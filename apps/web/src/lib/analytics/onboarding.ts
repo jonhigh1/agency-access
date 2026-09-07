@@ -1,13 +1,17 @@
 import posthog from 'posthog-js';
 
+import { stripPhcTokenProperty } from '@/lib/analytics/strip-phc-token';
+
 type OnboardingEventProperties = Record<string, unknown>;
 
 export function trackOnboardingEvent(
   eventName: string,
   properties: OnboardingEventProperties
 ) {
+  const sanitizedProperties = stripPhcTokenProperty(properties);
+
   try {
-    posthog.capture(eventName, properties);
+    posthog.capture(eventName, sanitizedProperties);
   } catch {
     // Non-blocking analytics path.
   }
@@ -22,7 +26,7 @@ export function trackOnboardingEvent(
   }
 
   try {
-    legacyAnalytics.track(eventName, properties);
+    legacyAnalytics.track(eventName, sanitizedProperties);
   } catch {
     // Non-blocking analytics path.
   }

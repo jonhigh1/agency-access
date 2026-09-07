@@ -40,6 +40,8 @@ function initPosthog() {
       capture_pageview: true,
       capture_pageleave: true,
       debug: process.env.NODE_ENV === 'development',
+      // PostHog JS injects config.token (phc_…) into every event's properties; denylist strips it.
+      property_denylist: ['token'],
     });
   } catch (e) {
     if (process.env.NODE_ENV === 'development') {
