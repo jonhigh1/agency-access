@@ -48,4 +48,20 @@ describe('trackOnboardingEvent', () => {
       timeToValueMs: 1234,
     });
   });
+
+  it('omits custom token prop from first_access_link_generated before capture', () => {
+    trackOnboardingEvent('first_access_link_generated', {
+      accessRequestId: 'req_123',
+      access_request_token: 'unique-access-token',
+      token: 'phc_BF0Pleaked_project_key',
+      timeToValueMs: 1234,
+    });
+
+    expect(captureMock).toHaveBeenCalledWith('first_access_link_generated', {
+      accessRequestId: 'req_123',
+      access_request_token: 'unique-access-token',
+      timeToValueMs: 1234,
+    });
+    expect(captureMock.mock.calls[0]?.[1]).not.toHaveProperty('token');
+  });
 });
