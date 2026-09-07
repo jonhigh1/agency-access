@@ -10,6 +10,7 @@ import {
   buildInviteReminderMailto,
   trackInviteLinkCopied,
   trackInviteReminderSent,
+  trackInviteSent,
 } from '@/lib/analytics/invite-events';
 import { getAccessRequest, getAuthorizationUrl } from '@/lib/api/access-requests';
 import type { AccessRequest } from '@/lib/api/access-requests';
@@ -116,13 +117,21 @@ export default function AccessRequestDetailPage({ params }: AccessRequestDetailP
     }
 
     void trackAction('copy_link');
-    trackInviteLinkCopied({
-      access_request_id: accessRequest.id,
-      access_request_token: accessRequest.uniqueToken,
-      status: accessRequest.status,
-      surface: 'detail',
+    await copy(authorizationUrl, () => {
+      trackInviteLinkCopied({
+        access_request_id: accessRequest.id,
+        access_request_token: accessRequest.uniqueToken,
+        status: accessRequest.status,
+        surface: 'detail',
+      });
+      trackInviteSent({
+        access_request_id: accessRequest.id,
+        access_request_token: accessRequest.uniqueToken,
+        channel: 'copy',
+        surface: 'detail',
+        status: accessRequest.status,
+      });
     });
-    await copy(authorizationUrl);
   };
 
   const handleSendReminder = async () => {

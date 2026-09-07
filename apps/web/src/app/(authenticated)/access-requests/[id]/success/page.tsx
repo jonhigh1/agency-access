@@ -73,20 +73,21 @@ export default function SuccessPage({ params }: SuccessPageProps) {
 
   const handleCopyLink = async () => {
     if (!authorizationUrl || !accessRequest) return;
-    trackInviteLinkCopied({
-      access_request_id: accessRequest.id,
-      access_request_token: accessRequest.uniqueToken,
-      status: accessRequest.status,
-      surface: 'success',
+    await copy(authorizationUrl, () => {
+      trackInviteLinkCopied({
+        access_request_id: accessRequest.id,
+        access_request_token: accessRequest.uniqueToken,
+        status: accessRequest.status,
+        surface: 'success',
+      });
+      trackInviteSent({
+        access_request_id: accessRequest.id,
+        access_request_token: accessRequest.uniqueToken,
+        channel: 'copy',
+        surface: 'success',
+        status: accessRequest.status,
+      });
     });
-    trackInviteSent({
-      access_request_id: accessRequest.id,
-      access_request_token: accessRequest.uniqueToken,
-      channel: 'copy',
-      surface: 'success',
-      status: accessRequest.status,
-    });
-    await copy(authorizationUrl);
   };
 
   const handleEmailClient = () => {

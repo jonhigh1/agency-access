@@ -1,4 +1,4 @@
-import posthog from 'posthog-js';
+import { capturePosthogEvent } from '@/lib/analytics/capture-posthog';
 
 export type InviteSurface = 'invite_page' | 'detail' | 'success' | 'modal' | 'onboarding';
 export type InviteChannel = 'copy' | 'email' | 'sms';
@@ -37,11 +37,7 @@ type InviteReminderSentProps = {
 };
 
 function captureInviteEvent(eventName: string, properties: Record<string, unknown>): void {
-  try {
-    posthog.capture(eventName, properties);
-  } catch {
-    // Non-blocking analytics path.
-  }
+  void capturePosthogEvent(eventName, properties);
 }
 
 export function trackInviteOpened(properties: InviteOpenedProps): void {

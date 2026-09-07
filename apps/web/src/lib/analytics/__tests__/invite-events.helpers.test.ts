@@ -5,14 +5,12 @@ import {
   trackInviteOpenedOncePerSession,
 } from '../invite-events';
 
-const { captureMock } = vi.hoisted(() => ({
-  captureMock: vi.fn(),
+const { capturePosthogEventMock } = vi.hoisted(() => ({
+  capturePosthogEventMock: vi.fn(),
 }));
 
-vi.mock('posthog-js', () => ({
-  default: {
-    capture: captureMock,
-  },
+vi.mock('../capture-posthog', () => ({
+  capturePosthogEvent: capturePosthogEventMock,
 }));
 
 describe('invite-events helpers', () => {
@@ -31,8 +29,8 @@ describe('invite-events helpers', () => {
       surface: 'invite_page',
     });
 
-    expect(captureMock).toHaveBeenCalledTimes(1);
-    expect(captureMock).toHaveBeenCalledWith('invite_opened', {
+    expect(capturePosthogEventMock).toHaveBeenCalledTimes(1);
+    expect(capturePosthogEventMock).toHaveBeenCalledWith('invite_opened', {
       access_request_token: 'tok-1',
       surface: 'invite_page',
     });
