@@ -9,7 +9,7 @@
 
 import { useState, useEffect } from 'react';
 import { m, AnimatePresence } from 'framer-motion';
-import { X, CheckCircle2, Link2, ChevronDown, Check, Minus } from 'lucide-react';
+import { X, Link2, ChevronDown, Check, Minus, Clock } from 'lucide-react';
 import { useAuth } from '@clerk/nextjs';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { PLATFORM_HIERARCHY, ACCESS_LEVEL_DESCRIPTIONS, type AccessLevel, type Platform } from '@agency-platform/shared';
@@ -314,11 +314,13 @@ export function CreateRequestModal({ client, onClose, onSuccess }: CreateRequest
           {success && createdRequest ? (
             <div className="p-6">
               <div className="text-center">
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-teal/10 rounded-full mb-4">
-                  <CheckCircle2 className="h-8 w-8 text-success-ink" />
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-coral/10 rounded-full mb-4">
+                  <Clock className="h-8 w-8 text-danger-ink" />
                 </div>
-                <h3 className="text-xl font-semibold text-foreground mb-2 font-display">Access Request Created!</h3>
-                <p className="text-muted-foreground">Send this link to {client.name} to request platform access</p>
+                <h3 className="text-xl font-semibold text-foreground mb-2 font-display">Pending — waiting on {client.name}</h3>
+                <p className="text-muted-foreground">
+                  Copy or email the link below. Connected when they finish Google.
+                </p>
               </div>
 
               {/* Invite link */}
