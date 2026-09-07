@@ -176,10 +176,8 @@ function OnboardingFlow() {
         return (
           <SuccessLinkScreen
             accessLink={state.accessLink || ''}
-            clientName={state.clientName || ''}
-            clientEmail={state.clientEmail}
+            agencyName={state.agencyName}
             accessRequestId={state.accessRequestId}
-            selectedPlatforms={Object.values(state.selectedPlatforms).flat() as any}
           />
         );
 

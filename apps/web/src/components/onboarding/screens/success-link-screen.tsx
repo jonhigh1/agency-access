@@ -1,29 +1,26 @@
 /**
- * Success Link Screen (Screen 3)
+ * Success Link Screen — wizard Success step (post first_access_link_generated).
  *
- * Step 4 of the unified onboarding flow.
- * Purpose: Deliver the access link and set pending expectations — client still needs to authorize.
+ * Pending activation framing, copy-primary CTA, static client preview, and
+ * connected-state example. No celebration / completion copy.
  */
 
 'use client';
 
-import { Platform } from '@agency-platform/shared';
-import { SuccessLinkCard } from '../success-link-card';
+import { Copy, Check } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { fadeVariants, fadeTransition } from '@/lib/animations';
 import { formatOnboardingStepLabel } from '@/lib/onboarding-steps';
-import {
-  buildInviteSentMailto,
-  trackInviteLinkCopied,
-  trackInviteSent,
-} from '@/lib/analytics/invite-events';
-import { motion } from 'framer-motion';
+import { trackInviteLinkCopied, trackInviteSent } from '@/lib/analytics/invite-events';
+import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard';
+import { Button } from '@/components/ui';
+import { WizardClientInvitePreview } from '../wizard-client-invite-preview';
+import { WizardConnectedExample } from '../wizard-connected-example';
 
 interface SuccessLinkScreenProps {
   accessLink: string;
-  clientName: string;
-  clientEmail?: string;
+  agencyName?: string;
   accessRequestId?: string;
-  selectedPlatforms: Platform[];
 }
 
 function extractAccessToken(accessLink: string): string {
@@ -33,11 +30,10 @@ function extractAccessToken(accessLink: string): string {
 
 export function SuccessLinkScreen({
   accessLink,
-  clientName,
-  clientEmail,
+  agencyName,
   accessRequestId,
-  selectedPlatforms,
 }: SuccessLinkScreenProps) {
+  const { copied, copy } = useCopyToClipboard();
   const accessRequestToken = extractAccessToken(accessLink);
 
   const trackProps = {
@@ -47,66 +43,44 @@ export function SuccessLinkScreen({
     surface: 'onboarding' as const,
   };
 
-  const handleCopy = () => {
+  const handleCopyLink = async () => {
     if (!accessRequestId || !accessRequestToken) return;
     trackInviteLinkCopied(trackProps);
     trackInviteSent({ ...trackProps, channel: 'copy' });
-  };
-
-  const handleEmail = () => {
-    if (!accessRequestId || !accessRequestToken) return;
-    trackInviteSent({ ...trackProps, channel: 'email' });
-
-    if (clientEmail) {
-      window.location.assign(
-        buildInviteSentMailto({
-          clientEmail,
-          clientName,
-          authorizationUrl: accessLink,
-        })
-      );
-    }
+    await copy(accessLink);
   };
 
   return (
     <motion.div
-      className="p-6 md:p-10"
+      className="p-6 md:p-8"
       variants={fadeVariants}
       initial="initial"
       animate="animate"
       exit="exit"
       transition={fadeTransition}
     >
-      <div className="mb-8 text-center">
-        <div className="text-sm font-semibold text-muted-foreground mb-2">
-          {formatOnboardingStepLabel(4)}
-        </div>
-        <h2 className="text-3xl font-bold text-ink mb-2 font-display">
-          Pending — waiting on {clientName}
-        </h2>
-        <p className="text-muted-foreground">
-          Link is ready. Connected when they finish Google.
-        </p>
-      </div>
+      <div className="mx-auto max-w-4xl space-y-5">
+        <header className="space-y-2">
+          <p className="text-sm font-semibold text-muted-foreground">
+            {formatOnboardingStepLabel(4)}
+          </p>
+          <h2 className="text-3xl font-bold text-ink font-display">Waiting on your client</h2>
+          <p className="text-base text-muted-foreground">
+            Your access link is ready. Share it — you&apos;re done when they connect Google.
+          </p>
+        </header>
 
-      <div className="max-w-4xl mx-auto">
-        <SuccessLinkCard
-          link={accessLink}
-          clientName={clientName}
-          platformCount={selectedPlatforms.length}
-          onCopy={handleCopy}
-          onEmail={handleEmail}
-        />
-      </div>
+        <Button
+          className="w-full sm:w-auto"
+          onClick={handleCopyLink}
+          leftIcon={copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+        >
+          {copied ? 'Copied' : 'Copy Link'}
+        </Button>
 
-      <div className="mt-8 max-w-4xl mx-auto">
-        <div className="rounded-lg border-2 border-black bg-paper p-6">
-          <h3 className="font-semibold text-ink mb-3 font-display">What happens next</h3>
-          <div className="space-y-2 text-sm text-foreground">
-            <p>Copy the link or email it to {clientName}.</p>
-            <p>They authorize Google when ready — usually under two minutes.</p>
-            <p>OAuth tokens appear in the dashboard only after they finish.</p>
-          </div>
+        <div className="grid gap-5 lg:grid-cols-2">
+          <WizardClientInvitePreview agencyName={agencyName} accessLink={accessLink} />
+          <WizardConnectedExample />
         </div>
       </div>
     </motion.div>
