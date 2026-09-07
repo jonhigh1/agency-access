@@ -16,6 +16,10 @@ import { CheckCircle2, AlertCircle } from 'lucide-react';
 import posthog from 'posthog-js';
 import { PlatformCard, Button, EmptyState } from '@/components/ui';
 import { Platform, PlatformInfo } from '@agency-platform/shared';
+import {
+  trackOAuthCallbackFailure,
+  trackOAuthCallbackSuccess,
+} from '@/lib/analytics/oauth-events';
 import { MetaUnifiedSettings } from '@/components/meta-unified-settings';
 import { GoogleUnifiedSettings } from '@/components/google-unified-settings';
 import { ManageAssetsModalShell } from '@/components/manage-assets-modal-shell';
@@ -106,8 +110,16 @@ function ConnectionsPageContent() {
     }
 
     if (error) {
+      trackOAuthCallbackFailure({
+        platform: platform,
+        error_code: error,
+        auth_source: 'agency_redirect',
+        agency_id: agencyId,
+      });
+
       showErrorMessage(`Failed to connect platform: ${error}`);
       router.replace('/connections');
+
       clearSuccessMessage();
     }
   }, [searchParams, queryClient, agencyId, router, showSuccessMessage, showErrorMessage, clearSuccessMessage, clearErrorMessage]);
@@ -344,8 +356,25 @@ function ConnectionsPageContent() {
       }
 
       await queryClient.invalidateQueries({ queryKey: ['available-platforms', agencyId] });
+      trackOAuthCallbackSuccess({
+        platform: 'meta',
+        auth_source: 'agency_meta_popup',
+        agency_id: agencyId,
+      });
+      posthog.capture('platform_connected', {
+        agency_id: agencyId,
+        platform: 'meta',
+        connection_source: 'meta_popup',
+      });
       showSuccessMessage('Successfully connected Meta!');
     } catch (error) {
+      trackOAuthCallbackFailure({
+        platform: 'meta',
+        error_code: 'META_POPUP_FAILED',
+        error_message: error instanceof Error ? error.message : 'Failed to connect Meta',
+        auth_source: 'agency_meta_popup',
+        agency_id: agencyId,
+      });
       showErrorMessage((error as Error).message);
     } finally {
       setConnectingPlatform(null);

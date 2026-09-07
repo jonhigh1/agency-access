@@ -32,6 +32,11 @@ import { PlatformIcon, Button } from '@/components/ui';
 import { PLATFORM_NAMES } from '@agency-platform/shared';
 import type { Platform } from '@agency-platform/shared';
 import { trackOnboardingEvent } from '@/lib/analytics/onboarding';
+import {
+  trackClientOAuthExchangeFailure,
+  trackClientOAuthExchangeSuccess,
+} from '@/lib/analytics/oauth-events';
+import { rememberInviteOAuthReturnToken } from '@/lib/client-invite-oauth';
 import { getClientInviteManualRoute } from '@/lib/client-invite-platforms';
 import { getApiBaseUrl } from '@/lib/api/api-env';
 import { parseJsonResponse } from '@/lib/api/parse-json-response';
@@ -394,11 +399,26 @@ export function PlatformAuthWizard({
             throw new Error(finalizeJson.error?.message || 'Failed to complete Meta connection');
           }
 
+          trackClientOAuthExchangeSuccess({
+            platform: finalizeJson.data.platform,
+            access_request_token: accessRequestToken,
+            connection_id: finalizeJson.data.connectionId,
+            auth_source: 'client_meta_popup',
+          });
+
           setConnectionId(finalizeJson.data.connectionId);
           setCurrentStep(2);
           setIsProcessing(false);
           return;
-        } catch {
+        } catch (popupError) {
+          trackClientOAuthExchangeFailure({
+            platform: 'meta',
+            error_code: 'META_POPUP_FAILED',
+            error_message:
+              popupError instanceof Error ? popupError.message : 'Meta popup login failed',
+            auth_source: 'client_meta_popup',
+            access_request_token: accessRequestToken,
+          });
           // Fallback to redirect when popup fails (e.g. Firefox Enhanced Tracking Protection blocks Facebook SDK)
           const response = await fetch(`${apiBaseUrl}/api/client/${accessRequestToken}/oauth-url`, {
             method: 'POST',
@@ -417,6 +437,7 @@ export function PlatformAuthWizard({
             throw new Error(json.error?.message || 'Failed to start Meta authorization');
           }
 
+          rememberInviteOAuthReturnToken(accessRequestToken);
           window.location.href = json.data.authUrl;
           return;
         }
@@ -449,6 +470,8 @@ export function PlatformAuthWizard({
           requestedProducts: products.map((p) => p.product),
         });
       }
+
+      rememberInviteOAuthReturnToken(accessRequestToken);
 
       // Redirect to external OAuth provider
       window.location.href = authUrl;

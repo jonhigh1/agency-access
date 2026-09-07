@@ -20,6 +20,10 @@ import { authorizedApiFetch } from '@/lib/api/authorized-api-fetch';
 import { getGoogleAdsAccountLabel } from '@/lib/google-ads-account-label';
 import { finalizeMetaBusinessLogin, launchMetaBusinessLogin } from '@/lib/meta-business-login';
 import { isManualInvitePlatform } from '@/lib/client-invite-platforms';
+import {
+  trackOAuthCallbackFailure,
+  trackOAuthCallbackSuccess,
+} from '@/lib/analytics/oauth-events';
 
 // Google account types
 interface GoogleAdsAccount {
@@ -347,8 +351,20 @@ export default function PlatformsPage() {
         queryClient.invalidateQueries({ queryKey: ['agency-platforms', orgId] }),
         queryClient.invalidateQueries({ queryKey: ['meta-business-accounts', orgId] }),
       ]);
+      trackOAuthCallbackSuccess({
+        platform: 'meta',
+        auth_source: 'agency_meta_popup',
+        agency_id: orgId,
+      });
       setShowMetaBusinesses(true);
     } catch (err) {
+      trackOAuthCallbackFailure({
+        platform: 'meta',
+        error_code: 'META_POPUP_FAILED',
+        error_message: err instanceof Error ? err.message : 'Failed to connect Meta',
+        auth_source: 'agency_meta_popup',
+        agency_id: orgId,
+      });
       const message =
         err instanceof Error ? err.message : 'Failed to connect Meta. Please try again.';
       setError(message);

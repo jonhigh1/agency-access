@@ -16,6 +16,10 @@ import Link from 'next/link';
 import posthog from 'posthog-js';
 import { MetaBusinessPortfolioSelector } from '@/components/meta-business-portfolio-selector';
 import { resolveApiUrl } from '@/lib/api/api-env';
+import {
+  trackOAuthCallbackFailure,
+  trackOAuthCallbackSuccess,
+} from '@/lib/analytics/oauth-events';
 import { PLATFORM_NAMES, type Platform } from '@agency-platform/shared';
 
 // Error message mapping
@@ -81,7 +85,6 @@ function CallbackPageContent() {
   });
 
   const handlePortfolioSelect = (businessId: string, businessName: string) => {
-    // Track Meta business portfolio selection in PostHog
     posthog.capture('meta_business_portfolio_selected', {
       agency_id: agencyIdParam || orgId,
       connection_id: connectionId,
@@ -95,18 +98,20 @@ function CallbackPageContent() {
   // Track OAuth callback results in PostHog
   useEffect(() => {
     if (success) {
-      posthog.capture('oauth_callback_success', {
+      trackOAuthCallbackSuccess({
+        platform: platform || 'unknown',
+        auth_source: 'agency_redirect',
         agency_id: agencyIdParam || orgId,
         connection_id: connectionId,
-        platform: platform,
         requires_business_selection: requireBusinessSelection || platform === 'meta',
       });
     } else if (errorCode) {
-      posthog.capture('oauth_callback_error', {
-        agency_id: agencyIdParam || orgId,
+      trackOAuthCallbackFailure({
         platform: platform,
         error_code: errorCode,
         error_message: errorMessage,
+        auth_source: 'agency_redirect',
+        agency_id: agencyIdParam || orgId,
       });
     }
   }, [success, errorCode, platform, agencyIdParam, orgId, connectionId, requireBusinessSelection, errorMessage]);
