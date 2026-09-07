@@ -80,7 +80,7 @@ describe('Invite Flow Page', () => {
     render(<InvitePage />);
 
     await waitFor(() => {
-      expect(screen.getByText(/request link unavailable/i)).toBeInTheDocument();
+      expect(screen.getByText(/this link is not working/i)).toBeInTheDocument();
       expect(screen.getByText(/access request expired/i)).toBeInTheDocument();
     });
   });
@@ -139,7 +139,7 @@ describe('Invite Flow Page', () => {
     });
     expect(screen.getByText(/still working on it/i)).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: /retry/i }));
+    fireEvent.click(screen.getByRole('button', { name: /try again/i }));
 
     await act(async () => {
       await Promise.resolve();
@@ -1111,7 +1111,7 @@ describe('Invite Flow Page', () => {
       await waitFor(() => {
         expect(screen.getByText(/step 1 of 3/i)).toBeInTheDocument();
         expect(screen.getByText(/confirm which accounts to share below/i)).toBeInTheDocument();
-        expect(screen.getByText(/share account access with client/i)).toBeInTheDocument();
+        expect(screen.getByText(/needs access to finish setup/i)).toBeInTheDocument();
         expect(screen.getAllByText('Google').length).toBeGreaterThan(0);
         expect(screen.getByText('Google Ads · Admin Access')).toBeInTheDocument();
         expect(screen.getByRole('img', { name: /demo agency logo/i })).toBeInTheDocument();

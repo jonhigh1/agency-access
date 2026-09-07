@@ -17,11 +17,36 @@ function ClientOAuthCallbackContent() {
 
   const code = searchParams.get('code') || searchParams.get('auth_code');
   const state = searchParams.get('state');
+  const oauthError = searchParams.get('error');
+
+  // Recovery: the invite stores progress under invite-progress:<token> in
+  // this browser. Use the newest one to offer a path back into the request.
+  const returnToken = (() => {
+    try {
+      const keys = Object.keys(sessionStorage)
+        .filter((key) => key.startsWith('invite-progress:'))
+        .sort();
+      const last = keys[keys.length - 1];
+      return last ? last.slice('invite-progress:'.length) : null;
+    } catch {
+      return null;
+    }
+  })();
 
   useEffect(() => {
     async function handleCallback() {
+      if (oauthError) {
+        setError(
+          oauthError === 'access_denied'
+            ? 'Authorization was canceled in the platform window. Nothing was shared.'
+            : `The platform reported a problem (${oauthError}). Nothing was shared.`
+        );
+        setIsProcessing(false);
+        return;
+      }
+
       if (!code || !state) {
-        setError('Missing OAuth parameters. Restart authorization from the invite link.');
+        setError('This authorization window is missing its security details. Restart it from your request page.');
         setIsProcessing(false);
         return;
       }

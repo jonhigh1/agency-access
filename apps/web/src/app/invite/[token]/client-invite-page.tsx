@@ -51,10 +51,6 @@ type PagePhase = 'intake' | 'platforms' | 'complete';
 
 const SESSION_STORAGE_PREFIX = 'invite-progress:';
 
-function toTitleCase(str: string): string {
-  return str.replace(/\b\w/g, (c) => c.toUpperCase());
-}
-
 function buildPlatformSummary(platforms: Platform[]): string {
   const uniqueNames = Array.from(new Set(platforms.map((platform) => PLATFORM_NAMES[platform])));
 
@@ -391,7 +387,7 @@ export default function ClientAuthorizationPage({
   // Per-phase copy.
   const phaseCopyByPhase: Record<PagePhase, { title: string; description: string }> = {
     intake: {
-      title: `Share account access with ${toTitleCase(data.clientName)}`,
+      title: `${data.agencyName} needs access to finish setup`,
       description:
         intakeFields.length > 0
           ? `${data.agencyName} asked for a few details, then you confirm which accounts to share.`
@@ -410,8 +406,8 @@ export default function ClientAuthorizationPage({
         : 'Finish the remaining platform connection steps.',
     },
     complete: {
-      title: `Share account access with ${toTitleCase(data.clientName)}`,
-      description: `${data.agencyName} requested access to ${platformSummary || 'your requested platforms'}. Review the request, then continue only with the accounts you want to share.`,
+      title: `${data.agencyName} needs access to ${platformSummary || 'your platforms'}`,
+      description: `Review the request, then continue only with the accounts you want to share.`,
     },
   };
   const phaseCopy = phaseCopyByPhase[phase];
