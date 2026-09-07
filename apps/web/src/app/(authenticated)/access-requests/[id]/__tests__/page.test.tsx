@@ -1,6 +1,7 @@
 import React from 'react';
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import AccessRequestDetailPage from '../page';
 import * as accessRequestsApi from '@/lib/api/access-requests';
@@ -29,6 +30,14 @@ vi.mock('@/lib/api/access-requests', () => ({
   getAuthorizationUrl: vi.fn((request: any) => `https://app.authhub.co/invite/${request.uniqueToken}`),
   cancelAccessRequest: vi.fn().mockResolvedValue({ data: { success: true } }),
 }));
+
+vi.mock('@/lib/analytics/invite-events', () => ({
+  trackInviteLinkCopied: vi.fn(),
+  trackInviteReminderSent: vi.fn(),
+  buildInviteReminderMailto: vi.fn(() => 'mailto:client@acme.com'),
+}));
+
+import * as inviteEvents from '@/lib/analytics/invite-events';
 
 describe('AccessRequestDetailPage', () => {
   beforeEach(() => {
@@ -64,9 +73,42 @@ describe('AccessRequestDetailPage', () => {
     expect(screen.getByText('Acme Client')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /edit request/i })).toHaveAttribute('href', '/access-requests/request-1/edit');
     expect(screen.getByRole('button', { name: /cancel request/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /send reminder/i })).toBeInTheDocument();
+    expect(screen.getByText(/waiting on client authorization/i)).toBeInTheDocument();
   });
 
-  it('renders replacement action for completed requests', async () => {
+  it('fires invite reminder analytics when Send Reminder is clicked', async () => {
+    const user = userEvent.setup();
+    vi.mocked(accessRequestsApi.getAccessRequest).mockResolvedValue({
+      data: {
+        id: 'request-1',
+        agencyId: 'agency-1',
+        clientName: 'Acme Client',
+        clientEmail: 'owner@acme.com',
+        status: 'pending',
+        uniqueToken: 'token-123',
+        expiresAt: '2026-03-14T00:00:00.000Z',
+        createdAt: '2026-03-01T00:00:00.000Z',
+        updatedAt: '2026-03-01T00:00:00.000Z',
+        platforms: [],
+      } as any,
+    });
+
+    renderWithProviders(<AccessRequestDetailPage params={Promise.resolve({ id: 'request-1' })} />);
+    await screen.findByText('Access Request Details');
+
+    await user.click(screen.getByRole('button', { name: /send reminder/i }));
+
+    expect(inviteEvents.trackInviteReminderSent).toHaveBeenCalledWith({
+      access_request_id: 'request-1',
+      access_request_token: 'token-123',
+      status: 'pending',
+      channel: 'copy',
+      surface: 'detail',
+    });
+  });
+
+  it('does not show Send Reminder for completed requests', async () => {
     vi.mocked(accessRequestsApi.getAccessRequest).mockResolvedValue({
       data: {
         id: 'request-2',
