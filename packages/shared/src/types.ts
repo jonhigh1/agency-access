@@ -2719,6 +2719,7 @@ export const DashboardRequestSummarySchema = z.object({
   clientEmail: z.string(),
   status: z.string(),
   createdAt: z.string(),
+  uniqueToken: z.string(),
   platforms: z.array(z.string()),
 });
 export type DashboardRequestSummary = z.infer<typeof DashboardRequestSummarySchema>;
