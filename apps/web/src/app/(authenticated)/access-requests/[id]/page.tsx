@@ -8,9 +8,8 @@ import { useAuthOrBypass } from '@/lib/dev-auth';
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard';
 import {
   buildInviteReminderMailto,
-  trackInviteLinkCopied,
+  trackInviteLinkCopyAndSent,
   trackInviteReminderSent,
-  trackInviteSent,
 } from '@/lib/analytics/invite-events';
 import { getAccessRequest, getAuthorizationUrl } from '@/lib/api/access-requests';
 import type { AccessRequest } from '@/lib/api/access-requests';
@@ -118,18 +117,11 @@ export default function AccessRequestDetailPage({ params }: AccessRequestDetailP
 
     void trackAction('copy_link');
     await copy(authorizationUrl, () => {
-      trackInviteLinkCopied({
+      trackInviteLinkCopyAndSent({
         access_request_id: accessRequest.id,
         access_request_token: accessRequest.uniqueToken,
         status: accessRequest.status,
         surface: 'detail',
-      });
-      trackInviteSent({
-        access_request_id: accessRequest.id,
-        access_request_token: accessRequest.uniqueToken,
-        channel: 'copy',
-        surface: 'detail',
-        status: accessRequest.status,
       });
     });
   };

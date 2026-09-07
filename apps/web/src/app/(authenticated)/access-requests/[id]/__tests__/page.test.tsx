@@ -32,9 +32,8 @@ vi.mock('@/lib/api/access-requests', () => ({
 }));
 
 vi.mock('@/lib/analytics/invite-events', () => ({
-  trackInviteLinkCopied: vi.fn(),
+  trackInviteLinkCopyAndSent: vi.fn(),
   trackInviteReminderSent: vi.fn(),
-  trackInviteSent: vi.fn(),
   buildInviteReminderMailto: vi.fn(() => 'mailto:client@acme.com'),
 }));
 
@@ -107,7 +106,7 @@ describe('AccessRequestDetailPage', () => {
       channel: 'copy',
       surface: 'detail',
     });
-    expect(inviteEvents.trackInviteSent).not.toHaveBeenCalled();
+    expect(inviteEvents.trackInviteLinkCopyAndSent).not.toHaveBeenCalled();
   });
 
   it('fires invite copy/send analytics when Copy Link is clicked', async () => {
@@ -136,18 +135,11 @@ describe('AccessRequestDetailPage', () => {
     await user.click(screen.getByRole('button', { name: /^copy link$/i }));
 
     expect(writeText).toHaveBeenCalledWith('https://app.authhub.co/invite/token-123');
-    expect(inviteEvents.trackInviteLinkCopied).toHaveBeenCalledWith({
+    expect(inviteEvents.trackInviteLinkCopyAndSent).toHaveBeenCalledWith({
       access_request_id: 'request-1',
       access_request_token: 'token-123',
       status: 'pending',
       surface: 'detail',
-    });
-    expect(inviteEvents.trackInviteSent).toHaveBeenCalledWith({
-      access_request_id: 'request-1',
-      access_request_token: 'token-123',
-      channel: 'copy',
-      surface: 'detail',
-      status: 'pending',
     });
     expect(inviteEvents.trackInviteReminderSent).not.toHaveBeenCalled();
   });

@@ -7,7 +7,7 @@ import { Check, Copy, ArrowLeft, Plus, ExternalLink, Mail } from 'lucide-react';
 import { getAccessRequest, getAuthorizationUrl } from '@/lib/api/access-requests';
 import {
   buildInviteSentMailto,
-  trackInviteLinkCopied,
+  trackInviteLinkCopyAndSent,
   trackInviteSent,
 } from '@/lib/analytics/invite-events';
 import { getPlatformCount } from '@/lib/transform-platforms';
@@ -74,18 +74,11 @@ export default function SuccessPage({ params }: SuccessPageProps) {
   const handleCopyLink = async () => {
     if (!authorizationUrl || !accessRequest) return;
     await copy(authorizationUrl, () => {
-      trackInviteLinkCopied({
+      trackInviteLinkCopyAndSent({
         access_request_id: accessRequest.id,
         access_request_token: accessRequest.uniqueToken,
         status: accessRequest.status,
         surface: 'success',
-      });
-      trackInviteSent({
-        access_request_id: accessRequest.id,
-        access_request_token: accessRequest.uniqueToken,
-        channel: 'copy',
-        surface: 'success',
-        status: accessRequest.status,
       });
     });
   };
