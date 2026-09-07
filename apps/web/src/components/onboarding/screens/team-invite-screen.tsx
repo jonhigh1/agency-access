@@ -24,6 +24,7 @@ import { AgencyRole } from '@agency-platform/shared';
 import { OpinionatedInput } from '../opinionated-input';
 import { SingleSelect } from '@/components/ui/single-select';
 import { fadeVariants, fadeTransition } from '@/lib/animations';
+import { formatOnboardingStepLabel } from '@/lib/onboarding-steps';
 import { X, Plus, Mail } from 'lucide-react';
 
 // ============================================================
@@ -104,7 +105,7 @@ export function TeamInviteScreen({
     >
       {/* Step Header */}
       <div className="mb-8">
-        <div className="text-sm font-semibold text-danger-ink mb-2">Step 5 of 6 (Optional)</div>
+        <div className="text-sm font-semibold text-danger-ink mb-2">{formatOnboardingStepLabel(5, true)}</div>
         <h2 className="text-3xl font-bold text-ink mb-2">Want to invite your team?</h2>
         <p className="text-muted-foreground">
           Team members can help manage access requests. You can also do this later from Settings.

@@ -6,14 +6,14 @@
  *
  * Key Elements:
  * - Visual grid with platform icons
- * - Google + Meta pre-selected with checkmarks
+ * - Google pre-selected with checkmark
  * - Click to toggle on/off
  * - "Pre-selected" callout reassures this is smart default
  * - Generate Link CTA creates excitement
  *
  * Design Principles:
  * - Visual: Platform grid is scannable and interactive
- * - Opinionated: Pre-select Google + Meta (80% of agencies)
+ * - Opinionated: Pre-select Google as the starting platform
  * - Fast: Can complete in 10-15 seconds
  */
 
@@ -24,6 +24,7 @@ import { motion } from 'framer-motion';
 import { Platform, PlatformSelection } from '@agency-platform/shared';
 import { PlatformSelectorGrid } from '../platform-selector-grid';
 import { fadeVariants, fadeTransition } from '@/lib/animations';
+import { formatOnboardingStepLabel } from '@/lib/onboarding-steps';
 
 // ============================================================
 // TYPES
@@ -76,8 +77,8 @@ export function PlatformSelectionScreen({
   // Convert to flat array for the grid component
   const flatPlatforms = useMemo(() => selectionToFlat(selectedPlatforms), [selectedPlatforms]);
 
-  // Pre-selected platforms (Google + Meta)
-  const preSelected: Platform[] = ['google', 'meta'];
+  // Pre-selected platform (Google)
+  const preSelected: Platform[] = ['google'];
 
   // Handle platform selection change
   const handleSelectionChange = useCallback(
@@ -100,7 +101,7 @@ export function PlatformSelectionScreen({
     >
       {/* Step Header */}
       <div className="mb-8">
-        <div className="text-sm font-semibold text-danger-ink mb-2">Step 3 of 6</div>
+        <div className="text-sm font-semibold text-danger-ink mb-2">{formatOnboardingStepLabel(3)}</div>
         <h2 className="text-3xl font-bold text-ink mb-2">Choose Platforms</h2>
         <p className="text-ink/60">
           Which platforms does this client need to authorize?
@@ -142,7 +143,7 @@ export function PlatformSelectionScreen({
             <li>We'll generate a unique access link for your client</li>
             <li>You'll send it to them (we'll copy it to your clipboard)</li>
             <li>They'll click the link and authorize each platform in one flow</li>
-            <li>You'll get instant access to their OAuth tokens</li>
+            <li>Once they authorize, OAuth tokens appear in your dashboard</li>
           </ol>
         </div>
       </div>

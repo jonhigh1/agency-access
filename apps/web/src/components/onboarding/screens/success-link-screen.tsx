@@ -24,6 +24,7 @@
 import { Platform } from '@agency-platform/shared';
 import { SuccessLinkCard } from '../success-link-card';
 import { fadeVariants, fadeTransition } from '@/lib/animations';
+import { formatOnboardingStepLabel } from '@/lib/onboarding-steps';
 import { motion } from 'framer-motion';
 
 // ============================================================
@@ -56,7 +57,7 @@ export function SuccessLinkScreen({
     >
       {/* Step Header */}
       <div className="mb-8 text-center">
-        <div className="text-sm font-semibold text-success-ink mb-2">Step 4 of 6</div>
+        <div className="text-sm font-semibold text-success-ink mb-2">{formatOnboardingStepLabel(4)}</div>
         <h2 className="text-3xl font-bold text-ink mb-2">
           Your access link is ready!
         </h2>
@@ -89,7 +90,7 @@ export function SuccessLinkScreen({
             </div>
             <div className="flex items-start gap-2">
               <span className="text-danger-ink font-bold">3.</span>
-              <span>You'll get instant access to their OAuth tokens</span>
+              <span>Once they authorize, OAuth tokens appear in your dashboard</span>
             </div>
             <div className="flex items-start gap-2">
               <span className="text-danger-ink font-bold">4.</span>

@@ -952,6 +952,14 @@ describe('UnifiedOnboardingContext', () => {
     expect(createRequestCall).toBeUndefined();
   });
 
+  it('pre-selects Google only as the default platform (Meta remains available)', () => {
+    const { result } = renderHook(() => useUnifiedOnboarding(), { wrapper });
+
+    expect(result.current.state.preSelectedPlatforms).toEqual(['google']);
+    expect(result.current.state.selectedPlatforms).toEqual({ google: ['google'] });
+    expect(result.current.state.selectedPlatforms.meta).toBeUndefined();
+  });
+
   it('persists resumable onboarding progress at the client step when deferring', async () => {
     fetchMock
       .mockResolvedValueOnce({

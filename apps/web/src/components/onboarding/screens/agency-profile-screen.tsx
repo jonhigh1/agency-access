@@ -23,6 +23,7 @@ import { motion } from 'framer-motion';
 import { OpinionatedInput } from '../opinionated-input';
 import { SingleSelect } from '@/components/ui/single-select';
 import { fadeVariants, fadeTransition } from '@/lib/animations';
+import { formatOnboardingStepLabel } from '@/lib/onboarding-steps';
 
 // ============================================================
 // TYPES
@@ -85,7 +86,7 @@ export function AgencyProfileScreen({
     >
       {/* Step Header */}
       <div className="mb-8">
-        <div className="text-sm font-semibold text-danger-ink mb-2">Step 1 of 6</div>
+        <div className="text-sm font-semibold text-danger-ink mb-2">{formatOnboardingStepLabel(1)}</div>
         <h2 className="text-3xl font-bold text-ink mb-2">Tell us about your agency</h2>
         <p className="text-muted-foreground">We'll get you set up in seconds.</p>
       </div>
