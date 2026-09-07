@@ -254,7 +254,7 @@ export const sampleComparisonPage: ProgrammaticComparisonPage = {
       starting: 79,
       currency: "USD",
       billing: "monthly",
-      starter: { price: 79, features: ["Unlimited clients", "15+ platforms", "Access + Intake", "US support", "API access"] },
+      starter: { price: 79, features: ["20 clients/month", "15+ platforms", "Access + Intake", "US support", "API access"] },
       pro: { price: 149, features: ["Everything in Starter", "Custom branding", "Templates", "Priority support"] },
       enterprise: { price: "Custom", features: ["White-label", "SSO", "Dedicated CSM", "SLA"] },
     },
@@ -279,7 +279,7 @@ export const sampleComparisonPage: ProgrammaticComparisonPage = {
       icon: "DollarSign",
       quote: "I never know what my bill will be.",
       description: "Usage-based pricing creates unpredictable costs. One busy month throws your budget. Growing agencies need predictable expenses.",
-      solution: "Flat-rate $79/mo unlimited clients",
+      solution: "Growth $79/mo · 20 clients/month",
     },
     {
       title: "Two-Step Onboarding",
@@ -420,7 +420,7 @@ export const sampleComparisonPage: ProgrammaticComparisonPage = {
       billing: "monthly",
     },
     authhub: {
-      starter: { price: 79, features: ["Unlimited clients", "15+ platforms", "Access + Intake", "US support", "API access"] },
+      starter: { price: 79, features: ["20 clients/month", "15+ platforms", "Access + Intake", "US support", "API access"] },
       pro: { price: 149, features: ["Custom branding", "Templates", "Priority support"] },
       enterprise: { price: "Custom", features: ["White-label", "SSO", "Dedicated CSM"] },
     },

@@ -15,6 +15,9 @@ describe('Marketing honesty guardrails', () => {
     'src/components/marketing/solution-section-new.tsx',
     'src/components/marketing/how-it-works-section.tsx',
     'src/components/marketing/pricing/faq-section.tsx',
+    'src/components/marketing/cta-section.tsx',
+    'src/components/marketing/hero-copy-rewrite/hero-copy-rewrite-final-cta-section.tsx',
+    'src/components/marketing/pricing/final-cta-section.tsx',
     'src/components/programmatic/ComparisonPageTemplate.tsx',
     'src/app/(marketing)/contact/page.tsx',
   ];

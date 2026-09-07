@@ -89,7 +89,7 @@ export function CTASection() {
               <div className="flex items-center gap-1.5 sm:gap-2">
                 <Check size={14} className="text-danger-ink sm:hidden" />
                 <Check size={16} className="text-danger-ink hidden sm:block" />
-                <span>Unlimited clients</span>
+                <span>14-day free trial</span>
               </div>
               <div className="flex items-center gap-1.5 sm:gap-2">
                 <Check size={14} className="text-danger-ink sm:hidden" />
