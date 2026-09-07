@@ -765,11 +765,14 @@ export function UnifiedOnboardingProvider({
       const accessLink = buildAuthorizeUrl(accessRequest.uniqueToken);
 
       const timeToValue = Date.now() - state.startedAt;
+      const requestedPlatforms = flattenSelectedPlatforms(state.selectedPlatforms);
       trackOnboardingEvent('first_access_link_generated', {
         agencyId: resolvedAgencyId,
         clientId,
         accessRequestId: accessRequest.id,
-        platformCount: flattenSelectedPlatforms(state.selectedPlatforms).length,
+        access_request_token: accessRequest.uniqueToken,
+        platformCount: requestedPlatforms.length,
+        platforms: requestedPlatforms,
         timeToValueMs: timeToValue,
       });
 

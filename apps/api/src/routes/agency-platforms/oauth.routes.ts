@@ -279,13 +279,29 @@ export async function registerOAuthRoutes(fastify: FastifyInstance) {
       state?: string;
     };
 
+    const redirectOAuthError = (
+      redirectUrl: string,
+      errorCode: string,
+      extraParams?: Record<string, string>
+    ) => {
+      const target = new URL(redirectUrl, env.FRONTEND_URL);
+      target.searchParams.set('error', errorCode);
+      target.searchParams.set('platform', platform);
+      if (extraParams) {
+        for (const [key, value] of Object.entries(extraParams)) {
+          target.searchParams.set(key, value);
+        }
+      }
+      return reply.redirect(target.toString());
+    };
+
     try {
       const stateResult = await oauthStateService.validateState(state || '');
 
       if (stateResult.error || !stateResult.data) {
         const errorCode = stateResult.error?.code || 'INVALID_STATE';
-        const redirectUrl = stateResult.data?.redirectUrl || env.FRONTEND_URL;
-        return reply.redirect(`${redirectUrl}?error=${errorCode}`);
+        const redirectUrl = stateResult.data?.redirectUrl || `${env.FRONTEND_URL}/platforms/callback`;
+        return redirectOAuthError(redirectUrl, errorCode);
       }
 
       const stateData = stateResult.data;
@@ -297,26 +313,26 @@ export async function registerOAuthRoutes(fastify: FastifyInstance) {
       });
 
       if (agencyResult.error) {
-        const redirectUrl = stateData.redirectUrl || env.FRONTEND_URL;
+        const redirectUrl = stateData.redirectUrl || `${env.FRONTEND_URL}/platforms/callback`;
         fastify.log.error({
           error: agencyResult.error,
           agencyId: stateData.agencyId,
           userEmail: stateData.userEmail,
         });
-        return reply.redirect(`${redirectUrl}?error=AGENCY_RESOLUTION_FAILED`);
+        return redirectOAuthError(redirectUrl, 'AGENCY_RESOLUTION_FAILED');
       }
 
       const actualAgencyId = agencyResult.data!.agencyId;
 
       if (MANUAL_PLATFORMS.includes(platform as any)) {
-        const redirectUrl = stateData.redirectUrl || env.FRONTEND_URL;
-        return reply.redirect(`${redirectUrl}?error=MANUAL_INVITATION_PLATFORM`);
+        const redirectUrl = stateData.redirectUrl || `${env.FRONTEND_URL}/platforms/callback`;
+        return redirectOAuthError(redirectUrl, 'MANUAL_INVITATION_PLATFORM');
       }
 
       const ConnectorClass = PLATFORM_CONNECTORS[platform as keyof typeof PLATFORM_CONNECTORS];
       if (!ConnectorClass) {
-        const redirectUrl = stateData.redirectUrl || env.FRONTEND_URL;
-        return reply.redirect(`${redirectUrl}?error=CONNECTOR_NOT_IMPLEMENTED`);
+        const redirectUrl = stateData.redirectUrl || `${env.FRONTEND_URL}/platforms/callback`;
+        return redirectOAuthError(redirectUrl, 'CONNECTOR_NOT_IMPLEMENTED');
       }
 
       const connector = new ConnectorClass() as PlatformConnector;
@@ -336,8 +352,8 @@ export async function registerOAuthRoutes(fastify: FastifyInstance) {
           tokens = await (connector as any).getLongLivedToken(tokens.accessToken);
         }
       } catch (error) {
-        const redirectUrl = stateData.redirectUrl || env.FRONTEND_URL;
-        return reply.redirect(`${redirectUrl}?error=TOKEN_EXCHANGE_FAILED`);
+        const redirectUrl = stateData.redirectUrl || `${env.FRONTEND_URL}/platforms/callback`;
+        return redirectOAuthError(redirectUrl, 'TOKEN_EXCHANGE_FAILED');
       }
 
       let googleAccounts: GoogleAccountsResponse | undefined;
@@ -388,8 +404,8 @@ export async function registerOAuthRoutes(fastify: FastifyInstance) {
       });
 
       if (connectionResult.error) {
-        const redirectUrl = stateData.redirectUrl || env.FRONTEND_URL;
-        return reply.redirect(`${redirectUrl}?error=${connectionResult.error.code}`);
+        const redirectUrl = stateData.redirectUrl || `${env.FRONTEND_URL}/platforms/callback`;
+        return redirectOAuthError(redirectUrl, connectionResult.error.code);
       }
 
       if (platform === 'meta' && connectionResult.data) {
@@ -411,8 +427,7 @@ export async function registerOAuthRoutes(fastify: FastifyInstance) {
       redirectTarget.searchParams.set('agencyId', actualAgencyId);
       return reply.redirect(redirectTarget.toString());
     } catch (error) {
-      const redirectUrl = env.FRONTEND_URL;
-      return reply.redirect(`${redirectUrl}?error=CALLBACK_FAILED`);
+      return redirectOAuthError(`${env.FRONTEND_URL}/platforms/callback`, 'CALLBACK_FAILED');
     }
   });
 }

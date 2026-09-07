@@ -196,13 +196,15 @@ export default function ClientAuthorizationPage({
 
     if (!urlStep && !startedTrackedRef.current) {
       startedTrackedRef.current = true;
+      const startedPlatforms = loadedPayload.platforms?.map((p) => p.platformGroup) || [];
       void capturePosthogEvent('client_authorization_started', {
         access_request_token: token,
+        platform: startedPlatforms[0] ?? null,
         agency_name: loadedPayload.agencyName,
         client_name: loadedPayload.clientName,
         client_email: loadedPayload.clientEmail,
         platform_count: loadedPayload.platforms?.length || 0,
-        platforms: loadedPayload.platforms?.map((p) => p.platformGroup) || [],
+        platforms: startedPlatforms,
         has_intake_fields: loadedPayload.intakeFields?.length > 0,
         has_custom_branding: !!loadedPayload.branding?.logoUrl,
       });
