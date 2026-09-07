@@ -9,6 +9,11 @@ import posthog from 'posthog-js';
  * - In development, events are not sent unless NEXT_PUBLIC_POSTHOG_SEND_IN_DEV=true
  *   (avoids polluting production analytics with local test data).
  * - Uses /ingest proxy (see next.config.ts) to reduce ad-blocker impact.
+ *
+ * PostHog JS sets `properties.token` to the project API key (phc_…) on every captured
+ * event for ingestion auth. HogQL exposes this as properties.token on all events
+ * (pageview, onboarding_started, etc.) — it is not a custom app property. Funnels
+ * must use `access_request_token` or `accessRequestId`, never properties.token.
  */
 function initPosthog() {
   const key = process.env.NEXT_PUBLIC_POSTHOG_KEY;
@@ -40,8 +45,6 @@ function initPosthog() {
       capture_pageview: true,
       capture_pageleave: true,
       debug: process.env.NODE_ENV === 'development',
-      // PostHog JS injects config.token (phc_…) into every event's properties; denylist strips it.
-      property_denylist: ['token'],
     });
   } catch (e) {
     if (process.env.NODE_ENV === 'development') {

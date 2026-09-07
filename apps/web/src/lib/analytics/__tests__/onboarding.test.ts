@@ -49,7 +49,7 @@ describe('trackOnboardingEvent', () => {
     });
   });
 
-  it('strips PostHog project key from first_access_link_generated capture props', () => {
+  it('omits custom token prop from first_access_link_generated before capture', () => {
     trackOnboardingEvent('first_access_link_generated', {
       accessRequestId: 'req_123',
       access_request_token: 'unique-access-token',

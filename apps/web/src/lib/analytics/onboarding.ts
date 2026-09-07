@@ -1,17 +1,21 @@
 import posthog from 'posthog-js';
 
-import { stripPhcTokenProperty } from '@/lib/analytics/strip-phc-token';
+import { omitCustomTokenProperty } from '@/lib/analytics/omit-custom-token-property';
 
 type OnboardingEventProperties = Record<string, unknown>;
 
+/**
+ * PostHog adds `properties.token` (phc_ project key) on every event for ingestion.
+ * Never pass a custom `token` prop — use `access_request_token` / `accessRequestId`.
+ */
 export function trackOnboardingEvent(
   eventName: string,
   properties: OnboardingEventProperties
 ) {
-  const sanitizedProperties = stripPhcTokenProperty(properties);
+  const captureProperties = omitCustomTokenProperty(properties);
 
   try {
-    posthog.capture(eventName, sanitizedProperties);
+    posthog.capture(eventName, captureProperties);
   } catch {
     // Non-blocking analytics path.
   }
@@ -26,7 +30,7 @@ export function trackOnboardingEvent(
   }
 
   try {
-    legacyAnalytics.track(eventName, sanitizedProperties);
+    legacyAnalytics.track(eventName, captureProperties);
   } catch {
     // Non-blocking analytics path.
   }

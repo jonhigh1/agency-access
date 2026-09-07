@@ -48,6 +48,8 @@ Track:
 - `onboarding_step_failed`
 - `team_invites_sent`
 
+**PostHog note (Growth):** `properties.token` on every event is the PostHog project API key (`phc_…`) injected by the JS SDK for ingestion — not an access-request token. It appears on `$pageview`, `onboarding_started`, and all other events. For onboarding funnels, correlate access requests with `properties.access_request_token` or `properties.accessRequestId` only. Do not filter or join on `properties.token`.
+
 ### Success thresholds
 - 401 rate on onboarding endpoints: near-zero after rollout
 - Link generation success rate: increase vs. pre-rollout baseline
