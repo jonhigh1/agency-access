@@ -1,4 +1,4 @@
-import { capturePosthogEvent } from '@/lib/analytics/capture-posthog';
+import { capturePosthogEvent, capturePosthogEvents } from '@/lib/analytics/capture-posthog';
 
 export type InviteSurface = 'invite_page' | 'detail' | 'success' | 'modal' | 'onboarding';
 export type InviteChannel = 'copy' | 'email' | 'sms';
@@ -50,6 +50,20 @@ export function trackInviteLinkCopied(properties: InviteLinkCopiedProps): void {
 
 export function trackInviteSent(properties: InviteSentProps): void {
   captureInviteEvent('invite_sent', properties);
+}
+
+/** Fires invite_link_copied + invite_sent (channel=copy) in one serialized PostHog capture. */
+export function trackInviteLinkCopyAndSent(properties: InviteLinkCopiedProps): void {
+  void capturePosthogEvents([
+    { event: 'invite_link_copied', properties },
+    {
+      event: 'invite_sent',
+      properties: {
+        ...properties,
+        channel: 'copy',
+      },
+    },
+  ]);
 }
 
 export function trackInviteReminderSent(properties: InviteReminderSentProps): void {

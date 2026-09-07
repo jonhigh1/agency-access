@@ -1,15 +1,18 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { capturePosthogEventMock } = vi.hoisted(() => ({
+const { capturePosthogEventMock, capturePosthogEventsMock } = vi.hoisted(() => ({
   capturePosthogEventMock: vi.fn(),
+  capturePosthogEventsMock: vi.fn(),
 }));
 
 vi.mock('../capture-posthog', () => ({
   capturePosthogEvent: capturePosthogEventMock,
+  capturePosthogEvents: capturePosthogEventsMock,
 }));
 
 import {
   trackInviteLinkCopied,
+  trackInviteLinkCopyAndSent,
   trackInviteOpened,
   trackInviteReminderSent,
   trackInviteSent,
@@ -66,6 +69,38 @@ describe('invite-events', () => {
       channel: 'email',
       surface: 'success',
     });
+  });
+
+  it('tracks invite copy + send together via capturePosthogEvents', () => {
+    trackInviteLinkCopyAndSent({
+      access_request_id: 'req-1',
+      access_request_token: 'tok-abc',
+      status: 'pending',
+      surface: 'detail',
+    });
+
+    expect(capturePosthogEventsMock).toHaveBeenCalledWith([
+      {
+        event: 'invite_link_copied',
+        properties: {
+          access_request_id: 'req-1',
+          access_request_token: 'tok-abc',
+          status: 'pending',
+          surface: 'detail',
+        },
+      },
+      {
+        event: 'invite_sent',
+        properties: {
+          access_request_id: 'req-1',
+          access_request_token: 'tok-abc',
+          status: 'pending',
+          surface: 'detail',
+          channel: 'copy',
+        },
+      },
+    ]);
+    expect(capturePosthogEventMock).not.toHaveBeenCalled();
   });
 
   it('tracks invite_reminder_sent with channel', () => {
