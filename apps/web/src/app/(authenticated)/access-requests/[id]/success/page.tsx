@@ -5,6 +5,11 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@clerk/nextjs';
 import { Check, Copy, ArrowLeft, Plus, ExternalLink, Mail } from 'lucide-react';
 import { getAccessRequest, getAuthorizationUrl } from '@/lib/api/access-requests';
+import {
+  buildInviteSentMailto,
+  trackInviteLinkCopied,
+  trackInviteSent,
+} from '@/lib/analytics/invite-events';
 import { getPlatformCount } from '@/lib/transform-platforms';
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard';
 import { Button } from '@/components/ui';
@@ -66,18 +71,43 @@ export default function SuccessPage({ params }: SuccessPageProps) {
     });
   }, [accessRequest]);
 
-  const handleCopyLink = () => {
-    if (!authorizationUrl) return;
-    void copy(authorizationUrl);
+  const handleCopyLink = async () => {
+    if (!authorizationUrl || !accessRequest) return;
+    trackInviteLinkCopied({
+      access_request_id: accessRequest.id,
+      access_request_token: accessRequest.uniqueToken,
+      status: accessRequest.status,
+      surface: 'success',
+    });
+    trackInviteSent({
+      access_request_id: accessRequest.id,
+      access_request_token: accessRequest.uniqueToken,
+      channel: 'copy',
+      surface: 'success',
+      status: accessRequest.status,
+    });
+    await copy(authorizationUrl);
   };
 
-  const emailHref = accessRequest
-    ? `mailto:${encodeURIComponent(accessRequest.clientEmail)}?subject=${encodeURIComponent(
-        `Authorize platform access for ${accessRequest.clientName}`
-      )}&body=${encodeURIComponent(
-        `Hi ${accessRequest.clientName},\n\nPlease use this secure link to authorize platform access:\n${authorizationUrl}\n\nThis link expires on ${expirationText}.`
-      )}`
-    : '#';
+  const handleEmailClient = () => {
+    if (!accessRequest || !authorizationUrl) return;
+
+    trackInviteSent({
+      access_request_id: accessRequest.id,
+      access_request_token: accessRequest.uniqueToken,
+      channel: 'email',
+      surface: 'success',
+      status: accessRequest.status,
+    });
+    window.location.assign(
+      buildInviteSentMailto({
+        clientEmail: accessRequest.clientEmail,
+        clientName: accessRequest.clientName,
+        authorizationUrl,
+        expirationText,
+      })
+    );
+  };
 
   if (loading) {
     return (
@@ -104,7 +134,7 @@ export default function SuccessPage({ params }: SuccessPageProps) {
   return (
     <FlowShell
       title="Access Request Created"
-      description={`Share this link with ${accessRequest.clientName} to authorize ${platformCount} platform${platformCount !== 1 ? 's' : ''}.`}
+      description={`Share this link with ${accessRequest.clientName}. They authorize when ready — tokens are stored only after authorization completes.`}
       step={3}
       totalSteps={3}
       steps={['Build', 'Review', 'Send']}
@@ -118,7 +148,9 @@ export default function SuccessPage({ params }: SuccessPageProps) {
               </div>
               <div>
                 <h2 className="text-lg font-semibold text-ink">Share Authorization Link</h2>
-                <p className="text-sm text-muted-foreground">Send this secure URL to your client.</p>
+                <p className="text-sm text-muted-foreground">
+                  Send this secure URL to your client. They complete authorization on their schedule.
+                </p>
               </div>
             </div>
             <span className="rounded-full border border-border bg-muted/20 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
@@ -144,7 +176,7 @@ export default function SuccessPage({ params }: SuccessPageProps) {
             <Button
               variant="secondary"
               leftIcon={<Mail className="h-4 w-4" />}
-              onClick={() => window.location.assign(emailHref)}
+              onClick={handleEmailClient}
             >
               Email Client
             </Button>

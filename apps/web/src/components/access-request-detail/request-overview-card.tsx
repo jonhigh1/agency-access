@@ -1,6 +1,6 @@
 'use client';
 
-import { Calendar, Clipboard, ExternalLink, Mail, User } from 'lucide-react';
+import { Bell, Calendar, Clipboard, ExternalLink, Mail, User } from 'lucide-react';
 import { Card, Button, StatusBadge } from '@/components/ui';
 import type { AccessRequest } from '@/lib/api/access-requests';
 
@@ -9,7 +9,14 @@ interface RequestOverviewCardProps {
   authorizationUrl: string;
   onCopyLink: () => void;
   onPreviewLink: () => void;
+  onSendReminder?: () => void;
+  onEmailClient?: () => void;
   copied: boolean;
+  reminderCopied?: boolean;
+}
+
+function isAwaitingClient(status: AccessRequest['status']): boolean {
+  return status === 'pending' || status === 'partial';
 }
 
 export function RequestOverviewCard({
@@ -17,8 +24,13 @@ export function RequestOverviewCard({
   authorizationUrl,
   onCopyLink,
   onPreviewLink,
+  onSendReminder,
+  onEmailClient,
   copied,
+  reminderCopied = false,
 }: RequestOverviewCardProps) {
+  const awaitingClient = isAwaitingClient(request.status);
+
   return (
     <Card className="border-black/10 shadow-sm">
       <div className="border-b border-border px-6 py-4 flex flex-wrap items-center justify-between gap-3">
@@ -28,6 +40,16 @@ export function RequestOverviewCard({
         </div>
         <StatusBadge status={request.status as any} />
       </div>
+
+      {awaitingClient && (
+        <div className="mx-6 mt-4 rounded-lg border border-coral/30 bg-coral/5 px-4 py-3">
+          <p className="text-sm font-semibold text-ink">Waiting on client authorization</p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Your client authorizes when they are ready. Access tokens are stored only after they
+            complete authorization — not when the link is sent.
+          </p>
+        </div>
+      )}
 
       <div className="p-6 grid gap-4 sm:grid-cols-2">
         <div className="flex items-start gap-2">
@@ -85,6 +107,28 @@ export function RequestOverviewCard({
           >
             Preview Link
           </Button>
+          {awaitingClient && onSendReminder && (
+            <Button
+              variant="primary"
+              size="sm"
+              leftIcon={<Bell className="h-4 w-4" />}
+              onClick={onSendReminder}
+              aria-label="Send reminder to client"
+            >
+              {reminderCopied ? 'Link copied — send when ready' : 'Send Reminder'}
+            </Button>
+          )}
+          {awaitingClient && onEmailClient && (
+            <Button
+              variant="secondary"
+              size="sm"
+              leftIcon={<Mail className="h-4 w-4" />}
+              onClick={onEmailClient}
+              aria-label="Email client authorization link"
+            >
+              Email Client
+            </Button>
+          )}
         </div>
       </div>
     </Card>

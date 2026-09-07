@@ -6,6 +6,11 @@ import { LogoSpinner } from '@/components/ui/logo-spinner';
 import { useAuth } from '@clerk/nextjs';
 import { useAuthOrBypass } from '@/lib/dev-auth';
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard';
+import {
+  buildInviteReminderMailto,
+  trackInviteLinkCopied,
+  trackInviteReminderSent,
+} from '@/lib/analytics/invite-events';
 import { getAccessRequest, getAuthorizationUrl } from '@/lib/api/access-requests';
 import type { AccessRequest } from '@/lib/api/access-requests';
 import {
@@ -26,6 +31,7 @@ export default function AccessRequestDetailPage({ params }: AccessRequestDetailP
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { copied, copy } = useCopyToClipboard();
+  const { copied: reminderCopied, copy: copyReminderLink } = useCopyToClipboard();
 
   const resolveApiToken = useMemo(
     () => async () => {
@@ -105,12 +111,62 @@ export default function AccessRequestDetailPage({ params }: AccessRequestDetailP
   }, [accessRequest]);
 
   const handleCopyLink = async () => {
-    if (!authorizationUrl) {
+    if (!authorizationUrl || !accessRequest) {
       return;
     }
 
     void trackAction('copy_link');
+    trackInviteLinkCopied({
+      access_request_id: accessRequest.id,
+      access_request_token: accessRequest.uniqueToken,
+      status: accessRequest.status,
+      surface: 'detail',
+    });
     await copy(authorizationUrl);
+  };
+
+  const handleSendReminder = async () => {
+    if (!authorizationUrl || !accessRequest) {
+      return;
+    }
+
+    void trackAction('send_reminder');
+    await copyReminderLink(authorizationUrl);
+    trackInviteReminderSent({
+      access_request_id: accessRequest.id,
+      access_request_token: accessRequest.uniqueToken,
+      status: accessRequest.status,
+      channel: 'copy',
+      surface: 'detail',
+    });
+  };
+
+  const handleEmailClient = () => {
+    if (!authorizationUrl || !accessRequest) {
+      return;
+    }
+
+    void trackAction('email_client');
+    const expirationText = new Date(accessRequest.expiresAt).toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+    });
+    const mailtoHref = buildInviteReminderMailto({
+      clientEmail: accessRequest.clientEmail,
+      clientName: accessRequest.clientName,
+      authorizationUrl,
+      expirationText,
+    });
+    trackInviteReminderSent({
+      access_request_id: accessRequest.id,
+      access_request_token: accessRequest.uniqueToken,
+      status: accessRequest.status,
+      channel: 'email',
+      surface: 'detail',
+    });
+    window.location.assign(mailtoHref);
   };
 
   const handlePreviewLink = () => {
@@ -171,8 +227,19 @@ export default function AccessRequestDetailPage({ params }: AccessRequestDetailP
           request={accessRequest}
           authorizationUrl={authorizationUrl}
           copied={copied}
+          reminderCopied={reminderCopied}
           onCopyLink={handleCopyLink}
           onPreviewLink={handlePreviewLink}
+          onSendReminder={
+            accessRequest.status === 'pending' || accessRequest.status === 'partial'
+              ? handleSendReminder
+              : undefined
+          }
+          onEmailClient={
+            accessRequest.status === 'pending' || accessRequest.status === 'partial'
+              ? handleEmailClient
+              : undefined
+          }
         />
 
         <RequestPlatformsCard request={accessRequest} />

@@ -5,6 +5,7 @@ import { useState, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Check, Lock, RefreshCw } from 'lucide-react';
 import { capturePosthogEvent } from '@/lib/analytics/capture-posthog';
+import { trackInviteOpenedOncePerSession } from '@/lib/analytics/invite-events';
 import { InviteFlowShell } from '@/components/flow/invite-flow-shell';
 import { InviteHeroHeader } from '@/components/flow/invite-hero-header';
 import { InvitePlatformQueueItem } from '@/components/flow/invite-platform-queue-item';
@@ -197,6 +198,14 @@ export default function ClientAuthorizationPage({
     if (!urlStep && !startedTrackedRef.current) {
       startedTrackedRef.current = true;
       const startedPlatforms = loadedPayload.platforms?.map((p) => p.platformGroup) || [];
+      trackInviteOpenedOncePerSession({
+        access_request_token: token,
+        status: loadedPayload.authorizationProgress?.isComplete ? 'completed' : 'pending',
+        surface: 'invite_page',
+        agency_name: loadedPayload.agencyName,
+        client_name: loadedPayload.clientName,
+        platform_count: loadedPayload.platforms?.length || 0,
+      });
       void capturePosthogEvent('client_authorization_started', {
         access_request_token: token,
         platform: startedPlatforms[0] ?? null,

@@ -21,6 +21,13 @@ vi.mock('@/lib/analytics/capture-posthog', () => ({
   capturePosthogEvent: vi.fn().mockResolvedValue(undefined),
 }));
 
+vi.mock('@/lib/analytics/invite-events', () => ({
+  trackInviteOpenedOncePerSession: vi.fn(),
+}));
+
+import * as inviteEvents from '@/lib/analytics/invite-events';
+import { capturePosthogEvent } from '@/lib/analytics/capture-posthog';
+
 vi.mock('@/components/client-auth/PlatformAuthWizard', async () => {
   const React = await vi.importActual<typeof import('react')>('react');
 
@@ -190,6 +197,19 @@ describe('Invite Flow Page', () => {
       expect(screen.getByRole('button', { name: /continue to connect/i })).toBeInTheDocument();
       expect(screen.getByText(/you explicitly approve in the next step/i)).toBeInTheDocument();
     });
+
+    expect(inviteEvents.trackInviteOpenedOncePerSession).toHaveBeenCalledWith(
+      expect.objectContaining({
+        access_request_token: 'token-123',
+        surface: 'invite_page',
+      })
+    );
+    expect(capturePosthogEvent).toHaveBeenCalledWith(
+      'client_authorization_started',
+      expect.objectContaining({
+        access_request_token: 'token-123',
+      })
+    );
   });
 
   it('shows the security badge only once in the setup hero', async () => {
