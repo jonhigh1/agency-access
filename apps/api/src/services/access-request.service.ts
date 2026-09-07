@@ -1350,6 +1350,7 @@ export async function getDashboardAccessRequestSummaries(
         clientEmail: true,
         status: true,
         createdAt: true,
+        uniqueToken: true,
         platforms: true,
       },
       orderBy: { createdAt: 'desc' },
@@ -1370,6 +1371,7 @@ export async function getDashboardAccessRequestSummaries(
         clientEmail: request.clientEmail,
         status: request.status,
         createdAt: request.createdAt.toISOString(),
+        uniqueToken: request.uniqueToken,
         platforms: extractDashboardPlatformGroups(request.platforms),
       }));
 

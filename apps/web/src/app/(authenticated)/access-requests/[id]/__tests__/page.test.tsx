@@ -32,9 +32,15 @@ vi.mock('@/lib/api/access-requests', () => ({
 }));
 
 vi.mock('@/lib/analytics/invite-events', () => ({
+  trackInviteLinkCopied: vi.fn(),
   trackInviteLinkCopyAndSent: vi.fn(),
   trackInviteReminderSent: vi.fn(),
   buildInviteReminderMailto: vi.fn(() => 'mailto:client@acme.com'),
+}));
+
+vi.mock('@/lib/analytics/pending-nudge-events', () => ({
+  trackPendingNudgeBannerShown: vi.fn(),
+  trackPendingNudgeBannerCta: vi.fn(),
 }));
 
 import * as inviteEvents from '@/lib/analytics/invite-events';
@@ -54,7 +60,7 @@ describe('AccessRequestDetailPage', () => {
         status: 'pending',
         uniqueToken: 'token-123',
         expiresAt: '2026-03-14T00:00:00.000Z',
-        createdAt: '2026-03-01T00:00:00.000Z',
+        createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
         updatedAt: '2026-03-01T00:00:00.000Z',
         platforms: [
           {
@@ -77,6 +83,28 @@ describe('AccessRequestDetailPage', () => {
     expect(screen.getByText(/waiting on client authorization/i)).toBeInTheDocument();
   });
 
+  it('shows pending cliff banner for stale pending requests', async () => {
+    vi.mocked(accessRequestsApi.getAccessRequest).mockResolvedValue({
+      data: {
+        id: 'request-stale',
+        agencyId: 'agency-1',
+        clientName: 'Stale Client',
+        clientEmail: 'stale@acme.com',
+        status: 'pending',
+        uniqueToken: 'token-stale',
+        expiresAt: '2026-03-14T00:00:00.000Z',
+        createdAt: '2026-03-01T00:00:00.000Z',
+        updatedAt: '2026-03-01T00:00:00.000Z',
+        platforms: [],
+      } as any,
+    });
+
+    renderWithProviders(<AccessRequestDetailPage params={Promise.resolve({ id: 'request-stale' })} />);
+
+    expect(await screen.findByText(/still pending after/i)).toBeInTheDocument();
+    expect(screen.queryByText(/waiting on client authorization/i)).not.toBeInTheDocument();
+  });
+
   it('fires invite reminder analytics when Send Reminder is clicked', async () => {
     const user = userEvent.setup();
     vi.mocked(accessRequestsApi.getAccessRequest).mockResolvedValue({
@@ -88,7 +116,7 @@ describe('AccessRequestDetailPage', () => {
         status: 'pending',
         uniqueToken: 'token-123',
         expiresAt: '2026-03-14T00:00:00.000Z',
-        createdAt: '2026-03-01T00:00:00.000Z',
+        createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
         updatedAt: '2026-03-01T00:00:00.000Z',
         platforms: [],
       } as any,
@@ -97,7 +125,7 @@ describe('AccessRequestDetailPage', () => {
     renderWithProviders(<AccessRequestDetailPage params={Promise.resolve({ id: 'request-1' })} />);
     await screen.findByText('Access Request Details');
 
-    await user.click(screen.getByRole('button', { name: /send reminder/i }));
+    await user.click(screen.getAllByRole('button', { name: /send reminder/i })[0]);
 
     expect(inviteEvents.trackInviteReminderSent).toHaveBeenCalledWith({
       access_request_id: 'request-1',
@@ -123,7 +151,7 @@ describe('AccessRequestDetailPage', () => {
         status: 'pending',
         uniqueToken: 'token-123',
         expiresAt: '2026-03-14T00:00:00.000Z',
-        createdAt: '2026-03-01T00:00:00.000Z',
+        createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
         updatedAt: '2026-03-01T00:00:00.000Z',
         platforms: [],
       } as any,
@@ -154,7 +182,7 @@ describe('AccessRequestDetailPage', () => {
         status: 'completed',
         uniqueToken: 'token-456',
         expiresAt: '2026-03-14T00:00:00.000Z',
-        createdAt: '2026-03-01T00:00:00.000Z',
+        createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
         updatedAt: '2026-03-01T00:00:00.000Z',
         platforms: [],
         intakeFields: [],
@@ -196,7 +224,7 @@ describe('AccessRequestDetailPage', () => {
         status: 'partial',
         uniqueToken: 'token-789',
         expiresAt: '2026-03-14T00:00:00.000Z',
-        createdAt: '2026-03-01T00:00:00.000Z',
+        createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
         updatedAt: '2026-03-01T00:00:00.000Z',
         platforms: [
           {
@@ -230,7 +258,7 @@ describe('AccessRequestDetailPage', () => {
         status: 'partial',
         uniqueToken: 'token-999',
         expiresAt: '2026-03-14T00:00:00.000Z',
-        createdAt: '2026-03-01T00:00:00.000Z',
+        createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
         updatedAt: '2026-03-01T00:00:00.000Z',
         platforms: [
           {
@@ -261,7 +289,7 @@ describe('AccessRequestDetailPage', () => {
         status: 'pending',
         uniqueToken: 'token-555',
         expiresAt: '2026-03-14T00:00:00.000Z',
-        createdAt: '2026-03-01T00:00:00.000Z',
+        createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
         updatedAt: '2026-03-01T00:00:00.000Z',
         platforms: [
           {

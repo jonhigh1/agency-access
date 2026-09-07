@@ -18,6 +18,8 @@ import {
   RequestOverviewCard,
   RequestPlatformsCard,
 } from '@/components/access-request-detail';
+import { PendingNudgeBanners } from '@/components/pending-nudge-banners';
+import { getPendingCliff } from '@/lib/pending-cliff';
 
 interface AccessRequestDetailPageProps {
   params: Promise<{ id: string }>;
@@ -224,6 +226,19 @@ export default function AccessRequestDetailPage({ params }: AccessRequestDetailP
           }}
         />
 
+        <PendingNudgeBanners
+          requests={[
+            {
+              id: accessRequest.id,
+              clientName: accessRequest.clientName,
+              status: accessRequest.status,
+              createdAt: accessRequest.createdAt,
+              uniqueToken: accessRequest.uniqueToken,
+            },
+          ]}
+          surface="detail"
+        />
+
         <RequestOverviewCard
           request={accessRequest}
           authorizationUrl={authorizationUrl}
@@ -231,6 +246,10 @@ export default function AccessRequestDetailPage({ params }: AccessRequestDetailP
           reminderCopied={reminderCopied}
           onCopyLink={handleCopyLink}
           onPreviewLink={handlePreviewLink}
+          showAwaitingClientCallout={
+            (accessRequest.status === 'pending' || accessRequest.status === 'partial') &&
+            getPendingCliff(accessRequest.createdAt) === null
+          }
           onSendReminder={
             accessRequest.status === 'pending' || accessRequest.status === 'partial'
               ? handleSendReminder

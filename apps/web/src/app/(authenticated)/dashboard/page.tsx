@@ -27,6 +27,7 @@ import { useUpdateAgencyOnboardingProgress } from '@/lib/query/onboarding';
 import { trackOnboardingEvent } from '@/lib/analytics/onboarding';
 import { usePrefetchQuota, useQuotaCheck, QuotaExceededError } from '@/lib/query/quota';
 import { UpgradeModal } from '@/components/upgrade-modal';
+import { PendingNudgeBanners } from '@/components/pending-nudge-banners';
 import {
   PLATFORM_NAMES,
   SUBSCRIPTION_TIER_NAMES,
@@ -477,6 +478,19 @@ export default function DashboardPage() {
             </div>
           </div>
         )}
+
+        <div className="mb-6">
+          <PendingNudgeBanners
+            requests={requests.map((request) => ({
+              id: request.id,
+              clientName: request.clientName,
+              status: request.status,
+              createdAt: request.createdAt,
+              uniqueToken: request.uniqueToken,
+            }))}
+            surface="dashboard"
+          />
+        </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
           <StatCard

@@ -13,6 +13,7 @@ interface RequestOverviewCardProps {
   onEmailClient?: () => void;
   copied: boolean;
   reminderCopied?: boolean;
+  showAwaitingClientCallout?: boolean;
 }
 
 function isAwaitingClient(status: AccessRequest['status']): boolean {
@@ -28,8 +29,11 @@ export function RequestOverviewCard({
   onEmailClient,
   copied,
   reminderCopied = false,
+  showAwaitingClientCallout,
 }: RequestOverviewCardProps) {
   const awaitingClient = isAwaitingClient(request.status);
+  const shouldShowAwaitingCallout =
+    showAwaitingClientCallout ?? awaitingClient;
 
   return (
     <Card className="border-black/10 shadow-sm">
@@ -41,7 +45,7 @@ export function RequestOverviewCard({
         <StatusBadge status={request.status as any} />
       </div>
 
-      {awaitingClient && (
+      {shouldShowAwaitingCallout && (
         <div className="mx-6 mt-4 rounded-lg border border-coral/30 bg-coral/5 px-4 py-3">
           <p className="text-sm font-semibold text-ink">Waiting on client authorization</p>
           <p className="mt-1 text-sm text-muted-foreground">

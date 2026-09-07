@@ -1,6 +1,12 @@
 import { capturePosthogEvent, capturePosthogEvents } from '@/lib/analytics/capture-posthog';
 
-export type InviteSurface = 'invite_page' | 'detail' | 'success' | 'modal' | 'onboarding';
+export type InviteSurface =
+  | 'invite_page'
+  | 'detail'
+  | 'success'
+  | 'modal'
+  | 'onboarding'
+  | 'dashboard';
 export type InviteChannel = 'copy' | 'email' | 'sms';
 
 type InviteOpenedProps = {

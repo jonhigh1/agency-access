@@ -1394,6 +1394,32 @@ describe('AccessRequestService', () => {
         })
       );
     });
+
+    it('should include uniqueToken for dashboard invite actions', async () => {
+      const mockRequests = [
+        {
+          id: 'request-1',
+          clientId: 'client-1',
+          clientName: 'Pending Client',
+          clientEmail: 'pending@test.com',
+          status: 'pending',
+          createdAt: new Date('2026-03-15T10:00:00.000Z'),
+          uniqueToken: 'abc123token456',
+          platforms: [{ platform: 'meta_ads', accessLevel: 'manage' }],
+        },
+      ];
+
+      vi.mocked(prisma.accessRequest.findMany).mockResolvedValue(mockRequests as any);
+      vi.mocked(prisma.accessRequest.count).mockResolvedValue(1);
+
+      const result = await accessRequestService.getDashboardAccessRequestSummaries(
+        'agency-1',
+        10
+      );
+
+      expect(result.error).toBeNull();
+      expect(result.data?.items[0]?.uniqueToken).toBe('abc123token456');
+    });
   });
 
   describe('generateUniqueToken', () => {
