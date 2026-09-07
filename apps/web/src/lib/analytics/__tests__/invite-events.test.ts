@@ -1,13 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { captureMock } = vi.hoisted(() => ({
-  captureMock: vi.fn(),
+const { capturePosthogEventMock } = vi.hoisted(() => ({
+  capturePosthogEventMock: vi.fn(),
 }));
 
-vi.mock('posthog-js', () => ({
-  default: {
-    capture: captureMock,
-  },
+vi.mock('../capture-posthog', () => ({
+  capturePosthogEvent: capturePosthogEventMock,
 }));
 
 import {
@@ -30,7 +28,7 @@ describe('invite-events', () => {
       surface: 'invite_page',
     });
 
-    expect(captureMock).toHaveBeenCalledWith('invite_opened', {
+    expect(capturePosthogEventMock).toHaveBeenCalledWith('invite_opened', {
       access_request_token: 'tok-abc',
       access_request_id: 'req-1',
       status: 'pending',
@@ -46,7 +44,7 @@ describe('invite-events', () => {
       surface: 'detail',
     });
 
-    expect(captureMock).toHaveBeenCalledWith('invite_link_copied', {
+    expect(capturePosthogEventMock).toHaveBeenCalledWith('invite_link_copied', {
       access_request_id: 'req-1',
       access_request_token: 'tok-abc',
       status: 'pending',
@@ -62,7 +60,7 @@ describe('invite-events', () => {
       surface: 'success',
     });
 
-    expect(captureMock).toHaveBeenCalledWith('invite_sent', {
+    expect(capturePosthogEventMock).toHaveBeenCalledWith('invite_sent', {
       access_request_id: 'req-1',
       access_request_token: 'tok-abc',
       channel: 'email',
@@ -79,7 +77,7 @@ describe('invite-events', () => {
       surface: 'detail',
     });
 
-    expect(captureMock).toHaveBeenCalledWith('invite_reminder_sent', {
+    expect(capturePosthogEventMock).toHaveBeenCalledWith('invite_reminder_sent', {
       access_request_id: 'req-1',
       access_request_token: 'tok-abc',
       status: 'pending',

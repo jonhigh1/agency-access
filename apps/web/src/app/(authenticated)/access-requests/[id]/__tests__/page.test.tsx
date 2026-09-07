@@ -34,6 +34,7 @@ vi.mock('@/lib/api/access-requests', () => ({
 vi.mock('@/lib/analytics/invite-events', () => ({
   trackInviteLinkCopied: vi.fn(),
   trackInviteReminderSent: vi.fn(),
+  trackInviteSent: vi.fn(),
   buildInviteReminderMailto: vi.fn(() => 'mailto:client@acme.com'),
 }));
 
@@ -106,6 +107,49 @@ describe('AccessRequestDetailPage', () => {
       channel: 'copy',
       surface: 'detail',
     });
+    expect(inviteEvents.trackInviteSent).not.toHaveBeenCalled();
+  });
+
+  it('fires invite copy/send analytics when Copy Link is clicked', async () => {
+    const user = userEvent.setup();
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    vi.spyOn(navigator.clipboard, 'writeText').mockImplementation(writeText);
+
+    vi.mocked(accessRequestsApi.getAccessRequest).mockResolvedValue({
+      data: {
+        id: 'request-1',
+        agencyId: 'agency-1',
+        clientName: 'Acme Client',
+        clientEmail: 'owner@acme.com',
+        status: 'pending',
+        uniqueToken: 'token-123',
+        expiresAt: '2026-03-14T00:00:00.000Z',
+        createdAt: '2026-03-01T00:00:00.000Z',
+        updatedAt: '2026-03-01T00:00:00.000Z',
+        platforms: [],
+      } as any,
+    });
+
+    renderWithProviders(<AccessRequestDetailPage params={Promise.resolve({ id: 'request-1' })} />);
+    await screen.findByText('Access Request Details');
+
+    await user.click(screen.getByRole('button', { name: /^copy link$/i }));
+
+    expect(writeText).toHaveBeenCalledWith('https://app.authhub.co/invite/token-123');
+    expect(inviteEvents.trackInviteLinkCopied).toHaveBeenCalledWith({
+      access_request_id: 'request-1',
+      access_request_token: 'token-123',
+      status: 'pending',
+      surface: 'detail',
+    });
+    expect(inviteEvents.trackInviteSent).toHaveBeenCalledWith({
+      access_request_id: 'request-1',
+      access_request_token: 'token-123',
+      channel: 'copy',
+      surface: 'detail',
+      status: 'pending',
+    });
+    expect(inviteEvents.trackInviteReminderSent).not.toHaveBeenCalled();
   });
 
   it('does not show Send Reminder for completed requests', async () => {
