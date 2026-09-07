@@ -9,7 +9,6 @@ import { InviteFlowShell } from '@/components/flow/invite-flow-shell';
 import { InviteHeroHeader } from '@/components/flow/invite-hero-header';
 import { InvitePlatformQueueItem } from '@/components/flow/invite-platform-queue-item';
 import { InvitePlatformStage } from '@/components/flow/invite-platform-stage';
-import { InviteStickyRail } from '@/components/flow/invite-sticky-rail';
 import { InviteLoadStateCard } from '@/components/flow/invite-load-state-card';
 import { InviteTrustNote } from '@/components/flow/invite-trust-note';
 import { Button, SingleSelect } from '@/components/ui';
@@ -20,6 +19,7 @@ import { resolveApiUrl } from '@/lib/api/api-env';
 import {
   getInviteSecuritySummary,
   isClientInviteManualCallbackPlatform,
+  isClientInviteManualPlatform,
 } from '@/lib/client-invite-platforms';
 import { buildInvitePlatformQueue } from '@/lib/invite-platform-queue';
 import type { AccessLevel, ClientAccessRequestPayload, Platform } from '@agency-platform/shared';
@@ -386,77 +386,32 @@ export default function ClientAuthorizationPage({
   const flowSteps = ['Setup', 'Connect', 'Done'];
   const flowTotalSteps = 3;
   const currentStep = phase === 'intake' ? 1 : phase === 'platforms' ? 2 : 3;
-  const layoutMode = phase === 'intake' ? 'focused' : 'split';
   const isConnectStatusReview = phase === 'platforms' && isComplete && isReviewingConnectStatus;
 
-  // Per-phase hero and rail copy.
-  const phaseCopyByPhase: Record<PagePhase, {
-    eyebrow?: string;
-    title: string;
-    description: string;
-    stats: Array<{ label: string; value: string }>;
-    railObjective: string;
-    railActionLabel: string;
-  }> = {
+  // Per-phase copy.
+  const phaseCopyByPhase: Record<PagePhase, { title: string; description: string }> = {
     intake: {
-      eyebrow: undefined,
       title: `Share account access with ${toTitleCase(data.clientName)}`,
       description:
         intakeFields.length > 0
-          ? 'Share a few details, then confirm which accounts to share.'
-          : 'Confirm which accounts to share below, then continue.',
-      stats: [
-        { label: 'From', value: data.agencyName },
-        { label: 'Next', value: 'Confirm what will be shared' },
-      ],
-      railObjective: 'Finish the remaining platform connection steps.',
-      railActionLabel: 'Complete current platform step',
+          ? `${data.agencyName} asked for a few details, then you confirm which accounts to share.`
+          : `${data.agencyName} requested access to ${platformSummary || 'your platforms'}. Confirm which accounts to share below.`,
     },
     platforms: {
-      eyebrow: `Request for ${toTitleCase(data.clientName)}`,
       title: isConnectStatusReview
         ? 'Review connected platforms'
         : activePlatformName
         ? `Complete ${activePlatformName} access`
         : 'Complete account access',
       description: isConnectStatusReview
-        ? 'Review which platforms are connected or return to the final confirmation.'
+        ? 'All requested platforms are connected. Review the status or return to the final confirmation.'
         : activePlatformName
-        ? `Finish ${activePlatformName} first, then continue through the remaining requested platforms.`
+        ? `Finish ${activePlatformName} first. The rest of the request is listed below.`
         : 'Finish the remaining platform connection steps.',
-      stats: [
-        { label: 'Platforms', value: platformSummary || 'No platforms requested' },
-        {
-          label: 'Next',
-          value: isConnectStatusReview
-            ? 'Return to final confirmation'
-            : activePlatformName
-            ? `Complete ${activePlatformName}`
-            : 'Review completion',
-        },
-      ],
-      railObjective: isConnectStatusReview
-        ? 'Review what was connected before closing the request.'
-        : 'Finish the remaining platform connection steps.',
-      railActionLabel: isConnectStatusReview
-        ? 'Return to final confirmation'
-        : 'Complete current platform step',
     },
     complete: {
-      eyebrow: `Request for ${toTitleCase(data.clientName)}`,
       title: `Share account access with ${toTitleCase(data.clientName)}`,
-      description: `Review the request, confirm the access levels below, and continue only with the accounts you want to share. ${data.agencyName} requested access to ${platformSummary || 'your requested platforms'}.`,
-      stats: [
-        { label: 'Requested by', value: data.agencyName },
-        {
-          label: 'Recipient',
-          value: data.clientEmail ? `${toTitleCase(data.clientName)} · ${data.clientEmail}` : toTitleCase(data.clientName),
-        },
-        { label: 'Platforms', value: platformSummary || 'No platforms requested' },
-        { label: 'Next', value: 'Review the completed authorization' },
-      ],
-      railObjective: 'Review your completed authorizations.',
-      railActionLabel: 'Authorization complete',
+      description: `${data.agencyName} requested access to ${platformSummary || 'your requested platforms'}. Review the request, then continue only with the accounts you want to share.`,
     },
   };
   const phaseCopy = phaseCopyByPhase[phase];
@@ -465,48 +420,24 @@ export default function ClientAuthorizationPage({
     <InviteFlowShell
       title={data.agencyName}
       description={`Authorize access for ${data.clientName}`}
-      density="compact"
-      hideStepChipsOnMobile
       header={
         <InviteHeroHeader
-          eyebrow={phaseCopy.eyebrow}
           title={phaseCopy.title}
           description={phaseCopy.description}
           badge={securitySummary.badge}
           logoUrl={data.branding?.logoUrl}
           logoAlt={`${data.agencyName} logo`}
-          density="compact"
-          statsLayout="inline"
-          hideInlineStatsOnMobile
-          stats={phaseCopy.stats}
         />
       }
       step={currentStep}
       totalSteps={flowTotalSteps}
       steps={flowSteps}
-      layoutMode={layoutMode}
-      rail={
-        <InviteStickyRail
-          objective={phaseCopy.railObjective}
-          securityNote={securitySummary.detail}
-          identities={railIdentities}
-          completedCount={completedPlatforms.size}
-          totalCount={requestedPlatforms.length || 1}
-          actionStatus={{
-            label: phaseCopy.railActionLabel,
-            disabledReason:
-              phase === 'platforms' && requestedPlatforms.length > completedPlatforms.size
-                ? 'Continue becomes available after platform step completion.'
-                : undefined,
-          }}
-        />
-      }
     >
       {phase === 'intake' &&
         (intakeFields.length > 0 ? (
           <form
             onSubmit={handleIntakeSubmit}
-            className="rounded-lg border-2 border-black bg-card shadow-brutalist overflow-hidden"
+            className="border-2 border-black bg-card shadow-brutalist overflow-hidden"
           >
             <div className="border-b border-border bg-muted/10 px-6 py-5">
               <h2 className="text-xl font-semibold text-ink font-display">Quick Setup</h2>
@@ -549,7 +480,7 @@ export default function ClientAuthorizationPage({
                       }
                       placeholder="Select an option"
                       ariaLabel={field.label}
-                      triggerClassName="w-full rounded-lg border-2 border-border"
+                      triggerClassName="w-full border-2 border-black"
                     />
                   ) : (
                     <input
@@ -580,18 +511,16 @@ export default function ClientAuthorizationPage({
             </div>
           </form>
         ) : (
-          <div className="overflow-hidden rounded-[1.5rem] border border-border bg-card shadow-sm">
+          <div className="border-2 border-black bg-card shadow-brutalist">
             <div className="space-y-3 px-5 py-4 sm:px-6">
               <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                  Requested platforms
-                </p>
+                <p className="label-micro">Requested platforms</p>
                 <div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                   {data.platforms.map((groupConfig) => {
                     const platform = groupConfig.platformGroup as Platform;
 
                     return (
-                      <div key={platform} className="rounded-xl border border-border bg-paper/70 p-3.5">
+                      <div key={platform} className="border border-black/25 bg-paper p-3.5">
                         <div className="flex items-center gap-2.5 mb-2">
                           <PlatformIcon platform={platform} size="sm" />
                           <p className="text-sm font-semibold text-ink">{PLATFORM_NAMES[platform]}</p>
@@ -600,7 +529,7 @@ export default function ClientAuthorizationPage({
                           {groupConfig.products.map((product) => (
                             <span
                               key={`${platform}:${product.product}`}
-                              className="rounded-full border border-border bg-card px-2 py-1 text-[11px] text-muted-foreground"
+                              className="border border-black/25 bg-card px-2 py-1 text-[11px] text-muted-foreground"
                             >
                         {`${PLATFORM_NAMES[product.product as Platform] || product.product} · ${ACCESS_LEVEL_DESCRIPTIONS[product.accessLevel as AccessLevel]?.title ?? product.accessLevel.replace(/_/g, ' ')}`}
                             </span>
@@ -634,7 +563,7 @@ export default function ClientAuthorizationPage({
       {phase === 'platforms' && (
         <div className="space-y-4">
           {isConnectStatusReview ? (
-            <div className="rounded-[1.5rem] border border-border bg-card p-4 shadow-sm">
+            <div className="border-2 border-black bg-card p-4 shadow-brutalist">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h2 className="text-lg font-semibold text-ink font-display">Review connected platforms</h2>
@@ -659,20 +588,21 @@ export default function ClientAuthorizationPage({
           {platformQueue.activePlatform ? (
             <div ref={platformStageRef}>
             <InvitePlatformStage
+              platform={platformQueue.activePlatform.platformGroup as Platform}
               platformName={PLATFORM_NAMES[platformQueue.activePlatform.platformGroup as Platform]}
+              stepNumber={Math.min(completedPlatforms.size + 1, requestedPlatforms.length || 1)}
+              totalCount={requestedPlatforms.length}
               description={
                 platformQueue.nextPlatform
                   ? `Complete this step, then continue to ${PLATFORM_NAMES[platformQueue.nextPlatform.platformGroup as Platform]}.`
                   : 'Complete this final platform to finish the request.'
               }
-              remainingCount={platformQueue.remainingPlatforms.length}
-              completedCount={platformQueue.completedPlatforms.length}
-              totalCount={requestedPlatforms.length}
-              nextPlatformName={
-                platformQueue.nextPlatform
-                  ? PLATFORM_NAMES[platformQueue.nextPlatform.platformGroup as Platform]
-                  : null
+              exitNote={
+                isClientInviteManualPlatform(platformQueue.activePlatform.platformGroup as Platform)
+                  ? `This takes about two minutes inside ${PLATFORM_NAMES[platformQueue.activePlatform.platformGroup as Platform]}. You stay on this page.`
+                  : `You will leave for ${PLATFORM_NAMES[platformQueue.activePlatform.platformGroup as Platform]} and come right back here.`
               }
+              identities={railIdentities}
             >
               <PlatformAuthWizard
                 key={platformQueue.activePlatform.platformGroup}
@@ -702,48 +632,31 @@ export default function ClientAuthorizationPage({
             </div>
           ) : null}
 
-          {platformQueue.remainingPlatforms.length > 0 ? (
-            <div className="space-y-2">
-              <div className="flex items-center justify-between gap-3">
-                <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                  Remaining in queue
-                </h3>
-                <p className="text-sm text-muted-foreground">
-                  {platformQueue.remainingPlatforms.length} platform
-                  {platformQueue.remainingPlatforms.length === 1 ? '' : 's'} left after this
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                {platformQueue.remainingPlatforms.map((groupConfig) => (
-                  <InvitePlatformQueueItem
-                    key={groupConfig.platformGroup}
-                    platform={groupConfig.platformGroup as Platform}
-                    platformName={PLATFORM_NAMES[groupConfig.platformGroup as Platform]}
-                    description="Queued until the current platform is finished."
-                    status="up-next"
-                    sequenceLabel={`Then ${PLATFORM_NAMES[groupConfig.platformGroup as Platform]}`}
-                  />
-                ))}
-              </div>
-            </div>
-          ) : null}
-
-          {platformQueue.completedPlatforms.length > 0 ? (
-            <div className="space-y-3">
-              <h3 className="text-sm font-semibold uppercase tracking-[0.16em] text-muted-foreground">
-                Completed
-              </h3>
-              <div className="space-y-3">
-                {platformQueue.completedPlatforms.map((groupConfig) => (
-                  <InvitePlatformQueueItem
-                    key={groupConfig.platformGroup}
-                    platform={groupConfig.platformGroup as Platform}
-                    platformName={PLATFORM_NAMES[groupConfig.platformGroup as Platform]}
-                    description="Access confirmed for this platform."
-                    status="completed"
-                  />
-                ))}
+          {requestedPlatforms.length > 1 ? (
+            <div>
+              <p className="label-micro mb-1">The full request</p>
+              <div>
+                {data.platforms.map((groupConfig, index) => {
+                  const platform = groupConfig.platformGroup as Platform;
+                  const isDone = completedPlatforms.has(platform);
+                  const isActive = platformQueue.activePlatform?.platformGroup === platform;
+                  return (
+                    <InvitePlatformQueueItem
+                      key={platform}
+                      platform={platform}
+                      platformName={PLATFORM_NAMES[platform]}
+                      description={
+                        isDone
+                          ? 'Access confirmed.'
+                          : isActive
+                          ? 'Current step.'
+                          : 'Waiting until earlier steps are done.'
+                      }
+                      status={isDone ? 'complete' : isActive ? 'active' : 'waiting'}
+                      sequence={index + 1}
+                    />
+                  );
+                })}
               </div>
             </div>
           ) : null}
@@ -751,20 +664,20 @@ export default function ClientAuthorizationPage({
       )}
 
       {phase === 'complete' && (
-        <div className="rounded-lg border-2 border-black bg-card p-8 shadow-brutalist text-center">
+        <div className="border-2 border-black bg-card p-8 shadow-brutalist text-center">
           {completionError ? (
             <>
-              <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full border border-coral bg-coral/10">
+              <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full border-2 border-black">
                 <RefreshCw className="h-8 w-8 text-danger-ink" />
               </div>
               <h2 className="text-2xl font-semibold text-ink font-display">
-                Almost done — finalize failed
+                Almost done — one step failed
               </h2>
               <p className="mt-2 text-sm text-muted-foreground">
                 All platforms are connected, but we couldn&apos;t confirm completion with your
                 agency.
               </p>
-              <div className="mt-4 rounded-lg border border-coral/30 bg-coral/10 p-4 text-left">
+              <div className="mt-4 border border-black bg-paper p-4 text-left">
                 <p className="text-sm text-danger-ink">{completionError}</p>
               </div>
               <Button
@@ -778,7 +691,7 @@ export default function ClientAuthorizationPage({
             </>
           ) : (
             <>
-              <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full border border-teal bg-teal/10">
+              <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full border-2 border-black">
                 <Check className="h-8 w-8 text-success-ink" />
               </div>
               <h2 className="text-2xl font-semibold text-ink font-display">
@@ -788,7 +701,7 @@ export default function ClientAuthorizationPage({
                 {data.agencyName} now has access to the accounts you approved. Nothing else is
                 needed from you.
               </p>
-              <div className="mt-6 rounded-lg border border-border bg-muted/10 p-4 text-left">
+              <div className="mt-6 border border-black bg-paper p-4 text-left">
                 <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                   Connected Platforms
                 </p>

@@ -1,24 +1,28 @@
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
+import type { Platform } from '@agency-platform/shared';
 import { InvitePlatformStage } from '../invite-platform-stage';
 
 describe('InvitePlatformStage', () => {
-  it('renders the active task before the queue banner in DOM order for mobile-first action priority', () => {
-    const { container } = render(
+  it('shows what to connect, who is asking, and the exit promise before the wizard', () => {
+    render(
       <InvitePlatformStage
-        platformName="Google"
-        description="Complete this step, then continue to Beehiiv."
-        remainingCount={2}
-        completedCount={0}
+        platform={'meta' as Platform}
+        platformName="Meta"
+        stepNumber={2}
         totalCount={3}
-        nextPlatformName="Beehiiv"
+        description="Complete this step."
+        exitNote="You will leave for Meta and come right back here."
+        identities={[{ label: 'Agency email', value: 'ops@demo.co' }]}
       >
         <div>Active connect task</div>
       </InvitePlatformStage>
     );
 
-    expect(container.innerHTML.indexOf('Active connect task')).toBeLessThan(
-      container.innerHTML.indexOf('Now connecting')
-    );
+    expect(screen.getByText(/verify before you approve/i)).toBeInTheDocument();
+    expect(screen.getByText(/ops@demo\.co/i)).toBeInTheDocument();
+    expect(screen.getByText(/come right back/i)).toBeInTheDocument();
+    expect(screen.getByText('Active connect task')).toBeInTheDocument();
+    expect(screen.getByText(/now · step 2 of 3/i)).toBeInTheDocument();
   });
 });

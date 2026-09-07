@@ -1,77 +1,71 @@
 import type { ReactNode } from 'react';
-import { m } from 'framer-motion';
+import { PlatformIcon } from '@/components/ui';
+import type { Platform } from '@agency-platform/shared';
+import { InviteStatusChip } from './invite-status-chip';
+
+export interface InviteStageIdentity {
+  label: string;
+  value: string;
+}
 
 interface InvitePlatformStageProps {
+  platform: Platform;
   platformName: string;
-  description: string;
-  remainingCount: number;
-  completedCount: number;
+  stepNumber: number;
   totalCount: number;
-  nextPlatformName?: string | null;
+  description: string;
+  exitNote: string;
+  identities?: InviteStageIdentity[];
   children: ReactNode;
 }
 
+/**
+ * The one active decision on screen: what to connect, who is asking,
+ * what happens when you click. The platform wizard renders inside this card.
+ */
 export function InvitePlatformStage({
+  platform,
   platformName,
-  description,
-  remainingCount,
-  completedCount,
+  stepNumber,
   totalCount,
-  nextPlatformName,
+  description,
+  exitNote,
+  identities = [],
   children,
 }: InvitePlatformStageProps) {
   return (
-    <m.section
-      layout
-      initial={false}
-      transition={{ type: 'spring', stiffness: 260, damping: 24 }}
-      className="flex flex-col gap-1.5 sm:gap-2"
+    <section
+      className="border-2 border-black bg-card shadow-brutalist"
       aria-label={`Active platform: ${platformName}`}
     >
-      <m.div
-        layout
-        initial={false}
-        transition={{ type: 'spring', stiffness: 260, damping: 24 }}
-        className="order-1 sm:order-2"
-      >
-        {children}
-      </m.div>
-
-      <div className="order-2 rounded-[1.5rem] border border-border bg-card px-4 py-2.5 shadow-sm sm:order-1 sm:px-5 sm:py-3">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">
-              Now connecting
-            </p>
-            <div className="mt-2 flex flex-wrap items-center gap-2">
-              <h2 className="text-lg font-semibold text-ink font-display sm:text-2xl">{platformName}</h2>
-              <div className="rounded-full border border-border bg-paper px-3 py-1 text-xs font-semibold text-ink">
-                {completedCount} of {totalCount} complete
-              </div>
-            </div>
-            <p className="mt-1.5 max-w-2xl text-sm leading-5 text-muted-foreground sm:mt-2 sm:leading-6">
-              {description}
-            </p>
-          </div>
-
-          <div className="hidden flex-wrap gap-2 sm:flex">
-            {nextPlatformName ? (
-              <>
-                <div className="rounded-full border border-border bg-paper px-3 py-1 text-xs font-semibold text-ink">
-                  Now: {platformName}
-                </div>
-                <div className="rounded-full border border-border bg-paper px-3 py-1 text-xs font-semibold text-muted-foreground">
-                  Then: {nextPlatformName}
-                </div>
-              </>
-            ) : (
-              <div className="rounded-full border border-teal/40 bg-teal/10 px-3 py-1 text-xs font-semibold text-success-ink">
-                Final authorization step
-              </div>
-            )}
-          </div>
+      <div className="border-b-2 border-black px-5 py-4 sm:px-6">
+        <div className="flex items-center justify-between gap-3">
+          <p className="label-micro">
+            Now · step {stepNumber} of {totalCount}
+          </p>
+          <InviteStatusChip status="active" />
         </div>
+        <div className="mt-3 flex items-center gap-3">
+          <PlatformIcon platform={platform} size="md" />
+          <h2 className="text-xl font-bold tracking-tight text-ink font-display">{platformName}</h2>
+        </div>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-muted-foreground">{description}</p>
+        <p className="mt-2 text-sm leading-6 text-ink">{exitNote}</p>
       </div>
-    </m.section>
+
+      {identities.length > 0 ? (
+        <div className="border-b border-black/20 px-5 py-4 sm:px-6">
+          <p className="label-micro">Verify before you approve</p>
+          <p className="mt-2 break-words text-sm leading-6 text-ink">
+            {identities.map((identity) => `${identity.label}: ${identity.value}`).join(' · ')}
+          </p>
+          <p className="mt-1 text-sm text-muted-foreground">
+            If this does not match what your agency sent you, stop and contact them.
+          </p>
+        </div>
+      ) : null}
+
+      <div className="px-5 py-5 sm:px-6">{children}</div>
+    </section>
   );
 }

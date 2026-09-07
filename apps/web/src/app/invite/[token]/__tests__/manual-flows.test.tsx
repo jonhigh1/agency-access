@@ -199,12 +199,9 @@ describe('Manual invite flows', () => {
     render(<MailchimpManualPage />);
 
     await screen.findByText(/copy invite email/i);
-    expect(screen.getByText(/request for client/i)).toBeInTheDocument();
-    expect(screen.getByText('Requested by')).toBeInTheDocument();
-    expect(screen.getByText('Demo Agency')).toBeInTheDocument();
-    expect(screen.getByText('Platform')).toBeInTheDocument();
-    expect(screen.getByText('Mailchimp')).toBeInTheDocument();
-    expect(screen.getAllByText(/request details/i).length).toBeGreaterThan(0);
+    expect(screen.getByRole('heading', { name: /complete mailchimp access/i })).toBeInTheDocument();
+    expect(screen.getByText(/Demo Agency/i)).toBeInTheDocument();
+    expect(screen.getByText(/Manual invite/i)).toBeInTheDocument();
 
     await clickPrimaryAction('I copied this');
     await screen.findByText(/open mailchimp team settings/i);
@@ -312,8 +309,6 @@ describe('Manual invite flows', () => {
 
     await screen.findByRole('heading', { name: /connect shopify/i });
     expect(screen.getAllByText(/step 1 of 3/i).length).toBeGreaterThan(0);
-    expect(screen.getByText(/2 · Select Store/i)).toBeInTheDocument();
-    expect(screen.getByText(/3 · Connected/i)).toBeInTheDocument();
 
     await clickPrimaryAction('Connect Shopify');
     await screen.findByRole('heading', { name: /select store/i });

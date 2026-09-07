@@ -3,12 +3,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useParams, useRouter } from 'next/navigation';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, CircleAlert } from 'lucide-react';
 import posthog from 'posthog-js';
 import type { ClientAccessRequestPayload, Platform } from '@agency-platform/shared';
 import { InviteFlowShell } from '@/components/flow/invite-flow-shell';
 import { ManualInviteHeader } from '@/components/flow/manual-invite-header';
-import { InviteStickyRail } from '@/components/flow/invite-sticky-rail';
 import { InviteLoadStateCard } from '@/components/flow/invite-load-state-card';
 import {
   ManualChecklistWizard,
@@ -345,9 +344,6 @@ export function ManualInviteFlow<TData extends ManualInviteFlowData>({
     );
   }
 
-  const ctx: ManualInviteFlowContext<TData> = { data, form, setFieldValue, isFormValid };
-  const progress = config.progress;
-
   return (
     <InviteFlowShell
       title={data.agencyName}
@@ -356,8 +352,6 @@ export function ManualInviteFlow<TData extends ManualInviteFlowData>({
         <ManualInviteHeader
           agencyName={data.agencyName}
           platformName={config.platformName}
-          clientName={data.clientName}
-          clientEmail={data.clientEmail}
           logoUrl={data.branding?.logoUrl}
           securityNote={config.headerSecurityNote}
           backAction={
@@ -374,25 +368,16 @@ export function ManualInviteFlow<TData extends ManualInviteFlowData>({
           }
         />
       }
-      layoutMode="split"
-      showProgress={Boolean(progress)}
-      step={progress ? Math.min(railState.stepIndex + 1, progress.stepTitles.length) : 1}
-      totalSteps={progress?.stepTitles.length}
-      steps={progress?.stepTitles}
-      rail={
-        <InviteStickyRail
-          objective={config.objective}
-          securityNote={config.railSecurityNote}
-          identities={config.identities(ctx)}
-          completedCount={railState.stepIndex}
-          totalCount={railState.totalSteps}
-          actionStatus={{
-            label: railState.label,
-            disabledReason: railState.blockedReason,
-          }}
-        />
-      }
-    >
+>
+      {railState.blockedReason ? (
+        <p
+          role="status"
+          className="mb-4 flex items-start gap-2 border border-black bg-paper p-3 text-sm leading-6 text-danger-ink"
+        >
+          <CircleAlert className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+          {railState.blockedReason}
+        </p>
+      ) : null}
       <ManualChecklistWizard
         platformName={config.platformName}
         steps={steps}

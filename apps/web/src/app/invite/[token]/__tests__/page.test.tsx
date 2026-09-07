@@ -438,7 +438,7 @@ describe('Invite Flow Page', () => {
     await userEvent.click(await screen.findByRole('button', { name: /complete platform/i }));
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /almost done — finalize failed/i })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /almost done — one step failed/i })).toBeInTheDocument();
       expect(screen.getByText(/finalization service unavailable/i)).toBeInTheDocument();
     });
     expect(screen.queryByRole('heading', { name: /all set/i })).not.toBeInTheDocument();
@@ -496,8 +496,7 @@ describe('Invite Flow Page', () => {
     await userEvent.click(continueButton);
 
     await waitFor(() => {
-      expect(screen.getByText(/2 · Connect/i)).toBeInTheDocument();
-      expect(screen.queryByText(/connect 1 more platform/i)).not.toBeInTheDocument();
+      expect(screen.getByText(/Step 2 of 3/i)).toBeInTheDocument();
     });
 
     expect(
@@ -1043,7 +1042,7 @@ describe('Invite Flow Page', () => {
   });
 
   describe('Dynamic step indicator', () => {
-    it('should always show setup, connect, and done steps', async () => {
+    it('shows the current step in the progress line for a fresh request', async () => {
       const fetchMock = vi.fn(async () => ({
         ok: true,
         json: async () => ({
@@ -1076,9 +1075,7 @@ describe('Invite Flow Page', () => {
       render(<InvitePage />);
 
       await waitFor(() => {
-        expect(screen.getByText(/1 · Setup/i)).toBeInTheDocument();
-        expect(screen.getByText(/2 · Connect/i)).toBeInTheDocument();
-        expect(screen.getByText(/3 · Done/i)).toBeInTheDocument();
+        expect(screen.getByText(/Step 1 of 3 · Setup/i)).toBeInTheDocument();
       });
     });
 

@@ -3,38 +3,37 @@ import { render, screen } from '@testing-library/react';
 import { InviteFlowShell } from '../invite-flow-shell';
 
 describe('InviteFlowShell', () => {
-  it('renders the main task before the mobile rail and exposes a collapsible rail summary', () => {
+  it('renders header, slim progress, then content in one column', () => {
     const { container } = render(
       <InviteFlowShell
         title="Share account access"
         description="Review and continue"
-        layoutMode="split"
-        rail={<div>Rail content</div>}
+        step={1}
+        totalSteps={3}
+        steps={['Setup', 'Connect', 'Done']}
       >
         <div>Main content</div>
       </InviteFlowShell>
     );
 
-    expect(container.innerHTML.indexOf('Main content')).toBeLessThan(container.innerHTML.indexOf('Rail content'));
-    expect(screen.getByText(/request details and support/i)).toBeInTheDocument();
+    expect(screen.getByText('Share account access')).toBeInTheDocument();
+    expect(screen.getByText(/step 1 of 3/i)).toBeInTheDocument();
+    expect(container.querySelector('[role="progressbar"]')).toBeTruthy();
+    expect(screen.getByText('Main content')).toBeInTheDocument();
   });
 
-  it('can hide step chips on mobile while keeping the compact progress summary', () => {
-    const { container } = render(
+  it('keeps the current step name in the progress line', () => {
+    render(
       <InviteFlowShell
         title="Complete Google access"
-        description="Finish the current platform"
-        density="compact"
-        hideStepChipsOnMobile
+        step={2}
+        totalSteps={3}
+        steps={['Setup', 'Connect', 'Done']}
       >
         <div>Main content</div>
       </InviteFlowShell>
     );
 
-    const steps = container.querySelector('[data-hide-on-mobile="true"]');
-    expect(steps).toBeTruthy();
-    expect(steps?.className).toContain('hidden');
-    expect(steps?.className).toContain('sm:grid');
-    expect(screen.getByText(/step 1 of 3/i)).toBeInTheDocument();
+    expect(screen.getByText(/step 2 of 3 · connect/i)).toBeInTheDocument();
   });
 });

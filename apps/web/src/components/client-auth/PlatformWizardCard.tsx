@@ -78,7 +78,7 @@ export function PlatformWizardCard({
 
       {/* Footer: Navigation (optional) */}
       {footer && (
-        <div className="border-t-2 border-black dark:border-white p-4 bg-muted/20 dark:bg-muted/60/50">
+        <div className="border-t-2 border-black bg-muted/20 p-4">
           {footer}
         </div>
       )}

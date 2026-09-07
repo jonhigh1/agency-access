@@ -37,7 +37,7 @@ export function StepHelpText({
   const contentId = useId();
 
   return (
-    <div className="bg-muted/20 dark:bg-muted/60/50 border-2 border-black dark:border-white p-4 mt-4">
+    <div className="border-2 border-black bg-muted/20 p-4 mt-4">
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
