@@ -13,7 +13,7 @@
  *
  * Design Principles:
  * - Visual: Users SEE platforms, not just read names
- * - Opinionated: Pre-select Google + Meta (80% of use cases)
+ * - Opinionated: Pre-select Google as the starting platform
  * - Fast: One click to toggle multiple platforms
  */
 
@@ -223,10 +223,10 @@ export function PlatformSelectorGrid({
             <span className="text-success-ink text-xl font-bold">→</span>
             <div className="flex-1">
               <div className="font-semibold text-ink mb-1">
-                Most agencies start with Google and Meta
+                Most agencies start with Google
               </div>
               <div className="text-sm text-ink/70">
-                We've pre-selected them for you (you can customize in the next step)
+                We've pre-selected it for you (add Meta or others anytime)
               </div>
             </div>
           </div>

@@ -5,7 +5,7 @@
  * Implements the "Zero-to-One" flow that gets founders to their first real client access link quickly.
  *
  * Design Principles:
- * - Opinionated: Smart defaults, pre-select best path (Google + Meta)
+ * - Opinionated: Smart defaults, pre-select Google as starting platform
  * - Interruptive: Full-screen experiences for key moments
  * - Interactive: Users CREATE value (first access request) immediately
  *
@@ -35,6 +35,7 @@ import {
   resolveOnboardingResumeStep,
   type AgencyOnboardingStatusData,
 } from '@/lib/query/onboarding';
+import { ONBOARDING_TOTAL_STEPS } from '@/lib/onboarding-steps';
 
 // ============================================================
 // TYPES
@@ -83,7 +84,7 @@ export interface OnboardingState {
 
   // Platform selection (Screen 2B)
   selectedPlatforms: PlatformSelection;
-  preSelectedPlatforms: Platform[]; // Google + Meta as smart defaults
+  preSelectedPlatforms: Platform[]; // Google as smart default
 
   // Generated link (Screen 3 - The Aha! Moment)
   agencyId?: string;
@@ -150,9 +151,7 @@ const UnifiedOnboardingContext = createContext<UnifiedOnboardingContextValue | u
 // INITIAL STATE & CONSTANTS
 // ============================================================
 
-const TOTAL_STEPS = 7; // 0-6 (7 screens total: Welcome, Agency, Client, Platform, Success, Team, Final)
-
-const PRESELECTED_PLATFORMS: Platform[] = ['google', 'meta']; // 80% of use cases
+const PRESELECTED_PLATFORMS: Platform[] = ['google'];
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const SECOND_LEVEL_TLDS = new Set(['co', 'com', 'org', 'net', 'gov', 'edu', 'ac']);
 const ACRONYM_TOKENS = new Set(['ai', 'seo', 'ppc', 'crm', 'saas', 'b2b', 'b2c']);
@@ -307,10 +306,14 @@ const initialState: OnboardingState = {
   existingClients: [],
 
   // Platforms
-  selectedPlatforms: {
-    google: PRESELECTED_PLATFORMS.filter((p) => p.startsWith('google')),
-    meta: PRESELECTED_PLATFORMS.filter((p) => p.startsWith('meta')),
-  },
+  selectedPlatforms: PRESELECTED_PLATFORMS.reduce<PlatformSelection>((selection, platform) => {
+    const group = platform.split('_')[0];
+    if (!selection[group]) {
+      selection[group] = [];
+    }
+    selection[group].push(platform);
+    return selection;
+  }, {}),
   preSelectedPlatforms: PRESELECTED_PLATFORMS,
 
   // Generated link
@@ -410,7 +413,7 @@ export function UnifiedOnboardingProvider({
     let agencyIdForPersist: string | undefined;
 
     setState((prev) => {
-      if (prev.currentStep >= TOTAL_STEPS) {
+      if (prev.currentStep >= ONBOARDING_TOTAL_STEPS) {
         return prev;
       }
 
@@ -440,7 +443,7 @@ export function UnifiedOnboardingProvider({
 
   const goToStep = useCallback(
     (step: number) => {
-      if (step >= 0 && step <= TOTAL_STEPS) {
+      if (step >= 0 && step <= ONBOARDING_TOTAL_STEPS) {
         setState((prev) => ({ ...prev, currentStep: step, error: null }));
         void persistOnboardingProgress(state.agencyId, {
           status: step >= 4 ? 'activated' : 'in_progress',
@@ -449,7 +452,7 @@ export function UnifiedOnboardingProvider({
         });
       }
     },
-    [TOTAL_STEPS, persistOnboardingProgress, state.agencyId, state.startedAt]
+    [persistOnboardingProgress, state.agencyId, state.startedAt]
   );
 
   const canGoNext = useCallback(() => {

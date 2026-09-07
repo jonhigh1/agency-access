@@ -33,6 +33,7 @@ import { PlatformSelectionScreen } from '@/components/onboarding/screens/platfor
 import { SuccessLinkScreen } from '@/components/onboarding/screens/success-link-screen';
 import { TeamInviteScreen } from '@/components/onboarding/screens/team-invite-screen';
 import { FinalSuccessScreen } from '@/components/onboarding/screens/final-success-screen';
+import { ONBOARDING_TOTAL_STEPS } from '@/lib/onboarding-steps';
 
 const DASHBOARD_ONBOARDING_RECOVERY_URL = '/dashboard?onboardingRecovery=1';
 
@@ -209,7 +210,7 @@ function OnboardingFlow() {
   return (
     <UnifiedWizard
       currentStep={state.currentStep}
-      totalSteps={7}
+      totalSteps={ONBOARDING_TOTAL_STEPS}
       onNext={handleNext}
       onBack={prevStep}
       canGoNext={canGoNext()}

@@ -161,13 +161,13 @@ export function FinalSuccessScreen({
         >
           <div className="bg-paper border-2 border-black rounded-lg p-6 text-center">
             <div className="text-sm text-danger-ink font-semibold uppercase tracking-wide mb-2">
-              ⚡ Lightning Fast
+              Link ready to send
             </div>
             <div className="text-3xl font-bold text-danger-ink mb-1">
-              Under 60 seconds
+              Setup complete
             </div>
             <div className="text-sm text-danger-ink">
-              That's how long it took you to create your first access request
+              Send the link to your client — tokens appear after they authorize
             </div>
           </div>
         </motion.div>

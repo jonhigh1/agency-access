@@ -23,6 +23,7 @@ import { motion } from 'framer-motion';
 import { Client } from '@agency-platform/shared';
 import { OpinionatedInput } from '../opinionated-input';
 import { fadeVariants, fadeTransition } from '@/lib/animations';
+import { formatOnboardingStepLabel } from '@/lib/onboarding-steps';
 
 // ============================================================
 // TYPES
@@ -138,10 +139,10 @@ export function ClientSelectionScreen({
     >
       {/* Step Header */}
       <div className="mb-8">
-        <div className="text-sm font-semibold text-danger-ink mb-2">Step 2 of 6</div>
+        <div className="text-sm font-semibold text-danger-ink mb-2">{formatOnboardingStepLabel(2)}</div>
         <h2 className="text-3xl font-bold text-ink mb-2">Create your first access request</h2>
         <p className="text-muted-foreground">
-          This is how you'll get client OAuth tokens in under 2 minutes.
+          Add a client and we'll generate a branded link they can authorize.
         </p>
       </div>
 

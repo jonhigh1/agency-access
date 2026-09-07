@@ -6,7 +6,7 @@
  *
  * Key Elements:
  * - Full-screen with gradient background (handled by UnifiedWizard)
- * - Clear "60-second" value prop
+ * - Clear value prop: link first, tokens after client authorizes
  * - Single CTA (no escape)
  * - Pre-fill agency name from Clerk user data (in context)
  *
@@ -68,12 +68,12 @@ export function WelcomeScreen({ onNext, agencyName }: WelcomeScreenProps) {
         <div className="space-y-4">
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-teal/10 border border-teal rounded-full text-success-ink font-semibold text-sm">
             <span className="text-2xl">🎯</span>
-            <span>Get client access in 60 seconds</span>
+            <span>Create your first access link in minutes</span>
           </div>
 
           <p className="text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
             No more 2-3 day OAuth nightmares. Create a branded access link,
-            send it to clients, and get instant token access.
+            send it to your client — once they authorize, tokens appear in your dashboard.
           </p>
         </div>
 
@@ -83,7 +83,7 @@ export function WelcomeScreen({ onNext, agencyName }: WelcomeScreenProps) {
             {
               icon: '⚡',
               title: 'Lightning Fast',
-              description: 'From sign-up to access link in under 60 seconds',
+              description: 'From sign-up to shareable access link in minutes',
             },
             {
               icon: '🔒',
