@@ -12,6 +12,11 @@ const DEV_PAGES = [
     title: 'Client Detail Harness',
     description: 'Client detail page with mock data',
   },
+  {
+    href: '/dev/redesign-prototype',
+    title: 'Request Flow Redesign Prototype',
+    description: 'THROWAWAY: three structural variants of the invite flow',
+  },
 ] as const;
 
 export default function DevIndexPage() {
