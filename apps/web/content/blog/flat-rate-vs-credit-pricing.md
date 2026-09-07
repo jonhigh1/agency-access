@@ -4,7 +4,8 @@ title: Flat-Rate vs Credit Pricing for Agency Tools (2026)
 excerpt: >-
   Credit-based agency tools charge $30–$150 in surprise overages when you grow.
   See the real per-client cost math for 3, 6, and 10 clients/month — and how
-  AuthHub's $29 flat-rate pricing eliminates overage risk entirely.
+  AuthHub's tiered flat-rate pricing (Starter $29 · Growth $79) eliminates overage
+  risk with predictable monthly caps.
 category: operations
 stage: awareness
 publishedAt: '2026-03-31'
@@ -46,7 +47,7 @@ That's not a typo. That's credit-based pricing in action. And it's how the faste
 
 Agency tools generally use one of two pricing models:
 
-**Flat-rate pricing**: Same price every month. $29/month whether you onboard 2 clients or 20. Your invoice never changes.
+**Flat-rate pricing**: Predictable tier pricing. Starter covers 5 clients/month; Growth covers 20. Your invoice matches your plan—not surprise overages.
 
 **Credit-based pricing**: You buy a bucket of credits each month. Each client onboarding costs one credit. Run out of credits? The tool charges you for more, automatically, with no opt-out.
 
@@ -63,14 +64,14 @@ Let's run the numbers for three different agency sizes using real pricing data f
 | Model | Monthly Cost | Per-Client Cost |
 |-------|-------------|----------------|
 | Credit plan (Starter, 3 credits) | $49 | $16.33 |
-| Flat-rate | $29 | $9.67 |
+| Flat-rate (Starter, 5 clients) | $29 | $9.67 |
 
 Agency A fits perfectly in the credit plan. No overages. But one extra client next month:
 
 | Model | Monthly Cost | Per-Client Cost |
 |-------|-------------|----------------|
 | Credit plan (Starter + 1 overage) | $49 + $30 = $79 | $19.75 |
-| Flat-rate | $29 | $9.67 |
+| Flat-rate (Starter, 5 clients) | $29 | $9.67 |
 
 That one extra client doubles the per-client cost under credit pricing. Under flat-rate, it doesn't move the needle.
 
@@ -79,18 +80,18 @@ That one extra client doubles the per-client cost under credit pricing. Under fl
 | Model | Monthly Cost | Per-Client Cost |
 |-------|-------------|----------------|
 | Credit plan (Starter + 2 overages) | $49 + $60 = $109 | $18.17 |
-| Flat-rate | $29 | $4.83 |
+| Flat-rate (Growth, 20 clients) | $79 | $13.17 |
 
-Agency B is paying $109/month, more than double the flat-rate price. That extra $80 is a junior contractor's daily rate. Or a month of your project management tool. Or the difference between a profitable month and a break-even one.
+Agency B is paying $109/month under credit pricing—$30 more than AuthHub Growth at $79/mo (or $66/mo billed yearly) for up to 20 clients/month.
 
 ### Agency C: 10 clients/month (scaling)
 
 | Model | Monthly Cost | Per-Client Cost |
 |-------|-------------|----------------|
 | Credit plan (Agency tier, 10 credits) | $99 | $9.90 |
-| Flat-rate | $29 | $2.90 |
+| Flat-rate (Growth, 20 clients) | $79 | $7.90 |
 
-To avoid overages at this volume, Agency C has to upgrade to the $99/mo tier. At 15 clients? Another $30 overage. At 20? They're on the $249/mo Pro plan.
+To avoid overages at this volume, Agency C has to upgrade to the $99/mo credit tier. AuthHub Growth covers up to 20 clients/month at $79/mo (or $66/mo billed yearly)—no per-client overages. At 25+ clients? Agency tier at $149/mo covers 50 clients/month.
 
 The pattern is clear: **the faster you grow, the more the credit model penalizes you**. Volume discounts are inverted. The more clients you onboard, the higher your per-client cost climbs.
 
@@ -104,7 +105,7 @@ An agency on the $49/mo plan lands a burst of new business. Eight clients in one
 
 That's $150 over their budgeted $49. A 306% increase on a month when cash flow is already tight from hiring.
 
-Flat-rate pricing: $29. No surprise. No math required.
+Flat-rate pricing: Growth $79/mo (or $66/mo billed yearly) for up to 20 clients. No surprise overages. No math required.
 
 ---
 
@@ -114,7 +115,7 @@ The dollar cost shows up on your invoice. The mental cost doesn't show up anywhe
 
 Credit-based tools create a running calculation in your head every time a new client signs: *Can I onboard them without triggering an overage?* That question shouldn't exist when you're deciding whether to take on a new account. The tool should work for you, not the other way around.
 
-Agency growth isn't linear. Three clients in January, seven in February (Q1 push), two in March (slow month), five in April. Under credit pricing, your costs swing from $49 to $109. Under flat-rate, they're $29 every month. Predictable enough to build into client proposals and hiring plans.
+Agency growth isn't linear. Three clients in January, seven in February (Q1 push), two in March (slow month), five in April. Under credit pricing, your costs swing from $49 to $109. Under AuthHub's tiered flat-rate, you pick the plan that fits—Starter ($29) for light months, Growth ($79) when volume picks up. Predictable enough to build into client proposals and hiring plans.
 
 Then there's the credit rollover problem. Most credit-based tools expire unused credits after 90 days. "Use them or lose them" anxiety on top of billing unpredictability. You're not just paying for what you use. You're paying for what you *might* use, and losing the value if you don't.
 
@@ -130,7 +131,7 @@ Credit-based pricing isn't always worse. It works for:
 
 If your agency consistently onboards 3+ clients per month, flat-rate pricing wins on cost. And it wins categorically on predictability.
 
-If you're currently using Leadsie and hitting overage charges, you're experiencing exactly the credit model described above. Leadsie's Starter plan runs $49/month for 3 credits; each additional client costs $30. AuthHub's flat-rate plan is $29/month with no credit limits — making it a direct Leadsie alternative for agencies onboarding more than 3 clients per month.
+If you're currently using Leadsie and hitting overage charges, you're experiencing exactly the credit model described above. Leadsie's Starter plan runs $49/month for 3 credits; each additional client costs $30. AuthHub Growth is $79/mo (or $66/mo billed yearly) · 20 clients/mo with no credit limits — making it a direct Leadsie alternative for agencies onboarding more than 3 clients per month.
 
 ---
 
@@ -148,6 +149,6 @@ The right pricing model is the one you never think about. If you're checking you
 
 ---
 
-Your tool costs should be the most predictable line item on your P&L. AuthHub uses flat-rate pricing — $29/month whether you onboard 2 clients or 20.
+Your tool costs should be the most predictable line item on your P&L. AuthHub uses tiered flat-rate pricing — Starter $29/mo (5 clients) · Growth $79/mo (or $66/mo billed yearly) · 20 clients/mo · Agency $149/mo (50 clients).
 
 No credits, no overages, no surprises on your invoice. **[Start your free AuthHub trial →](https://authhub.co/signup)** — takes 2 minutes, no credit card required.

@@ -33,7 +33,7 @@ const faqs: FAQItem[] = [
   },
   {
     question: "How secure is my OAuth data?",
-    answer: "We use bank-level encryption via Infisical to store all OAuth tokens. We're SOC 2 Type II compliant and GDPR ready. We never store tokens directly in our database—only secure references to encrypted vault storage.",
+    answer: "We use bank-level encryption via Infisical to store all OAuth tokens. Complete audit logs track every token access. We never store tokens directly in our database—only secure references to encrypted vault storage. GDPR ready.",
   },
   {
     question: "Can I use my own domain with white-label?",

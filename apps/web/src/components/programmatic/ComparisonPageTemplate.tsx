@@ -27,12 +27,12 @@ interface ComparisonPageTemplateProps {
 }
 
 function AgencyAccessPricingSection({ page }: ComparisonPageTemplateProps) {
-  const authHubPrice = page.ourProduct.pricing.starter?.price ?? page.ourProduct.pricing.starting;
+  const authHubPrice = page.ourProduct.pricing.pro?.price ?? 79;
   const agencyAccessPrice = typeof page.competitor.pricing.pro?.price === "number"
     ? page.competitor.pricing.pro.price
     : page.competitor.pricing.starting;
 
-  const authHubFeatures = page.pricingComparison.authhub.starter.features;
+  const authHubFeatures = page.ourProduct.pricing.pro?.features ?? page.pricingComparison.authhub.starter.features;
 
   const agencyAccessFeatures = [
     "Unlimited invites",
@@ -146,10 +146,10 @@ function AgencyAccessPricingSection({ page }: ComparisonPageTemplateProps) {
                 Value Summary
               </h3>
               <p className="mt-[6px] font-mono text-[11px] font-medium leading-[1.35] tracking-[0.015em] text-[#818898]">
-                For agencies needing unlimited clients, API access, and automatic token
-                refresh, AuthHub Growth (${authHubPrice}/mo) delivers more automation than
-                AgencyAccess Premium (${agencyAccessPrice}/mo). Save over $500/year while
-                gaining enterprise security and developer tools. AgencyAccess excels with
+                For agencies needing 20 clients/month, API access, and automatic token
+                refresh, AuthHub Growth (${authHubPrice}/mo, or $66/mo billed yearly) delivers more automation than
+                AgencyAccess Premium (${agencyAccessPrice}/mo). Predictable tier caps (5/20/50 clients/month) plus
+                Infisical-backed token storage and audit logs. AgencyAccess excels with
                 broader platform coverage and 24/7 chat support on higher tiers.
               </p>
             </div>
@@ -376,7 +376,7 @@ export function ComparisonPageTemplate({ page }: ComparisonPageTemplateProps) {
                     <span className="text-lg font-normal text-[#6B7280]">/month</span>
                   </p>
                   <p className="text-sm text-[#6B7280] mt-1">
-                    Flat-rate, unlimited clients
+                    From $29/mo · 5/20/50 clients by tier
                   </p>
                   {pricingComparison.savings.yearly > 0 && (
                     <p className="text-sm font-semibold text-[#4ECDC4] mt-2">
@@ -428,7 +428,7 @@ export function ComparisonPageTemplate({ page }: ComparisonPageTemplateProps) {
                     Save ${pricingComparison.savings.yearly}/year with AuthHub
                   </h4>
                   <p className="text-sm text-[#4A5568]">
-                    AuthHub&apos;s flat-rate pricing means you pay less per client as you grow. AgencyAccess charges per seat and limits invites on Starter—AuthHub gives you unlimited clients on every plan, plus automatic token refresh that prevents costly access interruptions.
+                    AuthHub&apos;s tiered pricing (Starter $29 · Growth $79 · Agency $149) scales with your volume—5, 20, or 50 clients/month per plan. AgencyAccess charges per seat and limits invites on Starter. AuthHub adds automatic token refresh and Infisical-backed audit logs that prevent costly access interruptions.
                   </p>
                 </div>
               </div>
@@ -669,7 +669,7 @@ function getDifferentiatorDescription(differentiator: string): string {
     "Flat-Rate Pricing": "No credits, no surprises. Predictable costs mean predictable margins.",
     "US-Based Support": "Same-day responses during US hours. No more time zone delays.",
     "15+ Platforms": "Support for Pinterest, Klaviyo, Shopify, and more emerging channels.",
-    "Enterprise Security": "Infisical token storage with audit logs for SOC2 compliance.",
+    "Infisical-backed Token Storage": "OAuth tokens stored in Infisical with complete audit logs—never in the database.",
   };
 
   return descriptions[differentiator] || "Industry-leading capability that sets us apart.";

@@ -266,7 +266,7 @@ export function HowItWorksSection() {
           <Reveal delay={1.2}>
             <div className="mt-16 sm:mt-20 md:mt-24 grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6">
               {[
-                { value: '99.9%', label: 'Success Rate', icon: Check, color: 'teal' },
+                { value: 'Auto', label: 'Token Refresh', icon: Check, color: 'teal' },
                 { value: '8+', label: 'Platforms', icon: Zap, color: 'coral' },
                 { value: '1 Link', label: 'Per Client', icon: Users, color: 'coral' },
                 { value: '5 min', label: 'Avg Setup', icon: Clock, color: 'coral' },

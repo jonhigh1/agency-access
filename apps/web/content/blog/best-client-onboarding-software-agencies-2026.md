@@ -76,11 +76,11 @@ Five platforms. Five different flows. Five different failure modes. Agencies spe
 
 **What it does**: Centralized platform access collection. Send one link, the client grants access to all platforms (Meta, Google, GA4, LinkedIn, TikTok, Pinterest) in one session. Includes intake forms, so access and information collection happen simultaneously.
 
-**What makes it different**: Only tool that combines access management and intake forms in a single client flow. Flat-rate pricing ($29/month) means no per-client charges or overage fees. OAuth tokens stored in Infisical (secrets management), not a database.
+**What makes it different**: Only tool that combines access management and intake forms in a single client flow. Tiered flat-rate pricing with predictable caps—no per-client overage fees. OAuth tokens stored in Infisical (secrets management), not a database.
 
 **Best for**: Agencies onboarding 3+ clients/month across multiple ad platforms.
 
-**Pricing**: From $29/month (flat-rate, unlimited clients)
+**Pricing**: Starter $29/mo ($24/mo billed yearly) · 5 clients/mo · Growth $79/mo (or $66/mo billed yearly) · 20 clients/mo · Agency $149/mo ($124/mo billed yearly) · 50 clients/mo
 
 ### Leadsie
 
@@ -280,7 +280,7 @@ The agencies that onboard clients fastest don't have more tools. They have the r
 
 | Category | Tool | Starts At | Solves the bottleneck? |
 |----------|------|----------|----------------------|
-| **Access + Intake** | **AuthHub** | **$29/mo** | **Yes** — access + intake in one flow |
+| **Access + Intake** | **AuthHub** | **$29/mo+** | **Yes** — access + intake in one flow |
 | **Access** | Leadsie | $49/mo | Yes — access collection (31+ platforms) |
 | **Access** | AgencyAccess | Custom | Partial — email-based, no guided flow |
 | **Forms** | Typeform | $25/mo | Partial — intake only, no access |

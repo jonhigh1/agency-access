@@ -66,16 +66,16 @@ export default function CombinedFeaturedSection() {
           {/* Key stats */}
           <div className="grid grid-cols-3 gap-3 mt-auto">
             <div className="text-center p-3 border-2 border-black bg-teal/10 rounded-[0.5rem]">
-              <div className="font-dela text-xl sm:text-2xl font-bold text-success-ink mb-1">30+</div>
-              <div className="text-[10px] sm:text-xs font-mono uppercase tracking-wider text-gray-600">Emails Eliminated</div>
+              <div className="font-dela text-xl sm:text-2xl font-bold text-success-ink mb-1">Fewer</div>
+              <div className="text-[10px] sm:text-xs font-mono uppercase tracking-wider text-gray-600">Email Threads</div>
             </div>
             <div className="text-center p-3 border-2 border-black bg-coral/10 rounded-[0.5rem]">
               <div className="font-dela text-xl sm:text-2xl font-bold text-danger-ink mb-1">5 min</div>
               <div className="text-[10px] sm:text-xs font-mono uppercase tracking-wider text-gray-600">Setup Time</div>
             </div>
             <div className="text-center p-3 border-2 border-black bg-coral/10 rounded-[0.5rem]">
-              <div className="font-dela text-xl sm:text-2xl font-bold text-danger-ink mb-1">100%</div>
-              <div className="text-[10px] sm:text-xs font-mono uppercase tracking-wider text-gray-600">Completion</div>
+              <div className="font-dela text-xl sm:text-2xl font-bold text-danger-ink mb-1">One</div>
+              <div className="text-[10px] sm:text-xs font-mono uppercase tracking-wider text-gray-600">Branded Link</div>
             </div>
           </div>
         </m.div>
@@ -141,26 +141,26 @@ export default function CombinedFeaturedSection() {
               <span className="text-xs sm:text-sm font-bold uppercase tracking-wide text-ink">OAuth Analytics</span>
             </div>
             <div className="text-right">
-              <div className="text-[10px] font-mono text-gray-600 uppercase tracking-wider">Growth Rate</div>
-              <div className="font-dela text-lg sm:text-xl font-bold text-success-ink">+127%</div>
+              <div className="text-[10px] font-mono text-gray-600 uppercase tracking-wider">Typical Result</div>
+              <div className="font-dela text-lg sm:text-xl font-bold text-success-ink">Same-day live</div>
             </div>
           </div>
           <h3 className="font-dela text-xl sm:text-2xl text-ink">
             Client Onboarding Accelerated
           </h3>
           <p className="text-sm leading-relaxed text-gray-700">
-            Scale from 10 to 100 clients without adding headcount. Token health monitoring ensures 99.9% uptime.
+            Scale from 5 to 50 clients/month with tiered plans that match your volume. Token health monitoring and automatic refresh keep access active.
           </p>
 
           {/* Simple brutalist stats - replacing complex chart */}
           <div className="grid grid-cols-2 gap-3 my-4">
             <div className="p-3 border-2 border-black bg-coral/10 rounded-[0.5rem]">
-              <div className="text-[10px] font-mono text-gray-600 mb-1 uppercase tracking-wider">Active OAuth Tokens</div>
-              <div className="font-dela text-2xl sm:text-3xl font-bold text-danger-ink">400</div>
+              <div className="text-[10px] font-mono text-gray-600 mb-1 uppercase tracking-wider">Active Connections</div>
+              <div className="font-dela text-2xl sm:text-3xl font-bold text-danger-ink">Your clients</div>
             </div>
             <div className="p-3 border-2 border-black bg-teal/10 rounded-[0.5rem]">
               <div className="text-[10px] font-mono text-gray-600 mb-1 uppercase tracking-wider">New Authorizations</div>
-              <div className="font-dela text-2xl sm:text-3xl font-bold text-success-ink">520</div>
+              <div className="font-dela text-2xl sm:text-3xl font-bold text-success-ink">This month</div>
             </div>
           </div>
           
@@ -168,11 +168,11 @@ export default function CombinedFeaturedSection() {
           <div className="flex items-center justify-between pt-4 border-t-2 border-black mt-auto">
             <div>
               <div className="text-[10px] font-mono text-gray-600 uppercase tracking-wider">Token Health</div>
-              <div className="font-dela text-sm font-bold text-ink">99.9% Uptime</div>
+              <div className="font-dela text-sm font-bold text-ink">Auto-refresh enabled</div>
             </div>
             <div className="text-right">
-              <div className="text-[10px] font-mono text-gray-600 uppercase tracking-wider">Auto-Refreshed</div>
-              <div className="font-dela text-sm font-bold text-ink">1,247 This Month</div>
+              <div className="text-[10px] font-mono text-gray-600 uppercase tracking-wider">Audit Logs</div>
+              <div className="font-dela text-sm font-bold text-ink">Every access logged</div>
             </div>
           </div>
         </m.div>
@@ -192,21 +192,21 @@ export default function CombinedFeaturedSection() {
             <span className="text-xs sm:text-sm font-bold uppercase tracking-wide text-ink">Enterprise Security</span>
           </div>
           <h3 className="font-dela text-xl sm:text-2xl text-ink mb-3">
-            SOC 2 Compliant Token Storage
+            Infisical-Backed Token Storage
           </h3>
           <p className="text-sm leading-relaxed mb-4 text-gray-700">
-            OAuth tokens encrypted in Infisical. Auto-refresh, complete audit logs, and zero password sharing ever.
+            OAuth tokens encrypted in Infisical—not stored in our database. Auto-refresh, complete audit logs, and zero password sharing ever.
           </p>
 
           {/* Key stats */}
           <div className="grid grid-cols-2 gap-3 mb-4">
             <div className="p-3 border-2 border-black bg-teal/10 rounded-[0.5rem]">
-              <div className="font-dela text-xl sm:text-2xl font-bold text-success-ink mb-1">SOC 2</div>
-              <div className="text-[10px] sm:text-xs font-mono text-gray-600 uppercase tracking-wider">Type II Certified</div>
+              <div className="font-dela text-xl sm:text-2xl font-bold text-success-ink mb-1">Infisical</div>
+              <div className="text-[10px] sm:text-xs font-mono text-gray-600 uppercase tracking-wider">Token Vault</div>
             </div>
             <div className="p-3 border-2 border-black bg-coral/10 rounded-[0.5rem]">
-              <div className="font-dela text-xl sm:text-2xl font-bold text-danger-ink mb-1">99.9%</div>
-              <div className="text-[10px] sm:text-xs font-mono text-gray-600 uppercase tracking-wider">Token Uptime</div>
+              <div className="font-dela text-xl sm:text-2xl font-bold text-danger-ink mb-1">Audit</div>
+              <div className="text-[10px] sm:text-xs font-mono text-gray-600 uppercase tracking-wider">Logs Included</div>
             </div>
           </div>
 

@@ -14,12 +14,12 @@ const faqs = [
   {
     question: 'How does AuthHub handle OAuth token security?',
     answer:
-      'OAuth tokens are encrypted at rest using Infisical and stored in a SOC 2 Type II certified environment. Tokens auto-refresh before expiration, so access never drops without manual intervention.',
+      'OAuth tokens are encrypted at rest using Infisical—not stored in our database. Complete audit logs track every token access. Tokens auto-refresh before expiration, so access stays active without manual intervention.',
   },
   {
     question: 'Which ad platforms does AuthHub support?',
     answer:
-      'AuthHub currently supports Meta Ads, Google Ads, GA4, LinkedIn Ads, and TikTok, with 30+ email exchanges eliminated per client onboarding.',
+      'AuthHub currently supports Meta Ads, Google Ads, GA4, LinkedIn Ads, and TikTok—replacing days of back-and-forth email with a single branded link.',
   },
   {
     question: 'How long does client onboarding take with AuthHub?',

@@ -119,7 +119,7 @@ function AfterState() {
               Your authorization link
             </div>
             <div className="text-white text-lg font-bold">
-              authhub.com/agency/xyz123
+              authhub.co/agency/xyz123
             </div>
           </div>
 

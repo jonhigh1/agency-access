@@ -55,12 +55,12 @@ This comparison breaks down features, pricing, and capabilities so you can choos
 | **Beehiiv** | ❌ | ❌ | ✅ |
 | **Permission Levels** | 2-3 levels | 2 levels | **4 levels** (admin, standard, read_only, email_only) |
 | **Token Storage** | Database | Database | **Infisical** (secrets management) |
-| **Audit Logging** | Basic | Basic | **Comprehensive** (SOC2-ready) |
+| **Audit Logging** | Basic | Basic | **Comprehensive** (Infisical-backed) |
 | **Onboarding Templates** | ❌ | ❌ | ✅ |
 | **Custom Branding** | ❌ | Limited | ✅ (full white-label) |
 | **Multi-Language** | ❌ | ❌ | ✅ (en, es, nl) |
 | **Hierarchical Access** | ❌ | ❌ | ✅ (Google = 8 products from 1 OAuth) |
-| **Pricing** | $97/mo | $149/mo | **$29/mo** |
+| **Pricing** | $49/mo+ | $149/mo | **$29/$79/$149/mo** |
 
 ## Platform Support Comparison
 
@@ -116,7 +116,7 @@ This comparison breaks down features, pricing, and capabilities so you can choos
 - **Zero-knowledge architecture**: Tokens encrypted before storage
 - **Audit trails**: Every token access is logged (who, when, why)
 - **Rotation support**: Automatic token refresh without client intervention
-- **SOC2 compliance**: Built for enterprise security requirements
+- **Infisical-backed storage**: Enterprise-grade secrets management without storing tokens in the database
 
 **Winner**: AuthHub—Infisical is the same security standard used by Fortune 500 companies.
 
@@ -131,7 +131,7 @@ This comparison breaks down features, pricing, and capabilities so you can choos
 - User email, IP address, timestamp
 - Action taken (AGENCY_CONNECTED, AGENCY_DISCONNECTED, TOKEN_REFRESHED)
 - Metadata for compliance reporting
-- Exportable for SOC2, GDPR audits
+- Exportable audit logs for compliance reviews and GDPR audits
 
 **Winner**: AuthHub—audit logs are critical for enterprise clients and regulatory compliance.
 
@@ -210,12 +210,14 @@ When a client authorizes Google, they simultaneously grant access to:
 
 | Plan | Leadsie | Other Platforms | AuthHub |
 |------|---------|--------------|------------------------|
-| **Starter** | $97/mo | $149/mo | **$29/mo** |
-| **Pro** | $197/mo | $299/mo | **$149/mo** |
-| **Enterprise** | Custom | Custom | **Custom** |
-| **Free Trial** | 14 days | 7 days | **21 days** |
+| **Starter** | $49/mo | $149/mo | **$29/mo** (5 clients/mo) |
+| **Growth** | $199/mo | $299/mo | **$79/mo** (20 clients/mo) |
+| **Agency** | Custom | Custom | **$149/mo** (50 clients/mo) |
+| **Free Trial** | 14 days | 7 days | **14 days** |
 
-**Winner**: AuthHub—lowest price across all tiers with most features.
+Yearly billing: Starter $290/yr (~$24/mo) · Growth $790/yr (~$66/mo) · Agency $1,490/yr (~$124/mo).
+
+**Value**: AuthHub's tiered pricing scales with your volume—predictable caps at every tier with Infisical-backed security and audit logs included.
 
 **ROI Calculation**: If your agency charges $150/hr and saves 8 hours/month on client onboarding, that's **$1,200/month in recovered billable time**. The platform pays for itself 15x over.
 
@@ -240,7 +242,7 @@ When a client authorizes Google, they simultaneously grant access to:
 - Need **onboarding templates** to scale
 - Want **custom branding** for white-label experience
 - Have **50+ clients** or plan to scale
-- Need **SOC2 compliance** documentation
+- Need **Infisical-backed token storage** and audit log documentation
 
 ## Migration: Switching Is Easy
 
@@ -257,9 +259,9 @@ All three platforms allow you to:
 - **Security**: Infisical token storage vs database storage (significant difference)
 - **Permissions**: 4 levels vs 2-3 levels (granular control)
 - **Templates**: Only AuthHub has reusable onboarding templates
-- **Pricing**: AuthHub is $18-70/mo less expensive
+- **Pricing**: AuthHub Starter at $29/mo undercuts competitors; Growth $79/mo (or $66/mo billed yearly) · 20 clients/mo scales affordably
 
-**Ready to make the switch?** [Start your 21-day free trial](/pricing)—the longest trial in the industry. See how teams reduce onboarding time by up to 90%.
+**Ready to make the switch?** [Start your 14-day free trial](/pricing)—no credit card required. See how teams reduce onboarding time by up to 90%.
 
 ---
 
