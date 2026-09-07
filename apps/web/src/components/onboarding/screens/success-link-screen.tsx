@@ -11,7 +11,7 @@ import { Copy, Check } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { fadeVariants, fadeTransition } from '@/lib/animations';
 import { formatOnboardingStepLabel } from '@/lib/onboarding-steps';
-import { trackInviteLinkCopied, trackInviteSent } from '@/lib/analytics/invite-events';
+import { trackInviteLinkCopyAndSent } from '@/lib/analytics/invite-events';
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard';
 import { Button } from '@/components/ui';
 import { WizardClientInvitePreview } from '../wizard-client-invite-preview';
@@ -45,9 +45,9 @@ export function SuccessLinkScreen({
 
   const handleCopyLink = async () => {
     if (!accessRequestId || !accessRequestToken) return;
-    trackInviteLinkCopied(trackProps);
-    trackInviteSent({ ...trackProps, channel: 'copy' });
-    await copy(accessLink);
+    await copy(accessLink, () => {
+      trackInviteLinkCopyAndSent(trackProps);
+    });
   };
 
   return (

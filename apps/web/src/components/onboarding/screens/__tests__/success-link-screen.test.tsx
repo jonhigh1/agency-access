@@ -16,6 +16,7 @@ vi.mock('@/hooks/use-copy-to-clipboard', () => ({
 }));
 
 vi.mock('@/lib/analytics/invite-events', () => ({
+  trackInviteLinkCopyAndSent: vi.fn(),
   trackInviteLinkCopied: vi.fn(),
   trackInviteSent: vi.fn(),
 }));
@@ -62,9 +63,12 @@ describe('SuccessLinkScreen (wizard Success step)', () => {
     expect(screen.getByText("That's the finish line — not creating the link.")).toBeInTheDocument();
   });
 
-  it('fires invite analytics when Copy Link is clicked', async () => {
+  it('fires invite copy/send analytics after successful clipboard write', async () => {
     const inviteEvents = await import('@/lib/analytics/invite-events');
     const user = userEvent.setup();
+    mockCopy.mockImplementation(async (_text, onCopy) => {
+      onCopy?.();
+    });
 
     render(
       <SuccessLinkScreen
@@ -76,19 +80,17 @@ describe('SuccessLinkScreen (wizard Success step)', () => {
 
     await user.click(screen.getByRole('button', { name: /copy link/i }));
 
-    expect(inviteEvents.trackInviteLinkCopied).toHaveBeenCalledWith({
+    expect(mockCopy).toHaveBeenCalledWith(
+      'https://authhub.co/authorize/token-123',
+      expect.any(Function)
+    );
+    expect(inviteEvents.trackInviteLinkCopyAndSent).toHaveBeenCalledWith({
       access_request_id: 'request-123',
       access_request_token: 'token-123',
       status: 'pending',
       surface: 'onboarding',
     });
-    expect(inviteEvents.trackInviteSent).toHaveBeenCalledWith({
-      access_request_id: 'request-123',
-      access_request_token: 'token-123',
-      channel: 'copy',
-      status: 'pending',
-      surface: 'onboarding',
-    });
-    expect(mockCopy).toHaveBeenCalledWith('https://authhub.co/authorize/token-123');
+    expect(inviteEvents.trackInviteLinkCopied).not.toHaveBeenCalled();
+    expect(inviteEvents.trackInviteSent).not.toHaveBeenCalled();
   });
 });
