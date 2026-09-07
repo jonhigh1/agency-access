@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@clerk/nextjs';
-import { Check, Copy, ArrowLeft, Plus, ExternalLink, Mail } from 'lucide-react';
+import { Clock, Copy, Mail, Plus } from 'lucide-react';
 import { getAccessRequest, getAuthorizationUrl } from '@/lib/api/access-requests';
 import {
   buildInviteSentMailto,
@@ -12,7 +12,7 @@ import {
 } from '@/lib/analytics/invite-events';
 import { getPlatformCount } from '@/lib/transform-platforms';
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard';
-import { Button } from '@/components/ui';
+import { Button, StatusBadge } from '@/components/ui';
 import { FlowShell } from '@/components/flow/flow-shell';
 import type { AccessRequest } from '@/lib/api/access-requests';
 
@@ -127,8 +127,8 @@ export default function SuccessPage({ params }: SuccessPageProps) {
 
   return (
     <FlowShell
-      title="Access Request Created"
-      description={`Share this link with ${accessRequest.clientName}. They authorize when ready — tokens are stored only after authorization completes.`}
+      title="Pending client authorization"
+      description={`Waiting on ${accessRequest.clientName}. Share the link below — connected when they finish Google.`}
       step={3}
       totalSteps={3}
       steps={['Build', 'Review', 'Send']}
@@ -137,22 +137,21 @@ export default function SuccessPage({ params }: SuccessPageProps) {
         <div className="rounded-lg border-2 border-black bg-card p-6 shadow-brutalist">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="h-12 w-12 rounded-full border border-teal bg-teal/10 flex items-center justify-center">
-                <Check className="h-6 w-6 text-success-ink" />
+              <div className="h-12 w-12 rounded-full border border-coral/30 bg-coral/10 flex items-center justify-center">
+                <Clock className="h-6 w-6 text-danger-ink" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-ink">Share Authorization Link</h2>
+                <h2 className="text-lg font-semibold text-ink font-display">Pending</h2>
                 <p className="text-sm text-muted-foreground">
-                  Send this secure URL to your client. They complete authorization on their schedule.
+                  Waiting on {accessRequest.clientName} to authorize. Connected when they finish Google.
                 </p>
               </div>
             </div>
-            <span className="rounded-full border border-border bg-muted/20 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              {accessRequest.status}
-            </span>
+            <StatusBadge status="pending" />
           </div>
 
           <div className="mt-5 rounded-lg border border-border bg-paper p-4">
+            <p className="label-micro mb-2 text-muted-foreground">Authorization link</p>
             <code className="break-all text-xs text-ink">{authorizationUrl}</code>
           </div>
 
@@ -161,27 +160,24 @@ export default function SuccessPage({ params }: SuccessPageProps) {
               {copied ? 'Copied' : 'Copy Link'}
             </Button>
             <Button
-              variant="secondary"
-              leftIcon={<ExternalLink className="h-4 w-4" />}
-              onClick={() => window.open(authorizationUrl, '_blank', 'noopener,noreferrer')}
-            >
-              Preview Link
-            </Button>
-            <Button
-              variant="secondary"
+              variant="primary"
               leftIcon={<Mail className="h-4 w-4" />}
               onClick={handleEmailClient}
             >
               Email Client
             </Button>
-            <Button
-              variant="secondary"
-              leftIcon={<ArrowLeft className="h-4 w-4" />}
-              onClick={() => router.push('/dashboard')}
-            >
-              Back to Dashboard
-            </Button>
           </div>
+
+          <p className="mt-4 text-center text-sm">
+            <button
+              type="button"
+              onClick={() => router.push('/dashboard')}
+              className="text-muted-foreground underline-offset-4 hover:text-ink hover:underline"
+            >
+              Go to dashboard
+            </button>
+            <span className="text-muted-foreground"> — track status while you wait</span>
+          </p>
         </div>
 
         <div className="rounded-lg border border-border bg-card p-5">
@@ -212,7 +208,7 @@ export default function SuccessPage({ params }: SuccessPageProps) {
 
         <div className="flex justify-end">
           <Button
-            variant="primary"
+            variant="secondary"
             leftIcon={<Plus className="h-4 w-4" />}
             onClick={() => router.push('/access-requests/new')}
           >

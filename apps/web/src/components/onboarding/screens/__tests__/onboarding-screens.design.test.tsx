@@ -217,9 +217,9 @@ describe('Final Success Screen - Static Design Validation', () => {
       expect(componentCode).toMatch(/bg-coral/);
     });
 
-    it('should use teal for success states', () => {
+    it('should use semantic ink tokens for status states', () => {
       const componentCode = fs.readFileSync(COMPONENT_PATH, 'utf-8');
-      expect(componentCode).toMatch(/text-success-ink/);
+      expect(componentCode).toMatch(/text-(success-ink|danger-ink)/);
     });
   });
 });
@@ -241,8 +241,8 @@ describe('All Onboarding Screens - No Raw gray-* Colors', () => {
     });
   }
 
-  it('success-link-card.tsx should not contain gray- colors', () => {
-    const code = fs.readFileSync(resolve(__dirname, '../../success-link-card.tsx'), 'utf-8');
+  it('wizard-client-invite-preview.tsx should not contain gray- colors', () => {
+    const code = fs.readFileSync(resolve(__dirname, '../../wizard-client-invite-preview.tsx'), 'utf-8');
     expect(code).not.toContain('gray-');
   });
 
@@ -266,8 +266,8 @@ describe('All Onboarding Screens - No Raw indigo-* Colors', () => {
     });
   }
 
-  it('success-link-card.tsx should not contain indigo- colors', () => {
-    const code = fs.readFileSync(resolve(__dirname, '../../success-link-card.tsx'), 'utf-8');
+  it('wizard-client-invite-preview.tsx should not contain indigo- colors', () => {
+    const code = fs.readFileSync(resolve(__dirname, '../../wizard-client-invite-preview.tsx'), 'utf-8');
     expect(code).not.toContain('indigo-');
   });
 
@@ -285,7 +285,8 @@ describe('All Onboarding Screens - No Other Raw Colors', () => {
     'client-selection-screen.tsx': '../client-selection-screen.tsx',
     'team-invite-screen.tsx': '../team-invite-screen.tsx',
     'success-link-screen.tsx': '../success-link-screen.tsx',
-    'success-link-card.tsx': '../../success-link-card.tsx',
+    'wizard-client-invite-preview.tsx': '../../wizard-client-invite-preview.tsx',
+    'wizard-connected-example.tsx': '../../wizard-connected-example.tsx',
     'opinionated-input.tsx': '../../opinionated-input.tsx',
   };
 

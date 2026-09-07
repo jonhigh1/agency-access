@@ -176,8 +176,8 @@ function OnboardingFlow() {
         return (
           <SuccessLinkScreen
             accessLink={state.accessLink || ''}
-            clientName={state.clientName || ''}
-            selectedPlatforms={Object.values(state.selectedPlatforms).flat() as any}
+            agencyName={state.agencyName}
+            accessRequestId={state.accessRequestId}
           />
         );
 
@@ -196,6 +196,7 @@ function OnboardingFlow() {
         return (
           <FinalSuccessScreen
             agencyName={state.agencyName}
+            clientName={state.clientName || 'your client'}
             accessRequestId={state.accessRequestId || ''}
             teamInvitesSent={state.teamInvites.length}
             onComplete={completeOnboarding}
