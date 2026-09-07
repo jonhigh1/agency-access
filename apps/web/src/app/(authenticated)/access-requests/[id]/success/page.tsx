@@ -3,12 +3,14 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@clerk/nextjs';
-import { Check, Copy, ArrowLeft, Plus, ExternalLink, Mail } from 'lucide-react';
+import { Check, Copy, ExternalLink, Mail } from 'lucide-react';
 import { getAccessRequest, getAuthorizationUrl } from '@/lib/api/access-requests';
 import { getPlatformCount } from '@/lib/transform-platforms';
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard';
 import { Button } from '@/components/ui';
+import { LogoSpinner } from '@/components/ui/logo-spinner';
 import { FlowShell } from '@/components/flow/flow-shell';
+import { RequestStatusChip } from '@/components/access-request-detail';
 import type { AccessRequest } from '@/lib/api/access-requests';
 
 interface SuccessPageProps {
@@ -81,8 +83,8 @@ export default function SuccessPage({ params }: SuccessPageProps) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-paper flex items-center justify-center">
-        <div className="h-10 w-10 animate-spin rounded-full border-2 border-coral border-t-transparent" />
+      <div className="flex min-h-screen items-center justify-center bg-paper">
+        <LogoSpinner size="lg" />
       </div>
     );
   }
@@ -90,7 +92,7 @@ export default function SuccessPage({ params }: SuccessPageProps) {
   if (error || !accessRequest) {
     return (
       <div className="min-h-screen bg-paper flex items-center justify-center px-4">
-        <div className="w-full max-w-md rounded-lg border-2 border-black bg-card p-8 shadow-brutalist text-center">
+        <div className="w-full max-w-md border-2 border-black bg-card p-8 text-center shadow-brutalist">
           <h1 className="text-2xl font-semibold text-ink font-display">Request Not Found</h1>
           <p className="mt-2 text-sm text-muted-foreground">{error || 'Could not load access request.'}</p>
           <Button className="mt-6" onClick={() => router.push('/dashboard')}>
@@ -110,88 +112,86 @@ export default function SuccessPage({ params }: SuccessPageProps) {
       steps={['Build', 'Review', 'Send']}
     >
       <div className="space-y-6">
-        <div className="rounded-lg border-2 border-black bg-card p-6 shadow-brutalist">
+        <section className="border-2 border-black bg-card p-6 shadow-brutalist">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-3">
-              <div className="h-12 w-12 rounded-full border border-teal bg-teal/10 flex items-center justify-center">
-                <Check className="h-6 w-6 text-success-ink" />
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border-2 border-black">
+                <Check className="h-6 w-6 text-success-ink" aria-hidden />
               </div>
               <div>
                 <h2 className="text-lg font-semibold text-ink">Share Authorization Link</h2>
-                <p className="text-sm text-muted-foreground">Send this secure URL to your client.</p>
+                <p className="text-sm text-muted-foreground">
+                  One action left: send it to {accessRequest.clientName}.
+                </p>
               </div>
             </div>
-            <span className="rounded-full border border-border bg-muted/20 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-              {accessRequest.status}
-            </span>
+            <RequestStatusChip status={accessRequest.status} />
           </div>
 
-          <div className="mt-5 rounded-lg border border-border bg-paper p-4">
-            <code className="break-all text-xs text-ink">{authorizationUrl}</code>
-          </div>
-
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
-            <Button onClick={handleCopyLink} leftIcon={<Copy className="h-4 w-4" />}>
-              {copied ? 'Copied' : 'Copy Link'}
+          <div className="mt-5 flex items-stretch gap-2 border border-black bg-paper p-3">
+            <code className="min-w-0 flex-1 break-all self-center text-xs text-ink">
+              {authorizationUrl}
+            </code>
+            <Button size="sm" onClick={handleCopyLink} leftIcon={<Copy className="h-4 w-4" />}>
+              {copied ? 'Copied' : 'Copy'}
             </Button>
-            <Button
-              variant="secondary"
-              leftIcon={<ExternalLink className="h-4 w-4" />}
+          </div>
+
+          <Button
+            className="mt-4 min-h-[44px] w-full"
+            leftIcon={<Mail className="h-4 w-4" />}
+            onClick={() => window.location.assign(emailHref)}
+          >
+            Email Client
+          </Button>
+
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-2 text-sm">
+            <button
+              type="button"
               onClick={() => window.open(authorizationUrl, '_blank', 'noopener,noreferrer')}
+              className="inline-flex items-center gap-1.5 text-muted-foreground underline-offset-4 hover:text-ink hover:underline"
             >
-              Preview Link
-            </Button>
-            <Button
-              variant="secondary"
-              leftIcon={<Mail className="h-4 w-4" />}
-              onClick={() => window.location.assign(emailHref)}
-            >
-              Email Client
-            </Button>
-            <Button
-              variant="secondary"
-              leftIcon={<ArrowLeft className="h-4 w-4" />}
-              onClick={() => router.push('/dashboard')}
-            >
-              Back to Dashboard
-            </Button>
+              <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+              Preview what your client sees
+            </button>
+            <p className="label-nano">Expires {expirationText}</p>
           </div>
-        </div>
+        </section>
 
-        <div className="rounded-lg border border-border bg-card p-5">
-          <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Request Details</h3>
+        <section className="border border-black/25 bg-card p-5">
+          <p className="label-micro">Request details</p>
           <div className="mt-3 grid gap-3 sm:grid-cols-2">
             <div>
-              <p className="text-xs text-muted-foreground">Client</p>
+              <p className="label-nano">Client</p>
               <p className="text-sm font-semibold text-ink">{accessRequest.clientName}</p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Email</p>
-              <p className="text-sm font-semibold text-ink">{accessRequest.clientEmail}</p>
+              <p className="label-nano">Email</p>
+              <p className="break-all text-sm font-semibold text-ink">{accessRequest.clientEmail}</p>
             </div>
             <div>
-              <p className="text-xs text-muted-foreground">Products</p>
+              <p className="label-nano">Products</p>
               <p className="text-sm font-semibold text-ink">{platformCount}</p>
             </div>
-            <div>
-              <p className="text-xs text-muted-foreground">Expires</p>
-              <p className="text-sm font-semibold text-ink">{expirationText}</p>
-            </div>
           </div>
+          <p className="label-nano mt-4">Link validity window is 7 days. Expiration date shown above.</p>
+        </section>
 
-          <p className="mt-4 text-xs text-muted-foreground">
-            Link validity window is 7 days. Expiration date shown above.
-          </p>
-        </div>
-
-        <div className="flex justify-end">
-          <Button
-            variant="primary"
-            leftIcon={<Plus className="h-4 w-4" />}
-            onClick={() => router.push('/access-requests/new')}
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t-2 border-black pt-4">
+          <button
+            type="button"
+            onClick={() => router.push('/dashboard')}
+            className="text-sm text-muted-foreground underline-offset-4 hover:text-ink hover:underline"
           >
-            Create Another Request
-          </Button>
+            Back to Dashboard
+          </button>
+          <button
+            type="button"
+            onClick={() => router.push('/access-requests/new')}
+            className="text-sm font-semibold text-ink underline-offset-4 hover:underline"
+          >
+            Create another request
+          </button>
         </div>
       </div>
     </FlowShell>

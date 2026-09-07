@@ -12,6 +12,8 @@ import {
   RequestActionsBar,
   RequestOverviewCard,
   RequestPlatformsCard,
+  RequestStatusChip,
+  nextActionLine,
 } from '@/components/access-request-detail';
 
 interface AccessRequestDetailPageProps {
@@ -136,7 +138,7 @@ export default function AccessRequestDetailPage({ params }: AccessRequestDetailP
   if (!accessRequest || error) {
     return (
       <div className="min-h-screen bg-paper flex items-center justify-center px-4">
-        <div className="w-full max-w-md rounded-lg border border-coral/40 bg-card p-8 text-center shadow-sm">
+        <div className="w-full max-w-md border-2 border-black bg-card p-8 text-center shadow-brutalist">
           <AlertCircle className="h-8 w-8 text-danger-ink mx-auto mb-3" />
           <h1 className="text-2xl font-semibold font-display text-ink">Request Not Found</h1>
           <p className="mt-2 text-sm text-muted-foreground">{error || 'Could not load request.'}</p>
@@ -147,13 +149,28 @@ export default function AccessRequestDetailPage({ params }: AccessRequestDetailP
 
   return (
     <div className="min-h-screen bg-paper">
-      <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8 space-y-6">
-        <div>
-          <h1 className="text-3xl font-semibold text-ink font-display">Access Request Details</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Review request configuration and lifecycle status before taking action.
+      <div className="mx-auto max-w-3xl space-y-6 px-4 py-8 sm:px-6 lg:px-8">
+        <header className="border-b-2 border-black pb-5">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h1 className="font-display text-2xl font-bold tracking-tight text-ink">
+              Access Request Details
+            </h1>
+            <RequestStatusChip status={accessRequest.status} />
+          </div>
+          <p className="mt-2 text-sm leading-6 text-muted-foreground">
+            {nextActionLine(accessRequest.status, accessRequest.clientName)}
           </p>
-        </div>
+        </header>
+
+        <RequestOverviewCard
+          request={accessRequest}
+          authorizationUrl={authorizationUrl}
+          copied={copied}
+          onCopyLink={handleCopyLink}
+          onPreviewLink={handlePreviewLink}
+        />
+
+        <RequestPlatformsCard request={accessRequest} />
 
         <RequestActionsBar
           requestId={accessRequest.id}
@@ -166,16 +183,6 @@ export default function AccessRequestDetailPage({ params }: AccessRequestDetailP
             setAccessRequest((prev) => (prev ? { ...prev, status: 'revoked' } : null));
           }}
         />
-
-        <RequestOverviewCard
-          request={accessRequest}
-          authorizationUrl={authorizationUrl}
-          copied={copied}
-          onCopyLink={handleCopyLink}
-          onPreviewLink={handlePreviewLink}
-        />
-
-        <RequestPlatformsCard request={accessRequest} />
       </div>
     </div>
   );
