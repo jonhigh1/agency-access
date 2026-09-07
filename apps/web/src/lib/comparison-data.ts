@@ -230,7 +230,7 @@ export const leadsieAlternativePage: ProgrammaticComparisonPage = {
         { name: "Support Location", competitor: "UK (GMT)", authhub: "US (EST/PST)" },
         { name: "Response Time", competitor: "Next business day", authhub: "Same day" },
         { name: "Token Storage", competitor: "Database", authhub: "Infisical (Enterprise-grade)" },
-        { name: "Audit Logging", competitor: "Basic", authhub: "Comprehensive (SOC2-ready)" },
+        { name: "Audit Logging", competitor: "Basic", authhub: "Comprehensive (Infisical-backed)" },
       ],
     },
   ],
@@ -310,20 +310,21 @@ export const leadsieAlternativePage: ProgrammaticComparisonPage = {
       starter: {
         price: 29,
         features: [
-          "Unlimited clients",
+          "5 clients/month",
           "15+ platforms",
           "Access + Intake",
           "US support",
-          "API access",
+          "Unlimited team seats",
         ],
       },
       pro: {
-        price: 149,
+        price: 79,
         features: [
-          "Custom branding",
+          "20 clients/month",
+          "Webhooks & API access",
+          "Custom domain",
           "Reusable templates",
           "Priority support",
-          "Multi-language",
         ],
       },
       enterprise: {
@@ -411,7 +412,7 @@ export const agencyAccessAlternativePage: ProgrammaticComparisonPage = {
   slug: "agencyaccess-alternative",
   title: "AuthHub vs AgencyAccess: Best Client Onboarding Software for Agencies [2026]",
   metaTitle: "AuthHub vs AgencyAccess: Best Client Onboarding Software for Agencies [2026]",
-  metaDescription: "Both platforms help agencies collect client permissions through a single link. But if you need automatic token refresh, SOC 2 compliance, unlimited clients on all plans, and developer-friendly API access, AuthHub delivers enterprise features without enterprise pricing.",
+  metaDescription: "Both platforms help agencies collect client permissions through a single link. Compare automatic token refresh, Infisical-backed token storage with audit logs, tiered plans (5/20/50 clients/month), and developer-friendly API access.",
 
   competitor: {
     name: "AgencyAccess",
@@ -507,7 +508,7 @@ export const agencyAccessAlternativePage: ProgrammaticComparisonPage = {
           "White-label branding",
           "Automatic token refresh",
           "Complete audit logs",
-          "SOC 2 Type II security",
+          "Infisical-backed token storage",
           "19 platform connectors",
         ],
       },
@@ -522,7 +523,7 @@ export const agencyAccessAlternativePage: ProgrammaticComparisonPage = {
         ],
       },
       enterprise: {
-        price: "Custom",
+        price: 149,
         features: [
           "Everything in Pro",
           "50 clients/month",
@@ -534,7 +535,7 @@ export const agencyAccessAlternativePage: ProgrammaticComparisonPage = {
     },
     differentiators: [
       "Automatic Token Refresh",
-      "SOC 2 Type II Certified",
+      "Infisical-backed Token Storage",
       "API & Webhooks Built-In",
     ],
     platforms: [
@@ -552,7 +553,7 @@ export const agencyAccessAlternativePage: ProgrammaticComparisonPage = {
     ],
   },
 
-  excerpt: "Both platforms help agencies collect client permissions through a single link. But if you need automatic token refresh, SOC 2 compliance, unlimited clients on all plans, and developer-friendly API access, AuthHub delivers enterprise features without enterprise pricing.",
+  excerpt: "Both platforms help agencies collect client permissions through a single link. Compare automatic token refresh, Infisical-backed token storage with audit logs, tiered plans (5/20/50 clients/month), and developer-friendly API access.",
 
   content: "", // Rendered by template
 
@@ -564,14 +565,14 @@ export const agencyAccessAlternativePage: ProgrammaticComparisonPage = {
       icon: "RefreshCw",
       quote: "When tokens expire, clients need to manually reconnect, which can interrupt live campaigns.",
       description: "AgencyAccess uses official platform APIs but doesn't advertise automatic token refresh. This means expired tokens require client action to restore access—often at the worst possible time during active campaigns.",
-      solution: "AuthHub monitors token health and automatically refreshes credentials before they expire, with 99.9% uptime and zero client involvement.",
+      solution: "AuthHub monitors token health and automatically refreshes credentials before they expire—with zero client involvement.",
     },
     {
-      title: "No SOC 2 Certification",
+      title: "No Infisical-Grade Token Storage",
       icon: "Shield",
-      quote: "We need SOC 2 compliance for our enterprise clients, but AgencyAccess doesn't advertise it.",
-      description: "AgencyAccess is GDPR compliant and secure by design, but lacks public SOC 2 certification. For agencies serving regulated industries or enterprise clients, this can be a dealbreaker for vendor approval.",
-      solution: "AuthHub is SOC 2 Type II certified with bank-grade token encryption through Infisical, plus complete audit logs for compliance documentation.",
+      quote: "We need audit trails and secure token vaulting, but AgencyAccess doesn't advertise Infisical-backed storage.",
+      description: "AgencyAccess is GDPR compliant and secure by design, but lacks public documentation of Infisical-backed token storage or comprehensive audit logs. For agencies serving regulated industries or enterprise clients, this can slow vendor approval.",
+      solution: "AuthHub stores OAuth tokens in Infisical with complete audit logs—bank-grade encryption without storing tokens in the database.",
     },
     {
       title: "Zapier-Only Automation",
@@ -604,7 +605,7 @@ export const agencyAccessAlternativePage: ProgrammaticComparisonPage = {
       features: [
         { name: "One-Link Client Onboarding", competitor: true, authhub: true },
         { name: "Automatic Token Refresh", competitor: false, authhub: true, notes: "AuthHub exclusive" },
-        { name: "Token Health Monitoring", competitor: false, authhub: true, notes: "99.9% uptime tracking" },
+        { name: "Token Health Monitoring", competitor: false, authhub: true, notes: "Proactive refresh before expiry" },
         { name: "Client Intake Forms", competitor: true, authhub: false, notes: "AgencyAccess advantage" },
         { name: "Custom Branding", competitor: true, authhub: true },
         { name: "Custom Subdomain", competitor: true, authhub: true },
@@ -613,7 +614,7 @@ export const agencyAccessAlternativePage: ProgrammaticComparisonPage = {
     {
       category: "Security & Compliance",
       features: [
-        { name: "SOC 2 Type II Certified", competitor: false, authhub: true, notes: "AuthHub exclusive" },
+        { name: "Infisical-backed Token Storage", competitor: false, authhub: true, notes: "AuthHub exclusive" },
         { name: "GDPR Compliant", competitor: true, authhub: true },
         { name: "Complete Audit Logs", competitor: false, authhub: true },
         { name: "Bank-Grade Token Encryption", competitor: false, authhub: true, notes: "Via Infisical" },
@@ -630,9 +631,9 @@ export const agencyAccessAlternativePage: ProgrammaticComparisonPage = {
     {
       category: "Pricing & Limits",
       features: [
-        { name: "Starting Price", competitor: "$33/mo (annual)", authhub: "$29/mo" },
-        { name: "Unlimited Clients", competitor: "Premium only", authhub: "All plans", notes: "AuthHub advantage" },
-        { name: "Starter Invite Limit", competitor: "5/month", authhub: "Unlimited" },
+        { name: "Starting Price", competitor: "$33/mo (annual)", authhub: "$29 Starter · $79 Growth" },
+        { name: "Client Caps by Tier", competitor: "Premium for unlimited invites", authhub: "5 / 20 / 50 clients/month" },
+        { name: "Starter Invite Limit", competitor: "5/month", authhub: "5 clients/month" },
         { name: "Free Trial", competitor: "30 days", authhub: "14 days" },
       ],
     },
@@ -660,12 +661,12 @@ export const agencyAccessAlternativePage: ProgrammaticComparisonPage = {
       "You have multi-language client requirements",
     ],
     switchToAuthHub: [
-      "You require SOC 2 compliance and audit trails",
+      "You need Infisical-backed token storage and audit trails",
       "You're building custom automation with API/webhooks",
-      "You want unlimited clients without tier upgrades",
+      "You want predictable tiered pricing (5/20/50 clients/month)",
       "You need always-on access with automatic token refresh",
       "You're a developer who needs more than Zapier integrations",
-      "You want enterprise security at a startup price",
+      "You want enterprise-grade security at a startup price",
     ],
   },
 
@@ -701,7 +702,7 @@ export const agencyAccessAlternativePage: ProgrammaticComparisonPage = {
       metric: "Eliminated token expiry tickets",
     },
     {
-      quote: "We needed SOC 2 for an enterprise client. AuthHub had it; AgencyAccess didn't. That was the entire decision.",
+      quote: "We needed Infisical-backed token storage and audit logs for an enterprise client. AuthHub had both documented; AgencyAccess didn't. That was the entire decision.",
       author: "Sarah Mitchell",
       company: "Compliance-first Marketing",
       role: "Director of Operations",
@@ -719,23 +720,23 @@ export const agencyAccessAlternativePage: ProgrammaticComparisonPage = {
     },
     authhub: {
       starter: {
-        price: 29,
+        price: 79,
         features: [
-          "Unlimited clients",
-          "White-label + custom domain",
+          "20 clients/month",
           "API + webhooks included",
           "Automatic token refresh",
           "Complete audit logs",
-          "SOC 2 Type II security",
+          "Infisical-backed token storage",
           "19 platform connectors",
         ],
       },
       pro: {
-        price: 79,
+        price: 149,
         features: [
+          "50 clients/month",
+          "Multi-brand support",
           "Priority support",
           "Advanced automation",
-          "Multi-language",
         ],
       },
       enterprise: {
@@ -769,7 +770,7 @@ export const agencyAccessAlternativePage: ProgrammaticComparisonPage = {
     },
     {
       question: "What security certifications does AuthHub have?",
-      answer: "AuthHub is SOC 2 Type II certified with bank-grade token encryption through Infisical. We provide complete audit logs for compliance. All data is encrypted in transit and at rest, and we never store client passwords. AgencyAccess is GDPR compliant but doesn't advertise SOC 2 certification.",
+      answer: "AuthHub stores OAuth tokens in Infisical with bank-grade encryption and provides complete audit logs for compliance documentation. We never store tokens directly in our database. AgencyAccess is GDPR compliant but doesn't advertise Infisical-backed token storage or comprehensive audit logs.",
     },
     {
       question: "Do I lose client access if I cancel AuthHub?",
@@ -794,7 +795,7 @@ export const agencyAccessAlternativePage: ProgrammaticComparisonPage = {
     "AgencyAccess competitor",
     "AgencyAccess review",
     "automatic token refresh",
-    "SOC 2 compliant agency tools",
+    "Infisical token storage agency tools",
   ],
 
   relatedComparisons: ["leadsie-alternative"],
@@ -806,12 +807,12 @@ export const agencyAccessAlternativePage: ProgrammaticComparisonPage = {
 
   cta: {
     headline: "Ready to Upgrade Your Client Onboarding?",
-    subheadline: "Join agencies who chose AuthHub for automatic token refresh, SOC 2 security, and unlimited clients at a lower price point.",
+    subheadline: "Join agencies who chose AuthHub for automatic token refresh, Infisical-backed security, and predictable tiered pricing.",
     primaryButton: "Start Free Trial",
     primaryLink: "/signup",
     secondaryButton: "Schedule Demo",
     secondaryLink: "/pricing",
-    guarantee: "✓ No credit card required ✓ Unlimited clients ✓ Cancel anytime",
+    guarantee: "✓ No credit card required ✓ 14-day free trial ✓ Cancel anytime",
   },
 
   isProgrammatic: true,

@@ -55,7 +55,7 @@ const pricingSchema = {
 
 export const metadata: Metadata = {
   title: 'OAuth Client Onboarding Pricing – Starter, Growth & Agency Plans | AuthHub',
-  description: 'Plans from $24/mo. Automate OAuth client onboarding with white-label flows, built-in token refresh, and audit logs. 14-day free trial — no credit card required.',
+  description: 'Plans from $29/mo ($24/mo billed yearly). Automate OAuth client onboarding with white-label flows, built-in token refresh, and audit logs. 14-day free trial — no credit card required.',
   alternates: {
     canonical: 'https://authhub.co/pricing',
   },

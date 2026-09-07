@@ -135,7 +135,7 @@ function AfterState() {
               Your authorization link
             </div>
             <div className="text-white text-lg font-bold">
-              authhub.com/agency/xyz123
+              authhub.co/agency/xyz123
             </div>
           </div>
 
@@ -152,12 +152,6 @@ function AfterState() {
                 Cost saved
               </div>
               <div className="text-white text-xl font-dela">$0</div>
-            </div>
-            <div className="bg-card/10 border-2 border-white/30 rounded-lg p-3">
-              <div className="font-mono text-[10px] text-white/70 uppercase mb-1">
-                Success rate
-              </div>
-              <div className="text-white text-xl font-dela">99.9%</div>
             </div>
             <div className="bg-card/10 border-2 border-white/30 rounded-lg p-3">
               <div className="font-mono text-[10px] text-white/70 uppercase mb-1">

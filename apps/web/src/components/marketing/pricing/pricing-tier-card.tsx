@@ -67,8 +67,10 @@ export function PricingTierCard({
   const monthlyDisplayPrice = Math.round(monthlyPrice);
   const yearlyMonthlyEquivalent = Math.round(yearlyDiscountedPrice / 12);
   const displayPrice = isYearly ? yearlyMonthlyEquivalent : monthlyDisplayPrice;
-  const period = '/mo';
-  const alternatePrice = isYearly ? `$${yearlyDiscountedPrice} billed yearly` : 'billed monthly';
+  const period = isYearly ? '/mo equiv.' : '/mo';
+  const alternatePrice = isYearly
+    ? `$${monthlyDisplayPrice}/mo billed monthly · $${yearlyDiscountedPrice}/yr billed yearly`
+    : `$${yearlyMonthlyEquivalent}/mo equiv. with annual billing · $${yearlyDiscountedPrice}/yr`;
 
   const cardBaseClasses = `relative border-2 ${
     isPro
