@@ -57,7 +57,7 @@ describe('AccessRequestContext', () => {
       ],
       branding: {
         logoUrl: '',
-        primaryColor: '#6366f1',
+        primaryColor: '#FF6B35',
         subdomain: '',
       },
       currentStep: 1,
@@ -254,7 +254,7 @@ describe('AccessRequestContext', () => {
 
       expect(result.current.state.branding).toEqual({
         logoUrl: '',
-        primaryColor: '#6366f1', // Default
+        primaryColor: '#FF6B35', // Default
         subdomain: 'acme',
       });
     });
@@ -721,7 +721,7 @@ describe('AccessRequestContext', () => {
         ],
         branding: {
           logoUrl: '',
-          primaryColor: '#6366f1',
+          primaryColor: '#FF6B35',
           subdomain: '',
         },
         currentStep: 1,

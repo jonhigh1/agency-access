@@ -117,7 +117,7 @@ export function SaveAsTemplateModal({
         platforms: Object.keys(state.selectedPlatforms),
         access_level: state.globalAccessLevel,
         intake_fields_count: state.intakeFields.length,
-        has_custom_branding: !!state.branding.logoUrl || state.branding.primaryColor !== '#6366f1',
+        has_custom_branding: !!state.branding.logoUrl || state.branding.primaryColor !== '#FF6B35',
       });
 
       setSaving(false);

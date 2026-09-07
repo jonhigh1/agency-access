@@ -547,7 +547,7 @@ function AccessRequestWizardContent() {
                       value={state.branding.primaryColor}
                       onChange={(e) => updateBranding({ primaryColor: e.target.value })}
                       className="flex-1 px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-ring focus:border-coral font-mono text-sm"
-                      placeholder="#6366f1"
+                      placeholder="#FF6B35"
                     />
                   </div>
                 </div>
@@ -573,7 +573,7 @@ function AccessRequestWizardContent() {
                 </div>
 
                 {/* Preview */}
-                {(state.branding.logoUrl || state.branding.primaryColor !== '#6366f1') && (
+                {(state.branding.logoUrl || state.branding.primaryColor !== '#FF6B35') && (
                   <m.div
                     initial={{ opacity: 0, height: 0 }}
                     animate={{ opacity: 1, height: 'auto' }}
@@ -594,12 +594,14 @@ function AccessRequestWizardContent() {
                           }}
                         />
                       )}
-                      <h3
-                        className="text-lg font-semibold mb-1.5"
-                        style={{ color: state.branding.primaryColor }}
-                      >
+                      <h3 className="mb-1.5 text-lg font-semibold text-ink">
                         {state.client?.name || 'Your Client'}
                       </h3>
+                      <span
+                        aria-hidden
+                        className="mx-auto mb-2 block h-1 w-10"
+                        style={{ backgroundColor: state.branding.primaryColor }}
+                      />
                       <p className="text-sm text-muted-foreground">
                         Authorize access to {platformCount} platform{platformCount !== 1 ? 's' : ''}
                       </p>
@@ -792,7 +794,7 @@ function AccessRequestWizardContent() {
                   </div>
 
                   {/* Branding Section (if configured) */}
-                  {(state.branding.logoUrl || state.branding.primaryColor !== '#6366f1' || state.branding.subdomain) && (
+                  {(state.branding.logoUrl || state.branding.primaryColor !== '#FF6B35' || state.branding.subdomain) && (
                     <div className="p-4 flex items-start justify-between">
                       <div className="flex items-start gap-3">
                         <div className="h-10 w-10 rounded-full bg-accent flex items-center justify-center flex-shrink-0">
@@ -808,7 +810,7 @@ function AccessRequestWizardContent() {
                             {state.branding.logoUrl && (
                               <span className="text-sm text-foreground">Custom logo</span>
                             )}
-                            {state.branding.primaryColor !== '#6366f1' && (
+                            {state.branding.primaryColor !== '#FF6B35' && (
                               <span className="text-sm text-foreground">Custom color</span>
                             )}
                             {state.branding.subdomain && (
@@ -817,7 +819,7 @@ function AccessRequestWizardContent() {
                           </div>
                         </div>
                         {/* Preview */}
-                        {(state.branding.logoUrl || state.branding.primaryColor !== '#6366f1') && (
+                        {(state.branding.logoUrl || state.branding.primaryColor !== '#FF6B35') && (
                           <div
                             className="w-24 h-12 rounded-md flex items-center justify-center text-xs font-medium text-center px-2"
                             style={{
