@@ -73,6 +73,7 @@ describe('billing analytics', () => {
       price_cents: 7900,
       surface: 'pricing',
       creem_product_id: 'prod_11NeEMY6WtGEkdnvdd7obj',
+      creem_price_id: 'prod_11NeEMY6WtGEkdnvdd7obj',
     });
   });
 

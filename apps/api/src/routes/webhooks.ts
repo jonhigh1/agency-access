@@ -528,7 +528,7 @@ export async function webhookRoutes(fastify: FastifyInstance) {
                 agencyId: agency.id,
                 creemSubscriptionId: subscription.id,
                 creemCustomerId: subscription.customer_id,
-                productId: subscription.price_id,
+                creemPriceId: subscription.price_id,
                 status: subscription.status,
               },
             }),

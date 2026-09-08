@@ -12,6 +12,7 @@ const buildCheckoutStartedPropsMock = vi.fn(() => ({
   price_cents: 2900,
   surface: 'checkout',
   creem_product_id: 'prod_4SUPfON3XwTo5SKOJzN2dH',
+  creem_price_id: 'prod_4SUPfON3XwTo5SKOJzN2dH',
 }));
 
 vi.mock('@clerk/nextjs', () => ({
@@ -101,6 +102,7 @@ describe('useCreateCheckout', () => {
       price_cents: 2900,
       surface: 'checkout',
       creem_product_id: 'prod_4SUPfON3XwTo5SKOJzN2dH',
+      creem_price_id: 'prod_4SUPfON3XwTo5SKOJzN2dH',
       agency_id: 'org_123',
     });
   });

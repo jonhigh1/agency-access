@@ -48,6 +48,7 @@ export type PlanSelectedProps = AgencyJoinProps & {
   price_cents: number;
   surface: BillingSurface;
   creem_product_id?: string;
+  creem_price_id?: string;
 };
 
 export type BillingCheckoutStartedProps = AgencyJoinProps &
@@ -130,18 +131,28 @@ export function getCreemProductId(
   return CREEM_PRODUCT_IDS[subscriptionTier][billingPeriod];
 }
 
+/** Creem checkout uses product ids; webhook field is `price_id` — same value in our integration. */
+export function getCreemPriceId(
+  tier: SubscriptionTier | PricingDisplayTier,
+  billingPeriod: BillingPeriod
+): string {
+  return getCreemProductId(tier, billingPeriod);
+}
+
 export function buildPlanSelectedProps(
   tier: SubscriptionTier | PricingDisplayTier,
   billingPeriod: BillingPeriod,
   surface: BillingSurface
 ): Omit<PlanSelectedProps, 'agency_id'> {
   const plan = toPlanSlug(tier);
+  const creemId = getCreemProductId(tier, billingPeriod);
   return {
     plan,
     billing_period: billingPeriod,
     price_cents: getListPriceCents(plan, billingPeriod),
     surface,
-    creem_product_id: getCreemProductId(tier, billingPeriod),
+    creem_product_id: creemId,
+    creem_price_id: creemId,
   };
 }
 

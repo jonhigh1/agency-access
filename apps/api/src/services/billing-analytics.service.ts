@@ -9,6 +9,9 @@ import { captureServerPosthogEvent } from '@/lib/posthog.js';
 export type BillingPlanSlug = 'starter' | 'growth' | 'agency';
 export type BillingPeriod = BillingInterval;
 
+/** Creem webhook subscription.status values handled for lifecycle analytics. */
+export type CreemSubscriptionStatus = 'active' | 'past_due' | 'canceled' | 'trialing';
+
 function toPlanSlug(tier: SubscriptionTier): BillingPlanSlug {
   return tier.toLowerCase() as BillingPlanSlug;
 }
@@ -29,15 +32,21 @@ function getMrrCents(plan: BillingPlanSlug, billingPeriod: BillingPeriod): numbe
   return Math.round((details.yearlyPrice / 12) * 100);
 }
 
-function resolvePlanFromProductId(productId: string): {
+/**
+ * Creem webhooks expose `price_id`; in AuthHub this value is the Creem product id
+ * (see getTierFromProductId). Both creem_price_id and creem_product_id are set from
+ * the webhook field for HogQL joins — never Stripe IDs.
+ */
+function resolvePlanFromCreemPriceId(creemPriceId: string): {
   plan: BillingPlanSlug;
   billing_period: BillingPeriod;
   price_cents: number;
   mrr_cents: number;
+  creem_price_id: string;
   creem_product_id: string;
 } {
-  const tier = getTierFromProductId(productId);
-  const billingPeriod = getIntervalFromProductId(productId);
+  const tier = getTierFromProductId(creemPriceId);
+  const billingPeriod = getIntervalFromProductId(creemPriceId);
   const plan = toPlanSlug(tier);
 
   return {
@@ -45,21 +54,23 @@ function resolvePlanFromProductId(productId: string): {
     billing_period: billingPeriod,
     price_cents: getListPriceCents(plan, billingPeriod),
     mrr_cents: getMrrCents(plan, billingPeriod),
-    creem_product_id: productId,
+    creem_price_id: creemPriceId,
+    creem_product_id: creemPriceId,
   };
 }
 
-type SubscriptionWebhookContext = {
+export type SubscriptionWebhookContext = {
   distinctId: string;
   agencyId: string;
   creemSubscriptionId: string;
   creemCustomerId: string;
-  productId: string;
-  status: string;
+  /** Raw Creem webhook `price_id` (product id in our integration). */
+  creemPriceId: string;
+  status: CreemSubscriptionStatus | string;
 };
 
-function baseProps(context: SubscriptionWebhookContext): Record<string, unknown> {
-  const planProps = resolvePlanFromProductId(context.productId);
+function lifecycleProps(context: SubscriptionWebhookContext): Record<string, unknown> {
+  const planProps = resolvePlanFromCreemPriceId(context.creemPriceId);
   return {
     agency_id: context.agencyId,
     ...planProps,
@@ -69,44 +80,52 @@ function baseProps(context: SubscriptionWebhookContext): Record<string, unknown>
   };
 }
 
+async function captureLifecycleEvent(
+  context: SubscriptionWebhookContext,
+  event: string
+): Promise<void> {
+  await captureServerPosthogEvent({
+    distinctId: context.distinctId,
+    event,
+    properties: lifecycleProps(context),
+  });
+}
+
+/**
+ * Maps Creem webhook events to Growth lifecycle captures.
+ *
+ * Primary checkout completion: `subscription_started` (not checkout_completed).
+ * Status lifecycle (server): subscription.active | subscription.past_due | subscription.canceled
+ */
 export async function trackSubscriptionLifecycleFromWebhook(input: {
   eventType: 'subscription.created' | 'subscription.updated' | 'subscription.canceled';
   context: SubscriptionWebhookContext;
 }): Promise<void> {
-  const props = baseProps(input.context);
+  const { eventType, context } = input;
+  const status = context.status;
 
-  if (input.eventType === 'subscription.canceled') {
-    await captureServerPosthogEvent({
-      distinctId: input.context.distinctId,
-      event: 'subscription_canceled',
-      properties: props,
-    });
+  if (eventType === 'subscription.canceled' || status === 'canceled') {
+    await captureLifecycleEvent(context, 'subscription.canceled');
     return;
   }
 
-  if (input.eventType === 'subscription.updated') {
-    await captureServerPosthogEvent({
-      distinctId: input.context.distinctId,
-      event: 'subscription_updated',
-      properties: props,
-    });
+  if (status === 'past_due') {
+    await captureLifecycleEvent(context, 'subscription.past_due');
     return;
   }
 
-  if (input.context.status === 'trialing') {
-    await captureServerPosthogEvent({
-      distinctId: input.context.distinctId,
-      event: 'trial_started',
-      properties: props,
-    });
+  if (status === 'trialing') {
+    await captureLifecycleEvent(context, 'trial_started');
     return;
   }
 
-  if (input.context.status === 'active') {
-    await captureServerPosthogEvent({
-      distinctId: input.context.distinctId,
-      event: 'subscription_started',
-      properties: props,
-    });
+  if (status === 'active') {
+    if (eventType === 'subscription.created') {
+      // checkout.completed equivalent — primary conversion event
+      await captureLifecycleEvent(context, 'subscription_started');
+      return;
+    }
+
+    await captureLifecycleEvent(context, 'subscription.active');
   }
 }

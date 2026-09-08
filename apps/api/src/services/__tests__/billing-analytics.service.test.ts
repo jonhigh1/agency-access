@@ -20,30 +20,34 @@ describe('billing-analytics.service', () => {
     agencyId: 'agency_123',
     creemSubscriptionId: 'sub_123',
     creemCustomerId: 'cus_123',
-    productId: 'prod_11NeEMY6WtGEkdnvdd7obj',
+    creemPriceId: 'prod_11NeEMY6WtGEkdnvdd7obj',
     status: 'active',
   };
 
-  it('emits subscription_started for active subscription.created webhooks', async () => {
+  const lifecycleProps = expect.objectContaining({
+    agency_id: 'agency_123',
+    plan: 'growth',
+    billing_period: 'monthly',
+    price_cents: 7900,
+    mrr_cents: 7900,
+    creem_price_id: 'prod_11NeEMY6WtGEkdnvdd7obj',
+    creem_product_id: 'prod_11NeEMY6WtGEkdnvdd7obj',
+    creem_subscription_id: 'sub_123',
+    creem_customer_id: 'cus_123',
+    subscription_status: 'active',
+  });
+
+  it('emits subscription_started for active subscription.created (checkout.completed primary)', async () => {
     await trackSubscriptionLifecycleFromWebhook({
       eventType: 'subscription.created',
       context,
     });
 
+    expect(captureServerPosthogEventMock).toHaveBeenCalledTimes(1);
     expect(captureServerPosthogEventMock).toHaveBeenCalledWith({
       distinctId: 'user_123',
       event: 'subscription_started',
-      properties: expect.objectContaining({
-        agency_id: 'agency_123',
-        plan: 'growth',
-        billing_period: 'monthly',
-        price_cents: 7900,
-        mrr_cents: 7900,
-        creem_product_id: 'prod_11NeEMY6WtGEkdnvdd7obj',
-        creem_subscription_id: 'sub_123',
-        creem_customer_id: 'cus_123',
-        subscription_status: 'active',
-      }),
+      properties: lifecycleProps,
     });
   });
 
@@ -59,32 +63,49 @@ describe('billing-analytics.service', () => {
       properties: expect.objectContaining({
         plan: 'growth',
         subscription_status: 'trialing',
+        creem_price_id: 'prod_11NeEMY6WtGEkdnvdd7obj',
       }),
     });
   });
 
-  it('emits subscription_updated and subscription_canceled lifecycle events', async () => {
+  it('emits subscription.active on subscription.updated when status is active', async () => {
+    await trackSubscriptionLifecycleFromWebhook({
+      eventType: 'subscription.updated',
+      context,
+    });
+
+    expect(captureServerPosthogEventMock).toHaveBeenCalledWith({
+      distinctId: 'user_123',
+      event: 'subscription.active',
+      properties: lifecycleProps,
+    });
+  });
+
+  it('emits subscription.past_due for past_due status', async () => {
     await trackSubscriptionLifecycleFromWebhook({
       eventType: 'subscription.updated',
       context: { ...context, status: 'past_due' },
     });
 
+    expect(captureServerPosthogEventMock).toHaveBeenCalledWith({
+      distinctId: 'user_123',
+      event: 'subscription.past_due',
+      properties: expect.objectContaining({
+        subscription_status: 'past_due',
+        mrr_cents: 7900,
+      }),
+    });
+  });
+
+  it('emits subscription.canceled for canceled webhooks', async () => {
     await trackSubscriptionLifecycleFromWebhook({
       eventType: 'subscription.canceled',
       context: { ...context, status: 'canceled' },
     });
 
-    expect(captureServerPosthogEventMock).toHaveBeenNthCalledWith(1, {
+    expect(captureServerPosthogEventMock).toHaveBeenCalledWith({
       distinctId: 'user_123',
-      event: 'subscription_updated',
-      properties: expect.objectContaining({
-        subscription_status: 'past_due',
-      }),
-    });
-
-    expect(captureServerPosthogEventMock).toHaveBeenNthCalledWith(2, {
-      distinctId: 'user_123',
-      event: 'subscription_canceled',
+      event: 'subscription.canceled',
       properties: expect.objectContaining({
         subscription_status: 'canceled',
       }),
