@@ -9,6 +9,12 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { BillingInterval, SubscriptionTier, TierLimits } from '@agency-platform/shared';
 import { authorizedApiFetch } from '@/lib/api/authorized-api-fetch';
 import { trackAffiliateEvent } from '@/lib/analytics/affiliate';
+import {
+  buildCheckoutStartedProps,
+  trackBillingCheckoutFailed,
+  trackBillingCheckoutStarted,
+  type BillingSurface,
+} from '@/lib/analytics/billing';
 import { getAffiliateClickTokenFromDocument } from '@/lib/affiliate-cookie';
 
 function resolvePrincipalId(orgId: string | null | undefined, userId: string | null | undefined): string | null {
@@ -230,8 +236,15 @@ export function useCreateCheckout() {
       billingInterval: BillingInterval;
       successUrl: string;
       cancelUrl: string;
+      surface?: BillingSurface;
     }) => {
       if (!principalId) throw new Error('No authenticated principal ID');
+
+      const surface = params.surface ?? 'checkout';
+      const checkoutStartedProps = {
+        ...buildCheckoutStartedProps(params.tier, params.billingInterval, surface),
+        agency_id: principalId,
+      };
 
       if (getAffiliateClickTokenFromDocument()) {
         trackAffiliateEvent('affiliate_checkout_started', {
@@ -242,27 +255,40 @@ export function useCreateCheckout() {
         });
       }
 
-      const payload = await authorizedApiFetch<{ data?: { checkoutUrl?: string } }>(
-        '/api/subscriptions/checkout',
-        {
-          getToken,
-          method: 'POST',
-          body: JSON.stringify({
-            agencyId: principalId,
-            tier: params.tier,
-            billingInterval: params.billingInterval,
-            successUrl: params.successUrl,
-            cancelUrl: params.cancelUrl,
-          }),
+      try {
+        const payload = await authorizedApiFetch<{ data?: { checkoutUrl?: string } }>(
+          '/api/subscriptions/checkout',
+          {
+            getToken,
+            method: 'POST',
+            body: JSON.stringify({
+              agencyId: principalId,
+              tier: params.tier,
+              billingInterval: params.billingInterval,
+              successUrl: params.successUrl,
+              cancelUrl: params.cancelUrl,
+            }),
+          }
+        );
+
+        const checkoutUrl = payload?.data?.checkoutUrl;
+        if (!checkoutUrl || typeof checkoutUrl !== 'string') {
+          throw new Error('Checkout session did not return a valid URL. Please try again.');
         }
-      );
 
-      const checkoutUrl = payload?.data?.checkoutUrl;
-      if (!checkoutUrl || typeof checkoutUrl !== 'string') {
-        throw new Error('Checkout session did not return a valid URL. Please try again.');
+        trackBillingCheckoutStarted(checkoutStartedProps);
+
+        return { checkoutUrl };
+      } catch (error) {
+        trackBillingCheckoutFailed({
+          agency_id: principalId,
+          plan: checkoutStartedProps.plan,
+          billing_period: checkoutStartedProps.billing_period,
+          surface,
+          reason: error instanceof Error ? error.message : 'checkout_session_failed',
+        });
+        throw error;
       }
-
-      return { checkoutUrl };
     },
   });
 }

@@ -53,6 +53,10 @@ vi.mock('@/lib/creem', () => ({
   },
 }));
 
+vi.mock('@/services/billing-analytics.service', () => ({
+  trackSubscriptionLifecycleFromWebhook: vi.fn(),
+}));
+
 import { prisma } from '@/lib/prisma';
 import { clerkMetadataService } from '@/services/clerk-metadata.service';
 import { creem } from '@/lib/creem';

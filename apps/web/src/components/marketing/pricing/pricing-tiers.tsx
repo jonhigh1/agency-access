@@ -1,10 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { usePathname } from 'next/navigation';
 import { m } from 'framer-motion';
 import { PricingToggle } from './pricing-toggle';
 import { PricingTierCard } from './pricing-tier-card';
 import { Reveal } from '../reveal';
+import { trackPricingViewed } from '@/lib/analytics/billing';
 
 // Feature interface with optional value context
 interface Feature {
@@ -49,7 +51,16 @@ const tierFeatures = {
 };
 
 export function PricingTiers() {
+  const pathname = usePathname();
   const [isYearly, setIsYearly] = useState(true);
+  const billingPeriod = isYearly ? 'yearly' : 'monthly';
+
+  useEffect(() => {
+    trackPricingViewed({
+      path: pathname || '/pricing',
+      billing_period: billingPeriod,
+    });
+  }, [billingPeriod, pathname]);
 
   return (
     <section id="pricing" className="py-16 sm:py-20 md:py-24 bg-paper relative">

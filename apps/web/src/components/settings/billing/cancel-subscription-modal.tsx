@@ -14,7 +14,6 @@ import { useCancelSubscription } from '@/lib/query/billing';
 import { getPricingTierNameFromSubscriptionTier, type SubscriptionTier } from '@agency-platform/shared';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@clerk/nextjs';
-import { trackBillingEvent } from '@/lib/analytics/billing';
 
 interface CancelSubscriptionModalProps {
   isOpen: boolean;
@@ -42,15 +41,6 @@ export function CancelSubscriptionModal({
 
     try {
       await cancelMutation.mutateAsync({
-        cancelAtPeriodEnd,
-      });
-
-      trackBillingEvent('billing_cancel_confirmed', {
-        lifecycle: 'PAID',
-        currentTier,
-        targetTier: null,
-        interval: null,
-        surface: 'cancel_subscription_modal',
         cancelAtPeriodEnd,
       });
 

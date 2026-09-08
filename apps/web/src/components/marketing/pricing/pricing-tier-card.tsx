@@ -4,6 +4,7 @@ import { SignUpButton } from '@clerk/nextjs';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Check, X } from 'lucide-react';
 import { m } from 'framer-motion';
+import { buildPlanSelectedProps, trackPlanSelected } from '@/lib/analytics/billing';
 
 interface Feature {
   name: string;
@@ -59,6 +60,14 @@ export function PricingTierCard({
       const backendTier = DISPLAY_TO_BACKEND[tier] ?? tier;
       localStorage.setItem('selectedSubscriptionTier', backendTier);
       localStorage.setItem('selectedBillingInterval', billingInterval);
+
+      const analyticsTier =
+        tier === 'SCALE' ? 'GROWTH' : tier;
+
+      trackPlanSelected({
+        ...buildPlanSelectedProps(analyticsTier, billingInterval, 'pricing'),
+      });
+
       // Notify providers to update Clerk sign-up subtitle dynamically
       window.dispatchEvent(new CustomEvent('tierSelected', { detail: { tier: backendTier, displayName: name } }));
     }

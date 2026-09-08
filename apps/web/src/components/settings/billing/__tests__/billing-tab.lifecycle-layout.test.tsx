@@ -6,13 +6,25 @@ const mockUseSubscription = vi.fn();
 
 vi.mock('next/navigation', () => ({
   useSearchParams: () => new URLSearchParams(),
+  usePathname: () => '/settings',
+}));
+
+vi.mock('@clerk/nextjs', () => ({
+  useAuth: () => ({ orgId: 'org_123', userId: 'user_123' }),
 }));
 
 vi.mock('@/lib/query/billing', () => ({
   useSubscription: () => mockUseSubscription(),
 }));
 vi.mock('@/lib/analytics/billing', () => ({
-  trackBillingEvent: vi.fn(),
+  trackPlanSelected: vi.fn(),
+  trackPricingViewed: vi.fn(),
+  trackSubscriptionStarted: vi.fn(),
+  trackTrialStarted: vi.fn(),
+  trackBillingCheckoutFailed: vi.fn(),
+  buildPlanSelectedProps: vi.fn(),
+  buildSubscriptionStartedProps: vi.fn(),
+  subscriptionTierToPlanSlug: vi.fn(),
 }));
 
 vi.mock('../billing-hero', () => ({ BillingHero: () => <div>Billing Hero</div> }));

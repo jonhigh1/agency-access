@@ -8,9 +8,13 @@
  */
 
 import { useEffect, useState } from 'react';
+import { useAuth } from '@clerk/nextjs';
 import { AlertCircle, ArrowRight, Check, X } from 'lucide-react';
 import { useSubscription, useCreateCheckout } from '@/lib/query/billing';
-import { trackBillingEvent } from '@/lib/analytics/billing';
+import {
+  buildPlanSelectedProps,
+  trackPlanSelected,
+} from '@/lib/analytics/billing';
 import {
   type BillingInterval,
   type PricingDisplayTier,
@@ -76,6 +80,8 @@ const tierFeatures: Record<PricingDisplayTier, { name: string; included: boolean
 };
 
 export function PlanComparison() {
+  const { orgId, userId } = useAuth();
+  const agencyId = orgId ?? userId ?? null;
   const { data: subscription } = useSubscription();
   const createCheckout = useCreateCheckout();
 
@@ -95,13 +101,6 @@ export function PlanComparison() {
   const setBillingInterval = (interval: BillingInterval) => {
     setIsYearly(interval === 'yearly');
     persistBillingIntervalPreference(interval);
-    trackBillingEvent('billing_interval_toggled', {
-      lifecycle,
-      currentTier: subscription?.tier ?? null,
-      targetTier: null,
-      interval,
-      surface: 'plan_comparison',
-    });
   };
 
   const handleUpgrade = async (displayTier: PricingDisplayTier) => {
@@ -111,25 +110,16 @@ export function PlanComparison() {
 
     setErrorMessage(null);
 
-    trackBillingEvent('billing_primary_cta_clicked', {
-      lifecycle,
-      currentTier: subscription?.tier ?? null,
-      targetTier: subscriptionTier,
-      interval: billingInterval,
-      surface: 'plan_comparison',
-    });
-    trackBillingEvent('billing_checkout_started', {
-      lifecycle,
-      currentTier: subscription?.tier ?? null,
-      targetTier: subscriptionTier,
-      interval: billingInterval,
-      surface: 'plan_comparison',
+    trackPlanSelected({
+      ...buildPlanSelectedProps(displayTier, billingInterval, 'compare'),
+      agency_id: agencyId,
     });
 
     try {
       const result = await createCheckout.mutateAsync({
         tier: subscriptionTier,
         billingInterval,
+        surface: 'compare',
         successUrl: `${window.location.origin}/settings?tab=billing&checkout=success`,
         cancelUrl: `${window.location.origin}/settings?tab=billing&checkout=cancel`,
       });
