@@ -44,7 +44,7 @@ export const leadsieAlternativePage: ProgrammaticComparisonPage = {
         ],
       },
       enterprise: {
-        price: 299,
+        price: "299",
         features: [
           "50 client credits/month",
           "White-label option",
@@ -109,7 +109,7 @@ export const leadsieAlternativePage: ProgrammaticComparisonPage = {
         ],
       },
       enterprise: {
-        price: 149,
+        price: "149",
         features: [
           "Everything in Pro",
           "50 clients/month",
@@ -328,7 +328,7 @@ export const leadsieAlternativePage: ProgrammaticComparisonPage = {
         ],
       },
       enterprise: {
-        price: 149,
+        price: "149",
         features: [
           "50 clients/month",
           "Multi-brand (3 brands)",

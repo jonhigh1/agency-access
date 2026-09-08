@@ -107,8 +107,8 @@ describe("Leadsie comparison page claims", () => {
     expect(leadsieAlternativePage.competitor.pricing.starting).toBe(59);
     expect(leadsieAlternativePage.competitor.pricing.starter?.price).toBe(59);
     expect(leadsieAlternativePage.competitor.pricing.pro?.price).toBe(129);
-    expect(leadsieAlternativePage.competitor.pricing.enterprise?.price).toBe(299);
-    expect(leadsieAlternativePage.ourProduct.pricing.enterprise?.price).toBe(149);
+    expect(leadsieAlternativePage.competitor.pricing.enterprise?.price).toBe("299");
+    expect(leadsieAlternativePage.ourProduct.pricing.enterprise?.price).toBe("149");
     expect(leadsieAlternativePage.pricingComparison.savings.yearly).toBe(600);
     expect(leadsieAlternativePage.pricingComparison.savings.monthly).toBe(50);
 
