@@ -3,6 +3,7 @@ import {
   agencyAccessAlternativePage,
   leadsieAlternativePage,
 } from "@/lib/comparison-data";
+import { generateComparisonSchema } from "@/lib/schema-generators";
 
 const AUTHHUB_FORBIDDEN = [
   /SOC\s*2/i,
@@ -73,6 +74,10 @@ const LEADSIE_FORBIDDEN = [
   /\$49\/mo/,
   /Save 25%/,
   /AgencyAccess charges/i,
+  /same-day/i,
+  /Mike Torres/,
+  /Jennifer Walsh/,
+  /API access \(all tiers\)/i,
 ];
 
 function leadsieRenderedCriticalSnapshot(page: typeof leadsieAlternativePage) {
@@ -117,19 +122,18 @@ describe("Leadsie comparison page claims", () => {
     });
 
     expect(leadsieAlternativePage.metaDescription).toMatch(
-      /tiered pricing from \$29\/mo \(Starter 5 · Growth 20 · Agency 50 clients\)/,
+      /credit pricing, \$29\/\$79\/\$149 monthly tiers, migration/,
     );
-    expect(leadsieAlternativePage.excerpt).toMatch(/\$600\/year vs Leadsie Agency/);
-    expect(leadsieAlternativePage.excerpt).toMatch(/\$1,800\/year vs Leadsie Pro/);
+    expect(leadsieAlternativePage.excerpt).toMatch(/Leadsie still wins for 31\+ integrations/);
     expect(leadsieAlternativePage.painPoints[0]?.solution).toMatch(
-      /\$29 \/ \$79 \/ \$149 \(5 \/ 20 \/ 50 clients\/mo\)/,
+      /\$29 \/ \$79 \/ \$149 monthly tiers with 5 \/ 20 \/ 50 client caps/,
     );
     expect(leadsieAlternativePage.quickComparison).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          feature: "Predictable tiered pricing (no credits)",
-          competitor: false,
-          authhub: true,
+          feature: "Platform Count",
+          competitor: "31+",
+          authhub: "19",
         }),
         expect.objectContaining({
           feature: "Starting Price",
@@ -138,19 +142,28 @@ describe("Leadsie comparison page claims", () => {
         }),
       ]),
     );
-    expect(leadsieAlternativePage.cta.guarantee).toMatch(/From \$29\/mo · 5\/20\/50 client caps/);
+    expect(leadsieAlternativePage.cta.guarantee).toMatch(/\$29\/\$79\/\$149 monthly tiers/);
     expect(leadsieAlternativePage.ourProduct.differentiators).toContain(
       "Predictable tiered pricing (no credits)",
     );
     expect(leadsieAlternativePage.valueCallout?.headline).toMatch(
-      /Save \$50\/mo \(\$600\/yr\) vs Leadsie Agency/,
+      /How Leadsie credits work/,
     );
-    expect(leadsieAlternativePage.valueCallout?.body).toMatch(/Leadsie uses client credits/);
+    expect(leadsieAlternativePage.valueCallout?.body).toMatch(/manager\/admin access/);
     expect(leadsieAlternativePage.valueCallout?.body).not.toMatch(/AgencyAccess charges/);
     expect(leadsieAlternativePage.competitorPricingSubtitle).toMatch(
       /\$59 · \$129 · \$299/,
     );
     expect(leadsieAlternativePage.authhubSavingsHighlight).toMatch(/\$600\/yr/);
+    expect(leadsieAlternativePage.pricingScenarios).toEqual([
+      expect.objectContaining({ clients: "5", competitorCost: "$109", authHubCost: "$29" }),
+      expect.objectContaining({ clients: "10", competitorCost: "$129", authHubCost: "$79" }),
+      expect.objectContaining({ clients: "15", competitorCost: "$179", authHubCost: "$79" }),
+      expect.objectContaining({ clients: "20", competitorCost: "$229", authHubCost: "$79" }),
+      expect.objectContaining({ clients: "50", competitorCost: "$299", authHubCost: "$149" }),
+    ]);
+    expect(leadsieAlternativePage.testimonials).toEqual([]);
+    expect(leadsieAlternativePage.ourProduct.platforms).toHaveLength(19);
   });
 
   it("does not include forbidden pricing copy in rendered-critical Leadsie fields", () => {
@@ -162,5 +175,12 @@ describe("Leadsie comparison page claims", () => {
 
     expect(leadsieAlternativePage.competitor.pricing.starting).not.toBe(49);
     expect(leadsieAlternativePage.ourProduct.pricing.starting).toBe(29);
+  });
+
+  it("does not publish an unverified comparison rating", () => {
+    const schema = JSON.stringify(generateComparisonSchema(leadsieAlternativePage));
+
+    expect(schema).not.toMatch(/AggregateRating/);
+    expect(schema).not.toMatch(/"ratingValue":\s*4\.9/);
   });
 });

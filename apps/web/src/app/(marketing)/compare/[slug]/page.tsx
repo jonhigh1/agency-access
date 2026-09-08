@@ -48,10 +48,7 @@ export default async function ComparisonPage({ params }: ComparisonPageProps) {
     notFound();
   }
 
-  const schema = generateComparisonSchema(page, {
-    rating: 4.9,
-    reviewCount: 127,
-  });
+  const schema = generateComparisonSchema(page);
 
   return (
     <>

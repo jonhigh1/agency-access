@@ -183,7 +183,7 @@ export function generateComparisonSchema(
   page: ProgrammaticComparisonPage,
   options: ComparisonSchemaOptions = {}
 ): Record<string, unknown> {
-  const opts = { ...defaultOptions, ...options } as Required<ComparisonSchemaOptions>;
+  const opts = { ...defaultOptions, ...options };
   const pageUrl = `${opts.siteUrl}/compare/${page.slug}`;
 
   const schemas: Record<string, unknown>[] = [];
@@ -225,43 +225,48 @@ export function generateComparisonSchema(
       priceCurrency: page.ourProduct.pricing.currency,
       availability: "https://schema.org/InStock",
     },
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: opts.rating,
-      reviewCount: opts.reviewCount,
-      bestRating: 5,
-      worstRating: 1,
-    },
+    ...(opts.rating !== undefined &&
+      opts.reviewCount !== undefined && {
+        aggregateRating: {
+          "@type": "AggregateRating",
+          ratingValue: opts.rating,
+          reviewCount: opts.reviewCount,
+          bestRating: 5,
+          worstRating: 1,
+        },
+      }),
   });
 
   // Review Schema (comparison itself)
-  schemas.push({
-    "@type": "Review",
-    "@id": `${pageUrl}#review`,
-    itemReviewed: [
-      {
-        "@type": "SoftwareApplication",
-        name: page.competitor.name,
+  if (opts.rating !== undefined) {
+    schemas.push({
+      "@type": "Review",
+      "@id": `${pageUrl}#review`,
+      itemReviewed: [
+        {
+          "@type": "SoftwareApplication",
+          name: page.competitor.name,
+        },
+        {
+          "@type": "SoftwareApplication",
+          name: page.ourProduct.name,
+        },
+      ],
+      reviewRating: {
+        "@type": "Rating",
+        ratingValue: opts.rating,
+        bestRating: 5,
+        worstRating: 1,
       },
-      {
-        "@type": "SoftwareApplication",
-        name: page.ourProduct.name,
+      author: {
+        "@type": "Organization",
+        name: opts.siteName,
+        url: opts.siteUrl,
       },
-    ],
-    reviewRating: {
-      "@type": "Rating",
-      ratingValue: opts.rating,
-      bestRating: 5,
-      worstRating: 1,
-    },
-    author: {
-      "@type": "Organization",
-      name: opts.siteName,
-      url: opts.siteUrl,
-    },
-    datePublished: page.competitor.founded || new Date().toISOString().split("T")[0],
-    dateModified: page.lastVerified || new Date().toISOString().split("T")[0],
-  });
+      datePublished: page.competitor.founded || new Date().toISOString().split("T")[0],
+      dateModified: page.lastVerified || new Date().toISOString().split("T")[0],
+    });
+  }
 
   // FAQ Schema
   if (page.faqs.length > 0) {

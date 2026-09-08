@@ -46,6 +46,16 @@ describe("ComparisonPageTemplate marketing hardening", () => {
     expect(template).not.toMatch(/AgencyAccess charges per seat and limits invites on Starter/);
   });
 
+  it("renders worked pricing scenarios without unverified migration promises", () => {
+    const template = readRelative("src/components/programmatic/ComparisonPageTemplate.tsx");
+
+    expect(template).toMatch(/pricingScenarios\.map/);
+    expect(template).toMatch(/Leadsie pricing explained/);
+    expect(template).toMatch(/Lowest published Leadsie option/);
+    expect(template).not.toMatch(/migrationTimeMinutes/);
+    expect(template).not.toMatch(/Free migration support/);
+  });
+
   it("keeps AgencyAccess-specific copy inside the AgencyAccess pricing section only", () => {
     const template = fs.readFileSync(templatePath, "utf-8");
     const agencyAccessSection = template.slice(

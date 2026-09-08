@@ -234,6 +234,14 @@ export interface PricingComparison {
   };
 }
 
+export interface ComparisonPricingScenario {
+  clients: string;
+  competitorPlan: string;
+  competitorCost: string;
+  authHubPlan: string;
+  authHubCost: string;
+}
+
 export interface ComparisonCTA {
   headline: string;
   subheadline: string;
@@ -303,6 +311,10 @@ export interface ProgrammaticComparisonPage {
 
   /** Highlight line under AuthHub starting price (e.g. savings vs competitor tier) */
   authhubSavingsHighlight?: string;
+
+  /** Worked pricing examples for competitor-specific credit/pricing searches */
+  pricingScenarios?: ComparisonPricingScenario[];
+  pricingScenariosNote?: string;
 
   // FAQ
   faqs: BlogFAQ[];

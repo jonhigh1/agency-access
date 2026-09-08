@@ -166,7 +166,24 @@ function AgencyAccessPricingSection({ page }: ComparisonPageTemplateProps) {
  */
 export function ComparisonPageTemplate({ page }: ComparisonPageTemplateProps) {
   const isAgencyAccessPage = page.id === "agencyaccess-alternative";
-  const { competitor, ourProduct, cta, testimonials, painPoints, quickComparison, detailedComparison, recommendations, migrationSteps, pricingComparison, faqs, valueCallout, competitorPricingSubtitle, authhubSavingsHighlight } = page;
+  const {
+    competitor,
+    ourProduct,
+    cta,
+    testimonials,
+    painPoints,
+    quickComparison,
+    detailedComparison,
+    recommendations,
+    migrationSteps,
+    pricingComparison,
+    faqs,
+    valueCallout,
+    competitorPricingSubtitle,
+    authhubSavingsHighlight,
+    pricingScenarios,
+    pricingScenariosNote,
+  } = page;
 
   return (
     <div className="min-h-screen bg-paper">
@@ -301,10 +318,10 @@ export function ComparisonPageTemplate({ page }: ComparisonPageTemplateProps) {
             {/* Section Header */}
             <div className="text-center mb-12">
               <p className="text-xs font-bold uppercase tracking-wider text-[#4ECDC4] mb-3">
-                Pricing Comparison
+                Leadsie Pricing
               </p>
               <h2 className="text-3xl md:text-4xl font-bold text-[#1A1A1A]">
-                Which plan is right for you?
+                Leadsie pricing explained
               </h2>
             </div>
 
@@ -346,7 +363,9 @@ export function ComparisonPageTemplate({ page }: ComparisonPageTemplateProps) {
                           <X size={16} className="text-[#EF4444] flex-shrink-0" strokeWidth={3} />
                         )
                       ) : (
-                        <span className="w-4 text-center text-[#6B7280]">{row.competitor}</span>
+                          <span className="w-24 shrink-0 text-right font-semibold text-[#6B7280]">
+                            {row.competitor}
+                          </span>
                       )}
                       <span>{row.feature}</span>
                     </li>
@@ -406,7 +425,9 @@ export function ComparisonPageTemplate({ page }: ComparisonPageTemplateProps) {
                           <X size={16} className="text-[#EF4444] flex-shrink-0" strokeWidth={3} />
                         )
                       ) : (
-                        <span className="w-4 text-center font-semibold text-[#4A5568]">{row.authhub}</span>
+                          <span className="w-24 shrink-0 text-right font-semibold text-[#4A5568]">
+                            {row.authhub}
+                          </span>
                       )}
                       <span className={row.isExclusive ? "font-semibold" : ""}>{row.feature}</span>
                       {row.isExclusive && (
@@ -442,6 +463,48 @@ export function ComparisonPageTemplate({ page }: ComparisonPageTemplateProps) {
                     </p>
                   </div>
                 </div>
+              </div>
+            )}
+
+            {pricingScenarios && pricingScenarios.length > 0 && (
+              <div className="mx-auto mt-8 max-w-4xl">
+                <div className="overflow-x-auto border-2 border-black">
+                  <table className="w-full border-collapse text-sm">
+                    <thead className="border-b-2 border-black bg-gray-100">
+                      <tr>
+                        <th scope="col" className="px-4 py-3 text-left font-bold">
+                          Clients in one month
+                        </th>
+                        <th scope="col" className="px-4 py-3 text-left font-bold">
+                          Lowest published Leadsie option
+                        </th>
+                        <th scope="col" className="px-4 py-3 text-left font-bold">
+                          Leadsie cost
+                        </th>
+                        <th scope="col" className="px-4 py-3 text-left font-bold">
+                          AuthHub plan
+                        </th>
+                        <th scope="col" className="px-4 py-3 text-left font-bold">
+                          AuthHub cost
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-300">
+                      {pricingScenarios.map((scenario) => (
+                        <tr key={scenario.clients}>
+                          <td className="px-4 py-3 font-semibold">{scenario.clients}</td>
+                          <td className="px-4 py-3">{scenario.competitorPlan}</td>
+                          <td className="px-4 py-3">{scenario.competitorCost}</td>
+                          <td className="px-4 py-3">{scenario.authHubPlan}</td>
+                          <td className="px-4 py-3 font-semibold">{scenario.authHubCost}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                {pricingScenariosNote && (
+                  <p className="mt-3 text-xs text-[#6B7280]">{pricingScenariosNote}</p>
+                )}
               </div>
             )}
           </div>
@@ -544,7 +607,7 @@ export function ComparisonPageTemplate({ page }: ComparisonPageTemplateProps) {
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-20">
             <div className="max-w-4xl mx-auto text-center">
               <h2 className="font-dela text-3xl md:text-4xl text-ink mb-4">
-                Switch in {page.migrationTimeMinutes || 15} Minutes
+                Switch from {competitor.name}
               </h2>
               <p className="font-mono text-muted-foreground mb-12">
                 Moving from {competitor.name} is straightforward. Here&apos;s how agencies do it:
@@ -564,14 +627,6 @@ export function ComparisonPageTemplate({ page }: ComparisonPageTemplateProps) {
                 ))}
               </div>
 
-              <div className="mt-10 p-4 bg-ink/5 border border-ink/10 inline-flex items-center gap-3">
-                <div className="w-8 h-8 bg-teal/20 rounded-full flex items-center justify-center">
-                  <Check size={16} className="text-success-ink" />
-                </div>
-                <p className="font-mono text-sm text-ink/80">
-                  <span className="font-semibold">Free migration support:</span> Our team walks you through the switch during onboarding.
-                </p>
-              </div>
             </div>
           </div>
         </section>
@@ -678,9 +733,9 @@ function getDifferentiatorDescription(differentiator: string): string {
   const descriptions: Record<string, string> = {
     "Access + Intake": "One link handles OAuth and collects client info—no separate forms needed.",
     "Access + Intake in One Link": "One link handles OAuth and collects client info—no separate forms needed.",
-    "Predictable tiered pricing (no credits)": "Fixed monthly caps at $29 / $79 / $149—no credits, no overage surprises.",
-    "US-Based Support": "Same-day responses during US hours. No more time zone delays.",
-    "15+ Platforms": "Support for Pinterest, Klaviyo, Shopify, and more emerging channels.",
+    "Predictable tiered pricing (no credits)": "Monthly tiers at $29 / $79 / $149 with 5 / 20 / 50 client caps.",
+    "Token Health + Infisical Audit": "Token-health monitoring, provider-supported refresh, and audit events.",
+    "19 Platform Connectors": "Core ad, analytics, commerce, and email connectors in one flow.",
     "Infisical-backed Token Storage": "OAuth tokens stored in Infisical with complete audit logs—never in the database.",
   };
 
