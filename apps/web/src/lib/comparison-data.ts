@@ -344,6 +344,15 @@ export const leadsieAlternativePage: ProgrammaticComparisonPage = {
     },
   },
 
+  competitorPricingSubtitle: "$59 · $129 · $299 by tier (3 / 10 / 50 credits)",
+  authhubSavingsHighlight:
+    "Save $50/mo ($600/yr) vs Leadsie Agency — AuthHub Growth $79 / 20 clients",
+  valueCallout: {
+    headline:
+      "Save $50/mo ($600/yr) vs Leadsie Agency — AuthHub Growth $79 / 20 clients",
+    body: "Leadsie uses client credits (3 / 10 / 50 per tier at $59 / $129 / $299) with overage fees when you exceed your cap. AuthHub uses fixed monthly caps—5, 20, or 50 clients per plan at $29 / $79 / $149—with no credit math or surprise overages.",
+  },
+
   faqs: [
     {
       question: "How long does it take to migrate from Leadsie to AuthHub?",
@@ -397,7 +406,7 @@ export const leadsieAlternativePage: ProgrammaticComparisonPage = {
 
   isProgrammatic: true,
   templateId: "comparison-aida-v1",
-  lastVerified: "2026-03-18",
+  lastVerified: "2026-09-08",
 };
 
 /**

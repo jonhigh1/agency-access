@@ -244,6 +244,11 @@ export interface ComparisonCTA {
   guarantee?: string;
 }
 
+export interface ComparisonValueCallout {
+  headline: string;
+  body: string;
+}
+
 /**
  * Programmatic Comparison Page - Full definition for VS/Alternative pages
  */
@@ -289,6 +294,15 @@ export interface ProgrammaticComparisonPage {
 
   // Pricing comparison
   pricingComparison: PricingComparison;
+
+  /** Competitor-specific pricing callout (headline + body under pricing cards) */
+  valueCallout?: ComparisonValueCallout;
+
+  /** Subtitle under competitor starting price (e.g. Leadsie tier ladder) */
+  competitorPricingSubtitle?: string;
+
+  /** Highlight line under AuthHub starting price (e.g. savings vs competitor tier) */
+  authhubSavingsHighlight?: string;
 
   // FAQ
   faqs: BlogFAQ[];

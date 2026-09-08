@@ -72,7 +72,26 @@ const LEADSIE_FORBIDDEN = [
   /\$240/,
   /\$49\/mo/,
   /Save 25%/,
+  /AgencyAccess charges/i,
 ];
+
+function leadsieRenderedCriticalSnapshot(page: typeof leadsieAlternativePage) {
+  return JSON.stringify({
+    ...authHubCopySnapshot(page),
+    valueCallout: page.valueCallout,
+    competitorPricingSubtitle: page.competitorPricingSubtitle,
+    authhubSavingsHighlight: page.authhubSavingsHighlight,
+    quickComparison: page.quickComparison,
+    competitor: {
+      name: page.competitor.name,
+      pricing: page.competitor.pricing,
+    },
+    ourProduct: {
+      differentiators: page.ourProduct.differentiators,
+      pricing: page.ourProduct.pricing,
+    },
+  });
+}
 
 describe("Leadsie comparison page claims", () => {
   it("does not claim unlimited clients or SOC 2 on AuthHub positioning", () => {
@@ -123,5 +142,25 @@ describe("Leadsie comparison page claims", () => {
     expect(leadsieAlternativePage.ourProduct.differentiators).toContain(
       "Predictable tiered pricing (no credits)",
     );
+    expect(leadsieAlternativePage.valueCallout?.headline).toMatch(
+      /Save \$50\/mo \(\$600\/yr\) vs Leadsie Agency/,
+    );
+    expect(leadsieAlternativePage.valueCallout?.body).toMatch(/Leadsie uses client credits/);
+    expect(leadsieAlternativePage.valueCallout?.body).not.toMatch(/AgencyAccess charges/);
+    expect(leadsieAlternativePage.competitorPricingSubtitle).toMatch(
+      /\$59 · \$129 · \$299/,
+    );
+    expect(leadsieAlternativePage.authhubSavingsHighlight).toMatch(/\$600\/yr/);
+  });
+
+  it("does not include forbidden pricing copy in rendered-critical Leadsie fields", () => {
+    const renderedCritical = leadsieRenderedCriticalSnapshot(leadsieAlternativePage);
+
+    LEADSIE_FORBIDDEN.forEach((pattern) => {
+      expect(renderedCritical, "leadsie rendered-critical copy").not.toMatch(pattern);
+    });
+
+    expect(leadsieAlternativePage.competitor.pricing.starting).not.toBe(49);
+    expect(leadsieAlternativePage.ourProduct.pricing.starting).toBe(29);
   });
 });

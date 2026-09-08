@@ -29,6 +29,7 @@ describe('Pricing page copy claims', () => {
   it('uses value-focused and team-oriented pricing language', () => {
     const metricCode = readFile('src/components/marketing/pricing/metric-banner.tsx');
     const tiersCode = readFile('src/components/marketing/pricing/pricing-tiers.tsx');
+    const toggleCode = readFile('src/components/marketing/pricing/pricing-toggle.tsx');
 
     expect(metricCode).toMatch(/OAuth Success Rate/);
     expect(metricCode).toMatch(/99\.9/);
@@ -41,5 +42,7 @@ describe('Pricing page copy claims', () => {
     expect(metricCode).not.toMatch(/Saved for Clients/);
     expect(metricCode).not.toMatch(/Hours Reclaimed/);
     expect(tiersCode).toMatch(/fits your team/i);
+    expect(toggleCode).toMatch(/Save ~17%/);
+    expect(toggleCode).not.toMatch(/Save 25%/);
   });
 });
