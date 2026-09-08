@@ -7,14 +7,17 @@
  */
 
 import { useState } from 'react';
+import { useAuth } from '@clerk/nextjs';
 import { AlertCircle, TrendingUp, Loader2 } from 'lucide-react';
 import { getNextTierForCheckout } from '@agency-platform/shared';
 import { useTierDetails, useCreateCheckout } from '@/lib/query/billing';
 import { Button } from '@/components/ui/button';
-import { trackBillingEvent } from '@/lib/analytics/billing';
+import { buildPlanSelectedProps, trackPlanSelected } from '@/lib/analytics/billing';
 import { readBillingIntervalPreference } from './billing-interval';
 
 export function UsageLimitsCard() {
+  const { orgId, userId } = useAuth();
+  const agencyId = orgId ?? userId ?? null;
   const { data: tierDetails, isLoading } = useTierDetails();
   const createCheckout = useCreateCheckout();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -54,25 +57,16 @@ export function UsageLimitsCard() {
 
     setErrorMessage(null);
 
-    trackBillingEvent('billing_primary_cta_clicked', {
-      lifecycle,
-      currentTier: currentTier ?? null,
-      targetTier: nextTier,
-      interval: preferredInterval,
-      surface: 'usage_limits_card',
-    });
-    trackBillingEvent('billing_checkout_started', {
-      lifecycle,
-      currentTier: currentTier ?? null,
-      targetTier: nextTier,
-      interval: preferredInterval,
-      surface: 'usage_limits_card',
+    trackPlanSelected({
+      ...buildPlanSelectedProps(nextTier, preferredInterval, 'checkout'),
+      agency_id: agencyId,
     });
 
     try {
       const result = await createCheckout.mutateAsync({
         tier: nextTier,
         billingInterval: preferredInterval,
+        surface: 'checkout',
         successUrl: `${window.location.origin}/settings?tab=billing&checkout=success`,
         cancelUrl: `${window.location.origin}/settings?tab=billing&checkout=cancel`,
       });
@@ -87,14 +81,6 @@ export function UsageLimitsCard() {
   };
 
   const handleContactSales = () => {
-    trackBillingEvent('billing_primary_cta_clicked', {
-      lifecycle,
-      currentTier: currentTier ?? null,
-      targetTier: null,
-      interval: preferredInterval,
-      surface: 'usage_limits_card',
-    });
-
     const supportLocalPart = 'support';
     const supportDomainPart = 'authhub.co';
     const at = String.fromCharCode(64); // '@'

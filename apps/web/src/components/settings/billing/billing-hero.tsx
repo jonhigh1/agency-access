@@ -1,15 +1,18 @@
 'use client';
 
 import { useMemo, useState } from 'react';
+import { useAuth } from '@clerk/nextjs';
 import { AlertCircle, ArrowRight, Loader2 } from 'lucide-react';
 import { useCreateCheckout, useOpenPortal, useSubscription } from '@/lib/query/billing';
 import { Button } from '@/components/ui/button';
-import { trackBillingEvent } from '@/lib/analytics/billing';
+import { buildPlanSelectedProps, trackPlanSelected } from '@/lib/analytics/billing';
 import { getNextTierForCheckout } from '@agency-platform/shared';
 import { persistBillingIntervalPreference, readBillingIntervalPreference } from './billing-interval';
 import { resolveBillingLifecycle } from './billing-lifecycle';
 
 export function BillingHero() {
+  const { orgId, userId } = useAuth();
+  const agencyId = orgId ?? userId ?? null;
   const { data: subscription, isLoading } = useSubscription();
   const createCheckout = useCreateCheckout();
   const openPortal = useOpenPortal();
@@ -24,26 +27,16 @@ export function BillingHero() {
 
     persistBillingIntervalPreference(billingInterval);
 
-    trackBillingEvent('billing_primary_cta_clicked', {
-      lifecycle,
-      currentTier: subscription?.tier ?? null,
-      targetTier: tier,
-      interval: billingInterval,
-      surface,
-    });
-
-    trackBillingEvent('billing_checkout_started', {
-      lifecycle,
-      currentTier: subscription?.tier ?? null,
-      targetTier: tier,
-      interval: billingInterval,
-      surface,
+    trackPlanSelected({
+      ...buildPlanSelectedProps(tier, billingInterval, 'checkout'),
+      agency_id: agencyId,
     });
 
     try {
       const result = await createCheckout.mutateAsync({
         tier,
         billingInterval,
+        surface: 'checkout',
         successUrl: `${window.location.origin}/settings?tab=billing&checkout=success`,
         cancelUrl: `${window.location.origin}/settings?tab=billing&checkout=cancel`,
       });
@@ -61,14 +54,6 @@ export function BillingHero() {
   const openBillingPortal = async () => {
     setErrorMessage(null);
 
-    trackBillingEvent('billing_primary_cta_clicked', {
-      lifecycle,
-      currentTier: subscription?.tier ?? null,
-      targetTier: null,
-      interval: billingInterval,
-      surface: 'billing_hero',
-    });
-
     try {
       const result = await openPortal.mutateAsync(window.location.href);
       window.location.href = result.portalUrl;
@@ -78,14 +63,6 @@ export function BillingHero() {
   };
 
   const focusManageSubscription = () => {
-    trackBillingEvent('billing_primary_cta_clicked', {
-      lifecycle,
-      currentTier: subscription?.tier ?? null,
-      targetTier: null,
-      interval: billingInterval,
-      surface: 'billing_hero',
-    });
-
     document.getElementById('manage-subscription-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 

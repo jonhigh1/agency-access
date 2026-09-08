@@ -8,6 +8,7 @@
  */
 
 import { useState } from 'react';
+import { useAuth } from '@clerk/nextjs';
 import {
   ArrowUp,
   ArrowDown,
@@ -19,7 +20,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useCreateCheckout, useSubscription, useUpgradeSubscription } from '@/lib/query/billing';
-import { trackBillingEvent } from '@/lib/analytics/billing';
+import { buildPlanSelectedProps, trackPlanSelected } from '@/lib/analytics/billing';
 import {
   SUBSCRIPTION_TIER_DESCRIPTIONS,
   getPricingTierNameFromSubscriptionTier,
@@ -53,6 +54,8 @@ function normalizeCurrentTier(tier: SubscriptionTier | null | undefined): Curren
 }
 
 export function ManageSubscriptionCard() {
+  const { orgId, userId } = useAuth();
+  const agencyId = orgId ?? userId ?? null;
   const { data: subscription, isLoading } = useSubscription();
   const upgradeMutation = useUpgradeSubscription();
   const createCheckoutMutation = useCreateCheckout();
@@ -98,24 +101,15 @@ export function ManageSubscriptionCard() {
 
     try {
       if (currentTier === 'FREE') {
-        trackBillingEvent('billing_primary_cta_clicked', {
-          lifecycle,
-          currentTier: null,
-          targetTier: selectedTier,
-          interval: preferredInterval,
-          surface: 'manage_subscription_card',
-        });
-        trackBillingEvent('billing_checkout_started', {
-          lifecycle,
-          currentTier: null,
-          targetTier: selectedTier,
-          interval: preferredInterval,
-          surface: 'manage_subscription_card',
+        trackPlanSelected({
+          ...buildPlanSelectedProps(selectedTier, preferredInterval, 'checkout'),
+          agency_id: agencyId,
         });
 
         const result = await createCheckoutMutation.mutateAsync({
           tier: selectedTier,
           billingInterval: preferredInterval,
+          surface: 'checkout',
           successUrl: `${window.location.origin}/settings?tab=billing&checkout=success`,
           cancelUrl: `${window.location.origin}/settings?tab=billing&checkout=cancel`,
         });
@@ -223,13 +217,6 @@ export function ManageSubscriptionCard() {
                 <Button
                   variant="ghost"
                   onClick={() => {
-                    trackBillingEvent('billing_cancel_flow_opened', {
-                      lifecycle,
-                      currentTier: subscription?.tier ?? null,
-                      targetTier: null,
-                      interval: preferredInterval,
-                      surface: 'manage_subscription_card',
-                    });
                     setShowCancelModal(true);
                   }}
                 >

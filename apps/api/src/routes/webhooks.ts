@@ -31,6 +31,7 @@ import {
 } from '@agency-platform/shared';
 import { getTierFromProductId } from '@/config/creem.config';
 import { creem } from '@/lib/creem';
+import { trackSubscriptionLifecycleFromWebhook } from '@/services/billing-analytics.service';
 import { sendError } from '../lib/response.js';
 
 type CreemEvent = {
@@ -519,6 +520,18 @@ export async function webhookRoutes(fastify: FastifyInstance) {
                   },
                 })
               : Promise.resolve(null),
+
+            trackSubscriptionLifecycleFromWebhook({
+              eventType: payload.type as 'subscription.created' | 'subscription.updated' | 'subscription.canceled',
+              context: {
+                distinctId: agency.clerkUserId,
+                agencyId: agency.id,
+                creemSubscriptionId: subscription.id,
+                creemCustomerId: subscription.customer_id,
+                productId: subscription.price_id,
+                status: subscription.status,
+              },
+            }),
           ]);
         }
       }

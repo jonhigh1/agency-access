@@ -5,7 +5,7 @@ import { BillingHero } from '../billing-hero';
 const mockUseSubscription = vi.fn();
 const mockCreateCheckoutMutateAsync = vi.fn();
 const mockOpenPortalMutateAsync = vi.fn();
-const trackBillingEventMock = vi.fn();
+const trackPlanSelectedMock = vi.fn();
 const storageState = new Map<string, string>();
 const localStorageMock = {
   getItem: vi.fn((key: string) => storageState.get(key) ?? null),
@@ -29,8 +29,19 @@ vi.mock('@/lib/query/billing', () => ({
   }),
 }));
 
+vi.mock('@clerk/nextjs', () => ({
+  useAuth: () => ({ orgId: 'org_123', userId: 'user_123' }),
+}));
+
 vi.mock('@/lib/analytics/billing', () => ({
-  trackBillingEvent: (...args: any[]) => trackBillingEventMock(...args),
+  trackPlanSelected: (...args: any[]) => trackPlanSelectedMock(...args),
+  buildPlanSelectedProps: vi.fn(() => ({
+    plan: 'starter',
+    billing_period: 'yearly',
+    price_cents: 29000,
+    surface: 'checkout',
+    creem_product_id: 'prod_6Hyydvn6jh0numRxJecMol',
+  })),
 }));
 
 describe('BillingHero', () => {

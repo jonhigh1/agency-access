@@ -156,6 +156,10 @@ const envSchema = z.object({
   CREEM_WEBHOOK_SECRET: z.string(),
   CREEM_API_URL: z.string().url().default('https://api.creem.io'),
 
+  // PostHog (server-side lifecycle events; optional in dev/test)
+  POSTHOG_API_KEY: z.string().optional(),
+  POSTHOG_HOST: z.string().url().optional(),
+
   // Sentry Error Monitoring
   SENTRY_DSN: z.string().optional(),
   SENTRY_SEND_IN_DEV: booleanish(false),

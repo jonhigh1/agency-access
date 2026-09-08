@@ -7,12 +7,14 @@
  * Shows current usage, tier comparison, and upgrade CTA.
  */
 
-import { useState } from 'react';
+import { useEffect } from 'react';
 import { m, AnimatePresence } from 'framer-motion';
 import { X, TrendingUp, Check, ArrowRight } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@clerk/nextjs';
 import { SUBSCRIPTION_TIER_NAMES, TIER_LIMITS } from '@agency-platform/shared';
 import type { QuotaExceededError } from '@/lib/query/quota';
+import { subscriptionTierToPlanSlug, trackCapHit } from '@/lib/analytics/billing';
 
 interface UpgradeModalProps {
   isOpen: boolean;
@@ -26,16 +28,32 @@ export function UpgradeModal({
   quotaError,
 }: UpgradeModalProps) {
   const router = useRouter();
+  const { orgId, userId } = useAuth();
+  const agencyId = orgId ?? userId ?? null;
+
+  const metric = quotaError?.metric;
+  const limit = quotaError?.limit;
+  const used = quotaError?.used ?? 0;
+  const errorTier = quotaError?.currentTier;
+
+  useEffect(() => {
+    if (!quotaError || !isOpen || metric !== 'clients' || limit === 'unlimited' || !errorTier) {
+      return;
+    }
+
+    trackCapHit({
+      agency_id: agencyId,
+      plan: subscriptionTierToPlanSlug(errorTier),
+      clients_used: used,
+      plan_cap: limit as number,
+    });
+  }, [agencyId, errorTier, isOpen, limit, metric, quotaError, used]);
 
   if (!quotaError) return null;
 
   const {
-    metric,
-    limit,
-    used,
     remaining,
     suggestedTier,
-    currentTier: errorTier,
     upgradeUrl,
   } = quotaError;
 
