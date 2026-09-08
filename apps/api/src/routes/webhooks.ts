@@ -31,58 +31,50 @@ import {
 } from '@agency-platform/shared';
 import { getTierFromProductId } from '@/config/creem.config';
 import { creem } from '@/lib/creem';
-import { trackSubscriptionLifecycleFromWebhook } from '@/services/billing-analytics.service';
+import {
+  getSubscriptionPayload,
+  normalizeCreemEvent,
+  type CreemNormalizedEvent,
+} from '@/lib/creem-webhook-payload.js';
+import { trackSubscriptionLifecycleFromWebhook, type CreemLifecycleWebhookEventType } from '@/services/billing-analytics.service';
 import { sendError } from '../lib/response.js';
 
-type CreemEvent = {
-  id: string;
-  type: string;
-  data: Record<string, any>;
-};
-
-type CreemSubscriptionPayload = {
-  id: string;
-  status: 'active' | 'past_due' | 'canceled' | 'trialing';
-  customer_id: string;
-  price_id: string;
-  current_period_start: string;
-  current_period_end: string;
-  trial_end?: string;
-};
+type CreemEvent = CreemNormalizedEvent;
 
 type CreemInvoicePayload = {
   id: string;
   [key: string]: any;
 };
 
-function getSubscriptionPayload(payload: CreemEvent): CreemSubscriptionPayload | null {
-  const candidate = payload.data?.subscription ?? payload.data?.object ?? null;
-
-  if (
-    !candidate ||
-    typeof candidate !== 'object' ||
-    typeof candidate.id !== 'string' ||
-    typeof candidate.customer_id !== 'string' ||
-    typeof candidate.price_id !== 'string'
-  ) {
-    return null;
-  }
-
-  return candidate as CreemSubscriptionPayload;
-}
-
 function getInvoicePayload(payload: CreemEvent): CreemInvoicePayload | null {
-  const candidate = payload.data?.invoice ?? payload.data?.object ?? null;
+  const candidate = (payload.data?.invoice ?? payload.data?.object ?? null) as
+    | Record<string, unknown>
+    | null;
 
-  if (!candidate || typeof candidate !== 'object' || typeof candidate.id !== 'string') {
+  if (!candidate || typeof candidate.id !== 'string') {
     return null;
   }
 
   return candidate as CreemInvoicePayload;
 }
 
+const CREEM_SUBSCRIPTION_EVENT_TYPES = new Set([
+  'subscription.created',
+  'subscription.updated',
+  'subscription.canceled',
+  'subscription.active',
+  'subscription.trialing',
+  'subscription.past_due',
+  'subscription.update',
+  'checkout.completed',
+]);
+
 function isUniqueConstraintError(error: unknown): boolean {
   return typeof error === 'object' && error !== null && (error as { code?: string }).code === 'P2002';
+}
+
+function isCreemSubscriptionEvent(eventType: string): boolean {
+  return CREEM_SUBSCRIPTION_EVENT_TYPES.has(eventType);
 }
 
 function resolveActorEmail(request: any): string {
@@ -325,7 +317,7 @@ export async function webhookRoutes(fastify: FastifyInstance) {
    * Idempotent: Duplicate events are detected via audit log and ignored.
    */
   fastify.post('/webhooks/creem', { config: { rawBody: true } }, async (request, reply) => {
-    const payload = request.body as CreemEvent;
+    const payload = normalizeCreemEvent((request.body ?? {}) as Record<string, unknown>);
     const signatureHeader =
       (request.headers['x-creem-signature'] as string | undefined) ||
       (request.headers['creem-signature'] as string | undefined);
@@ -423,11 +415,7 @@ export async function webhookRoutes(fastify: FastifyInstance) {
         }
 
         await webhookService.processInvoicePaymentFailed(invoice);
-      } else if (
-        payload.type === 'subscription.created' ||
-        payload.type === 'subscription.updated' ||
-        payload.type === 'subscription.canceled'
-      ) {
+      } else if (isCreemSubscriptionEvent(payload.type)) {
         const subscription = getSubscriptionPayload(payload);
 
         if (!subscription) {
@@ -522,13 +510,13 @@ export async function webhookRoutes(fastify: FastifyInstance) {
               : Promise.resolve(null),
 
             trackSubscriptionLifecycleFromWebhook({
-              eventType: payload.type as 'subscription.created' | 'subscription.updated' | 'subscription.canceled',
+              eventType: payload.type as CreemLifecycleWebhookEventType,
               context: {
                 distinctId: agency.clerkUserId,
                 agencyId: agency.id,
                 creemSubscriptionId: subscription.id,
                 creemCustomerId: subscription.customer_id,
-                creemPriceId: subscription.price_id,
+                creemProductId: subscription.price_id,
                 status: subscription.status,
               },
             }),

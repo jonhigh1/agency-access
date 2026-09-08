@@ -33,11 +33,10 @@ function getMrrCents(plan: BillingPlanSlug, billingPeriod: BillingPeriod): numbe
 }
 
 /**
- * Creem webhooks expose `price_id`; in AuthHub this value is the Creem product id
- * (see getTierFromProductId). Both creem_price_id and creem_product_id are set from
- * the webhook field for HogQL joins — never Stripe IDs.
+ * Creem webhooks expose product ids via product.id, price_id, or nested product fields.
+ * Both creem_price_id and creem_product_id are set from the resolved product id for HogQL joins.
  */
-function resolvePlanFromCreemPriceId(creemPriceId: string): {
+function resolvePlanFromCreemProductId(creemProductId: string): {
   plan: BillingPlanSlug;
   billing_period: BillingPeriod;
   price_cents: number;
@@ -45,8 +44,8 @@ function resolvePlanFromCreemPriceId(creemPriceId: string): {
   creem_price_id: string;
   creem_product_id: string;
 } {
-  const tier = getTierFromProductId(creemPriceId);
-  const billingPeriod = getIntervalFromProductId(creemPriceId);
+  const tier = getTierFromProductId(creemProductId);
+  const billingPeriod = getIntervalFromProductId(creemProductId);
   const plan = toPlanSlug(tier);
 
   return {
@@ -54,29 +53,38 @@ function resolvePlanFromCreemPriceId(creemPriceId: string): {
     billing_period: billingPeriod,
     price_cents: getListPriceCents(plan, billingPeriod),
     mrr_cents: getMrrCents(plan, billingPeriod),
-    creem_price_id: creemPriceId,
-    creem_product_id: creemPriceId,
+    creem_price_id: creemProductId,
+    creem_product_id: creemProductId,
   };
 }
 
 export type SubscriptionWebhookContext = {
   distinctId: string;
   agencyId: string;
-  creemSubscriptionId: string;
-  creemCustomerId: string;
-  /** Raw Creem webhook `price_id` (product id in our integration). */
-  creemPriceId: string;
+  creemSubscriptionId: string | null;
+  creemCustomerId: string | null;
+  creemProductId: string | null;
   status: CreemSubscriptionStatus | string;
 };
 
 function lifecycleProps(context: SubscriptionWebhookContext): Record<string, unknown> {
-  const planProps = resolvePlanFromCreemPriceId(context.creemPriceId);
-  return {
+  const base: Record<string, unknown> = {
     agency_id: context.agencyId,
-    ...planProps,
     creem_subscription_id: context.creemSubscriptionId,
     creem_customer_id: context.creemCustomerId,
+    creem_product_id: context.creemProductId,
     subscription_status: context.status,
+  };
+
+  if (!context.creemProductId) {
+    return base;
+  }
+
+  const planProps = resolvePlanFromCreemProductId(context.creemProductId);
+  return {
+    ...base,
+    ...planProps,
+    creem_product_id: context.creemProductId,
   };
 }
 
@@ -94,11 +102,33 @@ async function captureLifecycleEvent(
 /**
  * Maps Creem webhook events to Growth lifecycle captures.
  *
- * Primary checkout completion: `subscription_started` (not checkout_completed).
+ * Primary checkout completion: `subscription_started` (checkout.completed / subscription.active).
  * Status lifecycle (server): subscription.active | subscription.past_due | subscription.canceled
  */
+export type CreemLifecycleWebhookEventType =
+  | 'subscription.created'
+  | 'subscription.updated'
+  | 'subscription.canceled'
+  | 'subscription.active'
+  | 'subscription.trialing'
+  | 'subscription.past_due'
+  | 'subscription.update'
+  | 'checkout.completed';
+
+function isPrimaryConversionEvent(eventType: CreemLifecycleWebhookEventType): boolean {
+  return (
+    eventType === 'checkout.completed' ||
+    eventType === 'subscription.active' ||
+    eventType === 'subscription.created'
+  );
+}
+
+function isSubscriptionUpdateEvent(eventType: CreemLifecycleWebhookEventType): boolean {
+  return eventType === 'subscription.update' || eventType === 'subscription.updated';
+}
+
 export async function trackSubscriptionLifecycleFromWebhook(input: {
-  eventType: 'subscription.created' | 'subscription.updated' | 'subscription.canceled';
+  eventType: CreemLifecycleWebhookEventType;
   context: SubscriptionWebhookContext;
 }): Promise<void> {
   const { eventType, context } = input;
@@ -109,23 +139,24 @@ export async function trackSubscriptionLifecycleFromWebhook(input: {
     return;
   }
 
-  if (status === 'past_due') {
+  if (eventType === 'subscription.past_due' || status === 'past_due') {
     await captureLifecycleEvent(context, 'subscription.past_due');
     return;
   }
 
-  if (status === 'trialing') {
+  if (eventType === 'subscription.trialing' || status === 'trialing') {
     await captureLifecycleEvent(context, 'trial_started');
     return;
   }
 
   if (status === 'active') {
-    if (eventType === 'subscription.created') {
-      // checkout.completed equivalent — primary conversion event
+    if (isPrimaryConversionEvent(eventType)) {
       await captureLifecycleEvent(context, 'subscription_started');
       return;
     }
 
-    await captureLifecycleEvent(context, 'subscription.active');
+    if (isSubscriptionUpdateEvent(eventType)) {
+      await captureLifecycleEvent(context, 'subscription.active');
+    }
   }
 }
