@@ -47,9 +47,11 @@ type CreemInvoicePayload = {
 };
 
 function getInvoicePayload(payload: CreemEvent): CreemInvoicePayload | null {
-  const candidate = payload.data?.invoice ?? payload.data?.object ?? null;
+  const candidate = (payload.data?.invoice ?? payload.data?.object ?? null) as
+    | Record<string, unknown>
+    | null;
 
-  if (!candidate || typeof candidate !== 'object' || typeof candidate.id !== 'string') {
+  if (!candidate || typeof candidate.id !== 'string') {
     return null;
   }
 
