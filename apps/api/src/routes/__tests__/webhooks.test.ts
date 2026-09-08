@@ -60,6 +60,7 @@ vi.mock('@/services/billing-analytics.service', () => ({
 import { prisma } from '@/lib/prisma';
 import { clerkMetadataService } from '@/services/clerk-metadata.service';
 import { creem } from '@/lib/creem';
+import { trackSubscriptionLifecycleFromWebhook } from '@/services/billing-analytics.service';
 
 describe('Webhook Routes - TDD Tests', () => {
   let app: FastifyInstance;
@@ -218,6 +219,53 @@ describe('Webhook Routes - TDD Tests', () => {
       const payload = JSON.parse(response.payload);
       expect(payload.received).toBe(true);
       expect(payload.processed).toBe(true);
+    });
+
+    it('should handle real Creem subscription.active payload with product.id and customer.id', async () => {
+      const creemPayload = {
+        id: 'evt_creem_active',
+        eventType: 'subscription.active',
+        object: {
+          id: 'sub_creem_real',
+          object: 'subscription',
+          status: 'active',
+          product: {
+            id: 'prod_11NeEMY6WtGEkdnvdd7obj',
+            name: 'Growth Monthly',
+          },
+          customer: {
+            id: 'cus_123',
+            email: 'agency@example.com',
+          },
+          current_period_start_date: '2024-01-01T00:00:00.000Z',
+          current_period_end_date: '2024-02-01T00:00:00.000Z',
+        },
+      };
+
+      const response = await injectSigned({
+        method: 'POST',
+        url: '/api/webhooks/creem',
+        payload: creemPayload,
+      });
+
+      expect(response.statusCode).toBe(200);
+      expect(clerkMetadataService.setSubscriptionTier).toHaveBeenCalledWith(
+        'clerk_user_123',
+        'GROWTH',
+        expect.objectContaining({
+          subscriptionId: 'sub_creem_real',
+          subscriptionStatus: 'active',
+        })
+      );
+      expect(trackSubscriptionLifecycleFromWebhook).toHaveBeenCalledWith({
+        eventType: 'subscription.active',
+        context: expect.objectContaining({
+          creemSubscriptionId: 'sub_creem_real',
+          creemCustomerId: 'cus_123',
+          creemProductId: 'prod_11NeEMY6WtGEkdnvdd7obj',
+          status: 'active',
+        }),
+      });
     });
 
     it('should map prod_11NeEMY6WtGEkdnvdd7obj to GROWTH tier', async () => {
