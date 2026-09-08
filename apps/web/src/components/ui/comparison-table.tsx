@@ -233,7 +233,7 @@ export function ComparisonWinnerRow({
   feature,
   leadsieValue,
   authhubValue,
-  highlight = '$240/year savings',
+  highlight = '$600/yr savings vs Leadsie Agency',
 }: {
   feature: string;
   leadsieValue: string;

@@ -166,6 +166,7 @@ function AgencyAccessPricingSection({ page }: ComparisonPageTemplateProps) {
  */
 export function ComparisonPageTemplate({ page }: ComparisonPageTemplateProps) {
   const isAgencyAccessPage = page.id === "agencyaccess-alternative";
+  const isLeadsiePage = page.id === "leadsie-alternative";
   const { competitor, ourProduct, cta, testimonials, painPoints, quickComparison, detailedComparison, recommendations, migrationSteps, pricingComparison, faqs } = page;
 
   return (
@@ -323,6 +324,11 @@ export function ComparisonPageTemplate({ page }: ComparisonPageTemplateProps) {
                     ${competitor.pricing.starting}
                     <span className="text-lg font-normal text-[#6B7280]">/month</span>
                   </p>
+                  {isLeadsiePage && (
+                    <p className="text-sm text-[#6B7280] mt-1">
+                      $59 · $129 · $299 by tier (3 / 10 / 50 credits)
+                    </p>
+                  )}
                   {competitor.pricing.billing === "yearly" && (
                     <p className="text-sm text-[#6B7280] mt-1">
                       Billed yearly
@@ -380,7 +386,9 @@ export function ComparisonPageTemplate({ page }: ComparisonPageTemplateProps) {
                   </p>
                   {pricingComparison.savings.yearly > 0 && (
                     <p className="text-sm font-semibold text-[#4ECDC4] mt-2">
-                      Save ${pricingComparison.savings.yearly}/year
+                      {isLeadsiePage
+                        ? "Save $50/mo ($600/yr) vs Leadsie Agency — AuthHub Growth $79 / 20 clients"
+                        : `Save $${pricingComparison.savings.yearly}/year`}
                     </p>
                   )}
                 </div>
@@ -425,10 +433,20 @@ export function ComparisonPageTemplate({ page }: ComparisonPageTemplateProps) {
                 </div>
                 <div>
                   <h4 className="font-bold text-[#1A365D] mb-2">
-                    Save ${pricingComparison.savings.yearly}/year with AuthHub
+                    {isLeadsiePage
+                      ? "Save $50/mo ($600/yr) vs Leadsie Agency — AuthHub Growth $79 / 20 clients"
+                      : `Save $${pricingComparison.savings.yearly}/year with AuthHub`}
                   </h4>
                   <p className="text-sm text-[#4A5568]">
-                    AuthHub&apos;s tiered pricing (Starter $29 · Growth $79 · Agency $149) scales with your volume—5, 20, or 50 clients/month per plan. AgencyAccess charges per seat and limits invites on Starter. AuthHub adds automatic token refresh and Infisical-backed audit logs that prevent costly access interruptions.
+                    {isLeadsiePage ? (
+                      <>
+                        Leadsie uses client credits (3 / 10 / 50 per tier at $59 / $129 / $299) with overage fees when you exceed your cap. AuthHub uses fixed monthly caps—5, 20, or 50 clients per plan at $29 / $79 / $149—with no credit math or surprise overages.
+                      </>
+                    ) : (
+                      <>
+                        AuthHub&apos;s tiered pricing (Starter $29 · Growth $79 · Agency $149) scales with your volume—5, 20, or 50 clients/month per plan. AgencyAccess charges per seat and limits invites on Starter. AuthHub adds automatic token refresh and Infisical-backed audit logs that prevent costly access interruptions.
+                      </>
+                    )}
                   </p>
                 </div>
               </div>
@@ -666,7 +684,8 @@ export function ComparisonPageTemplate({ page }: ComparisonPageTemplateProps) {
 function getDifferentiatorDescription(differentiator: string): string {
   const descriptions: Record<string, string> = {
     "Access + Intake": "One link handles OAuth and collects client info—no separate forms needed.",
-    "Flat-Rate Pricing": "No credits, no surprises. Predictable costs mean predictable margins.",
+    "Predictable tiered pricing (no credits)": "Fixed monthly caps at $29 / $79 / $149—no credits, no overage surprises.",
+    "Flat-Rate Pricing": "Fixed monthly caps—no credits, no overage surprises.",
     "US-Based Support": "Same-day responses during US hours. No more time zone delays.",
     "15+ Platforms": "Support for Pinterest, Klaviyo, Shopify, and more emerging channels.",
     "Infisical-backed Token Storage": "OAuth tokens stored in Infisical with complete audit logs—never in the database.",

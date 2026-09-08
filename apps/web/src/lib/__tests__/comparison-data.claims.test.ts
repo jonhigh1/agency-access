@@ -67,11 +67,61 @@ describe("AgencyAccess comparison page claims", () => {
   });
 });
 
+const LEADSIE_FORBIDDEN = [
+  /flat.rate/i,
+  /\$240/,
+  /\$49\/mo/,
+  /Save 25%/,
+];
+
 describe("Leadsie comparison page claims", () => {
   it("does not claim unlimited clients or SOC 2 on AuthHub positioning", () => {
     const authHubCopy = authHubCopySnapshot(leadsieAlternativePage);
     expectNoAuthHubForbiddenClaims(authHubCopy, "leadsie AuthHub copy");
     expect(authHubCopy).toMatch(/5 clients\/month/);
     expect(authHubCopy).toMatch(/20 clients\/month/);
+  });
+
+  it("uses verified Leadsie list pricing and honest AuthHub tier caps", () => {
+    const copy = JSON.stringify(leadsieAlternativePage);
+
+    expect(leadsieAlternativePage.competitor.pricing.starting).toBe(59);
+    expect(leadsieAlternativePage.competitor.pricing.starter?.price).toBe(59);
+    expect(leadsieAlternativePage.competitor.pricing.pro?.price).toBe(129);
+    expect(leadsieAlternativePage.competitor.pricing.enterprise?.price).toBe(299);
+    expect(leadsieAlternativePage.ourProduct.pricing.enterprise?.price).toBe(149);
+    expect(leadsieAlternativePage.pricingComparison.savings.yearly).toBe(600);
+    expect(leadsieAlternativePage.pricingComparison.savings.monthly).toBe(50);
+
+    LEADSIE_FORBIDDEN.forEach((pattern) => {
+      expect(copy, "leadsie comparison copy").not.toMatch(pattern);
+    });
+
+    expect(leadsieAlternativePage.metaDescription).toMatch(
+      /tiered pricing from \$29\/mo \(Starter 5 · Growth 20 · Agency 50 clients\)/,
+    );
+    expect(leadsieAlternativePage.excerpt).toMatch(/\$600\/year vs Leadsie Agency/);
+    expect(leadsieAlternativePage.excerpt).toMatch(/\$1,800\/year vs Leadsie Pro/);
+    expect(leadsieAlternativePage.painPoints[0]?.solution).toMatch(
+      /\$29 \/ \$79 \/ \$149 \(5 \/ 20 \/ 50 clients\/mo\)/,
+    );
+    expect(leadsieAlternativePage.quickComparison).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          feature: "Predictable tiered pricing (no credits)",
+          competitor: false,
+          authhub: true,
+        }),
+        expect.objectContaining({
+          feature: "Starting Price",
+          competitor: "$59/mo",
+          authhub: "$29/mo",
+        }),
+      ]),
+    );
+    expect(leadsieAlternativePage.cta.guarantee).toMatch(/From \$29\/mo · 5\/20\/50 client caps/);
+    expect(leadsieAlternativePage.ourProduct.differentiators).toContain(
+      "Predictable tiered pricing (no credits)",
+    );
   });
 });
