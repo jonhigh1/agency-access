@@ -39,7 +39,7 @@ export function PricingToggle({ isYearly, onToggle }: PricingToggleProps) {
           <span className="inline-flex items-center gap-2">
             Yearly
             <span className="rounded-full border border-black/20 bg-white px-2 py-0.5 text-[10px] font-bold tracking-wider text-danger-ink">
-              Save 25%
+              Save ~17%
             </span>
           </span>
         </button>
@@ -49,8 +49,8 @@ export function PricingToggle({ isYearly, onToggle }: PricingToggleProps) {
       {/* Helper Text */}
       <p className="text-sm text-gray-500 dark:text-gray-400 font-mono">
         {isYearly
-          ? 'Save 25% with annual billing. Cancel anytime.'
-          : 'Billed monthly. Switch to yearly for 25% off.'}
+          ? 'Save ~17% with annual billing (pay for 10, get 12). Cancel anytime.'
+          : 'Billed monthly. Switch to yearly for ~17% off (2 months free).'}
       </p>
     </div>
   );
