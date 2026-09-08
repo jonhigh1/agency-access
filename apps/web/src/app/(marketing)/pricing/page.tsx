@@ -17,31 +17,31 @@ const pricingSchema = {
     {
       '@type': 'Offer',
       name: 'Starter',
-      price: '24.00',
+      price: '29.00',
       priceCurrency: 'USD',
       billingIncrement: 'P1M',
       description:
-        '5 clients/month, all platform integrations, white-label branding, unlimited team seats.',
+        '5 clients/month, all platform integrations, white-label branding, unlimited team seats. Yearly: $290/yr (~$24/mo, pay for 10 get 12).',
       url: 'https://authhub.co/pricing',
     },
     {
       '@type': 'Offer',
       name: 'Growth',
-      price: '66.00',
+      price: '79.00',
       priceCurrency: 'USD',
       billingIncrement: 'P1M',
       description:
-        '20 clients/month, custom domain, webhooks & API, priority support, multi-brand accounts.',
+        '20 clients/month, custom domain, webhooks & API, priority support, multi-brand accounts. Yearly: $790/yr (~$66/mo, pay for 10 get 12).',
       url: 'https://authhub.co/pricing',
     },
     {
       '@type': 'Offer',
       name: 'Agency',
-      price: '124.00',
+      price: '149.00',
       priceCurrency: 'USD',
       billingIncrement: 'P1M',
       description:
-        '50 clients/month, custom integrations, multi-brand management up to 3 brands.',
+        '50 clients/month, custom integrations, multi-brand management up to 3 brands. Yearly: $1,490/yr (~$124/mo, pay for 10 get 12).',
       url: 'https://authhub.co/pricing',
     },
     {

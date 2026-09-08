@@ -14,7 +14,7 @@ export const leadsieAlternativePage: ProgrammaticComparisonPage = {
   slug: "leadsie-alternative",
   title: "Leadsie Alternative | Why Agencies Switch to AuthHub",
   metaTitle: "Leadsie Alternative | Why Agencies Switch to AuthHub",
-  metaDescription: "Looking for a Leadsie alternative or comparing AuthHub vs Leadsie? AuthHub combines access + intake in one link, flat-rate pricing starting at $29/mo, and US-based support. See why agencies made the switch.",
+  metaDescription: "Looking for a Leadsie alternative or comparing AuthHub vs Leadsie? AuthHub combines access + intake in one link, tiered pricing from $29/mo (Starter 5 · Growth 20 · Agency 50 clients), and US-based support. See why agencies made the switch.",
 
   competitor: {
     name: "Leadsie",
@@ -22,34 +22,34 @@ export const leadsieAlternativePage: ProgrammaticComparisonPage = {
     logo: "/images/competitors/leadsie-logo.png",
     website: "https://leadsie.com",
     pricing: {
-      starting: 49,
+      starting: 59,
       currency: "USD",
       billing: "monthly",
       starter: {
-        price: 49,
+        price: 59,
         features: [
-          "5 access requests/month",
+          "3 client credits/month",
           "31+ platforms",
           "Email support",
-          "Basic reporting",
+          "Overage fees apply",
         ],
       },
       pro: {
-        price: 199,
+        price: 129,
         features: [
-          "Unlimited requests",
+          "10 client credits/month",
           "All platforms",
           "Priority support",
           "Team members",
         ],
       },
       enterprise: {
-        price: "Custom",
+        price: 299,
         features: [
+          "50 client credits/month",
           "White-label option",
           "Dedicated support",
-          "SLA",
-          "Custom integrations",
+          "Overage fees apply",
         ],
       },
     },
@@ -109,7 +109,7 @@ export const leadsieAlternativePage: ProgrammaticComparisonPage = {
         ],
       },
       enterprise: {
-        price: "Custom",
+        price: 149,
         features: [
           "Everything in Pro",
           "50 clients/month",
@@ -121,7 +121,7 @@ export const leadsieAlternativePage: ProgrammaticComparisonPage = {
     },
     differentiators: [
       "Access + Intake in One Link",
-      "Flat-Rate Pricing",
+      "Predictable tiered pricing (no credits)",
       "US-Based Support",
       "15+ Platforms",
     ],
@@ -146,7 +146,7 @@ export const leadsieAlternativePage: ProgrammaticComparisonPage = {
     ],
   },
 
-  excerpt: "Stop juggling separate tools for access and intake. Get both in one professional link—at a predictable flat rate starting at $29/mo. Save $240/year compared to Leadsie's Agency tier.",
+  excerpt: "Stop juggling separate tools for access and intake. Get both in one professional link—tiered plans from $29/mo (5/20/50 clients). Save $600/year vs Leadsie Agency when you choose AuthHub Growth ($79 vs $129)—or $1,800/year vs Leadsie Pro at Agency volume ($149 vs $299).",
 
   content: "", // Rendered by component from structured data
 
@@ -159,7 +159,7 @@ export const leadsieAlternativePage: ProgrammaticComparisonPage = {
       quote: "I never know what my bill will be each month.",
       description:
         "Usage-based pricing creates unpredictable costs. One busy month throws your budget. Growing agencies need predictable expenses they can plan around.",
-      solution: "Flat-rate pricing starting at $29/mo",
+      solution: "Predictable tiered pricing: $29 / $79 / $149 (5 / 20 / 50 clients/mo)—no credits",
     },
     {
       title: "Two-Step Onboarding",
@@ -193,8 +193,8 @@ export const leadsieAlternativePage: ProgrammaticComparisonPage = {
     { feature: "US-Based Support", competitor: false, authhub: true, winner: "authhub" },
     { feature: "Onboarding Templates", competitor: false, authhub: true, winner: "authhub", isExclusive: true },
     { feature: "API Access (All Tiers)", competitor: false, authhub: true, winner: "authhub", isExclusive: true },
-    { feature: "Flat-Rate Pricing", competitor: false, authhub: true, winner: "authhub" },
-    { feature: "Starting Price", competitor: "$49/mo", authhub: "$29/mo", winner: "authhub" },
+    { feature: "Predictable tiered pricing (no credits)", competitor: false, authhub: true, winner: "authhub" },
+    { feature: "Starting Price", competitor: "$59/mo", authhub: "$29/mo", winner: "authhub" },
   ],
 
   detailedComparison: [
@@ -247,7 +247,7 @@ export const leadsieAlternativePage: ProgrammaticComparisonPage = {
       "You need Pinterest, Klaviyo, or Shopify access",
       "You're tired of sending multiple links for client onboarding",
       "You're US-based and want same-day support",
-      "You want predictable, flat-rate pricing",
+      "You want predictable tiered pricing (no credits)",
       "You have 20+ clients or plan to scale",
       "You need reusable onboarding templates",
       "Enterprise-grade security and audit logs are required",
@@ -302,7 +302,7 @@ export const leadsieAlternativePage: ProgrammaticComparisonPage = {
 
   pricingComparison: {
     competitor: {
-      starting: 49,
+      starting: 59,
       currency: "USD",
       billing: "monthly",
     },
@@ -328,8 +328,13 @@ export const leadsieAlternativePage: ProgrammaticComparisonPage = {
         ],
       },
       enterprise: {
-        price: "Custom",
-        features: ["White-label", "SSO", "Dedicated CSM", "SLA"],
+        price: 149,
+        features: [
+          "50 clients/month",
+          "Multi-brand (3 brands)",
+          "Priority support",
+          "Custom integrations",
+        ],
       },
     },
     savings: {
@@ -387,7 +392,7 @@ export const leadsieAlternativePage: ProgrammaticComparisonPage = {
     primaryLink: "/signup",
     secondaryButton: "View Pricing",
     secondaryLink: "/pricing",
-    guarantee: "✓ Access + Intake in one link  ✓ $29/mo flat rate  ✓ US-based support",
+    guarantee: "✓ Access + Intake in one link  ✓ From $29/mo · 5/20/50 client caps  ✓ US-based support",
   },
 
   isProgrammatic: true,
@@ -631,7 +636,7 @@ export const agencyAccessAlternativePage: ProgrammaticComparisonPage = {
     {
       category: "Pricing & Limits",
       features: [
-        { name: "Starting Price", competitor: "$33/mo (annual)", authhub: "$29 Starter · $79 Growth" },
+        { name: "Starting Price", competitor: "$33/mo (annual)", authhub: "$29 Starter · $79 Growth · $149 Agency" },
         { name: "Client Caps by Tier", competitor: "Premium for unlimited invites", authhub: "5 / 20 / 50 clients/month" },
         { name: "Starter Invite Limit", competitor: "5/month", authhub: "5 clients/month" },
         { name: "Free Trial", competitor: "30 days", authhub: "14 days" },
