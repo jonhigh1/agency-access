@@ -309,6 +309,115 @@ describe('OAuth exchange routes (characterization)', () => {
           );
         });
 
+        it('persists the snapchat discovery contract as platform authorization metadata', async () => {
+          const SNAP_USER_INFO = {
+            id: 'snap-user-1',
+            email: 'client@example.com',
+            name: 'Snap User',
+            organizations: [
+              {
+                id: 'org-1',
+                name: 'Snap Org',
+                state: 'ACTIVE',
+                roles: ['ORGANIZATION_ADMIN'],
+                isAgency: false,
+                adAccounts: [
+                  {
+                    id: 'acct-1',
+                    name: 'Main Account',
+                    status: 'ACTIVE',
+                    currency: 'USD',
+                    timezone: 'America/Los_Angeles',
+                    roles: ['AD_ACCOUNT_ADMIN'],
+                  },
+                ],
+              },
+            ],
+            adAccountCount: 1,
+            role: 'ORGANIZATION_ADMIN',
+            discoveryFailed: false,
+            orgStatus: 'COMPLETED',
+          };
+
+          mockHappyPath({
+            state: { platform: 'snapchat' },
+            connector: { getUserInfo: vi.fn().mockResolvedValue(SNAP_USER_INFO) },
+          });
+
+          const response = await app.inject({
+            method: 'POST',
+            url,
+            payload: { code: 'code-1', state: 'state-1', platform: 'snapchat' },
+          });
+
+          expect(response.statusCode).toBe(200);
+          expect(response.json()).toEqual({
+            data: {
+              connectionId: 'conn-1',
+              platform: 'snapchat',
+              token: 'token-123',
+            },
+            error: null,
+          });
+
+          expect(prisma.clientConnection.create).toHaveBeenCalledWith({
+            data: {
+              accessRequestId: 'req-1',
+              agencyId: 'agency-1',
+              clientEmail: 'client@example.com',
+              status: 'active',
+            },
+          });
+
+          expect(infisical.storeOAuthTokens).toHaveBeenCalledWith(
+            expect.any(String),
+            expect.objectContaining({ accessToken: 'access-1' })
+          );
+
+          expect(prisma.platformAuthorization.upsert).toHaveBeenCalledWith(
+            expect.objectContaining({
+              where: {
+                connectionId_platform: { connectionId: 'conn-1', platform: 'snapchat' },
+              },
+              create: expect.objectContaining({
+                platform: 'snapchat',
+                metadata: expect.objectContaining({
+                  organizations: SNAP_USER_INFO.organizations,
+                  adAccountCount: 1,
+                  role: 'ORGANIZATION_ADMIN',
+                  discoveryFailed: false,
+                  orgStatus: 'COMPLETED',
+                }),
+              }),
+              update: expect.objectContaining({
+                metadata: expect.objectContaining({
+                  adAccountCount: 1,
+                  role: 'ORGANIZATION_ADMIN',
+                  discoveryFailed: false,
+                }),
+              }),
+            })
+          );
+
+          // CLIENT_AUTHORIZED only: no snapchat-specific audit action exists
+          // (the TIKTOK_TOKEN_EXCHANGED precedent stays unique).
+          expect(auditService.createAuditLog).toHaveBeenCalledTimes(1);
+          expect(auditService.createAuditLog).toHaveBeenCalledWith(
+            expect.objectContaining({
+              agencyId: 'agency-1',
+              action: 'CLIENT_AUTHORIZED',
+              userEmail: 'client@example.com',
+              resourceType: 'client_connection',
+              resourceId: 'conn-1',
+              metadata: expect.objectContaining({
+                platform: 'snapchat',
+                accessRequestId: 'req-1',
+                platformAuthId: 'auth-1',
+              }),
+            })
+          );
+        });
+
         it('creates the client connection when none exists yet', async () => {
           mockHappyPath();
 

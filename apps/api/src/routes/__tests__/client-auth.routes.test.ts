@@ -4,6 +4,8 @@ import { clientAuthRoutes } from '../client-auth.js';
 import * as accessRequestService from '@/services/access-request.service';
 import { oauthStateService } from '@/services/oauth-state.service';
 import { getConnector } from '@/services/connectors/factory';
+import { snapchatConnector } from '@/services/connectors/snapchat';
+import { env } from '@/lib/env';
 
 // Mock services
 vi.mock('@/services/access-request.service');
@@ -360,26 +362,108 @@ describe('Client Auth Routes', () => {
       expect(response.json().error.code).toBe('VALIDATION_ERROR');
     });
 
-    it('should reject snapchat for client OAuth URL generation', async () => {
-      const mockAccessRequest = {
-        id: 'req-1',
-        agencyId: 'agency-1',
-        clientEmail: 'client@example.com',
-      };
+    it('generates a Snapchat OAuth URL against the client invite callback with the marketing scope', async () => {
+      const mockToken = 'test-token';
+      const mockState = 'snap-state';
 
       vi.mocked(accessRequestService.getAccessRequestByToken).mockResolvedValue({
-        data: mockAccessRequest as any,
+        data: {
+          id: 'req-1',
+          agencyId: 'agency-1',
+          clientEmail: 'client@example.com',
+        } as any,
         error: null,
       });
 
-      const response = await app.inject({
-        method: 'POST',
-        url: '/client/test-token/oauth-url',
-        payload: { platform: 'snapchat' },
+      vi.mocked(oauthStateService.createState).mockResolvedValue({
+        data: mockState,
+        error: null,
       });
 
-      expect(response.statusCode).toBe(400);
-      expect(response.json().error.code).toBe('VALIDATION_ERROR');
+      // Real connector: proves the route's no-override scope handling falls
+      // through to the registry defaultScopes for snapchat.
+      vi.mocked(getConnector).mockReturnValue(snapchatConnector as any);
+
+      const originalClientId = (env as any).SNAPCHAT_CLIENT_ID;
+      (env as any).SNAPCHAT_CLIENT_ID = 'snap-client-id';
+
+      try {
+        const response = await app.inject({
+          method: 'POST',
+          url: `/client/${mockToken}/oauth-url`,
+          payload: { platform: 'snapchat' },
+        });
+
+        expect(response.statusCode).toBe(200);
+
+        const authUrl = new URL(response.json().data.authUrl);
+        expect(`${authUrl.origin}${authUrl.pathname}`).toBe(
+          'https://accounts.snapchat.com/login/oauth2/authorize'
+        );
+        expect(authUrl.searchParams.get('redirect_uri')).toBe(
+          'http://localhost:3000/invite/oauth-callback'
+        );
+        expect(authUrl.searchParams.get('scope')).toBe('snapchat-marketing-api');
+        expect(authUrl.searchParams.get('client_id')).toBe('snap-client-id');
+        expect(authUrl.searchParams.get('state')).toBe(mockState);
+        expect(authUrl.searchParams.get('response_type')).toBe('code');
+
+        expect(oauthStateService.createState).toHaveBeenCalledWith(
+          expect.objectContaining({
+            platform: 'snapchat',
+            accessRequestToken: mockToken,
+            redirectUrl: 'http://localhost:3000/invite/oauth-callback',
+          })
+        );
+      } finally {
+        if (originalClientId === undefined) {
+          delete (env as any).SNAPCHAT_CLIENT_ID;
+        } else {
+          (env as any).SNAPCHAT_CLIENT_ID = originalClientId;
+        }
+      }
+    });
+
+    it('maps missing Snapchat credentials to a CONNECTOR_ERROR naming SNAPCHAT_CLIENT_ID', async () => {
+      vi.mocked(accessRequestService.getAccessRequestByToken).mockResolvedValue({
+        data: {
+          id: 'req-1',
+          agencyId: 'agency-1',
+          clientEmail: 'client@example.com',
+        } as any,
+        error: null,
+      });
+
+      vi.mocked(oauthStateService.createState).mockResolvedValue({
+        data: 'snap-state',
+        error: null,
+      });
+
+      vi.mocked(getConnector).mockReturnValue(snapchatConnector as any);
+
+      const originalClientId = (env as any).SNAPCHAT_CLIENT_ID;
+      delete (env as any).SNAPCHAT_CLIENT_ID;
+
+      try {
+        const response = await app.inject({
+          method: 'POST',
+          url: '/client/test-token/oauth-url',
+          payload: { platform: 'snapchat' },
+        });
+
+        // Documented client-route behavior: unlike the agency initiate route
+        // (503 MISSING_CLIENT_ID), the client oauth-url route maps any
+        // connector failure to 400 CONNECTOR_ERROR with the raw message.
+        expect(response.statusCode).toBe(400);
+        expect(response.json().error.code).toBe('CONNECTOR_ERROR');
+        expect(response.json().error.message).toContain('SNAPCHAT_CLIENT_ID');
+      } finally {
+        if (originalClientId === undefined) {
+          delete (env as any).SNAPCHAT_CLIENT_ID;
+        } else {
+          (env as any).SNAPCHAT_CLIENT_ID = originalClientId;
+        }
+      }
     });
   });
 
@@ -459,15 +543,36 @@ describe('Client Auth Routes', () => {
       expect(response.statusCode).toBe(500);
     });
 
-    it('should reject snapchat in OAuth exchange payload', async () => {
+    it('accepts snapchat in the OAuth exchange payload', async () => {
+      vi.mocked(oauthStateService.validateState).mockResolvedValue({
+        data: {
+          accessRequestId: 'req-1',
+          platform: 'snapchat',
+          clientEmail: 'client@example.com',
+        } as any,
+        error: null,
+      });
+
+      const mockConnector = {
+        exchangeCode: vi.fn().mockRejectedValue(new Error('stop after validation')),
+      };
+      vi.mocked(getConnector).mockReturnValue(mockConnector as any);
+
       const response = await app.inject({
         method: 'POST',
         url: '/client/test-token/oauth-exchange',
         payload: { code: 'test-code', state: 'test-state', platform: 'snapchat' },
       });
 
-      expect(response.statusCode).toBe(400);
-      expect(response.json().error.code).toBe('VALIDATION_ERROR');
+      // Platform validation passed: the request reached state validation and
+      // the connector exchange stage with the client invite callback URI.
+      expect(oauthStateService.validateState).toHaveBeenCalledWith('test-state');
+      expect(mockConnector.exchangeCode).toHaveBeenCalledWith(
+        'test-code',
+        'http://localhost:3000/invite/oauth-callback'
+      );
+      expect(response.statusCode).not.toBe(400);
+      expect(response.json().error.code).not.toBe('VALIDATION_ERROR');
     });
   });
 
