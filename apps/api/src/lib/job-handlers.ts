@@ -86,11 +86,18 @@ export async function startTokenRefreshHandlers(): Promise<void> {
       const refreshResult = await refreshClientPlatformAuthorization(connectionId, platform as Platform);
 
       if (refreshResult.error) {
+        // RECONNECT_REQUIRED covers non-refreshable platforms; INVALID_TOKEN is a
+        // terminal refresh failure. Both mean the agency must reconnect, so both
+        // record the reconnect-required audit outcome.
+        const requiresReconnect =
+          refreshResult.error.code === 'RECONNECT_REQUIRED' ||
+          refreshResult.error.code === 'INVALID_TOKEN';
+
         await auditService.createAuditLog({
           agencyId: auth.connection.agencyId,
           resourceId: connectionId,
           resourceType: 'connection',
-          action: refreshResult.error.code === 'RECONNECT_REQUIRED'
+          action: requiresReconnect
             ? 'REFRESH_RECONNECT_REQUIRED'
             : 'FAILED',
           userEmail: auth.connection.clientEmail,

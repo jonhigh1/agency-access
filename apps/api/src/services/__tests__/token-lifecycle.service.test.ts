@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { prisma } from '@/lib/prisma';
 import { infisical } from '@/lib/infisical';
 import { getConnector } from '@/services/connectors/factory';
+import { ConnectorError } from '@/services/connectors/base.connector';
 import {
   ensureAgencyAccessToken,
   refreshAgencyPlatformConnection,
@@ -126,5 +127,128 @@ describe('tokenLifecycleService', () => {
       code: 'MANUAL_CONNECTION',
     });
     expect(getConnector).not.toHaveBeenCalled();
+  });
+});
+
+describe('tokenLifecycleService — refresh token rotation invariant', () => {
+  const CONNECTION_ID = 'conn-snap-1';
+  const SECRET_ID = 'oauth_snapchat_conn-snap-1';
+  const AUTH_ID = 'auth-snap-1';
+  const STORED_REFRESH = 'stored-refresh-token';
+  const NEW_EXPIRY = new Date(Date.now() + 3_600_000);
+
+  function mockClientTarget() {
+    vi.mocked(prisma.platformAuthorization.findFirst).mockResolvedValue({
+      id: AUTH_ID,
+      connectionId: CONNECTION_ID,
+      platform: 'snapchat',
+      secretId: SECRET_ID,
+      status: 'active',
+      expiresAt: new Date(Date.now() + 60_000),
+    } as any);
+
+    vi.mocked(infisical.retrieveOAuthTokens).mockResolvedValue({
+      accessToken: 'old-access-token',
+      refreshToken: STORED_REFRESH,
+      expiresAt: new Date(Date.now() + 60_000),
+    });
+  }
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    mockClientTarget();
+  });
+
+  it('persists the rotated refresh token when the refresh response returns one', async () => {
+    vi.mocked(getConnector).mockReturnValue({
+      refreshToken: vi.fn().mockResolvedValue({
+        accessToken: 'new-access-token',
+        refreshToken: 'rotated-refresh-token',
+        expiresAt: NEW_EXPIRY,
+      }),
+    } as any);
+
+    vi.mocked(prisma.platformAuthorization.update).mockResolvedValue({ id: AUTH_ID } as any);
+
+    const result = await refreshClientPlatformAuthorization(CONNECTION_ID, 'snapchat');
+
+    expect(result.error).toBeNull();
+    expect(result.data).toMatchObject({
+      outcome: 'refreshed',
+      accessToken: 'new-access-token',
+    });
+    // Exact payload: the rotated token must be written, not dropped.
+    expect(infisical.updateOAuthTokens).toHaveBeenCalledWith(SECRET_ID, {
+      accessToken: 'new-access-token',
+      refreshToken: 'rotated-refresh-token',
+      expiresAt: NEW_EXPIRY,
+    });
+    expect(prisma.platformAuthorization.update).toHaveBeenCalledWith({
+      where: { id: AUTH_ID },
+      data: expect.objectContaining({ status: 'active' }),
+    });
+  });
+
+  it('persists the stored refresh token unchanged when the refresh response omits one', async () => {
+    vi.mocked(getConnector).mockReturnValue({
+      refreshToken: vi.fn().mockResolvedValue({
+        accessToken: 'new-access-token',
+        refreshToken: undefined,
+        expiresAt: NEW_EXPIRY,
+      }),
+    } as any);
+
+    vi.mocked(prisma.platformAuthorization.update).mockResolvedValue({ id: AUTH_ID } as any);
+
+    const result = await refreshClientPlatformAuthorization(CONNECTION_ID, 'snapchat');
+
+    expect(result.error).toBeNull();
+    // Infisical updateOAuthTokens rewrites the whole secret JSON, so the stored
+    // refresh token must be carried forward or rotation would erase it.
+    expect(infisical.updateOAuthTokens).toHaveBeenCalledWith(SECRET_ID, {
+      accessToken: 'new-access-token',
+      refreshToken: STORED_REFRESH,
+      expiresAt: NEW_EXPIRY,
+    });
+  });
+
+  it('leaves the connection untouched for a retryable refresh failure', async () => {
+    vi.mocked(getConnector).mockReturnValue({
+      refreshToken: vi
+        .fn()
+        .mockRejectedValue(
+          new ConnectorError('snapchat', 'REFRESH_RETRYABLE', 'Token endpoint returned 503')
+        ),
+    } as any);
+
+    const result = await refreshClientPlatformAuthorization(CONNECTION_ID, 'snapchat');
+
+    expect(result.data).toBeNull();
+    expect(result.error).toMatchObject({ code: 'REFRESH_RETRYABLE' });
+    // Status must not flip to invalid: the token-refresh scan only picks up
+    // active authorizations, so an untouched row retries on the next scan.
+    expect(prisma.platformAuthorization.update).not.toHaveBeenCalled();
+    expect(infisical.updateOAuthTokens).not.toHaveBeenCalled();
+  });
+
+  it('marks the connection invalid for a terminal refresh failure', async () => {
+    vi.mocked(getConnector).mockReturnValue({
+      refreshToken: vi
+        .fn()
+        .mockRejectedValue(
+          new ConnectorError('snapchat', 'INVALID_REFRESH', 'invalid_grant: refresh token revoked')
+        ),
+    } as any);
+
+    vi.mocked(prisma.platformAuthorization.update).mockResolvedValue({ id: AUTH_ID } as any);
+
+    const result = await refreshClientPlatformAuthorization(CONNECTION_ID, 'snapchat');
+
+    expect(result.data).toBeNull();
+    expect(result.error).toMatchObject({ code: 'INVALID_TOKEN' });
+    expect(prisma.platformAuthorization.update).toHaveBeenCalledWith({
+      where: { id: AUTH_ID },
+      data: { status: 'invalid' },
+    });
   });
 });
