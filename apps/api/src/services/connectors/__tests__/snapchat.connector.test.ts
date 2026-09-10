@@ -207,6 +207,64 @@ describe('SnapchatConnector', () => {
         expect((error as ConnectorError).code).not.toBe('REFRESH_RETRYABLE');
       }
     });
+
+    it('classifies a transport failure (fetch rejects) as REFRESH_RETRYABLE', async () => {
+      const connector = new SnapchatConnector();
+
+      vi.mocked(fetch).mockRejectedValueOnce(new TypeError('fetch failed'));
+
+      await expect(connector.refreshToken('old-refresh-token')).rejects.toMatchObject({
+        code: 'REFRESH_RETRYABLE',
+      });
+    });
+
+    it('classifies missing client credentials as REFRESH_RETRYABLE, keeping the original message', async () => {
+      const connector = new SnapchatConnector();
+      const { env } = await import('../../../lib/env');
+      const originalId = (env as Record<string, string | undefined>).SNAPCHAT_CLIENT_ID;
+      delete (env as Record<string, string | undefined>).SNAPCHAT_CLIENT_ID;
+
+      try {
+        await connector.refreshToken('old-refresh-token');
+        expect.unreachable('refreshToken should have thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(ConnectorError);
+        expect((error as ConnectorError).code).toBe('REFRESH_RETRYABLE');
+        expect((error as Error).message).toContain('SNAPCHAT_CLIENT_ID is not configured');
+      } finally {
+        (env as Record<string, string | undefined>).SNAPCHAT_CLIENT_ID = originalId;
+      }
+    });
+
+    it('passes an abort signal on every outbound fetch (15s request bound)', async () => {
+      const connector = new SnapchatConnector();
+
+      vi.mocked(fetch)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            access_token: 'snap-access-token-2',
+            refresh_token: 'rotated-refresh-token',
+            expires_in: 3600,
+          }),
+        } as Response)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ me: { id: 'user-snap-signal' } }),
+        } as Response)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ request_status: 'SUCCESS', organizations: [] }),
+        } as Response);
+
+      await connector.refreshToken('old-refresh-token');
+      await connector.getUserInfo('snap-access-token');
+
+      expect(fetch).toHaveBeenCalledTimes(3);
+      for (const [, init] of vi.mocked(fetch).mock.calls) {
+        expect(init?.signal).toBeInstanceOf(AbortSignal);
+      }
+    });
   });
 
   describe('user info and discovery', () => {

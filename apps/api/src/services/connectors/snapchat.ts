@@ -3,6 +3,7 @@ import type { Platform } from '@agency-platform/shared';
 
 const SNAPCHAT_API_BASE = 'https://adsapi.snapchat.com';
 const DEFAULT_TOKEN_TTL_SECONDS = 60 * 60; // Snap access tokens live ~1 hour
+const REQUEST_TIMEOUT_MS = 15_000; // Bound every outbound Snap HTTP call
 
 /**
  * Snap Marketing API roles, ordered most-capable first.
@@ -101,6 +102,9 @@ function pickPrimaryRole(roles: string[]): string | undefined {
  * - Token endpoint credentials go in the FORM BODY (client_id/client_secret),
  *   never an Authorization: Basic header (BaseConnector default).
  * - Exchange body includes redirect_uri; refresh body must NOT (BaseConnector defaults).
+ * - Refresh runs the BaseConnector flow; only failure classification
+ *   (classifyRefreshFailure / classifyRefreshCatch) and a 15s request timeout
+ *   are Snap-specific.
  * - Token responses are a flat envelope: { access_token, refresh_token, expires_in, token_type, scope }.
  *   The authorization_code response OMITS `scope` — the registry default is recorded instead.
  * - Refresh returns a NEW refresh_token (rotation) which normalizeResponse maps through.
@@ -148,53 +152,44 @@ export class SnapchatConnector extends BaseConnector {
   }
 
   /**
-   * Refresh overrides the BaseConnector only for error classification: the
-   * form body it already sends (refresh_token, client_id, client_secret,
-   * grant_type — no redirect_uri) matches Snap's contract exactly.
+   * Refresh inherits the BaseConnector flow unchanged: the form body it builds
+   * (refresh_token, client_id, client_secret, grant_type — no redirect_uri)
+   * matches Snap's contract exactly. Only failure classification and the
+   * request timeout are overridden here.
    *
    * Retry classification contract (consumed by the token lifecycle):
    * - HTTP 429 and 5xx -> 'REFRESH_RETRYABLE' (transient, safe to retry)
-   * - HTTP 401 and every other non-ok status -> terminal codes (never 'REFRESH_RETRYABLE')
+   * - HTTP 401 and every other non-ok status -> 'INVALID_REFRESH' (terminal)
+   * - Transport failure (fetch rejects, incl. the 15s timeout) ->
+   *   'REFRESH_RETRYABLE' — a network blip must not invalidate the grant
+   * - MISSING_CLIENT_ID / MISSING_CLIENT_SECRET -> 'REFRESH_RETRYABLE' — a
+   *   config gap on our side must not strand the client's authorization
    */
-  override async refreshToken(refreshToken: string): Promise<NormalizedTokenResponse> {
-    const body = new URLSearchParams({
-      refresh_token: refreshToken,
-      client_id: this.getClientId(),
-      client_secret: this.getClientSecret(),
-      grant_type: 'refresh_token',
-    });
+  protected override classifyRefreshFailure(status: number): { code: string; message: string } {
+    return {
+      code: status === 429 || status >= 500 ? 'REFRESH_RETRYABLE' : 'INVALID_REFRESH',
+      message: 'Snapchat token refresh failed',
+    };
+  }
 
-    try {
-      const response = await fetch(this.config.tokenUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: body.toString(),
-      });
+  protected override refreshSignal(): AbortSignal {
+    return AbortSignal.timeout(REQUEST_TIMEOUT_MS);
+  }
 
-      if (!response.ok) {
-        const error = await response.text();
-        const retryable = response.status === 429 || response.status >= 500;
-        throw new ConnectorError(
-          this.platform,
-          retryable ? 'REFRESH_RETRYABLE' : 'INVALID_REFRESH',
-          'Snapchat token refresh failed',
-          { status: response.status, body: error }
-        );
+  protected override classifyRefreshCatch(error: unknown): ConnectorError {
+    if (error instanceof ConnectorError) {
+      const isConfigGap =
+        error.code === 'MISSING_CLIENT_ID' || error.code === 'MISSING_CLIENT_SECRET';
+      if (isConfigGap) {
+        return new ConnectorError(this.platform, 'REFRESH_RETRYABLE', error.message);
       }
-
-      return this.normalizeResponse(await response.json());
-    } catch (error) {
-      if (error instanceof ConnectorError) {
-        throw error;
-      }
-      throw new ConnectorError(
-        this.platform,
-        'REFRESH_ERROR',
-        error instanceof Error ? error.message : 'Snapchat token refresh failed'
-      );
+      return error;
     }
+    return new ConnectorError(
+      this.platform,
+      'REFRESH_RETRYABLE',
+      error instanceof Error ? error.message : 'Snapchat token refresh failed'
+    );
   }
 
   /**
@@ -214,6 +209,7 @@ export class SnapchatConnector extends BaseConnector {
       headers: {
         'Authorization': `Bearer ${accessToken}`,
       },
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
 
     if (!meResponse.ok) {
@@ -250,6 +246,7 @@ export class SnapchatConnector extends BaseConnector {
           headers: {
             'Authorization': `Bearer ${accessToken}`,
           },
+          signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
         }
       );
 
