@@ -6,7 +6,6 @@ import KitManualPage from '../kit/manual/page';
 import KlaviyoManualPage from '../klaviyo/manual/page';
 import MailchimpManualPage from '../mailchimp/manual/page';
 import PinterestManualPage from '../pinterest/manual/page';
-import SnapchatManualPage from '../snapchat/manual/page';
 import ShopifyManualPage from '../shopify/manual/page';
 
 const { pushMock, backMock } = vi.hoisted(() => ({
@@ -50,7 +49,6 @@ function buildPayload(overrides?: Partial<any>) {
         klaviyo: { agencyEmail: 'ops@demoagency.com' },
         mailchimp: { agencyEmail: 'ops@demoagency.com' },
         pinterest: { businessId: '123456789' },
-        snapchat: { agencyEmail: 'snap@demoagency.com' },
         shopify: { shopDomain: 'store-demo.myshopify.com', collaboratorCode: '1234' },
       },
       authorizationProgress: { completedPlatforms: [], isComplete: false },
@@ -329,59 +327,6 @@ describe('Manual invite flows', () => {
         expect.objectContaining({ method: 'POST' })
       );
       expect(pushMock).toHaveBeenCalledWith('/invite/token-123?step=2&platform=shopify&connectionId=conn-shopify-1');
-    });
-  });
-
-  it('Snapchat flow submits manual connect and redirects', async () => {
-    const fetchMock = vi.fn(async (url: string) => {
-      if (url.includes('/api/client/token-123/snapchat/manual-connect')) {
-        return {
-          ok: true,
-          json: async () => ({ data: { connectionId: 'conn-snapchat-1' }, error: null }),
-        } as Response;
-      }
-
-      return {
-        ok: true,
-        json: async () => buildPayload({
-          platforms: [
-            {
-              platformGroup: 'snapchat',
-              products: [{ product: 'snapchat_ads', accessLevel: 'admin' }],
-            },
-          ],
-        }),
-      } as Response;
-    });
-
-    vi.stubGlobal('fetch', fetchMock);
-
-    render(<SnapchatManualPage />);
-
-    await screen.findByText(/copy business email/i);
-    await clickPrimaryAction('I copied this');
-    await screen.findByText(/invite at the organization level/i);
-    await clickPrimaryAction('I invited the organization admin');
-    await screen.findByText(/invite at the ad account level/i);
-    await clickPrimaryAction('I invited the ad account admin');
-    await screen.findByRole('heading', { name: /confirm and continue/i });
-
-    const returnButtons = screen.getAllByRole('button', { name: 'Return to request' });
-    expect(returnButtons[0]).toBeDisabled();
-
-    await userEvent.click(
-      screen.getByRole('checkbox', {
-        name: /i completed snapchat business and ad account sharing/i,
-      })
-    );
-    await clickPrimaryAction('Return to request');
-
-    await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith(
-        expect.stringContaining('/api/client/token-123/snapchat/manual-connect'),
-        expect.objectContaining({ method: 'POST' })
-      );
-      expect(pushMock).toHaveBeenCalledWith('/invite/token-123?step=2&platform=snapchat&connectionId=conn-snapchat-1');
     });
   });
 });

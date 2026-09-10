@@ -137,12 +137,12 @@ export default function ClientAuthorizationPage({
     const targets = data.manualInviteTargets || {};
     const identities: Array<{ label: string; value: string }> = [];
 
-    const emailPlatforms: Array<Platform> = ['beehiiv', 'kit', 'klaviyo', 'mailchimp', 'snapchat'];
+    const emailPlatforms: Array<Platform> = ['beehiiv', 'kit', 'klaviyo', 'mailchimp'];
     for (const platform of emailPlatforms) {
       const value = (targets as any)?.[platform]?.agencyEmail;
       if (value) {
         identities.push({
-          label: platform === 'snapchat' ? 'Snapchat Business Email' : `${PLATFORM_NAMES[platform]} invite email`,
+          label: `${PLATFORM_NAMES[platform]} invite email`,
           value,
         });
       }

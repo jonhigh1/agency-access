@@ -260,7 +260,7 @@ describe('Onboarding Platforms Page', () => {
       });
     });
 
-    it('should open manual modal for Snapchat instead of initiating OAuth', async () => {
+    it('should initiate OAuth for Snapchat instead of opening the manual modal', async () => {
       const user = userEvent.setup();
       const mutateFn = vi.fn();
 
@@ -280,8 +280,8 @@ describe('Onboarding Platforms Page', () => {
       expect(connectButton).toBeTruthy();
       await user.click(connectButton as HTMLButtonElement);
 
-      expect(mutateFn).not.toHaveBeenCalled();
-      expect(screen.getByText(/snapchat business email/i)).toBeInTheDocument();
+      expect(mutateFn).toHaveBeenCalledWith('snapchat');
+      expect(screen.queryByText(/snapchat business email/i)).not.toBeInTheDocument();
     });
 
     it('shows Google Ads account titles with formatted IDs in the account list', async () => {

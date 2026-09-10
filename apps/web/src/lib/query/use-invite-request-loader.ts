@@ -13,7 +13,6 @@ interface UseInviteRequestLoaderOptions<TData> {
     | 'manual-kit'
     | 'manual-mailchimp'
     | 'manual-klaviyo'
-    | 'manual-snapchat'
     | 'manual-pinterest'
     | 'manual-shopify';
   delayedMs?: number;
