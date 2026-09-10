@@ -6,6 +6,7 @@
  */
 
 import { CheckCircle2, AlertCircle, XCircle, Clock } from 'lucide-react';
+import { formatTimeUntilExpiry } from '@/lib/token-health';
 
 export type HealthStatus = 'healthy' | 'expiring' | 'expired' | 'unknown';
 
@@ -70,11 +71,34 @@ export function HealthBadge({ health, size = 'md' }: HealthBadgeProps) {
 
 interface ExpirationCountdownProps {
   daysUntilExpiry: number;
+  /**
+   * When provided, sub-day horizons render minute-level truth ("Expires in
+   * 42m", "Expired 12m ago") instead of day-rounded copy. Hourly tokens make
+   * the day-granular path lie twice, so callers holding the real date pass it.
+   * An explicit null (token never expires) renders "Unknown" rather than the
+   * day-rounded copy; omitting the prop keeps the legacy days-only behavior.
+   */
+  expiresAt?: Date | string | null;
 }
 
 export function ExpirationCountdown({
   daysUntilExpiry,
+  expiresAt,
 }: ExpirationCountdownProps) {
+  if (expiresAt !== undefined) {
+    const copy = formatTimeUntilExpiry(expiresAt);
+    const isPast = copy.startsWith('Expired');
+    const isSubDay =
+      !isPast && copy.startsWith('Expires in') && (copy.endsWith('m') || copy.endsWith('h'));
+    const ink = isPast
+      ? 'text-danger-ink font-medium'
+      : isSubDay
+        ? 'text-warning font-medium'
+        : 'text-muted-foreground';
+
+    return <span className={`text-sm ${ink}`}>{copy}</span>;
+  }
+
   const isUrgent = daysUntilExpiry <= 2;
 
   if (daysUntilExpiry < 0) {

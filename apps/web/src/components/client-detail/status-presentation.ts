@@ -5,7 +5,7 @@ import type {
 
 type BadgeConfig =
   | { status: 'active' | 'pending' | 'expired' | 'revoked'; label?: never; badgeVariant?: never }
-  | { badgeVariant: 'warning' | 'default'; label: string; status?: never };
+  | { badgeVariant: 'warning' | 'default' | 'danger'; label: string; status?: never };
 
 export function getPlatformGroupBadgeConfig(
   status: ClientDetailPlatformGroupStatus
@@ -39,6 +39,10 @@ export function getProductBadgeConfig(status: ClientDetailProductStatus): BadgeC
       return { status: 'expired' };
     case 'revoked':
       return { status: 'revoked' };
+    // Lost grant: the client authorized but access died. Its own badge —
+    // never the pending fallthrough, which reads as "waiting on the client".
+    case 'needs_reconnect':
+      return { badgeVariant: 'danger', label: 'Reconnect Required' };
     case 'pending':
     default:
       return { status: 'pending' };

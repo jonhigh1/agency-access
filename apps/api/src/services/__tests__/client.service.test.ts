@@ -629,5 +629,101 @@ describe('Phase 5: Client Service - TDD Tests', () => {
         }),
       ]);
     });
+
+    it('keeps a never-authorized non-selecting product pending', async () => {
+      vi.mocked(mockPrisma.client.findUnique).mockResolvedValue({
+        id: 'client-1',
+        agencyId: 'agency-1',
+        name: 'Taylor Client',
+        company: 'Acme',
+        email: 'taylor@acme.com',
+        website: null,
+        language: 'en',
+        createdAt: new Date('2026-03-01T00:00:00.000Z'),
+        updatedAt: new Date('2026-03-05T00:00:00.000Z'),
+        accessRequests: [
+          {
+            id: 'request-4',
+            clientName: 'Snapchat access',
+            status: 'partial',
+            createdAt: new Date('2026-03-11T00:00:00.000Z'),
+            authorizedAt: null,
+            platforms: { snapchat: ['snapchat_ads'] },
+            connection: {
+              id: 'connection-4',
+              status: 'active',
+              createdAt: new Date('2026-03-11T00:00:00.000Z'),
+              grantedAssets: {},
+              authorizations: [],
+            },
+          },
+        ],
+      } as any);
+
+      const result = await clientService.getClientDetail({
+        clientId: 'client-1',
+        agencyId: 'agency-1',
+      });
+
+      expect(result?.platformGroups).toEqual([
+        expect.objectContaining({
+          platformGroup: 'snapchat',
+          status: 'pending',
+          products: [expect.objectContaining({ product: 'snapchat_ads', status: 'pending' })],
+        }),
+      ]);
+    });
+
+    it('marks a dead authorization as needs_reconnect instead of pending', async () => {
+      vi.mocked(mockPrisma.client.findUnique).mockResolvedValue({
+        id: 'client-1',
+        agencyId: 'agency-1',
+        name: 'Taylor Client',
+        company: 'Acme',
+        email: 'taylor@acme.com',
+        website: null,
+        language: 'en',
+        createdAt: new Date('2026-03-01T00:00:00.000Z'),
+        updatedAt: new Date('2026-03-05T00:00:00.000Z'),
+        accessRequests: [
+          {
+            id: 'request-5',
+            clientName: 'Snapchat access',
+            status: 'partial',
+            createdAt: new Date('2026-03-11T00:00:00.000Z'),
+            authorizedAt: new Date('2026-03-11T01:00:00.000Z'),
+            platforms: { snapchat: ['snapchat_ads'] },
+            connection: {
+              id: 'connection-5',
+              status: 'active',
+              createdAt: new Date('2026-03-11T01:00:00.000Z'),
+              grantedAssets: {},
+              authorizations: [
+                {
+                  platform: 'snapchat',
+                  status: 'invalid',
+                  metadata: {},
+                },
+              ],
+            },
+          },
+        ],
+      } as any);
+
+      const result = await clientService.getClientDetail({
+        clientId: 'client-1',
+        agencyId: 'agency-1',
+      });
+
+      // The client authorized; Snap killed the grant. The surface must say so,
+      // not "pending", and the group must read as agency action needed.
+      expect(result?.platformGroups).toEqual([
+        expect.objectContaining({
+          platformGroup: 'snapchat',
+          status: 'needs_follow_up',
+          products: [expect.objectContaining({ product: 'snapchat_ads', status: 'needs_reconnect' })],
+        }),
+      ]);
+    });
   });
 });

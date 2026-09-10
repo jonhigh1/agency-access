@@ -83,6 +83,16 @@ describe('Phase 5: Shared Types - TDD Tests', () => {
       expect(shared.ClientDetailProductStatusSchema.parse('selection_required')).toBe(
         'selection_required'
       );
+      // Lost-access truth: a dead grant is its own status, never 'pending' or 'revoked'.
+      expect(shared.ClientDetailProductStatusSchema.parse('needs_reconnect')).toBe(
+        'needs_reconnect'
+      );
+    });
+
+    it('should reject a product status outside the documented enum', async () => {
+      const shared = await import('../types');
+
+      expect(() => shared.ClientDetailProductStatusSchema.parse('waiting')).toThrow();
     });
 
     it('should allow client detail responses to include grouped platform progress', () => {

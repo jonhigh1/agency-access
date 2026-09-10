@@ -23,7 +23,7 @@ export type StatusType =
   | 'revoked'
   | 'invalid';
 
-export type StatusVariant = 'success' | 'warning' | 'default';
+export type StatusVariant = 'success' | 'warning' | 'default' | 'danger';
 
 interface StatusBadgeProps {
   status?: StatusType;
@@ -126,6 +126,11 @@ const VARIANT_CONFIG: Record<StatusVariant, { label: string; className: string }
   default: {
     label: 'Default',
     className: NEUTRAL_BADGE,
+  },
+  danger: {
+    label: 'Danger',
+    // Design system danger family: coral/10 fill, danger-ink text (AA on white).
+    className: DANGER_BADGE,
   },
 };
 

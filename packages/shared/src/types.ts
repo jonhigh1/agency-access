@@ -2879,6 +2879,10 @@ export const ClientDetailProductStatusSchema = z.enum([
   'no_assets',
   'expired',
   'revoked',
+  // The client DID authorize, but the grant is dead (platform revocation,
+  // credential rotation). Distinct from 'pending' (never authorized) and
+  // 'revoked' (request/connection-level revocation).
+  'needs_reconnect',
 ]);
 export type ClientDetailProductStatus = z.infer<typeof ClientDetailProductStatusSchema>;
 
