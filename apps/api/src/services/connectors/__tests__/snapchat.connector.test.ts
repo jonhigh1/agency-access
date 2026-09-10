@@ -94,6 +94,7 @@ describe('SnapchatConnector', () => {
         ok: true,
         json: async () => ({
           access_token: 'snap-access-token',
+          refresh_token: 'snap-refresh-token',
           expires_in: 3600,
         }),
       } as Response);
@@ -101,6 +102,47 @@ describe('SnapchatConnector', () => {
       const tokens = await connector.exchangeCode('auth-code-snap');
 
       expect(tokens.scope).toBe('snapchat-marketing-api');
+    });
+
+    it('fails the exchange fast when the response omits refresh_token', async () => {
+      const connector = new SnapchatConnector();
+
+      vi.mocked(fetch).mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          access_token: 'snap-access-token',
+          expires_in: 3600,
+          token_type: 'Bearer',
+        }),
+      } as Response);
+
+      try {
+        await connector.exchangeCode('auth-code-snap');
+        expect.unreachable('exchangeCode should have thrown');
+      } catch (error) {
+        expect(error).toBeInstanceOf(ConnectorError);
+        expect((error as ConnectorError).code).toBe('EXCHANGE_FAILED');
+        expect((error as Error).message).toContain(
+          'Snapchat token response missing refresh_token'
+        );
+      }
+    });
+
+    it('fails the exchange fast when the response carries an empty refresh_token', async () => {
+      const connector = new SnapchatConnector();
+
+      vi.mocked(fetch).mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          access_token: 'snap-access-token',
+          refresh_token: '',
+          expires_in: 3600,
+        }),
+      } as Response);
+
+      await expect(connector.exchangeCode('auth-code-snap')).rejects.toMatchObject({
+        code: 'EXCHANGE_FAILED',
+      });
     });
 
     it('throws EXCHANGE_FAILED without leaking the client secret on non-2xx', async () => {
@@ -160,6 +202,24 @@ describe('SnapchatConnector', () => {
       expect(tokens.accessToken).toBe('snap-access-token-2');
       expect(tokens.refreshToken).toBe('rotated-refresh-token');
       expect(tokens.scope).toBe('snapchat-marketing-api');
+    });
+
+    it('normalizes a refresh response that omits the rotated refresh_token (lifecycle falls back to the stored token)', async () => {
+      const connector = new SnapchatConnector();
+
+      vi.mocked(fetch).mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          access_token: 'snap-access-token-2',
+          expires_in: 3600,
+        }),
+      } as Response);
+
+      const tokens = await connector.refreshToken('old-refresh-token');
+
+      expect(tokens.accessToken).toBe('snap-access-token-2');
+      expect(tokens.refreshToken).toBeUndefined();
+      expect(tokens.expiresIn).toBe(3600);
     });
 
     it('classifies 429 as REFRESH_RETRYABLE', async () => {

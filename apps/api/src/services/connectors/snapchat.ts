@@ -107,7 +107,12 @@ function pickPrimaryRole(roles: string[]): string | undefined {
  *   are Snap-specific.
  * - Token responses are a flat envelope: { access_token, refresh_token, expires_in, token_type, scope }.
  *   The authorization_code response OMITS `scope` — the registry default is recorded instead.
+ * - The authorization_code response MUST carry refresh_token. Snap access tokens
+ *   live about an hour; a grant stored without one can never refresh and the
+ *   lifecycle reports NO_REFRESH_TOKEN forever. The exchange fails fast instead.
  * - Refresh returns a NEW refresh_token (rotation) which normalizeResponse maps through.
+ *   A refresh response that OMITS one is tolerated: the lifecycle falls back to the
+ *   stored token (token-lifecycle.service.ts: `refreshed.refreshToken || storedTokens.refreshToken`).
  *
  * Discovery is best-effort: /v1/me is required, organizations are not.
  */
@@ -149,6 +154,38 @@ export class SnapchatConnector extends BaseConnector {
       tokenType: typeof payload.token_type === 'string' ? payload.token_type : 'Bearer',
       scope,
     };
+  }
+
+  /**
+   * Fail the INITIAL exchange when Snap omits refresh_token.
+   *
+   * Storing that grant as an active authorization would strand it: the token
+   * lifecycle refuses to refresh without a stored refresh_token
+   * (NO_REFRESH_TOKEN) and Snap access tokens die in about an hour. Failing
+   * here runs before any Infisical write or active authorization row, so the
+   * client re-authorizes instead of inheriting a dead grant.
+   *
+   * Refresh is deliberately NOT enforced the same way. BaseConnector.refreshToken
+   * funnels both flows through normalizeResponse with no phase argument, and Snap's
+   * refresh response may omit the rotated refresh_token — the lifecycle then falls
+   * back to the stored token (`refreshed.refreshToken || storedTokens.refreshToken`),
+   * which is normal and must not fail the refresh.
+   */
+  override async exchangeCode(
+    code: string,
+    redirectUri?: string
+  ): Promise<NormalizedTokenResponse> {
+    const tokens = await super.exchangeCode(code, redirectUri);
+
+    if (!tokens.refreshToken) {
+      throw new ConnectorError(
+        this.platform,
+        'EXCHANGE_FAILED',
+        'Snapchat token response missing refresh_token'
+      );
+    }
+
+    return tokens;
   }
 
   /**
