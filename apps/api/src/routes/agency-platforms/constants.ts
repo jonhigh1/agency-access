@@ -2,6 +2,7 @@ import { MetaConnector } from '@/services/connectors/meta';
 import { GoogleConnector } from '@/services/connectors/google';
 import { LinkedInConnector } from '@/services/connectors/linkedin';
 import { TikTokConnector } from '@/services/connectors/tiktok';
+import { SnapchatConnector } from '@/services/connectors/snapchat';
 import {
   type Platform,
   getPlatformTokenCapability,
@@ -28,6 +29,7 @@ export const PLATFORM_CONNECTORS = {
   meta: MetaConnector,
   linkedin: LinkedInConnector,
   tiktok: TikTokConnector,
+  snapchat: SnapchatConnector,
 } as const;
 
 export function getPlatformDisplayName(platform: string): string {

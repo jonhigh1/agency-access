@@ -4,6 +4,7 @@ import { oauthStateService } from '@/services/oauth-state.service';
 import { MetaConnector } from '@/services/connectors/meta';
 import { GoogleConnector } from '@/services/connectors/google';
 import type { GoogleAccountsResponse } from '@/services/connectors/google';
+import type { SnapchatUserInfo } from '@/services/connectors/snapchat';
 import type { PlatformConnector } from '@/services/connectors/factory';
 import { ConnectorError } from '@/services/connectors/base.connector.js';
 import { env } from '@/lib/env';
@@ -23,6 +24,15 @@ interface MetaBusinessAccountsResponse {
     verificationStatus?: string;
   }>;
   hasAccess: boolean;
+}
+
+// Snapchat organization discovery payload persisted as connection metadata.
+interface SnapchatOrganizationsMetadata {
+  organizations: SnapchatUserInfo['organizations'];
+  adAccountCount: number;
+  role?: string;
+  discoveryFailed: boolean;
+  orgStatus?: string;
 }
 
 function sanitizeConnection(connection: Record<string, any>) {
@@ -358,6 +368,31 @@ export async function registerOAuthRoutes(fastify: FastifyInstance) {
         }
       }
 
+      // Snapchat discovery reuses the /v1/me call the connector already makes
+      // (identity + best-effort organizations). It never blocks the connection:
+      // both an organizations failure and an identity failure are recorded as
+      // discoveryFailed metadata and the connection is still created.
+      let snapchatOrganizations: SnapchatOrganizationsMetadata | undefined;
+      if (platform === 'snapchat') {
+        try {
+          const snapUserInfo = await connector.getUserInfo(tokens.accessToken);
+          snapchatOrganizations = {
+            organizations: snapUserInfo.organizations ?? [],
+            adAccountCount: snapUserInfo.adAccountCount ?? 0,
+            ...(snapUserInfo.role ? { role: snapUserInfo.role } : {}),
+            discoveryFailed: snapUserInfo.discoveryFailed ?? true,
+            ...(snapUserInfo.orgStatus ? { orgStatus: snapUserInfo.orgStatus } : {}),
+          };
+        } catch (error) {
+          console.error('Failed to fetch Snapchat organizations:', error);
+          snapchatOrganizations = {
+            organizations: [],
+            adAccountCount: 0,
+            discoveryFailed: true,
+          };
+        }
+      }
+
       const connectionResult = await agencyPlatformService.createConnection({
         agencyId: actualAgencyId,
         platform: stateData.platform,
@@ -384,6 +419,7 @@ export async function registerOAuthRoutes(fastify: FastifyInstance) {
               hasAccess: metaBusinessAccounts.hasAccess,
             },
           }),
+          ...(snapchatOrganizations && { snapchatOrganizations }),
         },
       });
 
@@ -402,9 +438,11 @@ export async function registerOAuthRoutes(fastify: FastifyInstance) {
 
       const redirectUrl = stateData.redirectUrl || env.FRONTEND_URL;
       // Include identifiers so the frontend can invalidate caches and track events reliably.
+      // The platform param mirrors the connected platform recorded in state,
+      // so it stays consistent with the created connection.
       const redirectTarget = new URL(redirectUrl, env.FRONTEND_URL);
       redirectTarget.searchParams.set('success', 'true');
-      redirectTarget.searchParams.set('platform', platform);
+      redirectTarget.searchParams.set('platform', stateData.platform);
       if (connectionResult.data) {
         redirectTarget.searchParams.set('connectionId', connectionResult.data.id);
       }

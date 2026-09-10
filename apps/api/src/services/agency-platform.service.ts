@@ -120,12 +120,15 @@ export async function createConnection(input: CreateConnectionInput) {
       };
     }
 
-    // Check if there's a previous revoked connection to reuse
-    const revokedConnection = await prisma.agencyPlatformConnection.findFirst({
+    // Check if there's a previous non-active connection to reuse in place.
+    // Revoked, expired, and invalid rows all occupy the same (agencyId, platform)
+    // slot, so reconnecting must update the row instead of creating a duplicate
+    // (a create would violate the unique constraint).
+    const reusableConnection = await prisma.agencyPlatformConnection.findFirst({
       where: {
         agencyId: validated.agencyId,
         platform: validated.platform,
-        status: 'revoked',
+        status: { in: ['revoked', 'expired', 'invalid'] },
       },
     });
 
@@ -142,10 +145,10 @@ export async function createConnection(input: CreateConnectionInput) {
 
     let connection;
 
-    // If reusing a revoked connection, update it; otherwise create new
-    if (revokedConnection) {
+    // If reusing a non-active connection, update it; otherwise create new
+    if (reusableConnection) {
       connection = await prisma.agencyPlatformConnection.update({
-        where: { id: revokedConnection.id },
+        where: { id: reusableConnection.id },
         data: {
           status: 'active',
           secretId,
@@ -157,6 +160,9 @@ export async function createConnection(input: CreateConnectionInput) {
           revokedAt: null, // Clear revoked fields
           revokedBy: null,
           lastRefreshedAt: null,
+          // A row reconnected through OAuth that was not already OAuth-shaped
+          // (e.g. a legacy manual_invitation row) records its new mode.
+          ...(reusableConnection.connectionMode !== 'oauth' && { connectionMode: 'oauth' }),
         },
       });
     } else {
