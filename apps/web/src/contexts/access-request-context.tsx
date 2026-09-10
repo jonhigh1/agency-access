@@ -98,7 +98,7 @@ const initialState: AccessRequestFormState = {
   ],
   branding: {
     logoUrl: '',
-    primaryColor: '#6366f1',
+    primaryColor: '#FF6B35',
     subdomain: '',
   },
   currentStep: 1, // Start at step 1 for 4-step flow
@@ -149,7 +149,7 @@ export function AccessRequestProvider({
         newState.intakeFields = template.intakeFields || [];
         newState.branding = {
           logoUrl: template.branding?.logoUrl || '',
-          primaryColor: template.branding?.primaryColor || '#6366f1',
+          primaryColor: template.branding?.primaryColor || '#FF6B35',
           subdomain: template.branding?.subdomain || '',
         };
       }
@@ -391,7 +391,7 @@ export function AccessRequestProvider({
           platforms: Object.keys(state.selectedPlatforms),
           access_level: state.globalAccessLevel,
           intake_fields_count: state.intakeFields.length,
-          has_custom_branding: !!state.branding.logoUrl || state.branding.primaryColor !== '#6366f1',
+          has_custom_branding: !!state.branding.logoUrl || state.branding.primaryColor !== '#FF6B35',
           used_template: !!state.selectedTemplate,
         });
 

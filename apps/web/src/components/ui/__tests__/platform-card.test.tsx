@@ -222,7 +222,7 @@ describe('PlatformCard', () => {
     expect(screen.getByRole('button', { name: /edit email/i })).toBeInTheDocument();
   });
 
-  it('should render edit email button for snapchat manual platform', () => {
+  it('should not render edit email button for snapchat now that it connects with OAuth', () => {
     render(
       <PlatformCard
         platform={'snapchat' as Platform}
@@ -233,7 +233,7 @@ describe('PlatformCard', () => {
       />
     );
 
-    expect(screen.getByRole('button', { name: /edit email/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /edit email/i })).not.toBeInTheDocument();
   });
 
   it('should not render edit details button for Shopify', () => {

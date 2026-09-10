@@ -6,6 +6,7 @@
  */
 
 import { CheckCircle2, AlertCircle, XCircle, Clock } from 'lucide-react';
+import { formatTimeUntilExpiry } from '@/lib/token-health';
 
 export type HealthStatus = 'healthy' | 'expiring' | 'expired' | 'unknown';
 
@@ -69,33 +70,38 @@ export function HealthBadge({ health, size = 'md' }: HealthBadgeProps) {
  */
 
 interface ExpirationCountdownProps {
+  /**
+   * Legacy day-granular estimate from getTokenHealth. Retained for call-site
+   * compatibility; the render below derives urgency from `expiresAt` alone.
+   */
   daysUntilExpiry: number;
+  /**
+   * Sub-day horizons render minute-level truth ("Expires in 42m", "Expired
+   * 12m ago") instead of day-rounded copy. Hourly tokens make the day-granular
+   * path lie twice, so callers holding the real date pass it. An explicit null
+   * (token never expires) renders "Unknown".
+   */
+  expiresAt: Date | string | null;
 }
 
-export function ExpirationCountdown({
-  daysUntilExpiry,
-}: ExpirationCountdownProps) {
-  const isUrgent = daysUntilExpiry <= 2;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
-  if (daysUntilExpiry < 0) {
-    return <span className="text-sm text-danger-ink font-medium">Expired</span>;
-  }
+export function ExpirationCountdown({ expiresAt }: ExpirationCountdownProps) {
+  // One clock for both the copy and the urgency class so the two can never
+  // disagree. Urgency comes from the raw offset, not from sniffing the copy:
+  // expired -> danger, still inside its first day -> warning, otherwise muted.
+  // A null or unparseable expiry makes the offset NaN, which falls to muted.
+  const now = new Date();
+  const copy = formatTimeUntilExpiry(expiresAt, now);
+  const expiryDate = typeof expiresAt === 'string' ? new Date(expiresAt) : expiresAt;
+  const msUntilExpiry = expiryDate ? expiryDate.getTime() - now.getTime() : Number.NaN;
+  const isPast = msUntilExpiry <= 0;
+  const isSubDay = !isPast && msUntilExpiry <= DAY_MS;
+  const ink = isPast
+    ? 'text-danger-ink font-medium'
+    : isSubDay
+      ? 'text-warning font-medium'
+      : 'text-muted-foreground';
 
-  if (daysUntilExpiry === 0) {
-    return <span className="text-sm text-danger-ink font-medium">Today</span>;
-  }
-
-  if (daysUntilExpiry === 1) {
-    return <span className="text-sm text-warning font-medium">Tomorrow</span>;
-  }
-
-  return (
-    <span
-      className={`text-sm ${
-        isUrgent ? 'text-warning font-medium' : 'text-muted-foreground'
-      }`}
-    >
-      {daysUntilExpiry} {daysUntilExpiry === 1 ? 'day' : 'days'}
-    </span>
-  );
+  return <span className={`text-sm ${ink}`}>{copy}</span>;
 }

@@ -204,7 +204,7 @@ const SUPPORTED_PLATFORMS = [
   { id: 'google', name: 'Google', description: 'Google Ads, Analytics, Business, Tag Manager, Search Console, Merchant Center', type: 'oauth' },
   { id: 'meta', name: 'Meta', description: 'Facebook & Instagram Ads', type: 'oauth' },
   { id: 'linkedin', name: 'LinkedIn Ads', description: 'LinkedIn Ads', type: 'oauth' },
-  { id: 'snapchat', name: 'Snapchat', description: 'Snapchat Ads - manual business sharing', type: 'manual' },
+  { id: 'snapchat', name: 'Snapchat', description: 'Snapchat Ads - authorize with Snapchat', type: 'oauth' },
   { id: 'pinterest', name: 'Pinterest', description: 'Pinterest Ads - manual partnership', type: 'manual' },
   { id: 'kit', name: 'Kit', description: 'Email marketing - team invitation', type: 'manual' },
   { id: 'mailchimp', name: 'Mailchimp', description: 'Email marketing - team invitation', type: 'manual' },

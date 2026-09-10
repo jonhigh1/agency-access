@@ -13,7 +13,6 @@ export const MANUAL_INVITE_PLATFORMS: readonly string[] = [
   'mailchimp',
   'beehiiv',
   'klaviyo',
-  'snapchat',
   'pinterest',
   'shopify',
   'zapier',
@@ -35,7 +34,6 @@ const CLIENT_INVITE_MANUAL_ROUTE_SEGMENTS: Partial<Record<Platform, string>> = {
   mailchimp: 'mailchimp/manual',
   klaviyo: 'klaviyo/manual',
   pinterest: 'pinterest/manual',
-  snapchat: 'snapchat/manual',
   shopify: 'shopify/manual',
 };
 
@@ -45,7 +43,6 @@ const CLIENT_INVITE_MANUAL_PLATFORMS = new Set<Platform>([
   'mailchimp',
   'klaviyo',
   'pinterest',
-  'snapchat',
   'shopify',
 ]);
 

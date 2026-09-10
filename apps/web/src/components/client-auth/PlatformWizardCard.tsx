@@ -6,7 +6,7 @@
  * Acid Brutalism Design:
  * - Hard borders (border-2 border-black)
  * - Brutalist shadow (shadow-brutalist)
- * - Minimal rounding (rounded-lg)
+ * - Binary radius (square)
  * - Platform icon header
  * - Animated step transitions
  * - Footer with navigation buttons
@@ -40,7 +40,7 @@ export function PlatformWizardCard({
 
   return (
     <m.div
-      className="bg-card rounded-lg shadow-brutalist border-2 border-black dark:border-white overflow-hidden"
+      className="bg-card rounded-none shadow-brutalist border-2 border-black dark:border-white overflow-hidden"
       initial={false}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
@@ -78,7 +78,7 @@ export function PlatformWizardCard({
 
       {/* Footer: Navigation (optional) */}
       {footer && (
-        <div className="border-t-2 border-black dark:border-white p-4 bg-muted/20 dark:bg-muted/60/50">
+        <div className="border-t-2 border-black bg-muted/20 p-4">
           {footer}
         </div>
       )}

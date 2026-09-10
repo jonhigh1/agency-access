@@ -56,7 +56,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     // Variant styles (use NonNullable to exclude undefined from Record key type)
     const variantStyles: Record<NonNullable<ButtonProps['variant']>, string> = {
       primary: 'border border-black dark:border-white bg-primary text-primary-foreground hover:bg-primary/90 hover:translate-y-[-2px] active:scale-95 shadow-brutalist',
-      secondary: 'border border-black dark:border-white bg-card text-foreground hover:border-coral hover:text-danger-ink hover:translate-y-[-2px] active:scale-95',
+      secondary: 'border border-black dark:border-white bg-card text-foreground hover:border-coral hover:text-ink hover:translate-y-[-2px] active:scale-95',
       ghost: 'bg-transparent text-muted-foreground hover:bg-muted/10 active:scale-95',
       // danger uses the AA danger-ink fill — never identical to primary (v2.0)
       danger: 'border border-black dark:border-white bg-danger-ink text-white hover:bg-danger-ink/90 hover:translate-y-[-2px] active:scale-95 shadow-brutalist',

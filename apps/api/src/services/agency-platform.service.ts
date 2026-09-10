@@ -101,16 +101,22 @@ export async function createConnection(input: CreateConnectionInput) {
       };
     }
 
-    // Check if platform already connected (only active connections block reconnect)
-    const existingConnection = await prisma.agencyPlatformConnection.findFirst({
+    // Load the (agencyId, platform) slot once and branch on its status in memory:
+    // - no row -> create below
+    // - active -> PLATFORM_ALREADY_CONNECTED (only active blocks reconnect)
+    // - revoked / expired / invalid -> reuse the row in place below
+    // - any other status -> fall through to the create below (the unique
+    //   constraint rejects it, as it did before this lookup was consolidated)
+    const existingConnection = await prisma.agencyPlatformConnection.findUnique({
       where: {
-        agencyId: validated.agencyId,
-        platform: validated.platform,
-        status: 'active', // Only check for active connections
+        agencyId_platform: {
+          agencyId: validated.agencyId,
+          platform: validated.platform,
+        },
       },
     });
 
-    if (existingConnection) {
+    if (existingConnection?.status === 'active') {
       return {
         data: null,
         error: {
@@ -120,14 +126,10 @@ export async function createConnection(input: CreateConnectionInput) {
       };
     }
 
-    // Check if there's a previous revoked connection to reuse
-    const revokedConnection = await prisma.agencyPlatformConnection.findFirst({
-      where: {
-        agencyId: validated.agencyId,
-        platform: validated.platform,
-        status: 'revoked',
-      },
-    });
+    const reusableConnection =
+      existingConnection && ['revoked', 'expired', 'invalid'].includes(existingConnection.status)
+        ? existingConnection
+        : null;
 
     // Generate secret name for Infisical
     const secretId = `${validated.platform}_agency_${validated.agencyId}`;
@@ -142,10 +144,10 @@ export async function createConnection(input: CreateConnectionInput) {
 
     let connection;
 
-    // If reusing a revoked connection, update it; otherwise create new
-    if (revokedConnection) {
+    // If reusing a non-active connection, update it; otherwise create new
+    if (reusableConnection) {
       connection = await prisma.agencyPlatformConnection.update({
-        where: { id: revokedConnection.id },
+        where: { id: reusableConnection.id },
         data: {
           status: 'active',
           secretId,
@@ -157,6 +159,9 @@ export async function createConnection(input: CreateConnectionInput) {
           revokedAt: null, // Clear revoked fields
           revokedBy: null,
           lastRefreshedAt: null,
+          // A row reconnected through OAuth that was not already OAuth-shaped
+          // (e.g. a legacy manual_invitation row) records its new mode.
+          ...(reusableConnection.connectionMode !== 'oauth' && { connectionMode: 'oauth' }),
         },
       });
     } else {

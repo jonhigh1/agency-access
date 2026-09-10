@@ -32,6 +32,9 @@ import { invalidateDashboardCache } from '@/lib/cache.js';
  */
 const AGENCY_LIVE_VERIFY_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
 
+/** One day in milliseconds, used for the day-granular countdown field. */
+const DAY_MS = 24 * 60 * 60 * 1000;
+
 /**
  * Cap on concurrent platform live-verify calls per agency health sweep,
  * so one agency with many connections cannot fan out unbounded.
@@ -56,11 +59,18 @@ function calculateHealthStatus(
     return { health: 'unknown', daysUntilExpiry: 0 };
   }
 
-  const daysUntilExpiry = Math.ceil(
-    (expiresAt.getTime() - Date.now()) / (1000 * 60 * 60 * 24)
-  );
+  // Expiry classification runs on milliseconds, matching getTokenHealth in
+  // apps/web/src/lib/token-health.ts: an hourly token (Snapchat-class) that
+  // died minutes ago must not round up to day 0 and read as merely "expiring".
+  const msUntilExpiry = expiresAt.getTime() - Date.now();
+  // Future horizons round up (conservative); past horizons round away from
+  // zero so "12 minutes past expiry" reports day -1, not day 0.
+  const daysUntilExpiry =
+    msUntilExpiry > 0
+      ? Math.ceil(msUntilExpiry / DAY_MS)
+      : Math.floor(msUntilExpiry / DAY_MS);
 
-  if (daysUntilExpiry < 0) {
+  if (msUntilExpiry <= 0) {
     return { health: 'expired', daysUntilExpiry };
   }
 

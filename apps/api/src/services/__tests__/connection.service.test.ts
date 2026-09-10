@@ -434,6 +434,63 @@ describe('ConnectionService', () => {
         ])
       );
     });
+
+    it('should classify a token that died 12 minutes ago as expired (no day-ceil round-up to day 0)', async () => {
+      vi.mocked(prisma.platformAuthorization.findMany).mockResolvedValue([
+        {
+          id: 'auth-snap',
+          connectionId: 'connection-1',
+          platform: 'snapchat',
+          status: 'active',
+          // No secretId: health comes from the stored expiry only.
+          expiresAt: new Date(Date.now() - 12 * 60 * 1000),
+          lastRefreshedAt: null,
+          connection: {
+            agencyId: 'agency-1',
+            clientEmail: 'client@example.com',
+          },
+        },
+      ] as any);
+
+      const result = await connectionService.getAgencyTokenHealth('agency-1');
+
+      expect(result.error).toBeNull();
+      expect(result.data).toEqual([
+        expect.objectContaining({
+          id: 'auth-snap',
+          health: 'expired',
+          daysUntilExpiry: -1,
+        }),
+      ]);
+    });
+
+    it('should classify a token with 12 minutes left as expiring, not expired', async () => {
+      vi.mocked(prisma.platformAuthorization.findMany).mockResolvedValue([
+        {
+          id: 'auth-snap',
+          connectionId: 'connection-1',
+          platform: 'snapchat',
+          status: 'active',
+          expiresAt: new Date(Date.now() + 12 * 60 * 1000),
+          lastRefreshedAt: null,
+          connection: {
+            agencyId: 'agency-1',
+            clientEmail: 'client@example.com',
+          },
+        },
+      ] as any);
+
+      const result = await connectionService.getAgencyTokenHealth('agency-1');
+
+      expect(result.error).toBeNull();
+      expect(result.data).toEqual([
+        expect.objectContaining({
+          id: 'auth-snap',
+          health: 'expiring',
+          daysUntilExpiry: 1,
+        }),
+      ]);
+    });
   });
 
   describe('getPlatformTokens', () => {

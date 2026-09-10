@@ -13,9 +13,13 @@ import { oauthStateService } from '../../services/oauth-state.service.js';
 import { metaAssetsService } from '../../services/meta-assets.service.js';
 import { googleAssetsService } from '../../services/google-assets.service.js';
 import { MetaConnector } from '../../services/connectors/meta.js';
+import { SnapchatConnector } from '../../services/connectors/snapchat.js';
+import { ConnectorError } from '../../services/connectors/base.connector.js';
+import { agencyResolutionService } from '../../services/agency-resolution.service.js';
 import * as authorization from '../../lib/authorization.js';
 import { prisma } from '../../lib/prisma.js';
 import { infisical } from '../../lib/infisical.js';
+import { env } from '../../lib/env.js';
 import { createAuditLog } from '../../services/audit.service.js';
 
 // Mock services
@@ -143,11 +147,14 @@ vi.mock('../../middleware/quota-enforcement.js', () => ({
   quotaEnforcementMiddleware: () => async () => undefined,
 }));
 
-// Mock env to provide FRONTEND_URL
+// Mock env to provide FRONTEND_URL (plus Snapchat OAuth credentials for the real connector)
 vi.mock('../../lib/env.js', () => ({
   env: {
     FRONTEND_URL: 'http://localhost:3000',
     NODE_ENV: 'test',
+    API_URL: 'http://localhost:3001',
+    SNAPCHAT_CLIENT_ID: 'snap-client-id',
+    SNAPCHAT_CLIENT_SECRET: 'snap-client-secret',
   },
 }));
 
@@ -1002,6 +1009,305 @@ describe('Agency Platforms Routes', () => {
 
       expect(response.statusCode).toBe(302);
       expect(response.headers.location).toContain('error=PLATFORM_ALREADY_CONNECTED');
+    });
+  });
+
+  describe('Snapchat agency OAuth flow', () => {
+    let exchangeCodeSpy: ReturnType<typeof vi.spyOn>;
+    let getUserInfoSpy: ReturnType<typeof vi.spyOn>;
+
+    beforeEach(() => {
+      // Use the REAL connector so registration (PLATFORM_CONNECTORS.snapchat)
+      // and the registry-driven auth URL are under test. Only the network
+      // boundary is spied.
+      exchangeCodeSpy = vi.spyOn(SnapchatConnector.prototype, 'exchangeCode');
+      getUserInfoSpy = vi.spyOn(SnapchatConnector.prototype, 'getUserInfo');
+    });
+
+    afterEach(() => {
+      exchangeCodeSpy.mockRestore();
+      getUserInfoSpy.mockRestore();
+    });
+
+    describe('POST /agency-platforms/snapchat/initiate', () => {
+      it('starts Snapchat OAuth with the API callback redirect and the single marketing scope', async () => {
+        const mockStateToken = 'snap-state-token-123';
+
+        vi.mocked(oauthStateService.createState).mockResolvedValue({
+          data: mockStateToken,
+          error: null,
+        });
+
+        const response = await app.inject({
+          method: 'POST',
+          url: '/agency-platforms/snapchat/initiate',
+          payload: {
+            agencyId: 'agency-1',
+            userEmail: 'admin@agency.com',
+            redirectUrl: 'https://app.example.com/settings/platforms',
+          },
+        });
+
+        expect(response.statusCode).toBe(200);
+        expect(response.json()).toEqual({
+          data: {
+            authUrl: expect.stringContaining('https://accounts.snapchat.com/login/oauth2/authorize'),
+            state: mockStateToken,
+          },
+          error: null,
+        });
+
+        expect(oauthStateService.createState).toHaveBeenCalledWith({
+          agencyId: 'agency-1',
+          platform: 'snapchat',
+          userEmail: 'admin@agency.com',
+          redirectUrl: 'https://app.example.com/settings/platforms',
+          timestamp: expect.any(Number),
+        });
+
+        const authUrl = new URL(response.json().data.authUrl);
+        expect(authUrl.searchParams.get('client_id')).toBe('snap-client-id');
+        expect(authUrl.searchParams.get('redirect_uri')).toBe(
+          'http://localhost:3001/agency-platforms/snapchat/callback'
+        );
+        expect(authUrl.searchParams.get('state')).toBe(mockStateToken);
+        expect(authUrl.searchParams.get('scope')).toBe('snapchat-marketing-api');
+        expect(authUrl.searchParams.get('response_type')).toBe('code');
+      });
+
+      it('returns 503 naming the missing Snapchat environment variables', async () => {
+        const originalClientId = (env as any).SNAPCHAT_CLIENT_ID;
+        const originalSecret = (env as any).SNAPCHAT_CLIENT_SECRET;
+        delete (env as any).SNAPCHAT_CLIENT_ID;
+        delete (env as any).SNAPCHAT_CLIENT_SECRET;
+
+        try {
+          vi.mocked(oauthStateService.createState).mockResolvedValue({
+            data: 'snap-state-token-123',
+            error: null,
+          });
+
+          const response = await app.inject({
+            method: 'POST',
+            url: '/agency-platforms/snapchat/initiate',
+            payload: {
+              agencyId: 'agency-1',
+              userEmail: 'admin@agency.com',
+            },
+          });
+
+          expect(response.statusCode).toBe(503);
+          expect(response.json().error.code).toBe('MISSING_CLIENT_ID');
+          expect(response.json().error.message).toContain('SNAPCHAT_CLIENT_ID');
+          expect(response.json().error.message).toContain('SNAPCHAT_CLIENT_SECRET');
+        } finally {
+          (env as any).SNAPCHAT_CLIENT_ID = originalClientId;
+          (env as any).SNAPCHAT_CLIENT_SECRET = originalSecret;
+        }
+      });
+
+      it('blocks initiation for an agency outside the caller principal', async () => {
+        const response = await app.inject({
+          method: 'POST',
+          url: '/agency-platforms/snapchat/initiate',
+          payload: {
+            agencyId: 'agency-9',
+            userEmail: 'admin@agency.com',
+          },
+        });
+
+        expect(response.statusCode).toBe(403);
+        expect(response.json().error.code).toBe('FORBIDDEN');
+        expect(oauthStateService.createState).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('GET /agency-platforms/snapchat/callback', () => {
+      const mockStateData = {
+        agencyId: 'agency-1',
+        platform: 'snapchat',
+        userEmail: 'admin@agency.com',
+        redirectUrl: 'https://app.example.com/settings/platforms',
+        timestamp: Date.now(),
+      };
+
+      const mockTokens = {
+        accessToken: 'snap-access-token',
+        refreshToken: 'snap-refresh-token',
+        expiresAt: new Date(Date.now() + 60 * 60 * 1000),
+        tokenType: 'Bearer',
+      };
+
+      function mockSuccessfulCallbackPrerequisites() {
+        vi.mocked(oauthStateService.validateState).mockResolvedValue({
+          data: mockStateData,
+          error: null,
+        });
+        exchangeCodeSpy.mockResolvedValue(mockTokens as any);
+        vi.mocked(agencyPlatformService.createConnection).mockResolvedValue({
+          data: { id: 'conn-snap-1', agencyId: 'agency-1', platform: 'snapchat' } as any,
+          error: null,
+        });
+      }
+
+      it('records Snapchat organization discovery and redirects with connection identifiers', async () => {
+        mockSuccessfulCallbackPrerequisites();
+
+        const organizations = [
+          {
+            id: 'org-1',
+            name: 'Agency Org',
+            state: 'ACTIVE',
+            roles: ['ORGANIZATION_ADMIN'],
+            isAgency: true,
+            adAccounts: [
+              {
+                id: 'acc-1',
+                name: 'Main Ad Account',
+                status: 'ACTIVE',
+                currency: 'USD',
+                timezone: 'America/Los_Angeles',
+                roles: ['AD_ACCOUNT_ADMIN'],
+              },
+              {
+                id: 'acc-2',
+                name: 'Second Ad Account',
+                status: 'ACTIVE',
+                roles: [],
+              },
+            ],
+          },
+        ];
+
+        getUserInfoSpy.mockResolvedValue({
+          id: 'snap-user-1',
+          email: 'agency@snap.com',
+          name: 'Snap Admin',
+          organizations,
+          adAccountCount: 2,
+          role: 'ORGANIZATION_ADMIN',
+          discoveryFailed: false,
+          orgStatus: 'SUCCESS',
+        } as any);
+
+        const response = await app.inject({
+          method: 'GET',
+          url: '/agency-platforms/snapchat/callback?code=snap-auth-code&state=snap-state-token-123',
+        });
+
+        expect(response.statusCode).toBe(302);
+        expect(response.headers.location).toBe(
+          'https://app.example.com/settings/platforms?success=true&platform=snapchat&connectionId=conn-snap-1&agencyId=agency-1'
+        );
+
+        expect(exchangeCodeSpy).toHaveBeenCalledWith('snap-auth-code');
+        expect(getUserInfoSpy).toHaveBeenCalledWith('snap-access-token');
+
+        expect(agencyPlatformService.createConnection).toHaveBeenCalledWith(
+          expect.objectContaining({
+            agencyId: 'agency-1',
+            platform: 'snapchat',
+            accessToken: mockTokens.accessToken,
+            refreshToken: mockTokens.refreshToken,
+            expiresAt: mockTokens.expiresAt,
+            connectedBy: 'admin@agency.com',
+            metadata: expect.objectContaining({
+              tokenType: 'Bearer',
+              snapchatOrganizations: {
+                organizations,
+                adAccountCount: 2,
+                role: 'ORGANIZATION_ADMIN',
+                discoveryFailed: false,
+                orgStatus: 'SUCCESS',
+              },
+            }),
+          })
+        );
+      });
+
+      it('records discoveryFailed metadata when Snapchat organization discovery fails', async () => {
+        mockSuccessfulCallbackPrerequisites();
+
+        getUserInfoSpy.mockResolvedValue({
+          id: 'snap-user-1',
+          organizations: [],
+          adAccountCount: 0,
+          discoveryFailed: true,
+        } as any);
+
+        const response = await app.inject({
+          method: 'GET',
+          url: '/agency-platforms/snapchat/callback?code=snap-auth-code&state=snap-state-token-123',
+        });
+
+        expect(response.statusCode).toBe(302);
+        expect(response.headers.location).toContain('success=true');
+        expect(agencyPlatformService.createConnection).toHaveBeenCalledWith(
+          expect.objectContaining({
+            platform: 'snapchat',
+            metadata: expect.objectContaining({
+              snapchatOrganizations: {
+                organizations: [],
+                adAccountCount: 0,
+                discoveryFailed: true,
+              },
+            }),
+          })
+        );
+      });
+
+      it('still creates the connection when Snapchat identity lookup throws', async () => {
+        mockSuccessfulCallbackPrerequisites();
+
+        getUserInfoSpy.mockRejectedValue(
+          new ConnectorError('snapchat', 'USER_INFO_FAILED', 'Snapchat user info request failed')
+        );
+
+        const response = await app.inject({
+          method: 'GET',
+          url: '/agency-platforms/snapchat/callback?code=snap-auth-code&state=snap-state-token-123',
+        });
+
+        expect(response.statusCode).toBe(302);
+        expect(response.headers.location).toContain('success=true');
+        expect(agencyPlatformService.createConnection).toHaveBeenCalledTimes(1);
+        expect(agencyPlatformService.createConnection).toHaveBeenCalledWith(
+          expect.objectContaining({
+            platform: 'snapchat',
+            metadata: expect.objectContaining({
+              snapchatOrganizations: {
+                organizations: [],
+                adAccountCount: 0,
+                discoveryFailed: true,
+              },
+            }),
+          })
+        );
+      });
+
+      it('blocks the callback and creates no connection when agency resolution fails', async () => {
+        vi.mocked(oauthStateService.validateState).mockResolvedValue({
+          data: mockStateData,
+          error: null,
+        });
+        vi.mocked(agencyResolutionService.getOrCreateAgency).mockResolvedValueOnce({
+          data: null,
+          error: {
+            code: 'AGENCY_RESOLUTION_FAILED',
+            message: 'Agency resolution failed',
+          },
+        } as any);
+
+        const response = await app.inject({
+          method: 'GET',
+          url: '/agency-platforms/snapchat/callback?code=snap-auth-code&state=snap-state-token-123',
+        });
+
+        expect(response.statusCode).toBe(302);
+        expect(response.headers.location).toContain('error=AGENCY_RESOLUTION_FAILED');
+        expect(exchangeCodeSpy).not.toHaveBeenCalled();
+        expect(agencyPlatformService.createConnection).not.toHaveBeenCalled();
+      });
     });
   });
 

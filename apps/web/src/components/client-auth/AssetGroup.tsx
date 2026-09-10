@@ -13,7 +13,7 @@
 
 import { useState } from 'react';
 import { m } from 'framer-motion';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Inbox } from 'lucide-react';
 import { AssetCheckbox } from './AssetCheckbox';
 
 export interface Asset {
@@ -77,12 +77,17 @@ export function AssetGroup({
   };
 
   return (
-    <div className="border-t border-border pt-2 first:border-t-0 first:pt-0">
+    <div className="border-t border-black/20 pt-3 first:border-t-0 first:pt-0">
+      {/* Group title — the category being approved (P1: was never rendered) */}
+      <p className="label-micro mb-1.5">
+        {title}
+      </p>
+
       {/* Header with Select All */}
       <div className="flex items-center justify-between mb-1.5">
         <div className="flex items-center gap-2">
           {icon}
-          <span className="text-sm font-medium text-[var(--ink)]">
+          <span className="label-nano">
             {selectedCount} of {assets.length} selected
           </span>
         </div>
@@ -92,6 +97,9 @@ export function AssetGroup({
           {assets.length > 0 && (
             <button
               type="button"
+              role="checkbox"
+              aria-checked={allSelected ? true : someSelected ? 'mixed' : false}
+              aria-label={`Select all ${title}`}
               onClick={handleSelectAll}
               className="flex items-center gap-1.5 cursor-pointer group"
             >
@@ -131,8 +139,9 @@ export function AssetGroup({
           <button
             type="button"
             onClick={() => setIsExpanded(!isExpanded)}
-            className="p-1 border border-border rounded hover:bg-muted/30 dark:hover:bg-muted/60 transition-colors"
-            aria-label={isExpanded ? 'Collapse' : 'Expand'}
+            aria-expanded={isExpanded}
+            aria-label={isExpanded ? `Collapse ${title}` : `Expand ${title}`}
+            className="border border-black bg-card p-1 hover:bg-paper transition-colors"
           >
             <m.div
               animate={{ rotate: isExpanded ? 0 : -90 }}
@@ -163,8 +172,8 @@ export function AssetGroup({
       {/* Empty State */}
       {assets.length === 0 && isExpanded && (
         <div className="py-2 text-center">
-          <div className="inline-flex items-center justify-center w-10 h-10 border border-border bg-muted/30 dark:bg-muted/60 mb-2 rounded">
-            <span className="text-lg">📭</span>
+          <div className="mb-2 inline-flex h-10 w-10 items-center justify-center border border-black bg-paper">
+            <Inbox className="h-5 w-5 text-muted-foreground" aria-hidden />
           </div>
           <p className="text-sm font-semibold text-[var(--ink)]">No {title.toLowerCase()} available</p>
           <p className="text-xs text-muted-foreground mt-0.5">

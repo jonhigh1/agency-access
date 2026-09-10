@@ -27,6 +27,26 @@ Append-only log of what was done each session. Newest first. Read the last 3–5
 
 ## Sessions
 
+## Session: 2026-09-10 — Snapchat Ads OAuth connector (U1-U9) + review hardening
+
+### What was done
+- Planned (ce-plan) + executed (ce-work) the Snapchat Ads OAuth connector: capability flip to oauth/automatic/live_verify, SnapchatConnector (BaseConnector; form-body token protocol, two-phase best-effort discovery), agency + client-invite OAuth registration, retryable-vs-terminal refresh classification with rotation persistence, full manual-path removal (web + API), truthful health/reconnect UI (needs_reconnect status, minutes-level expiry copy, status-gated refresh), gated legacy-row migration script.
+- ce-simplify-code pass (11 fixes: shared status types, single findUnique, registry-owned URLs, typed countdown).
+- ce-code-review (9 local reviewers + codex cross-model adversarial peer): 10 actionable findings — all applied across 7 fix(review) commits (retryable transport/credential classification + base refresh hook + fetch timeouts; snapchat identity degradation + requested-platform gate; migration CAS guard; dead countdown branch; job-handler audit tests; ms-precision server health math; fail-fast on missing refresh_token). 2 validator findings dropped with reasons; residuals recorded in the review artifact.
+
+### Files changed
+- Branch feat/snapchat-ads-oauth-connector (19 commits, a5e6215..HEAD): packages/shared types + tests; apps/api connectors/agency-platforms/client-auth/job-handlers/token-lifecycle/connection.service/scripts + tests; apps/web invite/onboarding/token-health/client-detail/ui libs + tests.
+
+### Decisions made
+- DEC-004/005/006 (see DECISIONS.md): two registered redirect URIs; legacy rows to 'revoked' with CAS + operator gate; needs_reconnect status + ms-precision server health.
+
+### Next steps
+- Operator gates (plan Verification Contract): create Snap OAuth apps (register BOTH redirect URIs at creation; immutable after), staging gate, production gate.
+- U9 production apply only after explicit approval (dry-run first).
+- Deferred: blog rewrite (snapchat-ads-access-agencies.md premise false post-launch), state-expiry recovery affordance, per-platform scan cadence, docs refresh (APP_OVERVIEW/PRODUCTION_OAUTH_SETUP/PRD/CLAUDE.md Redis wording).
+- Open residuals: zero-ad-account fulfillment truth unconsumed (hasNoAssetsSignal has no snapchat branch), agency callback state/URL platform binding, scripts/ outside api tsconfig.
+
+
 ## Session: 2026-09-04 — v2.0 tail: review fixes, AA text pass, animation gate, rulings
 
 ### What was done

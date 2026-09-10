@@ -15,7 +15,7 @@ describe('InviteLoadStateCard', () => {
       />
     );
 
-    await userEvent.click(screen.getByRole('button', { name: /retry/i }));
+    await userEvent.click(screen.getByRole('button', { name: /try again/i }));
 
     expect(onRetry).toHaveBeenCalledTimes(1);
     expect(screen.getByRole('heading', { name: /still working on it/i })).toBeInTheDocument();

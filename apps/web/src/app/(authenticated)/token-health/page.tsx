@@ -11,6 +11,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
+import Link from 'next/link';
 import { useAuth } from '@clerk/nextjs';
 import {
   RefreshCw,
@@ -21,8 +22,8 @@ import {
   AlertCircle,
   XCircle,
 } from 'lucide-react';
-import { StatCard, HealthBadge, ExpirationCountdown, PlatformIcon, formatRelativeTime } from '@/components/ui';
-import type { Platform, HealthStatus } from '@agency-platform/shared';
+import { StatCard, HealthBadge, ExpirationCountdown, PlatformIcon, StatusBadge, formatRelativeTime } from '@/components/ui';
+import type { Platform, HealthStatus, AuthorizationStatus } from '@agency-platform/shared';
 import { resolveApiUrl } from '@/lib/api/api-env';
 import { parseJsonResponse } from '@/lib/api/parse-json-response';
 
@@ -32,7 +33,10 @@ type TokenHealth = {
   clientName: string;
   platform: Platform;
   health: HealthStatus;
-  expiresAt: Date;
+  // Refresh is a property of the authorization, not of the token countdown.
+  status: AuthorizationStatus;
+  // Null for tokens that never expire (non_expiring platforms).
+  expiresAt: Date | null;
   daysUntilExpiry: number;
   lastRefreshedAt: Date | null;
   canRefresh: boolean;
@@ -67,10 +71,12 @@ export default function TokenHealthPage() {
       if (result.data) {
         // JSON dates arrive as strings; coerce once at the boundary so the
         // Date-typed fields below are real Date objects for every consumer.
+        // A null expiresAt must stay null — new Date(null) is the epoch, which
+        // would render a never-expiring token as long expired.
         setTokens(
           result.data.map((t) => ({
             ...t,
-            expiresAt: new Date(t.expiresAt),
+            expiresAt: t.expiresAt ? new Date(t.expiresAt) : null,
             lastRefreshedAt: t.lastRefreshedAt ? new Date(t.lastRefreshedAt) : null,
           }))
         );
@@ -273,6 +279,11 @@ export default function TokenHealthPage() {
             <div className="divide-y divide-slate-200">
               {filteredTokens.map((token) => {
                 const isRefreshing = refreshing.has(token.id);
+                // Refresh is gated on the authorization, not the countdown: an
+                // active row stays refreshable even when its stored expiry has
+                // passed. A dead grant cannot be refreshed by retrying.
+                const isRowActive = token.status === 'active';
+                const canRefreshRow = isRowActive && token.canRefresh;
 
                 return (
                   <div
@@ -289,13 +300,21 @@ export default function TokenHealthPage() {
 
                     {/* Status */}
                     <div className="col-span-3">
-                      <HealthBadge health={token.health} />
+                      <div className="flex flex-col items-start gap-1.5">
+                        <HealthBadge health={token.health} />
+                        {!isRowActive && (
+                          <StatusBadge badgeVariant="danger" size="sm">
+                            Reconnect Required
+                          </StatusBadge>
+                        )}
+                      </div>
                     </div>
 
                     {/* Expires In */}
                     <div className="col-span-3">
                       <ExpirationCountdown
                         daysUntilExpiry={token.daysUntilExpiry}
+                        expiresAt={token.expiresAt}
                       />
                     </div>
 
@@ -312,19 +331,29 @@ export default function TokenHealthPage() {
 
                     {/* Actions */}
                     <div className="col-span-1">
-                      <button
-                        onClick={() => handleRefresh(token.id, token.platform)}
-                        disabled={isRefreshing || token.health === 'expired' || !token.canRefresh}
-                        className={`p-2 rounded-lg transition-colors ${
-                          isRefreshing
-                            ? 'opacity-50 cursor-not-allowed'
-                            : token.canRefresh
-                              ? 'text-indigo-700 hover:text-indigo-800 hover:bg-indigo-50'
-                              : 'text-slate-300 cursor-not-allowed'
-                        }`}
-                      >
-                        <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-                      </button>
+                      {isRowActive ? (
+                        <button
+                          onClick={() => handleRefresh(token.id, token.platform)}
+                          aria-label={`Refresh ${token.platform} token`}
+                          disabled={isRefreshing || !canRefreshRow}
+                          className={`p-2 rounded-lg transition-colors ${
+                            isRefreshing
+                              ? 'opacity-50 cursor-not-allowed'
+                              : canRefreshRow
+                                ? 'text-indigo-700 hover:text-indigo-800 hover:bg-indigo-50'
+                                : 'text-slate-300 cursor-not-allowed'
+                          }`}
+                        >
+                          <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                        </button>
+                      ) : (
+                        <Link
+                          href="/clients"
+                          className="text-xs font-medium text-danger-ink hover:underline"
+                        >
+                          Re-request access
+                        </Link>
+                      )}
                     </div>
                   </div>
                 );

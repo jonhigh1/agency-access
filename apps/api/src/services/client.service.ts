@@ -16,6 +16,8 @@ import {
   type GooglePlatformProductId,
   type GoogleProductFulfillmentMode,
   type GoogleProductGrantLifecycle,
+  type ClientDetailProductStatus,
+  type ClientDetailPlatformGroupStatus,
 } from '@agency-platform/shared';
 import type { Prisma } from '@prisma/client';
 
@@ -385,7 +387,7 @@ export interface ClientDetailResponse {
   };
   platformGroups: Array<{
     platformGroup: string;
-    status: 'connected' | 'partial' | 'pending' | 'expired' | 'revoked' | 'needs_follow_up';
+    status: ClientDetailPlatformGroupStatus;
     fulfilledCount: number;
     requestedCount: number;
     latestRequestId?: string;
@@ -393,7 +395,7 @@ export interface ClientDetailResponse {
     latestRequestedAt?: Date;
     products: Array<{
       product: string;
-      status: 'connected' | 'pending' | 'selection_required' | 'no_assets' | 'expired' | 'revoked';
+      status: ClientDetailProductStatus;
       note?: string;
       latestRequestId?: string;
     }>;
@@ -436,22 +438,6 @@ type ClientDetailRequestedProduct = {
   product: string;
   platformGroup: string;
 };
-
-type ClientDetailProductStatus =
-  | 'connected'
-  | 'pending'
-  | 'selection_required'
-  | 'no_assets'
-  | 'expired'
-  | 'revoked';
-
-type ClientDetailPlatformGroupStatus =
-  | 'connected'
-  | 'partial'
-  | 'pending'
-  | 'expired'
-  | 'revoked'
-  | 'needs_follow_up';
 
 type ClientDetailAccessRequestRecord = {
   id: string;
@@ -715,6 +701,14 @@ function resolveProductSummary(
       return { status: 'connected' };
     }
 
+    // The client DID authorize (rows are only created at token exchange), but
+    // the grant is no longer active: the platform revoked it or the credential
+    // died. That is lost access, not "waiting on the client" — report it as
+    // needs_reconnect. Never-authorized products (no row) stay pending.
+    if (matchingAuthorization) {
+      return { status: 'needs_reconnect' };
+    }
+
     return { status: 'pending' };
   }
 
@@ -767,8 +761,12 @@ function resolveProductSummary(
 function getProductStatusPriority(status: ClientDetailProductStatus): number {
   switch (status) {
     case 'revoked':
-      return 6;
+      return 7;
     case 'expired':
+      return 6;
+    case 'needs_reconnect':
+      // Lost access outranks a live grant so a newer dead state wins over an
+      // older connected summary for the same product.
       return 5;
     case 'connected':
       return 4;
@@ -875,7 +873,9 @@ function buildClientDetailPlatformGroups(
     const hasRevoked = products.some((product) => product.status === 'revoked');
     const hasExpired = products.some((product) => product.status === 'expired');
     const hasFollowUp = products.some((product) =>
-      product.status === 'selection_required' || product.status === 'no_assets'
+      product.status === 'selection_required' ||
+      product.status === 'no_assets' ||
+      product.status === 'needs_reconnect'
     );
 
     let status: ClientDetailPlatformGroupStatus = 'pending';

@@ -280,43 +280,38 @@ export abstract class BaseConnector {
       );
     }
 
-    const body = new URLSearchParams({
-      refresh_token: refreshToken,
-      client_id: this.getClientId(),
-      client_secret: this.getClientSecret(),
-      grant_type: 'refresh_token',
-    });
-
     try {
+      // Built inside the try so missing-credential ConnectorErrors from
+      // getClientId/getClientSecret reach `classifyRefreshCatch`.
+      const body = new URLSearchParams({
+        refresh_token: refreshToken,
+        client_id: this.getClientId(),
+        client_secret: this.getClientSecret(),
+        grant_type: 'refresh_token',
+      });
+
       const response = await fetch(this.config.tokenUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: body.toString(),
+        signal: this.refreshSignal(),
       });
 
       if (!response.ok) {
         const error = await response.text();
-        throw new ConnectorError(
-          this.platform,
-          'REFRESH_FAILED',
-          `Token refresh failed: ${error}`,
-          { status: response.status, body: error }
-        );
+        const failure = this.classifyRefreshFailure(response.status, error);
+        throw new ConnectorError(this.platform, failure.code, failure.message, {
+          status: response.status,
+          body: error,
+        });
       }
 
       const data = await response.json();
       return this.normalizeResponse(data);
     } catch (error) {
-      if (error instanceof ConnectorError) {
-        throw error;
-      }
-      throw new ConnectorError(
-        this.platform,
-        'REFRESH_ERROR',
-        error instanceof Error ? error.message : 'Unknown error'
-      );
+      throw this.classifyRefreshCatch(error);
     }
   }
 
@@ -450,6 +445,65 @@ export abstract class BaseConnector {
    * ```
    */
   protected async postExchange?(tokens: NormalizedTokenResponse): Promise<NormalizedTokenResponse>;
+
+  /**
+   * Classify a non-2xx token refresh response
+   *
+   * Called from refreshToken when the token endpoint answers with a non-ok
+   * status. refreshToken attaches the standard `details` ({ status, body });
+   * this hook only decides the ConnectorError code and message.
+   *
+   * Default: 'REFRESH_FAILED' with the endpoint body appended, matching the
+   * historical refreshToken behavior byte-for-byte. Override for platforms
+   * with retry-vs-terminal semantics (e.g. Snapchat maps 429/5xx to
+   * 'REFRESH_RETRYABLE').
+   *
+   * @param status - HTTP status returned by the token endpoint
+   * @param body - Raw response body returned by the token endpoint
+   * @returns ConnectorError code and message for this failure
+   */
+  protected classifyRefreshFailure(
+    status: number,
+    body: string
+  ): { code: string; message: string } {
+    return { code: 'REFRESH_FAILED', message: `Token refresh failed: ${body}` };
+  }
+
+  /**
+   * Classify an error caught during token refresh
+   *
+   * Called from refreshToken's catch for every failure: ConnectorErrors thrown
+   * inside the flow (including the one built by classifyRefreshFailure) and
+   * anything else thrown while building the request, fetching, or normalizing.
+   *
+   * Default: ConnectorErrors pass through untouched; any other error is
+   * wrapped as a transport-level 'REFRESH_ERROR', matching the historical
+   * refreshToken behavior byte-for-byte. Override to re-classify transport
+   * failures as retryable without duplicating the fetch itself.
+   *
+   * @param error - Error caught during the refresh flow
+   * @returns The ConnectorError to throw
+   */
+  protected classifyRefreshCatch(error: unknown): ConnectorError {
+    if (error instanceof ConnectorError) {
+      return error;
+    }
+    return new ConnectorError(
+      this.platform,
+      'REFRESH_ERROR',
+      error instanceof Error ? error.message : 'Unknown error'
+    );
+  }
+
+  /**
+   * Abort signal for the token refresh request
+   *
+   * Default: undefined (the request is not aborted). Override to bound the
+   * outbound call, e.g. `return AbortSignal.timeout(15_000)`.
+   */
+  protected refreshSignal(): AbortSignal | undefined {
+    return undefined;
+  }
 
   /**
    * Verify agency has access to client's assets (for delegated access model)

@@ -5,7 +5,7 @@ import { useAuth } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
 import { AlertCircle, ChevronDown, Plus, Trash2 } from 'lucide-react';
 import { LogoSpinner } from '@/components/ui/logo-spinner';
-import { FlowShell } from '@/components/flow/flow-shell';
+import { ConfirmModal } from '@/components/access-request-detail/confirm-modal';
 import { AccessLevelSelector } from '@/components/access-level-selector';
 import { HierarchicalPlatformSelector } from '@/components/hierarchical-platform-selector';
 import { Button, SingleSelect } from '@/components/ui';
@@ -89,6 +89,7 @@ export default function EditAccessRequestPage({ params }: EditAccessRequestPageP
   const [success, setSuccess] = useState<string | null>(null);
   const [initialSnapshot, setInitialSnapshot] = useState<string>('');
   const [advancedExpanded, setAdvancedExpanded] = useState(false);
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
 
   const snapshot = useMemo(
     () =>
@@ -244,7 +245,8 @@ export default function EditAccessRequestPage({ params }: EditAccessRequestPageP
   };
 
   const handleDiscard = () => {
-    if (hasUnsavedChanges && !window.confirm('Discard unsaved changes?')) {
+    if (hasUnsavedChanges) {
+      setShowDiscardConfirm(true);
       return;
     }
 
@@ -328,20 +330,23 @@ export default function EditAccessRequestPage({ params }: EditAccessRequestPageP
   }
 
   return (
-    <FlowShell
-      title="Edit Access Request"
-      description="Update request settings for pending authorization links"
-      step={4}
-      totalSteps={4}
-      steps={['Platforms', 'Advanced', 'Customize', 'Review']}
-      rightSlot={
-        <Button type="button" variant="secondary" onClick={() => router.back()}>
-          Back
-        </Button>
-      }
-    >
+    <div className="min-h-screen bg-paper">
+      <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:px-8">
+        <header className="mb-6 flex flex-wrap items-start justify-between gap-3 border-b-2 border-black pb-5">
+          <div>
+            <h1 className="font-display text-2xl font-bold tracking-tight text-ink">
+              Edit Access Request
+            </h1>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Update settings while the authorization link is still pending.
+            </p>
+          </div>
+          <Button type="button" variant="secondary" onClick={() => router.back()}>
+            Back
+          </Button>
+        </header>
       <form onSubmit={handleSave} className="space-y-6">
-        <div className="rounded-lg border border-border bg-card p-6 shadow-sm space-y-4">
+        <div className="border-2 border-black bg-card p-6 shadow-brutalist space-y-4">
           <h2 className="text-lg font-semibold text-ink">Platforms</h2>
           <AccessLevelSelector
             selectedAccessLevel={globalAccessLevel}
@@ -355,7 +360,7 @@ export default function EditAccessRequestPage({ params }: EditAccessRequestPageP
           />
         </div>
 
-        <div className="rounded-lg border border-border bg-card p-6 shadow-sm space-y-4">
+        <div className="border-2 border-black bg-card p-6 shadow-brutalist space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-ink">Advanced</h2>
             <button
@@ -409,7 +414,7 @@ export default function EditAccessRequestPage({ params }: EditAccessRequestPageP
           )}
         </div>
 
-        <div className="rounded-lg border border-border bg-card p-6 shadow-sm space-y-4">
+        <div className="border-2 border-black bg-card p-6 shadow-brutalist space-y-4">
           <h2 className="text-lg font-semibold text-ink">Customize</h2>
 
           <div className="space-y-3">
@@ -512,13 +517,13 @@ export default function EditAccessRequestPage({ params }: EditAccessRequestPageP
         </div>
 
         {error && (
-          <div className="rounded-lg border border-coral/30 bg-coral/10 p-3 text-sm text-danger-ink">
+          <div className="border border-black bg-paper p-3 text-sm text-danger-ink">
             {error}
           </div>
         )}
 
         {success && (
-          <div className="rounded-lg border border-teal/30 bg-teal/10 p-3 text-sm text-success-ink">
+          <div className="border border-black bg-paper p-3 text-sm text-success-ink">
             {success}
           </div>
         )}
@@ -541,6 +546,21 @@ export default function EditAccessRequestPage({ params }: EditAccessRequestPageP
           </Button>
         </div>
       </form>
-    </FlowShell>
+        {showDiscardConfirm ? (
+          <ConfirmModal
+            title="Discard unsaved changes?"
+            body="Edits you have not saved will be lost."
+            confirmLabel="Discard changes"
+            cancelLabel="Keep editing"
+            destructive
+            onConfirm={() => {
+              setShowDiscardConfirm(false);
+              router.push(`/access-requests/${requestId}` as any);
+            }}
+            onClose={() => setShowDiscardConfirm(false)}
+          />
+        ) : null}
+      </div>
+    </div>
   );
 }

@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { infisical } from '@/lib/infisical';
 import { getConnector } from '@/services/connectors/factory';
+import { ConnectorError } from '@/services/connectors/base.connector';
 import {
   getPlatformTokenCapability,
   type Platform,
@@ -172,6 +173,19 @@ async function refreshTarget(
       error: null,
     };
   } catch (error) {
+    // Transient refresh failures (e.g. Snapchat 429/5xx from the token endpoint)
+    // must not strand the connection as invalid. Leave the row untouched so the
+    // next token-refresh scan retries, and surface a distinguishable code.
+    if (error instanceof ConnectorError && error.code === 'REFRESH_RETRYABLE') {
+      return {
+        data: null,
+        error: {
+          code: 'REFRESH_RETRYABLE',
+          message: error.message,
+        },
+      };
+    }
+
     await updateTargetStatus(target, 'invalid');
 
     return {

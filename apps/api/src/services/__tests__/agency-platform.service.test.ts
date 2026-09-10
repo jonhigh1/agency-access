@@ -244,10 +244,10 @@ describe('AgencyPlatformService', () => {
 
     it('should return error if platform already connected', async () => {
       const mockAgency = { id: 'agency-1' };
-      const existingConnection = { id: 'existing', platform: 'google' };
+      const existingConnection = { id: 'existing', platform: 'google', status: 'active' };
 
       vi.mocked(prisma.agency.findUnique).mockResolvedValue(mockAgency as any);
-      vi.mocked(prisma.agencyPlatformConnection.findFirst).mockResolvedValue(existingConnection as any);
+      vi.mocked(prisma.agencyPlatformConnection.findUnique).mockResolvedValue(existingConnection as any);
 
       const result = await agencyPlatformService.createConnection({
         agencyId: 'agency-1',
@@ -258,6 +258,95 @@ describe('AgencyPlatformService', () => {
 
       expect(result.data).toBeNull();
       expect(result.error?.code).toBe('PLATFORM_ALREADY_CONNECTED');
+    });
+  });
+
+  describe('createConnection row reuse (revoked / expired / invalid)', () => {
+    const staleStatuses = ['revoked', 'expired', 'invalid'] as const;
+
+    function mockReusableRow(status: string, connectionMode?: string) {
+      const staleRow = {
+        id: 'row-stale',
+        agencyId: 'agency-1',
+        platform: 'snapchat',
+        status,
+        connectionMode,
+      };
+
+      vi.mocked(prisma.agency.findUnique).mockResolvedValue({ id: 'agency-1', name: 'Test Agency' } as any);
+      vi.mocked(prisma.agencyPlatformConnection.findUnique).mockResolvedValue(staleRow as any);
+      vi.mocked(prisma.agencyPlatformConnection.update).mockResolvedValue({
+        ...staleRow,
+        status: 'active',
+      } as any);
+      vi.mocked(prisma.auditLog.create).mockResolvedValue({} as any);
+
+      return staleRow;
+    }
+
+    staleStatuses.forEach((staleStatus) => {
+      it(`updates a ${staleStatus} row in place instead of creating a duplicate`, async () => {
+        const staleRow = mockReusableRow(staleStatus, 'manual_invitation');
+        const expiresAt = new Date(Date.now() + 60 * 60 * 1000);
+
+        const result = await agencyPlatformService.createConnection({
+          agencyId: 'agency-1',
+          platform: 'snapchat',
+          accessToken: 'access_token_123',
+          expiresAt,
+          connectedBy: 'admin@agency.com',
+          metadata: { snapchatOrganizations: { discoveryFailed: false } },
+        });
+
+        expect(result.error).toBeNull();
+        expect(result.data).toEqual({ ...staleRow, status: 'active' });
+
+        // The slot lookup is a single findUnique on the (agencyId, platform)
+        // unique key; the stale-status branch is decided in memory (the Prisma
+        // mock ignores `where`, so pin the query shape explicitly).
+        expect(prisma.agencyPlatformConnection.findUnique).toHaveBeenCalledTimes(1);
+        expect(prisma.agencyPlatformConnection.findUnique).toHaveBeenCalledWith({
+          where: {
+            agencyId_platform: {
+              agencyId: 'agency-1',
+              platform: 'snapchat',
+            },
+          },
+        });
+
+        // Reuse must never attempt a create: the (agencyId, platform) unique
+        // constraint would reject it with P2002.
+        expect(prisma.agencyPlatformConnection.create).not.toHaveBeenCalled();
+        expect(prisma.agencyPlatformConnection.update).toHaveBeenCalledWith({
+          where: { id: 'row-stale' },
+          data: expect.objectContaining({
+            status: 'active',
+            secretId: 'snapchat_agency_agency-1',
+            expiresAt,
+            connectedBy: 'admin@agency.com',
+            revokedAt: null,
+            revokedBy: null,
+            connectionMode: 'oauth',
+          }),
+        });
+      });
+    });
+
+    it('keeps connectionMode untouched when the reused row is already oauth', async () => {
+      mockReusableRow('expired', 'oauth');
+
+      const result = await agencyPlatformService.createConnection({
+        agencyId: 'agency-1',
+        platform: 'snapchat',
+        accessToken: 'access_token_123',
+        connectedBy: 'admin@agency.com',
+      });
+
+      expect(result.error).toBeNull();
+      expect(prisma.agencyPlatformConnection.create).not.toHaveBeenCalled();
+
+      const updateCall = vi.mocked(prisma.agencyPlatformConnection.update).mock.calls[0][0] as any;
+      expect(updateCall.data).not.toHaveProperty('connectionMode');
     });
   });
 

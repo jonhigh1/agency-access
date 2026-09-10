@@ -49,7 +49,6 @@ export function ManualInvitationModal({
 
   const isBusinessIdPlatform = BUSINESS_ID_PLATFORMS.includes(platform);
   const isShopifyPlatform = platform === 'shopify';
-  const isSnapchatPlatform = platform === 'snapchat';
   const platformName = PLATFORM_NAMES[platform as Platform] || platform;
 
   // Reset form when modal opens
@@ -210,11 +209,6 @@ export function ManualInvitationModal({
                     <p className="text-muted-foreground">
                       Enable Shopify for access requests. Clients provide their store domain and collaborator code during authorization.
                     </p>
-                  ) : isSnapchatPlatform ? (
-                    <p className="text-muted-foreground">
-                      This email will be given access to your client&apos;s Snapchat accounts. Clients will use this email twice:
-                      once for Organization Admin access and again for Account Admin access.
-                    </p>
                   ) : (
                     <p className="text-muted-foreground">
                       When requesting {platformName} account access, your client will invite{' '}
@@ -254,8 +248,6 @@ export function ManualInvitationModal({
                     <label htmlFor={isBusinessIdPlatform ? 'business-id' : 'invitation-email'} className="block text-sm font-medium text-ink mb-2">
                       {isBusinessIdPlatform
                         ? 'Pinterest Business ID'
-                        : isSnapchatPlatform
-                        ? 'Snapchat Business Email'
                         : 'Email to receive invitations'}
                     </label>
                     <input
@@ -273,8 +265,6 @@ export function ManualInvitationModal({
                     <p className="mt-2 text-xs text-muted-foreground">
                       {isBusinessIdPlatform
                         ? 'Your Pinterest Business ID (1-20 digits)'
-                        : isSnapchatPlatform
-                        ? 'This email will be given access to your client\'s Snapchat accounts'
                         : 'This email will receive team invitations from your clients'}
                     </p>
                   </>

@@ -136,18 +136,18 @@ export const PLATFORM_TOKEN_CAPABILITIES: Record<Platform, PlatformTokenCapabili
     expiryBehavior: 'expiring',
   },
   snapchat: {
-    connectionMethod: 'manual',
-    tokenKind: 'none',
-    refreshStrategy: 'none',
-    healthStrategy: 'manual',
-    expiryBehavior: 'none',
+    connectionMethod: 'oauth',
+    tokenKind: 'oauth',
+    refreshStrategy: 'automatic',
+    healthStrategy: 'live_verify',
+    expiryBehavior: 'expiring',
   },
   snapchat_ads: {
-    connectionMethod: 'manual',
-    tokenKind: 'none',
-    refreshStrategy: 'none',
-    healthStrategy: 'manual',
-    expiryBehavior: 'none',
+    connectionMethod: 'oauth',
+    tokenKind: 'oauth',
+    refreshStrategy: 'automatic',
+    healthStrategy: 'live_verify',
+    expiryBehavior: 'expiring',
   },
   instagram: {
     connectionMethod: 'oauth',
@@ -2880,6 +2880,10 @@ export const ClientDetailProductStatusSchema = z.enum([
   'no_assets',
   'expired',
   'revoked',
+  // The client DID authorize, but the grant is dead (platform revocation,
+  // credential rotation). Distinct from 'pending' (never authorized) and
+  // 'revoked' (request/connection-level revocation).
+  'needs_reconnect',
 ]);
 export type ClientDetailProductStatus = z.infer<typeof ClientDetailProductStatusSchema>;
 

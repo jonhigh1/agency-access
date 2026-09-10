@@ -98,3 +98,12 @@ Record significant technical choices so future sessions (and humans) understand 
 ---
 
 _(Add DEC-002, DEC-003, … here; newest first.)_
+
+## DEC-004 — Snapchat OAuth redirect strategy: two registered URIs (2026-09-10)
+Register both the frontend invite callback and the API agency callback in the Snap OAuth app (TikTok parity). Chosen over single-URI + browser forwarding: Snap codes are single-use and the exchange redirect_uri must match the authorize request, so forwarding cannot work. Snap URIs are immutable after creation — register both at app creation.
+
+## DEC-005 — Legacy manual Snapchat rows migrate to status 'revoked' (2026-09-10)
+Old manual-only AgencyPlatformConnection rows (active, secretId null) are set to status 'revoked' + revokedAt/revokedBy 'system:legacy-manual-migration' + audit entry, per-row transaction, CAS-guarded (status+secretId re-checked in-transaction). 'revoked' is the only non-active status createConnection reuses, so reconnect lands on the update-in-place path. Production apply is operator-gated: dry-run, explicit approval, staging first.
+
+## DEC-006 — needs_reconnect product status + ms-precision server health (2026-09-10)
+ClientDetailProductStatus gains 'needs_reconnect' (client authorized; grant died — distinct from 'pending' never-authorized and 'revoked' request-level). Server calculateHealthStatus now uses ms-precision expiry (<= 0 -> expired) to match the web countdown, replacing day-ceil rounding.

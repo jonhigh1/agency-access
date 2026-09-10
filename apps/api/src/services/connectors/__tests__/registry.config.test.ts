@@ -15,6 +15,7 @@ import { pinterestConnector } from '../pinterest.js';
 import { klaviyoConnector } from '../klaviyo.js';
 import { shopifyConnector } from '../shopify.js';
 import { tiktokConnector } from '../tiktok.js';
+import { snapchatConnector } from '../snapchat.js';
 
 describe('connector registry', () => {
   it('repairs pinterest with documented v5 OAuth endpoints', () => {
@@ -72,6 +73,7 @@ describe('connector registry', () => {
       klaviyoConnector,
       shopifyConnector,
       tiktokConnector,
+      snapchatConnector,
     ];
     for (const connector of connectors) {
       expect(connector).toBeDefined();
