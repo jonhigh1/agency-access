@@ -123,6 +123,10 @@ const envSchema = z.object({
   MAILCHIMP_CLIENT_ID: z.string().optional(),
   MAILCHIMP_CLIENT_SECRET: z.string().optional(),
 
+  // Snapchat OAuth
+  SNAPCHAT_CLIENT_ID: z.string().optional(),
+  SNAPCHAT_CLIENT_SECRET: z.string().optional(),
+
   // Pinterest OAuth
   PINTEREST_CLIENT_ID: z.string().optional(),
   PINTEREST_CLIENT_SECRET: z.string().optional(),
