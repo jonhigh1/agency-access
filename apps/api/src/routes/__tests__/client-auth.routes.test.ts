@@ -49,6 +49,12 @@ describe('Client Auth Routes', () => {
         id: 'req-1',
         agencyId: 'agency-1',
         clientEmail: 'client@example.com',
+        platforms: [
+          {
+            platformGroup: 'meta',
+            products: [{ product: 'meta_ads', accessLevel: 'admin' }],
+          },
+        ],
       };
 
       vi.mocked(accessRequestService.getAccessRequestByToken).mockResolvedValue({
@@ -362,6 +368,77 @@ describe('Client Auth Routes', () => {
       expect(response.json().error.code).toBe('VALIDATION_ERROR');
     });
 
+    it('rejects a platform that is valid but absent from the access request', async () => {
+      vi.mocked(accessRequestService.getAccessRequestByToken).mockResolvedValue({
+        data: {
+          id: 'req-1',
+          agencyId: 'agency-1',
+          clientEmail: 'client@example.com',
+          platforms: [
+            {
+              platformGroup: 'google',
+              products: [{ product: 'google_ads', accessLevel: 'admin' }],
+            },
+          ],
+        } as any,
+        error: null,
+      });
+
+      // klaviyo passes the enum check but was never requested by the agency.
+      const response = await app.inject({
+        method: 'POST',
+        url: '/client/test-token/oauth-url',
+        payload: { platform: 'klaviyo' },
+      });
+
+      expect(response.statusCode).toBe(400);
+      expect(response.json()).toEqual({
+        data: null,
+        error: {
+          code: 'PLATFORM_NOT_REQUESTED',
+          message: 'Platform was not requested in this access request',
+        },
+      });
+      expect(oauthStateService.createState).not.toHaveBeenCalled();
+    });
+
+    it('still generates an OAuth URL for a platform the access request requested', async () => {
+      vi.mocked(accessRequestService.getAccessRequestByToken).mockResolvedValue({
+        data: {
+          id: 'req-1',
+          agencyId: 'agency-1',
+          clientEmail: 'client@example.com',
+          platforms: [
+            {
+              platformGroup: 'google',
+              products: [{ product: 'google_ads', accessLevel: 'admin' }],
+            },
+          ],
+        } as any,
+        error: null,
+      });
+
+      vi.mocked(oauthStateService.createState).mockResolvedValue({
+        data: 'state-1',
+        error: null,
+      });
+
+      vi.mocked(getConnector).mockReturnValue({
+        getAuthUrl: vi.fn().mockReturnValue('https://accounts.google.com/o/oauth2/v2/auth?state=state-1'),
+      } as any);
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/client/test-token/oauth-url',
+        payload: { platform: 'google' },
+      });
+
+      expect(response.statusCode).toBe(200);
+      expect(oauthStateService.createState).toHaveBeenCalledWith(
+        expect.objectContaining({ platform: 'google' })
+      );
+    });
+
     it('generates a Snapchat OAuth URL against the client invite callback with the marketing scope', async () => {
       const mockToken = 'test-token';
       const mockState = 'snap-state';
@@ -371,6 +448,12 @@ describe('Client Auth Routes', () => {
           id: 'req-1',
           agencyId: 'agency-1',
           clientEmail: 'client@example.com',
+          platforms: [
+            {
+              platformGroup: 'snapchat',
+              products: [{ product: 'snapchat_ads', accessLevel: 'admin' }],
+            },
+          ],
         } as any,
         error: null,
       });
@@ -430,6 +513,12 @@ describe('Client Auth Routes', () => {
           id: 'req-1',
           agencyId: 'agency-1',
           clientEmail: 'client@example.com',
+          platforms: [
+            {
+              platformGroup: 'snapchat',
+              products: [{ product: 'snapchat_ads', accessLevel: 'admin' }],
+            },
+          ],
         } as any,
         error: null,
       });

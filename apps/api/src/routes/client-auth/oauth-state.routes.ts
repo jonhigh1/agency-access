@@ -3,10 +3,42 @@ import { accessRequestService } from '../../services/access-request.service.js';
 import { oauthStateService } from '../../services/oauth-state.service.js';
 import { getConnector } from '../../services/connectors/factory.js';
 import { env } from '../../lib/env.js';
-import { resolveGoogleOAuthScopes, type Platform } from '@agency-platform/shared';
+import { resolveGoogleOAuthScopes, platformGroupOf, type Platform } from '@agency-platform/shared';
 import { createOAuthStateSchema } from './schemas.js';
 import { resolveClientInviteCallbackUrl } from './redirect-uri.js';
 import { sendError } from '../../lib/response.js';
+
+/**
+ * True when the access request actually requested this platform.
+ *
+ * The service returns platforms in the hierarchical shape
+ * ([{ platformGroup, products }]); raw flat rows ([{ platform, accessLevel }])
+ * are also accepted so the gate cannot reject a platform the agency did
+ * request. The exchange endpoint applies the same rule.
+ */
+function isPlatformRequested(accessRequestPlatforms: unknown, platform: string): boolean {
+  if (!Array.isArray(accessRequestPlatforms)) {
+    return false;
+  }
+
+  return accessRequestPlatforms.some((entry: any) => {
+    const group = entry?.platformGroup;
+    if (group === platform) {
+      return true;
+    }
+
+    const rawPlatform = entry?.platform;
+    if (rawPlatform === platform || (typeof rawPlatform === 'string' && platformGroupOf(rawPlatform) === platform)) {
+      return true;
+    }
+
+    return Array.isArray(entry?.products)
+      ? entry.products.some((product: any) =>
+          (typeof product === 'string' ? product : product?.product) === platform
+        )
+      : false;
+  });
+}
 
 export async function registerOAuthStateRoutes(fastify: FastifyInstance) {
   function getRequestedGroupProductIds(
@@ -102,6 +134,16 @@ export async function registerOAuthStateRoutes(fastify: FastifyInstance) {
     }
 
     const { platform } = validated.data;
+
+    if (!isPlatformRequested(accessRequest.data.platforms, platform)) {
+      return sendError(
+        reply,
+        'PLATFORM_NOT_REQUESTED',
+        'Platform was not requested in this access request',
+        400
+      );
+    }
+
     const redirectUri = resolveClientInviteCallbackUrl(request.headers);
 
     // Create OAuth state token (include token for redirect after OAuth)

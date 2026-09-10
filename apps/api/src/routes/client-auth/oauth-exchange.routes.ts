@@ -1,11 +1,11 @@
 import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { auditService } from '../../services/audit.service.js';
 import { oauthStateService } from '../../services/oauth-state.service.js';
-import { getConnector } from '../../services/connectors/factory.js';
+import { getConnector, type PlatformConnector } from '../../services/connectors/factory.js';
 import { infisical } from '../../lib/infisical.js';
 import { prisma } from '../../lib/prisma.js';
 import { env } from '../../lib/env.js';
-import type { Platform } from '@agency-platform/shared';
+import { platformGroupOf, type Platform } from '@agency-platform/shared';
 import { oauthExchangeSchema } from './schemas.js';
 import { sanitizeOAuthError } from '../../lib/errors.js';
 import { sendError } from '../../lib/response.js';
@@ -17,6 +17,66 @@ interface OAuthExchangeOptions {
    * can fall back to the access request's uniqueToken.
    */
   requireStateToken: boolean;
+}
+
+/**
+ * Snapchat identity lookup is best-effort. It must not fail the exchange: by
+ * that point the Snap authorization code has already been consumed, so a
+ * thrown identity error would 500 the flow and store no authorization.
+ * Mirrors the agency callback (routes/agency-platforms/oauth.routes.ts),
+ * which degrades the same failure into discoveryFailed metadata. Every other
+ * platform keeps strict identity handling and rethrows.
+ */
+async function getUserInfoForExchange(
+  platform: string,
+  connector: PlatformConnector,
+  accessToken: string
+): Promise<any> {
+  try {
+    return await connector.getUserInfo(accessToken);
+  } catch (error) {
+    if (platform !== 'snapchat') {
+      throw error;
+    }
+    console.error('Failed to fetch Snapchat organizations:', error);
+    return {
+      organizations: [],
+      adAccountCount: 0,
+      discoveryFailed: true,
+    };
+  }
+}
+
+/**
+ * True when the access request actually requested this platform.
+ *
+ * Access requests are stored as flat rows ([{ platform, accessLevel }]) but
+ * older rows and the service payload use the hierarchical shape
+ * ([{ platformGroup, products }]). Both are accepted so the gate cannot
+ * reject a platform the agency did request.
+ */
+function isPlatformRequested(accessRequestPlatforms: unknown, platform: string): boolean {
+  if (!Array.isArray(accessRequestPlatforms)) {
+    return false;
+  }
+
+  return accessRequestPlatforms.some((entry: any) => {
+    const group = entry?.platformGroup;
+    if (group === platform) {
+      return true;
+    }
+
+    const rawPlatform = entry?.platform;
+    if (rawPlatform === platform || (typeof rawPlatform === 'string' && platformGroupOf(rawPlatform) === platform)) {
+      return true;
+    }
+
+    return Array.isArray(entry?.products)
+      ? entry.products.some((product: any) =>
+          (typeof product === 'string' ? product : product?.product) === platform
+        )
+      : false;
+  });
 }
 
 function buildOAuthExchangeHandler(fastify: FastifyInstance, options: OAuthExchangeOptions) {
@@ -57,7 +117,7 @@ function buildOAuthExchangeHandler(fastify: FastifyInstance, options: OAuthExcha
             tokens = await connector.getLongLivedToken(tokens.accessToken);
           }
 
-          const userInfo = await connector.getUserInfo(tokens.accessToken);
+          const userInfo = await getUserInfoForExchange(platform, connector, tokens.accessToken);
           return { tokens, userInfo };
         })(),
         prisma.accessRequest.findUnique({
@@ -70,6 +130,15 @@ function buildOAuthExchangeHandler(fastify: FastifyInstance, options: OAuthExcha
 
       if (!accessRequest) {
         return sendError(reply, 'ACCESS_REQUEST_NOT_FOUND', 'Access request not found', 404);
+      }
+
+      if (!isPlatformRequested(accessRequest.platforms, platform)) {
+        return sendError(
+          reply,
+          'PLATFORM_NOT_REQUESTED',
+          'Platform was not requested in this access request',
+          400
+        );
       }
 
       let clientConnection = existingConnection;

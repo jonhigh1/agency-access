@@ -62,6 +62,14 @@ const ACCESS_REQUEST = {
   id: 'req-1',
   agencyId: 'agency-1',
   uniqueToken: 'unique-token-1',
+  // Raw stored shape: flat rows keyed by product. Covers every platform the
+  // characterization suite exercises (google, meta_ads, tiktok_ads, snapchat).
+  platforms: [
+    { platform: 'google_ads', accessLevel: 'manage' },
+    { platform: 'meta_ads', accessLevel: 'manage' },
+    { platform: 'tiktok_ads', accessLevel: 'manage' },
+    { platform: 'snapchat_ads', accessLevel: 'manage' },
+  ],
 };
 
 const TOKENS = {
@@ -416,6 +424,86 @@ describe('OAuth exchange routes (characterization)', () => {
               }),
             })
           );
+        });
+
+        it('degrades a failed Snapchat identity lookup into a persisted discoveryFailed authorization', async () => {
+          mockHappyPath({
+            state: { platform: 'snapchat' },
+            connector: {
+              getUserInfo: vi.fn().mockRejectedValue(new Error('snap identity lookup failed')),
+            },
+          });
+
+          const response = await app.inject({
+            method: 'POST',
+            url,
+            payload: { code: 'code-1', state: 'state-1', platform: 'snapchat' },
+          });
+
+          // Tokens are stored and the authorization persists even though the
+          // Snap identity call failed after the authorization code was spent.
+          expect(response.statusCode).toBe(200);
+          expect(response.json()).toEqual({
+            data: {
+              connectionId: 'conn-1',
+              platform: 'snapchat',
+              token: 'token-123',
+            },
+            error: null,
+          });
+          expect(infisical.storeOAuthTokens).toHaveBeenCalledWith(
+            expect.any(String),
+            expect.objectContaining({ accessToken: 'access-1' })
+          );
+          expect(prisma.platformAuthorization.upsert).toHaveBeenCalledWith(
+            expect.objectContaining({
+              where: {
+                connectionId_platform: { connectionId: 'conn-1', platform: 'snapchat' },
+              },
+              create: expect.objectContaining({
+                metadata: expect.objectContaining({
+                  organizations: [],
+                  adAccountCount: 0,
+                  discoveryFailed: true,
+                }),
+              }),
+              update: expect.objectContaining({
+                metadata: expect.objectContaining({ discoveryFailed: true }),
+              }),
+            })
+          );
+          expect(auditService.createAuditLog).toHaveBeenCalledWith(
+            expect.objectContaining({
+              agencyId: 'agency-1',
+              action: 'CLIENT_AUTHORIZED',
+              userEmail: 'client@example.com',
+              resourceType: 'client_connection',
+              resourceId: 'conn-1',
+            })
+          );
+        });
+
+        it('returns 400 PLATFORM_NOT_REQUESTED when the state platform is absent from the access request', async () => {
+          // ACCESS_REQUEST.platforms holds no klaviyo row, so the klaviyo state
+          // must not exchange tokens for this request.
+          mockHappyPath({ state: { platform: 'klaviyo' } });
+
+          const response = await app.inject({
+            method: 'POST',
+            url,
+            payload: { code: 'code-1', state: 'state-1', platform: 'klaviyo' },
+          });
+
+          expect(response.statusCode).toBe(400);
+          expect(response.json()).toEqual({
+            data: null,
+            error: {
+              code: 'PLATFORM_NOT_REQUESTED',
+              message: 'Platform was not requested in this access request',
+            },
+          });
+          expect(infisical.storeOAuthTokens).not.toHaveBeenCalled();
+          expect(prisma.platformAuthorization.upsert).not.toHaveBeenCalled();
         });
 
         it('creates the client connection when none exists yet', async () => {
