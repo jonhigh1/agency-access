@@ -49,6 +49,13 @@ type AuditCreateArgs = { data: Record<string, unknown> };
 /** Predicate deciding whether an audit insert fails (and with what error). */
 type AuditFailurePredicate = ((args: AuditCreateArgs) => Error | null) | null;
 
+/** Predicate deciding which row is reconnected by OAuth mid-run. */
+type ReconnectPredicate = ((args: { id: string }) => boolean) | null;
+
+type UpdateWhere = { id: string; status?: string; secretId?: string | null };
+
+type UpdateManyArgs = { where: UpdateWhere; data: Record<string, unknown> };
+
 function legacyRow(overrides: Partial<ConnectionRow> = {}): ConnectionRow {
   return {
     id: overrides.id ?? `conn-${Math.random().toString(36).slice(2, 8)}`,
@@ -91,16 +98,40 @@ function createFakePrisma(
   const calls = {
     findManyWhere: [] as Array<Record<string, unknown>>,
     transactionCallbacks: 0,
-    updates: [] as Array<{ where: { id: string }; data: Record<string, unknown> }>,
+    updateManys: [] as UpdateManyArgs[],
     auditCreates: [] as AuditCreateArgs[],
   };
 
   let auditFailure: AuditFailurePredicate = null;
+  let reconnectBeforeRevoke: ReconnectPredicate = null;
+  // Writes made inside the current transaction register their reversal here;
+  // $transaction points it at that run's undo list. Rows are processed
+  // sequentially, so one reference is enough.
+  let currentUndo: Array<() => void> = [];
 
   const rowFor = (id: string) => connectionRows.find((row) => row.id === id);
 
   const failAudit = (args: AuditCreateArgs) =>
     typeof auditFailure === 'function' ? auditFailure(args) : null;
+
+  /**
+   * Compare-and-set update. Matches rows on the full `where` predicate — not
+   * just the id — so a row that no longer satisfies the predicate is left
+   * alone and reported as count 0, exactly like Prisma's updateMany. Writes
+   * register an undo entry so a later throw rolls them back.
+   */
+  const updateManyRows = async (args: UpdateManyArgs) => {
+    calls.updateManys.push(args);
+    const matches = connectionRows.filter((row) => matchesWhere(row, args.where));
+    for (const row of matches) {
+      const before = { ...row };
+      currentUndo.push(() => {
+        Object.assign(row, before);
+      });
+      Object.assign(row, args.data);
+    }
+    return { count: matches.length };
+  };
 
   const prisma = {
     agencyPlatformConnection: {
@@ -110,13 +141,6 @@ function createFakePrisma(
         return connectionRows
           .filter((row) => matchesWhere(row, where))
           .map((row) => ({ ...row }));
-      }),
-      update: vi.fn(async (args: { where: { id: string }; data: Record<string, unknown> }) => {
-        const row = rowFor(args.where.id);
-        if (!row) throw new Error(`Record to update not found: ${args.where.id}`);
-        Object.assign(row, args.data);
-        calls.updates.push(args);
-        return { ...row };
       }),
     },
     auditLog: {
@@ -136,18 +160,25 @@ function createFakePrisma(
     $transaction: vi.fn(async (fn: (tx: unknown) => Promise<unknown>) => {
       calls.transactionCallbacks += 1;
       const undo: Array<() => void> = [];
+      currentUndo = undo;
       const tx = {
         agencyPlatformConnection: {
-          update: async (args: { where: { id: string }; data: Record<string, unknown> }) => {
-            const row = rowFor(args.where.id);
-            if (!row) throw new Error(`Record to update not found: ${args.where.id}`);
-            const before = { ...row };
-            undo.push(() => {
-              Object.assign(row, before);
-            });
-            Object.assign(row, args.data);
-            calls.updates.push(args);
-            return { ...row };
+          // A concurrent OAuth reconnect lands before the revoke when the
+          // hook matches the row: the row gains a secret, then the CAS
+          // predicate is evaluated against the mutated row. The reconnect's
+          // write is committed by another transaction, so it is never undone
+          // by this script's rollback.
+          updateMany: async (args: UpdateManyArgs) => {
+            if (typeof reconnectBeforeRevoke === 'function') {
+              const row = rowFor(args.where.id);
+              if (row && reconnectBeforeRevoke({ id: args.where.id })) {
+                Object.assign(row, {
+                  secretId: 'snapchat_agency_reconnected',
+                  connectionMode: 'oauth',
+                });
+              }
+            }
+            return updateManyRows(args);
           },
         },
         auditLog: {
@@ -189,10 +220,14 @@ function createFakePrisma(
     setAuditFailure: (predicate: AuditFailurePredicate) => {
       auditFailure = predicate;
     },
+    setReconnectBeforeRevoke: (predicate: ReconnectPredicate) => {
+      reconnectBeforeRevoke = predicate;
+    },
   };
 }
 
 function matchesWhere(row: ConnectionRow, where: Record<string, any>): boolean {
+  if (where.id !== undefined && where.id !== row.id) return false;
   if (where.platform) {
     const inList = where.platform.in;
     if (inList) {
@@ -293,7 +328,7 @@ describe('legacy Snapchat connection migration', () => {
     expect(dryRun.selected.map((row) => row.id).sort()).toEqual(['conn-ads', 'conn-snap']);
     expect(dryRun.migrated).toEqual([]);
     expect(fake.calls.transactionCallbacks).toBe(0);
-    expect(fake.calls.updates).toHaveLength(0);
+    expect(fake.calls.updateManys).toHaveLength(0);
     expect(fake.calls.auditCreates).toHaveLength(0);
 
     // Every selected row is untouched by a dry run.
@@ -340,7 +375,7 @@ describe('legacy Snapchat connection migration', () => {
     const first = await runLegacyMigration(fake.prisma, { apply: true, now: NOW });
     expect(first.total).toBe(2);
 
-    const updatesAfterFirst = fake.calls.updates.length;
+    const updatesAfterFirst = fake.calls.updateManys.length;
     const auditCreatesAfterFirst = fake.calls.auditCreates.length;
     const auditCountAfterFirst = fake.auditRows.length;
 
@@ -350,7 +385,7 @@ describe('legacy Snapchat connection migration', () => {
     expect(second.selected).toEqual([]);
     expect(second.total).toBe(0);
     expect(second.migrated).toEqual([]);
-    expect(fake.calls.updates).toHaveLength(updatesAfterFirst);
+    expect(fake.calls.updateManys).toHaveLength(updatesAfterFirst);
     expect(fake.calls.auditCreates).toHaveLength(auditCreatesAfterFirst);
     expect(fake.auditRows).toHaveLength(auditCountAfterFirst);
   });
@@ -391,6 +426,54 @@ describe('legacy Snapchat connection migration', () => {
     expect(fake.auditRows).toHaveLength(2); // pre-existing + conn-snap
   });
 
+  it('skips revoke and audit when a row gains a secret between selection and apply', async () => {
+    // An OAuth reconnect lands after selection and before the snapchat_ads
+    // row's revoke: the row is a working OAuth connection by the time the
+    // compare-and-set runs, so it must not be revoked.
+    fake.setReconnectBeforeRevoke(({ id }) => id === 'conn-ads');
+
+    const report = await runLegacyMigration(fake.prisma, { apply: true, now: NOW });
+
+    // The revoke still re-checks the selection predicate inside the row's
+    // transaction, not just the primary key.
+    expect(fake.calls.updateManys).toEqual([
+      {
+        where: { id: 'conn-snap', status: 'active', secretId: null },
+        data: { status: 'revoked', revokedAt: NOW, revokedBy: LEGACY_MIGRATION_ACTOR },
+      },
+      {
+        where: { id: 'conn-ads', status: 'active', secretId: null },
+        data: { status: 'revoked', revokedAt: NOW, revokedBy: LEGACY_MIGRATION_ACTOR },
+      },
+    ]);
+
+    // The changed row is reported as failed/skipped with the reason.
+    expect(report.failed).toHaveLength(1);
+    expect(report.failed[0]).toMatchObject({
+      id: 'conn-ads',
+      agencyId: 'agency-1',
+      platform: 'snapchat_ads',
+      connectedBy: 'ops@agency.test',
+    });
+    expect(report.failed[0].error).toBe('row changed since selection');
+    expect(report.migrated.map((row) => row.id)).toEqual(['conn-snap']);
+
+    // The row keeps the reconnect's state: not revoked, secret preserved.
+    const ads = fake.connectionRows.find((row) => row.id === 'conn-ads');
+    expect(ads?.status).toBe('active');
+    expect(ads?.secretId).toBe('snapchat_agency_reconnected');
+    expect(ads?.connectionMode).toBe('oauth');
+    expect(ads?.revokedAt).toBeNull();
+    expect(ads?.revokedBy).toBeNull();
+
+    // No audit entry for the skipped row; the untouched row still gets one.
+    expect(
+      fake.auditRows.some((entry) => entry.agencyConnectionId === 'conn-ads')
+    ).toBe(false);
+    expect(fake.auditRows).toHaveLength(2); // pre-existing + conn-snap
+    expect(fake.calls.auditCreates).toHaveLength(1);
+  });
+
   it('leaves non-active legacy rows alone so row reuse stays possible', async () => {
     const rows = [
       legacyRow({ id: 'conn-revoked', status: 'revoked' }),
@@ -402,7 +485,7 @@ describe('legacy Snapchat connection migration', () => {
     const report = await runLegacyMigration(store.prisma, { apply: true, now: NOW });
 
     expect(report.total).toBe(0);
-    expect(store.calls.updates).toHaveLength(0);
+    expect(store.calls.updateManys).toHaveLength(0);
     expect(store.calls.auditCreates).toHaveLength(0);
     for (const row of store.connectionRows) {
       expect(row.status).not.toBe('active');
@@ -436,7 +519,7 @@ describe('legacy Snapchat connection migration', () => {
       const dryExit = await main([]);
       expect(dryExit).toBe(0);
       expect(fake.calls.transactionCallbacks).toBe(0);
-      expect(fake.calls.updates).toHaveLength(0);
+      expect(fake.calls.updateManys).toHaveLength(0);
 
       const applyStore = createFakePrisma([
         legacyRow({ id: 'conn-snap' }),
@@ -445,8 +528,22 @@ describe('legacy Snapchat connection migration', () => {
       hoisted.currentPrisma.current = applyStore.prisma;
       const applyExit = await main(['--apply']);
       expect(applyExit).toBe(0);
-      expect(applyStore.calls.updates).toHaveLength(1);
+      expect(applyStore.calls.updateManys).toHaveLength(1);
       expect(applyStore.prisma.$disconnect).toHaveBeenCalled();
+    });
+
+    it('exits 1 when a row changed since selection', async () => {
+      const store = createFakePrisma([legacyRow({ id: 'conn-only' })]);
+      store.setReconnectBeforeRevoke(() => true);
+      hoisted.currentPrisma.current = store.prisma;
+
+      const exitCode = await main(['--apply']);
+
+      expect(exitCode).toBe(1);
+      expect(store.connectionRows[0].status).toBe('active');
+      expect(store.connectionRows[0].secretId).toBe('snapchat_agency_reconnected');
+      expect(store.auditRows).toHaveLength(0);
+      expect(store.prisma.$disconnect).toHaveBeenCalled();
     });
   });
 });

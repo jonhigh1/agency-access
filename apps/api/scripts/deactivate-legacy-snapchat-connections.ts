@@ -23,6 +23,11 @@
  *    transaction. An interrupted or failed row is rolled back completely
  *    and stays active, so re-running the script retries exactly the rows
  *    that did not complete.
+ *  - The revoke is a compare-and-set: inside the transaction the update
+ *    re-checks the selection predicate (status 'active', secretId null).
+ *    A row that changed since selection — an OAuth reconnect added a
+ *    secret — matches nothing, writes nothing, and is reported as skipped
+ *    instead of being revoked.
  *  - Audit history is append-only here: nothing is updated or deleted.
  *
  * OPERATOR-GATED: this script must never be pointed at staging or
@@ -112,24 +117,46 @@ export async function selectLegacyConnections(
 }
 
 /**
+ * The compare-and-set predicate for one row's revoke: the primary key plus
+ * the exact predicates the row was selected with. Re-checking them inside
+ * the transaction is what makes the migration safe against a concurrent
+ * reconnect — without it, an OAuth reconnect that landed between selection
+ * and apply would be revoked along with the stale manual rows.
+ */
+function revokeWhere(row: LegacyConnectionRow): Prisma.AgencyPlatformConnectionWhereInput {
+  return { id: row.id, status: 'active', secretId: null };
+}
+
+/**
  * Deactivate one row atomically: the status flip and its audit entry commit
  * together or not at all. A throw from either statement rolls back both,
  * leaving the row active and retryable on the next run.
+ *
+ * Returns true when the row was revoked and audited. Returns false when the
+ * row no longer matches the selection predicate — it changed between
+ * selection and apply, most often because an OAuth reconnect added a secret.
+ * Nothing is written in that case, so the caller must not audit it.
  */
 export async function migrateLegacyRow(
   prisma: MigrationPrisma,
   row: LegacyConnectionRow,
   now: Date
-): Promise<void> {
-  await prisma.$transaction(async (tx) => {
-    await tx.agencyPlatformConnection.update({
-      where: { id: row.id },
+): Promise<boolean> {
+  return prisma.$transaction(async (tx) => {
+    const result = await tx.agencyPlatformConnection.updateMany({
+      where: revokeWhere(row),
       data: {
         status: 'revoked',
         revokedAt: now,
         revokedBy: LEGACY_MIGRATION_ACTOR,
       },
     });
+
+    if (result.count !== 1) {
+      // The row changed since selection. The update matched nothing, so the
+      // transaction writes nothing and commits empty.
+      return false;
+    }
 
     await tx.auditLog.create({
       data: {
@@ -148,6 +175,8 @@ export async function migrateLegacyRow(
         userAgent: 'unknown',
       },
     });
+
+    return true;
   });
 }
 
@@ -197,8 +226,15 @@ export async function runLegacyMigration(
     // Sequential on purpose: one row, one transaction, one audit entry.
     for (const row of rows) {
       try {
-        await migrateLegacyRow(prisma, row, now);
-        migrated.push(toReportRow(row));
+        const revoked = await migrateLegacyRow(prisma, row, now);
+        if (revoked) {
+          migrated.push(toReportRow(row));
+        } else {
+          // The row changed between selection and apply (usually an OAuth
+          // reconnect added a secret). It is left exactly as the reconnect
+          // left it and is surfaced for the operator instead of being revoked.
+          failed.push({ ...toReportRow(row), error: 'row changed since selection' });
+        }
       } catch (error) {
         failed.push({
           ...toReportRow(row),
