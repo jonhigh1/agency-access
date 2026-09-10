@@ -1,43 +1,34 @@
 import { z } from 'zod';
 
+// Platforms a client may start an OAuth flow for. Shared by both the
+// state-creation and exchange schemas so the accepted set cannot drift.
+const clientOAuthPlatform = z.enum([
+  'google',
+  'meta',
+  'meta_ads',
+  'google_ads',
+  'ga4',
+  'linkedin',
+  'instagram',
+  'tiktok',
+  'snapchat',
+  'mailchimp',
+  'pinterest',
+  'klaviyo',
+]);
+
 export const submitIntakeSchema = z.object({
   intakeResponses: z.record(z.any()),
 });
 
 export const createOAuthStateSchema = z.object({
-  platform: z.enum([
-    'google',
-    'meta',
-    'meta_ads',
-    'google_ads',
-    'ga4',
-    'linkedin',
-    'instagram',
-    'tiktok',
-    'snapchat',
-    'mailchimp',
-    'pinterest',
-    'klaviyo',
-  ]),
+  platform: clientOAuthPlatform,
 });
 
 export const oauthExchangeSchema = z.object({
   code: z.string(),
   state: z.string(),
-  platform: z.enum([
-    'google',
-    'meta',
-    'meta_ads',
-    'google_ads',
-    'ga4',
-    'linkedin',
-    'instagram',
-    'tiktok',
-    'snapchat',
-    'mailchimp',
-    'pinterest',
-    'klaviyo',
-  ]).optional(),
+  platform: clientOAuthPlatform.optional(),
 });
 
 export const saveAssetsSchema = z.object({

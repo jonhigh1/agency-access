@@ -101,16 +101,22 @@ export async function createConnection(input: CreateConnectionInput) {
       };
     }
 
-    // Check if platform already connected (only active connections block reconnect)
-    const existingConnection = await prisma.agencyPlatformConnection.findFirst({
+    // Load the (agencyId, platform) slot once and branch on its status in memory:
+    // - no row -> create below
+    // - active -> PLATFORM_ALREADY_CONNECTED (only active blocks reconnect)
+    // - revoked / expired / invalid -> reuse the row in place below
+    // - any other status -> fall through to the create below (the unique
+    //   constraint rejects it, as it did before this lookup was consolidated)
+    const existingConnection = await prisma.agencyPlatformConnection.findUnique({
       where: {
-        agencyId: validated.agencyId,
-        platform: validated.platform,
-        status: 'active', // Only check for active connections
+        agencyId_platform: {
+          agencyId: validated.agencyId,
+          platform: validated.platform,
+        },
       },
     });
 
-    if (existingConnection) {
+    if (existingConnection?.status === 'active') {
       return {
         data: null,
         error: {
@@ -120,17 +126,10 @@ export async function createConnection(input: CreateConnectionInput) {
       };
     }
 
-    // Check if there's a previous non-active connection to reuse in place.
-    // Revoked, expired, and invalid rows all occupy the same (agencyId, platform)
-    // slot, so reconnecting must update the row instead of creating a duplicate
-    // (a create would violate the unique constraint).
-    const reusableConnection = await prisma.agencyPlatformConnection.findFirst({
-      where: {
-        agencyId: validated.agencyId,
-        platform: validated.platform,
-        status: { in: ['revoked', 'expired', 'invalid'] },
-      },
-    });
+    const reusableConnection =
+      existingConnection && ['revoked', 'expired', 'invalid'].includes(existingConnection.status)
+        ? existingConnection
+        : null;
 
     // Generate secret name for Infisical
     const secretId = `${validated.platform}_agency_${validated.agencyId}`;

@@ -119,29 +119,62 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
     ],
   };
 
-  // FAQ schema for client onboarding checklist (delays section)
-  const faqSchema = post.id === "client-onboarding-checklist" ? {
-    "@context": "https://schema.org",
-    "@type": "FAQPage",
-    "mainEntity": [
-      {
-        "@type": "Question",
-        "name": "What causes client onboarding delays?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Common causes include: Business Manager vs personal profile confusion, wrong permission levels granted, multiple Business Managers across platforms, previous agency still has access, and personal email used instead of business email.",
+  // FAQ schema per post (visible FAQ section at the end of each post)
+  const faqSchemas: Record<string, object> = {
+    "client-onboarding-checklist": {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "What causes client onboarding delays?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Common causes include: Business Manager vs personal profile confusion, wrong permission levels granted, multiple Business Managers across platforms, previous agency still has access, and personal email used instead of business email.",
+          },
         },
-      },
-      {
-        "@type": "Question",
-        "name": "How do I speed up client onboarding?",
-        "acceptedAnswer": {
-          "@type": "Answer",
-          "text": "Use automated access request platforms like AuthHub, create standardized templates, use annotated screenshots, and always specify exact permission levels in your requests.",
+        {
+          "@type": "Question",
+          "name": "How do I speed up client onboarding?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Use automated access request platforms like AuthHub, create standardized templates, use annotated screenshots, and always specify exact permission levels in your requests.",
+          },
         },
-      },
-    ],
-  } : null;
+      ],
+    },
+    "best-client-onboarding-software-agencies-2026": {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      "mainEntity": [
+        {
+          "@type": "Question",
+          "name": "What is agency onboarding software?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Any tool that removes a step between signed contract and live campaigns. That covers four categories: platform access management, client intake forms, contracts and e-signature, and internal project management.",
+          },
+        },
+        {
+          "@type": "Question",
+          "name": "Which agency onboarding software should I buy first?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Whichever category is your current bottleneck. For most agencies that is access management, because platform permissions block billable work while forms and contracts do not.",
+          },
+        },
+        {
+          "@type": "Question",
+          "name": "How much does agency onboarding software cost?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Access management platforms run $29 to $99 per month. Intake and document tools run $20 to $50 per month each. A minimum viable stack of four tools lands near $100 per month total.",
+          },
+        },
+      ],
+    },
+  };
+  const faqSchema = faqSchemas[post.id] ?? null;
 
   return (
     <div className="min-h-screen bg-paper">

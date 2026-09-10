@@ -25,7 +25,6 @@ describe('getTokenHealth', () => {
     const health = getTokenHealth(new Date(NOW.getTime() - 12 * MINUTE_MS), NOW);
 
     expect(health.status).toBe('expired');
-    expect(health.minutesUntilExpiry).toBe(-12);
     expect(health.daysUntilExpiry).toBe(-1);
   });
 
@@ -33,7 +32,6 @@ describe('getTokenHealth', () => {
     const health = getTokenHealth(new Date(NOW.getTime() + 42 * MINUTE_MS), NOW);
 
     expect(health.status).toBe('expiring');
-    expect(health.minutesUntilExpiry).toBe(42);
   });
 
   it('keeps day-level classification for horizons of a day or more', () => {
@@ -45,7 +43,6 @@ describe('getTokenHealth', () => {
     expect(getTokenHealth(null, NOW)).toEqual({
       status: 'unknown',
       daysUntilExpiry: 0,
-      minutesUntilExpiry: 0,
     });
   });
 

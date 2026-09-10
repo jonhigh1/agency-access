@@ -244,10 +244,10 @@ describe('AgencyPlatformService', () => {
 
     it('should return error if platform already connected', async () => {
       const mockAgency = { id: 'agency-1' };
-      const existingConnection = { id: 'existing', platform: 'google' };
+      const existingConnection = { id: 'existing', platform: 'google', status: 'active' };
 
       vi.mocked(prisma.agency.findUnique).mockResolvedValue(mockAgency as any);
-      vi.mocked(prisma.agencyPlatformConnection.findFirst).mockResolvedValue(existingConnection as any);
+      vi.mocked(prisma.agencyPlatformConnection.findUnique).mockResolvedValue(existingConnection as any);
 
       const result = await agencyPlatformService.createConnection({
         agencyId: 'agency-1',
@@ -274,9 +274,7 @@ describe('AgencyPlatformService', () => {
       };
 
       vi.mocked(prisma.agency.findUnique).mockResolvedValue({ id: 'agency-1', name: 'Test Agency' } as any);
-      vi.mocked(prisma.agencyPlatformConnection.findFirst)
-        .mockResolvedValueOnce(null) // active-connection guard
-        .mockResolvedValueOnce(staleRow as any); // reusable-row lookup
+      vi.mocked(prisma.agencyPlatformConnection.findUnique).mockResolvedValue(staleRow as any);
       vi.mocked(prisma.agencyPlatformConnection.update).mockResolvedValue({
         ...staleRow,
         status: 'active',
@@ -303,13 +301,16 @@ describe('AgencyPlatformService', () => {
         expect(result.error).toBeNull();
         expect(result.data).toEqual({ ...staleRow, status: 'active' });
 
-        // The reuse lookup must cover all three non-active statuses (the Prisma
+        // The slot lookup is a single findUnique on the (agencyId, platform)
+        // unique key; the stale-status branch is decided in memory (the Prisma
         // mock ignores `where`, so pin the query shape explicitly).
-        expect(prisma.agencyPlatformConnection.findFirst).toHaveBeenNthCalledWith(2, {
+        expect(prisma.agencyPlatformConnection.findUnique).toHaveBeenCalledTimes(1);
+        expect(prisma.agencyPlatformConnection.findUnique).toHaveBeenCalledWith({
           where: {
-            agencyId: 'agency-1',
-            platform: 'snapchat',
-            status: { in: ['revoked', 'expired', 'invalid'] },
+            agencyId_platform: {
+              agencyId: 'agency-1',
+              platform: 'snapchat',
+            },
           },
         });
 

@@ -148,7 +148,9 @@ export class SnapchatConnector extends BaseConnector {
   }
 
   /**
-   * Refresh with Snap's exact form body: NO redirect_uri.
+   * Refresh overrides the BaseConnector only for error classification: the
+   * form body it already sends (refresh_token, client_id, client_secret,
+   * grant_type — no redirect_uri) matches Snap's contract exactly.
    *
    * Retry classification contract (consumed by the token lifecycle):
    * - HTTP 429 and 5xx -> 'REFRESH_RETRYABLE' (transient, safe to retry)
@@ -204,7 +206,10 @@ export class SnapchatConnector extends BaseConnector {
    * discoveryFailed and never thrown.
    */
   override async getUserInfo(accessToken: string): Promise<SnapchatUserInfo> {
-    const meResponse = await fetch(`${SNAPCHAT_API_BASE}/v1/me`, {
+    // Identity endpoint is registry-owned (registry.config.ts sets it for
+    // snapchat); the cast only satisfies the config type's optional field.
+    const meUrl = this.config.userInfoUrl as string;
+    const meResponse = await fetch(meUrl, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${accessToken}`,

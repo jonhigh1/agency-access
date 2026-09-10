@@ -40,7 +40,7 @@
  */
 
 import { pathToFileURL } from 'node:url';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 
 /** Platforms that previously supported the manual-invitation flow. */
 export const LEGACY_SNAPCHAT_PLATFORMS = ['snapchat', 'snapchat_ads'] as const;
@@ -68,21 +68,15 @@ export type LegacyConnectionRow = {
   connectedBy: string;
 };
 
-type TransactionalPrisma = {
-  agencyPlatformConnection: {
-    findMany(args: {
-      where: Record<string, unknown>;
-      select?: Record<string, boolean>;
-      orderBy?: Array<Record<string, string>>;
-    }): Promise<LegacyConnectionRow[]>;
-    update(args: { where: { id: string }; data: Record<string, unknown> }): Promise<unknown>;
-  };
-  auditLog: {
-    create(args: { data: Record<string, unknown> }): Promise<unknown>;
-  };
-  $transaction<T>(fn: (tx: TransactionalPrisma) => Promise<T>): Promise<T>;
-  $disconnect(): Promise<void>;
-};
+/**
+ * The Prisma surface this migration touches: the real client delegates for
+ * reads/writes/audit, the interactive-transaction entry point, and disconnect.
+ * Both the top-level client and the per-row transaction client satisfy it.
+ */
+export type MigrationPrisma = Pick<
+  PrismaClient,
+  'agencyPlatformConnection' | 'auditLog' | '$transaction' | '$disconnect'
+>;
 
 /**
  * Selection predicate (from the plan): legacy Snapchat rows that claim to be
@@ -90,7 +84,7 @@ type TransactionalPrisma = {
  * OAuth connections and are never touched; rows that are not active are
  * already inert and are left alone.
  */
-export function buildLegacySelectionWhere(): Record<string, unknown> {
+export function buildLegacySelectionWhere(): Prisma.AgencyPlatformConnectionWhereInput {
   return {
     platform: { in: [...LEGACY_SNAPCHAT_PLATFORMS] },
     status: 'active',
@@ -100,7 +94,7 @@ export function buildLegacySelectionWhere(): Record<string, unknown> {
 
 /** Read the rows this migration would deactivate. Purely read-only. */
 export async function selectLegacyConnections(
-  prisma: TransactionalPrisma
+  prisma: MigrationPrisma
 ): Promise<LegacyConnectionRow[]> {
   return prisma.agencyPlatformConnection.findMany({
     where: buildLegacySelectionWhere(),
@@ -123,11 +117,11 @@ export async function selectLegacyConnections(
  * leaving the row active and retryable on the next run.
  */
 export async function migrateLegacyRow(
-  prisma: TransactionalPrisma,
+  prisma: MigrationPrisma,
   row: LegacyConnectionRow,
   now: Date
 ): Promise<void> {
-  await prisma.$transaction(async (tx: TransactionalPrisma) => {
+  await prisma.$transaction(async (tx) => {
     await tx.agencyPlatformConnection.update({
       where: { id: row.id },
       data: {
@@ -164,6 +158,16 @@ export type MigrationReportRow = {
   connectedBy: string;
 };
 
+/** The identifying slice of a row printed in every report section. */
+function toReportRow(row: LegacyConnectionRow): MigrationReportRow {
+  return {
+    id: row.id,
+    agencyId: row.agencyId,
+    platform: row.platform,
+    connectedBy: row.connectedBy,
+  };
+}
+
 export type MigrationReport = {
   mode: 'dry-run' | 'apply';
   selected: MigrationReportRow[];
@@ -177,19 +181,14 @@ export type MigrationReport = {
  * the rows apply would migrate and writes nothing.
  */
 export async function runLegacyMigration(
-  prisma: TransactionalPrisma,
+  prisma: MigrationPrisma,
   options: { apply?: boolean; now?: Date } = {}
 ): Promise<MigrationReport> {
   const apply = options.apply === true;
   const now = options.now ?? new Date();
 
   const rows = await selectLegacyConnections(prisma);
-  const selected: MigrationReportRow[] = rows.map((row) => ({
-    id: row.id,
-    agencyId: row.agencyId,
-    platform: row.platform,
-    connectedBy: row.connectedBy,
-  }));
+  const selected: MigrationReportRow[] = rows.map(toReportRow);
 
   const migrated: MigrationReportRow[] = [];
   const failed: Array<MigrationReportRow & { error: string }> = [];
@@ -199,18 +198,10 @@ export async function runLegacyMigration(
     for (const row of rows) {
       try {
         await migrateLegacyRow(prisma, row, now);
-        migrated.push({
-          id: row.id,
-          agencyId: row.agencyId,
-          platform: row.platform,
-          connectedBy: row.connectedBy,
-        });
+        migrated.push(toReportRow(row));
       } catch (error) {
         failed.push({
-          id: row.id,
-          agencyId: row.agencyId,
-          platform: row.platform,
-          connectedBy: row.connectedBy,
+          ...toReportRow(row),
           error: error instanceof Error ? error.message : String(error),
         });
       }
@@ -262,7 +253,7 @@ function printReport(report: MigrationReport): void {
  */
 export async function main(argv: string[] = process.argv.slice(2)): Promise<number> {
   const { apply } = parseArgs(argv);
-  const prisma = new PrismaClient({ log: ['error'] }) as unknown as TransactionalPrisma;
+  const prisma = new PrismaClient({ log: ['error'] });
 
   try {
     const report = await runLegacyMigration(prisma, { apply, now: new Date() });

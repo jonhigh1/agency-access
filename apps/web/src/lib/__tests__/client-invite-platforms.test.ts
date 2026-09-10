@@ -1,8 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import {
+  getClientInviteManualRoute,
   getClientInvitePlatformCapability,
   getInviteSecuritySummary,
   isClientInviteManualCallbackPlatform,
+  isClientInviteManualPlatform,
   MANUAL_INVITE_PLATFORMS,
   isManualInvitePlatform,
 } from '../client-invite-platforms';
@@ -38,6 +40,16 @@ describe('client invite platform capabilities', () => {
     });
   });
 
+  it('routes snapchat through oauth with no manual surface', () => {
+    expect(getClientInvitePlatformCapability('snapchat')).toMatchObject({
+      flow: 'oauth',
+      manualRoute: null,
+      manualCallback: false,
+    });
+    expect(isClientInviteManualPlatform('snapchat')).toBe(false);
+    expect(getClientInviteManualRoute('snapchat')).toBeNull();
+  });
+
   it('reports mixed security copy when both oauth and manual platforms are requested', () => {
     expect(getInviteSecuritySummary(['google', 'mailchimp'])).toMatchObject({
       badge: expect.stringMatching(/secure — passwords never requested/i),
@@ -60,11 +72,11 @@ describe('MANUAL_INVITE_PLATFORMS', () => {
       'mailchimp',
       'beehiiv',
       'klaviyo',
-      'snapchat',
       'pinterest',
       'shopify',
       'zapier',
     ]);
+    expect(MANUAL_INVITE_PLATFORMS).not.toContain('snapchat');
   });
 
   it('isManualInvitePlatform matches the constant', () => {

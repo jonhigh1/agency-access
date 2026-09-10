@@ -27,13 +27,10 @@ interface MetaBusinessAccountsResponse {
 }
 
 // Snapchat organization discovery payload persisted as connection metadata.
-interface SnapchatOrganizationsMetadata {
-  organizations: SnapchatUserInfo['organizations'];
-  adAccountCount: number;
-  role?: string;
-  discoveryFailed: boolean;
-  orgStatus?: string;
-}
+type SnapchatOrganizationsMetadata = Pick<
+  SnapchatUserInfo,
+  'organizations' | 'adAccountCount' | 'role' | 'discoveryFailed' | 'orgStatus'
+>;
 
 function sanitizeConnection(connection: Record<string, any>) {
   const { secretId, ...safeConnection } = connection;
@@ -368,19 +365,19 @@ export async function registerOAuthRoutes(fastify: FastifyInstance) {
         }
       }
 
-      // Snapchat discovery reuses the /v1/me call the connector already makes
-      // (identity + best-effort organizations). It never blocks the connection:
-      // both an organizations failure and an identity failure are recorded as
-      // discoveryFailed metadata and the connection is still created.
+      // One getUserInfo call yields identity plus best-effort organizations.
+      // Discovery never blocks the connection: both an organizations failure
+      // and an identity failure are recorded as discoveryFailed metadata and
+      // the connection is still created.
       let snapchatOrganizations: SnapchatOrganizationsMetadata | undefined;
       if (platform === 'snapchat') {
         try {
-          const snapUserInfo = await connector.getUserInfo(tokens.accessToken);
+          const snapUserInfo: SnapchatUserInfo = await connector.getUserInfo(tokens.accessToken);
           snapchatOrganizations = {
-            organizations: snapUserInfo.organizations ?? [],
-            adAccountCount: snapUserInfo.adAccountCount ?? 0,
+            organizations: snapUserInfo.organizations,
+            adAccountCount: snapUserInfo.adAccountCount,
             ...(snapUserInfo.role ? { role: snapUserInfo.role } : {}),
-            discoveryFailed: snapUserInfo.discoveryFailed ?? true,
+            discoveryFailed: snapUserInfo.discoveryFailed,
             ...(snapUserInfo.orgStatus ? { orgStatus: snapUserInfo.orgStatus } : {}),
           };
         } catch (error) {

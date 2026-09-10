@@ -16,6 +16,8 @@ import {
   type GooglePlatformProductId,
   type GoogleProductFulfillmentMode,
   type GoogleProductGrantLifecycle,
+  type ClientDetailProductStatus,
+  type ClientDetailPlatformGroupStatus,
 } from '@agency-platform/shared';
 import type { Prisma } from '@prisma/client';
 
@@ -385,7 +387,7 @@ export interface ClientDetailResponse {
   };
   platformGroups: Array<{
     platformGroup: string;
-    status: 'connected' | 'partial' | 'pending' | 'expired' | 'revoked' | 'needs_follow_up';
+    status: ClientDetailPlatformGroupStatus;
     fulfilledCount: number;
     requestedCount: number;
     latestRequestId?: string;
@@ -393,14 +395,7 @@ export interface ClientDetailResponse {
     latestRequestedAt?: Date;
     products: Array<{
       product: string;
-      status:
-        | 'connected'
-        | 'pending'
-        | 'selection_required'
-        | 'no_assets'
-        | 'expired'
-        | 'revoked'
-        | 'needs_reconnect';
+      status: ClientDetailProductStatus;
       note?: string;
       latestRequestId?: string;
     }>;
@@ -443,23 +438,6 @@ type ClientDetailRequestedProduct = {
   product: string;
   platformGroup: string;
 };
-
-type ClientDetailProductStatus =
-  | 'connected'
-  | 'pending'
-  | 'selection_required'
-  | 'no_assets'
-  | 'expired'
-  | 'revoked'
-  | 'needs_reconnect';
-
-type ClientDetailPlatformGroupStatus =
-  | 'connected'
-  | 'partial'
-  | 'pending'
-  | 'expired'
-  | 'revoked'
-  | 'needs_follow_up';
 
 type ClientDetailAccessRequestRecord = {
   id: string;

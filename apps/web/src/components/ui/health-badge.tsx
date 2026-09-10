@@ -81,15 +81,23 @@ interface ExpirationCountdownProps {
   expiresAt?: Date | string | null;
 }
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
 export function ExpirationCountdown({
   daysUntilExpiry,
   expiresAt,
 }: ExpirationCountdownProps) {
   if (expiresAt !== undefined) {
-    const copy = formatTimeUntilExpiry(expiresAt);
-    const isPast = copy.startsWith('Expired');
-    const isSubDay =
-      !isPast && copy.startsWith('Expires in') && (copy.endsWith('m') || copy.endsWith('h'));
+    // One clock for both the copy and the urgency class so the two can never
+    // disagree. Urgency comes from the raw offset, not from sniffing the copy:
+    // expired -> danger, still inside its first day -> warning, otherwise muted.
+    // A null or unparseable expiry makes the offset NaN, which falls to muted.
+    const now = new Date();
+    const copy = formatTimeUntilExpiry(expiresAt, now);
+    const expiryDate = typeof expiresAt === 'string' ? new Date(expiresAt) : expiresAt;
+    const msUntilExpiry = expiryDate ? expiryDate.getTime() - now.getTime() : Number.NaN;
+    const isPast = msUntilExpiry <= 0;
+    const isSubDay = !isPast && msUntilExpiry <= DAY_MS;
     const ink = isPast
       ? 'text-danger-ink font-medium'
       : isSubDay

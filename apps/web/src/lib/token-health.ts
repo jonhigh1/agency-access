@@ -10,8 +10,6 @@ export type TokenHealthStatus = 'healthy' | 'expiring' | 'expired' | 'unknown';
 export interface TokenHealth {
   status: TokenHealthStatus;
   daysUntilExpiry: number;
-  /** Exact whole minutes until expiry; negative once the token is past expiry. */
-  minutesUntilExpiry: number;
 }
 
 const MINUTE_MS = 60 * 1000;
@@ -34,7 +32,7 @@ const DAY_MS = 24 * 60 * MINUTE_MS;
  */
 export function getTokenHealth(expiresAt: Date | string | null, now: Date = new Date()): TokenHealth {
   if (!expiresAt) {
-    return { status: 'unknown', daysUntilExpiry: 0, minutesUntilExpiry: 0 };
+    return { status: 'unknown', daysUntilExpiry: 0 };
   }
 
   const expiryDate = typeof expiresAt === 'string' ? new Date(expiresAt) : expiresAt;
@@ -45,17 +43,16 @@ export function getTokenHealth(expiresAt: Date | string | null, now: Date = new 
     msUntilExpiry > 0
       ? Math.ceil(msUntilExpiry / DAY_MS)
       : Math.floor(msUntilExpiry / DAY_MS);
-  const minutesUntilExpiry = Math.floor(msUntilExpiry / MINUTE_MS);
 
   if (msUntilExpiry <= 0) {
-    return { status: 'expired', daysUntilExpiry, minutesUntilExpiry };
+    return { status: 'expired', daysUntilExpiry };
   }
 
   if (daysUntilExpiry <= 7) {
-    return { status: 'expiring', daysUntilExpiry, minutesUntilExpiry };
+    return { status: 'expiring', daysUntilExpiry };
   }
 
-  return { status: 'healthy', daysUntilExpiry, minutesUntilExpiry };
+  return { status: 'healthy', daysUntilExpiry };
 }
 
 /**

@@ -23,7 +23,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { StatCard, HealthBadge, ExpirationCountdown, PlatformIcon, StatusBadge, formatRelativeTime } from '@/components/ui';
-import type { Platform, HealthStatus } from '@agency-platform/shared';
+import type { Platform, HealthStatus, AuthorizationStatus } from '@agency-platform/shared';
 import { resolveApiUrl } from '@/lib/api/api-env';
 import { parseJsonResponse } from '@/lib/api/parse-json-response';
 
@@ -33,9 +33,8 @@ type TokenHealth = {
   clientName: string;
   platform: Platform;
   health: HealthStatus;
-  // Authorization status: 'active' | 'expired' | 'invalid' | 'revoked'.
   // Refresh is a property of the authorization, not of the token countdown.
-  status: string;
+  status: AuthorizationStatus;
   // Null for tokens that never expire (non_expiring platforms).
   expiresAt: Date | null;
   daysUntilExpiry: number;

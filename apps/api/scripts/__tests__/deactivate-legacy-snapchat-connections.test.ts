@@ -19,6 +19,7 @@ import {
   parseArgs,
   runLegacyMigration,
   selectLegacyConnections,
+  type MigrationPrisma,
 } from '../deactivate-legacy-snapchat-connections';
 
 type ConnectionRow = {
@@ -175,7 +176,10 @@ function createFakePrisma(
       }
     }),
     $disconnect: vi.fn(async () => undefined),
-  };
+    // The in-memory double is cast to the migration's real Prisma surface
+    // here, once: the script functions are typed against the actual client
+    // delegates, and only the test fakes need a cast.
+  } as unknown as MigrationPrisma;
 
   return {
     prisma,
