@@ -8,7 +8,7 @@ import { z } from 'zod';
 import { sendError } from '../../lib/response.js';
 
 export async function registerManualRoutes(fastify: FastifyInstance) {
-  type EmailManualPlatform = 'beehiiv' | 'kit' | 'mailchimp' | 'klaviyo' | 'snapchat';
+  type EmailManualPlatform = 'beehiiv' | 'kit' | 'mailchimp' | 'klaviyo';
 
   const normalizeShopDomain = (value: string): string =>
     value
@@ -194,16 +194,6 @@ export async function registerManualRoutes(fastify: FastifyInstance) {
       'klaviyo',
       'Manual invitation initiated. Waiting for agency to accept Klaviyo team invite.',
       'Failed to create Klaviyo manual connection'
-    )
-  );
-
-  // Snapchat manual connection endpoint (business + ad account invite flow)
-  fastify.post(
-    '/client/:token/snapchat/manual-connect',
-    createEmailManualConnectHandler(
-      'snapchat',
-      'Snapchat access sharing initiated. Complete both organization and ad account invites in Snapchat Ads Manager.',
-      'Failed to create Snapchat manual connection'
     )
   );
 

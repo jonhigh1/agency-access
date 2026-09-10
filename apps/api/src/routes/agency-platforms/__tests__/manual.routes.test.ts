@@ -116,19 +116,13 @@ describe('Manual Agency Platform Routes', () => {
     expect(invalidateDashboardCache).toHaveBeenCalledWith('agency-1');
   });
 
-  it('creates Snapchat manual connection with agency email', async () => {
+  it('rejects Snapchat manual connect because Snapchat is an OAuth platform', async () => {
     vi.mocked(agencyResolutionService.resolveAgency).mockResolvedValue({
       data: { agencyId: 'agency-1' },
       error: null,
     } as any);
     vi.mocked(prisma.agencyPlatformConnection.findFirst).mockResolvedValue(null as any);
-    vi.mocked(prisma.agencyPlatformConnection.create).mockResolvedValue({
-      id: 'conn-snapchat-1',
-      platform: 'snapchat',
-      agencyEmail: 'snap@agency.com',
-      status: 'active',
-      connectedAt: new Date(),
-    } as any);
+    vi.mocked(prisma.agencyPlatformConnection.create).mockResolvedValue({} as any);
     vi.mocked(prisma.auditLog.create).mockResolvedValue({} as any);
 
     const response = await app.inject({
@@ -140,64 +134,10 @@ describe('Manual Agency Platform Routes', () => {
       },
     });
 
-    expect(response.statusCode).toBe(201);
-    expect(prisma.agencyPlatformConnection.create).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          platform: 'snapchat',
-          agencyEmail: 'snap@agency.com',
-          metadata: expect.objectContaining({
-            authMethod: 'manual_team_invitation',
-            invitationEmail: 'snap@agency.com',
-          }),
-        }),
-      })
-    );
-  });
-
-  it('updates Snapchat manual invitation email', async () => {
-    vi.mocked(agencyResolutionService.resolveAgency).mockResolvedValue({
-      data: { agencyId: 'agency-1' },
-      error: null,
-    } as any);
-    vi.mocked(prisma.agencyPlatformConnection.findFirst).mockResolvedValue({
-      id: 'conn-snapchat-1',
-      agencyId: 'agency-1',
-      platform: 'snapchat',
-      agencyEmail: 'old@agency.com',
-      metadata: {
-        invitationEmail: 'old@agency.com',
-      },
-    } as any);
-    vi.mocked(prisma.agencyPlatformConnection.update).mockResolvedValue({
-      id: 'conn-snapchat-1',
-      platform: 'snapchat',
-      agencyEmail: 'new@agency.com',
-      status: 'active',
-      connectedAt: new Date(),
-    } as any);
-    vi.mocked(prisma.auditLog.create).mockResolvedValue({} as any);
-
-    const response = await app.inject({
-      method: 'PATCH',
-      url: '/agency-platforms/snapchat/manual-invitation',
-      payload: {
-        agencyId: 'agency-1',
-        invitationEmail: 'new@agency.com',
-      },
-    });
-
-    expect(response.statusCode).toBe(200);
-    expect(prisma.agencyPlatformConnection.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        data: expect.objectContaining({
-          agencyEmail: 'new@agency.com',
-          metadata: expect.objectContaining({
-            invitationEmail: 'new@agency.com',
-          }),
-        }),
-      })
-    );
+    expect(response.statusCode).toBe(400);
+    expect(response.json().error.code).toBe('UNSUPPORTED_PLATFORM');
+    expect(prisma.agencyPlatformConnection.create).not.toHaveBeenCalled();
+    expect(prisma.auditLog.create).not.toHaveBeenCalled();
   });
 
   it('creates Shopify manual connection as enablement only', async () => {
