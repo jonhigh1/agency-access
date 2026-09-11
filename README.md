@@ -62,6 +62,20 @@ cd agency-access-platform
 npm install
 ```
 
+### 1b. Git hooks setup
+
+```bash
+bash scripts/setup/install-git-hooks.sh
+```
+
+Points this clone at the committed hooks in `.githooks/` (survives
+re-clone, unlike `.git/hooks/`). The pre-push hook blocks pushes to `main`
+that fail `npm run typecheck` or `npm run build`, validated against a clean
+checkout of the pushed commit — not your working tree — so a build that
+only passes locally because of uncommitted changes gets caught before it
+reaches Render/Vercel. Non-`main` pushes are unaffected. Emergency bypass:
+`git push --no-verify`. Details: [`.githooks/README.md`](.githooks/README.md).
+
 ### 2. Set Up Environment Variables
 
 **Backend (`apps/api/.env`):**
