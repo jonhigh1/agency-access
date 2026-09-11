@@ -17,6 +17,7 @@ import {
   findExistingIncidentIssue,
   resolveFailingSha,
   resolveIncident,
+  resolveParentShaFromTrailer,
   routeByClassification,
   shortSha,
   type IssueRef,
@@ -300,5 +301,79 @@ describe('resolveIncident', () => {
       expect(result.comment.body).toContain('platform');
       expect(result.comment.body).toMatch(/zero repair attempts/i);
     });
+  });
+
+  describe('Correction B: parentSha routes a child-commit failure to the parent incident', () => {
+    it('given a parentSha, dedupe search + result converge on the same outcome as an equivalent same-SHA signal', async () => {
+      // Path A: a same-SHA-signal — the original incident's own sha comes
+      // back around (e.g. a manual replay), and an issue titled with ITS
+      // short sha already exists.
+      const parentIssue: IssueRef = {
+        number: 99,
+        title: buildIssueTitle(SHA_A, 'vercel'),
+        url: 'https://github.com/x/y/issues/99',
+      };
+      const pathA = await resolveIncident(baseInput({ sha: SHA_A, classification: 'build-time' }), {
+        searchIssues: async () => [parentIssue],
+      });
+
+      // Path B: a repair-commit's own CHILD sha fails (SHA_B), but its
+      // commit message carries `Deploy-Repair-Of: <SHA_A>` — the same
+      // tracking issue (titled with SHA_A's short form) must be found.
+      const pathB = await resolveIncident(
+        baseInput({ sha: SHA_B, classification: 'build-time', parentSha: SHA_A }),
+        { searchIssues: async () => [parentIssue] }
+      );
+
+      expect(pathA.kind).toBe('existing-incident');
+      expect(pathB.kind).toBe('existing-incident');
+      if (pathA.kind !== 'existing-incident' || pathB.kind !== 'existing-incident') {
+        throw new Error('unreachable');
+      }
+
+      // Both converge on the SAME issue and the same routing decision — the
+      // child-commit failure attributes to the parent incident rather than
+      // spinning up a fresh full-budget one.
+      expect(pathB.issue).toEqual(pathA.issue);
+      expect(pathB.issue).toEqual(parentIssue);
+      expect(pathB.shouldRepair).toBe(pathA.shouldRepair);
+      expect(pathB.shortSha).toBe(pathA.shortSha);
+      expect(pathB.shortSha).toBe(shortSha(SHA_A));
+    });
+
+    it('with no parentSha, dedupe still keys off the triggering sha itself (regression guard)', async () => {
+      const existingIssue: IssueRef = { number: 5, title: buildIssueTitle(SHA_A, 'vercel') };
+      const result = await resolveIncident(baseInput({ sha: SHA_A, classification: 'build-time' }), {
+        searchIssues: async () => [existingIssue],
+      });
+      expect(result.kind).toBe('existing-incident');
+      if (result.kind !== 'existing-incident') throw new Error('unreachable');
+      expect(result.shortSha).toBe(shortSha(SHA_A));
+    });
+  });
+});
+
+describe('resolveParentShaFromTrailer', () => {
+  it('extracts the sha from a well-formed Deploy-Repair-Of trailer', () => {
+    const message = [
+      'fix: repair build failure',
+      '',
+      'Applied automated fix for missing Suspense boundary.',
+      '',
+      `Deploy-Repair-Of: ${SHA_A}`,
+    ].join('\n');
+    expect(resolveParentShaFromTrailer(message)).toBe(SHA_A);
+  });
+
+  it('returns null for a commit message without the trailer', () => {
+    expect(resolveParentShaFromTrailer('fix: unrelated commit\n\nNo trailer here.')).toBeNull();
+  });
+
+  it('returns null for a malformed trailer (non-hex value)', () => {
+    expect(resolveParentShaFromTrailer('Deploy-Repair-Of: not-a-sha!!')).toBeNull();
+  });
+
+  it('matches case-insensitively on the trailer key', () => {
+    expect(resolveParentShaFromTrailer(`deploy-repair-of: ${SHA_A}`)).toBe(SHA_A);
   });
 });

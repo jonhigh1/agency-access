@@ -214,11 +214,170 @@ jobs:
     # here; U3's job ends at the classification/dedupe decision above.
     if: needs.incident.outputs.should_repair == 'true'
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
-      # TODO(U5): attempt loop attaches here — diagnose → patch → gate →
-      # push, bounded by the repair budget, running inside this single job
-      # per KTD1 (GITHUB_TOKEN pushes cannot re-trigger workflows, so
-      # in-run looping is safe without a PAT). Not implemented by this unit.
-      - name: Repair loop placeholder
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Full history (not the default shallow depth-1 clone) so KTD8's
+          # rebase-once-on-non-fast-forward path has real history to rebase
+          # against. actions/checkout without an explicit `ref` checks out
+          # the default branch's current HEAD — which is main, the same
+          # branch this loop pushes onto — so this only diverges from the
+          # exact failing commit if something else lands on main between
+          # the failure and this run, which the serialized `concurrency`
+          # group (KTD8, workflow-level) is what keeps rare.
+          fetch-depth: 0
+
+      # Correction A: this job is the EXCLUSIVE owner of `git commit`/`git
+      # push` in the whole repair pipeline (U4's repair-session is
+      # edit-only by design). The bot identity is configured once, here,
+      # before any commit step runs.
+      - name: Configure git identity (github-actions[bot], Correction A)
         run: |
-          echo "TODO(U5): attempt loop attaches here"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # KTD10 lesson (commit ffe440d): prisma generate must precede the API
+      # build. The in-loop gate (attempt-loop.ts's runGate — `npm run
+      # typecheck && npm run build`, run once per attempt) needs a
+      # generated client every time it shells out to the API build, so this
+      # runs once up front rather than being repeated per attempt.
+      - name: Generate Prisma client
+        run: npm run db:generate --workspace=apps/api
+
+      # Two-bugs-to-avoid #1 (env var name mismatch): the web build reads
+      # NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY / CLERK_SECRET_KEY, not
+      # PERF_CLERK_*. The underlying secrets are stored under PERF_CLERK_*
+      # names (reused from dashboard-perf-gate.yml rather than provisioning
+      # a second Clerk credential pair) — mapped to the real env var names
+      # in the "Run the attempt loop" step below. This is this job's OWN
+      # validate-secrets step (KTD10) for the Clerk keys it additionally
+      # needs, distinct from the `incident` job's VERCEL_TOKEN/
+      # RENDER_API_KEY/ANTHROPIC_API_KEY validation above — different
+      # secrets for a different job.
+      - name: Validate Clerk secrets for the repair-loop gate
+        env:
+          PERF_CLERK_SECRET_KEY: ${{ secrets.PERF_CLERK_SECRET_KEY }}
+          PERF_CLERK_PUBLISHABLE_KEY: ${{ secrets.PERF_CLERK_PUBLISHABLE_KEY }}
+        run: |
+          missing=0
+          for key in PERF_CLERK_SECRET_KEY PERF_CLERK_PUBLISHABLE_KEY; do
+            if [ -z "${!key}" ]; then
+              echo "Missing required secret: $key"
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
+
+      # This job's own copy of the trigger sha: `needs.incident.outputs`
+      # only exposes `should_repair`/`classification` (the incident job's
+      # own step-scoped outputs, e.g. `steps.trigger.outputs.sha`, are not
+      # visible to a downstream job). The same `github.event` context the
+      # incident job read from is available here too, so this re-derives
+      # the sha directly rather than requiring a change to the incident
+      # job's already-committed (U3) outputs.
+      - name: Read trigger sha
+        id: trigger
+        run: |
+          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+            echo "sha=${{ github.event.client_payload.sha }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "sha=" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Finds the tracking issue the `incident` job already created or
+      # deduped against (this job only runs when should_repair == 'true',
+      # which itself only happens once that issue exists). Mirrors the
+      # incident job's own dedupe search query exactly.
+      - name: Find the tracking issue for this incident
+        id: tracking-issue
+        if: steps.trigger.outputs.sha != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ steps.trigger.outputs.sha }}
+        run: |
+          SHORT_SHA="${SHA:0:7}"
+          NUMBER=$(gh issue list --search "$SHORT_SHA in:title is:issue is:open" --state open --json number --jq '.[0].number // empty')
+          echo "number=$NUMBER" >> "$GITHUB_OUTPUT"
+
+      # Runs apps/api/scripts/deploy-repair/attempt-loop.ts's CLI entry
+      # point: the bounded state machine (R8: max 3 attempts per incident)
+      # that diagnoses (U4's runRepairSession), gates (typecheck + build,
+      # covering both deploy targets per R1 since these are the root
+      # workspace scripts — shared+api+web, not a web-only subset),
+      # commits + pushes with the Deploy-Repair-Of trailer (Correction B),
+      # and verifies the redeploy (wait-for-deploy.ts, R13).
+      #
+      # STARTING_BUDGET is fixed at 3 (R8's cap) for this unit's scope —
+      # persisting a per-issue REMAINING budget across separate workflow
+      # runs (so a parentSha-attributed child incident starts with less
+      # than 3) is explicitly out of scope for this pass (see Correction B
+      # in this unit's own notes); incident.ts's parentSha dedupe already
+      # prevents a fresh full-budget ISSUE from being opened, which is the
+      # part that actually closes the SHA-cascade bug.
+      #
+      # FAILURE_REPORT_PATH/LOG_EXCERPT: the `incident` job's KTD7 artifact
+      # is written to that job's own (separate) runner checkout and is not
+      # available here — passing it across jobs needs
+      # actions/upload-artifact + actions/download-artifact, which is a
+      # documented follow-up (the same class of gap U3 already left open
+      # for the real Vercel/Render build-log fetch — see this workflow's
+      # "Fetch build log excerpt" step above). Left as safe, inert defaults
+      # here rather than a fragile inline reconstruction.
+      - name: Run the attempt loop (Correction A/B)
+        id: attempt-loop
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GH_TOKEN: ${{ github.token }}
+          STARTING_BUDGET: '3'
+          ORIGINAL_SHA: ${{ steps.trigger.outputs.sha }}
+          MODE: repair
+          FAILURE_REPORT_PATH: .claude/tasks/deploy-failures/${{ steps.trigger.outputs.sha }}.md
+          LOG_EXCERPT: ''
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.PERF_CLERK_PUBLISHABLE_KEY }}
+          CLERK_SECRET_KEY: ${{ secrets.PERF_CLERK_SECRET_KEY }}
+        run: npx tsx apps/api/scripts/deploy-repair/attempt-loop.ts | tee /tmp/deploy-repair-attempt-loop.json
+
+      # R10: post the per-attempt summary (diagnosis/gate/push/deploy per
+      # attempt) to the tracking issue. Runs regardless of outcome
+      # (success, exhausted, aborted-push-failure, no-repair-possible) so
+      # the operator always learns what happened without watching
+      # dashboards — the whole point of this unit.
+      - name: Post attempt-loop summary to the tracking issue (R10)
+        if: always() && steps.tracking-issue.outputs.number != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ steps.tracking-issue.outputs.number }}
+        run: |
+          if [ ! -s /tmp/deploy-repair-attempt-loop.json ]; then
+            echo "No attempt-loop output captured — nothing to post."
+            exit 0
+          fi
+          OUTCOME=$(jq -r '.outcome' /tmp/deploy-repair-attempt-loop.json)
+          ATTEMPTS=$(jq -r '.attemptsTaken' /tmp/deploy-repair-attempt-loop.json)
+          {
+            echo "### Deploy-repair attempt loop finished"
+            echo ""
+            echo "- **Outcome:** \`$OUTCOME\`"
+            echo "- **Attempts taken:** $ATTEMPTS"
+            echo ""
+            echo "<details><summary>Per-attempt detail</summary>"
+            echo ""
+            echo '```json'
+            jq '.attempts' /tmp/deploy-repair-attempt-loop.json
+            echo '```'
+            echo "</details>"
+          } > /tmp/deploy-repair-summary.md
+          gh issue comment "$ISSUE_NUMBER" --body-file /tmp/deploy-repair-summary.md

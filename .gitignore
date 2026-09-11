@@ -73,3 +73,9 @@ __pycache__/
 .codex/skills/
 .worktrees/
 .herenow/
+.env*
+
+# Deploy-repair failure-report artifacts (KTD7) — ephemeral working files
+# for the repair agent, never committed (defense-in-depth alongside U5's
+# path-scoped `git add`, per the SEC-03 review finding).
+.claude/tasks/deploy-failures/

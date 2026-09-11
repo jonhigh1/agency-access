@@ -137,7 +137,15 @@ export function classifyDeployStatus(input: DeployStatusInput): DeployClassifica
   return input.platform === 'vercel' ? classifyVercel(input) : classifyRender(input);
 }
 
-/** True only for the single classification that should spend a repair attempt. */
-export function isRepairTarget(classification: DeployClassification): boolean {
+/**
+ * True only for the single classification that should spend a repair
+ * attempt. A type predicate (not a plain boolean) so callers narrowing on
+ * this check — e.g. `incident.ts`'s `routeByClassification` — get real
+ * type-level exhaustiveness on the non-repair-target branch, instead of a
+ * narrowing gap that only surfaces once `apps/api/scripts/**` is added to
+ * `apps/api/tsconfig.json`'s include (see U2's own documented finding on
+ * that gap).
+ */
+export function isRepairTarget(classification: DeployClassification): classification is 'build-time' {
   return classification === 'build-time';
 }

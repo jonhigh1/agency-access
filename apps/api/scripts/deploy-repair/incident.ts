@@ -311,6 +311,41 @@ export function routeByClassification(
 }
 
 // ---------------------------------------------------------------------------
+// Correction B: SHA-cascade budget-bug fix
+// ---------------------------------------------------------------------------
+//
+// U5 pushes repair commits carrying a `Deploy-Repair-Of: <original-sha>`
+// trailer (see attempt-loop.ts). When a repair commit's OWN deploy fails,
+// Vercel's repository_dispatch fires for that NEW (child) sha — an external
+// webhook, not blocked by the GITHUB_TOKEN recursion guard. Without this
+// fix, a fresh `deploy-repair.yml` run would resolve the child sha through
+// this module, find no issue titled with the CHILD sha (the tracking issue
+// is titled with the ORIGINAL sha), and open a brand-new incident with a
+// full 3-attempt budget — defeating R8's cap across a chain of repair-commit
+// failures.
+//
+// The fix: extract the trailer's parent sha and dedupe against the
+// PARENT's short-sha title instead of the triggering (child) commit's own
+// sha. That routes the child failure to the SAME `existing-incident` result
+// the original incident already produced, so the issue's already-spent
+// budget governs — not a fresh 3.
+
+/** Matches a `Deploy-Repair-Of: <sha>` trailer line, case-insensitive on the key. */
+const DEPLOY_REPAIR_OF_TRAILER_RE = /^Deploy-Repair-Of:\s*([0-9a-f]{7,40})\s*$/im;
+
+/**
+ * Extract the parent incident sha from a repair commit's message, if it
+ * carries a `Deploy-Repair-Of: <sha>` trailer (Correction B). Returns null
+ * for a commit message with no such trailer, or a malformed one (not a
+ * plausible hex sha) — callers must treat null as "no parent," not as an
+ * empty-string sha.
+ */
+export function resolveParentShaFromTrailer(commitMessage: string): string | null {
+  const match = DEPLOY_REPAIR_OF_TRAILER_RE.exec(commitMessage);
+  return match ? match[1] : null;
+}
+
+// ---------------------------------------------------------------------------
 // Top-level incident resolution
 // ---------------------------------------------------------------------------
 
@@ -323,6 +358,14 @@ export type ResolveIncidentInput = {
   triggerSource: string;
   suspectedFiles?: string[];
   now?: Date;
+  /**
+   * The original incident's sha, extracted from a repair commit's
+   * `Deploy-Repair-Of` trailer (Correction B). When present, dedupe search
+   * and issue attribution use THIS sha's short form instead of `sha`'s —
+   * routing a child-commit failure back to the same tracking issue the
+   * parent incident already opened, so its remaining budget governs.
+   */
+  parentSha?: string;
 };
 
 export type ResolveIncidentResult =
@@ -387,16 +430,36 @@ export async function resolveIncident(
     return { kind: 'skipped-non-actionable', shortSha: short, classification: 'non-actionable' };
   }
 
-  const routing = routeByClassification(input.classification, input);
-  const existing = await findExistingIncidentIssue(input.sha, deps.searchIssues);
+  // Correction B: when this signal is for a repair-commit's own child sha
+  // (input.parentSha set from the pushed commit's Deploy-Repair-Of
+  // trailer), dedupe — and route classification comments — against the
+  // PARENT's short-sha, not the child's own sha. That attributes the
+  // child-commit failure to the SAME tracking issue the parent incident
+  // already opened, so its already-spent budget governs (not a fresh 3).
+  const dedupeSha = input.parentSha ?? input.sha;
+  const routing = routeByClassification(input.classification, { sha: dedupeSha });
+  const existing = await findExistingIncidentIssue(dedupeSha, deps.searchIssues);
+
+  // `routing.classification` can never actually be 'non-actionable' here —
+  // that value was excluded from `input.classification` above, before
+  // `routeByClassification` was ever called — but the function's own
+  // return type is `ClassificationRouting` regardless of what the caller
+  // already narrowed, so TypeScript can't see that. The `'commentBody' in
+  // routing` check narrows it explicitly instead of asserting or casting.
+  if (!routing.shouldRepair && !('commentBody' in routing)) {
+    throw new Error(
+      `Unreachable: routeByClassification returned 'non-actionable' for classification ${input.classification}, which was already excluded above.`
+    );
+  }
 
   if (existing) {
+    const dedupeShort = shortSha(dedupeSha);
     const commentBody = routing.shouldRepair
-      ? `Duplicate failure signal received for ${short}. Existing incident tracked here; no new issue created (R7).`
+      ? `Duplicate failure signal received for ${dedupeShort}. Existing incident tracked here; no new issue created (R7).`
       : routing.commentBody;
     return {
       kind: 'existing-incident',
-      shortSha: short,
+      shortSha: dedupeShort,
       issue: existing,
       shouldRepair: routing.shouldRepair,
       classification: input.classification,
@@ -445,6 +508,17 @@ type CliEnv = {
   DEPLOY_STATUS?: string;
   EXISTING_ISSUES_JSON?: string;
   GITHUB_OUTPUT?: string;
+  /**
+   * Correction B: the original incident's sha, when this signal is for a
+   * repair commit's own (child) sha. The workflow step is responsible for
+   * extracting this from the triggering commit's message before invoking
+   * this CLI — e.g. `resolveParentShaFromTrailer(commitMessage)` — rather
+   * than this module reading a raw COMMIT_MESSAGE env var itself, so the
+   * trailer-parsing choice of "which env var carries the raw message" stays
+   * with the workflow YAML (which already knows whether it has one) instead
+   * of being hardcoded here.
+   */
+  PARENT_SHA?: string;
 };
 
 function classificationFromEnv(env: CliEnv, platform: Platform): DeployClassification {
@@ -487,6 +561,7 @@ export async function main(env: CliEnv = process.env as CliEnv): Promise<number>
       logExcerpt: env.LOG_EXCERPT ?? '',
       classification,
       triggerSource: env.TRIGGER_SOURCE ?? 'unknown',
+      parentSha: env.PARENT_SHA || undefined,
     },
     { searchIssues: async () => existingIssues }
   );
