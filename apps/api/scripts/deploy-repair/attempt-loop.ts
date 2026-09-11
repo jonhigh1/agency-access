@@ -25,8 +25,7 @@
  * dependency, typed-result-union conventions.
  */
 
-import { promises as fs } from 'node:fs';
-import { pathToFileURL } from 'node:url';
+import { runCliIfDirect, writeGithubOutput } from './cli-utils';
 import {
   createNodeExecFn,
   createNodeGitDiffNameOnly,
@@ -381,14 +380,6 @@ type CliEnv = {
   GITHUB_OUTPUT?: string;
 };
 
-async function writeGithubOutput(env: CliEnv, entries: Record<string, string>): Promise<void> {
-  if (!env.GITHUB_OUTPUT) return;
-  const lines = Object.entries(entries)
-    .map(([key, value]) => `${key}=${value}`)
-    .join('\n');
-  await fs.appendFile(env.GITHUB_OUTPUT, `${lines}\n`, 'utf-8');
-}
-
 /** CLI entry point. Returns the process exit code so tests could call it directly. */
 export async function main(env: CliEnv = process.env as CliEnv): Promise<number> {
   const originalSha = env.ORIGINAL_SHA;
@@ -428,7 +419,7 @@ export async function main(env: CliEnv = process.env as CliEnv): Promise<number>
   );
 
   console.log(JSON.stringify(result, null, 2));
-  await writeGithubOutput(env, {
+  await writeGithubOutput(env.GITHUB_OUTPUT, {
     outcome: result.outcome,
     attempts_taken: String(result.attemptsTaken),
   });
@@ -436,16 +427,4 @@ export async function main(env: CliEnv = process.env as CliEnv): Promise<number>
   return 0;
 }
 
-const isDirectRun =
-  typeof process !== 'undefined' &&
-  process.argv[1] !== undefined &&
-  import.meta.url === pathToFileURL(process.argv[1]).href;
-
-if (isDirectRun) {
-  main()
-    .then((code) => process.exit(code))
-    .catch((error) => {
-      console.error('[deploy-repair] Fatal error:', error instanceof Error ? error.message : String(error));
-      process.exit(1);
-    });
-}
+runCliIfDirect(import.meta.url, main, '[deploy-repair]');

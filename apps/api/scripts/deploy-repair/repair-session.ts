@@ -35,7 +35,9 @@
  */
 
 import { spawn } from 'node:child_process';
-import { buildRepairPrompt, type RepairMode } from './prompt';
+import { buildRepairPrompt, DEFAULT_DENIED_PATHS, type RepairMode } from './prompt';
+
+export { DEFAULT_DENIED_PATHS } from './prompt';
 
 export type { RepairMode } from './prompt';
 
@@ -115,18 +117,6 @@ export const DEFAULT_ALLOWED_TOOLS: readonly string[] = [
   'Edit',
   'Bash(npm run typecheck)',
   'Bash(npm run build)',
-];
-
-/** R9 denied paths — same list `prompt.ts` tells the agent about. */
-export const DEFAULT_DENIED_PATHS: readonly string[] = [
-  '.github/**',
-  '.claude/**',
-  'prisma/**',
-  '**/schema.prisma',
-  'render.yaml',
-  'vercel.json',
-  '**/package.json',
-  '**/package-lock.json',
 ];
 
 /**

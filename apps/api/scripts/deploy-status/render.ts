@@ -15,10 +15,11 @@
  * network. Nothing here runs at module load time.
  */
 
-const RENDER_API_BASE = 'https://api.render.com';
+import { authHeaders, boundHead, boundTail, readErrorBody, DEFAULT_LOG_EXCERPT_MAX_CHARS } from './http-utils';
 
-/** Default cap on returned log-excerpt length (bytes, ASCII-approximate). */
-export const DEFAULT_LOG_EXCERPT_MAX_CHARS = 4000;
+export { DEFAULT_LOG_EXCERPT_MAX_CHARS } from './http-utils';
+
+const RENDER_API_BASE = 'https://api.render.com';
 
 /** Safety cap on log-pagination iterations so a misbehaving API can't hang the caller. */
 export const DEFAULT_MAX_LOG_PAGES = 10;
@@ -86,19 +87,6 @@ export class RenderApiError extends Error {
 }
 
 export type RenderFetch = typeof globalThis.fetch;
-
-async function readErrorBody(response: Response): Promise<string> {
-  try {
-    const text = await response.text();
-    return text || response.statusText || 'unknown error';
-  } catch {
-    return response.statusText || 'unknown error';
-  }
-}
-
-function authHeaders(apiKey: string): Record<string, string> {
-  return { Authorization: `Bearer ${apiKey}` };
-}
 
 export type ListRenderDeploysOptions = {
   apiKey: string;
@@ -254,14 +242,3 @@ export function reduceRenderLogsToExcerpt(
   return boundTail(fullText, maxLength);
 }
 
-function boundHead(text: string, maxLength: number): string {
-  if (text.length <= maxLength) return text;
-  const omitted = text.length - maxLength;
-  return `${text.slice(0, maxLength)}\n... [truncated, ${omitted} more characters]`;
-}
-
-function boundTail(text: string, maxLength: number): string {
-  if (text.length <= maxLength) return text;
-  const omitted = text.length - maxLength;
-  return `... [truncated, ${omitted} earlier characters]\n${text.slice(-maxLength)}`;
-}

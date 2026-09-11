@@ -26,6 +26,9 @@
  *   - 'success' means Vercel READY / Render live (R13).
  */
 
+import type { VercelReadyState } from './vercel';
+import type { RenderDeployStatus } from './render';
+
 export type DeployClassification =
   | 'success'
   | 'build-time'
@@ -33,31 +36,6 @@ export type DeployClassification =
   | 'platform'
   | 'transient'
   | 'non-actionable';
-
-/** The Vercel deployment `readyState` values documented for this unit. */
-export type VercelReadyState =
-  | 'BLOCKED'
-  | 'BUILDING'
-  | 'CANCELED'
-  | 'DELETED'
-  | 'ERROR'
-  | 'INITIALIZING'
-  | 'QUEUED'
-  | 'READY';
-
-/** The Render deploy `status` values documented for this unit. */
-export type RenderDeployStatus =
-  | 'created'
-  | 'queued'
-  | 'build_in_progress'
-  | 'update_in_progress'
-  | 'live'
-  | 'deactivated'
-  | 'build_failed'
-  | 'update_failed'
-  | 'canceled'
-  | 'pre_deploy_in_progress'
-  | 'pre_deploy_failed';
 
 export type VercelStatusInput = {
   platform: 'vercel';

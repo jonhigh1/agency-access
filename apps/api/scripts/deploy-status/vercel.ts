@@ -13,10 +13,11 @@
  * network. Nothing here runs at module load time.
  */
 
-const VERCEL_API_BASE = 'https://api.vercel.com';
+import { authHeaders, boundHead, boundTail, readErrorBody, DEFAULT_LOG_EXCERPT_MAX_CHARS } from './http-utils';
 
-/** Default cap on returned log-excerpt length (bytes, ASCII-approximate). */
-export const DEFAULT_LOG_EXCERPT_MAX_CHARS = 4000;
+export { DEFAULT_LOG_EXCERPT_MAX_CHARS } from './http-utils';
+
+const VERCEL_API_BASE = 'https://api.vercel.com';
 
 /** The Vercel deployment `readyState` values documented for this unit. */
 export type VercelReadyState =
@@ -66,19 +67,6 @@ export class VercelApiError extends Error {
 }
 
 export type VercelFetch = typeof globalThis.fetch;
-
-async function readErrorBody(response: Response): Promise<string> {
-  try {
-    const text = await response.text();
-    return text || response.statusText || 'unknown error';
-  } catch {
-    return response.statusText || 'unknown error';
-  }
-}
-
-function authHeaders(token: string): Record<string, string> {
-  return { Authorization: `Bearer ${token}` };
-}
 
 export type ListVercelDeploymentsOptions = {
   token: string;
@@ -197,18 +185,6 @@ export function reduceVercelEventsToExcerpt(
     .join('\n');
 
   return boundTail(fullText, maxLength);
-}
-
-function boundHead(text: string, maxLength: number): string {
-  if (text.length <= maxLength) return text;
-  const omitted = text.length - maxLength;
-  return `${text.slice(0, maxLength)}\n... [truncated, ${omitted} more characters]`;
-}
-
-function boundTail(text: string, maxLength: number): string {
-  if (text.length <= maxLength) return text;
-  const omitted = text.length - maxLength;
-  return `... [truncated, ${omitted} earlier characters]\n${text.slice(-maxLength)}`;
 }
 
 export type GetVercelBuildLogExcerptOptions = {

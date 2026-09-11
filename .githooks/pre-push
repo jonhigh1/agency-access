@@ -101,7 +101,11 @@ if (
   npm run build --workspace=packages/shared
   npm run db:generate --workspace=apps/api
   npm run typecheck
-  npm run build
+  # packages/shared is already built above (typecheck needs its dist/
+  # first); the root `build` script would rebuild it a second time in the
+  # same run, so build the remaining workspaces directly instead.
+  npm run build --workspace=apps/api
+  npm run build --workspace=apps/web
 ); then
   GATE_STATUS=0
 else

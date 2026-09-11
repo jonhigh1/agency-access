@@ -170,22 +170,19 @@ jobs:
           DEPLOY_READY_STATE: ERROR
           DEPLOY_STATUS: build_failed
           EXISTING_ISSUES_JSON: ${{ steps.existing-issues.outputs.issues_json }}
-        run: npx tsx apps/api/scripts/deploy-repair/incident.ts
+        # Captured to a file (not just $GITHUB_OUTPUT, which can't hold a
+        # multi-KB body) so this step's own artifact write and `new Date()`
+        # timestamp are the only ones this run produces — re-invoking the
+        # script a second time in the next step computed a different
+        # timestamp and wrote a second, near-duplicate KTD7 artifact for the
+        # same incident (simplify-pass finding).
+        run: npx tsx apps/api/scripts/deploy-repair/incident.ts | tee /tmp/deploy-repair-incident.json
 
       - name: Create or update the tracking issue
         if: steps.trigger.outputs.sha != ''
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          # Re-run resolve-incident's decision one more time to get the full
-          # JSON payload (title/body/artifactPath) — the previous step only
-          # exposed scalar $GITHUB_OUTPUT values, not the composed strings,
-          # since GitHub Actions step outputs are not well suited to
-          # multi-KB markdown bodies. Re-invoking is cheap and deterministic
-          # (same inputs, same env) and keeps incident.ts the single source
-          # of truth for the composed content instead of duplicating its
-          # markdown-building logic in bash.
-          npx tsx apps/api/scripts/deploy-repair/incident.ts > /tmp/deploy-repair-incident.json
           KIND=$(jq -r '.kind' /tmp/deploy-repair-incident.json)
 
           if [ "$KIND" = "skipped-non-actionable" ]; then
