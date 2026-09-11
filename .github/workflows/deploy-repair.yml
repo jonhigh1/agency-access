@@ -94,20 +94,35 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Interpolating `${{ }}` expressions directly into a `run:` bash body
+      # is a script-injection vector (GitHub's own security guidance):
+      # untrusted event payload text becomes literal shell source before
+      # bash ever sees it. Every value from `github.event.client_payload`
+      # or `inputs` is passed through `env:` and referenced as `"$VAR"`
+      # instead, matching the pattern the "Search for an existing tracking
+      # issue" step below already used (a code-review finding this closes).
       - name: Read trigger inputs
         id: trigger
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          DISPATCH_URL: ${{ github.event.client_payload.url }}
+          DISPATCH_SHA: ${{ github.event.client_payload.sha }}
+          DISPATCH_ACTION: ${{ github.event.action }}
+          INPUT_PLATFORM: ${{ inputs.platform }}
+          INPUT_DEPLOYMENT_URL: ${{ inputs.deployment_url }}
+          INPUT_MODE: ${{ inputs.mode }}
         run: |
-          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
+          if [ "$EVENT_NAME" = "repository_dispatch" ]; then
             echo "platform=vercel" >> "$GITHUB_OUTPUT"
-            echo "deployment_url=${{ github.event.client_payload.url }}" >> "$GITHUB_OUTPUT"
-            echo "sha=${{ github.event.client_payload.sha }}" >> "$GITHUB_OUTPUT"
-            echo "trigger_source=repository_dispatch:${{ github.event.action }}" >> "$GITHUB_OUTPUT"
+            echo "deployment_url=$DISPATCH_URL" >> "$GITHUB_OUTPUT"
+            echo "sha=$DISPATCH_SHA" >> "$GITHUB_OUTPUT"
+            echo "trigger_source=repository_dispatch:$DISPATCH_ACTION" >> "$GITHUB_OUTPUT"
             echo "mode=repair" >> "$GITHUB_OUTPUT"
           else
-            echo "platform=${{ inputs.platform }}" >> "$GITHUB_OUTPUT"
-            echo "deployment_url=${{ inputs.deployment_url }}" >> "$GITHUB_OUTPUT"
+            echo "platform=$INPUT_PLATFORM" >> "$GITHUB_OUTPUT"
+            echo "deployment_url=$INPUT_DEPLOYMENT_URL" >> "$GITHUB_OUTPUT"
             echo "trigger_source=workflow_dispatch" >> "$GITHUB_OUTPUT"
-            echo "mode=${{ inputs.mode }}" >> "$GITHUB_OUTPUT"
+            echo "mode=$INPUT_MODE" >> "$GITHUB_OUTPUT"
             # TODO(follow-up): workflow_dispatch carries no `sha` input.
             # apps/api/scripts/deploy-repair/incident.ts exports
             # `resolveFailingSha` + `createRenderCommitLookup` (wraps U2's
@@ -118,6 +133,28 @@ jobs:
             # module's ShaTrigger doc comment), not an oversight.
             echo "sha=" >> "$GITHUB_OUTPUT"
           fi
+
+      # Correction B (SHA-cascade fix): a repair commit carries a
+      # `Deploy-Repair-Of: <original-sha>` trailer (attempt-loop.ts). When
+      # THIS trigger's own commit carries that trailer, extract it so
+      # dedupe attributes back to the original incident instead of opening
+      # a fresh one — this step is what was missing: incident.ts's
+      # `resolveParentShaFromTrailer`/`parentSha` logic was fully built and
+      # tested, but nothing in this workflow ever called it (a code-review
+      # finding this closes). No-op (empty output) when there's no sha yet
+      # (workflow_dispatch) or the commit carries no trailer.
+      - name: Extract parent sha from a repair-commit trailer, if any (Correction B)
+        id: parent-sha
+        env:
+          SHA: ${{ steps.trigger.outputs.sha }}
+        run: |
+          if [ -z "$SHA" ]; then
+            echo "parent_sha=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          MESSAGE=$(git log -1 --format=%B "$SHA" 2>/dev/null || true)
+          PARENT=$(printf '%s\n' "$MESSAGE" | grep -oiE '^Deploy-Repair-Of:[[:space:]]*[0-9a-f]{7,40}' | grep -oE '[0-9a-f]{7,40}$' | head -n1 || true)
+          echo "parent_sha=$PARENT" >> "$GITHUB_OUTPUT"
 
       # TODO(follow-up): fetch the real build log excerpt via U2's
       # getVercelBuildLogExcerpt / fetchRenderBuildLogs+reduceRenderLogsToExcerpt
@@ -131,17 +168,25 @@ jobs:
         id: log-excerpt
         run: echo "excerpt=" >> "$GITHUB_OUTPUT"
 
+      # Correction B: search using the PARENT sha's short form when this
+      # trigger's own commit carries a Deploy-Repair-Of trailer, not the
+      # child sha — the tracking issue is titled with the ORIGINAL sha, so
+      # searching by the child sha would never find it (a code-review
+      # finding this closes: the trailer/parentSha extraction above was
+      # fully wired, but this step still searched by the wrong sha).
       - name: Search for an existing tracking issue
         id: existing-issues
         env:
           GH_TOKEN: ${{ github.token }}
           SHA: ${{ steps.trigger.outputs.sha }}
+          PARENT_SHA: ${{ steps.parent-sha.outputs.parent_sha }}
         run: |
-          if [ -z "$SHA" ]; then
+          DEDUPE_SHA="${PARENT_SHA:-$SHA}"
+          if [ -z "$DEDUPE_SHA" ]; then
             echo "issues_json=[]" >> "$GITHUB_OUTPUT"
             exit 0
           fi
-          SHORT_SHA="${SHA:0:7}"
+          SHORT_SHA="${DEDUPE_SHA:0:7}"
           JSON=$(gh issue list --search "$SHORT_SHA in:title is:issue is:open" --state open --json number,title,url)
           {
             echo "issues_json<<ISSUES_JSON_EOF"
@@ -163,6 +208,7 @@ jobs:
         id: resolve-incident
         env:
           DEPLOY_SHA: ${{ steps.trigger.outputs.sha }}
+          PARENT_SHA: ${{ steps.parent-sha.outputs.parent_sha }}
           PLATFORM: ${{ steps.trigger.outputs.platform }}
           DEPLOYMENT_URL: ${{ steps.trigger.outputs.deployment_url }}
           LOG_EXCERPT: ${{ steps.log-excerpt.outputs.excerpt }}
@@ -278,34 +324,60 @@ jobs:
             exit 1
           fi
 
-      # This job's own copy of the trigger sha: `needs.incident.outputs`
+      # This job's own copy of the trigger inputs: `needs.incident.outputs`
       # only exposes `should_repair`/`classification` (the incident job's
-      # own step-scoped outputs, e.g. `steps.trigger.outputs.sha`, are not
-      # visible to a downstream job). The same `github.event` context the
-      # incident job read from is available here too, so this re-derives
-      # the sha directly rather than requiring a change to the incident
-      # job's already-committed (U3) outputs.
-      - name: Read trigger sha
+      # own step-scoped outputs, e.g. `steps.trigger.outputs.sha`/`.mode`,
+      # are not visible to a downstream job). The same `github.event`
+      # context the incident job read from is available here too, so this
+      # re-derives sha/mode/parent_sha directly rather than requiring a
+      # change to the incident job's already-committed (U3) outputs.
+      # `${{ }}` values go through `env:`, not directly into `run:` bash,
+      # for the same script-injection reason as the incident job's
+      # equivalent step.
+      - name: Read trigger inputs
         id: trigger
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          DISPATCH_SHA: ${{ github.event.client_payload.sha }}
+          INPUT_MODE: ${{ inputs.mode }}
         run: |
-          if [ "${{ github.event_name }}" = "repository_dispatch" ]; then
-            echo "sha=${{ github.event.client_payload.sha }}" >> "$GITHUB_OUTPUT"
+          if [ "$EVENT_NAME" = "repository_dispatch" ]; then
+            echo "sha=$DISPATCH_SHA" >> "$GITHUB_OUTPUT"
+            echo "mode=repair" >> "$GITHUB_OUTPUT"
           else
             echo "sha=" >> "$GITHUB_OUTPUT"
+            echo "mode=$INPUT_MODE" >> "$GITHUB_OUTPUT"
           fi
+
+      - name: Extract parent sha from a repair-commit trailer, if any (Correction B)
+        id: parent-sha
+        env:
+          SHA: ${{ steps.trigger.outputs.sha }}
+        run: |
+          if [ -z "$SHA" ]; then
+            echo "parent_sha=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          MESSAGE=$(git log -1 --format=%B "$SHA" 2>/dev/null || true)
+          PARENT=$(printf '%s\n' "$MESSAGE" | grep -oiE '^Deploy-Repair-Of:[[:space:]]*[0-9a-f]{7,40}' | grep -oE '[0-9a-f]{7,40}$' | head -n1 || true)
+          echo "parent_sha=$PARENT" >> "$GITHUB_OUTPUT"
 
       # Finds the tracking issue the `incident` job already created or
       # deduped against (this job only runs when should_repair == 'true',
       # which itself only happens once that issue exists). Mirrors the
-      # incident job's own dedupe search query exactly.
+      # incident job's own dedupe search query exactly, including
+      # searching by parent_sha (Correction B) when this trigger's own
+      # commit carries a Deploy-Repair-Of trailer.
       - name: Find the tracking issue for this incident
         id: tracking-issue
         if: steps.trigger.outputs.sha != ''
         env:
           GH_TOKEN: ${{ github.token }}
           SHA: ${{ steps.trigger.outputs.sha }}
+          PARENT_SHA: ${{ steps.parent-sha.outputs.parent_sha }}
         run: |
-          SHORT_SHA="${SHA:0:7}"
+          DEDUPE_SHA="${PARENT_SHA:-$SHA}"
+          SHORT_SHA="${DEDUPE_SHA:0:7}"
           NUMBER=$(gh issue list --search "$SHORT_SHA in:title is:issue is:open" --state open --json number --jq '.[0].number // empty')
           echo "number=$NUMBER" >> "$GITHUB_OUTPUT"
 
@@ -340,7 +412,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           STARTING_BUDGET: '3'
           ORIGINAL_SHA: ${{ steps.trigger.outputs.sha }}
-          MODE: repair
+          MODE: ${{ steps.trigger.outputs.mode }}
           FAILURE_REPORT_PATH: .claude/tasks/deploy-failures/${{ steps.trigger.outputs.sha }}.md
           LOG_EXCERPT: ''
           NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.PERF_CLERK_PUBLISHABLE_KEY }}

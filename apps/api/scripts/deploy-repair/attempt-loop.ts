@@ -73,7 +73,8 @@ export type GateRunnerFn = () => Promise<GateResult>;
 export type PushOutcome =
   | { kind: 'pushed' }
   | { kind: 'rejected-non-fast-forward' }
-  | { kind: 'error'; message: string };
+  | { kind: 'error'; message: string }
+  | { kind: 'dry-run-skipped'; commitMessage: string; changedPaths: string[] };
 
 /**
  * Commits (bot identity is configured once by the caller, outside this fn)
@@ -94,12 +95,21 @@ export type RebaseFn = () => Promise<RebaseResult>;
 /** Injected in place of a direct `waitForDeploy` call — the target/options are already bound by the caller. */
 export type WaitForDeployFn = () => Promise<WaitForDeployResult>;
 
+/**
+ * Reverts exactly `paths` in the working tree (e.g. `git checkout -- <paths>`).
+ * Called after a `denied-path-violation` so a stray edit never persists into
+ * the next attempt's diff — without this, the same violation reappears on
+ * every subsequent attempt and silently burns the whole budget.
+ */
+export type RevertPathsFn = (paths: string[]) => Promise<void>;
+
 export type AttemptLoopDeps = {
   runRepairSession: RepairSessionRunner;
   runGate: GateRunnerFn;
   push: PushFn;
   rebase: RebaseFn;
   waitForDeploy: WaitForDeployFn;
+  revertPaths: RevertPathsFn;
 };
 
 // ---------------------------------------------------------------------------
@@ -138,6 +148,8 @@ export type AttemptRecord = {
   attemptNumber: number;
   sessionKind: RepairAttemptResult['kind'];
   diagnosis?: string;
+  /** Per-attempt spend reported by the repair session (R10 audit trail). */
+  totalCostUsd?: number;
   gate?: GateResult;
   push?: PushOutcome;
   deploy?: WaitForDeployResult;
@@ -147,7 +159,9 @@ export type AttemptLoopOutcome =
   | 'success'
   | 'exhausted'
   | 'aborted-push-failure'
-  | 'no-repair-possible';
+  | 'no-repair-possible'
+  /** R12: mode !== 'repair' stopped before ever pushing. See the last attempt's `push` (kind: 'dry-run-skipped') for the proposed diff. */
+  | 'dry-run-complete';
 
 export type AttemptLoopResult = {
   outcome: AttemptLoopOutcome;
@@ -207,6 +221,7 @@ export async function runAttemptLoop(
     const record: AttemptRecord = { attemptNumber, sessionKind: sessionResult.kind };
     if ('diagnosis' in sessionResult) record.diagnosis = sessionResult.diagnosis;
     if ('sessionId' in sessionResult) sessionId = sessionResult.sessionId;
+    if ('totalCostUsd' in sessionResult) record.totalCostUsd = sessionResult.totalCostUsd;
 
     // A CLI crash / malformed output is a different failure class than a
     // bad diagnosis — it is never retried, regardless of remaining budget.
@@ -216,6 +231,13 @@ export async function runAttemptLoop(
     }
 
     if (sessionResult.kind === 'no-change-proposed' || sessionResult.kind === 'denied-path-violation') {
+      // A denied-path violation leaves the offending edit sitting in the
+      // working tree. Left alone, the SAME violation reappears on every
+      // later attempt's diff check — revert it so the next attempt starts
+      // clean instead of silently re-failing on stale state.
+      if (sessionResult.kind === 'denied-path-violation') {
+        await deps.revertPaths(sessionResult.violatedPaths);
+      }
       attempts.push(record);
       if (budget <= 0) {
         return { outcome: 'exhausted', attemptsTaken: attemptNumber, attempts };
@@ -237,6 +259,18 @@ export async function runAttemptLoop(
 
     const commitMessage = buildRepairCommitMessage(input.originalSha, sessionResult.diagnosis);
     const changedPaths = sessionResult.changedPaths;
+
+    // R12 / Correction A: 'drill' and 'dry-run' must never push to main —
+    // this is the actual code-level enforcement the requirement asks for,
+    // not just an operator-discipline convention (a prior gap: every mode
+    // reached this same push call unconditionally). The proposed diff is
+    // recorded on the attempt record via the 'dry-run-skipped' push kind.
+    if (input.mode !== 'repair') {
+      record.push = { kind: 'dry-run-skipped', commitMessage, changedPaths };
+      attempts.push(record);
+      return { outcome: 'dry-run-complete', attemptsTaken: attemptNumber, attempts };
+    }
+
     let pushOutcome = await deps.push({ commitMessage, changedPaths });
 
     if (pushOutcome.kind === 'rejected-non-fast-forward') {
@@ -333,6 +367,14 @@ export function createNodeGitPusher(execFn: ExecFn): PushFn {
   };
 }
 
+/** Reverts exactly `paths` (`git checkout -- <paths>`) — never a broader reset. */
+export function createNodeRevertPaths(execFn: ExecFn): RevertPathsFn {
+  return async (paths) => {
+    if (paths.length === 0) return;
+    await execFn({ command: 'git', args: ['checkout', '--', ...paths] });
+  };
+}
+
 export function createNodeGitRebaser(execFn: ExecFn): RebaseFn {
   return async () => {
     const fetch = await execFn({ command: 'git', args: ['fetch', 'origin'] });
@@ -380,11 +422,18 @@ type CliEnv = {
   GITHUB_OUTPUT?: string;
 };
 
+/** Full or short git commit sha, hex only — rejects anything that could act as a path-traversal or shell-metacharacter primitive downstream (SEC finding). */
+const SHA_RE = /^[0-9a-f]{7,40}$/i;
+
 /** CLI entry point. Returns the process exit code so tests could call it directly. */
 export async function main(env: CliEnv = process.env as CliEnv): Promise<number> {
   const originalSha = env.ORIGINAL_SHA;
   if (!originalSha) {
     console.error('[deploy-repair] Missing ORIGINAL_SHA — cannot attempt a repair without an incident sha.');
+    return 1;
+  }
+  if (!SHA_RE.test(originalSha)) {
+    console.error(`[deploy-repair] ORIGINAL_SHA is not a plausible git sha: "${originalSha}"`);
     return 1;
   }
 
@@ -415,6 +464,7 @@ export async function main(env: CliEnv = process.env as CliEnv): Promise<number>
       push: createNodeGitPusher(execFn),
       rebase: createNodeGitRebaser(execFn),
       waitForDeploy: waitForDeployFn,
+      revertPaths: createNodeRevertPaths(execFn),
     }
   );
 

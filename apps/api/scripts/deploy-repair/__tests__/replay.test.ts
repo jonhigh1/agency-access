@@ -166,11 +166,19 @@ function buildRealWiredDeps(execFn: ExecFn): AttemptLoopDeps {
     push: createNodeGitPusher(execFn),
     rebase: vi.fn(async () => ({ ok: true })),
     waitForDeploy: vi.fn(async () => ({ kind: 'deployed' as const })),
+    revertPaths: vi.fn(async () => undefined),
   };
 }
 
-describe.each(['drill', 'dry-run'] as const)("mode: '%s' wiring (SC1)", (mode) => {
-  it('threads through the real createRepairSessionRunner/createGateRunner/createNodeGitPusher — no special-cased bypass', async () => {
+// A code-review pass on this plan found that mode was threaded through but
+// never enforced: every mode reached the same unconditional git add/commit/
+// push. runAttemptLoop now stops before ever calling `push` when
+// mode !== 'repair' (see its R12 branch) — these tests assert that fix
+// directly, replacing an earlier version of this test that asserted the gap
+// itself (drill/dry-run issuing a real push) as documented, accepted
+// behavior.
+describe.each(['drill', 'dry-run'] as const)("mode: '%s' never pushes for real (SC1, R12)", (mode) => {
+  it('runs the real diagnose+gate wiring but stops before git add/commit/push', async () => {
     const { execFn, calls } = createRecordingExecFn();
     const deps = buildRealWiredDeps(execFn);
 
@@ -185,29 +193,18 @@ describe.each(['drill', 'dry-run'] as const)("mode: '%s' wiring (SC1)", (mode) =
       deps
     );
 
-    // The real session runner was invoked: it shells out to the `claude` CLI.
+    // The real session runner and gate still ran for real — a drill proves
+    // the diagnosis and gate genuinely work, not just that mode is accepted.
     expect(calls.some((c) => c.command === 'claude')).toBe(true);
-    // The real gate runner was invoked: typecheck then build, via `npm`.
     expect(calls.some((c) => c.command === 'npm' && c.args.includes('typecheck'))).toBe(true);
     expect(calls.some((c) => c.command === 'npm' && c.args.includes('build'))).toBe(true);
-    // The real git pusher was invoked: add, commit, push — the same commands
-    // a real `repair` run would issue. Nothing here special-cases drill/dry-run
-    // to skip staging or committing.
-    expect(calls.some((c) => c.command === 'git' && c.args[0] === 'add')).toBe(true);
-    expect(calls.some((c) => c.command === 'git' && c.args[0] === 'commit')).toBe(true);
-    expect(calls.some((c) => c.command === 'git' && c.args[0] === 'push')).toBe(true);
 
-    expect(result.outcome).toBe('success');
+    // But no git write command ever ran — this is the fix under test.
+    expect(calls.some((c) => c.command === 'git' && c.args[0] === 'add')).toBe(false);
+    expect(calls.some((c) => c.command === 'git' && c.args[0] === 'commit')).toBe(false);
+    expect(calls.some((c) => c.command === 'git' && c.args[0] === 'push')).toBe(false);
+
+    expect(result.outcome).toBe('dry-run-complete');
+    expect(result.attempts[0].push?.kind).toBe('dry-run-skipped');
   });
 });
-
-// Residual gap (reported, not asserted): the test above proves the POSITIVE
-// half of SC1 — the real dependency-wiring helpers run unmodified for
-// drill/dry-run. There is no corresponding NEGATIVE assertion here (e.g.
-// "pushing to main is blocked in drill mode") because no such code path
-// exists to assert against: neither `runAttemptLoop` nor
-// `createNodeGitPusher` branches on `mode` to skip commit/push. The only
-// real guarantee that a drill never touches `main` is operator discipline —
-// running the drill against a `repair-drill/*` branch and dispatching the
-// workflow with `mode: drill` themselves. See this unit's final report for
-// the explicit callout.

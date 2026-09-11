@@ -13,6 +13,7 @@ import {
   buildDeployRepairOfTrailer,
   buildRepairCommitMessage,
   createNodeGitPusher,
+  createNodeRevertPaths,
   runAttemptLoop,
   type AttemptLoopDeps,
   type GateResult,
@@ -116,6 +117,7 @@ function baseDeps(overrides: Partial<AttemptLoopDeps> = {}): AttemptLoopDeps {
     push: vi.fn(async () => pushed()),
     rebase: vi.fn(async () => rebaseOk()),
     waitForDeploy: vi.fn(async () => deployed()),
+    revertPaths: vi.fn(async () => undefined),
     ...overrides,
   };
 }
@@ -364,5 +366,111 @@ describe('createNodeGitPusher (SEC-03: scoped staging, never git add -A)', () =>
     );
     expect(pushCall![0].args).not.toContain('--force');
     expect(pushCall![0].args).not.toContain('-f');
+  });
+});
+
+describe('createNodeRevertPaths', () => {
+  function fakeExecFn(exitCodes: Record<string, number> = {}): ExecFn {
+    return vi.fn(async ({ command, args }) => ({
+      stdout: '',
+      stderr: '',
+      exitCode: exitCodes[`${command} ${args[0]}`] ?? 0,
+    }));
+  }
+
+  it('checks out exactly the given paths, no broader reset', async () => {
+    const execFn = fakeExecFn();
+    const revertPaths = createNodeRevertPaths(execFn);
+
+    await revertPaths(['package.json', 'render.yaml']);
+
+    expect(execFn).toHaveBeenCalledWith({ command: 'git', args: ['checkout', '--', 'package.json', 'render.yaml'] });
+  });
+
+  it('does nothing (no git call) for an empty path list', async () => {
+    const execFn = fakeExecFn();
+    const revertPaths = createNodeRevertPaths(execFn);
+
+    await revertPaths([]);
+
+    expect(execFn).not.toHaveBeenCalled();
+  });
+});
+
+describe('runAttemptLoop: mode !== repair never pushes (R12)', () => {
+  it('drill mode stops before push and reports the proposed diff, not a real push', async () => {
+    const push = vi.fn(async () => pushed());
+    const deps = baseDeps({ push });
+
+    const result = await runAttemptLoop({ ...BASE_INPUT, mode: 'drill' }, deps);
+
+    expect(result.outcome).toBe('dry-run-complete');
+    expect(push).not.toHaveBeenCalled();
+    expect(result.attempts[0].push).toEqual({
+      kind: 'dry-run-skipped',
+      commitMessage: expect.any(String),
+      changedPaths: ['apps/web/src/app/page.tsx'],
+    });
+  });
+
+  it('dry-run mode stops before push the same way drill does', async () => {
+    const push = vi.fn(async () => pushed());
+    const rebase = vi.fn(async () => rebaseOk());
+    const waitForDeploy = vi.fn(async () => deployed());
+    const deps = baseDeps({ push, rebase, waitForDeploy });
+
+    const result = await runAttemptLoop({ ...BASE_INPUT, mode: 'dry-run' }, deps);
+
+    expect(result.outcome).toBe('dry-run-complete');
+    expect(push).not.toHaveBeenCalled();
+    expect(rebase).not.toHaveBeenCalled();
+    expect(waitForDeploy).not.toHaveBeenCalled();
+  });
+
+  it('repair mode (the default) still pushes for real', async () => {
+    const push = vi.fn(async () => pushed());
+    const deps = baseDeps({ push });
+
+    const result = await runAttemptLoop(BASE_INPUT, deps);
+
+    expect(result.outcome).toBe('success');
+    expect(push).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('runAttemptLoop: denied-path-violation reverts before the next attempt', () => {
+  it('calls revertPaths with exactly the violated paths, then continues to the next attempt', async () => {
+    const revertPaths = vi.fn(async () => undefined);
+    const runRepairSession = vi.fn(
+      sequence<RepairAttemptResult>([deniedPathViolation(), repaired()])
+    ) as unknown as RepairSessionRunner;
+    const deps = baseDeps({ runRepairSession, revertPaths });
+
+    const result = await runAttemptLoop(BASE_INPUT, deps);
+
+    expect(revertPaths).toHaveBeenCalledTimes(1);
+    expect(revertPaths).toHaveBeenCalledWith(['package.json']);
+    expect(result.outcome).toBe('success');
+    expect(result.attemptsTaken).toBe(2);
+  });
+
+  it('does not call revertPaths for a no-change-proposed result (nothing to revert)', async () => {
+    const revertPaths = vi.fn(async () => undefined);
+    const runRepairSession = vi.fn(
+      sequence<RepairAttemptResult>([noChangeProposed(), repaired()])
+    ) as unknown as RepairSessionRunner;
+    const deps = baseDeps({ runRepairSession, revertPaths });
+
+    await runAttemptLoop(BASE_INPUT, deps);
+
+    expect(revertPaths).not.toHaveBeenCalled();
+  });
+});
+
+describe('runAttemptLoop: totalCostUsd threads onto the attempt record (R10)', () => {
+  it('records the repair session totalCostUsd on the attempt', async () => {
+    const deps = baseDeps();
+    const result = await runAttemptLoop(BASE_INPUT, deps);
+    expect(result.attempts[0].totalCostUsd).toBe(0.1);
   });
 });

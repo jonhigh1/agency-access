@@ -454,9 +454,13 @@ export async function resolveIncident(
 
   if (existing) {
     const dedupeShort = shortSha(dedupeSha);
-    const commentBody = routing.shouldRepair
-      ? `Duplicate failure signal received for ${dedupeShort}. Existing incident tracked here; no new issue created (R7).`
-      : routing.commentBody;
+    // input.parentSha set means this signal is for a repair-commit's child
+    // sha, not a literal repeat of the same sha (Correction B) — say so
+    // rather than calling every attribution a "duplicate".
+    const defaultCommentBody = input.parentSha
+      ? `Repair commit for ${dedupeShort} also failed to deploy. Attributed to this existing incident (Correction B); no new issue created and no fresh attempt budget granted.`
+      : `Duplicate failure signal received for ${dedupeShort}. Existing incident tracked here; no new issue created (R7).`;
+    const commentBody = routing.shouldRepair ? defaultCommentBody : routing.commentBody;
     return {
       kind: 'existing-incident',
       shortSha: dedupeShort,

@@ -11,11 +11,13 @@ import {
   DEFAULT_DENIED_PATHS,
   DEFAULT_MAX_BUDGET_USD,
   DEFAULT_MAX_TURNS,
+  REPAIR_SESSION_ALLOWED_ENV_KEYS,
   type ExecFn,
   type ExecResult,
   type GitDiffNameOnlyFn,
   buildClaudeArgs,
   buildDisallowedTools,
+  buildRepairSessionEnv,
   findDeniedPathViolations,
   parseClaudeCliOutput,
   runRepairSession,
@@ -34,8 +36,11 @@ function fakeExecFn(result: ExecResult): ExecFn {
   return async () => result;
 }
 
-function recordingExecFn(result: ExecResult): { execFn: ExecFn; calls: Array<{ command: string; args: string[]; input?: string }> } {
-  const calls: Array<{ command: string; args: string[]; input?: string }> = [];
+function recordingExecFn(result: ExecResult): {
+  execFn: ExecFn;
+  calls: Array<{ command: string; args: string[]; input?: string; env?: NodeJS.ProcessEnv }>;
+} {
+  const calls: Array<{ command: string; args: string[]; input?: string; env?: NodeJS.ProcessEnv }> = [];
   const execFn: ExecFn = async (invocation) => {
     calls.push(invocation);
     return result;
@@ -206,6 +211,40 @@ describe('runRepairSession — happy path', () => {
     const resumeIndex = calls[0].args.indexOf('--resume');
     expect(resumeIndex).toBeGreaterThan(-1);
     expect(calls[0].args[resumeIndex + 1]).toBe('sess-abc123');
+  });
+
+  it('scopes the spawned env down to the allowlist, dropping workflow secrets the CLI does not need (security-review finding)', async () => {
+    const { execFn, calls } = recordingExecFn({ stdout: jsonResult(), stderr: '', exitCode: 0 });
+    const gitDiffNameOnly = fakeGitDiff([]);
+
+    await runRepairSession(BASE_INPUT, { execFn, gitDiffNameOnly });
+
+    expect(calls).toHaveLength(1);
+    expect(calls[0].env).toBeDefined();
+    const passedKeys = Object.keys(calls[0].env ?? {});
+    expect(passedKeys.every((key) => REPAIR_SESSION_ALLOWED_ENV_KEYS.includes(key))).toBe(true);
+    for (const secretKey of ['GH_TOKEN', 'VERCEL_TOKEN', 'RENDER_API_KEY']) {
+      expect(passedKeys).not.toContain(secretKey);
+    }
+  });
+});
+
+describe('buildRepairSessionEnv', () => {
+  it('keeps only allowlisted keys present in the source env', () => {
+    const scoped = buildRepairSessionEnv({
+      PATH: '/usr/bin',
+      ANTHROPIC_API_KEY: 'sk-test',
+      GH_TOKEN: 'ghp_should_not_leak',
+      VERCEL_TOKEN: 'vercel_should_not_leak',
+    });
+
+    expect(scoped).toEqual({ PATH: '/usr/bin', ANTHROPIC_API_KEY: 'sk-test' });
+  });
+
+  it('omits an allowlisted key entirely when the source env does not have it', () => {
+    const scoped = buildRepairSessionEnv({ PATH: '/usr/bin' });
+    expect(scoped).toEqual({ PATH: '/usr/bin' });
+    expect('ANTHROPIC_API_KEY' in scoped).toBe(false);
   });
 });
 

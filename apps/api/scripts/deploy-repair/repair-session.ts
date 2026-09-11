@@ -56,6 +56,8 @@ export type ExecFn = (invocation: {
   command: string;
   args: string[];
   input?: string;
+  /** When given, the spawned process gets exactly this env instead of inheriting the caller's. */
+  env?: NodeJS.ProcessEnv;
 }) => Promise<ExecResult>;
 
 /** Injected in place of a real `git diff --name-only`. Returns changed file paths. */
@@ -67,9 +69,12 @@ export type GitDiffNameOnlyFn = () => Promise<string[]>;
  * has a working default without reimplementing stdin piping.
  */
 export function createNodeExecFn(): ExecFn {
-  return ({ command, args, input }) =>
+  return ({ command, args, input, env }) =>
     new Promise((resolve, reject) => {
-      const child = spawn(command, args, { stdio: ['pipe', 'pipe', 'pipe'] });
+      const child = spawn(command, args, {
+        stdio: ['pipe', 'pipe', 'pipe'],
+        ...(env !== undefined ? { env } : {}),
+      });
       let stdout = '';
       let stderr = '';
       child.stdout.on('data', (chunk: Buffer) => {
@@ -143,6 +148,42 @@ function pathDenialTools(deniedPaths: readonly string[]): string[] {
 
 export function buildDisallowedTools(deniedPaths: readonly string[] = DEFAULT_DENIED_PATHS): string[] {
   return [...DENIED_BASH_TOOLS, ...pathDenialTools(deniedPaths)];
+}
+
+// ---------------------------------------------------------------------------
+// Env scoping for the `claude` subprocess (security-review finding)
+// ---------------------------------------------------------------------------
+
+/**
+ * The `claude` CLI process is driven by a prompt built from an untrusted
+ * deploy-log excerpt (a prompt-injection surface) and is itself allowed to
+ * run `npm run typecheck`/`npm run build` (KTD6). Spawning it with the
+ * caller's full environment — as Node's `spawn` does by default — would
+ * hand it every workflow secret (GH_TOKEN, VERCEL_TOKEN, RENDER_API_KEY,
+ * ANTHROPIC_API_KEY, Clerk keys, ...) even though it only needs a small
+ * subset to run its allowed tools. This allowlist is the env this one
+ * subprocess actually needs; everything else (git/npm calls made directly
+ * by this unit, not by the agent) keeps inheriting the full env as before.
+ */
+export const REPAIR_SESSION_ALLOWED_ENV_KEYS: readonly string[] = [
+  'PATH',
+  'HOME',
+  'ANTHROPIC_API_KEY',
+  'NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY',
+  'CLERK_SECRET_KEY',
+  'NODE_ENV',
+];
+
+/** Projects `sourceEnv` down to `REPAIR_SESSION_ALLOWED_ENV_KEYS`, dropping everything else. */
+export function buildRepairSessionEnv(
+  sourceEnv: NodeJS.ProcessEnv = process.env
+): NodeJS.ProcessEnv {
+  const scoped: NodeJS.ProcessEnv = {};
+  for (const key of REPAIR_SESSION_ALLOWED_ENV_KEYS) {
+    const value = sourceEnv[key];
+    if (value !== undefined) scoped[key] = value;
+  }
+  return scoped;
 }
 
 // ---------------------------------------------------------------------------
@@ -381,7 +422,12 @@ export async function runRepairSession(
     disallowedTools: input.disallowedTools ?? buildDisallowedTools(deniedPaths),
   });
 
-  const execResult = await deps.execFn({ command: CLAUDE_CLI_COMMAND, args, input: promptContent });
+  const execResult = await deps.execFn({
+    command: CLAUDE_CLI_COMMAND,
+    args,
+    input: promptContent,
+    env: buildRepairSessionEnv(),
+  });
 
   if (execResult.exitCode !== 0) {
     return {
