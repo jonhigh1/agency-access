@@ -1258,6 +1258,21 @@ export const PLATFORM_HIERARCHY: Record<string, PlatformGroup> = {
   },
 };
 
+/**
+ * Every client-facing platform product a client can connect, derived from
+ * PLATFORM_HIERARCHY. Group keys ('google', 'meta', ...) are OAuth umbrellas
+ * that bundle these products, so they are never counted separately.
+ */
+export const SUPPORTED_PLATFORM_PRODUCTS: readonly string[] = Object.values(
+  PLATFORM_HIERARCHY
+).flatMap((group) => group.products.map((product) => product.id));
+
+/**
+ * Number of client-facing platform connectors AuthHub supports.
+ * Marketing copy must interpolate this constant instead of hardcoding a number.
+ */
+export const SUPPORTED_PLATFORM_COUNT: number = SUPPORTED_PLATFORM_PRODUCTS.length;
+
 // Inverted PLATFORM_HIERARCHY lookup: product id -> group key, group key -> itself.
 const PLATFORM_GROUP_BY_PRODUCT: ReadonlyMap<string, string> = new Map(
   Object.entries(PLATFORM_HIERARCHY).flatMap(([groupKey, group]): [string, string][] => [
@@ -2332,7 +2347,7 @@ export type AffiliateAdminCommissionAdjustment = z.infer<typeof AffiliateAdminCo
 // ============================================================
 
 // Subscription tiers - updated for Creem integration
-export const SubscriptionTierSchema = z.enum(['STARTER', 'GROWTH', 'AGENCY']);
+export const SubscriptionTierSchema = z.enum(['STARTER', 'GROWTH', 'SCALE']);
 export type SubscriptionTier = z.infer<typeof SubscriptionTierSchema>;
 
 export const BillingIntervalSchema = z.enum(['monthly', 'yearly']);
@@ -2341,19 +2356,19 @@ export type BillingInterval = z.infer<typeof BillingIntervalSchema>;
 export const SUBSCRIPTION_TIER_NAMES: Record<SubscriptionTier, string> = {
   STARTER: 'Starter',
   GROWTH: 'Growth',
-  AGENCY: 'Agency',
+  SCALE: 'Scale',
 };
 
 // Pricing display tiers shown in billing UIs and Clerk metadata
-export const PricingDisplayTierSchema = z.enum(['STARTER', 'GROWTH', 'AGENCY']);
+export const PricingDisplayTierSchema = z.enum(['STARTER', 'GROWTH', 'SCALE']);
 export type PricingDisplayTier = z.infer<typeof PricingDisplayTierSchema>;
 
-export const PRICING_DISPLAY_TIER_ORDER: PricingDisplayTier[] = ['STARTER', 'GROWTH', 'AGENCY'];
+export const PRICING_DISPLAY_TIER_ORDER: PricingDisplayTier[] = ['STARTER', 'GROWTH', 'SCALE'];
 
 export const PRICING_DISPLAY_TIER_NAMES: Record<PricingDisplayTier, string> = {
   STARTER: 'Starter',
   GROWTH: 'Growth',
-  AGENCY: 'Agency',
+  SCALE: 'Scale',
 };
 
 export const PRICING_DISPLAY_TIER_DETAILS: Record<PricingDisplayTier, {
@@ -2377,8 +2392,8 @@ export const PRICING_DISPLAY_TIER_DETAILS: Record<PricingDisplayTier, {
     monthlyPrice: 79,
     yearlyPrice: 790,
   },
-  AGENCY: {
-    name: 'Agency',
+  SCALE: {
+    name: 'Scale',
     persona: 'For established agencies',
     description: 'High-volume agencies with advanced needs',
     monthlyPrice: 149,
@@ -2389,13 +2404,13 @@ export const PRICING_DISPLAY_TIER_DETAILS: Record<PricingDisplayTier, {
 export const SUBSCRIPTION_TIER_TO_PRICING_DISPLAY_TIER: Record<SubscriptionTier, PricingDisplayTier> = {
   STARTER: 'STARTER',
   GROWTH: 'GROWTH',
-  AGENCY: 'AGENCY',
+  SCALE: 'SCALE',
 };
 
 export const PRICING_DISPLAY_TIER_TO_SUBSCRIPTION_TIER: Record<PricingDisplayTier, SubscriptionTier | null> = {
   STARTER: 'STARTER',
   GROWTH: 'GROWTH',
-  AGENCY: 'AGENCY',
+  SCALE: 'SCALE',
 };
 
 export function getPricingDisplayTierFromSubscriptionTier(
@@ -2524,7 +2539,7 @@ export const TIER_LIMITS: Record<SubscriptionTier, {
     priceYearly: 790,
     description: 'For established agencies scaling fast',
   },
-  AGENCY: {
+  SCALE: {
     accessRequests: 50,
     clients: 50,
     members: -1,
@@ -2629,8 +2644,8 @@ export const SUBSCRIPTION_TIER_DESCRIPTIONS: Record<SubscriptionTier, {
       'Custom integrations',
     ],
   },
-  AGENCY: {
-    title: 'Agency',
+  SCALE: {
+    title: 'Scale',
     description: 'For large agencies with multi-brand needs',
     price: { monthly: 149, yearly: 1440 },
     features: [
@@ -2650,10 +2665,10 @@ export const SUBSCRIPTION_TIER_DESCRIPTIONS: Record<SubscriptionTier, {
 };
 
 /** Tier order for upgrade sequencing (lowest to highest). */
-const SUBSCRIPTION_TIER_ORDER: SubscriptionTier[] = ['STARTER', 'GROWTH', 'AGENCY'];
+const SUBSCRIPTION_TIER_ORDER: SubscriptionTier[] = ['STARTER', 'GROWTH', 'SCALE'];
 
-/** Tiers that have Creem checkout configured (STARTER, GROWTH, AGENCY). */
-const CREEM_CHECKOUT_TIERS: SubscriptionTier[] = ['STARTER', 'GROWTH', 'AGENCY'];
+/** Tiers that have Creem checkout configured (STARTER, GROWTH, SCALE). */
+const CREEM_CHECKOUT_TIERS: SubscriptionTier[] = ['STARTER', 'GROWTH', 'SCALE'];
 
 /**
  * Returns the next tier up from the current tier that has Creem checkout.
