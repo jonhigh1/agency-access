@@ -109,10 +109,10 @@ describe('Quota Enforcement Middleware - TDD Tests', () => {
       expect(result.remaining).toBe(0);
     });
 
-    it('should allow unlimited team seats for AGENCY tier', async () => {
+    it('should allow unlimited team seats for SCALE tier', async () => {
       (clerkMetadataService.getSubscriptionTier as any).mockResolvedValue({
         data: {
-          tier: 'AGENCY',
+          tier: 'SCALE',
           privateMetadata: {
             quotaLimits: {
               teamSeats: { limit: -1, used: 100 },
@@ -233,7 +233,7 @@ describe('Quota Enforcement Middleware - TDD Tests', () => {
             metric: 'client_onboards',
             limit: 36,
             used: 36,
-            upgradeUrl: '/pricing?upgrade=AGENCY',
+            upgradeUrl: '/pricing?upgrade=GROWTH',
           }),
         })
       );
@@ -274,10 +274,10 @@ describe('Quota Enforcement Middleware - TDD Tests', () => {
       expect(mockReply.code).toHaveBeenCalledWith(400);
     });
 
-    it('should suggest PRO tier when AGENCY tier is exceeded', async () => {
+    it('should not suggest a higher tier when SCALE tier is exceeded', async () => {
       (clerkMetadataService.getSubscriptionTier as any).mockResolvedValue({
         data: {
-          tier: 'AGENCY',
+          tier: 'SCALE',
           privateMetadata: {
             quotaLimits: {
               clientOnboards: { limit: 120, used: 120 },
@@ -288,7 +288,7 @@ describe('Quota Enforcement Middleware - TDD Tests', () => {
       });
 
       (prisma.agencyUsageCounter.findUnique as any).mockResolvedValue({
-        count: 600, // At AGENCY limit
+        count: 600, // At SCALE limit
         resetAt: new Date('2025-01-01T00:00:00.000Z'),
       });
 
@@ -299,8 +299,8 @@ describe('Quota Enforcement Middleware - TDD Tests', () => {
       expect(mockReply.send).toHaveBeenCalledWith(
         expect.objectContaining({
           error: expect.objectContaining({
-            currentTier: 'AGENCY',
-            suggestedTier: 'PRO',
+            currentTier: 'SCALE',
+            suggestedTier: null,
           }),
         })
       );

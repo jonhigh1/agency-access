@@ -9,7 +9,7 @@ import { FastifyRequest, FastifyReply } from 'fastify';
 import { prisma } from '@/lib/prisma.js';
 import { clerkMetadataService } from '@/services/clerk-metadata.service.js';
 import { quotaService } from '@/services/quota.service.js';
-import { MetricType, QuotaCheckResult, TIER_LIMITS, SubscriptionTier } from '@agency-platform/shared';
+import { MetricType, QuotaCheckResult, TIER_LIMITS, SubscriptionTier, getNextTierForCheckout } from '@agency-platform/shared';
 import { sendError } from '../lib/response.js';
 
 export interface QuotaCheckOptions {
@@ -166,7 +166,7 @@ export function quotaEnforcementMiddleware(options: QuotaMiddlewareOptions) {
       if (!result.allowed) {
         // Tier comes from the checkQuota result — no second Clerk fetch.
         const currentTier = result.currentTier ?? 'STARTER';
-        const suggestedTier = currentTier === 'STARTER' ? 'AGENCY' : 'PRO';
+        const suggestedTier = getNextTierForCheckout(currentTier);
 
         return reply.code(402).send({
           data: null,
@@ -177,7 +177,7 @@ export function quotaEnforcementMiddleware(options: QuotaMiddlewareOptions) {
             limit: result.limit,
           used: result.used,
           resetsAt: result.resetsAt,
-          upgradeUrl: `/pricing?upgrade=${suggestedTier}`,
+          upgradeUrl: suggestedTier ? `/pricing?upgrade=${suggestedTier}` : '/pricing',
           currentTier,
           suggestedTier,
         },

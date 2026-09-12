@@ -113,7 +113,7 @@ describe('Webhook Routes - TDD Tests', () => {
       id: 'commission-123',
     });
     (clerkMetadataService.setSubscriptionTier as any).mockResolvedValue({
-      data: { tier: 'AGENCY' },
+      data: { tier: 'SCALE' },
       error: null,
     });
     (creem.verifyWebhookSignature as any).mockReturnValue(true);
@@ -285,7 +285,7 @@ describe('Webhook Routes - TDD Tests', () => {
       );
     });
 
-    it('should map agency product IDs to AGENCY tier', async () => {
+    it('should map agency product IDs to SCALE tier', async () => {
       const agencyPayload = {
         ...validPayload,
         data: {
@@ -305,7 +305,7 @@ describe('Webhook Routes - TDD Tests', () => {
       expect(response.statusCode).toBe(200);
       expect(clerkMetadataService.setSubscriptionTier).toHaveBeenCalledWith(
         'clerk_user_123',
-        'AGENCY',
+        'SCALE',
         expect.anything()
       );
     });
@@ -711,7 +711,7 @@ describe('Webhook Routes - TDD Tests', () => {
 
         expect(clerkMetadataService.setSubscriptionTier).toHaveBeenCalledWith(
           'clerk_user_123',
-          'AGENCY',
+          'SCALE',
           expect.anything()
         );
       }

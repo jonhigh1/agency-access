@@ -185,7 +185,7 @@ describe('Dashboard Routes', () => {
     getSubscriptionMock.mockResolvedValue({
       data: {
         id: 'sub_123',
-        tier: 'AGENCY',
+        tier: 'SCALE',
         status: 'trialing',
         cancelAtPeriodEnd: false,
         trialEnd: new Date('2026-03-20T00:00:00.000Z'),
@@ -341,7 +341,7 @@ describe('Dashboard Routes', () => {
       },
     });
     expect(body.data.trialBanner).toEqual({
-      tier: 'AGENCY',
+      tier: 'SCALE',
       trialEnd: '2026-03-20T00:00:00.000Z',
     });
   });

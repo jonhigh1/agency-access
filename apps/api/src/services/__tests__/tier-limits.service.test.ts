@@ -87,10 +87,10 @@ describe('TierLimitsService', () => {
       });
     });
 
-    it('should allow unlimited members for AGENCY tier', async () => {
+    it('should allow unlimited members for SCALE tier', async () => {
       vi.mocked(prisma.agency.findUnique).mockResolvedValue({
         subscription: {
-          tier: 'AGENCY',
+          tier: 'SCALE',
           status: 'active',
         },
       });
@@ -216,10 +216,10 @@ describe('TierLimitsService', () => {
       expect(result).toBe(false);
     });
 
-    it('should return true for AGENCY feature access', async () => {
+    it('should return true for SCALE feature access', async () => {
       vi.mocked(prisma.agency.findUnique).mockResolvedValue({
         subscription: {
-          tier: 'AGENCY',
+          tier: 'SCALE',
           status: 'active',
         },
       });
@@ -300,10 +300,10 @@ describe('TierLimitsService', () => {
       });
     });
 
-    it('should show current limits for AGENCY tier', async () => {
+    it('should show current limits for SCALE tier', async () => {
       vi.mocked(prisma.agency.findUnique).mockResolvedValue({
         subscription: {
-          tier: 'AGENCY',
+          tier: 'SCALE',
           status: 'active',
         },
       });
@@ -316,12 +316,12 @@ describe('TierLimitsService', () => {
 
       expect(result.data?.limits).toEqual({
         accessRequests: {
-          limit: TIER_LIMITS.AGENCY.accessRequests,
+          limit: TIER_LIMITS.SCALE.accessRequests,
           used: 9999,
           remaining: 0,
         },
         clients: {
-          limit: TIER_LIMITS.AGENCY.clients,
+          limit: TIER_LIMITS.SCALE.clients,
           used: 500,
           remaining: 0,
         },
@@ -331,7 +331,7 @@ describe('TierLimitsService', () => {
           remaining: -1,
         },
         templates: {
-          limit: TIER_LIMITS.AGENCY.templates,
+          limit: TIER_LIMITS.SCALE.templates,
           used: 50,
           remaining: 0,
         },

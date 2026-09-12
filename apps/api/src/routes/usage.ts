@@ -21,7 +21,7 @@ export async function usageRoutes(fastify: FastifyInstance) {
    *
    * Returns:
    * - agencyId: Agency UUID
-   * - tier: Current subscription tier (STARTER, AGENCY, PRO)
+   * - tier: Current subscription tier (STARTER, GROWTH, SCALE)
    * - tierName: Display name of tier
    * - metrics: Object with clientOnboards, platformAudits, teamSeats
    * - currentPeriodStart: Start date of current billing period

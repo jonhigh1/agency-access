@@ -88,18 +88,18 @@ describe('Clerk Metadata Service - TDD Tests', () => {
       });
     });
 
-    it('should set AGENCY tier with trial status', async () => {
+    it('should set SCALE tier with trial status', async () => {
       const { createClerkClient } = await import('@clerk/backend');
       (createClerkClient as any).mockReturnValue(mockClerk);
 
-      const result = await clerkMetadataService.setSubscriptionTier('user_456', 'AGENCY', {
+      const result = await clerkMetadataService.setSubscriptionTier('user_456', 'SCALE', {
         subscriptionStatus: 'trialing',
         trialEndsAt: new Date('2025-02-01'),
       });
 
       expect(result.error).toBeNull();
-      expect(result.data?.tier).toBe('AGENCY');
-      expect(result.data?.publicMetadata.tierName).toBe('Agency');
+      expect(result.data?.tier).toBe('SCALE');
+      expect(result.data?.publicMetadata.tierName).toBe('Scale');
       expect(result.data?.privateMetadata.subscriptionStatus).toBe('trialing');
       expect(result.data?.privateMetadata.trialEndsAt).toBeDefined();
     });
@@ -108,7 +108,7 @@ describe('Clerk Metadata Service - TDD Tests', () => {
       const { createClerkClient } = await import('@clerk/backend');
       (createClerkClient as any).mockReturnValue(mockClerk);
 
-      const result = await clerkMetadataService.setSubscriptionTier('user_789', 'AGENCY');
+      const result = await clerkMetadataService.setSubscriptionTier('user_789', 'SCALE');
 
       expect(result.error).toBeNull();
       expect(result.data?.privateMetadata.quotaLimits).toBeDefined();
