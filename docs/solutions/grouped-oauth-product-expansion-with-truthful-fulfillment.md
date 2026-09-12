@@ -64,7 +64,7 @@ The LinkedIn Pages sprint exposed the full version of that problem. The repo alr
 - Client/runtime aggregation: `apps/api/src/services/client.service.ts`
 - Invite wizard + selector UI: `apps/web/src/components/client-auth/PlatformAuthWizard.tsx`, `apps/web/src/components/client-auth/LinkedInAssetSelector.tsx`
 - Agency request detail: `apps/web/src/components/access-request-detail/request-platforms-card.tsx`
-- Browser evidence harness: `apps/web/scripts/capture-linkedin-page-support-evidence.mjs`, `apps/web/src/evidence/linkedin-page-support-preview.tsx`
+- Browser evidence harness: `apps/web/scripts/capture-linkedin-page-support-evidence.mjs`, `apps/web/evidence/linkedin-page-support-preview.tsx`
 
 ## Rollout Notes
 - This solution is selection-first only. It does not automate LinkedIn Page role assignment for the agency.
@@ -75,5 +75,5 @@ The LinkedIn Pages sprint exposed the full version of that problem. The repo alr
   - truthful `partial` completion when zero assets exist
 
 ## Related Sprints
-- [`docs/sprints/2026-03-10-cross-platform-post-oauth-fulfillment.md`](/Users/jhigh/agency-access-platform/docs/sprints/2026-03-10-cross-platform-post-oauth-fulfillment.md)
-- [`docs/sprints/2026-03-10-linkedin-page-support.md`](/Users/jhigh/agency-access-platform/docs/sprints/2026-03-10-linkedin-page-support.md)
+- [`docs/sprints/2026-03-10-cross-platform-post-oauth-fulfillment.md`](../sprints/2026-03-10-cross-platform-post-oauth-fulfillment.md)
+- [`docs/sprints/2026-03-10-linkedin-page-support.md`](../sprints/2026-03-10-linkedin-page-support.md)

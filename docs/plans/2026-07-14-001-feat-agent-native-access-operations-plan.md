@@ -499,7 +499,7 @@ stateDiagram-v2
 - `apps/api/src/services/audit.service.ts` and `apps/api/prisma/schema.prisma` — current audit and persistent security contracts.
 - `apps/api/src/services/webhook-delivery.service.ts` and `apps/web/src/components/settings/webhooks/webhook-settings-tab.tsx` — durable retries and settings-management patterns.
 - `docs/solutions/google-authorization-fulfillment-truthfulness.md` and `docs/solutions/grouped-oauth-product-expansion-with-truthful-fulfillment.md` — completion must be product-level, not raw OAuth-level.
-- `docs/solutions/oauth-state-redis-protocol-hardening.md` and `docs/solutions/oauth-state-redis-quota-fallback.md` — keep optional infrastructure from taking down product-critical authorization paths.
+- `docs/solutions/security-issues/oauth-state-postgres-fail-closed.md` — keep OAuth state durable and single-use in production while isolating optional infrastructure.
 - `docs/RENDER_DEPLOYMENT.md` and `render.yaml` — production schema changes require committed migrations and API-first deployment.
 
 **External grounding**

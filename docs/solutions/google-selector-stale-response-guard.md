@@ -37,5 +37,5 @@ The Google invite selector could accept an older in-flight asset response after 
 - No screenshot evidence was needed because this was a race-condition fix with no visual delta.
 
 ## Related Sprints
-- [`docs/sprints/2026-03-10-google-account-discovery-hardening.md`](/Users/jhigh/agency-access-platform/docs/sprints/2026-03-10-google-account-discovery-hardening.md)
-- [`docs/sprints/2026-03-10-google-post-oauth-account-selection.md`](/Users/jhigh/agency-access-platform/docs/sprints/2026-03-10-google-post-oauth-account-selection.md)
+- [`docs/sprints/2026-03-10-google-account-discovery-hardening.md`](../sprints/2026-03-10-google-account-discovery-hardening.md)
+- [`docs/sprints/2026-03-10-google-post-oauth-account-selection.md`](../sprints/2026-03-10-google-post-oauth-account-selection.md)

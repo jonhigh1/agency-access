@@ -1,0 +1,452 @@
+name: Deploy Repair
+
+# Self-healing deploy pipeline (U3): receives a production deploy-failure
+# signal, dedupes it to one tracking issue keyed by the failing commit SHA
+# (R7, KTD9), classifies it (R6), and either hands off to the repair loop
+# (a later unit — see the `repair` job below) or routes it to a human with
+# zero attempts spent (R6, R11).
+#
+# Triggers:
+#  - repository_dispatch (R4): Vercel production-deploy failures, delivered
+#    event-driven with no polling. `client_payload` is expected to carry
+#    `sha` and `url` — see apps/api/scripts/deploy-repair/incident.ts's
+#    `ShaTrigger` doc comment for why `sha` must come directly from the
+#    dispatch payload rather than a follow-up Vercel API lookup.
+#  - workflow_dispatch (R12): manual replay, and the entry point Render's
+#    polling-based detection (R5) uses once it exists (a later unit).
+
+on:
+  repository_dispatch:
+    types: [vercel.deployment.error, vercel.deployment.failed]
+  workflow_dispatch:
+    inputs:
+      platform:
+        description: 'Platform the failing deployment is on'
+        required: true
+        type: choice
+        options:
+          - vercel
+          - render
+      deployment_url:
+        description: 'Failing deployment URL (Vercel) or service identifier (Render)'
+        required: true
+        type: string
+      mode:
+        description: 'Run mode'
+        required: false
+        type: choice
+        options:
+          - repair
+          - dry-run
+          - drill
+        default: repair
+
+permissions:
+  contents: write
+  issues: write
+
+# Runs serialize rather than cancel (KTD8, concurrency scope only — the
+# actual push-serialization mechanics belong to a later unit): a second
+# failure signal while a repair is in progress queues behind it instead of
+# cancelling work in flight.
+concurrency:
+  group: deploy-repair
+  cancel-in-progress: false
+
+jobs:
+  incident:
+    name: Resolve incident
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      should_repair: ${{ steps.resolve-incident.outputs.should_repair }}
+      classification: ${{ steps.resolve-incident.outputs.classification }}
+    steps:
+      # KTD10 (secrets-validation slice only): fail fast, naming every
+      # missing secret, before any deploy-status API call or repair attempt
+      # can run. Mirrors "Validate perf secrets" in dashboard-perf-gate.yml.
+      - name: Validate deploy-repair secrets
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          missing=0
+          for key in VERCEL_TOKEN RENDER_API_KEY ANTHROPIC_API_KEY; do
+            if [ -z "${!key}" ]; then
+              echo "Missing required secret: $key"
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # Interpolating `${{ }}` expressions directly into a `run:` bash body
+      # is a script-injection vector (GitHub's own security guidance):
+      # untrusted event payload text becomes literal shell source before
+      # bash ever sees it. Every value from `github.event.client_payload`
+      # or `inputs` is passed through `env:` and referenced as `"$VAR"`
+      # instead, matching the pattern the "Search for an existing tracking
+      # issue" step below already used (a code-review finding this closes).
+      - name: Read trigger inputs
+        id: trigger
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          DISPATCH_URL: ${{ github.event.client_payload.url }}
+          DISPATCH_SHA: ${{ github.event.client_payload.sha }}
+          DISPATCH_ACTION: ${{ github.event.action }}
+          INPUT_PLATFORM: ${{ inputs.platform }}
+          INPUT_DEPLOYMENT_URL: ${{ inputs.deployment_url }}
+          INPUT_MODE: ${{ inputs.mode }}
+        run: |
+          if [ "$EVENT_NAME" = "repository_dispatch" ]; then
+            echo "platform=vercel" >> "$GITHUB_OUTPUT"
+            echo "deployment_url=$DISPATCH_URL" >> "$GITHUB_OUTPUT"
+            echo "sha=$DISPATCH_SHA" >> "$GITHUB_OUTPUT"
+            echo "trigger_source=repository_dispatch:$DISPATCH_ACTION" >> "$GITHUB_OUTPUT"
+            echo "mode=repair" >> "$GITHUB_OUTPUT"
+          else
+            echo "platform=$INPUT_PLATFORM" >> "$GITHUB_OUTPUT"
+            echo "deployment_url=$INPUT_DEPLOYMENT_URL" >> "$GITHUB_OUTPUT"
+            echo "trigger_source=workflow_dispatch" >> "$GITHUB_OUTPUT"
+            echo "mode=$INPUT_MODE" >> "$GITHUB_OUTPUT"
+            # TODO(follow-up): workflow_dispatch carries no `sha` input.
+            # apps/api/scripts/deploy-repair/incident.ts exports
+            # `resolveFailingSha` + `createRenderCommitLookup` (wraps U2's
+            # listRenderDeploys) specifically so a later unit can wire a
+            # real lookup here once Render's service id / Vercel's project
+            # id are available as workflow inputs or repo vars. Left blank
+            # deliberately — a documented interface boundary (see that
+            # module's ShaTrigger doc comment), not an oversight.
+            echo "sha=" >> "$GITHUB_OUTPUT"
+          fi
+
+      # Correction B (SHA-cascade fix): a repair commit carries a
+      # `Deploy-Repair-Of: <original-sha>` trailer (attempt-loop.ts). When
+      # THIS trigger's own commit carries that trailer, extract it so
+      # dedupe attributes back to the original incident instead of opening
+      # a fresh one — this step is what was missing: incident.ts's
+      # `resolveParentShaFromTrailer`/`parentSha` logic was fully built and
+      # tested, but nothing in this workflow ever called it (a code-review
+      # finding this closes). No-op (empty output) when there's no sha yet
+      # (workflow_dispatch) or the commit carries no trailer.
+      - name: Extract parent sha from a repair-commit trailer, if any (Correction B)
+        id: parent-sha
+        env:
+          SHA: ${{ steps.trigger.outputs.sha }}
+        run: |
+          if [ -z "$SHA" ]; then
+            echo "parent_sha=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          MESSAGE=$(git log -1 --format=%B "$SHA" 2>/dev/null || true)
+          PARENT=$(printf '%s\n' "$MESSAGE" | grep -oiE '^Deploy-Repair-Of:[[:space:]]*[0-9a-f]{7,40}' | grep -oE '[0-9a-f]{7,40}$' | head -n1 || true)
+          echo "parent_sha=$PARENT" >> "$GITHUB_OUTPUT"
+
+      # TODO(follow-up): fetch the real build log excerpt via U2's
+      # getVercelBuildLogExcerpt / fetchRenderBuildLogs+reduceRenderLogsToExcerpt
+      # (apps/api/scripts/deploy-status/{vercel,render}.ts) using the
+      # already-validated VERCEL_TOKEN / RENDER_API_KEY. Left as an empty
+      # excerpt for this unit — U3's scope is the incident/dedupe/
+      # classification decision, not log retrieval; incident.ts already
+      # embeds whatever excerpt it is given (composeFailureReport,
+      # composeNewIssueBody) and is tested against that contract.
+      - name: Fetch build log excerpt
+        id: log-excerpt
+        run: echo "excerpt=" >> "$GITHUB_OUTPUT"
+
+      # Correction B: search using the PARENT sha's short form when this
+      # trigger's own commit carries a Deploy-Repair-Of trailer, not the
+      # child sha — the tracking issue is titled with the ORIGINAL sha, so
+      # searching by the child sha would never find it (a code-review
+      # finding this closes: the trailer/parentSha extraction above was
+      # fully wired, but this step still searched by the wrong sha).
+      - name: Search for an existing tracking issue
+        id: existing-issues
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ steps.trigger.outputs.sha }}
+          PARENT_SHA: ${{ steps.parent-sha.outputs.parent_sha }}
+        run: |
+          DEDUPE_SHA="${PARENT_SHA:-$SHA}"
+          if [ -z "$DEDUPE_SHA" ]; then
+            echo "issues_json=[]" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          SHORT_SHA="${DEDUPE_SHA:0:7}"
+          JSON=$(gh issue list --search "$SHORT_SHA in:title is:issue is:open" --state open --json number,title,url)
+          {
+            echo "issues_json<<ISSUES_JSON_EOF"
+            echo "$JSON"
+            echo "ISSUES_JSON_EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      # Runs apps/api/scripts/deploy-repair/incident.ts's CLI entry point:
+      # classifies the failure (R6), dedupes against EXISTING_ISSUES_JSON
+      # (R7), and — for a new incident — writes the KTD7 artifact to
+      # .claude/tasks/deploy-failures/ and prints the composed title/body.
+      # See that module for why DEPLOY_READY_STATE defaults to ERROR here:
+      # the repository_dispatch event only fires because Vercel reported an
+      # error, so the readyState is implied by the trigger itself, not
+      # fabricated. Render's status has no such implicit source yet (its
+      # detection is poll-based — R5, a later unit) and defaults to
+      # build_failed as a placeholder pending that wiring.
+      - name: Resolve incident
+        id: resolve-incident
+        env:
+          DEPLOY_SHA: ${{ steps.trigger.outputs.sha }}
+          PARENT_SHA: ${{ steps.parent-sha.outputs.parent_sha }}
+          PLATFORM: ${{ steps.trigger.outputs.platform }}
+          DEPLOYMENT_URL: ${{ steps.trigger.outputs.deployment_url }}
+          LOG_EXCERPT: ${{ steps.log-excerpt.outputs.excerpt }}
+          TRIGGER_SOURCE: ${{ steps.trigger.outputs.trigger_source }}
+          DEPLOY_READY_STATE: ERROR
+          DEPLOY_STATUS: build_failed
+          EXISTING_ISSUES_JSON: ${{ steps.existing-issues.outputs.issues_json }}
+        # Captured to a file (not just $GITHUB_OUTPUT, which can't hold a
+        # multi-KB body) so this step's own artifact write and `new Date()`
+        # timestamp are the only ones this run produces — re-invoking the
+        # script a second time in the next step computed a different
+        # timestamp and wrote a second, near-duplicate KTD7 artifact for the
+        # same incident (simplify-pass finding).
+        run: npx tsx apps/api/scripts/deploy-repair/incident.ts | tee /tmp/deploy-repair-incident.json
+
+      - name: Create or update the tracking issue
+        if: steps.trigger.outputs.sha != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          KIND=$(jq -r '.kind' /tmp/deploy-repair-incident.json)
+
+          if [ "$KIND" = "skipped-non-actionable" ]; then
+            echo "Non-actionable deploy state — not a failure (R5). No issue created."
+            exit 0
+          fi
+
+          if [ "$KIND" = "new-incident" ]; then
+            TITLE=$(jq -r '.title' /tmp/deploy-repair-incident.json)
+            ARTIFACT_PATH=$(jq -r '.artifactPath' /tmp/deploy-repair-incident.json)
+            jq -r '.body' /tmp/deploy-repair-incident.json > /tmp/deploy-repair-issue-body.md
+            gh issue create --title "$TITLE" --body-file /tmp/deploy-repair-issue-body.md
+            echo "Created tracking issue for $ARTIFACT_PATH"
+          elif [ "$KIND" = "existing-incident" ]; then
+            ISSUE_NUMBER=$(jq -r '.issue.number' /tmp/deploy-repair-incident.json)
+            jq -r '.comment.body' /tmp/deploy-repair-incident.json > /tmp/deploy-repair-comment.md
+            gh issue comment "$ISSUE_NUMBER" --body-file /tmp/deploy-repair-comment.md
+            echo "Commented on existing tracking issue #$ISSUE_NUMBER"
+          fi
+
+  repair:
+    name: Repair
+    needs: incident
+    # Only a build-time classification with an available budget is a repair
+    # target (R6). Everything else — human-routed or non-actionable — stops
+    # here; U3's job ends at the classification/dedupe decision above.
+    if: needs.incident.outputs.should_repair == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          # Full history (not the default shallow depth-1 clone) so KTD8's
+          # rebase-once-on-non-fast-forward path has real history to rebase
+          # against. actions/checkout without an explicit `ref` checks out
+          # the default branch's current HEAD — which is main, the same
+          # branch this loop pushes onto — so this only diverges from the
+          # exact failing commit if something else lands on main between
+          # the failure and this run, which the serialized `concurrency`
+          # group (KTD8, workflow-level) is what keeps rare.
+          fetch-depth: 0
+
+      # Correction A: this job is the EXCLUSIVE owner of `git commit`/`git
+      # push` in the whole repair pipeline (U4's repair-session is
+      # edit-only by design). The bot identity is configured once, here,
+      # before any commit step runs.
+      - name: Configure git identity (github-actions[bot], Correction A)
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      # KTD10 lesson (commit ffe440d): prisma generate must precede the API
+      # build. The in-loop gate (attempt-loop.ts's runGate — `npm run
+      # typecheck && npm run build`, run once per attempt) needs a
+      # generated client every time it shells out to the API build, so this
+      # runs once up front rather than being repeated per attempt.
+      - name: Generate Prisma client
+        run: npm run db:generate --workspace=apps/api
+
+      # Two-bugs-to-avoid #1 (env var name mismatch): the web build reads
+      # NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY / CLERK_SECRET_KEY, not
+      # PERF_CLERK_*. The underlying secrets are stored under PERF_CLERK_*
+      # names (reused from dashboard-perf-gate.yml rather than provisioning
+      # a second Clerk credential pair) — mapped to the real env var names
+      # in the "Run the attempt loop" step below. This is this job's OWN
+      # validate-secrets step (KTD10) for the Clerk keys it additionally
+      # needs, distinct from the `incident` job's VERCEL_TOKEN/
+      # RENDER_API_KEY/ANTHROPIC_API_KEY validation above — different
+      # secrets for a different job.
+      - name: Validate Clerk secrets for the repair-loop gate
+        env:
+          PERF_CLERK_SECRET_KEY: ${{ secrets.PERF_CLERK_SECRET_KEY }}
+          PERF_CLERK_PUBLISHABLE_KEY: ${{ secrets.PERF_CLERK_PUBLISHABLE_KEY }}
+        run: |
+          missing=0
+          for key in PERF_CLERK_SECRET_KEY PERF_CLERK_PUBLISHABLE_KEY; do
+            if [ -z "${!key}" ]; then
+              echo "Missing required secret: $key"
+              missing=1
+            fi
+          done
+          if [ "$missing" -ne 0 ]; then
+            exit 1
+          fi
+
+      # This job's own copy of the trigger inputs: `needs.incident.outputs`
+      # only exposes `should_repair`/`classification` (the incident job's
+      # own step-scoped outputs, e.g. `steps.trigger.outputs.sha`/`.mode`,
+      # are not visible to a downstream job). The same `github.event`
+      # context the incident job read from is available here too, so this
+      # re-derives sha/mode/parent_sha directly rather than requiring a
+      # change to the incident job's already-committed (U3) outputs.
+      # `${{ }}` values go through `env:`, not directly into `run:` bash,
+      # for the same script-injection reason as the incident job's
+      # equivalent step.
+      - name: Read trigger inputs
+        id: trigger
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          DISPATCH_SHA: ${{ github.event.client_payload.sha }}
+          INPUT_MODE: ${{ inputs.mode }}
+        run: |
+          if [ "$EVENT_NAME" = "repository_dispatch" ]; then
+            echo "sha=$DISPATCH_SHA" >> "$GITHUB_OUTPUT"
+            echo "mode=repair" >> "$GITHUB_OUTPUT"
+          else
+            echo "sha=" >> "$GITHUB_OUTPUT"
+            echo "mode=$INPUT_MODE" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Extract parent sha from a repair-commit trailer, if any (Correction B)
+        id: parent-sha
+        env:
+          SHA: ${{ steps.trigger.outputs.sha }}
+        run: |
+          if [ -z "$SHA" ]; then
+            echo "parent_sha=" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          MESSAGE=$(git log -1 --format=%B "$SHA" 2>/dev/null || true)
+          PARENT=$(printf '%s\n' "$MESSAGE" | grep -oiE '^Deploy-Repair-Of:[[:space:]]*[0-9a-f]{7,40}' | grep -oE '[0-9a-f]{7,40}$' | head -n1 || true)
+          echo "parent_sha=$PARENT" >> "$GITHUB_OUTPUT"
+
+      # Finds the tracking issue the `incident` job already created or
+      # deduped against (this job only runs when should_repair == 'true',
+      # which itself only happens once that issue exists). Mirrors the
+      # incident job's own dedupe search query exactly, including
+      # searching by parent_sha (Correction B) when this trigger's own
+      # commit carries a Deploy-Repair-Of trailer.
+      - name: Find the tracking issue for this incident
+        id: tracking-issue
+        if: steps.trigger.outputs.sha != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ steps.trigger.outputs.sha }}
+          PARENT_SHA: ${{ steps.parent-sha.outputs.parent_sha }}
+        run: |
+          DEDUPE_SHA="${PARENT_SHA:-$SHA}"
+          SHORT_SHA="${DEDUPE_SHA:0:7}"
+          NUMBER=$(gh issue list --search "$SHORT_SHA in:title is:issue is:open" --state open --json number --jq '.[0].number // empty')
+          echo "number=$NUMBER" >> "$GITHUB_OUTPUT"
+
+      # Runs apps/api/scripts/deploy-repair/attempt-loop.ts's CLI entry
+      # point: the bounded state machine (R8: max 3 attempts per incident)
+      # that diagnoses (U4's runRepairSession), gates (typecheck + build,
+      # covering both deploy targets per R1 since these are the root
+      # workspace scripts — shared+api+web, not a web-only subset),
+      # commits + pushes with the Deploy-Repair-Of trailer (Correction B),
+      # and verifies the redeploy (wait-for-deploy.ts, R13).
+      #
+      # STARTING_BUDGET is fixed at 3 (R8's cap) for this unit's scope —
+      # persisting a per-issue REMAINING budget across separate workflow
+      # runs (so a parentSha-attributed child incident starts with less
+      # than 3) is explicitly out of scope for this pass (see Correction B
+      # in this unit's own notes); incident.ts's parentSha dedupe already
+      # prevents a fresh full-budget ISSUE from being opened, which is the
+      # part that actually closes the SHA-cascade bug.
+      #
+      # FAILURE_REPORT_PATH/LOG_EXCERPT: the `incident` job's KTD7 artifact
+      # is written to that job's own (separate) runner checkout and is not
+      # available here — passing it across jobs needs
+      # actions/upload-artifact + actions/download-artifact, which is a
+      # documented follow-up (the same class of gap U3 already left open
+      # for the real Vercel/Render build-log fetch — see this workflow's
+      # "Fetch build log excerpt" step above). Left as safe, inert defaults
+      # here rather than a fragile inline reconstruction.
+      - name: Run the attempt loop (Correction A/B)
+        id: attempt-loop
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GH_TOKEN: ${{ github.token }}
+          STARTING_BUDGET: '3'
+          ORIGINAL_SHA: ${{ steps.trigger.outputs.sha }}
+          MODE: ${{ steps.trigger.outputs.mode }}
+          FAILURE_REPORT_PATH: .claude/tasks/deploy-failures/${{ steps.trigger.outputs.sha }}.md
+          LOG_EXCERPT: ''
+          NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: ${{ secrets.PERF_CLERK_PUBLISHABLE_KEY }}
+          CLERK_SECRET_KEY: ${{ secrets.PERF_CLERK_SECRET_KEY }}
+        run: npx tsx apps/api/scripts/deploy-repair/attempt-loop.ts | tee /tmp/deploy-repair-attempt-loop.json
+
+      # R10: post the per-attempt summary (diagnosis/gate/push/deploy per
+      # attempt) to the tracking issue. Runs regardless of outcome
+      # (success, exhausted, aborted-push-failure, no-repair-possible) so
+      # the operator always learns what happened without watching
+      # dashboards — the whole point of this unit.
+      - name: Post attempt-loop summary to the tracking issue (R10)
+        if: always() && steps.tracking-issue.outputs.number != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ steps.tracking-issue.outputs.number }}
+        run: |
+          if [ ! -s /tmp/deploy-repair-attempt-loop.json ]; then
+            echo "No attempt-loop output captured — nothing to post."
+            exit 0
+          fi
+          OUTCOME=$(jq -r '.outcome' /tmp/deploy-repair-attempt-loop.json)
+          ATTEMPTS=$(jq -r '.attemptsTaken' /tmp/deploy-repair-attempt-loop.json)
+          {
+            echo "### Deploy-repair attempt loop finished"
+            echo ""
+            echo "- **Outcome:** \`$OUTCOME\`"
+            echo "- **Attempts taken:** $ATTEMPTS"
+            echo ""
+            echo "<details><summary>Per-attempt detail</summary>"
+            echo ""
+            echo '```json'
+            jq '.attempts' /tmp/deploy-repair-attempt-loop.json
+            echo '```'
+            echo "</details>"
+          } > /tmp/deploy-repair-summary.md
+          gh issue comment "$ISSUE_NUMBER" --body-file /tmp/deploy-repair-summary.md

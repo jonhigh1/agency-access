@@ -83,5 +83,5 @@ The Meta Business Login JS SDK cutover appeared complete in code, but production
   - Render build green on the finalize-route backend commit
 
 ## Related Sprints
-- [`docs/sprints/2026-03-11-meta-business-login-js-sdk.md`](/Users/jhigh/agency-access-platform/docs/sprints/2026-03-11-meta-business-login-js-sdk.md)
-- [`docs/sprints/2026-03-11-meta-business-portfolio-modal.md`](/Users/jhigh/agency-access-platform/docs/sprints/2026-03-11-meta-business-portfolio-modal.md)
+- [`docs/sprints/2026-03-11-meta-business-login-js-sdk.md`](../sprints/2026-03-11-meta-business-login-js-sdk.md)
+- [`docs/sprints/2026-03-11-meta-business-portfolio-modal.md`](../sprints/2026-03-11-meta-business-portfolio-modal.md)

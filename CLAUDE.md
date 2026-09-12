@@ -261,7 +261,9 @@ Frontend 3000, Backend 3001, Prisma Studio 5555. Kill: `lsof -ti:3000 | xargs ki
 
 **Vercel (web):** Deploy from apps/web. Checklist: all imported modules committed; design-system pages use real prop names (StatusBadge status/badgeVariant, HealthBadge health, PlatformIcon size token); shared types use real properties; test files excluded in tsconfig; useSearchParams wrapped in Suspense for static prerender.
 
-**Railway (api):** Deploy from apps/api; env via CLI/dashboard; PostgreSQL (Neon) and Redis (Upstash) external. `cd apps/api && railway up`.
+**Render (api):** Deploys via the `render.yaml` Blueprint at the repo root (`autoDeploy: true` — pushes to main trigger a build automatically, no manual `up` command). Env vars are set per service in the Render dashboard. PostgreSQL (Neon) and secrets (Infisical) are external. See `docs/RENDER_DEPLOYMENT.md` for the full setup and env-var list.
+
+**Self-healing deploy pipeline:** This repo auto-detects and repairs build-time deploy failures on both apps/web (Vercel) and apps/api (Render). See `docs/deploy-repair-runbook.md` for setup, manual replay, drills, and recovery when the loop gives up.
 
 ## Security Requirements
 

@@ -1,0 +1,121 @@
+#!/usr/bin/env bash
+# Committed pre-push gate.
+#
+# Chains the existing Entire CLI pre-push hook (unchanged), then — only for
+# pushes that update refs/heads/main — builds the exact pushed commit in a
+# throwaway git worktree and blocks the push if typecheck or build fails.
+#
+# See .githooks/README.md for the full rationale and the emergency bypass
+# (`git push --no-verify`).
+set -euo pipefail
+
+REMOTE_NAME="${1:-}"
+REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+
+# --- 1. Capture stdin once. ------------------------------------------------
+# git feeds "<local-ref> <local-sha> <remote-ref> <remote-sha>" lines on
+# stdin. We need that content twice (once to forward to Entire, once to look
+# for a refs/heads/main line ourselves), and stdin can only be read once, so
+# slurp it into a variable up front.
+REFS_INPUT="$(cat || true)"
+
+# --- 2. Delegate to the Entire CLI pre-push hook first. --------------------
+# This preserves the exact behavior of the machine-local hook this file
+# replaces (see .git/hooks/pre-push): guarded delegate, exit code propagates.
+ENTIRE_STATUS=0
+if command -v entire >/dev/null 2>&1; then
+  printf '%s\n' "$REFS_INPUT" | entire hooks git pre-push "$REMOTE_NAME" || ENTIRE_STATUS=$?
+else
+  :
+fi
+
+if [ "$ENTIRE_STATUS" -ne 0 ]; then
+  # Entire already blocked (or reported on) this push. Do not run the build
+  # gate on top of it — propagate its exit code as-is.
+  exit "$ENTIRE_STATUS"
+fi
+
+# --- 3. Only gate pushes that update refs/heads/main. -----------------------
+ZERO_SHA_RE='^0+$'
+MAIN_SHA=""
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+  [ -z "${local_ref:-}" ] && continue
+  if [ "$remote_ref" = "refs/heads/main" ]; then
+    if [[ "$local_sha" =~ $ZERO_SHA_RE ]]; then
+      # Branch/ref deletion — nothing to build.
+      continue
+    fi
+    MAIN_SHA="$local_sha"
+    break
+  fi
+done <<< "$REFS_INPUT"
+
+if [ -z "$MAIN_SHA" ]; then
+  # Not a push to main (or a main deletion) — skip the build gate.
+  exit 0
+fi
+
+echo "[pre-push] Pushing to refs/heads/main — running the production build gate on $MAIN_SHA (clean worktree checkout)..."
+
+# --- 4. Build the pushed commit in a throwaway worktree, not the working
+#        tree. A past production incident (see docs/solutions/
+#        meta-business-login-production-rollout.md) shipped a broken Render
+#        build because the pushed commit was missing local-only changes —
+#        building the working tree would not have caught that.
+WORKTREE_DIR="$(mktemp -d "${TMPDIR:-/tmp}/agency-access-prepush.XXXXXX")"
+
+cleanup() {
+  cd "$REPO_ROOT" >/dev/null 2>&1 || true
+  git worktree remove --force "$WORKTREE_DIR" >/dev/null 2>&1 || rm -rf "$WORKTREE_DIR"
+}
+trap cleanup EXIT
+
+git -C "$REPO_ROOT" worktree add --detach --quiet "$WORKTREE_DIR" "$MAIN_SHA"
+
+# Copy local env files in for convenience only. Never fail the gate if they
+# are missing locally — env is a local convenience, not a hard requirement.
+if [ -f "$REPO_ROOT/apps/web/.env.local" ]; then
+  cp "$REPO_ROOT/apps/web/.env.local" "$WORKTREE_DIR/apps/web/.env.local" || true
+fi
+if [ -f "$REPO_ROOT/apps/api/.env" ]; then
+  cp "$REPO_ROOT/apps/api/.env" "$WORKTREE_DIR/apps/api/.env" || true
+fi
+
+# Dependency provisioning: a real `npm ci` inside the worktree, not a
+# symlink into the host's hoisted node_modules. This repo's npm workspaces
+# hoist local packages (e.g. @agency-platform/shared) into node_modules via
+# symlinks that point back at the *host* checkout — reusing them wholesale
+# would validate the working tree's packages/shared, not the pushed SHA's,
+# defeating the point of this gate. `npm ci` is slower but isolated, uses
+# the pushed package-lock.json, and cannot mutate host state (e.g. a stray
+# `prisma generate` overwriting the host's generated client). See
+# .githooks/README.md for the trade-off.
+GATE_STATUS=0
+if (
+  cd "$WORKTREE_DIR"
+  npm ci --no-audit --prefer-offline
+  # packages/shared ships types from dist/, and apps/api's Prisma-typed code
+  # needs a generated client — both are prerequisites for typecheck, not
+  # just build, so provision them before `npm run typecheck`.
+  npm run build --workspace=packages/shared
+  npm run db:generate --workspace=apps/api
+  npm run typecheck
+  # packages/shared is already built above (typecheck needs its dist/
+  # first); the root `build` script would rebuild it a second time in the
+  # same run, so build the remaining workspaces directly instead.
+  npm run build --workspace=apps/api
+  npm run build --workspace=apps/web
+); then
+  GATE_STATUS=0
+else
+  GATE_STATUS=$?
+fi
+
+if [ "$GATE_STATUS" -ne 0 ]; then
+  echo "[pre-push] BLOCKED: production build gate failed (typecheck/build) on $MAIN_SHA. Fix the errors above, or bypass in an emergency with: git push --no-verify" >&2
+  exit "$GATE_STATUS"
+fi
+
+echo "[pre-push] Production build gate passed for $MAIN_SHA."
+exit 0

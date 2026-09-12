@@ -47,7 +47,13 @@ The backend should be deployed first to obtain the API URL.
 
 ### Deployment Steps
 
-1. Import the repo in Vercel and set the root directory to `apps/web`.
+1. Import the repo in Vercel and **leave the project's root directory unset (empty)** — link it
+   from the repository root (e.g. `vercel link --cwd .`), not from `apps/web`. Setting
+   `rootDirectory` to `apps/web` makes Vercel run `npm install` from that directory, which can't
+   see the root `package.json` workspaces and causes install failures. `vercel.json`'s
+   `buildCommand`/`outputDirectory` (already configured at the repo root) handle building the
+   monorepo and locating the Next.js app's output. See
+   `docs/VERCEL_DEPLOYMENT_LESSONS_LEARNED.md` for the full rationale and history.
 2. Add the following **Environment Variables**:
    - `NEXT_PUBLIC_API_URL`: Your deployed backend URL (e.g., `https://api.yourdomain.com`)
    - `NEXT_PUBLIC_APP_URL`: Your Vercel frontend URL (e.g., `https://app.yourdomain.com`)
