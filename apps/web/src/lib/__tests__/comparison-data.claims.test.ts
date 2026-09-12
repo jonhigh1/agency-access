@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { SUPPORTED_PLATFORM_COUNT } from "@agency-platform/shared";
 import {
   agencyAccessAlternativePage,
   leadsieAlternativePage,
@@ -33,16 +34,18 @@ function authHubCopySnapshot(page: typeof agencyAccessAlternativePage) {
   });
 }
 
+const CONNECTOR_COPY = `${SUPPORTED_PLATFORM_COUNT} platform connectors`;
+
 describe("AgencyAccess comparison page claims", () => {
   it("uses the current AuthHub connector count in platform copy", () => {
     expect(agencyAccessAlternativePage.ourProduct.pricing.starter.features).toContain(
-      "19 platform connectors",
+      CONNECTOR_COPY,
     );
     expect(agencyAccessAlternativePage.pricingComparison.authhub.starter.features).toContain(
-      "19 platform connectors",
+      CONNECTOR_COPY,
     );
     expect(agencyAccessAlternativePage.ourProduct.platforms).toContain(
-      "19 platform connectors",
+      CONNECTOR_COPY,
     );
   });
 
@@ -50,7 +53,9 @@ describe("AgencyAccess comparison page claims", () => {
     const authHubCopy = authHubCopySnapshot(agencyAccessAlternativePage);
 
     expect(authHubCopy).toMatch(/Infisical/i);
-    expect(authHubCopy).toMatch(/5 clients\/month|5 \/ 20 \/ 50|20 clients\/month/);
+    expect(authHubCopy).toMatch(
+      /Up to 5 active clients|5 clients\/month|5 \/ 20 \/ 50|Up to 20 active clients|20 clients\/month/,
+    );
     expectNoAuthHubForbiddenClaims(authHubCopy, "agencyAccess AuthHub copy");
 
     expect(agencyAccessAlternativePage.ourProduct.differentiators).toContain(
@@ -59,12 +64,13 @@ describe("AgencyAccess comparison page claims", () => {
     expect(agencyAccessAlternativePage.cta.guarantee).toMatch(/14-day free trial/i);
   });
 
-  it("compares AuthHub Growth at $79 with 20 clients/month", () => {
+  it("compares AuthHub Growth at $79 with a stated 20 active client cap", () => {
     expect(agencyAccessAlternativePage.ourProduct.pricing.pro?.price).toBe(79);
-    expect(agencyAccessAlternativePage.ourProduct.pricing.pro?.features).toContain(
-      "20 clients/month",
+    expect(agencyAccessAlternativePage.ourProduct.pricing.pro?.features).toEqual(
+      expect.arrayContaining([expect.stringMatching(/Up to 20 active clients|20 clients\/month/)]),
     );
-    expect(agencyAccessAlternativePage.pricingComparison.authhub.starter.price).toBe(79);
+    expect(agencyAccessAlternativePage.pricingComparison.authhub.starter.price).toBe(29);
+    expect(agencyAccessAlternativePage.pricingComparison.authhub.pro?.price).toBe(79);
   });
 });
 
@@ -102,8 +108,8 @@ describe("Leadsie comparison page claims", () => {
   it("does not claim unlimited clients or SOC 2 on AuthHub positioning", () => {
     const authHubCopy = authHubCopySnapshot(leadsieAlternativePage);
     expectNoAuthHubForbiddenClaims(authHubCopy, "leadsie AuthHub copy");
-    expect(authHubCopy).toMatch(/5 clients\/month/);
-    expect(authHubCopy).toMatch(/20 clients\/month/);
+    expect(authHubCopy).toMatch(/Up to 5 active clients|5 clients\/month/);
+    expect(authHubCopy).toMatch(/Up to 20 active clients|20 clients\/month/);
   });
 
   it("uses verified Leadsie list pricing and honest AuthHub tier caps", () => {
@@ -133,7 +139,7 @@ describe("Leadsie comparison page claims", () => {
         expect.objectContaining({
           feature: "Platform Count",
           competitor: "31+",
-          authhub: "19",
+          authhub: `${SUPPORTED_PLATFORM_COUNT}`,
         }),
         expect.objectContaining({
           feature: "Starting Price",
@@ -163,7 +169,7 @@ describe("Leadsie comparison page claims", () => {
       expect.objectContaining({ clients: "50", competitorCost: "$299", authHubCost: "$149" }),
     ]);
     expect(leadsieAlternativePage.testimonials).toEqual([]);
-    expect(leadsieAlternativePage.ourProduct.platforms).toHaveLength(19);
+    expect(leadsieAlternativePage.ourProduct.platforms).toHaveLength(SUPPORTED_PLATFORM_COUNT);
   });
 
   it("does not include forbidden pricing copy in rendered-critical Leadsie fields", () => {

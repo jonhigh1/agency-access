@@ -3,6 +3,8 @@
  * Structured data for programmatic comparison pages
  */
 
+import { SUPPORTED_PLATFORM_COUNT } from "@agency-platform/shared";
+
 import type { ProgrammaticComparisonPage } from "./programmatic-types";
 
 /**
@@ -102,31 +104,36 @@ export const leadsieAlternativePage: ProgrammaticComparisonPage = {
       starter: {
         price: 29,
         features: [
-          "5 clients/month",
-          "19 platform connectors",
+          "Up to 5 active clients",
+          `${SUPPORTED_PLATFORM_COUNT} platforms`,
           "Unlimited team seats",
-          "White-label branding",
-          "Email support",
+          "One-link onboarding",
+          "Token auto-refresh",
+          "Audit logs",
+          "AuthHub-branded client link",
+          "US-based support",
         ],
       },
       pro: {
         price: 79,
         features: [
           "Everything in Starter",
-          "20 clients/month",
-          "Webhooks & API",
+          "Up to 20 active clients",
+          "Full white-label branding",
           "Custom domain",
+          "Webhooks & API",
           "Priority support",
+          "Token health monitoring dashboard",
         ],
       },
       enterprise: {
         price: "149",
         features: [
           "Everything in Pro",
-          "50 clients/month",
+          "Up to 50 active clients",
           "Multi-brand (3 brands)",
-          "Priority support",
           "Custom integrations",
+          "Priority support",
         ],
       },
     },
@@ -134,7 +141,7 @@ export const leadsieAlternativePage: ProgrammaticComparisonPage = {
       "Access + Intake in One Link",
       "Predictable tiered pricing (no credits)",
       "Token Health + Infisical Audit",
-      "19 Platform Connectors",
+      `${SUPPORTED_PLATFORM_COUNT} Platform Connectors`,
     ],
     platforms: [
       "Meta Ads",
@@ -145,6 +152,7 @@ export const leadsieAlternativePage: ProgrammaticComparisonPage = {
       "Google Tag Manager",
       "Merchant Center",
       "Search Console",
+      "Business Profile",
       "LinkedIn Ads",
       "LinkedIn Pages",
       "TikTok Ads",
@@ -194,7 +202,7 @@ export const leadsieAlternativePage: ProgrammaticComparisonPage = {
   ],
 
   quickComparison: [
-    { feature: "Platform Count", competitor: "31+", authhub: "19", winner: "competitor" },
+    { feature: "Platform Count", competitor: "31+", authhub: `${SUPPORTED_PLATFORM_COUNT}`, winner: "competitor" },
     { feature: "Client Intake Forms", competitor: false, authhub: true, winner: "authhub", isExclusive: true },
     { feature: "API & Webhooks", competitor: "Enterprise", authhub: "Growth+", winner: "authhub" },
     { feature: "Pricing Model", competitor: "Credits + overages", authhub: "Fixed monthly tiers" },
@@ -224,7 +232,7 @@ export const leadsieAlternativePage: ProgrammaticComparisonPage = {
         { name: "Client Intake Forms", competitor: false, authhub: true },
         { name: "Reusable Templates", competitor: false, authhub: true },
         { name: "Custom Branding", competitor: "Agency tier", authhub: "All plans" },
-        { name: "API Access", competitor: "Enterprise only", authhub: "Growth and Agency" },
+        { name: "API Access", competitor: "Enterprise only", authhub: "Growth and Scale" },
       ],
     },
     {
@@ -250,7 +258,7 @@ export const leadsieAlternativePage: ProgrammaticComparisonPage = {
       "You need predictable monthly bills without credit overages",
       "You want intake answers and OAuth in the same client flow",
       "You want token-health monitoring and Infisical-backed audit events",
-      "Your clients use AuthHub's 19 core connectors",
+      `Your clients use AuthHub's ${SUPPORTED_PLATFORM_COUNT} core connectors`,
     ],
   },
 
@@ -287,16 +295,16 @@ export const leadsieAlternativePage: ProgrammaticComparisonPage = {
       starter: {
         price: 29,
         features: [
-          "5 clients/month",
-          "19 platform connectors",
+          "Up to 5 active clients",
+          `${SUPPORTED_PLATFORM_COUNT} platforms`,
           "Access + Intake",
-          "Email support",
+          "US-based support",
         ],
       },
       pro: {
         price: 79,
         features: [
-          "20 clients/month",
+          "Up to 20 active clients",
           "Webhooks & API access",
           "Custom domain",
           "Priority support",
@@ -305,7 +313,7 @@ export const leadsieAlternativePage: ProgrammaticComparisonPage = {
       enterprise: {
         price: "149",
         features: [
-          "50 clients/month",
+          "Up to 50 active clients",
           "Multi-brand (3 brands)",
           "Priority support",
           "Custom integrations",
@@ -358,7 +366,7 @@ export const leadsieAlternativePage: ProgrammaticComparisonPage = {
       clients: "50",
       competitorPlan: "Pro",
       competitorCost: "$299",
-      authHubPlan: "Agency",
+      authHubPlan: "Scale",
       authHubCost: "$149",
     },
   ],
@@ -383,7 +391,7 @@ export const leadsieAlternativePage: ProgrammaticComparisonPage = {
     {
       question: "Does AuthHub support every Leadsie platform?",
       answer:
-        "No. Leadsie advertises 31+ integrations, including platforms AuthHub does not currently expose. AuthHub has 19 core connectors across ad, analytics, commerce, and email platforms. Check both integration lists for the platforms your clients actually use.",
+        `No. Leadsie advertises 31+ integrations, including platforms AuthHub does not currently expose. AuthHub has ${SUPPORTED_PLATFORM_COUNT} core connectors across ad, analytics, commerce, and email platforms. Check both integration lists for the platforms your clients actually use.`,
     },
     {
       question: "What is the difference between AuthHub and Leadsie's intake approach?",
@@ -513,7 +521,6 @@ export const agencyAccessAlternativePage: ProgrammaticComparisonPage = {
     weaknesses: [
       "Invite limits on Starter tier (5 invites)",
       "No automatic token refresh (manual reconnect required)",
-      "No SOC 2 certification advertised",
       "No public API for custom development",
       "Limited audit log functionality",
     ],
@@ -540,22 +547,25 @@ export const agencyAccessAlternativePage: ProgrammaticComparisonPage = {
       starter: {
         price: 29,
         features: [
-          "5 clients/month",
+          "Up to 5 active clients",
           "Unlimited team seats",
-          "White-label branding",
-          "Automatic token refresh",
+          "One-link onboarding",
+          "Token auto-refresh",
           "Complete audit logs",
           "Infisical-backed token storage",
-          "19 platform connectors",
+          `${SUPPORTED_PLATFORM_COUNT} platform connectors`,
+          "AuthHub-branded client link",
+          "US-based support",
         ],
       },
       pro: {
         price: 79,
         features: [
           "Everything in Starter",
-          "20 clients/month",
-          "API + webhooks",
+          "Up to 20 active clients",
+          "Full white-label branding",
           "Custom domain",
+          "API + webhooks",
           "Priority support",
         ],
       },
@@ -563,10 +573,10 @@ export const agencyAccessAlternativePage: ProgrammaticComparisonPage = {
         price: "149",
         features: [
           "Everything in Pro",
-          "50 clients/month",
+          "Up to 50 active clients",
           "Multi-brand (3 brands)",
-          "Priority support",
           "Custom integrations",
+          "Priority support",
         ],
       },
     },
@@ -586,7 +596,7 @@ export const agencyAccessAlternativePage: ProgrammaticComparisonPage = {
       "Search Console",
       "LinkedIn Ads",
       "TikTok Ads",
-      "19 platform connectors",
+      `${SUPPORTED_PLATFORM_COUNT} platform connectors`,
     ],
   },
 
@@ -643,7 +653,7 @@ export const agencyAccessAlternativePage: ProgrammaticComparisonPage = {
         { name: "One-Link Client Onboarding", competitor: true, authhub: true },
         { name: "Automatic Token Refresh", competitor: false, authhub: true, notes: "AuthHub exclusive" },
         { name: "Token Health Monitoring", competitor: false, authhub: true, notes: "Proactive refresh before expiry" },
-        { name: "Client Intake Forms", competitor: true, authhub: false, notes: "AgencyAccess advantage" },
+        { name: "Client Intake Forms", competitor: true, authhub: true, notes: "AuthHub: custom fields on request templates" },
         { name: "Custom Branding", competitor: true, authhub: true },
         { name: "Custom Subdomain", competitor: true, authhub: true },
       ],
@@ -668,7 +678,7 @@ export const agencyAccessAlternativePage: ProgrammaticComparisonPage = {
     {
       category: "Pricing & Limits",
       features: [
-        { name: "Starting Price", competitor: "$33/mo (annual)", authhub: "$29 Starter · $79 Growth · $149 Agency" },
+        { name: "Starting Price", competitor: "$33/mo (annual)", authhub: "$29 Starter · $79 Growth · $149 Scale" },
         { name: "Client Caps by Tier", competitor: "Premium for unlimited invites", authhub: "5 / 20 / 50 clients/month" },
         { name: "Starter Invite Limit", competitor: "5/month", authhub: "5 clients/month" },
         { name: "Free Trial", competitor: "30 days", authhub: "14 days" },
@@ -681,9 +691,9 @@ export const agencyAccessAlternativePage: ProgrammaticComparisonPage = {
         { name: "Google (Ads, Analytics, GTM)", competitor: true, authhub: true },
         { name: "LinkedIn", competitor: true, authhub: true },
         { name: "TikTok Ads", competitor: true, authhub: true },
-        { name: "Shopify", competitor: true, authhub: false },
+        { name: "Shopify", competitor: true, authhub: true },
         { name: "HubSpot", competitor: true, authhub: false },
-        { name: "Klaviyo", competitor: true, authhub: false },
+        { name: "Klaviyo", competitor: true, authhub: true },
         { name: "YouTube Studio", competitor: true, authhub: false },
       ],
     },
@@ -691,10 +701,9 @@ export const agencyAccessAlternativePage: ProgrammaticComparisonPage = {
 
   recommendations: {
     stickWithCompetitor: [
-      "You need 20+ platform integrations (Shopify, HubSpot, Klaviyo)",
+      "You need HubSpot or YouTube Studio integrations",
       "You value 24/7 chat support and longer trial periods",
       "You're comfortable with Zapier-based automation only",
-      "You want intake forms built into the onboarding flow",
       "You have multi-language client requirements",
     ],
     switchToAuthHub: [
@@ -757,36 +766,45 @@ export const agencyAccessAlternativePage: ProgrammaticComparisonPage = {
     },
     authhub: {
       starter: {
-        price: 79,
+        price: 29,
         features: [
-          "20 clients/month",
-          "API + webhooks included",
+          "Up to 5 active clients",
+          `${SUPPORTED_PLATFORM_COUNT} platform connectors`,
           "Automatic token refresh",
           "Complete audit logs",
           "Infisical-backed token storage",
-          "19 platform connectors",
+          "AuthHub-branded client link",
         ],
       },
       pro: {
-        price: 149,
+        price: 79,
         features: [
-          "50 clients/month",
-          "Multi-brand support",
+          "Up to 20 active clients",
+          "Full white-label + custom domain",
+          "API + webhooks included",
           "Priority support",
-          "Advanced automation",
+          "Token health monitoring dashboard",
         ],
       },
       enterprise: {
-        price: "Custom",
-        features: ["White-label", "SSO", "Dedicated CSM", "SLA"],
+        price: "149",
+        features: [
+          "Up to 50 active clients",
+          "Multi-brand (3 brands)",
+          "Custom integrations",
+          "Priority support",
+        ],
       },
     },
+    // Starter vs Starter, both billed annually: AuthHub $24/mo vs AgencyAccess $33/mo.
     savings: {
-      monthly: 44,
-      yearly: 528,
-      percentage: 59,
+      monthly: 9,
+      yearly: 108,
+      percentage: 27,
     },
   },
+
+  authhubSavingsHighlight: "$108/yr less on Starter: AuthHub $24/mo billed yearly vs AgencyAccess $33/mo billed annually",
 
   faqs: [
     {
@@ -795,7 +813,7 @@ export const agencyAccessAlternativePage: ProgrammaticComparisonPage = {
     },
     {
       question: "Does AuthHub support the same platforms as AgencyAccess?",
-      answer: "AuthHub supports all major advertising and analytics platforms including Meta Ads, Google Ads, GA4, Google Search Console, LinkedIn Ads, TikTok Ads, and more. AgencyAccess has broader coverage with 20+ integrations including Shopify, HubSpot, and Klaviyo. Check both platforms for your specific needs.",
+      answer: "AuthHub supports all major advertising and analytics platforms including Meta Ads, Google Ads, GA4, Google Search Console, LinkedIn Ads, TikTok Ads, and more. AgencyAccess advertises 20+ integrations, including HubSpot and YouTube Studio, which AuthHub does not offer. Check both platforms for your specific needs.",
     },
     {
       question: "How does AuthHub's automatic token refresh work?",
@@ -803,7 +821,7 @@ export const agencyAccessAlternativePage: ProgrammaticComparisonPage = {
     },
     {
       question: "Is AuthHub more expensive than AgencyAccess?",
-      answer: "AuthHub Growth starts at $79/month with 20 clients/month and API access. AgencyAccess Starter is $33/month (annual) but limits you to 5 invites. For equivalent features (more invites, automation), AgencyAccess Premium costs $74/month. AuthHub delivers better value for automation-focused teams.",
+      answer: "AuthHub Growth starts at $79/month with up to 20 active clients and API access. AgencyAccess Starter is $33/month (annual) but limits you to 5 invites. For equivalent features (more invites, automation), AgencyAccess Premium costs $74/month. AuthHub delivers better value for automation-focused teams.",
     },
     {
       question: "What security certifications does AuthHub have?",
@@ -815,7 +833,7 @@ export const agencyAccessAlternativePage: ProgrammaticComparisonPage = {
     },
     {
       question: "Does AuthHub have intake forms like AgencyAccess?",
-      answer: "AgencyAccess includes built-in intake forms to collect budgets, goals, and context during onboarding. AuthHub focuses on OAuth authorization. You can use AuthHub alongside your existing intake process or connect forms via webhooks/API.",
+      answer: "Yes. AuthHub request templates carry custom intake fields, so the client answers onboarding questions and authorizes platforms in the same flow. AgencyAccess also includes built-in intake forms.",
     },
     {
       question: "Which platform has better support?",

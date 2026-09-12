@@ -37,43 +37,60 @@ const tierPricing: Record<PricingDisplayTier, { yearly: number; monthly: number 
     yearly: PRICING_DISPLAY_TIER_DETAILS.GROWTH.yearlyPrice,
     monthly: PRICING_DISPLAY_TIER_DETAILS.GROWTH.monthlyPrice,
   },
-  AGENCY: {
-    yearly: PRICING_DISPLAY_TIER_DETAILS.AGENCY.yearlyPrice,
-    monthly: PRICING_DISPLAY_TIER_DETAILS.AGENCY.monthlyPrice,
+  SCALE: {
+    yearly: PRICING_DISPLAY_TIER_DETAILS.SCALE.yearlyPrice,
+    monthly: PRICING_DISPLAY_TIER_DETAILS.SCALE.monthlyPrice,
   },
 };
 
-// Feature inclusion matrix for each tier - ONE value metric (clients/month)
+// Feature inclusion matrix for each tier - ONE value metric (active clients)
 const tierFeatures: Record<PricingDisplayTier, { name: string; included: boolean; value?: string }[]> = {
   STARTER: [
-    { name: '5 clients/month', included: true, value: '60 onboards/year' },
+    { name: 'Up to 5 active clients', included: true, value: 'Add/remove anytime' },
     { name: 'All platform integrations', included: true, value: 'Meta, Google, LinkedIn, TikTok, more' },
-    { name: 'White-label branding', included: true, value: 'Your brand, not ours' },
+    { name: 'One-link onboarding', included: true, value: 'Share single link' },
+    { name: 'Token auto-refresh', included: true, value: 'No expired tokens' },
+    { name: 'Audit logs', included: true, value: 'Full activity history' },
     { name: 'Unlimited team seats', included: true, value: 'Share the work' },
-    { name: 'Email support', included: true },
+    { name: 'AuthHub-branded client link', included: true, value: 'Built-in branding' },
+    { name: 'White-label branding', included: false, value: 'Your brand, not ours' },
     { name: 'Custom domain', included: false },
     { name: 'Webhooks & API', included: false },
     { name: 'Priority support', included: false },
+    { name: 'Email support', included: true },
+    { name: 'Token health monitoring dashboard', included: false },
   ],
   GROWTH: [
-    { name: '20 clients/month', included: true, value: '240 onboards/year' },
-    { name: 'All platform integrations', included: true },
-    { name: 'White-label branding', included: true },
+    { name: 'Up to 20 active clients', included: true, value: 'Add/remove anytime' },
+    { name: 'All platform integrations', included: true, value: 'Meta, Google, LinkedIn, TikTok, more' },
+    { name: 'One-link onboarding', included: true, value: 'Share single link' },
+    { name: 'Token auto-refresh', included: true, value: 'No expired tokens' },
+    { name: 'Audit logs', included: true, value: 'Full activity history' },
+    { name: 'Unlimited team seats', included: true, value: 'Share the work' },
+    { name: 'AuthHub-branded client link', included: true, value: 'Built-in branding' },
+    { name: 'White-label branding', included: true, value: 'Your brand, colors, domain' },
     { name: 'Custom domain', included: true, value: 'Your URL, your brand' },
-    { name: 'Unlimited team seats', included: true, value: 'Full team collaboration' },
     { name: 'Webhooks & API', included: true, value: 'Connect your stack' },
     { name: 'Priority support', included: true, value: 'Faster response time' },
-    { name: 'Multi-brand accounts', included: false },
-    { name: 'Custom integrations', included: false },
+    { name: 'Email support', included: true },
+    { name: 'Token health monitoring dashboard', included: true, value: 'Real-time token health' },
+    { name: 'Multi-brand accounts', included: false, value: 'Up to 3 brands' },
+    { name: 'Custom integrations', included: false, value: 'We build what you need' },
   ],
-  AGENCY: [
-    { name: '50 clients/month', included: true, value: '600 onboards/year' },
-    { name: 'All platform integrations', included: true },
-    { name: 'White-label branding', included: true },
+  SCALE: [
+    { name: 'Up to 50 active clients', included: true, value: 'Add/remove anytime' },
+    { name: 'All platform integrations', included: true, value: 'Meta, Google, LinkedIn, TikTok, more' },
+    { name: 'One-link onboarding', included: true, value: 'Share single link' },
+    { name: 'Token auto-refresh', included: true, value: 'No expired tokens' },
+    { name: 'Audit logs', included: true, value: 'Full activity history' },
+    { name: 'Unlimited team seats', included: true, value: 'Share the work' },
+    { name: 'AuthHub-branded client link', included: true, value: 'Built-in branding' },
+    { name: 'White-label branding', included: true, value: 'Your brand, colors, domain' },
     { name: 'Custom domain', included: true, value: 'Your URL, your brand' },
-    { name: 'Unlimited team seats', included: true, value: 'Full team collaboration' },
     { name: 'Webhooks & API', included: true, value: 'Connect your stack' },
     { name: 'Priority support', included: true, value: 'Faster response time' },
+    { name: 'Email support', included: true },
+    { name: 'Token health monitoring dashboard', included: true, value: 'Real-time token health' },
     { name: 'Multi-brand accounts', included: true, value: 'Manage up to 3 brands' },
     { name: 'Custom integrations', included: true, value: 'We build what you need' },
   ],
@@ -237,9 +254,9 @@ export function PlanComparison() {
             </div>
             <div className="flex justify-between items-center py-2">
               <div>
-                <span className="font-bold text-ink">Agency</span>
+                <span className="font-bold text-ink">Scale</span>
                 <span className="block text-xs text-gray-500">
-                  {PRICING_DISPLAY_TIER_DETAILS.AGENCY.persona}
+                  {PRICING_DISPLAY_TIER_DETAILS.SCALE.persona}
                 </span>
               </div>
               <span className="text-gray-600">{isYearly ? '$124/mo' : '$149/mo'}</span>

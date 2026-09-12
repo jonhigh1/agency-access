@@ -139,7 +139,7 @@ export function UsageLimitsCard() {
     );
   };
 
-  const isAgencyTier = currentTier === 'AGENCY';
+  const isScaleTier = currentTier === 'SCALE';
   const showUpgradeNudge =
     limits &&
     ((limits.accessRequests.limit !== 'unlimited' &&
@@ -190,7 +190,7 @@ export function UsageLimitsCard() {
                 Upgrade to get more capacity and unlock premium features.
               </p>
             </div>
-            {isAgencyTier ? (
+            {isScaleTier ? (
               <Button
                 variant="secondary"
                 size="sm"

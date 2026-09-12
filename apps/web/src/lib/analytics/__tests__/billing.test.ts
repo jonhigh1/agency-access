@@ -98,7 +98,7 @@ describe('billing analytics', () => {
 
   it('uses subscription_started as the primary checkout completion event', () => {
     trackSubscriptionStarted({
-      ...buildSubscriptionStartedProps('AGENCY', 'monthly'),
+      ...buildSubscriptionStartedProps('SCALE', 'monthly'),
       agency_id: 'org_123',
       surface: 'checkout',
     });
@@ -106,7 +106,7 @@ describe('billing analytics', () => {
     expect(capturePosthogEventMock).toHaveBeenCalledWith(
       'subscription_started',
       expect.objectContaining({
-        plan: 'agency',
+        plan: 'scale',
         billing_period: 'monthly',
         price_cents: 14900,
         mrr_cents: 14900,
