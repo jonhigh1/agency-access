@@ -64,6 +64,10 @@ Append-only log of what was done each session. Newest first. Read the last 3–5
 
 - PostHog dry run (project 309879): 13 saved objects scanned, 0 filter on `plan = agency`. U10 closed with no writes.
 
+### Rollout (2026-09-12)
+- PR #44 → `main` `1dc85a5`. Render migration applied at boot, `/health` 200; Vercel live with Scale. Data gate: no AGENCY rows. Clerk dry run: 29 users, 0 on a retired tier — no apply needed. PostHog: nothing to apply. Render logs clean.
+- Branch note: the shared checkout sits on `feat/self-healing-deploy-pipeline` (another session). The rename was committed from a separate worktree off `main`; duplicate uncommitted copies in that checkout were restored to HEAD after confirming byte-identity with `main`, so the deploy-pipeline branch merges `main` cleanly.
+
 ### Next steps
 - Follow the rollout plan (U1 commit split → U2 commits → U4 content decision → U7 deploy → U8/U9 Clerk backfill dry-run/canary/apply → U10 PostHog).
 - Previously listed items now resolved:

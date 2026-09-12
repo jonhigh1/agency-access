@@ -210,7 +210,9 @@ Distinguish carefully: SOC 2 mentions that describe a *prospect's* requirement (
 
 - **Verification:** the three greps return no AuthHub-capability hit.
 
-### U6. Run every suite end to end and record the result
+### U6. Run every suite end to end and record the result — DONE 2026-09-11
+
+> Serial full runs on an idle machine: typecheck clean; shared jest 154/154; API vitest 147 files, 1405 passed, 19 skipped; web vitest 177 files, 945 passed, 2 skipped, 1 failed (`access-requests/[id]/success` copy-link analytics — pre-existing, unrelated). `apps/api` build passed; `apps/web` `next build` passed (68 pages).
 
 - **Goal:** A recorded baseline, not an assumption, before the push.
 - **Requirements:** R3.
@@ -241,7 +243,9 @@ The rename-touching set includes `scripts/__tests__/backfill-clerk-tier-agency-t
 - **Remaining work for this unit:** complete one clean full-web-suite run and one clean full-API-suite run on an idle machine.
 - **Verification:** all four commands recorded with their pass/fail counts.
 
-### U7. Push to `main` and let both platforms deploy
+### U7. Push to `main` and let both platforms deploy — DONE 2026-09-12
+
+> Shipped as PR #44 (five commits, all checks green incl. Vercel preview) merged to `main` as `1dc85a5`. Render deploy `dep-daiai9h5efls73ep5pfg` applied `20260911_rename_agency_tier_to_scale` at boot and went live; `/health` 200. Vercel production serves Scale on `/pricing`. Data gate: `subscriptions` holds only STARTER (5 rows); `agencies.subscription_tier` holds STARTER 2, `growth` 1 (lowercase — pre-existing data oddity, not touched), null 36. No AGENCY anywhere.
 
 - **Goal:** Vercel and Render serve the same SHA, with the migration applied.
 - **Requirements:** R4, R5, R6.
@@ -257,7 +261,9 @@ Render then runs its own build and `startCommand: cd apps/api && npm run db:migr
 
 - **Verification:** Render deploy log shows `[db:migrate:deploy] Running prisma migrate deploy using direct endpoint...` followed by the migration name, then a green `/health`. Vercel build succeeds.
 
-### U8. Clerk backfill — dry run
+### U8. Clerk backfill — dry run — DONE 2026-09-12, nothing to apply
+
+> Render one-off jobs are a paid feature (workspace blocks them) and the free plan has no SSH, so the dry run ran locally with the service env pulled from the Render API in-process (never written to disk). Result: `scanned=29 selected=0 unmapped=0`. No Clerk user carries a retired tier. Q1 answered: zero, so U9 is not needed.
 
 - **Goal:** Know exactly which Clerk users would be rewritten, and on what basis, before anything is written.
 - **Requirements:** R7, R8, R9.
@@ -273,7 +279,7 @@ Read every printed row. Each carries its `basis`. Rows resolved by `quota-finger
 - **Gate:** zero unresolved `label-fallback` rows on paid subscriptions.
 - **Verification:** dry-run output saved; nothing written.
 
-### U9. Clerk backfill — canary, then apply
+### U9. Clerk backfill — canary, then apply — NOT NEEDED (U8 found zero candidates)
 
 - **Goal:** Every stale Clerk user holds a live tier.
 - **Requirements:** R10, R11.
@@ -350,7 +356,9 @@ The personal API key needs read **and** write scopes for `insight`, `dashboard`,
 
 **Tests:** `cd apps/api && npx vitest run scripts/__tests__/posthog-rename-plan-filters.test.ts`
 
-### U11. Post-deploy verification
+### U11. Post-deploy verification — DONE 2026-09-12 (partial by design)
+
+> Runtime: zero error-level or `TIER_LIMITS` entries in Render logs since deploy. Live pages checked: `/pricing`, both `/compare/*` pages, the Leadsie blog, and `/privacy-policy` show Scale and the 20-connector count, and no SOC 2 text. Billing-UI and Creem-checkout gates for a SCALE agency could not be exercised: no agency is on SCALE yet and no test purchase was made.
 
 - **Goal:** Prove the rollout landed.
 - **Requirements:** R12, R13.
