@@ -396,7 +396,7 @@ describe('DashboardPage behavior', () => {
           requests: [],
           connections: [],
           trialBanner: {
-            tier: 'AGENCY',
+            tier: 'SCALE',
             trialEnd: '2026-03-20T00:00:00.000Z',
           },
         },
@@ -409,7 +409,7 @@ describe('DashboardPage behavior', () => {
 
     render(<DashboardPage />);
 
-    expect(await screen.findByText('Trial banner: Agency ends 2026-03-20T00:00:00.000Z')).toBeInTheDocument();
+    expect(await screen.findByText('Trial banner: Scale ends 2026-03-20T00:00:00.000Z')).toBeInTheDocument();
   });
 
   it('preserves loading state while initial data request is pending', () => {

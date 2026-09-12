@@ -10,7 +10,7 @@ import {
   getPricingDisplayTierFromSubscriptionTier,
 } from '@agency-platform/shared';
 
-export type BillingPlanSlug = 'starter' | 'growth' | 'agency';
+export type BillingPlanSlug = 'starter' | 'growth' | 'scale';
 export type BillingPeriod = BillingInterval;
 export type BillingSurface = 'pricing' | 'compare' | 'checkout';
 
@@ -27,7 +27,7 @@ const CREEM_PRODUCT_IDS: Record<SubscriptionTier, Record<BillingPeriod, string>>
     monthly: 'prod_11NeEMY6WtGEkdnvdd7obj',
     yearly: 'prod_4vNvJn99RTRwhkMeHgkBT7',
   },
-  AGENCY: {
+  SCALE: {
     monthly: 'prod_5FEs6qBlwvbMWHHun95wkk',
     yearly: 'prod_6w78r7ZbTUjkJl7mTkNfFr',
   },
@@ -91,7 +91,7 @@ function captureBillingEvent(eventName: string, properties: Record<string, unkno
 
 export function toPlanSlug(tier: SubscriptionTier | PricingDisplayTier): BillingPlanSlug {
   const normalized = tier.toLowerCase();
-  if (normalized === 'starter' || normalized === 'growth' || normalized === 'agency') {
+  if (normalized === 'starter' || normalized === 'growth' || normalized === 'scale') {
     return normalized;
   }
   return 'starter';

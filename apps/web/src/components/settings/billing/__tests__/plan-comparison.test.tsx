@@ -63,11 +63,11 @@ describe('PlanComparison', () => {
     expect(within(starterCard as HTMLElement).getByText('Current Plan')).toBeInTheDocument();
   });
 
-  it('marks Agency as current plan for AGENCY subscriptions', () => {
+  it('marks Scale as current plan for SCALE subscriptions', () => {
     mockUseSubscription.mockReturnValue({
       data: {
         id: 'sub_456',
-        tier: 'AGENCY',
+        tier: 'SCALE',
         status: 'active',
         cancelAtPeriodEnd: false,
       },
@@ -76,7 +76,7 @@ describe('PlanComparison', () => {
 
     render(<PlanComparison />);
 
-    const agencyCard = screen.getAllByText('Agency')
+    const agencyCard = screen.getAllByText('Scale')
       .map((node) => node.closest('div.relative'))
       .find(Boolean);
     expect(agencyCard).toBeTruthy();

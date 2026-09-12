@@ -32,21 +32,21 @@ import { readBillingIntervalPreference } from './billing-interval';
 import { resolveBillingLifecycle } from './billing-lifecycle';
 import { useTransientMessage } from '@/hooks/use-transient-message';
 
-type ManageableTier = 'STARTER' | 'GROWTH' | 'AGENCY';
+type ManageableTier = 'STARTER' | 'GROWTH' | 'SCALE';
 type CurrentTier = 'FREE' | ManageableTier;
 
-const MANAGEABLE_TIERS: ManageableTier[] = ['STARTER', 'GROWTH', 'AGENCY'];
+const MANAGEABLE_TIERS: ManageableTier[] = ['STARTER', 'GROWTH', 'SCALE'];
 const TIER_RANK: Record<CurrentTier, number> = {
   FREE: -1,
   STARTER: 0,
   GROWTH: 1,
-  AGENCY: 2,
+  SCALE: 2,
 };
 
 function normalizeCurrentTier(tier: SubscriptionTier | null | undefined): CurrentTier {
   // Default to STARTER for null/undefined (defensive coding for pre-launch)
   if (!tier) return 'STARTER';
-  if (tier === 'STARTER' || tier === 'GROWTH' || tier === 'AGENCY') return tier;
+  if (tier === 'STARTER' || tier === 'GROWTH' || tier === 'SCALE') return tier;
   // Legacy FREE tier maps to STARTER for UI
   if (tier === 'FREE') return 'STARTER';
   // Fallback for any other tier

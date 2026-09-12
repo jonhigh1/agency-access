@@ -91,7 +91,7 @@ Agency B is paying $109/month under credit pricing—$30 more than AuthHub Growt
 | Credit plan (Agency tier, 10 credits) | $99 | $9.90 |
 | Flat-rate (Growth, 20 clients) | $79 | $7.90 |
 
-To avoid overages at this volume, Agency C has to upgrade to the $99/mo credit tier. AuthHub Growth covers up to 20 clients/month at $79/mo (or $66/mo billed yearly)—no per-client overages. At 25+ clients? Agency tier at $149/mo covers 50 clients/month.
+To avoid overages at this volume, Agency C has to upgrade to the $99/mo credit tier. AuthHub Growth covers up to 20 clients/month at $79/mo (or $66/mo billed yearly)—no per-client overages. At 25+ clients? Scale tier at $149/mo covers 50 clients/month.
 
 The pattern is clear: **the faster you grow, the more the credit model penalizes you**. Volume discounts are inverted. The more clients you onboard, the higher your per-client cost climbs.
 
@@ -149,6 +149,6 @@ The right pricing model is the one you never think about. If you're checking you
 
 ---
 
-Your tool costs should be the most predictable line item on your P&L. AuthHub uses tiered flat-rate pricing — Starter $29/mo (5 clients) · Growth $79/mo (or $66/mo billed yearly) · 20 clients/mo · Agency $149/mo (50 clients).
+Your tool costs should be the most predictable line item on your P&L. AuthHub uses tiered flat-rate pricing — Starter $29/mo (5 clients) · Growth $79/mo (or $66/mo billed yearly) · 20 clients/mo · Scale $149/mo (50 clients).
 
 No credits, no overages, no surprises on your invoice. **[Start your free AuthHub trial →](https://authhub.co/signup)** — takes 2 minutes, no credit card required.

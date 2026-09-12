@@ -476,22 +476,22 @@ describe('SubscriptionService', () => {
         currentPeriodEnd: new Date('2025-02-01'),
       });
       vi.mocked(creem.upgradeSubscription).mockResolvedValue({
-        data: { tier: 'AGENCY', status: 'active' },
+        data: { tier: 'SCALE', status: 'active' },
       });
       vi.mocked(prisma.subscription.update).mockResolvedValue({
-        tier: 'AGENCY',
+        tier: 'SCALE',
         status: 'active',
         currentPeriodEnd: new Date('2025-02-01'),
       });
 
       const result = await subscriptionService.upgradeSubscription({
         agencyId: mockAgencyId,
-        newTier: 'AGENCY',
+        newTier: 'SCALE',
         updateBehavior: 'proration-charge',
       });
 
       expect(result.error).toBeNull();
-      expect(result.data?.tier).toBe('AGENCY');
+      expect(result.data?.tier).toBe('SCALE');
       expect(creem.upgradeSubscription).toHaveBeenCalledWith(
         'sub_test123',
         expect.objectContaining({
@@ -545,14 +545,14 @@ describe('SubscriptionService', () => {
     it('should return error for same tier', async () => {
       vi.mocked(prisma.subscription.findUnique).mockResolvedValue({
         id: mockSubscriptionId,
-        tier: 'AGENCY',
+        tier: 'SCALE',
         creemSubscriptionId: 'sub_test123',
         creemCustomerId: 'cus_test123',
       });
 
       const result = await subscriptionService.upgradeSubscription({
         agencyId: mockAgencyId,
-        newTier: 'AGENCY',
+        newTier: 'SCALE',
       });
 
       expect(result.data).toBeNull();

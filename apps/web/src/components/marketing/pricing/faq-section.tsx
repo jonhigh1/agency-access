@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { m, AnimatePresence } from 'framer-motion';
 import { ChevronDown } from 'lucide-react';
+import { SUPPORTED_PLATFORM_COUNT } from '@agency-platform/shared';
 import { Reveal } from '../reveal';
 
 interface FAQItem {
@@ -13,35 +14,31 @@ interface FAQItem {
 const faqs: FAQItem[] = [
   {
     question: "How does the 14-day free trial work?",
-    answer: "All plans include a 14-day free trial with full access to features—no credit card required. After the trial, you can subscribe to Starter, Growth, or Agency based on your needs.",
+    answer: "All plans include a 14-day free trial with full access to features—no credit card required. After the trial, you can subscribe to Starter, Growth, or Scale based on your needs.",
   },
   {
-    question: "What's the difference between Starter, Growth, and Agency?",
-    answer: "Starter ($29/mo, $24/mo yearly) is for small agencies with 5 clients/month, unlimited team seats, and all platforms. Growth ($79/mo, $66/mo yearly) adds webhooks, API access, and custom domain for 20 clients/month. Agency ($149/mo, $124/mo yearly) is for established teams with 50 clients/month, multi-brand support (up to 3 brands), and priority support.",
+    question: "What's the difference between Starter, Growth, and Scale?",
+    answer: `Starter ($29/mo, $24/mo yearly) is for small agencies with up to 5 active clients, unlimited team seats, and all ${SUPPORTED_PLATFORM_COUNT} platform integrations. Growth ($79/mo, $66/mo yearly) adds full white-label branding, custom domain, webhooks & API access, priority support, and token health monitoring for up to 20 active clients. Scale ($149/mo, $124/mo yearly) includes everything in Growth plus multi-brand management (up to 3 brands) and custom integrations for up to 50 active clients. All plans bill by active client count (not monthly onboards) with no rollover—add or remove clients anytime.`,
   },
   {
     question: "Can I change plans later?",
-    answer: "Yes! Upgrade or downgrade anytime. When upgrading, you'll be prorated for the remainder of your billing cycle. When downgrading, you'll receive credit towards future billing. Your existing clients continue working without interruption.",
+    answer: "Yes! Upgrade or downgrade anytime. When upgrading, you'll be prorated for the remainder of your billing cycle. When downgrading, you'll receive credit towards future billing. Your existing client connections remain active regardless of your plan.",
   },
   {
-    question: "What happens when I hit my monthly client limit?",
-    answer: "We'll notify you when you're approaching your limit. You can upgrade to the next tier instantly—no data loss, no interruption. Existing client connections remain active regardless of your plan.",
+    question: "What happens when I need more active clients than my plan includes?",
+    answer: "All plans include automatic overage at $20/mo per 5-client pack—added and removed automatically as your client count changes. No hard limits, no interrupted onboarding, and no surprise bills. You're always in control.",
   },
   {
     question: "Do you offer discounts for annual billing?",
-    answer: "Yes! Annual billing gives you 2 months free (pay for 10 months, get 12). Starter drops from $29/mo to $24/mo, Growth from $79/mo to $66/mo, and Agency from $149/mo to $124/mo. Most teams choose annual for the savings.",
+    answer: "Yes! Annual billing gives you 2 months free (pay for 10 months, get 12). Starter drops from $29/mo to $24/mo, Growth from $79/mo to $66/mo, and Scale from $149/mo to $124/mo. Most teams choose annual for the savings.",
   },
   {
     question: "How secure is my OAuth data?",
-    answer: "We use bank-level encryption via Infisical to store all OAuth tokens. Complete audit logs track every token access. We never store tokens directly in our database—only secure references to encrypted vault storage. GDPR ready.",
+    answer: "We use bank-level encryption via Infisical to store all OAuth tokens. We're GDPR ready, and every token access is written to a complete audit log. We never store tokens directly in our database—only secure references to encrypted vault storage.",
   },
   {
     question: "Can I use my own domain with white-label?",
-    answer: "Growth and Agency plans include custom domain support (e.g., access.yourbrand.com). All plans include white-label branding with your logo, colors, and styling.",
-  },
-  {
-    question: "What platforms do you support?",
-    answer: "All plans include access to 15+ platforms including Meta, Google, LinkedIn, TikTok, Snapchat, Instagram, Beehiiv, Kit, Zapier, Pinterest, Klaviyo, Shopify, and Mailchimp. Agency plan also includes custom integrations for your specific needs.",
+    answer: "Growth and Scale plans include custom domain support (e.g., access.yourbrand.com). Starter includes AuthHub-branded links. All plans include white-label branding options—Starter with AuthHub branding, Growth and Scale with your full brand.",
   },
 ];
 

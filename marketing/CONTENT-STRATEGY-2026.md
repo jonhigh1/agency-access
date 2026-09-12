@@ -273,7 +273,7 @@
 
 | Weakness | AuthHub Opportunity |
 |----------|-------------------|
-| **No security/compliance content** — only brief GDPR mentions | Own SOC 2, Infisical token security, enterprise trust narrative |
+| **No security/compliance content** — only brief GDPR mentions | Own Infisical token security, complete audit logs, and a GDPR-ready enterprise trust narrative |
 | **No developer/API content** — purely agency-focused | Technical audience content about OAuth, API, webhooks |
 | **No topic cluster architecture** — guides are flat, no pillar pages | Build proper hub/spoke with `/guides/` index page |
 | **Limited internal linking depth** — case studies siloed from guides | Connect case studies ↔ guides ↔ comparisons |
@@ -510,7 +510,7 @@ Content that plays to strengths Leadsie cannot match.
 | # | Title / Topic | Type | Target Keyword(s) | Est. Volume | Why This Works |
 |---|-------------|------|-------------------|-------------|----------------|
 | 5 | **How to Onboard a New Marketing Client (Complete 2026 Guide)** | Blog (pillar) | "how to onboard a new marketing client", "new client onboarding process" | 1K-3K/mo | **High-volume pillar content.** Leadsie has a 7-step guide but it's thin. Ours includes the access+intake angle they can't match. |
-| 6 | **Agency Security Checklist: Protecting Client Ad Account Access** | Blog | "agency security checklist", "client account security", "SOC 2 agency requirements" | 100-300/mo | **Leadsie has NO security content.** Our SOC 2 + Infisical story is a real differentiator. This captures enterprise evaluation intent. |
+| 6 | **Agency Security Checklist: Protecting Client Ad Account Access** | Blog | "agency security checklist", "client account security", "SOC 2 agency requirements" | 100-300/mo | **Leadsie has NO security content.** Our Infisical token storage and audit log story is a real differentiator. This captures enterprise evaluation intent. |
 | 7 | **How to Revoke Client Access When Offboarding** | Blog | "how to revoke client access", "client offboarding checklist" | 100-200/mo | **Leadsie has offboarding as a feature but no educational content.** Practical guide that shows we think beyond acquisition. |
 | 8 | **Social Media Access Request Template for Agencies** | Blog + template | "social media access request template", "client access request template" | 200-500/mo | **Template/lead magnet.** Leadsie offers a Google Doc with 13 access guides — we offer a better, branded version with intake fields. |
 

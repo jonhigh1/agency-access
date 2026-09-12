@@ -26,7 +26,7 @@ describe('ManageSubscriptionCard', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockMutateAsync.mockResolvedValue({
-      tier: 'AGENCY',
+      tier: 'SCALE',
       status: 'active',
     });
     mockCreateCheckoutMutateAsync.mockResolvedValue({
@@ -34,7 +34,7 @@ describe('ManageSubscriptionCard', () => {
     });
   });
 
-  it('shows Starter, Growth, and Agency labels in tier selector', async () => {
+  it('shows Starter, Growth, and Scale labels in tier selector', async () => {
     mockUseSubscription.mockReturnValue({
       data: {
         id: 'sub_123',
@@ -51,7 +51,7 @@ describe('ManageSubscriptionCard', () => {
 
     expect(screen.getByText('Starter')).toBeInTheDocument();
     expect(screen.getByText('Growth')).toBeInTheDocument();
-    expect(screen.getByText('Agency')).toBeInTheDocument();
+    expect(screen.getByText('Scale')).toBeInTheDocument();
   });
 
   it('uses tier name in success copy after plan change', async () => {
@@ -68,24 +68,24 @@ describe('ManageSubscriptionCard', () => {
     render(<ManageSubscriptionCard />);
 
     fireEvent.click(screen.getByRole('button', { name: /change plan/i }));
-    fireEvent.click(screen.getByRole('button', { name: /Agency.*149\/month/i }));
+    fireEvent.click(screen.getByRole('button', { name: /Scale.*149\/month/i }));
     fireEvent.click(screen.getByRole('button', { name: /Upgrade Now/i }));
 
     await waitFor(() => {
       expect(mockMutateAsync).toHaveBeenCalledWith({
-        newTier: 'AGENCY',
+        newTier: 'SCALE',
         updateBehavior: 'next-cycle',
       });
     });
 
-    expect(screen.getByText(/Successfully upgraded to Agency/i)).toBeInTheDocument();
+    expect(screen.getByText(/Successfully upgraded to Scale/i)).toBeInTheDocument();
   });
 
-  it('shows manageable tiers when current subscription tier is AGENCY', () => {
+  it('shows manageable tiers when current subscription tier is SCALE', () => {
     mockUseSubscription.mockReturnValue({
       data: {
         id: 'sub_789',
-        tier: 'AGENCY',
+        tier: 'SCALE',
         status: 'active',
         cancelAtPeriodEnd: false,
       },

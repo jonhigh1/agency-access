@@ -46,26 +46,17 @@ export function PricingTierCard({
   buttonVariant = 'brutalist',
   billingInterval = 'monthly',
 }: PricingTierCardProps) {
-  // Normalize display aliases to backend tiers expected by onboarding/subscriptions.
-  const DISPLAY_TO_BACKEND: Record<'STARTER' | 'GROWTH' | 'AGENCY' | 'SCALE', 'STARTER' | 'AGENCY' | 'PRO'> = {
-    STARTER: 'STARTER',
-    GROWTH: 'AGENCY',
-    AGENCY: 'PRO',
-    SCALE: 'AGENCY', // Legacy support
-  };
+  // AGENCY is the pre-rename alias for the SCALE tier.
+  const backendTier = tier === 'AGENCY' ? 'SCALE' : tier;
 
   // Store selected tier and billing interval when user clicks CTA
   const handleTierSelect = () => {
-    if (tier) {
-      const backendTier = DISPLAY_TO_BACKEND[tier] ?? tier;
+    if (backendTier) {
       localStorage.setItem('selectedSubscriptionTier', backendTier);
       localStorage.setItem('selectedBillingInterval', billingInterval);
 
-      const analyticsTier =
-        tier === 'SCALE' ? 'GROWTH' : tier;
-
       trackPlanSelected({
-        ...buildPlanSelectedProps(analyticsTier, billingInterval, 'pricing'),
+        ...buildPlanSelectedProps(backendTier, billingInterval, 'pricing'),
       });
 
       // Notify providers to update Clerk sign-up subtitle dynamically

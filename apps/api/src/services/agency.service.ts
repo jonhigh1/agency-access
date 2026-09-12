@@ -12,9 +12,11 @@ import { creem } from '@/lib/creem.js';
 import { getProductId } from '@/config/creem.config';
 import {
   AgencyRoleSchema,
+  SubscriptionTierSchema,
   UnifiedOnboardingProgressSchema,
   UnifiedOnboardingStatusSchema,
   type AgencyRole,
+  type SubscriptionTier,
   type UnifiedOnboardingProgress,
   type UnifiedOnboardingStatus,
 } from '@agency-platform/shared';
@@ -26,7 +28,7 @@ const createAgencySchema = z.object({
   name: z.string().min(1, 'Agency name is required'),
   email: z.string().email('Invalid email address'),
   clerkUserId: z.string().optional(),
-  subscriptionTier: z.enum(['STARTER', 'AGENCY']).optional(),
+  subscriptionTier: SubscriptionTierSchema.optional(),
   settings: z.record(z.any()).optional(),
   affiliateClickToken: z.string().min(1).optional(),
 });
@@ -38,7 +40,7 @@ const inviteMemberSchema = z.object({
 
 const updateAgencySchema = z.object({
   name: z.string().min(1, 'Agency name is required').optional(),
-  subscriptionTier: z.enum(['STARTER', 'AGENCY']).optional(),
+  subscriptionTier: SubscriptionTierSchema.optional(),
   settings: z.record(z.any()).nullable().optional(),
 }).refine((value) => Object.keys(value).length > 0, {
   message: 'At least one field must be provided',
@@ -239,7 +241,7 @@ export interface CreateAgencyWithCheckoutInput {
   clerkUserId: string;
   name: string;
   email: string;
-  selectedTier: 'STARTER' | 'AGENCY';
+  selectedTier: SubscriptionTier;
   billingInterval: 'monthly' | 'yearly';
   settings?: Record<string, any>;
   affiliateClickToken?: string;
@@ -252,7 +254,7 @@ export async function createAgencyWithCheckout(input: CreateAgencyWithCheckoutIn
       clerkUserId: z.string().min(1, 'Clerk user ID is required'),
       name: z.string().min(1, 'Agency name is required'),
       email: z.string().email('Invalid email address'),
-      selectedTier: z.enum(['STARTER', 'AGENCY']),
+      selectedTier: SubscriptionTierSchema,
       billingInterval: z.enum(['monthly', 'yearly']),
       settings: z.record(z.any()).optional(),
       affiliateClickToken: z.string().min(1).optional(),

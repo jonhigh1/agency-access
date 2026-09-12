@@ -1,10 +1,10 @@
 ---
 id: leadsie-alternatives-comparison
-title: 'Leadsie vs Other Platforms vs AuthHub: 2026 Comparison'
+title: 'Leadsie vs AgencyAccess vs AuthHub: 2026 Comparison'
 excerpt: >-
-  Comprehensive comparison of the three leading client access platforms. See how
-  platform support, security, permissions, and pricing differ—and which one is
-  right for your agency.
+  A sourced comparison of three client access platforms. Published pricing,
+  platform coverage, token handling, branding, and support for Leadsie,
+  AgencyAccess, and AuthHub—with unpublished details marked as such.
 category: comparisons
 stage: decision
 publishedAt: '2026-01-18'
@@ -14,255 +14,267 @@ author:
   role: Founder
 tags:
   - Leadsie
+  - AgencyAccess
   - AuthHub
   - comparison
   - alternatives
   - pricing
   - Leadsie vs AuthHub
-metaTitle: 'Leadsie vs Other Platforms vs AuthHub: 2026 Comparison'
+metaTitle: 'Leadsie vs AgencyAccess vs AuthHub: 2026 Comparison'
 metaDescription: >-
-  Leadsie vs AuthHub: comprehensive 2026 comparison of client access platforms.
-  See how platform support, pricing, permissions, and security differ.
+  Leadsie vs AgencyAccess vs AuthHub: 2026 comparison of client access
+  platforms. Published pricing, platform coverage, token storage, and support.
 relatedPosts:
-  - meta-ads-access-guide
+  - how-to-get-meta-ads-access-from-clients
   - client-onboarding-checklist
 ---
-# Leadsie vs Other Platforms vs AuthHub: 2026 Comparison
+# Leadsie vs AgencyAccess vs AuthHub: 2026 Comparison
 
 ## The Client Access Platform Landscape
 
-Managing client platform access (Meta, Google, LinkedIn, etc.) went from "email a PDF of instructions" to a dedicated software category. Three platforms now dominate:
+Managing client platform access (Meta, Google, LinkedIn, etc.) went from "email a PDF of instructions" to a dedicated software category. Three platforms compete for agency budgets:
 
-- **Leadsie**: Early market leader, focused on simplicity
-- **Other Platforms**: Platform-heavy approach with ~10 integrations
-- **AuthHub**: Newest entrant with broader platform support and enterprise security
+- **Leadsie** (leadsie.com, UK): the established player, advertising 31+ integrations
+- **AgencyAccess** (agencyaccess.co, Netherlands/EU): onboarding-focused, advertising 20+ integrations and built-in intake forms
+- **AuthHub**: 20 platform connectors with Infisical-backed token storage and audit logs
 
-This comparison breaks down features, pricing, and capabilities so you can choose the right platform for your agency.
+This comparison only uses each vendor's published information. Where a vendor does not publish a figure, the table says **Not published** instead of guessing.
+
+**Verification dates**: Leadsie details checked 2026-09-08. AgencyAccess details checked 2026-03-06. Pricing changes often—confirm on each vendor's pricing page before you buy.
 
 ## Quick Comparison Table
 
-| Feature | Leadsie | Other Platforms | AuthHub |
-|---------|---------|--------------|------------------------|
-| **Platform Count** | ~8 platforms | ~10 platforms | **15+ platforms** |
-| **Meta Platforms** | ✅ Facebook, Instagram | ✅ Facebook, Instagram | ✅ Facebook, Instagram, WhatsApp |
-| **Google Platforms** | ✅ Ads, Analytics | ✅ Ads, Analytics | ✅ Ads, Analytics, GA4, GTM, Merchant Center, Search Console |
-| **LinkedIn Ads** | ✅ | ✅ | ✅ |
+| Feature | Leadsie | AgencyAccess | AuthHub |
+|---------|---------|--------------|---------|
+| **Integrations advertised** | 31+ | 20+ | **20 connectors** |
+| **Meta (Ads, Pages, Instagram)** | ✅ | ✅ | ✅ |
+| **Google (Ads, Analytics, GTM, Merchant Center, Search Console)** | ✅ | ✅ | ✅ |
+| **Google Business Profile** | Not published | ✅ | ✅ |
+| **LinkedIn** | ✅ Ads | ✅ Company Pages | ✅ Ads + Pages |
 | **TikTok Ads** | ✅ | ✅ | ✅ |
-| **Pinterest** | ❌ | ❌ | ✅ |
-| **Klaviyo** | ❌ | ❌ | ✅ |
-| **Shopify** | ❌ | ❌ | ✅ |
-| **Kit** | ❌ | ❌ | ✅ |
-| **Beehiiv** | ❌ | ❌ | ✅ |
-| **Permission Levels** | 2-3 levels | 2 levels | **4 levels** (admin, standard, read_only, email_only) |
-| **Token Storage** | Database | Database | **Infisical** (secrets management) |
-| **Audit Logging** | Basic | Basic | **Comprehensive** (Infisical-backed) |
-| **Onboarding Templates** | ❌ | ❌ | ✅ |
-| **Custom Branding** | ❌ | Limited | ✅ (full white-label) |
-| **Multi-Language** | ❌ | ❌ | ✅ (en, es, nl) |
-| **Hierarchical Access** | ❌ | ❌ | ✅ (Google = 8 products from 1 OAuth) |
-| **Pricing** | $49/mo+ | $149/mo | **$29/$79/$149/mo** |
+| **Snapchat Ads** | ✅ | Not published | ✅ |
+| **Pinterest Ads** | ✅ | Not published | ✅ |
+| **Shopify / Klaviyo** | ✅ | ✅ | ✅ |
+| **HubSpot** | Not published | ✅ | ❌ |
+| **YouTube** | ✅ | ✅ (YouTube Studio) | ❌ |
+| **WordPress** | ✅ | Not published | ❌ |
+| **Kit / Beehiiv / Mailchimp** | Mailchimp only | Not published | ✅ all three |
+| **Client intake forms** | ❌ | ✅ | ✅ (template fields) |
+| **Token storage** | Encrypted database | Not published | **Infisical secret references** |
+| **Automatic token refresh** | Selected platforms | ❌ (manual reconnect) | ✅ where the provider supports it |
+| **Token health monitoring** | ❌ | ❌ | ✅ |
+| **Audit events** | ❌ | Limited | ✅ Complete audit logs |
+| **API access** | Enterprise tier only | ❌ (Zapier only) | ✅ Growth and Scale |
+| **Free trial** | Not published | 30 days | 14 days |
+| **Entry price** | $59/mo | $33/mo (annual) | **$29/mo** |
 
 ## Platform Support Comparison
 
-### Supported Platforms
+### Leadsie (31+ integrations advertised)
 
-#### Leadsie (~8 platforms)
-- Meta Ads, Facebook Pages, Instagram
-- Google Ads, Google Analytics
-- LinkedIn Ads
-- TikTok Ads, Snapchat Ads
+Published connectors include Meta Ads, Facebook Pages, Instagram, Google Ads, Google Analytics, Google Tag Manager, Merchant Center, Search Console, LinkedIn Ads, TikTok Ads, Snapchat Ads, Shopify, Pinterest Ads, Klaviyo, Mailchimp, WordPress, and YouTube.
 
-**Missing**: Pinterest, Klaviyo, Shopify, Kit, Beehiiv, GA4-specific features, Google ecosystem products
+Leadsie advertises the largest catalogue of the three. If your clients sit on long-tail tools, Leadsie is the most likely to already cover them.
 
-#### Other Platforms (~10 platforms)
-- Meta Ads, Facebook Pages, Instagram
-- Google Ads, Google Analytics
-- LinkedIn Ads
-- TikTok Ads
-- Twitter/X Ads, Pinterest (limited)
+### AgencyAccess (20+ integrations advertised)
 
-**Missing**: Full Pinterest support, Klaviyo, Shopify, Kit, Beehiiv, advanced Google products
+Published connectors include Meta Ads, Facebook Pages, Instagram, Google Ads, Google Analytics, Google Tag Manager, Google Merchant Center, Google Search Console, Google Business Profile, LinkedIn Company Pages, TikTok Ads, YouTube Studio, Shopify, HubSpot, and Klaviyo.
 
-#### AuthHub (15+ platforms)
-- **Meta**: Ads, Pages, Instagram, WhatsApp
-- **Google**: Ads, Analytics (GA4), Tag Manager, Merchant Center, Search Console, YouTube Ads, Display & Video 360, Campaign Manager 360
-- **LinkedIn Ads**, **TikTok Ads**, **Snapchat Ads**
-- **Pinterest Ads** (full support)
-- **Klaviyo**, **Shopify**, **Kit**, **Beehiiv**
+HubSpot is the clearest gap in AuthHub's coverage. AgencyAccess also advertises 500+ agencies on the platform and GDPR compliance from an EU base.
 
-**Winner**: AuthHub—5+ more platforms than competitors, including emerging channels like Pinterest and Beehiiv.
+### AuthHub (20 connectors)
 
-### Unique Platform Advantages
+- **Meta**: Ads, Pages, Instagram
+- **Google**: Ads, GA4, Tag Manager, Merchant Center, Search Console, Business Profile
+- **LinkedIn**: Ads, Pages
+- **TikTok Ads**, **Snapchat Ads**, **Pinterest**
+- **Klaviyo**, **Shopify**
+- **Kit**, **Beehiiv**, **Mailchimp**
+- **Zapier**
 
-**Pinterest**: Growing rapidly for e-commerce agencies. Neither Leadsie nor Other Platforms supports Pinterest Ads access.
+**Honest read**: Leadsie advertises more integrations than AuthHub. AuthHub is the only one of the three publishing Kit and Beehiiv connectors, which matters for newsletter and creator-economy agencies. AuthHub does not connect HubSpot, YouTube, or WordPress. Check all three integration lists against the tools your clients actually use.
 
-**Klaviyo**: Essential for email marketing agencies. Only AuthHub supports Klaviyo OAuth.
+### Google Ecosystem Access
 
-**Shopify**: Critical for e-commerce stacks. Only AuthHub integrates Shopify store access.
+AuthHub groups six Google products—Ads, GA4, Tag Manager, Merchant Center, Search Console, and Business Profile—behind a single Google OAuth consent. Neither Leadsie nor AgencyAccess publishes how it groups Google product authorization, so treat this as an AuthHub design detail rather than a proven advantage.
 
-**Google Ecosystem**: AuthHub supports **8 Google products from a single OAuth**. Competitors require separate authorization for each.
+## Security and Token Handling
 
-## Security Comparison
+### Token Storage
 
-### Token Storage: Database vs. Secrets Management
+**Leadsie**: stores OAuth tokens in an encrypted database.
 
-**Leadsie & Other Platforms**: Store OAuth tokens in their databases.
+**AgencyAccess**: publishes GDPR compliance and an EU (Netherlands) base. It does not publish where or how OAuth tokens are stored. **Not published.**
 
-**Risk**: If the database is compromised, all client tokens are exposed. Tokens grant full access to client ad accounts, analytics data, and customer information.
+**AuthHub**: stores OAuth tokens in **Infisical**, a dedicated secrets manager. Only the secret reference lives in the AuthHub database—never the token itself.
 
-**AuthHub**: Stores tokens in **Infisical**, a dedicated secrets management platform.
-
-- **Infrastructure-grade encryption**: AES-256 encryption at rest
-- **Zero-knowledge architecture**: Tokens encrypted before storage
-- **Audit trails**: Every token access is logged (who, when, why)
-- **Rotation support**: Automatic token refresh without client intervention
-- **Infisical-backed storage**: Enterprise-grade secrets management without storing tokens in the database
-
-**Winner**: AuthHub—Infisical is the same security standard used by Fortune 500 companies.
+- Token references, not tokens, in the application database
+- Every token access is recorded with user, action, IP address, and timestamp
+- Provider-supported refresh runs in the background, with no client involvement
+- GDPR ready
 
 ### Audit Logging
 
-**Leadsie**: Basic logging (who created access request)
+**Leadsie**: does not publish audit event logging.
 
-**Other Platforms**: Basic logging (who granted access)
+**AgencyAccess**: audit log functionality is limited.
 
-**AuthHub**: Comprehensive audit logs including:
-- Token creation, access, refresh, revocation
-- User email, IP address, timestamp
-- Action taken (AGENCY_CONNECTED, AGENCY_DISCONNECTED, TOKEN_REFRESHED)
-- Metadata for compliance reporting
-- Exportable audit logs for compliance reviews and GDPR audits
+**AuthHub**: complete audit logs covering token creation, access, refresh, and revocation, with user email, IP address, timestamp, action, and metadata for compliance reporting.
 
-**Winner**: AuthHub—audit logs are critical for enterprise clients and regulatory compliance.
+### Token Refresh and Health
 
-## Permission Levels Comparison
+**Leadsie**: provider-supported refresh on selected platforms. No published token health monitoring.
 
-### Leadsie (2-3 levels)
-- **Admin**: Full control
-- **Standard**: Create and edit
-- **View-only** (limited): Read-only
+**AgencyAccess**: no automatic token refresh. When access expires, the client reconnects manually—which can interrupt a live campaign.
 
-### Other Platforms (2 levels)
-- **Admin**: Full control
-- **Standard**: Create and edit
+**AuthHub**: token health monitoring plus provider-supported refresh, so expiring connections surface before a launch rather than during one.
 
-### AuthHub (4 levels)
-- **Admin**: Full control (create, edit, delete, manage billing, add/remove users)
-- **Standard**: Create and edit (create campaigns, edit settings, view reports)
-- **Read-only**: View-only access (view campaigns, view reports, export data)
-- **Email-only**: Basic email access (receive email reports, view shared dashboards)
+## Permission and Access Levels
 
-**Winner**: AuthHub—granular permissions mean:
-- Junior staff get read-only access (reduces accidental changes)
-- Freelancers get standard access (can work but can't break things)
-- Senior team gets admin access (full control)
+**Leadsie**: permission tiering is not published.
 
-## Features Comparison
+**AgencyAccess**: permission tiering is not published.
 
-### Onboarding Templates
+**AuthHub** (4 levels):
+- **Admin**: full control (create, edit, delete, manage billing, add or remove users)
+- **Standard**: create and edit campaigns, edit settings, view reports
+- **Read-only**: view campaigns, view reports, export data
+- **Email-only**: receive email reports, view shared dashboards
 
-**AuthHub** only: Create reusable templates with:
-- Pre-selected platforms (e.g., "E-commerce Client Template" = Meta + Google + Shopify + Klaviyo)
-- Custom intake fields (business name, monthly budget, target audience)
-- Saved branding (logo, colors, welcome message)
-- One-click template application to new clients
+Granular levels let junior staff work read-only, freelancers work at standard, and senior team members hold admin.
 
-**Use case**: Standardize onboarding for different client types and scale from 10 to 100 clients without re-creating access requests.
+## Templates, Intake, and Branding
 
-### Custom Branding / White-Label
+### Client Intake
 
-**Leadsie**: No white-label options
+**Leadsie**: no client intake forms. You collect budgets, goals, and context in a separate tool.
 
-**Other Platforms**: Limited branding (logo upload only)
+**AgencyAccess**: intake forms are built into the onboarding flow.
 
-**AuthHub**: Full white-label customization
-- Custom logo
-- Custom primary colors
-- Custom subdomain (e.g., clients.youragency.com)
-- Custom welcome messaging
-- Hide all AuthHub branding
+**AuthHub**: request templates carry custom intake fields, so the client answers onboarding questions and authorizes platforms in the same flow.
 
-**Winner**: AuthHub—enterprise agencies can present a fully branded client experience.
+### Reusable Templates
 
-### Multi-Language Support
+**Leadsie**: reusable request templates are not offered.
 
-**AuthHub** only: Client authorization flows in English, Spanish, and Dutch.
+**AgencyAccess**: static invite links on the Premium tier. Reusable templates are not published.
 
-**Use case**: International agencies or agencies with Spanish-speaking clients can provide native-language authorization flows.
+**AuthHub**: reusable templates with pre-selected platforms, custom intake fields, and saved branding—so a new e-commerce client is one click, not a rebuild.
 
-### Hierarchical Platform Access
+### Custom Branding
 
-**AuthHub** only: Google's unique "one OAuth, eight products" capability.
+**Leadsie**: white-label and embed on the $129 Agency tier.
 
-When a client authorizes Google, they simultaneously grant access to:
-1. Google Ads
-2. Google Analytics 4
-3. Google Tag Manager
-4. Google Merchant Center
-5. Google Search Console
-6. YouTube Ads
-7. Google Display & Video 360
-8. Campaign Manager 360
+**AgencyAccess**: custom branding on all tiers, including the $33 Starter tier, plus a custom subdomain.
 
-**Competitors**: Each Google product requires a separate authorization flow (8x more work for clients).
+**AuthHub**: the $29 Starter tier uses an AuthHub-branded client link. Full white-label branding and a custom domain start on Growth ($79/mo).
+
+AgencyAccess wins on entry-level branding. If white-label at the lowest price point is your requirement, that is the honest answer.
+
+### Multi-Language
+
+**Leadsie**: access requests in 8 languages.
+
+**AgencyAccess**: not published.
+
+**AuthHub**: client authorization flows in English, Spanish, and Dutch.
 
 ## Pricing Comparison
 
-| Plan | Leadsie | Other Platforms | AuthHub |
-|------|---------|--------------|------------------------|
-| **Starter** | $49/mo | $149/mo | **$29/mo** (5 clients/mo) |
-| **Growth** | $199/mo | $299/mo | **$79/mo** (20 clients/mo) |
-| **Agency** | Custom | Custom | **$149/mo** (50 clients/mo) |
-| **Free Trial** | 14 days | 7 days | **14 days** |
+| Plan | Leadsie | AgencyAccess | AuthHub |
+|------|---------|--------------|---------|
+| **Entry** | $59/mo (3 client credits) | $33/mo Starter (5 invites) | **$29/mo Starter** (5 active clients) |
+| **Mid** | $129/mo Agency (10 credits) | $74/mo Premium (unlimited invites) | **$79/mo Growth** (20 active clients) |
+| **Top** | $299/mo Pro (50 credits) | $149/mo Agency (multi-brand, 24/7 chat) | **$149/mo Scale** (50 active clients) |
+| **Overages** | $50 packs (3/5/10 credits by tier) | Not published | None—tier caps only |
+| **Free trial** | Not published | 30 days | 14 days, no credit card |
 
-Yearly billing: Starter $290/yr (~$24/mo) · Growth $790/yr (~$66/mo) · Agency $1,490/yr (~$124/mo).
+Yearly billing on AuthHub: Starter $290/yr (~$24/mo) · Growth $790/yr (~$66/mo) · Scale $1,490/yr (~$124/mo). Pay for 10 months, get 12.
 
-**Value**: AuthHub's tiered pricing scales with your volume—predictable caps at every tier with Infisical-backed security and audit logs included.
+AgencyAccess pricing reflects annual billing with its published annual discount. Leadsie prices are its published monthly list prices.
 
-**ROI Calculation**: If your agency charges $150/hr and saves 8 hours/month on client onboarding, that's **$1,200/month in recovered billable time**. The platform pays for itself 15x over.
+### How the Pricing Models Differ
+
+Leadsie bills **credits**. One onboarding credit covers each new client that grants manager or admin access, view-only audits use separate credits, unused credits roll over for three months, and exceeding the cap means a $50 overage pack. AgencyAccess bills **invites**, with 5 on Starter and unlimited on Premium and above. AuthHub bills **active client caps**: 5, 20, or 50.
+
+Worked example against Leadsie's published prices, choosing the cheapest Leadsie option that covers the workload:
+
+| Monthly clients | Leadsie | AuthHub |
+|-----------------|---------|---------|
+| 5 | $109 (Starter + 1 overage pack) | $29 (Starter) |
+| 10 | $129 (Agency) | $79 (Growth) |
+| 15 | $179 (Agency + 1 overage pack) | $79 (Growth) |
+| 20 | $229 (Agency + 2 overage packs) | $79 (Growth) |
+| 50 | $299 (Pro) | $149 (Scale) |
+
+Prices are pre-tax and were verified on September 8, 2026. AgencyAccess is left out of this table because it does not publish overage pricing, so a like-for-like scenario cannot be built without guessing.
 
 ## Use Case Recommendations
 
 ### Choose Leadsie If You:
-- Need basic Meta + Google access
-- Want simple, no-frills onboarding
-- Don't need enterprise security features
-- Have < 20 clients
+- Need the widest integration catalogue (31+ advertised), including WordPress and YouTube
+- Depend on Access Detective, Meta asset creation, or influencer whitelisting
+- Are best served during UK/EU hours
+- Already have an intake process that works
+- Are comfortable with credit rollover and overage math
 
-### Choose Other Platforms If You:
-- Need broader platform coverage
-- Value platform count over features
-- Don't need granular permissions
-- Have < 50 clients
+### Choose AgencyAccess If You:
+- Need HubSpot or YouTube Studio integrations
+- Value 24/7 chat support and a longer trial (30 days)
+- Are comfortable with Zapier-based automation only
+- Have multi-language client requirements
 
 ### Choose AuthHub If You:
-- Need **Pinterest, Klaviyo, Shopify, Kit, or Beehiiv** access
-- Require **enterprise-grade security** (Infisical tokens, audit logs)
+- Need **Kit, Beehiiv, Pinterest, or Snapchat Ads** in the same flow as Meta and Google
+- Require **Infisical-backed token storage** and complete audit logs
 - Want **granular permissions** (4 levels)
-- Need **onboarding templates** to scale
-- Want **custom branding** for white-label experience
-- Have **50+ clients** or plan to scale
-- Need **Infisical-backed token storage** and audit log documentation
+- Want **token health monitoring** and provider-supported refresh
+- Need **reusable onboarding templates** with intake fields
+- Are building custom automation on **API and webhooks** rather than Zapier
+- Want **predictable tier caps** (5 / 20 / 50 active clients) with no overage packs
 
-## Migration: Switching Is Easy
+## Migration: What Actually Moves
 
-All three platforms allow you to:
-1. Export existing client connections (CSV format)
-2. Import into the new platform
-3. Re-authorization is only required for OAuth token refresh
+OAuth permissions live in the platforms themselves—Meta, Google, LinkedIn, TikTok, and the rest. Canceling any of these three tools does not remove the access your client already granted.
 
-**Migration time**: 1-2 hours for most agencies.
+1. **List your active clients**, the platforms they granted, and which authorizations still need managing.
+2. **Build your templates** in the new tool, including intake fields and branding.
+3. **Dual-run the transition.** Send new links for fresh onboarding and renewals. Clients must re-authorize through the new tool; existing permissions do not auto-port.
+
+**Migration time**: about 5 minutes per client for a new authorization.
+
+## FAQ
+
+**Will switching break my existing client access?**
+No. Permissions sit with the platform, not the vendor. You may lose vendor-side monitoring, automation, and audit history, but the direct platform authorization survives a cancelation.
+
+**Does AuthHub support every platform Leadsie does?**
+No. Leadsie advertises 31+ integrations, including WordPress and YouTube, which AuthHub does not expose. AuthHub has 20 core connectors across ad, analytics, commerce, and email platforms.
+
+**Is AuthHub more expensive than AgencyAccess?**
+It depends on the tier. AgencyAccess Starter is $33/mo (annual) with 5 invites; AuthHub Starter is $29/mo with 5 active clients. For unlimited invites, AgencyAccess Premium is $74/mo; AuthHub Growth is $79/mo with 20 active clients plus API and webhooks.
+
+**Which has the best support?**
+AgencyAccess offers 24/7 chat on Premium and Agency plans. Leadsie serves UK/EU hours. AuthHub provides US-based email and documentation support. If you need round-the-clock chat, AgencyAccess is the better fit.
+
+**Where does AuthHub store OAuth tokens?**
+In Infisical, a dedicated secrets manager. Only the secret reference is held in the AuthHub database. Every access is recorded in a complete audit log, and the platform is GDPR ready.
+
+**Does AuthHub have intake forms?**
+Yes. AuthHub request templates carry custom intake fields, so onboarding answers and platform authorization arrive in the same client flow.
 
 ## Key Takeaways
 
-- **Platform count**: AuthHub supports 15+ vs 8-10 for competitors
-- **Security**: Infisical token storage vs database storage (significant difference)
-- **Permissions**: 4 levels vs 2-3 levels (granular control)
-- **Templates**: Only AuthHub has reusable onboarding templates
-- **Pricing**: AuthHub Starter at $29/mo undercuts competitors; Growth $79/mo (or $66/mo billed yearly) · 20 clients/mo scales affordably
+- **Integrations**: Leadsie advertises the most (31+), AgencyAccess 20+, AuthHub 20 connectors
+- **Token security**: AuthHub publishes Infisical-backed storage and complete audit logs; Leadsie stores tokens in an encrypted database; AgencyAccess does not publish its approach
+- **Token refresh**: AuthHub and Leadsie both refresh where the provider allows it; AgencyAccess requires a manual reconnect
+- **Branding**: AgencyAccess includes custom branding on its entry tier; AuthHub white-label starts on Growth; Leadsie white-label starts on its $129 Agency tier
+- **Pricing model**: Leadsie sells credits with $50 overage packs, AgencyAccess sells invites, AuthHub sells fixed client caps at $29 / $79 / $149
 
-**Ready to make the switch?** [Start your 14-day free trial](/pricing)—no credit card required. See how teams reduce onboarding time by up to 90%.
+Read the full head-to-head breakdowns: [AuthHub vs Leadsie](/compare/leadsie-alternative) and [AuthHub vs AgencyAccess](/compare/agencyaccess-alternative).
+
+**Ready to try AuthHub?** [Start your 14-day free trial](/pricing)—no credit card required.
 
 ---
 
-*Need help deciding? [Contact our team](/pricing) for a personalized demo.*
+*Competitor details come from each vendor's published pricing and product pages. Leadsie verified 2026-09-08; AgencyAccess verified 2026-03-06. Confirm current pricing with the vendor before purchase. [Contact our team](/pricing) if you want help deciding.*

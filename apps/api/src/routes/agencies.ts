@@ -6,6 +6,7 @@
  */
 
 import { FastifyInstance } from 'fastify';
+import type { SubscriptionTier } from '@agency-platform/shared';
 import { agencyService } from '../services/agency.service.js';
 import { sendError, sendValidationError } from '../lib/response.js';
 import { authenticate } from '../middleware/auth.js';
@@ -196,7 +197,7 @@ export async function agencyRoutes(fastify: FastifyInstance) {
         clerkUserId: string;
         name: string;
         email: string;
-        selectedTier: 'STARTER' | 'AGENCY';
+        selectedTier: SubscriptionTier;
         billingInterval: 'monthly' | 'yearly';
         settings?: Record<string, any>;
         affiliateClickToken?: string;

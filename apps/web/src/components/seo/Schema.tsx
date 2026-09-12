@@ -3,6 +3,8 @@
  * Injects structured data into pages for SEO and GEO optimization
  */
 
+import { SUPPORTED_PLATFORM_COUNT } from '@agency-platform/shared';
+
 interface SchemaProps {
   schema: Record<string, unknown> | Record<string, unknown>[];
 }
@@ -61,7 +63,7 @@ export function OrganizationSchema() {
       "@type": "ImageObject",
       url: "https://authhub.co/logo.png",
     },
-    description: "OAuth aggregation platform for marketing agencies. Get client access to Meta, Google, LinkedIn, and 15+ platforms with a single link.",
+    description: `OAuth aggregation platform for marketing agencies. Get client access to Meta, Google, LinkedIn, and ${SUPPORTED_PLATFORM_COUNT} platforms with a single link.`,
     sameAs: [
       "https://twitter.com/authhub",
       "https://linkedin.com/company/authhub",

@@ -9,6 +9,7 @@
 import { Check, X, ArrowRight, Clock, DollarSign, Globe, Zap, Shield, Users } from "lucide-react";
 import Link from "next/link";
 import type { Route } from "next";
+import { SUPPORTED_PLATFORM_COUNT } from "@agency-platform/shared";
 import type { ProgrammaticComparisonPage } from "@/lib/programmatic-types";
 
 // Icon mapping for dynamic icon rendering
@@ -735,7 +736,8 @@ function getDifferentiatorDescription(differentiator: string): string {
     "Access + Intake in One Link": "One link handles OAuth and collects client info—no separate forms needed.",
     "Predictable tiered pricing (no credits)": "Monthly tiers at $29 / $79 / $149 with 5 / 20 / 50 client caps.",
     "Token Health + Infisical Audit": "Token-health monitoring, provider-supported refresh, and audit events.",
-    "19 Platform Connectors": "Core ad, analytics, commerce, and email connectors in one flow.",
+    [`${SUPPORTED_PLATFORM_COUNT} Platform Connectors`]:
+      "Core ad, analytics, commerce, and email connectors in one flow.",
     "Infisical-backed Token Storage": "OAuth tokens stored in Infisical with complete audit logs—never in the database.",
   };
 
