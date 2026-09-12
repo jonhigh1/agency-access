@@ -36,4 +36,4 @@ The client invite flow treated Google OAuth success as if the requested Google a
 - Request-detail component test covers unresolved-product visibility for agencies.
 
 ## Related Sprint
-- [`docs/sprints/2026-03-10-google-post-oauth-account-selection.md`](/Users/jhigh/agency-access-platform/docs/sprints/2026-03-10-google-post-oauth-account-selection.md)
+- [`docs/sprints/2026-03-10-google-post-oauth-account-selection.md`](../sprints/2026-03-10-google-post-oauth-account-selection.md)

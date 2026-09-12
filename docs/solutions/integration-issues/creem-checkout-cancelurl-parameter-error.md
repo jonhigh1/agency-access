@@ -256,7 +256,7 @@ This prevents breaking changes in the frontend code while avoiding the API error
 - **Client Implementation**: `apps/api/src/lib/creem.ts`
 - **Product Configuration**: `apps/api/src/config/creem.config.ts`
 - **Signature Verification**: `apps/api/src/lib/creem-signature.ts`
-- **Environment Variables**: `apps/api/src/lib/env.ts` (lines 124-126)
+- **Environment Variables**: `apps/api/src/lib/env.ts` (lines 155-157)
 
 ### Related Solutions
 - **Webhook Support Runbook**: `docs/features/webhooks-support-runbook.md`

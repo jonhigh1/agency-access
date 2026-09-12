@@ -147,7 +147,7 @@ Consolidation is one-directional: call sites move onto existing helpers (`author
 ### Assumptions
 
 - Inferred bets made by planning (not user-confirmed): Pinterest OAuth connector is kept rather than converted (KTD3); quota enforcement attaches per mutating route (KTD4); the Meta version constant lives in apps/api, not shared (no web consumer exists); commit-per-theme inside units (KTD8).
-- The OAuth-state Redis fallback (`docs/solutions/oauth-state-redis-quota-fallback.md`) and the authenticated layout's fail-open agency check are deliberate graceful degradation. This pass does not touch their fallback paths; any finding that appears to delete them is skipped and surfaced.
+- The OAuth-state production fail-closed contract (`docs/solutions/security-issues/oauth-state-postgres-fail-closed.md`) and the authenticated layout's fail-open agency check are deliberate behavior boundaries. This pass does not weaken them; any finding that appears to do so is skipped and surfaced.
 - `tools/authhub-cli` treats non-2xx responses as errors today; U17 verifies CLI behavior against the 402 body shape before the middleware switch.
 
 ### Sequencing
@@ -699,9 +699,8 @@ Condensed from the 12 review reports. Each line: location — finding — fix. L
 
 From `docs/solutions/` — binding on this pass:
 
-1. **OAuth state Redis fallback is deliberate** (`oauth-state-redis-quota-fallback.md`): signed stateless HMAC fallback when Redis writes fail must survive; Redis is optional for OAuth initiation. Do not consolidate into a Redis-required helper or delete the fallback as dead code.
+1. **OAuth state is durable and fail-closed in production** (`security-issues/oauth-state-postgres-fail-closed.md`): production state must remain durable and single-use; a stateless token is permitted only outside production. Do not consolidate into a production stateless fallback.
 2. **Grouped OAuth is six-surface and per-product** (`grouped-oauth-product-expansion-with-truthful-fulfillment.md`): scope resolution is product-aware additive-union; vendor discovery is intentionally per-product; platform-level OAuth success never fulfills a product needing asset selection. Binding on U7 (KTD5).
 3. **Google fulfillment truthfulness** (`google-authorization-fulfillment-truthfulness.md`, `google-selector-stale-response-guard.md`): `fulfilledProducts`/`unresolvedProducts`/persisted `availableAssetCount` distinguish `selection_required` from `no_assets`; selector stale-response guards are correctness code, not UX noise. Do not delete during U7/U15.
 4. **Meta Business Login env contract** (`meta-business-login-production-rollout.md`): frontend strictly `NEXT_PUBLIC_META_APP_ID` + `NEXT_PUBLIC_META_LOGIN_FOR_BUSINESS_CONFIG_ID`; `MetaConnector.getTokenMetadata()` is a live dependency. Do not rename during U7.
-5. **Redis env/TLS protocol handling** (`oauth-state-redis-protocol-hardening.md`): boot-time env validation and protocol-derived TLS stay intact.
-6. **URL hygiene guard** (`browser-api-reliability-hardening.md`): `apps/web/src/lib/api/__tests__/api-url-usage.test.ts` enforces no raw `NEXT_PUBLIC_API_URL` reads — U9's ally; must stay green.
+5. **URL hygiene guard** (`browser-api-reliability-hardening.md`): `apps/web/src/lib/api/__tests__/api-url-usage.test.ts` enforces no raw `NEXT_PUBLIC_API_URL` reads — U9's ally; must stay green.

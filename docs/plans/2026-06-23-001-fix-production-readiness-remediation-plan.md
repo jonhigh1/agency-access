@@ -175,11 +175,10 @@ flowchart TB
   - `apps/api/src/services/__tests__/audit.service.test.ts`
   - `apps/api/src/services/__tests__/oauth-state.service.test.ts`
   - `apps/api/src/services/__tests__/access-request.service.test.ts`
-  - `docs/solutions/oauth-state-redis-protocol-hardening.md`
-  - `docs/solutions/oauth-state-redis-quota-fallback.md`
-- **Approach:** Remove or replace the audit uniqueness constraint with indexes that support repeated events. Reconcile the current Postgres/stateless OAuth state implementation with the repo's Redis-backed, single-use launch requirement, using the prior Redis protocol and quota-fallback notes to avoid repeating operational mistakes. Change default access request expiry to seven days.
+  - `docs/solutions/security-issues/oauth-state-postgres-fail-closed.md`
+- **Approach:** Remove or replace the audit uniqueness constraint with indexes that support repeated events. Reconcile the current Postgres/stateless OAuth state implementation with the repo's durable, single-use launch requirement, using the superseding OAuth-state note to avoid repeating operational mistakes. Change default access request expiry to seven days.
 - **Execution note:** Use characterization tests before changing OAuth state so the chosen production behavior is explicit.
-- **Patterns to follow:** Existing `AuditLog` service API; OAuth state tests under `apps/api/src/services/__tests__/oauth-state.service.test.ts`; prior Redis hardening solution notes.
+- **Patterns to follow:** Existing `AuditLog` service API; OAuth state tests under `apps/api/src/services/__tests__/oauth-state.service.test.ts`; superseding OAuth-state solution note.
 - **Test scenarios:**
   - Two audit events with the same action and resource ID both persist.
   - Token access audit logs include user email, IP, timestamp, action, and metadata where available.
@@ -330,7 +329,7 @@ This work changes the production trust boundary for API access, token lifecycle 
 
 - Compound review artifact from run `20260622-211612-a3f7c63e` under the local Compound Engineering review artifact directory.
 - Prior remediation plan: `docs/implementation-plans/security-critical-high-remediation.md`.
-- Prior OAuth hardening notes: `docs/solutions/oauth-state-redis-protocol-hardening.md` and `docs/solutions/oauth-state-redis-quota-fallback.md`.
+- Superseding OAuth hardening note: `docs/solutions/security-issues/oauth-state-postgres-fail-closed.md`.
 - Production checklist: `docs/PRODUCTION_CHECKLIST.md`.
 - Clerk Next.js docs note that `clerkMiddleware()` does not protect all routes by default; protection must be explicitly configured: https://clerk.com/docs/reference/nextjs/clerk-middleware
 - Next.js proxy docs emphasize precise matchers because proxy can be invoked across the route surface: https://nextjs.org/docs/app/api-reference/file-conventions/proxy
