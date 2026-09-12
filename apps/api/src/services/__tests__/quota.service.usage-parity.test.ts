@@ -51,7 +51,7 @@ describe('QuotaService.getUsage - parity and fetch counts', () => {
     vi.mocked(prisma.agency.findUnique).mockResolvedValue({
       id: 'agency-1',
       clerkUserId: 'clerk-user-1',
-      subscription: { tier: 'AGENCY', status: 'active' },
+      subscription: { tier: 'SCALE', status: 'active' },
     } as any);
     vi.mocked(prisma.accessRequest.count).mockResolvedValue(4);
     vi.mocked(prisma.client.count).mockResolvedValue(10);
@@ -71,9 +71,9 @@ describe('QuotaService.getUsage - parity and fetch counts', () => {
     const usage = await quotaService.getUsage('agency-1');
 
     expect(usage).not.toBeNull();
-    expect(usage!.currentTier).toBe('AGENCY');
+    expect(usage!.currentTier).toBe('SCALE');
 
-    const limits = getTierLimitsConfig('AGENCY');
+    const limits = getTierLimitsConfig('SCALE');
     const asLimit = (value: number | 'unlimited') =>
       value === -1 || value === 'unlimited' ? 'unlimited' : value;
     const asRemaining = (value: number | 'unlimited', used: number) =>

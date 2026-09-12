@@ -27,6 +27,57 @@ Append-only log of what was done each session. Newest first. Read the last 3–5
 
 ## Sessions
 
+## Session: 2026-09-11 — ce-simplify-code pass on uncommitted AGENCY→SCALE tier rename
+
+### What was done
+- Ran compound-engineering simplify (3 reviewers: reuse, quality, efficiency) on the uncommitted diff (`git diff HEAD`, code files only).
+- Applied 7 findings; skipped 4. Restored `PRICING_DISPLAY_TIER_ORDER.map` in plan-comparison (removed two identity maps, hardcoded tier arrays, shadowed `tierIndex`, dead `SubscriptionTier` import); fixed broken describe/brace nesting in shared `types.test.ts` (file did not parse); renamed `isAgencyTier`→`isScaleTier`; current-plan-card now reads tier descriptions from `PRICING_DISPLAY_TIER_DETAILS`; repaired indentation damage in 6 files.
+- Verification: web tsc clean; shared jest 150/150; eslint 0 errors (2 pre-existing warnings). API tsc still fails (5 errors) and 11 web tests still fail — both pre-existing from the incomplete rename, not from this pass.
+
+### Files changed
+- `apps/web/src/components/settings/billing/plan-comparison.tsx` — grid iterates shared tier order again; identity maps removed
+- `apps/web/src/components/settings/billing/current-plan-card.tsx` — description from shared details
+- `apps/web/src/components/settings/billing/usage-limits-card.tsx` — variable rename
+- `apps/web/src/components/settings/billing/billing-hero.tsx`, `apps/web/src/components/marketing/pricing/pricing-tiers.tsx`, `apps/web/src/lib/comparison-data.ts` — indentation only
+- `packages/shared/src/__tests__/types.test.ts` — brace nesting + SCALE rename completed
+
+### Decisions made
+- Did not widen scope to finish the rename in `apps/api` (Prisma `tier` column holds `'AGENCY'` strings in prod; Creem config keyed by tier). That is a migration decision, not a simplification.
+
+### Follow-up (same day): closed the rename gaps the parallel T3 session left open
+- Parallel session 1ef6e095 renamed the API source files (creem.config, agency.service, quota.service, routes/agencies). Closed here: quota-enforcement `suggestedTier` now uses `getNextTierForCheckout` (was hardcoded AGENCY/PRO); checkout success copy; pricing-tier-card legacy map (was writing AGENCY/PRO to localStorage); analytics `BillingPlanSlug` `agency`→`scale` (SCALE previously fell back to `starter`); Prisma comment; 19 test files; migration `20260911_rename_agency_tier_to_scale` for `subscriptions.tier` and `agencies.subscription_tier`.
+- comparison-data.ts: restored Leadsie's real plan names/prices (Starter $59 / Agency $129 / Pro $299, verified at leadsie.com/pricing) and AuthHub Scale at $149 monthly (rename had produced "Leadsie Scale $124").
+- Verification: web tsc, api tsc, shared jest 150/150, api rename tests 178/178, web scope 241/245.
+
+### Follow-up 2 (same day, via opus subagents): SOC 2 removal, connector count, Clerk backfill, rollout plan
+- SOC 2 claims about AuthHub removed from apps/web/src, privacy policy, blog content, and marketing strategy (AuthHub is not SOC 2 compliant). Security copy now says Infisical-backed tokens, audit logs, GDPR ready.
+- `SUPPORTED_PLATFORM_COUNT` (20, derived from PLATFORM_HIERARCHY products) exported from shared and interpolated into pricing FAQ, JSON-LD, comparison data, Schema.tsx; blog literals updated. Leadsie blog no longer lists WhatsApp / YouTube Ads / DV360 / CM360.
+- `apps/api/scripts/backfill-clerk-tier-agency-to-scale.ts` (+21 tests): dry-run default, `--apply`, `--limit`; fingerprints tier by quota limits because 'AGENCY' meant $79 before 2026-03-14 and $149 after.
+- `quota.service.ts` upgrade path aligned with middleware (no `/checkout?tier=undefined`).
+- Plan: `docs/plans/2026-09-11-1316-refactor-agency-to-scale-tier-rollout-plan.md`; DEC-007 added.
+- Verification: typecheck clean (5 workspaces); shared jest 154/154; API full suite 1318 passed; web full suite 912 passed, 1 unrelated pre-existing failure.
+
+### Follow-up 3 (same day): comparison content + PostHog tool
+- AgencyAccess comparison page aligned to Starter/Growth/Scale; fixed false "AuthHub lacks intake forms / Shopify / Klaviyo"; savings badge now sourced ($108/yr Starter yearly vs AgencyAccess $33 annual).
+- Leadsie blog: invented "Other Platforms" column replaced by AgencyAccess with every number traced to comparison-data.ts; Leadsie "~8 platforms" corrected to 31+; unsourced ROI/AES-256/CSV claims removed.
+- `apps/api/scripts/posthog-rename-plan-filters.ts` (+35 tests): finds insights/dashboards/cohorts/actions/flags/experiments filtering `plan = agency`, widens to `['agency','scale']` (or replaces); dry-run default; needs POSTHOG_PERSONAL_API_KEY. Runbook in plan U10. Legacy insight `filters` blobs are not PATCHable and are reported for manual fix.
+
+- PostHog dry run (project 309879): 13 saved objects scanned, 0 filter on `plan = agency`. U10 closed with no writes.
+
+### Rollout (2026-09-12)
+- PR #44 → `main` `1dc85a5`. Render migration applied at boot, `/health` 200; Vercel live with Scale. Data gate: no AGENCY rows. Clerk dry run: 29 users, 0 on a retired tier — no apply needed. PostHog: nothing to apply. Render logs clean.
+- Branch note: the shared checkout sits on `feat/self-healing-deploy-pipeline` (another session). The rename was committed from a separate worktree off `main`; duplicate uncommitted copies in that checkout were restored to HEAD after confirming byte-identity with `main`, so the deploy-pipeline branch merges `main` cleanly.
+
+### Next steps
+- Follow the rollout plan (U1 commit split → U2 commits → U4 content decision → U7 deploy → U8/U9 Clerk backfill dry-run/canary/apply → U10 PostHog).
+- Previously listed items now resolved:
+- Decide on 4 failing `comparison-data.claims.test.ts` assertions: new copy claims "SOC 2 Type II" (test forbids SOC 2 claims), says "15+ platforms" (test expects "19 platform connectors"), and drops the "N clients/month" phrasing. Either the copy or the test must change.
+- Backfill Clerk `publicMetadata.subscriptionTier` for users still holding `'AGENCY'` (no script exists; `TIER_LIMITS['AGENCY']` is undefined after the rename).
+- PostHog: `plan` property value `agency` becomes `scale` for subscription events; update dashboards/filters.
+- agencyAccess page `pricingComparison.authhub.starter` is $29 but lists Growth-only features (white-label, custom domain, API). Content review needed.
+
+---
+
 ## Session: 2026-09-10 — Snapchat Ads OAuth connector (U1-U9) + review hardening
 
 ### What was done

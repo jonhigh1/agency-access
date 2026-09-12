@@ -197,4 +197,4 @@ Multiple platforms, multiple flows, multiple permission levels to get right — 
 
 ---
 
-*Need the operational playbook? Our [client onboarding checklist](/blog/client-onboarding-checklist) covers the full process. For a deeper dive on pricing models, see our [flat-rate vs credit pricing comparison](/blog/flat-rate-vs-credit-pricing).*
+*Need the operational playbook? Our [client onboarding checklist](/blog/client-onboarding-checklist) covers the full process. For a deeper dive on pricing models, see our [flat-rate vs credit pricing comparison](/blog/flat-rate-vs-credit-pricing). Evaluating full tool stacks? Read the [best agency onboarding software breakdown](/blog/best-client-onboarding-software-agencies-2026).*

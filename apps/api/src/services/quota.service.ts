@@ -30,7 +30,7 @@
  * ```
  */
 
-import { type SubscriptionTier, type MetricType, getTierLimitsConfig } from '@agency-platform/shared';
+import { type SubscriptionTier, type MetricType, getTierLimitsConfig, getNextTierForCheckout } from '@agency-platform/shared';
 import { prisma } from '@/lib/prisma';
 import { getClerkClient } from '@/lib/clerk';
 import { resolveEffectiveSubscriptionTier } from '@/lib/effective-subscription-tier';
@@ -190,7 +190,7 @@ export class QuotaService {
             remaining: Math.max(0, (limit as number) - used),
             currentTier: (tier || 'STARTER') as SubscriptionTier,
             suggestedTier: this.getSuggestedTier(tier),
-            upgradeUrl: `/checkout?tier=${this.getSuggestedTier(tier)}`,
+            upgradeUrl: this.getUpgradeUrl(this.getSuggestedTier(tier)),
           });
         }
         // For these metrics, we don't increment here - they're counted on-the-fly
@@ -209,7 +209,7 @@ export class QuotaService {
             remaining: Math.max(0, (limit as number) - currentUsed),
             currentTier: (tier || 'STARTER') as SubscriptionTier,
             suggestedTier: this.getSuggestedTier(tier),
-            upgradeUrl: `/checkout?tier=${this.getSuggestedTier(tier)}`,
+            upgradeUrl: this.getUpgradeUrl(this.getSuggestedTier(tier)),
           });
         }
 
@@ -220,15 +220,14 @@ export class QuotaService {
   }
 
   /**
-   * Get suggested next tier for upgrade prompts
+   * Get suggested next tier for upgrade prompts. Undefined on the top tier.
    */
-  private getSuggestedTier(tier: SubscriptionTier | null): SubscriptionTier {
-    const tierOrder: SubscriptionTier[] = ['STARTER', 'GROWTH', 'AGENCY'];
-    return tier
-      ? (tierOrder.indexOf(tier) < tierOrder.length - 1
-          ? tierOrder[tierOrder.indexOf(tier) + 1]
-          : 'AGENCY')
-      : 'STARTER';
+  private getSuggestedTier(tier: SubscriptionTier | null): SubscriptionTier | undefined {
+    return getNextTierForCheckout(tier) ?? undefined;
+  }
+
+  private getUpgradeUrl(suggestedTier: SubscriptionTier | undefined): string {
+    return suggestedTier ? `/checkout?tier=${suggestedTier}` : '/pricing';
   }
 
   /**
@@ -291,13 +290,7 @@ export class QuotaService {
     // STRICT ENFORCEMENT: Block at limit, no overage
     const allowed = remaining >= (requestedAmount || 1);
 
-    // Calculate next tier for upgrade suggestion
-    const tierOrder: SubscriptionTier[] = ['STARTER', 'GROWTH', 'AGENCY'];
-    const suggestedTier = tier
-      ? (tierOrder.indexOf(tier) < tierOrder.length - 1
-          ? tierOrder[tierOrder.indexOf(tier) + 1]
-          : undefined)
-      : 'STARTER'; // Free users should upgrade to STARTER
+    const suggestedTier = this.getSuggestedTier(tier);
 
     return {
       allowed,
@@ -307,7 +300,7 @@ export class QuotaService {
       remaining,
       currentTier: (tier || 'STARTER') as SubscriptionTier,
       suggestedTier,
-      upgradeUrl: `/checkout?tier=${suggestedTier}`,
+      upgradeUrl: this.getUpgradeUrl(suggestedTier),
     };
   }
 

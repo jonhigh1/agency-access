@@ -31,7 +31,7 @@ const CREEM_PRODUCT_IDS: Record<SubscriptionTier, CreemProductConfig> = {
     monthly: 'prod_11NeEMY6WtGEkdnvdd7obj',
     yearly: 'prod_4vNvJn99RTRwhkMeHgkBT7',
   },
-  AGENCY: {
+  SCALE: {
     monthly: 'prod_5FEs6qBlwvbMWHHun95wkk',
     yearly: 'prod_6w78r7ZbTUjkJl7mTkNfFr',
   },

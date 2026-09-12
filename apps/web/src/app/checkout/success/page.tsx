@@ -30,8 +30,8 @@ function CheckoutSuccessContent() {
           Payment Successful!
         </h1>
         <p className="text-gray-600 mb-6">
-          {tier === 'AGENCY'
-            ? 'Your Agency subscription is now active.'
+          {tier === 'SCALE'
+            ? 'Your Scale subscription is now active.'
             : tier === 'STARTER'
               ? 'Your Starter subscription is now active.'
               : 'Your subscription is now active.'}

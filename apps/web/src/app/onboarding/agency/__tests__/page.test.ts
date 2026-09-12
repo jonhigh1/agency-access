@@ -12,10 +12,10 @@ vi.mock('next/navigation', () => ({
 describe('AgencyOnboardingRedirect', () => {
   it('redirects to unified onboarding with tier passthrough', () => {
     AgencyOnboardingRedirect({
-      searchParams: { tier: 'AGENCY' },
+      searchParams: { tier: 'SCALE' },
     });
 
-    expect(redirectMock).toHaveBeenCalledWith('/onboarding/unified?tier=AGENCY');
+    expect(redirectMock).toHaveBeenCalledWith('/onboarding/unified?tier=SCALE');
   });
 
   it('redirects to unified onboarding without query when tier is missing', () => {

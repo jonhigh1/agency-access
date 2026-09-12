@@ -275,4 +275,4 @@ One link for access and intake. One dashboard for verification. One timeline tha
 
 ---
 
-*Need the tactical checklist? Our [client onboarding checklist](/blog/client-onboarding-checklist) has the platform-by-platform breakdown. For the system behind the single-link approach, see [what client access management is and why your agency needs it](/blog/what-is-client-access-management).*
+*Need the tactical checklist? Our [client onboarding checklist](/blog/client-onboarding-checklist) has the platform-by-platform breakdown. For the system behind the single-link approach, see [what client access management is and why your agency needs it](/blog/what-is-client-access-management). And if you are buying tools, start with our [client onboarding software for agencies comparison](/blog/best-client-onboarding-software-agencies-2026).*

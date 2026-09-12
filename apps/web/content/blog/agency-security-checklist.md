@@ -160,7 +160,7 @@ Tokens should be stored in a dedicated secrets management system:
 | Access control | Database permissions | Granular, auditable |
 | Audit trail | None | Every access logged |
 | Rotation | Manual, disruptive | Automatic, transparent |
-| SOC2 compliance | Difficult | Built-in |
+| Audit evidence for security reviews | Hard to produce | Generated automatically |
 
 Systems like Infisical, HashiCorp Vault, and AWS Secrets Manager are built for this. They're what Fortune 500 companies use to store credentials. Your client access tokens deserve the same standard — and if you're [comparing access management tools](/blog/leadsie-vs-authhub-comparison), token storage architecture should be on your evaluation checklist.
 
@@ -314,7 +314,7 @@ Not stored in a database. Not in a spreadsheet. In a proper secrets management s
 When someone leaves — client or team member — there's a checklist. It gets followed. There's a paper trail.
 
 **4. They're ready for enterprise sales.**
-When a prospect asks for SOC2 documentation or security questionnaires, they can produce it. Audit logs, token storage documentation, access policies — it's all ready.
+When a prospect sends a security questionnaire, they can answer it with evidence. Audit logs, token storage documentation, access policies — it's all ready.
 
 ---
 
@@ -331,7 +331,7 @@ But at scale, manual security breaks down:
 Access management tools like AuthHub handle the security infrastructure automatically:
 
 - Token storage in Infisical (secrets management, not database)
-- Audit logging for every access (SOC2-ready)
+- Audit logging for every access (complete, exportable trail)
 - One-click offboarding across all platforms
 - Token refresh without client intervention
 

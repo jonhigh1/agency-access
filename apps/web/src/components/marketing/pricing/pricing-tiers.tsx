@@ -17,35 +17,51 @@ interface Feature {
 
 const tierFeatures = {
   starter: [
-    { name: '5 clients/month', included: true, value: '60 onboards/year' },
+    { name: '5 active clients', included: true, value: 'Add/remove anytime' },
     { name: 'All platform integrations', included: true, value: 'Meta, Google, LinkedIn, TikTok, more' },
-    { name: 'White-label branding', included: true, value: 'Your brand, not ours' },
+    { name: 'One-link onboarding', included: true, value: 'Share single link' },
+    { name: 'Token auto-refresh', included: true, value: 'No expired tokens' },
+    { name: 'Audit logs', included: true, value: 'Full activity history' },
     { name: 'Unlimited team seats', included: true, value: 'Share the work' },
-    { name: 'Email support', included: true },
+    { name: 'AuthHub-branded client link', included: true, value: 'Built-in branding' },
+    { name: 'White-label branding', included: false, value: 'Your brand, not ours' },
     { name: 'Custom domain', included: false },
     { name: 'Webhooks & API', included: false },
     { name: 'Priority support', included: false },
+    { name: 'Token health monitoring dashboard', included: false },
+    { name: 'Multi-brand management', included: false, value: 'Up to 3 brands' },
+    { name: 'Custom integrations', included: false, value: 'We build what you need' },
   ],
   growth: [
-    { name: '20 clients/month', included: true, value: '240 onboards/year' },
-    { name: 'All platform integrations', included: true },
-    { name: 'White-label branding', included: true },
+    { name: '20 active clients', included: true, value: 'Add/remove anytime' },
+    { name: 'All platform integrations', included: true, value: 'Meta, Google, LinkedIn, TikTok, more' },
+    { name: 'One-link onboarding', included: true, value: 'Share single link' },
+    { name: 'Token auto-refresh', included: true, value: 'No expired tokens' },
+    { name: 'Audit logs', included: true, value: 'Full activity history' },
+    { name: 'Unlimited team seats', included: true, value: 'Share the work' },
+    { name: 'AuthHub-branded client link', included: true, value: 'Built-in branding' },
+    { name: 'White-label branding', included: true, value: 'Your brand, colors, domain' },
     { name: 'Custom domain', included: true, value: 'Your URL, your brand' },
-    { name: 'Unlimited team seats', included: true, value: 'Full team collaboration' },
     { name: 'Webhooks & API', included: true, value: 'Connect your stack' },
     { name: 'Priority support', included: true, value: 'Faster response time' },
-    { name: 'Multi-brand accounts', included: false },
-    { name: 'Custom integrations', included: false },
+    { name: 'Token health monitoring dashboard', included: true, value: 'Real-time token health' },
+    { name: 'Multi-brand management', included: false, value: 'Up to 3 brands' },
+    { name: 'Custom integrations', included: false, value: 'We build what you need' },
   ],
-  agency: [
-    { name: '50 clients/month', included: true, value: '600 onboards/year' },
-    { name: 'All platform integrations', included: true },
-    { name: 'White-label branding', included: true },
+  scale: [
+    { name: '50 active clients', included: true, value: 'Add/remove anytime' },
+    { name: 'All platform integrations', included: true, value: 'Meta, Google, LinkedIn, TikTok, more' },
+    { name: 'One-link onboarding', included: true, value: 'Share single link' },
+    { name: 'Token auto-refresh', included: true, value: 'No expired tokens' },
+    { name: 'Audit logs', included: true, value: 'Full activity history' },
+    { name: 'Unlimited team seats', included: true, value: 'Share the work' },
+    { name: 'AuthHub-branded client link', included: true, value: 'Built-in branding' },
+    { name: 'White-label branding', included: true, value: 'Your brand, colors, domain' },
     { name: 'Custom domain', included: true, value: 'Your URL, your brand' },
-    { name: 'Unlimited team seats', included: true, value: 'Full team collaboration' },
     { name: 'Webhooks & API', included: true, value: 'Connect your stack' },
     { name: 'Priority support', included: true, value: 'Faster response time' },
-    { name: 'Multi-brand accounts', included: true, value: 'Manage up to 3 brands' },
+    { name: 'Token health monitoring dashboard', included: true, value: 'Real-time token health' },
+    { name: 'Multi-brand management', included: true, value: 'Up to 3 brands' },
     { name: 'Custom integrations', included: true, value: 'We build what you need' },
   ],
 };
@@ -110,7 +126,7 @@ export function PricingTiers() {
                 <span className="text-gray-600">{isYearly ? '$66/mo' : '$79/mo'}</span>
               </div>
               <div className="flex justify-between items-center py-2">
-                <span className="font-bold text-ink">Agency</span>
+                <span className="font-bold text-ink">Scale</span>
                 <span className="text-gray-600">{isYearly ? '$124/mo' : '$149/mo'}</span>
               </div>
             </div>
@@ -159,11 +175,11 @@ export function PricingTiers() {
             />
           </div>
 
-          {/* Agency Tier - Has Free Trial */}
+          {/* Scale Tier - Has Free Trial */}
           <div className="md:col-span-1">
             <PricingTierCard
-              tier="AGENCY"
-              name="Agency"
+              tier="SCALE"
+              name="Scale"
               description="High-volume agencies with advanced needs"
               persona="For established agencies"
               yearlyPrice={1490}
@@ -171,7 +187,7 @@ export function PricingTiers() {
               isYearly={isYearly}
               isPro={true}
               hasTrial={true}
-              features={tierFeatures.agency}
+              features={tierFeatures.scale}
               buttonText="Start Free Trial"
               buttonVariant="brutalist"
               billingInterval={isYearly ? 'yearly' : 'monthly'}

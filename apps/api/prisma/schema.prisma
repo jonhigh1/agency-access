@@ -609,7 +609,7 @@ model Subscription {
   creemSubscriptionId String? @map("creem_subscription_id")
 
   // Subscription details
-  tier   String @default("STARTER") // 'STARTER', 'GROWTH', 'AGENCY'
+  tier   String @default("STARTER") // 'STARTER', 'GROWTH', 'SCALE'
   status String @default("active") // 'active', 'canceled', 'past_due', 'incomplete', 'incomplete_expired'
 
   // Billing cycle

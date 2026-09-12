@@ -363,7 +363,7 @@ describe('Internal Admin Routes', () => {
   it('upgrades subscription for allowlisted internal admin', async () => {
     vi.mocked(subscriptionService.upgradeSubscription).mockResolvedValue({
       data: {
-        tier: 'AGENCY',
+        tier: 'SCALE',
         status: 'active',
         currentPeriodEnd: new Date('2026-04-01T00:00:00.000Z'),
       },
@@ -378,14 +378,14 @@ describe('Internal Admin Routes', () => {
         'x-mock-user': 'admin_user|admin@example.com',
       },
       payload: {
-        newTier: 'AGENCY',
+        newTier: 'SCALE',
       },
     });
 
     expect(response.statusCode).toBe(200);
     expect(subscriptionService.upgradeSubscription).toHaveBeenCalledWith({
       agencyId: 'agency_1',
-      newTier: 'AGENCY',
+      newTier: 'SCALE',
       updateBehavior: undefined,
     });
   });

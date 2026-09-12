@@ -97,10 +97,10 @@ export default function PrivacyPolicyPage() {
             </p>
             <ul className="mt-4 list-disc pl-6 space-y-2 text-muted-foreground leading-7">
               <li>Encryption of OAuth tokens at rest and in transit</li>
-              <li>Secure token storage using secret management services</li>
+              <li>OAuth tokens stored in Infisical, never in our database</li>
               <li>Regular security audits and monitoring</li>
               <li>Access controls and audit logging</li>
-              <li>SOC 2 Type II compliance (in progress)</li>
+              <li>GDPR-ready data handling, including deletion on request</li>
             </ul>
           </section>
 

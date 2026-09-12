@@ -120,11 +120,11 @@ describe('QuotaService', () => {
       expect(result.suggestedTier).toBe('GROWTH');
     });
 
-    it('should always allow actions for unlimited team seats on AGENCY tier', async () => {
+    it('should always allow actions for unlimited team seats on SCALE tier', async () => {
       // Arrange
       const metric: MetricType = 'team_seats';
       vi.mocked(prisma.agency.findUnique).mockResolvedValue({
-        subscription: { tier: 'AGENCY', status: 'active' },
+        subscription: { tier: 'SCALE', status: 'active' },
       } as any);
 
       // Act
@@ -142,10 +142,10 @@ describe('QuotaService', () => {
       expect(result.remaining).toBe('unlimited');
     });
 
-    it('should always allow actions for unlimited team seats on AGENCY tier', async () => {
+    it('should always allow actions for unlimited team seats on SCALE tier', async () => {
       const metric: MetricType = 'team_seats';
       vi.mocked(prisma.agency.findUnique).mockResolvedValue({
-        subscription: { tier: 'AGENCY', status: 'active' },
+        subscription: { tier: 'SCALE', status: 'active' },
       } as any);
 
       // Act

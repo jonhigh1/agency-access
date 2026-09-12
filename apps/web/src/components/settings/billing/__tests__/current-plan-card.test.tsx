@@ -34,11 +34,11 @@ describe('CurrentPlanCard', () => {
     expect(screen.getByRole('heading', { name: 'Starter Plan' })).toBeInTheDocument();
   });
 
-  it('maps AGENCY tier to Agency plan display', () => {
+  it('maps SCALE tier to Scale plan display', () => {
     mockUseSubscription.mockReturnValue({
       data: {
         id: 'sub_456',
-        tier: 'AGENCY',
+        tier: 'SCALE',
         status: 'active',
         cancelAtPeriodEnd: false,
       },
@@ -47,7 +47,7 @@ describe('CurrentPlanCard', () => {
 
     render(<CurrentPlanCard />);
 
-    expect(screen.getByRole('heading', { name: 'Agency Plan' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Scale Plan' })).toBeInTheDocument();
   });
 
   it('shows Free plan when no active subscription exists', () => {

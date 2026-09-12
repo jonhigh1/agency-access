@@ -120,7 +120,7 @@ describe('Usage Routes - TDD Tests', () => {
     it('should handle unlimited seats for PRO tier', async () => {
       (clerkMetadataService.getSubscriptionTier as any).mockResolvedValue({
         data: {
-          tier: 'AGENCY',
+          tier: 'SCALE',
           publicMetadata: { tierName: 'Agency', features: [] },
           privateMetadata: {
             quotaLimits: {

@@ -78,13 +78,13 @@ describe('InternalAdminService', () => {
         },
         {
           id: 'sub_2',
-          tier: 'AGENCY',
+          tier: 'SCALE',
           status: 'trialing',
-          creemData: { product_id: getProductId('AGENCY', 'yearly') },
+          creemData: { product_id: getProductId('SCALE', 'yearly') },
         },
         {
           id: 'sub_3',
-          tier: 'AGENCY',
+          tier: 'SCALE',
           status: 'active',
           creemData: { product_id: 'prod_unknown' },
         },

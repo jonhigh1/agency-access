@@ -77,7 +77,7 @@ describe('expireTrials', () => {
   it('should handle multiple expired subscriptions', async () => {
     const subs = [
       { id: 'sub-1', agencyId: 'agency-1', tier: 'STARTER', status: 'trialing', trialEnd: new Date('2026-02-20') },
-      { id: 'sub-2', agencyId: 'agency-2', tier: 'AGENCY', status: 'trialing', trialEnd: new Date('2026-02-21') },
+      { id: 'sub-2', agencyId: 'agency-2', tier: 'SCALE', status: 'trialing', trialEnd: new Date('2026-02-21') },
     ];
 
     vi.mocked(prisma.subscription.findMany).mockResolvedValue(subs as any);

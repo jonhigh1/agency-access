@@ -14,7 +14,7 @@ import {
 } from 'lucide-react';
 import { useSubscription, useOpenPortal } from '@/lib/query/billing';
 import type { SubscriptionTier } from '@agency-platform/shared';
-import { SUBSCRIPTION_TIER_NAMES, TIER_LIMITS } from '@agency-platform/shared';
+import { PRICING_DISPLAY_TIER_DETAILS, SUBSCRIPTION_TIER_NAMES, TIER_LIMITS } from '@agency-platform/shared';
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/ui/status-badge';
 
@@ -91,10 +91,7 @@ export function CurrentPlanCard() {
           <div>
             <h3 className="text-lg font-semibold text-ink">{tierName} Plan</h3>
             <p className="text-sm text-muted-foreground">
-              {currentTier === 'STARTER' && 'Agencies getting started with access automation'}
-              {currentTier === 'GROWTH' && 'Agencies scaling their client operations'}
-              {currentTier === 'AGENCY' && 'High-volume agencies with advanced needs'}
-              {!currentTier && 'Try before you commit'}
+              {currentTier ? PRICING_DISPLAY_TIER_DETAILS[currentTier].description : 'Try before you commit'}
             </p>
           </div>
           <div className="text-right">

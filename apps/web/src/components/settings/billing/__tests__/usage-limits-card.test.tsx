@@ -26,7 +26,7 @@ describe('UsageLimitsCard', () => {
     });
   });
 
-  it('upgrades STARTER users to AGENCY', async () => {
+  it('upgrades STARTER users to SCALE', async () => {
     mockUseTierDetails.mockReturnValue({
       data: {
         tier: 'STARTER',
@@ -54,10 +54,10 @@ describe('UsageLimitsCard', () => {
     });
   });
 
-  it('shows contact sales for AGENCY users near limits', () => {
+  it('shows contact sales for SCALE users near limits', () => {
     mockUseTierDetails.mockReturnValue({
       data: {
-        tier: 'AGENCY',
+        tier: 'SCALE',
         status: 'active',
         limits: {
           accessRequests: { used: 45, limit: 50, remaining: 5 },

@@ -22,7 +22,7 @@ export function BillingHero() {
   const defaultInterval = lifecycle === 'PAID' ? 'monthly' : 'yearly';
   const billingInterval = useMemo(() => readBillingIntervalPreference(defaultInterval), [defaultInterval]);
 
-  const startCheckout = async (tier: 'STARTER' | 'AGENCY', surface: string) => {
+  const startCheckout = async (tier: 'STARTER' | 'GROWTH' | 'SCALE', surface: string) => {
     setErrorMessage(null);
 
     persistBillingIntervalPreference(billingInterval);
@@ -99,7 +99,7 @@ export function BillingHero() {
               ? `Your trial ends on ${trialEndDate}. Activate your paid plan to keep all features live.`
               : 'Activate your paid plan now to keep your trial features without interruption.',
             buttonLabel: 'Activate Paid Plan',
-            onClick: () => startCheckout(subscription?.tier === 'AGENCY' ? 'AGENCY' : 'STARTER', 'billing_hero_trialing'),
+            onClick: () => startCheckout(subscription?.tier === 'SCALE' ? 'SCALE' : 'STARTER', 'billing_hero_trialing'),
           }
         : subscription?.status === 'past_due'
           ? {
@@ -124,7 +124,7 @@ export function BillingHero() {
               onClick: (() => {
               const nextTier = getNextTierForCheckout(subscription?.tier);
               return nextTier
-                ? () => startCheckout(nextTier as 'STARTER' | 'AGENCY', 'billing_hero_paid')
+                ? () => startCheckout(nextTier as 'STARTER' | 'GROWTH' | 'SCALE', 'billing_hero_paid')
                 : focusManageSubscription;
             })(),
             };
