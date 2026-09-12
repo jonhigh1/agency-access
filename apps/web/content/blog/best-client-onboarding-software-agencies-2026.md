@@ -80,7 +80,7 @@ Five platforms. Five different flows. Five different failure modes. Agencies spe
 
 **Best for**: Agencies onboarding 3+ clients/month across multiple ad platforms.
 
-**Pricing**: Starter $29/mo ($24/mo billed yearly) · 5 clients/mo · Growth $79/mo (or $66/mo billed yearly) · 20 clients/mo · Agency $149/mo ($124/mo billed yearly) · 50 clients/mo
+**Pricing**: Starter $29/mo ($24/mo billed yearly) · 5 clients/mo · Growth $79/mo (or $66/mo billed yearly) · 20 clients/mo · Scale $149/mo ($124/mo billed yearly) · 50 clients/mo
 
 ### Leadsie
 
@@ -312,3 +312,21 @@ The agencies that try to solve onboarding with seven different tools spend more 
 ---
 
 *For the operational playbook, see our [client onboarding checklist](/blog/client-onboarding-checklist). For a deeper look at the access bottleneck specifically, read [what client access management is and why it costs agencies $1,500/month](/blog/what-is-client-access-management). And if you're evaluating pricing models, our [flat-rate vs credit pricing comparison](/blog/flat-rate-vs-credit-pricing) has the math.*
+
+
+## Agency Onboarding Software: FAQ
+
+**What is agency onboarding software?**
+Any tool that removes a step between signed contract and live campaigns. That covers four categories: platform access management, client intake forms, contracts and e-signature, and internal project management. Most lists mix all four into one ranking, which is why they are hard to act on.
+
+**Which agency onboarding software should I buy first?**
+Whichever category is your current bottleneck. For most agencies that is access management, because platform permissions block billable work while forms and contracts do not. Start there, then add intake and project tools only if a second bottleneck appears.
+
+**What is the difference between agency onboarding software and project management tools?**
+Project management tools coordinate your internal team. Onboarding software faces the client: it collects their permissions, information, and signatures. Asana and Monday cannot get you Meta Ads access. That is a different job.
+
+**How much does agency onboarding software cost?**
+Access management platforms run $29 to $99 per month. Intake and document tools run $20 to $50 per month each. A minimum viable stack of four tools lands near $100 per month total. Avoid credit-based pricing where cost scales with client count.
+
+**Can I build agency onboarding without dedicated software?**
+Yes, with a checklist, manual permission requests, and email templates. Agencies that do this spend 10 to 20 non-billable hours per month on coordination. Software pays for itself when that time exceeds the subscription cost.
