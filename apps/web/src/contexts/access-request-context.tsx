@@ -7,7 +7,7 @@
 
 'use client';
 
-import { createContext, useContext, useState, useCallback, ReactNode, useMemo } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, ReactNode, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { QueryClient } from '@tanstack/react-query';
 import { Client, AccessLevel, AccessRequestTemplate, IntakeField } from '@agency-platform/shared';
@@ -106,6 +106,105 @@ const initialState: AccessRequestFormState = {
   error: null,
 };
 
+const DRAFT_VERSION = 1;
+const draftKey = (agencyId: string) => `access-request-draft:${agencyId}`;
+
+function readDraft(agencyId: string): AccessRequestFormState {
+  if (typeof window === 'undefined') return initialState;
+
+  try {
+    const raw = sessionStorage.getItem(draftKey(agencyId));
+    if (!raw) return initialState;
+
+    const parsed = JSON.parse(raw) as { version?: number; state?: Partial<AccessRequestFormState> };
+    const saved = parsed.state;
+    const client = saved?.client;
+    const validClient =
+      client === null ||
+      (client &&
+        typeof client.id === 'string' &&
+        client.agencyId === agencyId &&
+        typeof client.name === 'string' &&
+        typeof client.company === 'string' &&
+        typeof client.email === 'string' &&
+        (client.website === null || typeof client.website === 'string') &&
+        ['en', 'es', 'nl'].includes(client.language) &&
+        !Number.isNaN(Date.parse(String(client.createdAt))) &&
+        !Number.isNaN(Date.parse(String(client.updatedAt))));
+
+    if (
+      parsed.version !== DRAFT_VERSION ||
+      !saved ||
+      !validClient ||
+      typeof saved.externalReference !== 'string' ||
+      !saved.selectedPlatforms ||
+      Object.values(saved.selectedPlatforms).some(
+        (products) => !Array.isArray(products) || products.some((product) => typeof product !== 'string')
+      ) ||
+      !saved.platformAccessLevels ||
+      Object.values(saved.platformAccessLevels).some(
+        (level) => !['admin', 'standard', 'read_only'].includes(level)
+      ) ||
+      !Array.isArray(saved.intakeFields) ||
+      saved.intakeFields.some(
+        (field) =>
+          !field ||
+          typeof field.id !== 'string' ||
+          typeof field.label !== 'string' ||
+          !['text', 'email', 'phone', 'url', 'dropdown', 'textarea'].includes(field.type) ||
+          typeof field.required !== 'boolean' ||
+          typeof field.order !== 'number'
+      ) ||
+      !saved.branding ||
+      typeof saved.branding.logoUrl !== 'string' ||
+      typeof saved.branding.primaryColor !== 'string' ||
+      typeof saved.branding.subdomain !== 'string' ||
+      typeof saved.currentStep !== 'number' ||
+      saved.currentStep < 1 ||
+      saved.currentStep > 4
+    ) {
+      throw new Error('Invalid access request draft');
+    }
+
+    return {
+      ...initialState,
+      client: client
+        ? {
+            ...client,
+            createdAt: new Date(String(client.createdAt)),
+            updatedAt: new Date(String(client.updatedAt)),
+          }
+        : null,
+      externalReference: saved.externalReference,
+      selectedPlatforms: saved.selectedPlatforms,
+      globalAccessLevel: saved.globalAccessLevel ?? initialState.globalAccessLevel,
+      platformAccessLevels: saved.platformAccessLevels,
+      intakeFields: saved.intakeFields,
+      branding: saved.branding,
+      currentStep: saved.currentStep,
+    };
+  } catch {
+    sessionStorage.removeItem(draftKey(agencyId));
+    return initialState;
+  }
+}
+
+function hasDraftContent(state: AccessRequestFormState): boolean {
+  return Boolean(
+    state.client ||
+      state.externalReference ||
+      Object.keys(state.selectedPlatforms).length ||
+      state.currentStep > 1 ||
+      state.intakeFields.length !== initialState.intakeFields.length ||
+      state.intakeFields.some((field, index) =>
+        JSON.stringify(field) !== JSON.stringify(initialState.intakeFields[index])
+      ) ||
+      state.branding.logoUrl ||
+      state.branding.primaryColor !== initialState.branding.primaryColor ||
+      state.branding.subdomain
+  );
+}
+
 // ============================================================
 // PROVIDER
 // ============================================================
@@ -124,7 +223,41 @@ export function AccessRequestProvider({
   getToken,
 }: AccessRequestProviderProps) {
   const router = useRouter();
-  const [state, setState] = useState<AccessRequestFormState>(initialState);
+  const [state, setState] = useState<AccessRequestFormState>(() => readDraft(agencyId));
+
+  useEffect(() => {
+    if (!hasDraftContent(state)) {
+      sessionStorage.removeItem(draftKey(agencyId));
+      return;
+    }
+
+    const draftState = {
+      client: state.client
+        ? {
+            id: state.client.id,
+            agencyId: state.client.agencyId,
+            name: state.client.name,
+            company: state.client.company,
+            email: state.client.email,
+            website: state.client.website,
+            language: state.client.language,
+            createdAt: state.client.createdAt,
+            updatedAt: state.client.updatedAt,
+          }
+        : null,
+      externalReference: state.externalReference,
+      selectedPlatforms: state.selectedPlatforms,
+      globalAccessLevel: state.globalAccessLevel,
+      platformAccessLevels: state.platformAccessLevels,
+      intakeFields: state.intakeFields,
+      branding: state.branding,
+      currentStep: state.currentStep,
+    };
+    sessionStorage.setItem(
+      draftKey(agencyId),
+      JSON.stringify({ version: DRAFT_VERSION, state: draftState })
+    );
+  }, [agencyId, state]);
 
   // ============================================================
   // UPDATE METHODS
@@ -375,8 +508,7 @@ export function AccessRequestProvider({
 
       // Success! Navigate to success page
       if (result.data) {
-        // Reset submitting state before navigation
-        setState((prev) => ({ ...prev, submitting: false }));
+        setState(initialState);
 
         // Track access request creation in PostHog
         const platformCount = Object.values(state.selectedPlatforms).reduce(
@@ -398,6 +530,8 @@ export function AccessRequestProvider({
         // Invalidate dashboard cache so it shows fresh data when user returns
         // We use the wildcard pattern to invalidate all dashboard queries
         queryClient?.invalidateQueries({ queryKey: ['dashboard'] });
+
+        sessionStorage.removeItem(draftKey(agencyId));
 
         router.push(`/access-requests/${result.data.id}/success`);
       }

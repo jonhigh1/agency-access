@@ -90,6 +90,7 @@ describe('Access Request Wizard', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    sessionStorage.clear();
 
     vi.mocked(useRouter).mockReturnValue(mockRouter as any);
     vi.mocked(useUser).mockReturnValue({ user: { id: 'user-123' } } as any);
@@ -155,6 +156,43 @@ describe('Access Request Wizard', () => {
     await waitFor(() => {
       expect(continueButton).not.toBeDisabled();
     });
+  });
+
+  it('keeps focus on an invalid custom field instead of advancing to review', async () => {
+    renderWithProviders(<AccessRequestPage />);
+
+    await userEvent.click(await screen.findByRole('button', { name: /pick client/i }));
+    await userEvent.click(screen.getByRole('button', { name: /continue to platforms/i }));
+    await userEvent.click(await screen.findByRole('button', { name: /pick platforms/i }));
+    await userEvent.click(screen.getByRole('button', { name: /continue to customize/i }));
+
+    const field = await screen.findByPlaceholderText(/field label/i);
+    await userEvent.clear(field);
+    await userEvent.click(screen.getByRole('button', { name: /review & create/i }));
+
+    expect(screen.getByRole('heading', { name: 'Customize' })).toBeInTheDocument();
+    expect(field).toHaveFocus();
+    expect(field).toHaveAttribute('aria-invalid', 'true');
+    expect(field).toHaveAccessibleDescription('Enter a label for this field.');
+  });
+
+  it('opens branding and focuses an invalid subdomain', async () => {
+    renderWithProviders(<AccessRequestPage />);
+
+    await userEvent.click(await screen.findByRole('button', { name: /pick client/i }));
+    await userEvent.click(screen.getByRole('button', { name: /continue to platforms/i }));
+    await userEvent.click(await screen.findByRole('button', { name: /pick platforms/i }));
+    await userEvent.click(screen.getByRole('button', { name: /continue to customize/i }));
+    await userEvent.click(screen.getByRole('button', { name: 'Branding' }));
+
+    const subdomain = screen.getByLabelText('Subdomain');
+    await userEvent.type(subdomain, 'ab');
+    await userEvent.click(screen.getByRole('button', { name: /review & create/i }));
+
+    expect(screen.getByRole('heading', { name: 'Customize' })).toBeInTheDocument();
+    expect(subdomain).toHaveFocus();
+    expect(subdomain).toHaveAttribute('aria-invalid', 'true');
+    expect(subdomain).toHaveAccessibleDescription(/3–63 lowercase letters/i);
   });
 
   it('submits successfully and routes to success page', async () => {

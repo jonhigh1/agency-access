@@ -13,7 +13,7 @@
 
 'use client';
 
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@clerk/nextjs';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { Plus, Trash2, Check, Loader2, AlertCircle, Save, Shield, ChevronDown } from 'lucide-react';
@@ -56,6 +56,7 @@ function AccessRequestWizardContent() {
     updateIntakeFields,
     updateBranding,
     setStep,
+    setError,
     submitRequest,
     validateStep,
   } = useAccessRequest();
@@ -68,8 +69,7 @@ function AccessRequestWizardContent() {
 
   // Advanced settings state (for Step 1: Optional downstream configuration)
   const [advancedSettingsExpanded, setAdvancedSettingsExpanded] = useState(false);
-
-  const principalClerkId = orgId || userId;
+  const [validationFocusId, setValidationFocusId] = useState<string | null>(null);
 
   // Fetch agency by clerkUserId - shared hook with the connections page
   const { data: agencyData } = useUserAgency();
@@ -152,6 +152,25 @@ function AccessRequestWizardContent() {
     await submitRequest();
   };
 
+  const handleCustomizeContinue = () => {
+    const validation = validateStep(3);
+    if (validation.valid) {
+      setValidationFocusId(null);
+      setStep(4);
+      return;
+    }
+
+    setError(validation.error || 'Check the highlighted fields');
+    const emptyField = state.intakeFields.find((field) => !field.label.trim());
+    setCustomizeTab(emptyField ? 'fields' : 'branding');
+    setValidationFocusId(emptyField ? `intake-field-${emptyField.id}` : 'subdomain');
+  };
+
+  useEffect(() => {
+    if (!validationFocusId) return;
+    document.getElementById(validationFocusId)?.focus();
+  }, [customizeTab, validationFocusId]);
+
   // Step labels (1-4 with new streamlined flow)
   const steps = [
     { number: 1, label: 'Fundamentals' },
@@ -187,25 +206,15 @@ function AccessRequestWizardContent() {
                 Set up the basics for your access request
               </p>
 
-              {/* Vertical Flow with Clear Sections */}
-              <div className="relative space-y-10 pl-5">
-                {/* Connecting line - runs through all sections */}
-                <div className="absolute left-[18px] top-3 bottom-3 w-px bg-muted/40 pointer-events-none" />
-
-                {/* Section 1: Client (Primary, Required) */}
-                <div className="relative">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="relative z-10 h-9 w-9 rounded-full bg-coral/20 border-4 border-white flex items-center justify-center">
-                      <span className="text-sm font-semibold text-danger-ink/90">1</span>
-                    </div>
-                    <div>
+              <div className="space-y-8">
+                <div>
+                  <div className="mb-4">
                       <label className="block text-base font-semibold text-ink">
                         Select Client <span className="text-danger-ink">*</span>
                       </label>
                       <p className="text-sm text-muted-foreground">Who is this access request for?</p>
-                    </div>
                   </div>
-                  <div className="ml-10">
+                  <div>
                     <ClientSelector
                       agencyId={agencyId!}
                       value={state.client?.id}
@@ -214,17 +223,13 @@ function AccessRequestWizardContent() {
                   </div>
                 </div>
 
-                {/* Section 2: Advanced Settings (Optional) */}
-                <div className="relative">
+                <div>
                   <button
                     type="button"
                     onClick={() => setAdvancedSettingsExpanded(!advancedSettingsExpanded)}
                     aria-expanded={advancedSettingsExpanded}
-                    className="flex w-full items-center gap-3 text-left group"
+                    className="flex min-h-[44px] w-full items-center gap-3 text-left group"
                   >
-                    <div className="relative z-10 h-9 w-9 rounded-full bg-muted/30 border-4 border-white flex items-center justify-center">
-                      <span className="text-sm font-semibold text-muted-foreground">2</span>
-                    </div>
                     <div className="flex-1">
                       <span className="block text-base font-semibold text-ink hover:text-danger-ink transition-colors">
                         Advanced Settings <span className="text-muted-foreground font-normal">(Optional)</span>
@@ -245,7 +250,7 @@ function AccessRequestWizardContent() {
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
-                      className="ml-10 mt-4"
+                      className="mt-4"
                     >
                       <label htmlFor="external-reference" className="block text-base font-semibold text-ink">
                         External Reference
@@ -272,7 +277,7 @@ function AccessRequestWizardContent() {
             </div>
 
             {/* Platform Quick Actions */}
-            <div className="mt-4 p-4 bg-background border border-border rounded-lg flex items-center justify-between">
+            <div className="mt-4 flex flex-col items-stretch gap-4 rounded-lg border border-border bg-background p-4 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-base font-medium text-ink">Need to connect platforms?</p>
                 <p className="text-sm text-muted-foreground">Connect your agency's platform accounts to use delegated access</p>
@@ -280,7 +285,7 @@ function AccessRequestWizardContent() {
               <Button
                 type="button"
                 variant="secondary"
-                className="px-4 py-2.5"
+                className="w-full px-4 py-2.5 sm:w-auto"
                 onClick={() => router.push('/connections')}
               >
                 <Plus className="h-4 w-4" />
@@ -303,7 +308,7 @@ function AccessRequestWizardContent() {
             <div className="flex justify-end">
               <Button
                 type="button"
-                className="px-8"
+                className="w-full px-8 sm:w-auto"
                 onClick={() => setStep(2)}
                 disabled={!state.client}
               >
@@ -381,16 +386,18 @@ function AccessRequestWizardContent() {
               </m.div>
             )}
 
-            <div className="mt-6 flex justify-between">
+            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
               <Button
               type="button"
               variant="ghost"
+              className="w-full sm:w-auto"
               onClick={() => setStep(1)}
               >
               Back
               </Button>
               <Button
               type="button"
+              className="w-full sm:w-auto"
               onClick={() => setStep(3)}
               disabled={!currentStepValid}
               >
@@ -447,7 +454,7 @@ function AccessRequestWizardContent() {
             {customizeTab === 'fields' && (
               <div className="space-y-3">
                 <AnimatePresence mode="popLayout">
-              {state.intakeFields.map((field, index) => (
+              {state.intakeFields.map((field) => (
                 <m.div
                 key={field.id}
                 initial={{ opacity: 0, y: -10 }}
@@ -458,12 +465,27 @@ function AccessRequestWizardContent() {
                 >
                 <div className="flex-1 space-y-3">
                   <input
+                id={`intake-field-${field.id}`}
                 type="text"
                 value={field.label}
-                onChange={(e) => updateIntakeField(field.id, { label: e.target.value })}
+                onChange={(e) => {
+                  updateIntakeField(field.id, { label: e.target.value });
+                  if (state.error) setError(null);
+                }}
                 placeholder="Field label (e.g., Company Website)"
                 className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:ring-2 focus:ring-ring focus:border-coral"
+                aria-invalid={state.error === 'All intake fields must have a label' && !field.label.trim()}
+                aria-describedby={
+                  state.error === 'All intake fields must have a label' && !field.label.trim()
+                    ? `intake-field-${field.id}-error`
+                    : undefined
+                }
                   />
+                  {state.error === 'All intake fields must have a label' && !field.label.trim() ? (
+                    <p id={`intake-field-${field.id}-error`} className="text-sm text-danger-ink">
+                      Enter a label for this field.
+                    </p>
+                  ) : null}
                   <div className="flex items-center gap-3">
                 <SingleSelect
                   options={[
@@ -562,15 +584,25 @@ function AccessRequestWizardContent() {
                       type="text"
                       id="subdomain"
                       value={state.branding.subdomain}
-                      onChange={(e) => updateBranding({ subdomain: e.target.value.toLowerCase() })}
+                      onChange={(e) => {
+                        updateBranding({ subdomain: e.target.value.toLowerCase() });
+                        if (state.error) setError(null);
+                      }}
                       className="flex-1 px-3 py-2 border border-border rounded-l-lg focus:ring-2 focus:ring-ring focus:border-coral"
                       placeholder="my-agency"
                       pattern="[a-z0-9]([a-z0-9-]{1,61}[a-z0-9])?"
+                      aria-invalid={state.error?.startsWith('Subdomain must') || undefined}
+                      aria-describedby={state.error?.startsWith('Subdomain must') ? 'subdomain-error' : undefined}
                     />
                     <span className="px-4 py-2 bg-muted/30 border border-l-0 border-border rounded-r-lg text-muted-foreground text-sm">
                       .agencyplatform.com
                     </span>
                   </div>
+                  {state.error?.startsWith('Subdomain must') ? (
+                    <p id="subdomain-error" className="mt-2 text-sm text-danger-ink">
+                      Use 3–63 lowercase letters, numbers, or hyphens. Do not start or end with a hyphen.
+                    </p>
+                  ) : null}
                 </div>
 
                 {/* Preview */}
@@ -623,17 +655,19 @@ function AccessRequestWizardContent() {
               </m.div>
             )}
 
-            <div className="mt-6 flex justify-between">
+            <div className="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-between">
               <Button
                 type="button"
                 variant="ghost"
+                className="w-full sm:w-auto"
                 onClick={() => setStep(2)}
               >
                 Back
               </Button>
               <Button
                 type="button"
-                onClick={() => setStep(4)}
+                className="w-full sm:w-auto"
+                onClick={handleCustomizeContinue}
               >
                 Review & Create
               </Button>
@@ -859,21 +893,22 @@ function AccessRequestWizardContent() {
                 )}
 
                 {/* Action Buttons */}
-                <div className="flex justify-between items-center">
+                <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <Button
                     type="button"
                     variant="ghost"
+                    className="w-full sm:w-auto"
                     onClick={() => setStep(3)}
                     disabled={state.submitting}
                   >
                     Back
                   </Button>
 
-                  <div className="flex gap-3">
+                  <div className="flex w-full flex-col gap-3 sm:w-auto sm:flex-row">
                     <Button
                       type="button"
                       variant="ghost"
-                      className="px-4 py-2.5 text-danger-ink"
+                      className="w-full px-4 py-2.5 text-danger-ink sm:w-auto"
                       onClick={() => setIsSaveTemplateModalOpen(true)}
                       disabled={state.submitting}
                     >
@@ -883,6 +918,7 @@ function AccessRequestWizardContent() {
                     <Button
                       type="submit"
                       variant="brutalist"
+                      className="w-full sm:w-auto"
                       disabled={state.submitting}
                     >
                       {state.submitting && <Loader2 className="h-4 w-4 animate-spin" />}
@@ -931,7 +967,12 @@ export default function NewAccessRequestPage() {
   const agencyId = orgId || userId;
 
   return (
-    <AccessRequestProvider agencyId={agencyId} queryClient={queryClient} getToken={clerkAuth.getToken}>
+    <AccessRequestProvider
+      key={agencyId}
+      agencyId={agencyId}
+      queryClient={queryClient}
+      getToken={clerkAuth.getToken}
+    >
       <AccessRequestWizardContent />
     </AccessRequestProvider>
   );

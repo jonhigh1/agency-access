@@ -30,6 +30,7 @@ vi.mock('@/lib/api/access-requests');
 describe('AccessRequestContext', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    sessionStorage.clear();
   });
 
   const wrapper = ({ children }: { children: ReactNode }) => (
@@ -269,6 +270,59 @@ describe('AccessRequestContext', () => {
       });
 
       expect(result.current.state.currentStep).toBe(3);
+    });
+  });
+
+  describe('session draft', () => {
+    it('restores request work for the same agency', async () => {
+      const first = renderHook(() => useAccessRequest(), { wrapper });
+
+      act(() => {
+        first.result.current.updateClient({
+          id: 'client-123',
+          agencyId: 'agency-123',
+          name: 'Test Client',
+          company: 'Test Company',
+          email: 'test@example.com',
+          website: null,
+          language: 'en',
+          createdAt: new Date('2026-01-01T00:00:00.000Z'),
+          updatedAt: new Date('2026-01-02T00:00:00.000Z'),
+        });
+        first.result.current.updateExternalReference('crm-123');
+        first.result.current.updatePlatforms({ google: ['google_ads'] });
+        first.result.current.setStep(2);
+      });
+
+      await waitFor(() => {
+        expect(sessionStorage.getItem('access-request-draft:agency-123')).toContain('crm-123');
+      });
+      first.unmount();
+
+      const restored = renderHook(() => useAccessRequest(), { wrapper });
+
+      expect(restored.result.current.state).toMatchObject({
+        client: { id: 'client-123', email: 'test@example.com' },
+        externalReference: 'crm-123',
+        selectedPlatforms: { google: ['google_ads'] },
+        currentStep: 2,
+        submitting: false,
+        error: null,
+      });
+      expect(restored.result.current.state.client?.createdAt).toBeInstanceOf(Date);
+    });
+
+    it('removes the saved draft when the form resets', async () => {
+      const { result } = renderHook(() => useAccessRequest(), { wrapper });
+
+      act(() => result.current.updateExternalReference('crm-123'));
+      await waitFor(() => {
+        expect(sessionStorage.getItem('access-request-draft:agency-123')).not.toBeNull();
+      });
+
+      act(() => result.current.resetForm());
+
+      expect(sessionStorage.getItem('access-request-draft:agency-123')).toBeNull();
     });
   });
 
