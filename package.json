@@ -49,7 +49,8 @@
     "axios": "^1.13.5",
     "picomatch": "^4.0.4",
     "postcss": "^8.5.10",
-    "svix": "^1.96.0"
+    "svix": "^1.96.0",
+    "react-router": "^5.3.4"
   },
   "engines": {
     "node": "20.x",
