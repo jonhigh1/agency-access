@@ -48,7 +48,7 @@ export function UsageOverviewCard() {
   const { data: quota, isLoading, isError } = useQuota();
 
   const billingLink = (
-    <Link href="/settings?tab=billing" className="text-sm font-semibold text-ink underline underline-offset-4 hover:text-danger-ink">
+    <Link href="/settings?tab=billing" className="inline-flex min-h-[44px] items-center text-sm font-semibold text-ink underline underline-offset-4 hover:text-danger-ink">
       Manage billing
     </Link>
   );

@@ -6,6 +6,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { authorizedApiFetch } from '@/lib/api/authorized-api-fetch';
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard';
 import { getApiBaseUrl } from '@/lib/api/api-env';
+import { getDocsUrl } from '@/lib/docs-url';
 import { createAgentGrant, listAgentGrants, revokeAgentGrant, updateAgentGrant } from '@/lib/api/agents';
 import type { AgentPermission } from '@agency-platform/shared';
 import { Button } from '@/components/ui/button';
@@ -69,7 +70,7 @@ export function AgentsSettingsTab() {
         <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2">
           <a
             href={endpoint}
-            className="label-micro"
+            className="label-micro inline-flex min-h-[44px] items-center"
             onClick={(event) => {
               event.preventDefault();
               void copyEndpoint();
@@ -140,9 +141,14 @@ export function AgentsSettingsTab() {
             label="No agents connected"
             description="Until you approve one, no agent can read or prepare anything for this workspace."
           >
-            <Button variant="secondary" size="sm" onClick={copyEndpoint}>
-              {copied ? 'Copied' : 'Copy endpoint'}
-            </Button>
+            <a
+              href={getDocsUrl('/agents')}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex min-h-[44px] items-center text-sm font-semibold text-ink underline underline-offset-4 hover:text-danger-ink"
+            >
+              How to connect an agent
+            </a>
           </SettingsRow>
         )}
         {grants.map((grant) => (
