@@ -2,7 +2,7 @@
 
 **SEO Performance Tracking for Priority Keywords**
 
-**Last Updated**: March 25, 2026
+**Last Updated**: September 13, 2026
 
 ---
 
@@ -27,6 +27,8 @@
 | meta ads access request | ~200-300 | N/A | Top 5 | /guides/meta-ads-access | P0 |
 | tiktok ads access for agencies | ~100-200 | N/A | Top 5 | /guides/tiktok-ads-access | P1 |
 | linkedin campaign manager access | ~100-200 | N/A | Top 5 | /guides/linkedin-ads-access | P1 |
+| snapchat business manager | ~9,900 | N/A | Top 10 | /blog/snapchat-ads-access-agencies | P1 |
+| snapchat ad account access | long-tail | N/A | Top 10 | /blog/snapchat-ads-access-agencies | P1 |
 
 ### Tier 3: Educational/Top of Funnel (P1-P2)
 
