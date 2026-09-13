@@ -391,7 +391,7 @@ Leadsie supports **31+ platforms**: Meta (Pages, IG, Ads, Datasets, Pixels, Cata
 
 ## 📊 Content Inventory Summary (Audited March 18, 2026)
 
-### Published Blog Posts (20 total — loaded from `content/blog/*.md`)
+### Published Blog Posts (21 total — loaded from `content/blog/*.md`)
 
 | Slug | Title | Category | Year | Notes |
 |------|-------|----------|------|-------|
@@ -417,6 +417,7 @@ Leadsie supports **31+ platforms**: Meta (Pages, IG, Ads, Datasets, Pixels, Cata
 | `client-onboarding-questionnaire-27-questions` | Client Onboarding Questionnaire: 27 Questions Every Agency Needs to Ask | onboarding | 2026 | 9/10, publish-ready, 27 questions across 6 categories, downloadable template |
 | `marketing-agency-onboarding-best-practices-2026` | Agency Onboarding Best Practices (7 Mistakes That Make Clients Question Hiring You) | onboarding | 2026 | 9/10, publish-ready, client-POV mistakes angle, unique from existing pillar |
 | `oauth-token-management-agencies` | OAuth Token Management for Agencies: What Expires, What Breaks, and How to Fix It | operations | 2026 | 9/10, draft complete, agency ops angle on OAuth tokens, 5-phase lifecycle framework |
+| `unable-to-assign-assets-meta-business-suite` | Unable to Assign Assets in Meta Business Suite: 6 Fixes That Actually Work (2026) | tutorials | 2026 | 9/10, draft complete, 6-cause diagnostic framework, unique specificity vs. all competitor posts |
 
 ### Published Dedicated Guides (2 total — in `app/(marketing)/guides/`)
 

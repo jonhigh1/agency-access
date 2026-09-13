@@ -114,6 +114,9 @@ Keywords Leadsie ranks for that we should target:
 | oauth token management | ~100-200 | N/A | Top 10 | /blog/oauth-token-management-agencies | P2 |
 | ad account access expired | ~50-100 | N/A | Top 10 | /blog/oauth-token-management-agencies | P2 |
 | google ads token refresh | ~50-100 | N/A | Top 10 | /blog/oauth-token-management-agencies | P2 |
+| unable to assign assets meta business suite | ~200-400 | N/A | Top 3 | /blog/unable-to-assign-assets-meta-business-suite | P1 |
+| meta business suite asset assignment error | ~100-200 | N/A | Top 5 | /blog/unable-to-assign-assets-meta-business-suite | P2 |
+| meta business manager assign ad account error | ~100-200 | N/A | Top 5 | /blog/unable-to-assign-assets-meta-business-suite | P2 |
 
 ---
 
@@ -179,3 +182,4 @@ Common PAA questions to answer in content:
 # Blog Post Published 
 # Blog Post Published 
 # Blog Post Published — oauth-token-management-agencies (2026-04-06)
+# Blog Post Published — unable-to-assign-assets-meta-business-suite (2026-04-07)
