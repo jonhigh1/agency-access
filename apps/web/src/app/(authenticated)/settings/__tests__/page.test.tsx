@@ -39,6 +39,11 @@ vi.mock('next/navigation', () => ({
 
 vi.mock('@/lib/query/billing', () => ({
   usePrefetchBillingData: () => vi.fn(),
+  useSubscription: () => ({ data: null, isLoading: false, isError: false }),
+}));
+
+vi.mock('@/hooks/use-user-agency', () => ({
+  useUserAgency: () => ({ data: { id: 'ag_1', name: 'Acme' }, isLoading: false }),
 }));
 
 vi.mock('@/components/settings/usage-overview-card', () => ({
