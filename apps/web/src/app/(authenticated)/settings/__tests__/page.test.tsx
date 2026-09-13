@@ -41,18 +41,13 @@ vi.mock('@/lib/query/billing', () => ({
   usePrefetchBillingData: () => vi.fn(),
 }));
 
-vi.mock('@/components/marketing/reveal', () => ({
-  Reveal: ({ children }: { children: React.ReactNode }) => <>{children}</>,
-}));
-
 vi.mock('@/components/settings/usage-overview-card', () => ({
   UsageOverviewCard: () => <div>Usage overview</div>,
 }));
 
 vi.mock('@/components/settings/general', () => ({
   AgencyProfileCard: () => <div>Agency profile</div>,
-  TeamMembersCard: () => <div>Team members</div>,
-  NotificationsCard: () => <div>Notifications</div>,
+  PlanStrip: () => <div>Plan strip</div>,
 }));
 
 vi.mock('@/components/settings/billing/billing-tab', () => ({
@@ -76,7 +71,7 @@ describe('SettingsPage gated tabs', () => {
     render(<SettingsPage />);
 
     expect(await screen.findByText('Agency profile')).toBeInTheDocument();
-    expect(screen.getByText('Team members')).toBeInTheDocument();
+    expect(screen.getByText('Plan strip')).toBeInTheDocument();
     expect(screen.queryByText('Billing settings panel')).not.toBeInTheDocument();
     expect(screen.queryByText('Webhook settings panel')).not.toBeInTheDocument();
     expect(screen.queryByText('Agents settings panel')).not.toBeInTheDocument();

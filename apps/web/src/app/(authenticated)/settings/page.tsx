@@ -3,27 +3,23 @@
 /**
  * Settings Page
  *
- * Three-tab structure:
- * - General: Agency Profile, Team Members, Notifications
- * - Billing: Current plan, usage, comparison, payments, invoices
+ * Four-tab structure inside one shell:
+ * - General: Plan strip, usage, agency profile
+ * - Billing: Plan status, usage, comparison, payments, invoices
  * - Webhooks: Endpoint configuration and delivery inspection
+ * - Agents: MCP endpoint and personal-agent grants
  */
 
 import { Suspense } from 'react';
 import dynamic from 'next/dynamic';
 import { SettingsTabs } from '@/components/settings/settings-tabs';
-import { Reveal } from '@/components/marketing/reveal';
-import {
-  AgencyProfileCard,
-  TeamMembersCard,
-  NotificationsCard,
-} from '@/components/settings/general';
+import { AgencyProfileCard, PlanStrip } from '@/components/settings/general';
 import { UsageOverviewCard } from '@/components/settings/usage-overview-card';
 
 function gatedTabFallback(label: string) {
   return (
     <div
-      className="min-h-[220px] rounded-xl border border-border bg-muted/25"
+      className="min-h-[220px] border border-border bg-muted/25"
       aria-busy
       aria-label={label}
     />
@@ -57,10 +53,9 @@ const AgentsSettingsTab = dynamic(
 function GeneralTabContent() {
   return (
     <>
+      <PlanStrip />
       <UsageOverviewCard />
       <AgencyProfileCard />
-      <TeamMembersCard />
-      <NotificationsCard />
     </>
   );
 }
@@ -68,34 +63,33 @@ function GeneralTabContent() {
 export default function SettingsPage() {
   return (
     <Suspense fallback={<SettingsLoadingSkeleton />}>
-      <Reveal direction="up">
-        <SettingsTabs
-          generalContent={<GeneralTabContent />}
-          billingContent={<BillingTab />}
-          webhooksContent={<WebhookSettingsTab />}
-          agentsContent={<AgentsSettingsTab />}
-        />
-      </Reveal>
+      <SettingsTabs
+        generalContent={<GeneralTabContent />}
+        billingContent={<BillingTab />}
+        webhooksContent={<WebhookSettingsTab />}
+        agentsContent={<AgentsSettingsTab />}
+      />
     </Suspense>
   );
 }
 
 function SettingsLoadingSkeleton() {
   return (
-    <div className="flex-1 bg-paper p-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="mb-6">
-          <div className="h-9 w-32 bg-card/50 rounded animate-pulse" />
-          <div className="h-4 w-64 bg-card/50 rounded animate-pulse mt-2" />
+    <div className="flex-1 bg-paper p-6 md:p-8">
+      <div className="max-w-7xl mx-auto">
+        <div className="mb-8">
+          <div className="h-8 w-32 bg-muted animate-pulse" />
+          <div className="h-3 w-64 bg-muted animate-pulse mt-3" />
         </div>
-        <div className="flex gap-1 mb-6 border-b border-border pb-3">
-          <div className="h-8 w-24 bg-card/50 rounded animate-pulse" />
-          <div className="h-8 w-24 bg-card/50 rounded animate-pulse" />
-          <div className="h-8 w-24 bg-card/50 rounded animate-pulse" />
+        <div className="flex gap-6 mb-8 hairline-b pb-3">
+          <div className="h-5 w-16 bg-muted animate-pulse" />
+          <div className="h-5 w-16 bg-muted animate-pulse" />
+          <div className="h-5 w-20 bg-muted animate-pulse" />
+          <div className="h-5 w-16 bg-muted animate-pulse" />
         </div>
-        <div className="space-y-6">
-          <div className="h-48 bg-card rounded-lg border border-border animate-pulse" />
-          <div className="h-32 bg-card rounded-lg border border-border animate-pulse" />
+        <div className="space-y-10">
+          <div className="h-24 bg-ink/90 animate-pulse" />
+          <div className="h-40 border border-border animate-pulse" />
         </div>
       </div>
     </div>
