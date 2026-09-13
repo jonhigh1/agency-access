@@ -53,7 +53,7 @@ export function PlatformCard({
   const textClass = isFeatured ? 'text-lg' : isOther ? 'text-lg' : 'text-base';
 
   const cardBaseClasses = cn(
-    'clean-card bg-card rounded-xl h-full',
+    'bg-card border border-black/10 rounded-none h-full',
     'px-4 py-5 md:px-5 md:py-6',
     isFeatured && 'border-coral/30 bg-gradient-to-b from-coral/5 to-card'
   );
@@ -137,7 +137,7 @@ export function PlatformCard({
                 isLoading={isConnecting}
                 onClick={() => onConnect(platform)}
                 disabled={isConnecting}
-                className="w-full shadow-none hover:translate-y-0"
+                className="w-full"
               >
                 {isConnecting ? 'Connecting...' : 'Connect'}
               </Button>

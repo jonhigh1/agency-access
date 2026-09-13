@@ -43,11 +43,9 @@ const BRUTALIST_SHADOW = /^shadow-brutalist/;
 /** Movement mechanics — hover lifts/presses belong to Button variants. */
 const MOVEMENT_MECHANICS = /(?:^|:)-?translate-/;
 /** Button className tokens that cancel or fight the chosen variant. */
-const BUTTON_OVERRIDE_BAN = [
-  'hover:translate-x-0',
-  'normal-case',
-  'hover:shadow-',
-];
+const BUTTON_OVERRIDE_BAN =
+  /^(?:(?:group-)?hover:)?(?:translate-[xy]-?0|normal-case|shadow-none)$/;
+const BUTTON_HOVER_SHADOW_BAN = /^(?:group-)?hover:shadow-/;
 
 interface Violation {
   file: string;
@@ -126,7 +124,7 @@ function walkFile(file: string, violations: Violation[]): void {
     if (!classMatch) continue;
     const tokens = classMatch[1].split(/\s+/).filter(Boolean);
     for (const token of tokens) {
-      if (BUTTON_OVERRIDE_BAN.some((banned) => token.startsWith(banned))) {
+      if (BUTTON_OVERRIDE_BAN.test(token) || BUTTON_HOVER_SHADOW_BAN.test(token)) {
         push(match.index, 'button-variant-override', token);
       }
       if (token.startsWith('rounded-')) {
