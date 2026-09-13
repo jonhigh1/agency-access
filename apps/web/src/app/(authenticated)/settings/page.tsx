@@ -12,11 +12,7 @@
 
 import { Suspense } from 'react';
 import { SettingsTabs } from '@/components/settings/settings-tabs';
-import {
-  AgencyProfileCard,
-  TeamMembersCard,
-  NotificationsCard,
-} from '@/components/settings/general';
+import { AgencyProfileCard, PlanStrip } from '@/components/settings/general';
 import { BillingTab } from '@/components/settings/billing';
 import { UsageOverviewCard } from '@/components/settings/usage-overview-card';
 import { WebhookSettingsTab } from '@/components/settings/webhooks';
@@ -25,10 +21,9 @@ import { AgentsSettingsTab } from '@/components/settings/agents';
 function GeneralTabContent() {
   return (
     <>
+      <PlanStrip />
       <UsageOverviewCard />
       <AgencyProfileCard />
-      <TeamMembersCard />
-      <NotificationsCard />
     </>
   );
 }
