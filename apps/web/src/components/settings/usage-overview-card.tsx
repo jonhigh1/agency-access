@@ -4,14 +4,13 @@
  * Usage overview — one row per quota metric on the General tab.
  *
  * Flat rows, no card. Links to /settings?tab=billing for the full picture.
- * `useQuota` needs an organization; a personal principal sees one row that
- * says so instead of an empty section.
+ * Reads `useTierDetails`, the same principal-safe source the Billing tab
+ * uses (orgId ?? userId), so personal workspaces see their usage too.
  */
 
 import Link from 'next/link';
-import { useAuth } from '@clerk/nextjs';
 import type { TierLimits } from '@agency-platform/shared';
-import { useQuota } from '@/lib/query/quota';
+import { useTierDetails } from '@/lib/query/billing';
 import { SettingsGroup, SettingsRow } from './settings-row';
 
 type MetricKey = keyof TierLimits;
@@ -44,8 +43,8 @@ function UsageMeter({ used, limit }: { used: number; limit: number | 'unlimited'
 }
 
 export function UsageOverviewCard() {
-  const { orgId } = useAuth();
-  const { data: quota, isLoading, isError } = useQuota();
+  const { data: tierDetails, isLoading, isError } = useTierDetails();
+  const limits = tierDetails?.limits;
 
   const billingLink = (
     <Link href="/settings?tab=billing" className="inline-flex min-h-[44px] items-center text-sm font-semibold text-ink underline underline-offset-4 hover:text-danger-ink">
@@ -63,21 +62,15 @@ export function UsageOverviewCard() {
         </div>
       )}
 
-      {!isLoading && !orgId && (
-        <SettingsRow label="Quota" description="Usage data requires an active organization context.">
-          <p className="text-sm text-muted-foreground">Switch to an organization to see quota usage.</p>
-        </SettingsRow>
-      )}
-
-      {!isLoading && orgId && isError && (
+      {!isLoading && isError && (
         <SettingsRow label="Quota">
           <p className="text-sm text-danger-ink">Failed to load usage data. Reload the page to try again.</p>
         </SettingsRow>
       )}
 
-      {!isLoading && quota &&
+      {!isLoading && limits &&
         METRICS.map(({ key, label, description }) => {
-          const entry = quota[key];
+          const entry = limits[key];
           if (!entry) return null;
           if (key === 'templates' && entry.limit === 'unlimited') return null;
           return (
