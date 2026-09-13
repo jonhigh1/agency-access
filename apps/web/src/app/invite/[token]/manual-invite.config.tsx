@@ -6,6 +6,7 @@ import type { ClientAccessRequestPayload, Platform } from '@agency-platform/shar
 import { KitCopyButton } from '@/components/client-auth/kit/KitCopyButton';
 import { BeehiivCopyButton } from '@/components/client-auth/beehiiv/BeehiivCopyButton';
 import { CopyCode } from '@/components/client-auth/pinterest/CopyCode';
+import { Button } from '@/components/ui/button';
 import type { ManualInviteConfig, ManualInviteFlowData } from '@/components/flow/manual-invite-flow';
 import { renderManualFormFields } from '@/components/flow/manual-invite-flow';
 
@@ -59,16 +60,18 @@ function linkButtons(links: Array<{ href: string; label: string }>): ReactNode {
   return (
     <div className="flex flex-wrap gap-3">
       {links.map((link) => (
-        <a
+        <Button
           key={link.href}
-          href={link.href}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-3 py-2 text-sm font-medium text-foreground hover:bg-muted/20"
+          variant="secondary"
+          size="sm"
+          className="px-3 py-2"
+          asChild
         >
-          {link.label}
-          <ExternalLink className="h-4 w-4" />
-        </a>
+          <a href={link.href} target="_blank" rel="noopener noreferrer">
+            {link.label}
+            <ExternalLink className="h-4 w-4" />
+          </a>
+        </Button>
       ))}
     </div>
   );

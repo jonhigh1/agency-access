@@ -13,7 +13,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Search, Filter, AlertCircle, ExternalLink, Plus } from 'lucide-react';
 import { LogoSpinner } from '@/components/ui/logo-spinner';
 import Link from 'next/link';
-import { StatusBadge, PlatformIcon, EmptyState } from '@/components/ui';
+import { StatusBadge, PlatformIcon, EmptyState, Button } from '@/components/ui';
 import { CreateClientModal } from '@/components/client-detail/CreateClientModal';
 import { UpgradeModal } from '@/components/upgrade-modal';
 import { useQuotaCheck, QuotaExceededError } from '@/lib/query/quota';
@@ -149,13 +149,14 @@ function ClientsPageContent() {
               Manage client connections and platform authorizations
             </p>
           </div>
-          <button
+          <Button
+            variant="brutalist"
+            className="sm:px-8"
             onClick={handleCreateClientClick}
-            className="flex items-center gap-2 px-6 sm:px-8 bg-coral text-white rounded-lg hover:bg-coral/90 shadow-brutalist hover:shadow-none hover:translate-y-[2px] transition-all font-semibold min-h-[44px]"
           >
             <Plus className="h-4 w-4" />
             Create Client
-          </button>
+          </Button>
         </div>
 
         {/* Search and Filter Bar */}
@@ -172,7 +173,7 @@ function ClientsPageContent() {
           </div>
           <button
             onClick={() => setShowFilters(!showFilters)}
-            className={`px-4 py-3 border border-black/10 rounded-lg hover:bg-coral/10 transition-colors flex items-center gap-2 min-h-[44px] ${
+            className={`px-4 py-3 border border-border rounded-none hover:bg-coral/10 transition-colors flex items-center gap-2 min-h-[44px] ${
               showFilters ? 'bg-coral/10' : 'bg-background'
             }`}
           >
@@ -261,13 +262,17 @@ function ClientsPageContent() {
                 </div>
 
                 {/* Actions */}
-                <Link
-                  href={`/clients/${client.id}` as any}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-black/10 bg-transparent text-foreground rounded-lg hover:bg-black/5 hover:border-black/30 transition-all text-sm font-medium min-h-[44px]"
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  className="w-full"
+                  asChild
                 >
-                  View Details
-                  <ExternalLink className="h-3.5 w-3.5" />
-                </Link>
+                  <Link href={`/clients/${client.id}` as any}>
+                    View Details
+                    <ExternalLink className="h-3.5 w-3.5" />
+                  </Link>
+                </Button>
               </div>
             ))}
           </div>

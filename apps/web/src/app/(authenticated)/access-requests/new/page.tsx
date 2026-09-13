@@ -21,6 +21,7 @@ import { m, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
 
 // Phase 5 Components
+import { Button } from '@/components/ui/button';
 import { ClientSelector } from '@/components/client-selector';
 import { HierarchicalPlatformSelector } from '@/components/hierarchical-platform-selector';
 import { AccessLevelSelector } from '@/components/access-level-selector';
@@ -276,14 +277,15 @@ function AccessRequestWizardContent() {
                 <p className="text-base font-medium text-ink">Need to connect platforms?</p>
                 <p className="text-sm text-muted-foreground">Connect your agency's platform accounts to use delegated access</p>
               </div>
-              <button
+              <Button
                 type="button"
+                variant="secondary"
+                className="px-4 py-2.5"
                 onClick={() => router.push('/connections')}
-                className="px-4 py-2.5 bg-accent hover:bg-accent text-foreground text-base rounded-lg transition-colors flex items-center gap-2"
               >
                 <Plus className="h-4 w-4" />
                 Manage Platform Connections
-              </button>
+              </Button>
             </div>
 
             {state.error && (
@@ -299,14 +301,14 @@ function AccessRequestWizardContent() {
 
             {/* Navigation */}
             <div className="flex justify-end">
-              <button
+              <Button
                 type="button"
+                className="px-8"
                 onClick={() => setStep(2)}
                 disabled={!state.client}
-                className="px-8 py-3 bg-coral text-white text-base rounded-lg hover:bg-coral/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95 shadow-brutalist hover:shadow-none hover:translate-y-[2px] font-medium"
               >
                 Continue to Platforms
-              </button>
+              </Button>
             </div>
           </m.div>
           )}
@@ -380,21 +382,20 @@ function AccessRequestWizardContent() {
             )}
 
             <div className="mt-6 flex justify-between">
-              <button
+              <Button
               type="button"
+              variant="ghost"
               onClick={() => setStep(1)}
-              className="px-6 py-2.5 text-foreground hover:text-ink hover:bg-muted/30 rounded-lg transition-colors"
               >
               Back
-              </button>
-              <button
+              </Button>
+              <Button
               type="button"
               onClick={() => setStep(3)}
               disabled={!currentStepValid}
-              className="px-6 py-2.5 bg-coral text-white rounded-lg hover:bg-coral/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95 shadow-brutalist hover:shadow-none hover:translate-y-[2px]"
               >
               Continue to Customize
-              </button>
+              </Button>
             </div>
             </m.div>
           )}
@@ -494,7 +495,7 @@ function AccessRequestWizardContent() {
                 <button
                   type="button"
                   onClick={() => removeIntakeField(field.id)}
-                  className="p-2 text-danger-ink hover:bg-coral/10 rounded-lg transition-colors"
+                  className="p-2 text-danger-ink hover:bg-coral/10 rounded-none transition-colors"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
@@ -505,7 +506,7 @@ function AccessRequestWizardContent() {
               <button
                 type="button"
                 onClick={addIntakeField}
-                className="w-full flex items-center justify-center gap-2 p-4 border-2 border-dashed border-border rounded-lg text-muted-foreground hover:border-coral/40 hover:text-danger-ink hover:bg-coral/10 transition-all"
+                className="w-full flex items-center justify-center gap-2 p-4 border-2 border-dashed border-border rounded-none text-muted-foreground hover:border-coral/40 hover:text-danger-ink hover:bg-coral/10 transition-all"
               >
                 <Plus className="h-4 w-4" />
                 Add Field
@@ -623,20 +624,19 @@ function AccessRequestWizardContent() {
             )}
 
             <div className="mt-6 flex justify-between">
-              <button
+              <Button
                 type="button"
+                variant="ghost"
                 onClick={() => setStep(2)}
-                className="px-6 py-2.5 text-foreground hover:text-ink hover:bg-muted/30 rounded-lg transition-colors"
               >
                 Back
-              </button>
-              <button
+              </Button>
+              <Button
                 type="button"
                 onClick={() => setStep(4)}
-                className="px-6 py-2.5 bg-coral text-white rounded-lg hover:bg-coral/90 transition-all active:scale-95 shadow-brutalist hover:shadow-none hover:translate-y-[2px]"
               >
                 Review & Create
-              </button>
+              </Button>
             </div>
             </m.div>
           )}
@@ -860,33 +860,34 @@ function AccessRequestWizardContent() {
 
                 {/* Action Buttons */}
                 <div className="flex justify-between items-center">
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
                     onClick={() => setStep(3)}
-                    className="px-6 py-2.5 text-foreground hover:text-ink hover:bg-muted/30 rounded-lg transition-colors"
                     disabled={state.submitting}
                   >
                     Back
-                  </button>
+                  </Button>
 
                   <div className="flex gap-3">
-                    <button
+                    <Button
                       type="button"
+                      variant="ghost"
+                      className="px-4 py-2.5 text-danger-ink"
                       onClick={() => setIsSaveTemplateModalOpen(true)}
-                      className="px-4 py-2.5 text-danger-ink bg-coral/10 hover:bg-coral/20 rounded-lg transition-colors flex items-center gap-2"
                       disabled={state.submitting}
                     >
                       <Save className="h-4 w-4" />
                       Save as Template
-                    </button>
-                    <button
+                    </Button>
+                    <Button
                       type="submit"
+                      variant="brutalist"
                       disabled={state.submitting}
-                      className="px-6 py-2.5 bg-coral text-white rounded-lg hover:bg-coral/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-95 shadow-brutalist hover:shadow-none hover:translate-y-[2px] flex items-center gap-2"
                     >
                       {state.submitting && <Loader2 className="h-4 w-4 animate-spin" />}
                       {state.submitting ? 'Creating Request...' : 'Create Access Request'}
-                    </button>
+                    </Button>
                   </div>
                 </div>
 

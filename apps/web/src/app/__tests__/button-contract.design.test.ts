@@ -78,8 +78,9 @@ function walkFile(file: string, violations: Violation[]): void {
   const push = (index: number, kind: string, detail: string) =>
     violations.push({ file, line: lineOf(source, index), kind, detail });
 
-  // Raw button-like elements.
-  const rawOpen = /<(button|Link|a)\b([^>]*)>/g;
+  // Raw button-like elements. `=>` in arrow-function handlers contains `>`,
+  // so the attribute run must allow it or those buttons escape the walker.
+  const rawOpen = /<(button|Link|a)\b((?:[^>]|=>)*)>/g;
   let match: RegExpExecArray | null;
   while ((match = rawOpen.exec(source)) !== null) {
     const attrs = match[2];
@@ -118,7 +119,7 @@ function walkFile(file: string, violations: Violation[]): void {
   }
 
   // <Button> usages whose className fights the variant contract.
-  const buttonOpen = /<Button\b([^>]*)>/g;
+  const buttonOpen = /<Button\b((?:[^>]|=>)*)>/g;
   while ((match = buttonOpen.exec(source)) !== null) {
     const classMatch = match[1].match(/className="([^"]*)"/);
     if (!classMatch) continue;

@@ -8,6 +8,7 @@ import { BLOG_CATEGORIES } from "@/lib/blog-types";
 import { BlogContent } from "@/components/blog/blog-content";
 import { BlogNavigation } from "@/components/blog/blog-navigation";
 import { BlogCard } from "@/components/blog/blog-card";
+import { Button } from "@/components/ui/button";
 import { getRelatedPosts } from "@/lib/blog-data";
 import { Metadata } from "next";
 
@@ -233,12 +234,9 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
             47-email onboarding with a single link.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <a
-              href="/pricing"
-              className="px-8 py-4 bg-coral text-white font-bold uppercase tracking-wider border-2 border-white rounded-none hover:bg-card hover:text-ink transition-all"
-            >
-              Start Free Trial
-            </a>
+            <Button variant="brutalist" size="lg" asChild>
+              <a href="/pricing">Start Free Trial</a>
+            </Button>
             <a
               href="#"
               className="px-8 py-4 bg-transparent text-white font-bold uppercase tracking-wider border-2 border-white rounded-none hover:bg-card hover:text-ink transition-all"
