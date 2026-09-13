@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { StatusBadge } from '@/components/ui/status-badge';
 import { HealthBadge } from '@/components/ui/health-badge';
 import { PlatformIcon } from '@/components/ui/platform-icon';
+import { SingleSelect } from '@/components/ui/single-select';
 
 export default function DesignSystemPage() {
   return (
@@ -60,6 +61,8 @@ export default function DesignSystemPage() {
             <h3 className="font-sans text-lg font-medium mb-4 text-muted-foreground">Semantic Colors (Accessible)</h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <ColorSwatch name="Warning" varName="--warning" hex="#B45309" description="Warnings, pending (5.2:1 contrast)" />
+              <ColorSwatch name="Success ink" varName="--success-ink" hex="#0F766E" description="Success text (5.5:1 contrast)" />
+              <ColorSwatch name="Danger ink" varName="--danger-ink" hex="#C2410C" description="Danger text (4.8:1 contrast)" />
             </div>
             <p className="text-sm text-muted-foreground mt-3">
               Semantic colors meet WCAG AA contrast requirements (4.5:1 minimum).
@@ -74,9 +77,9 @@ export default function DesignSystemPage() {
 
           <div className="space-y-6">
             <TypeSample family="dela" text="Dela" size="text-4xl md:text-5xl" description="Display headlines, hero text" />
-            <TypeSample family="display" text="Geist Display" size="text-3xl" description="Section headings, subheadings" />
-            <TypeSample family="sans" text="System UI Sans" size="text-xl" description="Body text, UI elements" />
-            <TypeSample family="mono" text="IBM Plex Mono" size="text-lg" description="Code, data, technical" />
+            <TypeSample family="display" text="Outfit Display" size="text-3xl" description="Section headings, subheadings" />
+            <TypeSample family="sans" text="Outfit Sans" size="text-xl" description="Body text, UI elements" />
+            <TypeSample family="mono" text="JetBrains Mono" size="text-lg" description="Code, data, technical" />
           </div>
         </section>
 
@@ -116,7 +119,7 @@ export default function DesignSystemPage() {
             <div>
               <h3 className="font-sans text-sm font-medium text-muted-foreground mb-4">States</h3>
               <div className="flex flex-wrap gap-4">
-                <Button isLoading>Loading</Button>
+                <Button isLoading>Save changes</Button>
                 <Button disabled>Disabled</Button>
                 <Button variant="primary" leftIcon={<span>→</span>}>With Icon</Button>
               </div>
@@ -135,7 +138,7 @@ export default function DesignSystemPage() {
                 <CardDescription>shadcn/ui base component</CardDescription>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground">Clean, refined aesthetic with subtle shadows and rounded corners.</p>
+              <p className="text-sm text-muted-foreground">Calm surface with square corners and a measured shadow budget.</p>
               </CardContent>
             </Card>
 
@@ -144,9 +147,9 @@ export default function DesignSystemPage() {
               <p className="text-sm">Hard borders, hard shadows, no blur. Pure brutalist aesthetic.</p>
             </div>
 
-            <div className="clean-card p-6">
-              <h3 className="font-semibold text-lg mb-2">Clean Card</h3>
-              <p className="text-sm text-muted-foreground">Subtle shadow with hover lift effect. Minimal border.</p>
+            <div className="border border-border bg-card p-6">
+              <h3 className="font-semibold text-lg mb-2">Quiet Surface</h3>
+              <p className="text-sm text-muted-foreground">Border-led grouping for supporting content.</p>
             </div>
           </div>
         </section>
@@ -177,6 +180,48 @@ export default function DesignSystemPage() {
               </div>
             </div>
           </div>
+        </section>
+
+        {/* Form controls */}
+        <section>
+          <h2 className="font-display text-3xl font-semibold mb-6">Form Controls</h2>
+          <div className="grid max-w-2xl gap-6 md:grid-cols-2">
+            <div>
+              <label htmlFor="design-system-name" className="mb-2 block text-sm font-semibold text-foreground">
+                Client name
+              </label>
+              <input id="design-system-name" defaultValue="Northstar Studio" className="w-full rounded-none border border-black px-4 py-3" />
+              <p className="mt-2 text-sm text-muted-foreground">Persistent labels. Immediate focus ring.</p>
+            </div>
+            <div>
+              <label className="mb-2 block text-sm font-semibold text-foreground">Platform</label>
+              <SingleSelect
+                options={[
+                  { value: 'meta', label: 'Meta Ads' },
+                  { value: 'google', label: 'Google Ads' },
+                  { value: 'shopify', label: 'Shopify' },
+                ]}
+                value="meta"
+                onChange={() => undefined}
+                ariaLabel="Platform"
+              />
+              <p className="mt-2 text-sm text-muted-foreground">Arrow keys, Enter, Space, Home, End, and Escape.</p>
+            </div>
+          </div>
+        </section>
+
+        {/* Motion contract */}
+        <section>
+          <h2 className="font-display text-3xl font-semibold mb-6">Motion Contract</h2>
+          <div className="grid gap-3 border border-border p-6 font-mono text-sm md:grid-cols-2">
+            <span>press — 100ms</span>
+            <span>hover — 150ms</span>
+            <span>surface enter — 180ms</span>
+            <span>surface exit — 120ms</span>
+            <span>modal enter — 250ms</span>
+            <span>modal exit — 150ms</span>
+          </div>
+          <p className="mt-3 text-sm text-muted-foreground">Reduced motion removes spatial movement and keeps state feedback clear.</p>
         </section>
 
         {/* Shadows */}
