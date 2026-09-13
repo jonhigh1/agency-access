@@ -1,5 +1,5 @@
 /* Hallmark · genre: modern-minimal · macrostructure: Index-First · design-system: DESIGN_SYSTEM.md v2.0 · designed-as-app */
-/* Hallmark · pre-emit critique: P_ H_ E_ S_ R_ V_ */
+/* Hallmark · pre-emit critique: P4 H4 E4 S4 R5 V3 — self-assessment; the render gate (visual-qa 2026-09-12: PASS-WITH-NITS) is the evidence */
 'use client';
 
 /**

@@ -1,0 +1,12 @@
+[
+  {
+    "date": "2026-09-12",
+    "scope": "app",
+    "macrostructure": "Index-First",
+    "theme": "design-system: DESIGN_SYSTEM.md v2.0",
+    "enrichment": "none",
+    "nav": "n/a (app sidebar)",
+    "footer": "n/a",
+    "brief": "AuthHub \u00b7 Settings page revamp on rows + ink-panel"
+  }
+]
