@@ -1,0 +1,27 @@
+Make these updates:
+
+The metric, in plain words: an active client is a client with at least one connected platform under management. You can add or remove clients anytime — you're billed on the count, not on how many you onboarded. Side benefit: this kills the rollover problem entirely, since there's no monthly flow to roll over.
+
+Starter — $29/mo ($290/yr)
+
+Up to 5 active clients
+All 8+ platform integrations, one-link onboarding
+Token auto-refresh, audit logs, unlimited team seats
+AuthHub-branded client link
+14-day free trial, no card required
+Growth — $79/mo ($790/yr) · Most popular
+
+Up to 20 active clients
+Everything in Starter, plus full white-label: your logo, colors, and custom domain
+Token health monitoring dashboard
+Webhooks + API access, priority support
+Scale — $149/mo ($1,490/yr)
+
+Up to 50 active clients
+Everything in Growth, plus multi-brand management (up to 3 brands)
+Custom integrations
+Overage, no hard walls: $20/mo per 5-client pack on any plan, added automatically, removable anytime. Nobody's onboarding flow breaks mid-month because client #6 showed up.
+
+Launch offer for your 30 pilot signups: founding members lock 30% off for life ($20 / $55 / $105) when they convert within 30 days of launch. Urgency plus a thank-you in one line.
+
+Two decisions I need from you: first, are you comfortable pulling white-label out of Starter, or do you want to keep it as the wedge that wins deals off Leadsie? Second — does the product actually count active clients today, or does it count onboardings per month? If it's onboardings, I'll switch the wording back and add rollover instead.
