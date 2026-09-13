@@ -3,7 +3,7 @@
   "checkpoint_id": "01M2DZJV9E9Y7S8QAPESQDFGVF",
   "strategy": "manual-commit",
   "branch": "main",
-  "checkpoints_count": 9,
+  "checkpoints_count": 10,
   "files_touched": [
     "docs/SESSION-LOG.md",
     "tasks/todo.md"
@@ -71,6 +71,13 @@
       "compact_transcript": "/8/transcript.jsonl",
       "content_hash": "/8/content_hash.txt",
       "prompt": ""
+    },
+    {
+      "metadata": "/9/metadata.json",
+      "transcript": "/9/full.jsonl",
+      "compact_transcript": "/9/transcript.jsonl",
+      "content_hash": "/9/content_hash.txt",
+      "prompt": ""
     }
   ],
   "token_usage": {
@@ -78,6 +85,6 @@
     "cache_creation_tokens": 0,
     "cache_read_tokens": 0,
     "output_tokens": 0,
-    "api_call_count": 335
+    "api_call_count": 379
   }
 }
