@@ -3,7 +3,8 @@
 /**
  * Billing Tab
  *
- * Orchestrates all billing-related cards:
+ * Orchestrates the billing groups as flat rows:
+ * - Billing hero: ink-panel strip + the tab's one brutalist lifecycle CTA
  * - Current plan with status
  * - Manage subscription (upgrade/downgrade/cancel)
  * - Usage limits with progress bars
@@ -11,6 +12,9 @@
  * - Payment methods
  * - Invoices history
  * - Billing details form
+ *
+ * The legacy branch (NEXT_PUBLIC_BILLING_V2_ENABLED === 'false') renders its
+ * seven groups in the same order and no hero (KTD6).
  */
 
 import { useAuth } from '@clerk/nextjs';
@@ -92,7 +96,7 @@ export function BillingTab() {
       <>
         {checkoutStatus === 'success' && <CheckoutSuccessToast />}
 
-        <div className="space-y-6">
+        <div className="space-y-10">
           <CurrentPlanCard />
           <ManageSubscriptionCard />
           <UsageLimitsCard />
@@ -111,7 +115,7 @@ export function BillingTab() {
     <>
       {checkoutStatus === 'success' && <CheckoutSuccessToast />}
 
-      <div className="space-y-6">
+      <div className="space-y-10">
         <BillingHero />
         {showFreeOrTrialLayout ? (
           <>

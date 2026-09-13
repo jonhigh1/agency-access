@@ -28,6 +28,7 @@ import { env } from '@/lib/env.js';
 import { logger } from '@/lib/logger.js';
 import { webhookEventService } from '@/services/webhook-event.service.js';
 import { normalizeCustomerId } from '@/services/connectors/google.js';
+import { resolveListLimit, resolveListOffset } from '@/lib/list-pagination.js';
 
 const LegacyPlatformSchema = z.enum([
   'whatsapp_business',
@@ -1293,9 +1294,22 @@ export async function getAgencyAccessRequests(
 
     const requests = await prisma.accessRequest.findMany({
       where,
+      select: {
+        id: true,
+        agencyId: true,
+        clientId: true,
+        clientName: true,
+        clientEmail: true,
+        externalReference: true,
+        platforms: true,
+        status: true,
+        expiresAt: true,
+        createdAt: true,
+        authorizedAt: true,
+      },
       orderBy: { createdAt: 'desc' },
-      take: filters?.limit,
-      skip: filters?.offset,
+      take: resolveListLimit(filters?.limit),
+      skip: resolveListOffset(filters?.offset),
     });
 
     // Transform platforms from flat to hierarchical format for frontend

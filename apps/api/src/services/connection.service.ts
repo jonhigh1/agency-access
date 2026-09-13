@@ -5,10 +5,10 @@
  * Works with Infisical for token storage - never stores tokens directly in database.
  */
 
+import { randomUUID } from 'node:crypto';
 import { prisma } from '@/lib/prisma';
 import { infisical } from '@/lib/infisical';
 import { auditService } from '@/services/audit.service';
-import { getConnector } from '@/services/connectors/factory';
 import { refreshClientPlatformAuthorization } from '@/services/token-lifecycle.service';
 import {
   getPlatformTokenCapability,
@@ -16,30 +16,11 @@ import {
   type DashboardConnectionSummary,
   type HealthStatus,
 } from '@agency-platform/shared';
-import { z } from 'zod';
 import { invalidateDashboardCache } from '@/lib/cache.js';
-
-/**
- * Live-verify window for agency token-health sweeps (getAgencyTokenHealth).
- *
- * The dashboard flags a token as "expiring" 7 days out (getTokenHealth in
- * apps/web/src/lib/token-health.ts) and the token-refresh scan sweeps a 7-day
- * horizon, so a live platform call on a token further out cannot change any
- * status the UI acts on. The window is kept at 30 days — half the longest
- * common access-token lifetime (60-day Meta/LinkedIn long-lived tokens) — so
- * server-side revocations still surface well before the UI horizon; beyond
- * that, tokens are reported from their stored expiry only.
- */
-const AGENCY_LIVE_VERIFY_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
+import { resolveListLimit, resolveListOffset } from '@/lib/list-pagination.js';
 
 /** One day in milliseconds, used for the day-granular countdown field. */
 const DAY_MS = 24 * 60 * 60 * 1000;
-
-/**
- * Cap on concurrent platform live-verify calls per agency health sweep,
- * so one agency with many connections cannot fan out unbounded.
- */
-const LIVE_VERIFY_CONCURRENCY = 5;
 
 function calculateHealthStatus(
   expiresAt: Date | null,
@@ -81,91 +62,6 @@ function calculateHealthStatus(
   return { health: 'healthy', daysUntilExpiry };
 }
 
-type TokenHealthAudit = {
-  agencyId?: string;
-  userEmail?: string;
-  resourceId: string;
-  resourceType: 'connection';
-  action: 'TOKEN_HEALTH_CHECK';
-  details: { platform: Platform; authorizationId?: string };
-};
-
-async function resolveTokenHealth(
-  input: {
-    authorizationId?: string;
-    connectionId: string;
-    platform: Platform;
-    status: string;
-    expiresAt: Date | null;
-    secretId?: string;
-    agencyId?: string;
-    userEmail?: string;
-  },
-  options: { liveVerifyWindowMs?: number } = {}
-): Promise<{ health: HealthStatus; daysUntilExpiry: number; audit?: TokenHealthAudit }> {
-  const fallback = calculateHealthStatus(input.expiresAt, input.platform, input.status);
-  const capability = getPlatformTokenCapability(input.platform);
-
-  if (
-    !input.secretId
-    || (capability.healthStrategy !== 'live_verify' && capability.healthStrategy !== 'api_key_verify')
-  ) {
-    return fallback;
-  }
-
-  // Outside the live-verify window: report from the stored expiry only —
-  // no Infisical read, no platform call, no audit row.
-  if (
-    options.liveVerifyWindowMs !== undefined
-    && capability.expiryBehavior !== 'non_expiring'
-    && (input.expiresAt === null || input.expiresAt.getTime() - Date.now() > options.liveVerifyWindowMs)
-  ) {
-    return fallback;
-  }
-
-  try {
-    const tokens = await infisical.retrieveOAuthTokens(input.secretId);
-    if (!tokens?.accessToken) {
-      return { health: 'expired', daysUntilExpiry: -1 };
-    }
-
-    const audit: TokenHealthAudit = {
-      agencyId: input.agencyId,
-      userEmail: input.userEmail,
-      resourceId: input.connectionId,
-      resourceType: 'connection',
-      action: 'TOKEN_HEALTH_CHECK',
-      details: {
-        platform: input.platform,
-        authorizationId: input.authorizationId,
-      },
-    };
-
-    try {
-      const connector = getConnector(input.platform);
-      const isValid = await connector.verifyToken(tokens.accessToken);
-
-      if (!isValid) {
-        return { health: 'expired', daysUntilExpiry: -1, audit };
-      }
-
-      return { ...fallback, audit };
-    } catch (error) {
-      if (fallback.health === 'expired') {
-        return { ...fallback, audit };
-      }
-
-      return { health: 'unknown', daysUntilExpiry: fallback.daysUntilExpiry, audit };
-    }
-  } catch (error) {
-    if (fallback.health === 'expired') {
-      return fallback;
-    }
-
-    return { health: 'unknown', daysUntilExpiry: fallback.daysUntilExpiry };
-  }
-}
-
 /**
  * Create a new client connection with platform authorizations
  */
@@ -189,41 +85,71 @@ export async function createClientConnection(input: {
       };
     }
 
-    // Create connection and platform authorizations in a transaction
-    const result = await prisma.$transaction(async (tx: any) => {
-      // Create the connection
-      const connection = await tx.clientConnection.create({
-        data: {
-          accessRequestId: input.requestId,
-          agencyId: accessRequest.agencyId,
-          clientEmail: accessRequest.clientEmail,
-          status: 'active',
-        },
-      });
+    const connectionId = randomUUID();
+    const storedSecrets: Array<{ platform: Platform; secretId: string; expiresAt: Date }> = [];
 
-      // Create platform authorizations
+    try {
       for (const [platform, tokens] of Object.entries(input.platforms)) {
-        const secretId = infisical.generateSecretName(platform as Platform, connection.id);
-
-        // Store tokens in Infisical
+        const secretId = infisical.generateSecretName(platform as Platform, connectionId);
         await infisical.storeOAuthTokens(secretId, tokens);
+        storedSecrets.push({
+          platform: platform as Platform,
+          secretId,
+          expiresAt: tokens.expiresAt,
+        });
+      }
+    } catch (error) {
+      await Promise.allSettled(
+        storedSecrets.map((secret) => infisical.deleteSecret(secret.secretId))
+      );
+      throw error;
+    }
 
-        // Create database record with only secretId
-        await tx.platformAuthorization.create({
+    let result;
+    try {
+      result = await prisma.$transaction(async (tx: any) => {
+        const connection = await tx.clientConnection.create({
           data: {
-            connectionId: connection.id,
-            platform: platform as Platform,
-            secretId,
-            expiresAt: tokens.expiresAt,
+            id: connectionId,
+            accessRequestId: input.requestId,
+            agencyId: accessRequest.agencyId,
+            clientEmail: accessRequest.clientEmail,
             status: 'active',
           },
         });
-      }
 
-      return connection;
-    });
+        for (const secret of storedSecrets) {
+          await tx.platformAuthorization.create({
+            data: {
+              connectionId: connection.id,
+              platform: secret.platform,
+              secretId: secret.secretId,
+              expiresAt: secret.expiresAt,
+              status: 'active',
+            },
+          });
+        }
 
-    // Invalidate dashboard cache for this agency
+        return connection;
+      });
+    } catch (error) {
+      await Promise.allSettled(
+        storedSecrets.map((secret) => infisical.deleteSecret(secret.secretId))
+      );
+      throw error;
+    }
+
+    await auditService.createAuditLogs(
+      storedSecrets.map((secret) => ({
+        agencyId: accessRequest.agencyId,
+        userEmail: accessRequest.clientEmail,
+        action: 'GRANTED',
+        resourceType: 'connection',
+        resourceId: result.id,
+        metadata: { platform: secret.platform },
+      }))
+    );
+
     await invalidateDashboardCache(accessRequest.agencyId);
 
     return { data: result, error: null };
@@ -490,7 +416,10 @@ export async function revokeConnection(
 }
 
 /**
- * Get token health for a connection
+ * Get token health for a connection.
+ *
+ * Expiry-only: classify from stored `expiresAt` and authorization status.
+ * Infisical reads and `verifyToken` belong in the token-refresh job.
  */
 export async function getTokenHealth(connectionId: string) {
   try {
@@ -507,24 +436,13 @@ export async function getTokenHealth(connectionId: string) {
       },
     });
 
-    const healthRows = await Promise.all(authorizations.map(async (authorization) => {
-      const { audit, ...health } = await resolveTokenHealth({
-        authorizationId: authorization.id,
-        connectionId: authorization.connectionId,
-        platform: authorization.platform as Platform,
-        status: authorization.status,
-        expiresAt: authorization.expiresAt,
-        secretId: authorization.secretId,
-      });
-
-      if (audit) {
-        await auditService.createAuditLog(audit);
-      }
-
-      return {
-        ...authorization,
-        ...health,
-      };
+    const healthRows = authorizations.map((authorization) => ({
+      ...authorization,
+      ...calculateHealthStatus(
+        authorization.expiresAt,
+        authorization.platform as Platform,
+        authorization.status
+      ),
     }));
 
     return {
@@ -543,7 +461,10 @@ export async function getTokenHealth(connectionId: string) {
 }
 
 /**
- * Get token health for all client authorizations in an agency
+ * Get token health for all client authorizations in an agency.
+ *
+ * Expiry-only on the request path (GET /token-health and MCP workspace).
+ * Live platform verify belongs in the token-refresh job.
  */
 export async function getAgencyTokenHealth(agencyId: string) {
   try {
@@ -561,10 +482,8 @@ export async function getAgencyTokenHealth(agencyId: string) {
         status: true,
         expiresAt: true,
         lastRefreshedAt: true,
-        secretId: true,
         connection: {
           select: {
-            agencyId: true,
             clientEmail: true,
           },
         },
@@ -574,28 +493,9 @@ export async function getAgencyTokenHealth(agencyId: string) {
       },
     });
 
-    const audits: TokenHealthAudit[] = [];
-
-    const verifyOne = async (authorization: (typeof authorizations)[number]) => {
-      const capability = getPlatformTokenCapability(authorization.platform as Platform);
-
-      const { audit, ...health } = await resolveTokenHealth(
-        {
-          authorizationId: authorization.id,
-          connectionId: authorization.connectionId,
-          platform: authorization.platform as Platform,
-          status: authorization.status,
-          expiresAt: authorization.expiresAt,
-          secretId: authorization.secretId,
-          agencyId: authorization.connection.agencyId,
-          userEmail: authorization.connection.clientEmail,
-        },
-        { liveVerifyWindowMs: AGENCY_LIVE_VERIFY_WINDOW_MS }
-      );
-
-      if (audit) {
-        audits.push(audit);
-      }
+    const healthRows = authorizations.map((authorization) => {
+      const platform = authorization.platform as Platform;
+      const capability = getPlatformTokenCapability(platform);
 
       return {
         id: authorization.id,
@@ -607,20 +507,9 @@ export async function getAgencyTokenHealth(agencyId: string) {
         lastRefreshedAt: authorization.lastRefreshedAt,
         canRefresh: capability.connectionMethod === 'oauth'
           && capability.refreshStrategy === 'automatic',
-        ...health,
+        ...calculateHealthStatus(authorization.expiresAt, platform, authorization.status),
       };
-    };
-
-    // Bounded fan-out: at most LIVE_VERIFY_CONCURRENCY verifications in flight,
-    // result order preserved (chunks run in order, Promise.all keeps chunk order).
-    const healthRows = [];
-    for (let i = 0; i < authorizations.length; i += LIVE_VERIFY_CONCURRENCY) {
-      const chunk = authorizations.slice(i, i + LIVE_VERIFY_CONCURRENCY);
-      healthRows.push(...await Promise.all(chunk.map(verifyOne)));
-    }
-
-    // One batched audit insert for every token access in this sweep.
-    await auditService.createAuditLogs(audits);
+    });
 
     return {
       data: healthRows,
@@ -637,17 +526,33 @@ export async function getAgencyTokenHealth(agencyId: string) {
   }
 }
 
+const CONNECTION_LIST_SELECT = {
+  id: true,
+  clientEmail: true,
+  status: true,
+  createdAt: true,
+  authorizations: {
+    select: {
+      platform: true,
+      status: true,
+    },
+  },
+} as const;
+
 /**
- * Get all connections for an agency
+ * Get connections for an agency as summaries (no secretId / metadata JSON).
  */
-export async function getAgencyConnections(agencyId: string) {
+export async function getAgencyConnections(
+  agencyId: string,
+  filters?: { limit?: number; offset?: number }
+) {
   try {
     const connections = await prisma.clientConnection.findMany({
       where: { agencyId },
-      include: {
-        authorizations: true,
-      },
+      select: CONNECTION_LIST_SELECT,
       orderBy: { createdAt: 'desc' },
+      take: resolveListLimit(filters?.limit),
+      skip: resolveListOffset(filters?.offset),
     });
 
     return { data: connections, error: null };
@@ -667,36 +572,11 @@ export async function getAgencyConnections(agencyId: string) {
  * Returns only essential data (platform badges) without full authorization details
  * This reduces payload size significantly for agencies with many connections
  */
-export async function getAgencyConnectionSummaries(agencyId: string) {
-  try {
-    const connections = await prisma.clientConnection.findMany({
-      where: { agencyId },
-      select: {
-        id: true,
-        clientEmail: true,
-        status: true,
-        createdAt: true,
-        // Only select platform from authorizations, not full details
-        authorizations: {
-          select: {
-            platform: true,
-            status: true,
-          },
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    return { data: connections, error: null };
-  } catch (error) {
-    return {
-      data: null,
-      error: {
-        code: 'INTERNAL_ERROR',
-        message: 'Failed to get agency connection summaries',
-      },
-    };
-  }
+export async function getAgencyConnectionSummaries(
+  agencyId: string,
+  filters?: { limit?: number; offset?: number }
+) {
+  return getAgencyConnections(agencyId, filters);
 }
 
 /**

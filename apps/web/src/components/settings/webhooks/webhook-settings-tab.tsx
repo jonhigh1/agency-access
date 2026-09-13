@@ -8,17 +8,10 @@ import type {
 import { WEBHOOK_API_VERSION_V1, WEBHOOK_API_VERSION_V2 } from '@agency-platform/shared';
 import { useAuth } from '@clerk/nextjs';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { useUserAgency } from '@/hooks/use-user-agency';
-import {
-  AlertTriangle,
-  BellRing,
-  KeyRound,
-  Send,
-  ShieldCheck,
-  Webhook,
-} from 'lucide-react';
+import { AlertTriangle, KeyRound, Send, ShieldCheck } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { useUserAgency } from '@/hooks/use-user-agency';
 import {
   disableWebhookEndpoint,
   getWebhookEndpoint,
@@ -27,8 +20,8 @@ import {
   sendWebhookTestEvent,
   upsertWebhookEndpoint,
 } from '@/lib/api/webhooks';
+import { SettingsGroup, SettingsRow } from '../settings-row';
 import { WebhookDeliveryInspector } from './webhook-delivery-inspector';
-import { WebhookSettingsCardShell } from './webhook-settings-card-shell';
 import { WebhookStatusBadge } from './webhook-status-badge';
 
 const DELIVERY_LIMIT = 8;
@@ -76,6 +69,12 @@ const EVENT_OPTIONS: Array<{
   },
 ];
 
+const ENDPOINT_GROUP_DESCRIPTION =
+  'Send signed lifecycle events from AuthHub into your CRM, automation, or warehouse.';
+
+const EMPTY_ENDPOINT_COPY =
+  'No endpoint is configured yet. Add a destination URL, choose the events you want, and create the endpoint to start receiving signed notifications.';
+
 function isValidWebhookUrl(value: string): boolean {
   try {
     const parsed = new URL(value);
@@ -101,9 +100,10 @@ function getFeedbackTone(isError: boolean): string {
 }
 
 export function WebhookSettingsTab() {
-  const { getToken } = useAuth();
+  const { userId, orgId, getToken } = useAuth();
   const queryClient = useQueryClient();
-  const { data: agency, isLoading: isAgencyLoading, isError: isAgencyError, error: agencyError } = useUserAgency();
+  const principalClerkId = orgId || userId;
+  const agencyQuery = useUserAgency();
   const [destinationUrl, setDestinationUrl] = useState('');
   const [selectedEvents, setSelectedEvents] = useState<WebhookEventType[]>(['access_request.completed']);
   const [selectedApiVersion, setSelectedApiVersion] = useState<WebhookApiVersion>(WEBHOOK_API_VERSION_V1);
@@ -112,7 +112,7 @@ export function WebhookSettingsTab() {
   const [signingSecret, setSigningSecret] = useState<string | null>(null);
   const [selectedDeliveryId, setSelectedDeliveryId] = useState<string | null>(null);
 
-  const agencyId = agency?.id ?? null;
+  const agencyId = agencyQuery.data?.id ?? null;
 
   const endpointQuery = useQuery({
     queryKey: ['settings-webhooks-endpoint', agencyId],
@@ -260,272 +260,248 @@ export function WebhookSettingsTab() {
     });
   };
 
-  if (isAgencyLoading || (agencyId && (endpointQuery.isLoading || deliveriesQuery.isLoading))) {
-    return (
-      <div className="space-y-6">
-        <div className="clean-card animate-pulse p-6">
-          <div className="h-6 w-48 rounded bg-card/60" />
-          <div className="mt-3 h-4 w-80 rounded bg-card/60" />
-          <div className="mt-8 h-40 rounded-2xl bg-card/60" />
-        </div>
-        <div className="clean-card animate-pulse p-6">
-          <div className="h-6 w-56 rounded bg-card/60" />
-          <div className="mt-6 h-48 rounded-2xl bg-card/60" />
-        </div>
-      </div>
-    );
-  }
+  // Render branches. Same conditions and precedence as before; every branch
+  // now renders inside the same shell (ink-panel strip + titled group) so the
+  // tab never swaps to a different section while loading or failing.
+  const isLoadingView =
+    agencyQuery.isLoading || Boolean(agencyId && (endpointQuery.isLoading || deliveriesQuery.isLoading));
+  const hasNoAgency = !principalClerkId || (!agencyQuery.isLoading && !agencyId);
+  const hasQueryError = agencyQuery.isError || endpointQuery.isError || deliveriesQuery.isError;
+  const errorMessage =
+    agencyQuery.error instanceof Error
+      ? agencyQuery.error.message
+      : endpointQuery.error instanceof Error
+      ? endpointQuery.error.message
+      : deliveriesQuery.error instanceof Error
+      ? deliveriesQuery.error.message
+      : 'Failed to load webhook settings.';
 
-  if (!isAgencyLoading && !agencyId) {
-    return (
-      <WebhookSettingsCardShell
-        title="Webhook Endpoint"
-        description="Manage the outbound endpoint used for access request lifecycle updates."
-        icon={Webhook}
-      >
-        <p className="rounded-2xl border border-dashed border-border bg-paper/60 p-5 text-sm text-muted-foreground">
+  // The one dark surface on this view. Unloaded values render as "—".
+  const stripUrl = endpoint ? endpoint.url : endpointQuery.isSuccess ? EMPTY_ENDPOINT_COPY : '—';
+
+  const endpointStrip = (
+    <div className="ink-panel p-6">
+      <span className="label-micro">Endpoint</span>
+      <p className="mt-2 break-all text-sm">{stripUrl}</p>
+      <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2">
+        {endpoint ? <WebhookStatusBadge status={endpoint.status} /> : <span className="label-nano">Status —</span>}
+        <span className="label-nano">Last delivery {endpoint ? formatDateTime(endpoint.lastDeliveredAt) : '—'}</span>
+        <span className="label-nano">Failures {endpoint ? endpoint.failureCount : '—'}</span>
+        {endpoint?.secretLastFour && <span className="label-nano">Secret ••••{endpoint.secretLastFour}</span>}
+      </div>
+    </div>
+  );
+
+  let body: React.ReactNode;
+
+  if (isLoadingView) {
+    body = (
+      <SettingsGroup title="Webhook Endpoint" description={ENDPOINT_GROUP_DESCRIPTION}>
+        <div className="space-y-4 py-5" aria-busy="true" aria-label="Loading webhook settings">
+          <div className="h-4 w-48 animate-pulse bg-muted" />
+          <div className="h-12 w-full max-w-lg animate-pulse bg-muted" />
+          <div className="h-4 w-80 max-w-full animate-pulse bg-muted" />
+          <div className="h-40 w-full animate-pulse bg-muted" />
+        </div>
+      </SettingsGroup>
+    );
+  } else if (hasNoAgency) {
+    body = (
+      <SettingsGroup title="Webhook Endpoint" description={ENDPOINT_GROUP_DESCRIPTION}>
+        <p className="py-5 text-sm text-muted-foreground">
           This workspace does not have an agency context yet, so webhook settings are unavailable.
         </p>
-      </WebhookSettingsCardShell>
+      </SettingsGroup>
     );
-  }
+  } else if (hasQueryError) {
+    body = (
+      <SettingsGroup title="Webhook Endpoint" description={ENDPOINT_GROUP_DESCRIPTION}>
+        <p className="py-5 text-sm text-danger-ink">{errorMessage}</p>
+      </SettingsGroup>
+    );
+  } else {
+    body = (
+      <>
+        <SettingsGroup title="Webhook Endpoint" description={ENDPOINT_GROUP_DESCRIPTION}>
+          {hasRecentFailure && (
+            <div className="mt-4 border border-warning/30 bg-warning/10 p-4">
+              <div className="flex items-center gap-2 text-sm font-semibold text-ink">
+                <AlertTriangle className="h-4 w-4 text-warning" />
+                Delivery attention needed
+              </div>
+              <p className="mt-2 text-sm text-muted-foreground">
+                This endpoint has recent delivery failures. Review the inspector below, confirm your receiver returns `2xx`, and rotate the secret if you suspect signature drift.
+              </p>
+            </div>
+          )}
 
-  if (isAgencyError || endpointQuery.isError || deliveriesQuery.isError) {
-    return (
-      <WebhookSettingsCardShell
-        title="Webhook Endpoint"
-        description="Manage the outbound endpoint used for access request lifecycle updates."
-        icon={Webhook}
-      >
-        <div className="rounded-2xl border border-coral/30 bg-coral/5 p-5 text-sm text-danger-ink">
-          {agencyError instanceof Error
-            ? agencyError.message
-            : endpointQuery.error instanceof Error
-            ? endpointQuery.error.message
-            : deliveriesQuery.error instanceof Error
-            ? deliveriesQuery.error.message
-            : 'Failed to load webhook settings.'}
-        </div>
-      </WebhookSettingsCardShell>
+          <SettingsRow
+            label="Destination URL"
+            controlId="webhook-destination-url"
+            description="We sign each request with `svix-like` headers: timestamp plus HMAC SHA-256 signature."
+          >
+            <input
+              id="webhook-destination-url"
+              type="url"
+              value={destinationUrl}
+              onChange={(event) => setDestinationUrl(event.target.value)}
+              placeholder="https://hooks.example.com/agency"
+              disabled={isBusy}
+              className="w-full max-w-lg border border-black px-4 py-3 text-sm disabled:cursor-not-allowed disabled:bg-muted/40"
+            />
+          </SettingsRow>
+
+          <SettingsRow
+            label="Payload version"
+            controlId="webhook-api-version"
+            description={
+              selectedApiVersion === WEBHOOK_API_VERSION_V2
+                ? 'V2 payloads include individual asset IDs, names, types, and statuses for each connected platform.'
+                : 'V1 payloads include connection-level summaries. Upgrade to V2 for granular asset data.'
+            }
+          >
+            <select
+              id="webhook-api-version"
+              value={selectedApiVersion}
+              onChange={(event) => setSelectedApiVersion(event.target.value as WebhookApiVersion)}
+              disabled={isBusy}
+              className="w-full max-w-lg border border-black px-4 py-3 text-sm disabled:cursor-not-allowed disabled:bg-muted/40"
+            >
+              <option value={WEBHOOK_API_VERSION_V1}>Standard (V1) — connection-level summary</option>
+              <option value={WEBHOOK_API_VERSION_V2}>Enhanced (V2) — per-asset detail</option>
+            </select>
+          </SettingsRow>
+
+          <SettingsRow label="Subscribed events" description="Choose which lifecycle events this endpoint receives.">
+            <fieldset aria-label="Subscribed events" className="space-y-3">
+              {EVENT_OPTIONS.map((option) => {
+                const checked = selectedEvents.includes(option.value);
+
+                return (
+                  <label
+                    key={option.value}
+                    className="flex cursor-pointer gap-3 border border-border p-4 transition-colors duration-150 hover:border-coral/40"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={(event) => handleEventToggle(option.value, event.target.checked)}
+                      disabled={isBusy}
+                      aria-label={option.value}
+                      className="mt-1 h-4 w-4 shrink-0 accent-coral"
+                    />
+                    <div className="min-w-0">
+                      <div className="text-sm font-semibold text-ink">{option.label}</div>
+                      <span className="label-nano break-all">{option.value}</span>
+                      <p className="mt-1 text-sm text-muted-foreground">{option.description}</p>
+                    </div>
+                  </label>
+                );
+              })}
+            </fieldset>
+          </SettingsRow>
+
+          <SettingsRow
+            label={endpointExists ? 'Save changes' : 'Create endpoint'}
+            description={
+              endpointExists
+                ? 'Saving keeps the current signing secret.'
+                : 'Creating the endpoint reveals its signing secret once.'
+            }
+          >
+            <Button type="button" variant="brutalist" onClick={() => void handleSave()} disabled={isBusy}>
+              <ShieldCheck className="h-4 w-4" />
+              {endpointExists ? 'Save Endpoint' : 'Create Endpoint'}
+            </Button>
+          </SettingsRow>
+        </SettingsGroup>
+
+        <SettingsGroup
+          title="Secret and delivery controls"
+          description="Rotate the signing secret, send a test event, or pause deliveries."
+        >
+          {signingSecret && (
+            <div className="mt-4 border-2 border-black p-5">
+              <div className="flex items-center gap-2 text-sm font-semibold text-ink">
+                <KeyRound className="h-4 w-4" />
+                Signing secret
+              </div>
+              <p className="mt-2 text-sm text-muted-foreground">
+                This value is shown once. Store it in your webhook receiver before leaving this page.
+              </p>
+              <code className="mt-4 block break-all bg-ink px-4 py-3 text-sm font-semibold text-paper">
+                {signingSecret}
+              </code>
+            </div>
+          )}
+
+          <SettingsRow
+            label="Secret rotation"
+            description="Issues a new signing secret and shows it once. Update your receiver before sending more events."
+          >
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => rotateMutation.mutate()}
+              disabled={!endpointExists || isBusy}
+            >
+              <KeyRound className="h-4 w-4" />
+              Rotate secret
+            </Button>
+          </SettingsRow>
+
+          <SettingsRow
+            label="Test delivery"
+            description="Queues a test event to the active endpoint so you can verify signatures end to end."
+          >
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => testMutation.mutate()}
+              disabled={!endpointExists || endpoint?.status !== 'active' || isBusy}
+            >
+              <Send className="h-4 w-4" />
+              Send test event
+            </Button>
+          </SettingsRow>
+
+          <SettingsRow label="Pause deliveries" description="Disabling stops deliveries until you save the endpoint again.">
+            <Button
+              type="button"
+              variant="danger"
+              onClick={() => disableMutation.mutate()}
+              disabled={!endpointExists || endpoint?.status !== 'active' || isBusy}
+            >
+              <AlertTriangle className="h-4 w-4" />
+              Disable endpoint
+            </Button>
+          </SettingsRow>
+        </SettingsGroup>
+
+        <SettingsGroup title="Recent Deliveries" description="Inspect the most recent attempts sent to this endpoint.">
+          <div className="pt-4">
+            <WebhookDeliveryInspector
+              deliveries={deliveries}
+              selectedDeliveryId={selectedDeliveryId}
+              onInspect={setSelectedDeliveryId}
+            />
+          </div>
+        </SettingsGroup>
+      </>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <WebhookSettingsCardShell
-        title="Webhook Endpoint"
-        description="Send signed lifecycle events from AgencyAccess into your CRM, automation, or warehouse."
-        icon={Webhook}
-        aside={endpoint ? <WebhookStatusBadge status={endpoint.status} /> : undefined}
-      >
-        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,0.9fr)]">
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="webhook-destination-url" className="mb-1 block text-sm font-medium text-foreground">
-                Destination URL
-              </label>
-              <input
-                id="webhook-destination-url"
-                type="url"
-                value={destinationUrl}
-                onChange={(event) => setDestinationUrl(event.target.value)}
-                placeholder="https://hooks.example.com/agency"
-                disabled={isBusy}
-                className="w-full rounded-lg border border-input px-4 py-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-coral disabled:cursor-not-allowed disabled:bg-muted/40"
-              />
-              <p className="mt-1 text-xs text-muted-foreground">
-                We sign each request with `svix-like` headers: timestamp plus HMAC SHA-256 signature.
-              </p>
-            </div>
+    <div className="space-y-10">
+      {endpointStrip}
 
-            <div>
-              <label htmlFor="webhook-api-version" className="mb-1 block text-sm font-medium text-foreground">
-                Payload Version
-              </label>
-              <select
-                id="webhook-api-version"
-                value={selectedApiVersion}
-                onChange={(event) => setSelectedApiVersion(event.target.value as WebhookApiVersion)}
-                disabled={isBusy}
-                className="w-full rounded-lg border border-input px-4 py-2 focus:border-transparent focus:outline-none focus:ring-2 focus:ring-coral disabled:cursor-not-allowed disabled:bg-muted/40"
-              >
-                <option value={WEBHOOK_API_VERSION_V1}>Standard (V1) — connection-level summary</option>
-                <option value={WEBHOOK_API_VERSION_V2}>Enhanced (V2) — per-asset detail</option>
-              </select>
-              <p className="mt-1 text-xs text-muted-foreground">
-                {selectedApiVersion === WEBHOOK_API_VERSION_V2
-                  ? 'V2 payloads include individual asset IDs, names, types, and statuses for each connected platform.'
-                  : 'V1 payloads include connection-level summaries. Upgrade to V2 for granular asset data.'}
-              </p>
-            </div>
+      {feedbackMessage && (
+        <p role="status" className={`text-sm font-medium ${getFeedbackTone(feedbackError)}`}>
+          {feedbackMessage}
+        </p>
+      )}
 
-            <fieldset>
-              <legend className="text-sm font-medium text-foreground">Subscribed events</legend>
-              <div className="mt-3 space-y-3">
-                {EVENT_OPTIONS.map((option) => {
-                  const checked = selectedEvents.includes(option.value);
-
-                  return (
-                    <label
-                      key={option.value}
-                      className="flex cursor-pointer gap-3 rounded-2xl border border-border bg-paper/60 p-4 transition-colors hover:border-coral/40"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={checked}
-                        onChange={(event) => handleEventToggle(option.value, event.target.checked)}
-                        disabled={isBusy}
-                        aria-label={option.value}
-                        className="mt-1 h-4 w-4 rounded border-border text-danger-ink focus:ring-coral"
-                      />
-                      <div>
-                        <div className="font-mono text-sm font-semibold text-ink">{option.label}</div>
-                        <p className="mt-1 text-sm text-muted-foreground">{option.description}</p>
-                      </div>
-                    </label>
-                  );
-                })}
-              </div>
-            </fieldset>
-
-            <div className="flex flex-wrap gap-3">
-              <Button
-                type="button"
-                variant="primary"
-                onClick={() => void handleSave()}
-                disabled={isBusy}
-              >
-                <ShieldCheck className="h-4 w-4" />
-                {endpointExists ? 'Save Endpoint' : 'Create Endpoint'}
-              </Button>
-
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => rotateMutation.mutate()}
-                disabled={!endpointExists || isBusy}
-              >
-                <KeyRound className="h-4 w-4" />
-                Rotate Secret
-              </Button>
-
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={() => testMutation.mutate()}
-                disabled={!endpointExists || endpoint?.status !== 'active' || isBusy}
-              >
-                <Send className="h-4 w-4" />
-                Send Test
-              </Button>
-
-              <Button
-                type="button"
-                variant="ghost"
-                onClick={() => disableMutation.mutate()}
-                disabled={!endpointExists || endpoint?.status !== 'active' || isBusy}
-              >
-                <AlertTriangle className="h-4 w-4" />
-                Disable
-              </Button>
-            </div>
-
-            {feedbackMessage && (
-              <p className={`text-sm font-medium ${getFeedbackTone(feedbackError)}`}>{feedbackMessage}</p>
-            )}
-          </div>
-
-          <aside className="rounded-3xl border border-border bg-gradient-to-br from-coral/10 via-paper to-teal/10 p-5">
-            <div className="flex items-center gap-2 text-sm font-semibold text-ink">
-              <BellRing className="h-4 w-4 text-danger-ink" />
-              Delivery posture
-            </div>
-
-            <dl className="mt-4 space-y-4 text-sm">
-              <div>
-                <dt className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Agency</dt>
-                <dd className="mt-1 font-medium text-ink">{agency?.name || 'Current agency'}</dd>
-              </div>
-              <div>
-                <dt className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Last Delivered</dt>
-                <dd className="mt-1 text-ink">{formatDateTime(endpoint?.lastDeliveredAt)}</dd>
-              </div>
-              <div>
-                <dt className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Failure Count</dt>
-                <dd className="mt-1 text-ink">{endpoint?.failureCount ?? 0}</dd>
-              </div>
-              <div>
-                <dt className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Payload Version</dt>
-                <dd className="mt-1 font-mono text-ink">{selectedApiVersion === WEBHOOK_API_VERSION_V2 ? 'Enhanced (V2)' : 'Standard (V1)'}</dd>
-              </div>
-              <div>
-                <dt className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Subscribed Event Set</dt>
-                <dd className="mt-2 flex flex-wrap gap-2">
-                  {(selectedEvents.length > 0 ? selectedEvents : ['access_request.completed']).map((eventType) => (
-                    <code
-                      key={eventType}
-                      className="rounded bg-ink px-2 py-1 text-xs font-semibold text-paper"
-                    >
-                      {eventType}
-                    </code>
-                  ))}
-                </dd>
-              </div>
-              {endpoint?.secretLastFour && (
-                <div>
-                  <dt className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Current Secret Ref</dt>
-                  <dd className="mt-1 font-mono text-ink">••••{endpoint.secretLastFour}</dd>
-                </div>
-              )}
-            </dl>
-          </aside>
-        </div>
-
-        {!endpointExists && (
-          <div className="rounded-3xl border border-dashed border-border bg-paper/70 p-5 text-sm text-muted-foreground">
-            No endpoint is configured yet. Add a destination URL, choose the events you want, and create the endpoint to start receiving signed notifications.
-          </div>
-        )}
-
-        {hasRecentFailure && (
-          <div className="rounded-3xl border border-warning/30 bg-warning/5 p-5">
-            <div className="flex items-center gap-2 text-sm font-semibold text-ink">
-              <AlertTriangle className="h-4 w-4 text-warning" />
-              Delivery attention needed
-            </div>
-            <p className="mt-2 text-sm text-muted-foreground">
-              This endpoint has recent delivery failures. Review the inspector below, confirm your receiver returns `2xx`, and rotate the secret if you suspect signature drift.
-            </p>
-          </div>
-        )}
-
-        {signingSecret && (
-          <div className="rounded-3xl border border-teal/30 bg-teal/5 p-5">
-            <div className="flex items-center gap-2 text-sm font-semibold text-ink">
-              <KeyRound className="h-4 w-4 text-success-ink" />
-              Signing secret
-            </div>
-            <p className="mt-2 text-sm text-muted-foreground">
-              This value is shown once. Store it in your webhook receiver before leaving this page.
-            </p>
-            <code className="mt-4 block overflow-x-auto rounded-2xl bg-ink px-4 py-3 text-sm font-semibold text-paper">
-              {signingSecret}
-            </code>
-          </div>
-        )}
-      </WebhookSettingsCardShell>
-
-      <WebhookSettingsCardShell
-        title="Recent Deliveries"
-        description="Inspect the most recent attempts sent to this endpoint."
-        icon={Send}
-      >
-        <WebhookDeliveryInspector
-          deliveries={deliveries}
-          selectedDeliveryId={selectedDeliveryId}
-          onInspect={setSelectedDeliveryId}
-        />
-      </WebhookSettingsCardShell>
+      {body}
     </div>
   );
 }

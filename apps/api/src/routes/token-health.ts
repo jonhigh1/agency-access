@@ -6,12 +6,19 @@
  */
 
 import { FastifyInstance, type FastifyReply, type FastifyRequest } from 'fastify';
+import { z } from 'zod';
 import type { Platform } from '@agency-platform/shared';
 import { connectionService } from '../services/connection.service.js';
 import { authenticate } from '@/middleware/auth.js';
 import { resolvePrincipalAgency, type AuthorizationError } from '@/lib/authorization.js';
 import { prisma } from '@/lib/prisma.js';
-import { sendValidationError } from '../lib/response.js';
+import { sendError, sendValidationError } from '../lib/response.js';
+import { DEFAULT_LIST_LIMIT, MAX_LIST_LIMIT } from '@/lib/list-pagination.js';
+
+const listConnectionsQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(MAX_LIST_LIMIT).default(DEFAULT_LIST_LIMIT),
+  offset: z.coerce.number().int().min(0).default(0),
+});
 
 function sendRouteError(reply: FastifyReply, error: AuthorizationError, statusCode: number) {
   return reply.code(statusCode).send({
@@ -113,7 +120,20 @@ export async function tokenHealthRoutes(fastify: FastifyInstance) {
     const { agencyId, sent } = await resolveAgencyIdOrReply(request, reply);
     if (!agencyId) return sent;
 
-    const result = await connectionService.getAgencyConnections(agencyId);
+    const query = listConnectionsQuerySchema.safeParse(request.query);
+    if (!query.success) {
+      return sendError(
+        reply,
+        'VALIDATION_ERROR',
+        query.error.errors[0]?.message || 'Invalid list query',
+        400
+      );
+    }
+
+    const result = await connectionService.getAgencyConnectionSummaries(agencyId, {
+      limit: query.data.limit,
+      offset: query.data.offset,
+    });
 
     if (result.error) {
       return reply.code(500).send({

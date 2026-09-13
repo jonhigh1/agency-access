@@ -63,7 +63,8 @@ export async function startTokenRefreshHandlers(): Promise<void> {
     logger.info(`Token refresh scan complete`, { queued });
   }, { teamSize: 1, teamConcurrency: 1 });
 
-  // Handler for refreshing individual tokens
+  // Handler for refreshing individual tokens.
+  // Live platform contact (Infisical get + refresh) lives here, not on GET /token-health.
   await registerHandler('token-refresh', async (job) => {
     const { connectionId, platform } = job.data as JobRegistry['token-refresh'];
 

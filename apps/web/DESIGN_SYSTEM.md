@@ -239,7 +239,7 @@ Unchanged: `cn()` merging, forwardRef, CVA where needed, components in
 - **Default**: `border` + `bg-card`, **no shadow** (v2.0)
 - **Static containers**: keep them static when they hold interactive children —
   one hover target per interactive element (unchanged from v1.x)
-- **`clean-card`**: still available for settings surfaces
+- **`clean-card`**: deprecated — Settings no longer uses it (soft shadow + `transition-all` break v2.0). Slated for deletion once no consumer remains
 
 ### StatusBadge
 
@@ -379,6 +379,14 @@ Run: `npm run test --workspace=apps/web`. Visual reference: `/design-system`.
 | `~/Desktop/lazyweb.com-design-kit/` | The reference extraction (brief, tokens, scaffold) |
 
 ## Changelog
+
+### v2.1.0 (September 12, 2026) — Settings adoption
+- Settings page rebuilt on rows: `SettingsRow` / `SettingsGroup` primitives (`src/components/settings/settings-row.tsx`), hairline dividers, no cards
+- `.ink-panel` gets its first consumers: one strip per Settings tab (plan, subscription, endpoint, MCP)
+- `brutalist` button: one per tab view, always in the row layer, never on ink ground (black border and shadow vanish on `--ink`)
+- Enforcement: `settings.design.test.ts` (source walker + regex) and `settings-view-counts.test.tsx` (rendered counts of ink-panel, brutalist, `shadow-brutalist`)
+- `clean-card` deprecated for settings surfaces
+- Reduced motion: hover transforms disabled under `prefers-reduced-motion` in `globals.css`; `motion-reduce:` utilities are avoided because the validator substring-matches `-red`
 
 ### v2.0.0 (September 3, 2026) — Subtraction release
 - **Removed `--electric`** — one accent (coral) carries the system

@@ -272,8 +272,7 @@ export async function createAuditLog(input: AuditLogInput) {
 
 /**
  * Create several audit log entries in a single insert.
- * Same row shape as createAuditLog; use for batched writes
- * (e.g. token-health sweeps that touch many tokens at once).
+ * Same row shape as createAuditLog; use for batched writes.
  */
 export async function createAuditLogs(inputs: AuditLogInput[]) {
   if (inputs.length === 0) {

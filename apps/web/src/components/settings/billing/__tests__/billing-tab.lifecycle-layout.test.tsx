@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { BillingTab } from '../billing-tab';
 
@@ -38,8 +38,43 @@ vi.mock('../billing-details-card', () => ({ BillingDetailsCard: () => <div>Billi
 vi.mock('../checkout-success-toast', () => ({ CheckoutSuccessToast: () => <div>Checkout Success Toast</div> }));
 
 describe('BillingTab lifecycle layout', () => {
+  const originalFlag = process.env.NEXT_PUBLIC_BILLING_V2_ENABLED;
+
   beforeEach(() => {
     vi.clearAllMocks();
+    delete process.env.NEXT_PUBLIC_BILLING_V2_ENABLED;
+  });
+
+  afterEach(() => {
+    if (originalFlag === undefined) delete process.env.NEXT_PUBLIC_BILLING_V2_ENABLED;
+    else process.env.NEXT_PUBLIC_BILLING_V2_ENABLED = originalFlag;
+  });
+
+  it('legacy branch renders the seven groups in order and no hero (KTD6)', () => {
+    process.env.NEXT_PUBLIC_BILLING_V2_ENABLED = 'false';
+    mockUseSubscription.mockReturnValue({
+      data: { id: 'sub_legacy', tier: 'GROWTH', status: 'active', cancelAtPeriodEnd: false },
+      isLoading: false,
+    });
+
+    const { container } = render(<BillingTab />);
+
+    expect(screen.queryByText('Billing Hero')).not.toBeInTheDocument();
+    expect(container.querySelectorAll('.ink-panel')).toHaveLength(0);
+
+    const expectedOrder = [
+      'Current Plan Card',
+      'Manage Subscription Card',
+      'Usage Limits Card',
+      'Plan Comparison',
+      'Payment Methods Card',
+      'Invoices Card',
+      'Billing Details Card',
+    ];
+    const rendered = Array.from(container.querySelectorAll('div'))
+      .map((node) => node.textContent)
+      .filter((text) => expectedOrder.includes(text ?? ''));
+    expect(rendered).toEqual(expectedOrder);
   });
 
   it('renders free/trialing layout without paid-only cards', () => {

@@ -4,7 +4,6 @@ import { googleAdsConnector } from './google-ads.js';
 import { ga4Connector } from './ga4.js';
 import { googleConnector } from './google.js';
 import { linkedinConnector } from './linkedin.js';
-import { kitConnector } from './kit.js';
 import { beehiivConnector } from './beehiiv.js';
 import { mailchimpConnector } from './mailchimp.js';
 import { pinterestConnector } from './pinterest.js';
@@ -129,7 +128,6 @@ const connectors: Partial<Record<Platform, PlatformConnector>> = {
   linkedin: linkedinConnector,
   linkedin_ads: linkedinConnector, // Alias for same connector
   linkedin_pages: linkedinConnector, // Alias for same connector
-  kit: kitConnector, // Kit (ConvertKit) - standalone pattern (like Meta)
 
   // API Key authentication connectors (non-OAuth)
   beehiiv: beehiivConnector as any, // Beehiiv uses API key auth (team invitation workflow)
@@ -143,7 +141,7 @@ const connectors: Partial<Record<Platform, PlatformConnector>> = {
   pinterest: pinterestConnector,
   klaviyo: klaviyoConnector,
   shopify: shopifyConnector,
-  // zapier: uses manual invitation flow, not OAuth
+  // kit / zapier: manual invitation flow, not OAuth
 };
 
 /**

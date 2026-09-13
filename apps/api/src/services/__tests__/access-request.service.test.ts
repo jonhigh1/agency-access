@@ -761,6 +761,58 @@ describe('AccessRequestService', () => {
       expect(result.error).toBeNull();
       expect(result.data).toEqual(mockRequests);
     });
+
+    it('should default the agency list to 50 rows and omit large JSON columns', async () => {
+      vi.mocked(prisma.accessRequest.findMany).mockResolvedValue([] as any);
+
+      await accessRequestService.getAgencyAccessRequests('agency-1');
+
+      expect(prisma.accessRequest.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { agencyId: 'agency-1' },
+          take: 50,
+          skip: 0,
+          select: {
+            id: true,
+            agencyId: true,
+            clientId: true,
+            clientName: true,
+            clientEmail: true,
+            externalReference: true,
+            platforms: true,
+            status: true,
+            expiresAt: true,
+            createdAt: true,
+            authorizedAt: true,
+          },
+        })
+      );
+      const query = vi.mocked(prisma.accessRequest.findMany).mock.calls[0][0] as {
+        select?: Record<string, unknown>;
+      };
+      expect(query.select).not.toHaveProperty('branding');
+      expect(query.select).not.toHaveProperty('intakeFields');
+      expect(query.select).not.toHaveProperty('metaAccessConfig');
+      expect(query.select).not.toHaveProperty('uniqueToken');
+    });
+
+    it('should cap an oversized access-request list limit at 100', async () => {
+      vi.mocked(prisma.accessRequest.findMany).mockResolvedValue([] as any);
+
+      await accessRequestService.getAgencyAccessRequests('agency-1', {
+        status: 'pending',
+        limit: 500,
+        offset: 25,
+      });
+
+      expect(prisma.accessRequest.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { agencyId: 'agency-1', status: 'pending' },
+          take: 100,
+          skip: 25,
+        })
+      );
+    });
   });
 
   describe('getAccessRequestById', () => {
