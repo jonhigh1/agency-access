@@ -21,8 +21,8 @@ vi.mock('@/lib/api/agents', () => ({
   updateAgentGrant: (...args: any[]) => mockUpdate(...args),
 }));
 
-function renderTab() {
-  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
+function renderTab(queryClient = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } })) {
+  queryClient.setQueryData(['user-agency', 'user-1'], { id: 'agency-1', name: 'Agency' });
   return render(<QueryClientProvider client={queryClient}><AgentsSettingsTab /></QueryClientProvider>);
 }
 
@@ -64,5 +64,14 @@ describe('AgentsSettingsTab', () => {
       displayName: 'Onboarding operator',
       permissions: expect.arrayContaining(['workspace:read', 'clients:write']),
     }), mockGetToken);
+  });
+
+  it('reuses the shared user-agency cache instead of fetching agencies again', async () => {
+    const fetchSpy = vi.fn();
+    global.fetch = fetchSpy;
+    renderTab();
+    expect(await screen.findByText('Chief of Staff')).toBeInTheDocument();
+    expect(mockAuthorizedApiFetch).not.toHaveBeenCalled();
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 });

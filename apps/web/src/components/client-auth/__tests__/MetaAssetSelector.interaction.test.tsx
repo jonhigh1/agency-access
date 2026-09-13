@@ -1,13 +1,14 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import posthog from 'posthog-js';
 import { MetaAssetSelector } from '../MetaAssetSelector';
 
-vi.mock('posthog-js', () => ({
-  default: {
-    capture: vi.fn(),
-  },
+const { captureMock } = vi.hoisted(() => ({
+  captureMock: vi.fn(),
+}));
+
+vi.mock('@/lib/analytics/capture-posthog', () => ({
+  capturePosthogEvent: captureMock,
 }));
 
 describe('MetaAssetSelector interactions', () => {
@@ -96,6 +97,6 @@ describe('MetaAssetSelector interactions', () => {
       );
     });
 
-    expect(posthog.capture).not.toHaveBeenCalled();
+    expect(captureMock).not.toHaveBeenCalled();
   });
 });

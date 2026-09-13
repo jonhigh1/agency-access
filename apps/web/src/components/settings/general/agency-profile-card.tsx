@@ -8,72 +8,51 @@
 
 import { useCallback, useEffect, useState } from 'react';
 import { useAuth } from '@clerk/nextjs';
+import { useQueryClient } from '@tanstack/react-query';
 import { Building2, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { authorizedApiFetch } from '@/lib/api/authorized-api-fetch';
-
-interface AgencyRecord {
-  id: string;
-  name: string;
-  settings?: Record<string, unknown> | null;
-}
+import { USER_AGENCY_QUERY_KEY, useUserAgency, type UserAgency } from '@/hooks/use-user-agency';
 
 function toOptionalString(value: unknown): string {
   return typeof value === 'string' ? value : '';
 }
 
 export function AgencyProfileCard() {
-  const { userId, orgId, getToken } = useAuth();
+  const { getToken } = useAuth();
+  const queryClient = useQueryClient();
+  const { data: agency, isLoading: isAgencyLoading, isError, error } = useUserAgency();
   const [agencyId, setAgencyId] = useState<string | null>(null);
   const [agencyName, setAgencyName] = useState('');
   const [companyWebsite, setCompanyWebsite] = useState('');
   const [logoUrl, setLogoUrl] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
   const [feedbackError, setFeedbackError] = useState(false);
 
-  const loadAgencyProfile = useCallback(async () => {
-    const principalClerkId = orgId || userId;
-    if (!principalClerkId) {
-      setIsLoading(false);
+  useEffect(() => {
+    if (!agency) {
+      setAgencyId(null);
+      setAgencyName('');
+      setCompanyWebsite('');
+      setLogoUrl('');
       return;
     }
 
-    try {
-      setIsLoading(true);
-      setFeedbackMessage(null);
-      setFeedbackError(false);
-
-      const response = await authorizedApiFetch<{ data: AgencyRecord[]; error: null }>(
-        `/api/agencies?clerkUserId=${encodeURIComponent(principalClerkId)}`,
-        { getToken }
-      );
-
-      const agency = response.data?.[0];
-      if (!agency) {
-        setAgencyId(null);
-        setAgencyName('');
-        setCompanyWebsite('');
-        setLogoUrl('');
-        return;
-      }
-
-      setAgencyId(agency.id);
-      setAgencyName(agency.name || '');
-      setCompanyWebsite(toOptionalString(agency.settings?.website));
-      setLogoUrl(toOptionalString(agency.settings?.logoUrl));
-    } catch (error) {
-      setFeedbackMessage(error instanceof Error ? error.message : 'Failed to load agency profile');
-      setFeedbackError(true);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [getToken, orgId, userId]);
+    setAgencyId(agency.id);
+    setAgencyName(agency.name || '');
+    setCompanyWebsite(toOptionalString(agency.settings?.website));
+    setLogoUrl(toOptionalString(agency.settings?.logoUrl));
+  }, [agency]);
 
   useEffect(() => {
-    void loadAgencyProfile();
-  }, [loadAgencyProfile]);
+    if (!isError) {
+      return;
+    }
+
+    setFeedbackMessage(error instanceof Error ? error.message : 'Failed to load agency profile');
+    setFeedbackError(true);
+  }, [error, isError]);
 
   const handleSave = useCallback(async () => {
     if (!agencyId || isSaving) {
@@ -106,13 +85,30 @@ export function AgencyProfileCard() {
       setLogoUrl(trimmedLogo);
       setFeedbackMessage('Changes saved');
       setFeedbackError(false);
-    } catch (error) {
-      setFeedbackMessage(error instanceof Error ? error.message : 'Failed to save changes');
+      queryClient.setQueriesData<UserAgency | null>(
+        { queryKey: [USER_AGENCY_QUERY_KEY] },
+        (current) =>
+          current
+            ? {
+                ...current,
+                name: trimmedName,
+                settings: {
+                  ...(current.settings ?? {}),
+                  website: trimmedWebsite.length > 0 ? trimmedWebsite : null,
+                  logoUrl: trimmedLogo.length > 0 ? trimmedLogo : null,
+                },
+              }
+            : current
+      );
+    } catch (saveError) {
+      setFeedbackMessage(saveError instanceof Error ? saveError.message : 'Failed to save changes');
       setFeedbackError(true);
     } finally {
       setIsSaving(false);
     }
-  }, [agencyId, agencyName, companyWebsite, getToken, isSaving, logoUrl]);
+  }, [agencyId, agencyName, companyWebsite, getToken, isSaving, logoUrl, queryClient]);
+
+  const isLoading = isAgencyLoading;
 
   return (
     <section className="clean-card p-6">

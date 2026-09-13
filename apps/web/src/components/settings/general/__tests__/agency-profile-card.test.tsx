@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AgencyProfileCard } from '../agency-profile-card';
 
 const mockAuthorizedApiFetch = vi.fn();
@@ -17,6 +18,22 @@ vi.mock('@clerk/nextjs', () => ({
   }),
 }));
 
+function renderCard(agency: {
+  id: string;
+  name: string;
+  settings?: Record<string, unknown> | null;
+}) {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  queryClient.setQueryData(['user-agency', 'user_123'], agency);
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <AgencyProfileCard />
+    </QueryClientProvider>
+  );
+}
+
 describe('AgencyProfileCard', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -24,19 +41,14 @@ describe('AgencyProfileCard', () => {
   });
 
   it('loads agency values and populates fields', async () => {
-    mockAuthorizedApiFetch.mockResolvedValueOnce({
-      data: [{
-        id: 'agency-1',
-        name: 'Pillar AI Agency',
-        settings: {
-          website: 'https://pillaraiagency.com',
-          logoUrl: 'https://pillaraiagency.com/logo.png',
-        },
-      }],
-      error: null,
+    renderCard({
+      id: 'agency-1',
+      name: 'Pillar AI Agency',
+      settings: {
+        website: 'https://pillaraiagency.com',
+        logoUrl: 'https://pillaraiagency.com/logo.png',
+      },
     });
-
-    render(<AgencyProfileCard />);
 
     await waitFor(() => {
       expect(screen.getByDisplayValue('Pillar AI Agency')).toBeInTheDocument();
@@ -46,31 +58,26 @@ describe('AgencyProfileCard', () => {
   });
 
   it('saves agency name and website updates to api', async () => {
-    mockAuthorizedApiFetch
-      .mockResolvedValueOnce({
-        data: [{
-          id: 'agency-1',
-          name: 'Old Agency Name',
-          settings: {
-            website: 'https://old.example.com',
-            logoUrl: '',
-          },
-        }],
-        error: null,
-      })
-      .mockResolvedValueOnce({
-        data: {
-          id: 'agency-1',
-          name: 'New Agency Name',
-          settings: {
-            website: 'https://new.example.com',
-            logoUrl: '',
-          },
+    mockAuthorizedApiFetch.mockResolvedValueOnce({
+      data: {
+        id: 'agency-1',
+        name: 'New Agency Name',
+        settings: {
+          website: 'https://new.example.com',
+          logoUrl: '',
         },
-        error: null,
-      });
+      },
+      error: null,
+    });
 
-    render(<AgencyProfileCard />);
+    renderCard({
+      id: 'agency-1',
+      name: 'Old Agency Name',
+      settings: {
+        website: 'https://old.example.com',
+        logoUrl: '',
+      },
+    });
 
     const agencyNameInput = await screen.findByDisplayValue('Old Agency Name');
     const websiteInput = screen.getByLabelText('Company Website') as HTMLInputElement;

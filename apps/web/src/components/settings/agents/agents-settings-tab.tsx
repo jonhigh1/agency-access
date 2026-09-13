@@ -4,27 +4,23 @@ import { useAuth } from '@clerk/nextjs';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Bot, Copy, ExternalLink } from 'lucide-react';
-import { authorizedApiFetch } from '@/lib/api/authorized-api-fetch';
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard';
+import { useUserAgency } from '@/hooks/use-user-agency';
 import { getApiBaseUrl } from '@/lib/api/api-env';
 import { createAgentGrant, listAgentGrants, revokeAgentGrant, updateAgentGrant } from '@/lib/api/agents';
 import type { AgentPermission } from '@agency-platform/shared';
 import { AgentGrantCard } from './agent-grant-card';
 
 export function AgentsSettingsTab() {
-  const { userId, orgId, getToken } = useAuth();
+  const { getToken } = useAuth();
   const queryClient = useQueryClient();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const principalClerkId = orgId || userId;
+  const { data: agency } = useUserAgency();
   const { copied, copy } = useCopyToClipboard(1500);
   const endpoint = `${getApiBaseUrl()}/mcp`;
   const pendingOauthClientId = searchParams.get('connect');
-  const agencyQuery = useQuery({
-    queryKey: ['settings-agents-agency', principalClerkId], enabled: Boolean(principalClerkId),
-    queryFn: async () => (await authorizedApiFetch<{ data: Array<{ id: string; name: string }> }>(`/api/agencies?clerkUserId=${encodeURIComponent(principalClerkId as string)}`, { getToken })).data[0] ?? null,
-  });
-  const agencyId = agencyQuery.data?.id;
+  const agencyId = agency?.id;
   const grantsQuery = useQuery({
     queryKey: ['settings-agent-grants', agencyId], enabled: Boolean(agencyId),
     queryFn: () => listAgentGrants(agencyId as string, getToken),

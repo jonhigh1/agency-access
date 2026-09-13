@@ -3,7 +3,7 @@
 import { m, useScroll, useTransform } from 'framer-motion';
 import { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { SignUpButton } from '@clerk/nextjs';
+import { SignUpButton } from '@/components/lazy-clerk-auth-buttons';
 import { ArrowRight, Clock, Link2, MousePointerClick, Radar, Shield } from 'lucide-react';
 import { Reveal } from '@/components/marketing/reveal';
 import { ScheduleDemoModal } from '@/components/marketing/schedule-demo-modal';

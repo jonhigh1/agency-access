@@ -8,6 +8,7 @@ import type {
 import { WEBHOOK_API_VERSION_V1, WEBHOOK_API_VERSION_V2 } from '@agency-platform/shared';
 import { useAuth } from '@clerk/nextjs';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useUserAgency } from '@/hooks/use-user-agency';
 import {
   AlertTriangle,
   BellRing,
@@ -18,7 +19,6 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { authorizedApiFetch } from '@/lib/api/authorized-api-fetch';
 import {
   disableWebhookEndpoint,
   getWebhookEndpoint,
@@ -30,11 +30,6 @@ import {
 import { WebhookDeliveryInspector } from './webhook-delivery-inspector';
 import { WebhookSettingsCardShell } from './webhook-settings-card-shell';
 import { WebhookStatusBadge } from './webhook-status-badge';
-
-interface AgencyRecord {
-  id: string;
-  name: string;
-}
 
 const DELIVERY_LIMIT = 8;
 
@@ -106,9 +101,9 @@ function getFeedbackTone(isError: boolean): string {
 }
 
 export function WebhookSettingsTab() {
-  const { userId, orgId, getToken } = useAuth();
+  const { getToken } = useAuth();
   const queryClient = useQueryClient();
-  const principalClerkId = orgId || userId;
+  const { data: agency, isLoading: isAgencyLoading, isError: isAgencyError, error: agencyError } = useUserAgency();
   const [destinationUrl, setDestinationUrl] = useState('');
   const [selectedEvents, setSelectedEvents] = useState<WebhookEventType[]>(['access_request.completed']);
   const [selectedApiVersion, setSelectedApiVersion] = useState<WebhookApiVersion>(WEBHOOK_API_VERSION_V1);
@@ -117,20 +112,7 @@ export function WebhookSettingsTab() {
   const [signingSecret, setSigningSecret] = useState<string | null>(null);
   const [selectedDeliveryId, setSelectedDeliveryId] = useState<string | null>(null);
 
-  const agencyQuery = useQuery({
-    queryKey: ['settings-webhooks-agency', principalClerkId],
-    enabled: Boolean(principalClerkId),
-    queryFn: async () => {
-      const response = await authorizedApiFetch<{ data: AgencyRecord[]; error: null }>(
-        `/api/agencies?clerkUserId=${encodeURIComponent(principalClerkId as string)}`,
-        { getToken }
-      );
-
-      return response.data[0] ?? null;
-    },
-  });
-
-  const agencyId = agencyQuery.data?.id ?? null;
+  const agencyId = agency?.id ?? null;
 
   const endpointQuery = useQuery({
     queryKey: ['settings-webhooks-endpoint', agencyId],
@@ -278,7 +260,7 @@ export function WebhookSettingsTab() {
     });
   };
 
-  if (agencyQuery.isLoading || (agencyId && (endpointQuery.isLoading || deliveriesQuery.isLoading))) {
+  if (isAgencyLoading || (agencyId && (endpointQuery.isLoading || deliveriesQuery.isLoading))) {
     return (
       <div className="space-y-6">
         <div className="clean-card animate-pulse p-6">
@@ -294,7 +276,7 @@ export function WebhookSettingsTab() {
     );
   }
 
-  if (!principalClerkId || (!agencyQuery.isLoading && !agencyId)) {
+  if (!isAgencyLoading && !agencyId) {
     return (
       <WebhookSettingsCardShell
         title="Webhook Endpoint"
@@ -308,7 +290,7 @@ export function WebhookSettingsTab() {
     );
   }
 
-  if (agencyQuery.isError || endpointQuery.isError || deliveriesQuery.isError) {
+  if (isAgencyError || endpointQuery.isError || deliveriesQuery.isError) {
     return (
       <WebhookSettingsCardShell
         title="Webhook Endpoint"
@@ -316,8 +298,8 @@ export function WebhookSettingsTab() {
         icon={Webhook}
       >
         <div className="rounded-2xl border border-coral/30 bg-coral/5 p-5 text-sm text-danger-ink">
-          {agencyQuery.error instanceof Error
-            ? agencyQuery.error.message
+          {agencyError instanceof Error
+            ? agencyError.message
             : endpointQuery.error instanceof Error
             ? endpointQuery.error.message
             : deliveriesQuery.error instanceof Error
@@ -462,7 +444,7 @@ export function WebhookSettingsTab() {
             <dl className="mt-4 space-y-4 text-sm">
               <div>
                 <dt className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Agency</dt>
-                <dd className="mt-1 font-medium text-ink">{agencyQuery.data?.name || 'Current agency'}</dd>
+                <dd className="mt-1 font-medium text-ink">{agency?.name || 'Current agency'}</dd>
               </div>
               <div>
                 <dt className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Last Delivered</dt>

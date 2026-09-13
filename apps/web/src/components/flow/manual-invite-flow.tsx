@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, CircleAlert } from 'lucide-react';
-import posthog from 'posthog-js';
+import { capturePosthogEvent } from '@/lib/analytics/capture-posthog';
 import type { ClientAccessRequestPayload, Platform } from '@agency-platform/shared';
 import { InviteFlowShell } from '@/components/flow/invite-flow-shell';
 import { ManualInviteHeader } from '@/components/flow/manual-invite-header';
@@ -274,7 +274,7 @@ export function ManualInviteFlow<TData extends ManualInviteFlowData>({
           onChange: (checked: boolean) => {
             setCompletionConfirmed(checked);
             if (checked) {
-              posthog.capture('client_manual_completion_confirmed', {
+              void capturePosthogEvent('client_manual_completion_confirmed', {
                 platform: config.platform,
               });
             }
@@ -382,7 +382,7 @@ export function ManualInviteFlow<TData extends ManualInviteFlowData>({
         platformName={config.platformName}
         steps={steps}
         onStepView={({ stepId, stepIndex, totalSteps }) => {
-          posthog.capture('client_manual_step_viewed', {
+          void capturePosthogEvent('client_manual_step_viewed', {
             platform: config.platform,
             step_id: stepId,
             step_index: stepIndex,
@@ -390,7 +390,7 @@ export function ManualInviteFlow<TData extends ManualInviteFlowData>({
           });
         }}
         onStepAdvanced={({ fromStepId, toStepId, fromStepIndex, toStepIndex, totalSteps }) => {
-          posthog.capture('client_manual_step_advanced', {
+          void capturePosthogEvent('client_manual_step_advanced', {
             platform: config.platform,
             from_step_id: fromStepId,
             to_step_id: toStepId,

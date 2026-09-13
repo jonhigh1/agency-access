@@ -71,6 +71,7 @@ function renderWithQueryClient(ui: React.ReactElement) {
       },
     },
   });
+  queryClient.setQueryData(['user-agency', 'user_123'], { id: 'agency-1', name: 'Agency One' });
 
   return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
 }
@@ -299,6 +300,33 @@ describe('WebhookSettingsTab', () => {
     });
 
     expect(await screen.findByText('Test event queued.')).toBeInTheDocument();
+  });
+
+  it('reuses the shared user-agency cache instead of fetching agencies again', async () => {
+    mockEndpointQueries({
+      endpoint: null,
+      deliveries: [],
+    });
+
+    const queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
+    });
+    queryClient.setQueryData(['user-agency', 'user_123'], { id: 'agency-1', name: 'Agency One' });
+    const fetchSpy = vi.fn();
+    global.fetch = fetchSpy;
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <WebhookSettingsTab />
+      </QueryClientProvider>
+    );
+
+    expect(await screen.findByText(/No endpoint is configured yet/i)).toBeInTheDocument();
+    expect(mockAuthorizedApiFetch).not.toHaveBeenCalled();
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 
   it('renders the empty state when no endpoint has been configured', async () => {

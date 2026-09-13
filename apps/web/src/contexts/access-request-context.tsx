@@ -13,7 +13,7 @@ import { QueryClient } from '@tanstack/react-query';
 import { Client, AccessLevel, AccessRequestTemplate, IntakeField } from '@agency-platform/shared';
 import { transformPlatformsForAPI } from '@/lib/transform-platforms';
 import { createAccessRequest, type CreateAccessRequestPayload } from '@/lib/api/access-requests';
-import posthog from 'posthog-js';
+import { capturePosthogEvent } from '@/lib/analytics/capture-posthog';
 
 // ============================================================
 // TYPES
@@ -383,7 +383,7 @@ export function AccessRequestProvider({
           (sum, products) => sum + products.length,
           0
         );
-        posthog.capture('access_request_created', {
+        void capturePosthogEvent('access_request_created', {
           access_request_id: result.data.id,
           agency_id: agencyId,
           client_id: state.client?.id,

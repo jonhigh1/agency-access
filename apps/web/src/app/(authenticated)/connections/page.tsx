@@ -13,7 +13,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth, useUser } from '@clerk/nextjs';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { CheckCircle2, AlertCircle } from 'lucide-react';
-import posthog from 'posthog-js';
+import { capturePosthogEvent } from '@/lib/analytics/capture-posthog';
 import { PlatformCard, Button, EmptyState } from '@/components/ui';
 import { Platform, PlatformInfo } from '@agency-platform/shared';
 import {
@@ -92,7 +92,7 @@ function ConnectionsPageContent() {
 
     if (success === 'true' && platform) {
       // Track platform connected in PostHog
-      posthog.capture('platform_connected', {
+      void capturePosthogEvent('platform_connected', {
         agency_id: agencyId,
         platform: platform,
         connection_source: 'oauth_callback',
@@ -266,7 +266,7 @@ function ConnectionsPageContent() {
     },
     onSuccess: (_, platform) => {
       // Track platform disconnected in PostHog
-      posthog.capture('platform_disconnected', {
+      void capturePosthogEvent('platform_disconnected', {
         agency_id: agencyId,
         platform: platform,
       });
@@ -361,7 +361,7 @@ function ConnectionsPageContent() {
         auth_source: 'agency_meta_popup',
         agency_id: agencyId,
       });
-      posthog.capture('platform_connected', {
+      void capturePosthogEvent('platform_connected', {
         agency_id: agencyId,
         platform: 'meta',
         connection_source: 'meta_popup',

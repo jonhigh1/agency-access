@@ -9,7 +9,6 @@ Sentry.init({
 
   replaysSessionSampleRate: 0.1,
   replaysOnErrorSampleRate: 1.0,
-  integrations: [Sentry.replayIntegration()],
 
   enableLogs: true,
 
@@ -26,3 +25,19 @@ Sentry.init({
   environment: process.env.NODE_ENV || "development",
   release: process.env.NEXT_PUBLIC_APP_VERSION || undefined,
 });
+
+function registerReplayIntegration() {
+  void Sentry.lazyLoadIntegration('replayIntegration')
+    .then((replayIntegration) => {
+      Sentry.addIntegration(replayIntegration());
+    })
+    .catch(() => {
+      // Replay is optional; error reporting still works without it.
+    });
+}
+
+if (typeof requestIdleCallback === 'function') {
+  requestIdleCallback(() => registerReplayIntegration(), { timeout: 4000 });
+} else {
+  setTimeout(registerReplayIntegration, 1);
+}

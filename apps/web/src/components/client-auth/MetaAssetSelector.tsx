@@ -16,7 +16,7 @@
  */
 
 import { useState, useEffect, useRef } from 'react';
-import posthog from 'posthog-js';
+import { capturePosthogEvent } from '@/lib/analytics/capture-posthog';
 import { AssetGroup, type Asset } from './AssetGroup';
 import { MultiSelectCombobox } from '@/components/ui/multi-select-combobox';
 import { SingleSelect } from '@/components/ui/single-select';
@@ -276,7 +276,7 @@ export function MetaAssetSelector({
     if (totalSelected > 0 && !hasTrackedSelection.current) {
       // Debounce the tracking to avoid spamming events
       selectionTrackingTimeoutId = setTimeout(() => {
-        posthog.capture('meta_assets_selected', {
+        void capturePosthogEvent('meta_assets_selected', {
           session_id: sessionId,
           ad_accounts_selected: selectedAdAccounts.size,
           pages_selected: selectedPages.size,

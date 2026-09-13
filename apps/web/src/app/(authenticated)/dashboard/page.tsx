@@ -23,6 +23,7 @@ import { useEffect, useRef, useState } from 'react';
 import { readPerfHarnessContext, startPerfTimer } from '@/lib/perf-harness';
 import { getApiBaseUrl } from '@/lib/api/api-env';
 import { extractApiErrorMessage } from '@/lib/api/extract-error';
+import { capturePosthogEvent } from '@/lib/analytics/capture-posthog';
 import { useUpdateAgencyOnboardingProgress } from '@/lib/query/onboarding';
 import { trackOnboardingEvent } from '@/lib/analytics/onboarding';
 import { usePrefetchQuota, useQuotaCheck, QuotaExceededError } from '@/lib/query/quota';
@@ -84,19 +85,14 @@ async function captureDashboardLoadPerf(metrics: DashboardPerfMetrics): Promise<
     return;
   }
 
-  try {
-    const { default: posthog } = await import('posthog-js');
-    posthog.capture('dashboard_load_perf', {
-      token_fetch_ms: Number(metrics.tokenFetchMs.toFixed(2)),
-      dashboard_api_ms: Number(metrics.dashboardApiMs.toFixed(2)),
-      time_to_data_ms: Number(metrics.timeToDataMs.toFixed(2)),
-      cache_status: metrics.cacheStatus,
-      is_cold_session: metrics.isColdSession,
-      principal_id: metrics.principalId,
-    });
-  } catch {
-    // Ignore analytics failures.
-  }
+  await capturePosthogEvent('dashboard_load_perf', {
+    token_fetch_ms: Number(metrics.tokenFetchMs.toFixed(2)),
+    dashboard_api_ms: Number(metrics.dashboardApiMs.toFixed(2)),
+    time_to_data_ms: Number(metrics.timeToDataMs.toFixed(2)),
+    cache_status: metrics.cacheStatus,
+    is_cold_session: metrics.isColdSession,
+    principal_id: metrics.principalId,
+  });
 }
 
 function platformLabel(platform: string): string {
@@ -299,8 +295,7 @@ export default function DashboardPage() {
   useEffect(() => {
     if (agency && !hasTrackedView.current) {
       const trackDashboardView = async () => {
-        const { default: posthog } = await import('posthog-js');
-        posthog.capture('dashboard_viewed', {
+        await capturePosthogEvent('dashboard_viewed', {
           agency_id: agency.id,
           agency_name: agency.name,
           total_requests: stats.totalRequests,

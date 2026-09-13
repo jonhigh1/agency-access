@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { LazyMotion, domAnimation } from 'framer-motion';
+import { GoogleTagManager } from "@/components/marketing/google-tag-manager";
 import { MarketingShellEffects } from "@/components/marketing/marketing-shell-effects";
 import { MarketingNav } from "@/components/marketing/marketing-nav";
 import { MarketingFooter } from "@/components/marketing/marketing-footer";
@@ -22,6 +23,7 @@ export default function MarketingLayout({
 }>) {
   return (
     <LazyMotion features={domAnimation} strict>
+      <GoogleTagManager />
       <div className="flex min-h-screen flex-col">
         <MarketingShellEffects />
         <MarketingNav />
