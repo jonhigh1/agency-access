@@ -38,6 +38,17 @@ describe('CancelSubscriptionModal - Static Design Validation', () => {
       // Should use coral instead of red
       expect(componentCode).not.toContain('red-');
     });
+
+    it('should not contain gray colors', () => {
+      const fs = require('fs');
+      const componentCode = fs.readFileSync(
+        'src/components/settings/billing/cancel-subscription-modal.tsx',
+        'utf-8'
+      );
+
+      // Neutrals come from the token layer (muted-foreground, border), not gray-*
+      expect(componentCode).not.toContain('gray-');
+    });
   });
 
   describe('Component uses brutalist styling', () => {
