@@ -10,6 +10,7 @@ vi.mock('@/services/connection.service.js', () => ({
   connectionService: {
     getAgencyTokenHealth: vi.fn(),
     getAgencyConnections: vi.fn(),
+    getAgencyConnectionSummaries: vi.fn(),
     getConnection: vi.fn(),
     revokeConnection: vi.fn(),
     refreshPlatformAuthorization: vi.fn(),
@@ -52,6 +53,7 @@ describe('Token health routes - security', () => {
     });
     vi.mocked(connectionService.getAgencyTokenHealth).mockResolvedValue({ data: [], error: null } as any);
     vi.mocked(connectionService.getAgencyConnections).mockResolvedValue({ data: [], error: null } as any);
+    vi.mocked(connectionService.getAgencyConnectionSummaries).mockResolvedValue({ data: [], error: null } as any);
     vi.mocked(connectionService.getConnection).mockResolvedValue({ data: { id: 'conn-1' }, error: null } as any);
     vi.mocked(connectionService.revokeConnection).mockResolvedValue({ data: { id: 'conn-1' }, error: null } as any);
     vi.mocked(connectionService.refreshPlatformAuthorization).mockResolvedValue({ data: { id: 'auth-1' }, error: null } as any);
@@ -115,5 +117,37 @@ describe('Token health routes - security', () => {
     expect(response.statusCode).toBe(404);
     expect(response.json().error.code).toBe('AUTHORIZATION_NOT_FOUND');
     expect(connectionService.revokePlatformAuthorization).not.toHaveBeenCalled();
+  });
+
+  it('lists connections as summaries with a default limit of 50', async () => {
+    const response = await app.inject({
+      method: 'GET',
+      url: '/connections',
+      headers: { authorization: 'Bearer token' },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(connectionService.getAgencyConnectionSummaries).toHaveBeenCalledWith(
+      'agency-owner',
+      expect.objectContaining({ limit: 50, offset: 0 })
+    );
+    expect(connectionService.getAgencyConnections).not.toHaveBeenCalled();
+  });
+
+  it('rejects an oversized connections list limit with VALIDATION_ERROR', async () => {
+    const response = await app.inject({
+      method: 'GET',
+      url: '/connections?limit=500',
+      headers: { authorization: 'Bearer token' },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toEqual({
+      data: null,
+      error: expect.objectContaining({
+        code: 'VALIDATION_ERROR',
+      }),
+    });
+    expect(connectionService.getAgencyConnectionSummaries).not.toHaveBeenCalled();
   });
 });
