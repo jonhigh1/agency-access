@@ -1,14 +1,44 @@
 'use client';
 
+/**
+ * Billing Hero
+ *
+ * The Billing tab's one ink-panel strip (plan, status, next bill or trial
+ * end in mono) plus one row beneath it holding the lifecycle action as the
+ * tab's single brutalist button. One shell across loading, error, and
+ * loaded states — unloaded values render as "—" and the CTA is disabled.
+ */
+
 import { useMemo, useState } from 'react';
 import { useAuth } from '@clerk/nextjs';
 import { AlertCircle, ArrowRight, Loader2 } from 'lucide-react';
 import { useCreateCheckout, useOpenPortal, useSubscription } from '@/lib/query/billing';
 import { Button } from '@/components/ui/button';
 import { buildPlanSelectedProps, trackPlanSelected } from '@/lib/analytics/billing';
-import { getNextTierForCheckout } from '@agency-platform/shared';
+import { getNextTierForCheckout, SUBSCRIPTION_TIER_NAMES } from '@agency-platform/shared';
+import { SettingsRow } from '../settings-row';
 import { persistBillingIntervalPreference, readBillingIntervalPreference } from './billing-interval';
 import { resolveBillingLifecycle } from './billing-lifecycle';
+
+const EMPTY_VALUE = '—';
+
+const STATUS_LABELS: Record<string, string> = {
+  active: 'Active',
+  trialing: 'Trialing',
+  past_due: 'Past due',
+  canceled: 'Canceled',
+  incomplete: 'Incomplete',
+  expired: 'Expired',
+};
+
+function formatLongDate(value: string | undefined): string | null {
+  if (!value) return null;
+  return new Date(value).toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}
 
 export function BillingHero() {
   const { orgId, userId } = useAuth();
@@ -66,23 +96,8 @@ export function BillingHero() {
     document.getElementById('manage-subscription-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
-  if (isLoading) {
-    return (
-      <section className="clean-card p-6">
-        <div className="py-6 text-center">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground mx-auto" />
-        </div>
-      </section>
-    );
-  }
-
-  const trialEndDate = subscription?.trialEnd
-    ? new Date(subscription.trialEnd).toLocaleDateString('en-US', {
-        month: 'long',
-        day: 'numeric',
-        year: 'numeric',
-      })
-    : null;
+  const trialEndDate = formatLongDate(subscription?.trialEnd);
+  const nextBillDate = formatLongDate(subscription?.currentPeriodEnd);
 
   const heroCopy =
     lifecycle === 'FREE'
@@ -129,39 +144,73 @@ export function BillingHero() {
             })(),
             };
 
-  return (
-    <section className="clean-card p-6">
-      <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-        <div>
-          <h2 className="font-display text-2xl font-semibold text-ink">{heroCopy.title}</h2>
-          <p className="mt-1 text-sm text-muted-foreground">{heroCopy.description}</p>
-        </div>
+  // Panel values: "—" until the subscription has loaded (KTD4).
+  const planName = isLoading
+    ? EMPTY_VALUE
+    : subscription?.tier
+      ? SUBSCRIPTION_TIER_NAMES[subscription.tier]
+      : 'Free';
+  const statusLabel = isLoading
+    ? EMPTY_VALUE
+    : subscription
+      ? STATUS_LABELS[subscription.status] ?? subscription.status
+      : 'No subscription';
+  const dateLabel = lifecycle === 'TRIALING' ? 'Trial ends' : 'Next bill';
+  const dateValue = isLoading ? EMPTY_VALUE : (lifecycle === 'TRIALING' ? trialEndDate : nextBillDate) ?? EMPTY_VALUE;
 
-        <Button
-          variant="primary"
-          onClick={heroCopy.onClick}
-          disabled={createCheckout.isPending || openPortal.isPending}
-        >
-          {createCheckout.isPending || openPortal.isPending ? (
-            <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              Processing...
-            </>
-          ) : (
-            <>
-              {heroCopy.buttonLabel}
-              <ArrowRight className="h-4 w-4" />
-            </>
-          )}
-        </Button>
+  const isPending = createCheckout.isPending || openPortal.isPending;
+
+  return (
+    <div>
+      <div className="ink-panel p-6">
+        <span className="label-micro">Subscription</span>
+        <dl className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="min-w-0">
+            <dt className="label-nano">Plan</dt>
+            <dd className="mt-1 text-lg font-semibold [overflow-wrap:anywhere]">{planName}</dd>
+          </div>
+          <div className="min-w-0">
+            <dt className="label-nano">Status</dt>
+            <dd className="mt-1 text-lg font-semibold [overflow-wrap:anywhere]">{statusLabel}</dd>
+          </div>
+          <div className="min-w-0">
+            <dt className="label-nano">{dateLabel}</dt>
+            <dd className="mt-1 text-lg font-semibold [overflow-wrap:anywhere]">{dateValue}</dd>
+          </div>
+        </dl>
       </div>
 
-      {errorMessage && (
-        <div className="mt-4 rounded-lg border border-coral/20 bg-coral/10 p-3 text-sm text-danger-ink">
-          <AlertCircle className="mr-1 inline h-4 w-4" />
-          {errorMessage}
+      <SettingsRow
+        label={isLoading ? 'Plan actions' : heroCopy.title}
+        description={isLoading ? 'Loading your subscription.' : heroCopy.description}
+      >
+        <div className="flex flex-col items-start gap-3 md:items-end">
+          <Button
+            variant="brutalist"
+            onClick={heroCopy.onClick}
+            disabled={isLoading || isPending}
+          >
+            {isPending ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Processing...
+              </>
+            ) : (
+              <>
+                {isLoading ? 'Loading' : heroCopy.buttonLabel}
+                <ArrowRight className="h-4 w-4" />
+              </>
+            )}
+          </Button>
+
+          {errorMessage && (
+            <p className="flex items-start gap-1 text-sm text-danger-ink">
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+              <span>{errorMessage}</span>
+            </p>
+          )}
         </div>
-      )}
-    </section>
+      </SettingsRow>
+    </div>
   );
 }

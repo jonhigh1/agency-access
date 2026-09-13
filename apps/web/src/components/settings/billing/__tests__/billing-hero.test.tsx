@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { BillingHero } from '../billing-hero';
 
 const mockUseSubscription = vi.fn();
@@ -99,6 +99,58 @@ describe('BillingHero', () => {
     render(<BillingHero />);
 
     expect(screen.getByRole('button', { name: /activate paid plan/i })).toBeInTheDocument();
+  });
+
+  it('renders the lifecycle CTA as the one brutalist button, outside the ink-panel (KTD4, KTD5)', () => {
+    mockUseSubscription.mockReturnValue({ data: null, isLoading: false });
+
+    const { container } = render(<BillingHero />);
+
+    const panels = container.querySelectorAll('.ink-panel');
+    expect(panels).toHaveLength(1);
+    expect(panels[0].querySelector('button')).toBeNull();
+
+    const cta = screen.getByRole('button', { name: /start free trial/i });
+    for (const marker of ['uppercase', 'bg-coral', 'border-2']) {
+      expect(cta.className.split(/\s+/)).toContain(marker);
+    }
+    expect(panels[0].contains(cta)).toBe(false);
+  });
+
+  it('shows plan name, status, and next bill in the panel for paid users', () => {
+    mockUseSubscription.mockReturnValue({
+      data: {
+        id: 'sub_789',
+        tier: 'GROWTH',
+        status: 'active',
+        cancelAtPeriodEnd: false,
+        currentPeriodEnd: '2026-10-01T12:00:00.000Z',
+      },
+      isLoading: false,
+    });
+
+    const { container } = render(<BillingHero />);
+
+    const panel = container.querySelector('.ink-panel') as HTMLElement;
+    expect(within(panel).getByText('Growth')).toBeInTheDocument();
+    expect(within(panel).getByText('Active')).toBeInTheDocument();
+    expect(within(panel).getByText(/October 1, 2026/)).toBeInTheDocument();
+  });
+
+  it('keeps one shell while loading: same panel heading, — values, disabled CTA', () => {
+    mockUseSubscription.mockReturnValue({ data: undefined, isLoading: true });
+
+    const { container } = render(<BillingHero />);
+
+    const panel = container.querySelector('.ink-panel') as HTMLElement;
+    expect(panel).toBeInTheDocument();
+    expect(within(panel).getByText('Subscription')).toBeInTheDocument();
+    expect(within(panel).getAllByText('—').length).toBeGreaterThanOrEqual(3);
+
+    const buttons = screen.getAllByRole('button');
+    expect(buttons).toHaveLength(1);
+    expect(buttons[0]).toBeDisabled();
+    expect(panel.contains(buttons[0])).toBe(false);
   });
 
   it('uses billing portal CTA for past due users', async () => {
