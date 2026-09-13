@@ -1,5 +1,4 @@
-import posthog from 'posthog-js';
-
+import { capturePosthogEvent } from '@/lib/analytics/capture-posthog';
 import { omitCustomTokenProperty } from '@/lib/analytics/omit-custom-token-property';
 
 type OnboardingEventProperties = Record<string, unknown>;
@@ -13,12 +12,7 @@ export function trackOnboardingEvent(
   properties: OnboardingEventProperties
 ) {
   const captureProperties = omitCustomTokenProperty(properties);
-
-  try {
-    posthog.capture(eventName, captureProperties);
-  } catch {
-    // Non-blocking analytics path.
-  }
+  void capturePosthogEvent(eventName, captureProperties);
 
   if (typeof window === 'undefined') {
     return;

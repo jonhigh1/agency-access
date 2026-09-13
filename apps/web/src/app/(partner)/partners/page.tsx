@@ -1,6 +1,7 @@
 'use client';
 
-import { SignInButton, UserButton, useAuth } from '@clerk/nextjs';
+import { UserButton, useAuth } from '@clerk/nextjs';
+import { SignInButton } from '@/components/lazy-clerk-auth-buttons';
 import type {
   AffiliateCommissionLedgerEntry,
   AffiliateLinkSummary,

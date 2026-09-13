@@ -62,6 +62,32 @@ describe('useUserAgency', () => {
     expect(queryClient.getQueryData(['user-agency', 'org_1'])).toEqual({ id: 'agency_1', name: 'Acme' });
   });
 
+  it('dedupes concurrent consumers onto one agencies request', async () => {
+    (global.fetch as any).mockResolvedValue({
+      ok: true,
+      json: async () => ({ data: [{ id: 'agency_shared', name: 'Shared' }] }),
+    });
+
+    function DualProbe() {
+      const first = useUserAgency();
+      const second = useUserAgency();
+      return (
+        <div>
+          <span data-testid="first">{first.data?.id ?? 'none'}</span>
+          <span data-testid="second">{second.data?.id ?? 'none'}</span>
+        </div>
+      );
+    }
+
+    renderWithClient(<DualProbe />);
+
+    await waitFor(() => {
+      expect(document.querySelector('[data-testid="first"]')?.textContent).toBe('agency_shared');
+      expect(document.querySelector('[data-testid="second"]')?.textContent).toBe('agency_shared');
+    });
+    expect(global.fetch).toHaveBeenCalledTimes(1);
+  });
+
   it('prefers an explicit principal and token resolver', async () => {
     (global.fetch as any).mockResolvedValue({
       ok: true,

@@ -88,8 +88,8 @@ describe('PlanStrip', () => {
 
     render(<PlanStrip />);
 
-    expect(screen.getByText(/^Ends /)).toBeInTheDocument();
-    expect(screen.queryByText(/^Renews /)).toBeNull();
+    expect(screen.getByTestId('plan-strip-status')).toHaveTextContent(/Ends /);
+    expect(screen.getByTestId('plan-strip-status')).not.toHaveTextContent(/Renews /);
   });
 
   it('renders dashes, not Free, when the subscription query errors', () => {

@@ -10,6 +10,7 @@
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, waitFor } from '@testing-library/react';
+import React, { Suspense } from 'react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import SettingsPage from '@/app/(authenticated)/settings/page';
 import { isBrutalistButton } from '@/test/utils/design-system';
@@ -39,6 +40,21 @@ vi.mock('next/dynamic', async () => {
     },
   };
 });
+
+// next/dynamic never resolves in jsdom; resolve it through React.lazy so the
+// rendered counts see the real tab bodies, not the loading placeholder.
+vi.mock('next/dynamic', () => ({
+  default: (loader: () => Promise<{ default: React.ComponentType<any> }>) => {
+    const Lazy = React.lazy(loader);
+    return function DynamicStub(props: Record<string, unknown>) {
+      return (
+        <Suspense fallback={null}>
+          <Lazy {...props} />
+        </Suspense>
+      );
+    };
+  },
+}));
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ replace: vi.fn(), push: vi.fn() }),
@@ -148,9 +164,11 @@ async function renderTab(query: string) {
       <SettingsPage />
     </QueryClientProvider>
   );
+  const { container } = utils;
+  await waitFor(() => expect(container.querySelector('[aria-busy]')).toBeNull());
+  await waitFor(() => expect(container.querySelector('[role="tabpanel"]')?.childElementCount ?? 0).toBeGreaterThan(0));
   await waitFor(() => expect(queryClient.isFetching()).toBe(0));
   await new Promise((resolve) => setTimeout(resolve, 0));
-  const { container } = utils;
   const panels = container.querySelectorAll('.ink-panel');
   const brutalistButtons = Array.from(container.querySelectorAll('button, a')).filter(isBrutalistButton);
   const shadows = container.querySelectorAll('[class*="shadow-brutalist"]');

@@ -1,6 +1,6 @@
 'use client';
 
-import { SignUpButton } from '@clerk/nextjs';
+import { SignUpButton } from '@/components/lazy-clerk-auth-buttons';
 import { Button } from '@/components/ui/button';
 import { Globe, Link2, ShieldCheck, Workflow } from 'lucide-react';
 import { m } from 'framer-motion';

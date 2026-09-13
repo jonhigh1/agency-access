@@ -19,6 +19,7 @@ import {
   RequestPlatformsCard,
 } from '@/components/access-request-detail';
 import { PendingNudgeBanners } from '@/components/pending-nudge-banners';
+import { capturePosthogEvent } from '@/lib/analytics/capture-posthog';
 import { getPendingCliff } from '@/lib/pending-cliff';
 
 interface AccessRequestDetailPageProps {
@@ -76,15 +77,10 @@ export default function AccessRequestDetailPage({ params }: AccessRequestDetailP
     }
 
     const track = async () => {
-      try {
-        const { default: posthog } = await import('posthog-js');
-        posthog.capture('access_request_detail_viewed', {
-          access_request_id: accessRequest.id,
-          status: accessRequest.status,
-        });
-      } catch {
-        // Ignore analytics failures.
-      }
+      await capturePosthogEvent('access_request_detail_viewed', {
+        access_request_id: accessRequest.id,
+        status: accessRequest.status,
+      });
     };
 
     void track();
@@ -95,16 +91,11 @@ export default function AccessRequestDetailPage({ params }: AccessRequestDetailP
       return;
     }
 
-    try {
-      const { default: posthog } = await import('posthog-js');
-      posthog.capture('access_request_detail_action_clicked', {
-        access_request_id: accessRequest.id,
-        status: accessRequest.status,
-        action,
-      });
-    } catch {
-      // Ignore analytics failures.
-    }
+    await capturePosthogEvent('access_request_detail_action_clicked', {
+      access_request_id: accessRequest.id,
+      status: accessRequest.status,
+      action,
+    });
   };
 
   const authorizationUrl = useMemo(() => {

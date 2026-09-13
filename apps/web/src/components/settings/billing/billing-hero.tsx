@@ -20,6 +20,7 @@ import { SettingsRow } from '../settings-row';
 import { persistBillingIntervalPreference, readBillingIntervalPreference } from './billing-interval';
 import { isSubscriptionEnding, resolveBillingLifecycle, SUBSCRIPTION_STATUS_LABELS } from './billing-lifecycle';
 import { UNLOADED_VALUE } from '../settings-row';
+import { StatusBar } from '../status-bar';
 import { formatLongDate } from '@/lib/format';
 
 
@@ -149,23 +150,14 @@ export function BillingHero() {
 
   return (
     <div>
-      <div className="ink-panel p-6">
-        <span className="label-micro">Subscription</span>
-        <dl className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <div className="min-w-0">
-            <dt className="label-nano">Plan</dt>
-            <dd className="mt-1 text-lg font-semibold [overflow-wrap:anywhere]">{planName}</dd>
-          </div>
-          <div className="min-w-0">
-            <dt className="label-nano">Status</dt>
-            <dd className="mt-1 text-lg font-semibold [overflow-wrap:anywhere]">{statusLabel}</dd>
-          </div>
-          <div className="min-w-0">
-            <dt className="label-nano">{dateLabel}</dt>
-            <dd className="mt-1 text-lg font-semibold [overflow-wrap:anywhere]">{dateValue}</dd>
-          </div>
-        </dl>
-      </div>
+      <StatusBar
+        label="Subscription"
+        items={[
+          { label: 'Plan', value: planName },
+          { label: 'Status', value: statusLabel },
+          { label: dateLabel, value: dateValue },
+        ]}
+      />
 
       <SettingsRow
         label={isLoading ? 'Plan actions' : heroCopy.title}

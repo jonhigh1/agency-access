@@ -1,4 +1,4 @@
-import posthog from 'posthog-js';
+import { capturePosthogEvent } from '@/lib/analytics/capture-posthog';
 
 type OAuthCallbackSuccessProps = {
   platform: string;
@@ -28,37 +28,27 @@ function normalizePlatform(platform: string | null | undefined): string {
 
 export function trackOAuthCallbackSuccess(properties: OAuthCallbackSuccessProps): void {
   const platform = normalizePlatform(properties.platform);
-
-  try {
-    posthog.capture('oauth_callback_success', {
-      ...properties,
-      platform,
-    });
-  } catch {
-    // Non-blocking analytics path.
-  }
+  void capturePosthogEvent('oauth_callback_success', {
+    ...properties,
+    platform,
+  });
 }
 
 export function trackOAuthCallbackFailure(properties: OAuthCallbackFailureProps): void {
   const platform = properties.platform ? normalizePlatform(properties.platform) : 'unknown';
-
-  try {
-    posthog.capture('oauth_callback_failure', {
-      ...properties,
-      platform,
-    });
-    // Keep legacy event name for existing PostHog insights during transition.
-    posthog.capture('oauth_callback_error', {
-      agency_id: properties.agency_id,
-      platform,
-      error_code: properties.error_code,
-      error_message: properties.error_message,
-      auth_source: properties.auth_source,
-      access_request_token: properties.access_request_token,
-    });
-  } catch {
-    // Non-blocking analytics path.
-  }
+  void capturePosthogEvent('oauth_callback_failure', {
+    ...properties,
+    platform,
+  });
+  // Keep legacy event name for existing PostHog insights during transition.
+  void capturePosthogEvent('oauth_callback_error', {
+    agency_id: properties.agency_id,
+    platform,
+    error_code: properties.error_code,
+    error_message: properties.error_message,
+    auth_source: properties.auth_source,
+    access_request_token: properties.access_request_token,
+  });
 }
 
 export function trackClientOAuthExchangeSuccess(properties: {
@@ -74,16 +64,12 @@ export function trackClientOAuthExchangeSuccess(properties: {
     connection_id: properties.connection_id,
   });
 
-  try {
-    posthog.capture('client_oauth_exchange_success', {
-      platform: normalizePlatform(properties.platform),
-      access_request_token: properties.access_request_token,
-      connection_id: properties.connection_id,
-      auth_source: properties.auth_source,
-    });
-  } catch {
-    // Non-blocking analytics path.
-  }
+  void capturePosthogEvent('client_oauth_exchange_success', {
+    platform: normalizePlatform(properties.platform),
+    access_request_token: properties.access_request_token,
+    connection_id: properties.connection_id,
+    auth_source: properties.auth_source,
+  });
 }
 
 export function trackClientOAuthExchangeFailure(properties: {
@@ -101,15 +87,11 @@ export function trackClientOAuthExchangeFailure(properties: {
     access_request_token: properties.access_request_token,
   });
 
-  try {
-    posthog.capture('client_oauth_exchange_failure', {
-      platform: properties.platform ? normalizePlatform(properties.platform) : 'unknown',
-      access_request_token: properties.access_request_token,
-      error_code: properties.error_code,
-      error_message: properties.error_message,
-      auth_source: properties.auth_source,
-    });
-  } catch {
-    // Non-blocking analytics path.
-  }
+  void capturePosthogEvent('client_oauth_exchange_failure', {
+    platform: properties.platform ? normalizePlatform(properties.platform) : 'unknown',
+    access_request_token: properties.access_request_token,
+    error_code: properties.error_code,
+    error_message: properties.error_message,
+    auth_source: properties.auth_source,
+  });
 }

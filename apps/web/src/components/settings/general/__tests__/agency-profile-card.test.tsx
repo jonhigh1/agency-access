@@ -18,8 +18,13 @@ vi.mock('@clerk/nextjs', () => ({
   }),
 }));
 
-function renderCard() {
+function renderCard(agency: {
+  id: string;
+  name: string;
+  settings?: Record<string, unknown> | null;
+}) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  queryClient.setQueryData(['user-agency', 'user_123'], agency);
   const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
   const utils = render(
     <QueryClientProvider client={queryClient}>
@@ -36,19 +41,14 @@ describe('AgencyProfileCard', () => {
   });
 
   it('loads agency values and populates fields', async () => {
-    mockAuthorizedApiFetch.mockResolvedValueOnce({
-      data: [{
-        id: 'agency-1',
-        name: 'Pillar AI Agency',
-        settings: {
-          website: 'https://pillaraiagency.com',
-          logoUrl: 'https://pillaraiagency.com/logo.png',
-        },
-      }],
-      error: null,
+    renderCard({
+      id: 'agency-1',
+      name: 'Pillar AI Agency',
+      settings: {
+        website: 'https://pillaraiagency.com',
+        logoUrl: 'https://pillaraiagency.com/logo.png',
+      },
     });
-
-    renderCard();
 
     await waitFor(() => {
       expect(screen.getByDisplayValue('Pillar AI Agency')).toBeInTheDocument();
@@ -58,12 +58,7 @@ describe('AgencyProfileCard', () => {
   });
 
   it('resolves each field label to exactly one control', async () => {
-    mockAuthorizedApiFetch.mockResolvedValueOnce({
-      data: [{ id: 'agency-1', name: 'Acme', settings: {} }],
-      error: null,
-    });
-
-    renderCard();
+    renderCard({ id: 'agency-1', name: 'Acme', settings: {} });
     await screen.findByDisplayValue('Acme');
 
     expect(screen.getByLabelText('Agency Name')).toBeInstanceOf(HTMLInputElement);
@@ -72,31 +67,26 @@ describe('AgencyProfileCard', () => {
   });
 
   it('saves agency name and website updates to api and invalidates the shared agency query', async () => {
-    mockAuthorizedApiFetch
-      .mockResolvedValueOnce({
-        data: [{
-          id: 'agency-1',
-          name: 'Old Agency Name',
-          settings: {
-            website: 'https://old.example.com',
-            logoUrl: '',
-          },
-        }],
-        error: null,
-      })
-      .mockResolvedValueOnce({
-        data: {
-          id: 'agency-1',
-          name: 'New Agency Name',
-          settings: {
-            website: 'https://new.example.com',
-            logoUrl: '',
-          },
+    mockAuthorizedApiFetch.mockResolvedValueOnce({
+      data: {
+        id: 'agency-1',
+        name: 'New Agency Name',
+        settings: {
+          website: 'https://new.example.com',
+          logoUrl: '',
         },
-        error: null,
-      });
+      },
+      error: null,
+    });
 
-    const { invalidateSpy } = renderCard();
+    const { invalidateSpy } = renderCard({
+      id: 'agency-1',
+      name: 'Old Agency Name',
+      settings: {
+        website: 'https://old.example.com',
+        logoUrl: '',
+      },
+    });
 
     const agencyNameInput = await screen.findByDisplayValue('Old Agency Name');
     const websiteInput = screen.getByLabelText('Company Website') as HTMLInputElement;
@@ -128,11 +118,9 @@ describe('AgencyProfileCard', () => {
   });
 
   it('renders a failed save with the danger ink token', async () => {
-    mockAuthorizedApiFetch
-      .mockResolvedValueOnce({ data: [{ id: 'agency-1', name: 'Acme', settings: {} }], error: null })
-      .mockRejectedValueOnce(new Error('Save failed'));
+    mockAuthorizedApiFetch.mockRejectedValueOnce(new Error('Save failed'));
 
-    renderCard();
+    renderCard({ id: 'agency-1', name: 'Acme', settings: {} });
     await screen.findByDisplayValue('Acme');
     fireEvent.click(screen.getByRole('button', { name: /save changes/i }));
 
@@ -141,9 +129,7 @@ describe('AgencyProfileCard', () => {
   });
 
   it('renders Save changes as the brutalist button', async () => {
-    mockAuthorizedApiFetch.mockResolvedValueOnce({ data: [{ id: 'agency-1', name: 'Acme', settings: {} }], error: null });
-
-    renderCard();
+    renderCard({ id: 'agency-1', name: 'Acme', settings: {} });
     await screen.findByDisplayValue('Acme');
 
     const button = screen.getByRole('button', { name: /save changes/i });

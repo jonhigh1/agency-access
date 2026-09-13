@@ -12,71 +12,48 @@ import { useAuth } from '@clerk/nextjs';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { authorizedApiFetch } from '@/lib/api/authorized-api-fetch';
+import { useUserAgency } from '@/hooks/use-user-agency';
 import { SettingsGroup, SettingsRow } from '../settings-row';
-
-interface AgencyRecord {
-  id: string;
-  name: string;
-  settings?: Record<string, unknown> | null;
-}
 
 function toOptionalString(value: unknown): string {
   return typeof value === 'string' ? value : '';
 }
 
 export function AgencyProfileCard() {
-  const { userId, orgId, getToken } = useAuth();
+  const { getToken } = useAuth();
   const queryClient = useQueryClient();
+  const { data: agency, isLoading, isError, error } = useUserAgency();
   const [agencyId, setAgencyId] = useState<string | null>(null);
   const [agencyName, setAgencyName] = useState('');
   const [companyWebsite, setCompanyWebsite] = useState('');
   const [logoUrl, setLogoUrl] = useState('');
-  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [feedbackMessage, setFeedbackMessage] = useState<string | null>(null);
   const [feedbackError, setFeedbackError] = useState(false);
 
-  const loadAgencyProfile = useCallback(async () => {
-    const principalClerkId = orgId || userId;
-    if (!principalClerkId) {
-      setIsLoading(false);
+  useEffect(() => {
+    if (!agency) {
+      setAgencyId(null);
+      setAgencyName('');
+      setCompanyWebsite('');
+      setLogoUrl('');
       return;
     }
 
-    try {
-      setIsLoading(true);
-      setFeedbackMessage(null);
-      setFeedbackError(false);
-
-      const response = await authorizedApiFetch<{ data: AgencyRecord[]; error: null }>(
-        `/api/agencies?clerkUserId=${encodeURIComponent(principalClerkId)}`,
-        { getToken }
-      );
-
-      const agency = response.data?.[0];
-      if (!agency) {
-        setAgencyId(null);
-        setAgencyName('');
-        setCompanyWebsite('');
-        setLogoUrl('');
-        return;
-      }
-
-      setAgencyId(agency.id);
-      setAgencyName(agency.name || '');
-      setCompanyWebsite(toOptionalString(agency.settings?.website));
-      setLogoUrl(toOptionalString(agency.settings?.logoUrl));
-    } catch (error) {
-      setFeedbackMessage(error instanceof Error ? error.message : 'Failed to load agency profile');
-      setFeedbackError(true);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [getToken, orgId, userId]);
+    setAgencyId(agency.id);
+    setAgencyName(agency.name || '');
+    setCompanyWebsite(toOptionalString(agency.settings?.website));
+    setLogoUrl(toOptionalString(agency.settings?.logoUrl));
+  }, [agency]);
 
   useEffect(() => {
-    void loadAgencyProfile();
-  }, [loadAgencyProfile]);
+    if (!isError) {
+      return;
+    }
+
+    setFeedbackMessage(error instanceof Error ? error.message : 'Failed to load agency profile');
+    setFeedbackError(true);
+  }, [error, isError]);
 
   const handleSave = useCallback(async () => {
     if (!agencyId || isSaving) {

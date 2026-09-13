@@ -19,7 +19,7 @@ vi.mock('next/navigation', () => ({
   }),
 }));
 
-vi.mock('@clerk/nextjs', () => ({
+vi.mock('@/components/lazy-clerk-auth-buttons', () => ({
   SignInButton: ({ children }: any) => <div>{children}</div>,
   SignUpButton: ({ children }: any) => <div>{children}</div>,
 }));

@@ -19,11 +19,18 @@ import { resolveApiUrl } from '@/lib/api/api-env';
 import { authorizedApiFetch } from '@/lib/api/authorized-api-fetch';
 import { useAuthOrBypass } from '@/lib/dev-auth';
 
+export const USER_AGENCY_QUERY_KEY = 'user-agency' as const;
+
+export function userAgencyQueryKey(principalClerkId: string | null | undefined) {
+  return [USER_AGENCY_QUERY_KEY, principalClerkId] as const;
+}
+
 export interface UserAgency {
   id: string;
   name?: string;
   email?: string;
   clerkUserId?: string;
+  settings?: Record<string, unknown> | null;
 }
 
 export interface UseUserAgencyOptions {
@@ -40,7 +47,7 @@ export function useUserAgency(options: UseUserAgencyOptions = {}) {
   const principalClerkId = options.principalClerkId ?? (orgId || userId);
 
   return useQuery({
-    queryKey: ['user-agency', principalClerkId],
+    queryKey: userAgencyQueryKey(principalClerkId),
     queryFn: async () => {
       if (!principalClerkId) return null;
 

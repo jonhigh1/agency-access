@@ -2,5 +2,22 @@
   "installCommand": "npm install",
   "buildCommand": "npm run build",
   "outputDirectory": "build",
-  "framework": "docusaurus"
+  "framework": "docusaurus",
+  "redirects": [
+    {
+      "source": "/agents",
+      "destination": "/agentic-workflows/connect-an-agent",
+      "permanent": true
+    },
+    {
+      "source": "/mcp",
+      "destination": "/agentic-workflows/connect-an-agent",
+      "permanent": true
+    },
+    {
+      "source": "/cli",
+      "destination": "/developer-tools/authhub-cli",
+      "permanent": true
+    }
+  ]
 }

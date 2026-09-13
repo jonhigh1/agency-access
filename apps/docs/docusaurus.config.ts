@@ -20,10 +20,19 @@ const config: Config = {
   projectName: 'agency-access',
 
   onBrokenLinks: 'throw',
+  onBrokenAnchors: 'throw',
   markdown: {
     hooks: {
       onBrokenMarkdownLinks: 'throw',
+      onBrokenMarkdownImages: 'throw',
     },
+  },
+
+  // Docusaurus 3.10: Faster (Rspack, SWC, Lightning CSS, worker-thread SSG)
+  // is stable and the v4 flags turn it on by default. Opt in now so the v4
+  // upgrade is a no-op and every push to main builds quickly.
+  future: {
+    v4: true,
   },
 
   i18n: {
@@ -47,7 +56,7 @@ const config: Config = {
           routeBasePath: '/',
           sidebarPath: './sidebars.ts',
           editUrl:
-            'https://github.com/jhigh1594/agency-access/tree/main/apps/docs/',
+            'https://github.com/jonhigh1/agency-access/tree/main/apps/docs/',
           showLastUpdateAuthor: false,
           showLastUpdateTime: false,
         },
@@ -61,6 +70,26 @@ const config: Config = {
           priority: 0.6,
         },
       } satisfies Preset.Options,
+    ],
+  ],
+
+  plugins: [
+    // AI-readable docs: /llms.txt index, /llms-full.txt, and every page as
+    // raw Markdown at /{path}.md. AuthHub ships an MCP endpoint and a CLI for
+    // agents, so the agent and CLI guides must be readable by agents too.
+    [
+      '@writechoice/docusaurus-plugin-llms-txt',
+      {
+        description:
+          'AuthHub help center: agency onboarding, client authorization, webhooks, the MCP agent endpoint, and the CLI.',
+      },
+    ],
+    // "Copy page" as Markdown, plus open-in-ChatGPT/Claude actions.
+    [
+      'docusaurus-plugin-copy-page-button',
+      {
+        placement: 'article',
+      },
     ],
   ],
 

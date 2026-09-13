@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * Plan strip — the General tab's ink panel.
+ * Plan strip — the General tab's ink status line.
  *
  * Plan name, subscription status, and tier limits in the mono data layer.
  * Reads principal-safe hooks (orgId ?? userId), so personal workspaces get
@@ -14,6 +14,7 @@ import type { TierLimits } from '@agency-platform/shared';
 import { useSubscription, useTierDetails } from '@/lib/query/billing';
 import { isSubscriptionEnding, resolveBillingLifecycle, SUBSCRIPTION_STATUS_LABELS } from '../billing/billing-lifecycle';
 import { UNLOADED_VALUE } from '../settings-row';
+import { StatusBar } from '../status-bar';
 import { formatMediumDate } from '@/lib/format';
 
 
@@ -54,34 +55,18 @@ export function PlanStrip() {
     ? formatMediumDate(subscription.currentPeriodEnd)
     : null;
 
+  const periodLabel = subscription?.status === 'trialing' ? 'Trial ends' : isSubscriptionEnding(subscription) ? 'Ends' : 'Renews';
+  const statusValue =
+    periodEnd && lifecycle !== 'FREE' && !subscriptionUnresolved ? `${status} · ${periodLabel} ${periodEnd}` : status;
+
   return (
-    <div className="ink-panel p-6" data-testid="plan-strip">
-      <span className="label-micro">Plan</span>
-      <div className="mt-4 grid gap-6 md:grid-cols-3">
-        <div>
-          <span className="label-nano">Tier</span>
-          <p className="mt-1 text-2xl font-bold" data-testid="plan-strip-plan">
-            {plan}
-          </p>
-        </div>
-        <div>
-          <span className="label-nano">Status</span>
-          <p className="mt-1 text-lg" data-testid="plan-strip-status">
-            {status}
-          </p>
-          {periodEnd && lifecycle !== 'FREE' && (
-            <p className="label-nano mt-1">
-              {subscription?.status === 'trialing' ? 'Trial ends' : isSubscriptionEnding(subscription) ? 'Ends' : 'Renews'} {periodEnd}
-            </p>
-          )}
-        </div>
-        <div>
-          <span className="label-nano">Limits</span>
-          <p className="mt-1 text-sm leading-relaxed" data-testid="plan-strip-limits">
-            {limitLine}
-          </p>
-        </div>
-      </div>
-    </div>
+    <StatusBar
+      label="Plan"
+      items={[
+        { label: 'Tier', value: plan, testId: 'plan-strip-plan' },
+        { label: 'Status', value: statusValue, testId: 'plan-strip-status' },
+        { label: 'Limits', value: limitLine, testId: 'plan-strip-limits' },
+      ]}
+    />
   );
 }

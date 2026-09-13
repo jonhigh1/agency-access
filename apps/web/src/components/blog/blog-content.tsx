@@ -10,7 +10,7 @@ import remarkGfm from 'remark-gfm';
 import { BlogPost, BLOG_CATEGORIES } from '@/lib/blog-types';
 import { Calendar, Clock, User, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { SignUpButton } from '@clerk/nextjs';
+import { SignUpButton } from '@/components/lazy-clerk-auth-buttons';
 import type { Components } from 'react-markdown';
 
 // Helper to set Growth tier (STARTER in backend) for trial signup

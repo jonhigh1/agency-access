@@ -3,30 +3,27 @@
 import { useAuth } from '@clerk/nextjs';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { authorizedApiFetch } from '@/lib/api/authorized-api-fetch';
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard';
+import { useUserAgency } from '@/hooks/use-user-agency';
 import { getApiBaseUrl } from '@/lib/api/api-env';
 import { getDocsUrl } from '@/lib/docs-url';
 import { createAgentGrant, listAgentGrants, revokeAgentGrant, updateAgentGrant } from '@/lib/api/agents';
 import type { AgentPermission } from '@agency-platform/shared';
 import { Button } from '@/components/ui/button';
 import { SettingsGroup, SettingsRow } from '../settings-row';
+import { StatusBar } from '../status-bar';
 import { AgentGrantCard } from './agent-grant-card';
 
 export function AgentsSettingsTab() {
-  const { userId, orgId, getToken } = useAuth();
+  const { getToken } = useAuth();
   const queryClient = useQueryClient();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const principalClerkId = orgId || userId;
+  const { data: agency } = useUserAgency();
   const { copied, copy } = useCopyToClipboard(1500);
   const endpoint = `${getApiBaseUrl()}/mcp`;
   const pendingOauthClientId = searchParams.get('connect');
-  const agencyQuery = useQuery({
-    queryKey: ['settings-agents-agency', principalClerkId], enabled: Boolean(principalClerkId),
-    queryFn: async () => (await authorizedApiFetch<{ data: Array<{ id: string; name: string }> }>(`/api/agencies?clerkUserId=${encodeURIComponent(principalClerkId as string)}`, { getToken })).data[0] ?? null,
-  });
-  const agencyId = agencyQuery.data?.id;
+  const agencyId = agency?.id;
   const grantsQuery = useQuery({
     queryKey: ['settings-agent-grants', agencyId], enabled: Boolean(agencyId),
     queryFn: () => listAgentGrants(agencyId as string, getToken),
@@ -64,10 +61,10 @@ export function AgentsSettingsTab() {
   return (
     <div className="space-y-10">
       {/* The one dark surface on this view: the MCP endpoint strip. */}
-      <div className="ink-panel p-6">
-        <span className="label-micro block">MCP endpoint</span>
-        <p className="mt-2 break-all text-sm">{endpoint}</p>
-        <div className="mt-3 flex flex-col items-start gap-y-1">
+      <StatusBar
+        label="MCP endpoint"
+        items={[{ label: 'URL', value: endpoint }]}
+        action={
           <button
             type="button"
             className="label-micro inline-flex min-h-[44px] items-center underline underline-offset-4"
@@ -75,9 +72,9 @@ export function AgentsSettingsTab() {
           >
             {copied ? 'Copied' : 'Copy endpoint'}
           </button>
-          <span className="text-xs text-paper/70">Provider sign-in and client authorization always remain human-only.</span>
-        </div>
-      </div>
+        }
+        note="Provider sign-in and client authorization always remain human-only."
+      />
 
       {pendingOauthClientId && agencyId && (
         <SettingsGroup
@@ -139,7 +136,7 @@ export function AgentsSettingsTab() {
             description="Until you approve one, no agent can read or prepare anything for this workspace."
           >
             <a
-              href={getDocsUrl('/agents')}
+              href={getDocsUrl('/agentic-workflows/connect-an-agent')}
               target="_blank"
               rel="noreferrer"
               className="inline-flex min-h-[44px] items-center text-sm font-semibold text-ink underline underline-offset-4 hover:text-danger-ink"

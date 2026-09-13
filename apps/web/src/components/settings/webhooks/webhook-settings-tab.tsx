@@ -11,7 +11,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AlertTriangle, KeyRound, Send, ShieldCheck } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { authorizedApiFetch } from '@/lib/api/authorized-api-fetch';
+import { useUserAgency } from '@/hooks/use-user-agency';
 import {
   disableWebhookEndpoint,
   getWebhookEndpoint,
@@ -21,13 +21,9 @@ import {
   upsertWebhookEndpoint,
 } from '@/lib/api/webhooks';
 import { SettingsGroup, SettingsRow } from '../settings-row';
+import { StatusBar } from '../status-bar';
 import { WebhookDeliveryInspector } from './webhook-delivery-inspector';
 import { WebhookStatusBadge } from './webhook-status-badge';
-
-interface AgencyRecord {
-  id: string;
-  name: string;
-}
 
 const DELIVERY_LIMIT = 8;
 
@@ -108,6 +104,7 @@ export function WebhookSettingsTab() {
   const { userId, orgId, getToken } = useAuth();
   const queryClient = useQueryClient();
   const principalClerkId = orgId || userId;
+  const agencyQuery = useUserAgency();
   const [destinationUrl, setDestinationUrl] = useState('');
   const [selectedEvents, setSelectedEvents] = useState<WebhookEventType[]>(['access_request.completed']);
   const [selectedApiVersion, setSelectedApiVersion] = useState<WebhookApiVersion>(WEBHOOK_API_VERSION_V1);
@@ -115,19 +112,6 @@ export function WebhookSettingsTab() {
   const [feedbackError, setFeedbackError] = useState(false);
   const [signingSecret, setSigningSecret] = useState<string | null>(null);
   const [selectedDeliveryId, setSelectedDeliveryId] = useState<string | null>(null);
-
-  const agencyQuery = useQuery({
-    queryKey: ['settings-webhooks-agency', principalClerkId],
-    enabled: Boolean(principalClerkId),
-    queryFn: async () => {
-      const response = await authorizedApiFetch<{ data: AgencyRecord[]; error: null }>(
-        `/api/agencies?clerkUserId=${encodeURIComponent(principalClerkId as string)}`,
-        { getToken }
-      );
-
-      return response.data[0] ?? null;
-    },
-  });
 
   const agencyId = agencyQuery.data?.id ?? null;
 
@@ -297,16 +281,16 @@ export function WebhookSettingsTab() {
   const stripUrl = endpoint ? endpoint.url : endpointQuery.isSuccess ? EMPTY_ENDPOINT_COPY : '—';
 
   const endpointStrip = (
-    <div className="ink-panel p-6">
-      <span className="label-micro">Endpoint</span>
-      <p className="mt-2 break-all text-sm">{stripUrl}</p>
-      <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2">
-        {endpoint ? <WebhookStatusBadge status={endpoint.status} /> : <span className="label-nano">Status —</span>}
-        <span className="label-nano">Last delivery {endpoint ? formatDateTime(endpoint.lastDeliveredAt) : '—'}</span>
-        <span className="label-nano">Failures {endpoint ? endpoint.failureCount : '—'}</span>
-        {endpoint?.secretLastFour && <span className="label-nano">Secret ••••{endpoint.secretLastFour}</span>}
-      </div>
-    </div>
+    <StatusBar
+      label="Endpoint"
+      items={[
+        { label: 'URL', value: stripUrl },
+        { label: 'Status', value: endpoint ? <WebhookStatusBadge status={endpoint.status} /> : null },
+        { label: 'Last delivery', value: endpoint ? formatDateTime(endpoint.lastDeliveredAt) : null },
+        { label: 'Failures', value: endpoint ? String(endpoint.failureCount) : null },
+        ...(endpoint?.secretLastFour ? [{ label: 'Secret', value: `••••${endpoint.secretLastFour}` }] : []),
+      ]}
+    />
   );
 
   let body: React.ReactNode;
