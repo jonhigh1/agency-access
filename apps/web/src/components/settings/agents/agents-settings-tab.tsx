@@ -11,6 +11,7 @@ import { createAgentGrant, listAgentGrants, revokeAgentGrant, updateAgentGrant }
 import type { AgentPermission } from '@agency-platform/shared';
 import { Button } from '@/components/ui/button';
 import { SettingsGroup, SettingsRow } from '../settings-row';
+import { StatusBar } from '../status-bar';
 import { AgentGrantCard } from './agent-grant-card';
 
 export function AgentsSettingsTab() {
@@ -60,10 +61,10 @@ export function AgentsSettingsTab() {
   return (
     <div className="space-y-10">
       {/* The one dark surface on this view: the MCP endpoint strip. */}
-      <div className="ink-panel p-6">
-        <span className="label-micro block">MCP endpoint</span>
-        <p className="mt-2 break-all text-sm">{endpoint}</p>
-        <div className="mt-3 flex flex-col items-start gap-y-1">
+      <StatusBar
+        label="MCP endpoint"
+        items={[{ label: 'URL', value: endpoint }]}
+        action={
           <button
             type="button"
             className="label-micro inline-flex min-h-[44px] items-center underline underline-offset-4"
@@ -71,9 +72,9 @@ export function AgentsSettingsTab() {
           >
             {copied ? 'Copied' : 'Copy endpoint'}
           </button>
-          <span className="text-xs text-paper/70">Provider sign-in and client authorization always remain human-only.</span>
-        </div>
-      </div>
+        }
+        note="Provider sign-in and client authorization always remain human-only."
+      />
 
       {pendingOauthClientId && agencyId && (
         <SettingsGroup
