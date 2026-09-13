@@ -3,7 +3,7 @@
   "checkpoint_id": "01M2DYFA42FJKSAR9FARNVP5HH",
   "strategy": "manual-commit",
   "branch": "main",
-  "checkpoints_count": 2,
+  "checkpoints_count": 3,
   "files_touched": [
     "apps/web/content/blog/snapchat-ads-access-agencies.md",
     "marketing/CONTENT-STRATEGY-2026.md",
@@ -24,6 +24,13 @@
       "compact_transcript": "/1/transcript.jsonl",
       "content_hash": "/1/content_hash.txt",
       "prompt": ""
+    },
+    {
+      "metadata": "/2/metadata.json",
+      "transcript": "/2/full.jsonl",
+      "compact_transcript": "/2/transcript.jsonl",
+      "content_hash": "/2/content_hash.txt",
+      "prompt": ""
     }
   ],
   "token_usage": {
@@ -31,6 +38,6 @@
     "cache_creation_tokens": 0,
     "cache_read_tokens": 0,
     "output_tokens": 0,
-    "api_call_count": 1
+    "api_call_count": 19
   }
 }
