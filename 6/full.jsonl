@@ -1,0 +1,4836 @@
+{
+  "info": {
+    "id": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+    "slug": "curious-meadow",
+    "projectID": "c927b59eeed48abf0aba66323a0a796e68b7d53c",
+    "directory": "/Users/jon.high/agency-access",
+    "path": "",
+    "title": "T3 Code generateThreadTitle",
+    "agent": "build",
+    "model": {
+      "id": "glm-4.6",
+      "providerID": "z-ai",
+      "variant": "default"
+    },
+    "version": "1.18.30",
+    "summary": {
+      "additions": 0,
+      "deletions": 0,
+      "files": 0
+    },
+    "cost": 0,
+    "tokens": {
+      "input": 0,
+      "output": 0,
+      "reasoning": 0,
+      "cache": {
+        "read": 0,
+        "write": 0
+      }
+    },
+    "permission": [
+      {
+        "permission": "*",
+        "pattern": "*",
+        "action": "deny"
+      }
+    ],
+    "time": {
+      "created": 1789321349666,
+      "updated": 1789321961807
+    }
+  },
+  "messages": [
+    {
+      "info": {
+        "role": "user",
+        "time": {
+          "created": 1789321349674
+        },
+        "agent": "build",
+        "model": {
+          "providerID": "z-ai",
+          "modelID": "glm-4.6"
+        },
+        "summary": {
+          "diffs": [
+            {
+              "file": "apps/web/content/blog/snapchat-ads-access-agencies.md",
+              "patch": "Index: apps/web/content/blog/snapchat-ads-access-agencies.md\n===================================================================\n--- apps/web/content/blog/snapchat-ads-access-agencies.md\t\n+++ apps/web/content/blog/snapchat-ads-access-agencies.md\t\n@@ -1,208 +1,212 @@\n ---\n-id: snapchat-ads-access-guide\n-title: 'Snapchat Ads Access for Agencies: Business Manager Roles & Permissions (2026)'\n+id: snapchat-ads-access-agencies\n+title: 'Snapchat Business Manager Access for Agencies: Roles & Permissions (2026)'\n excerpt: >-\n-  Snapchat has no access-request system. Your client must add you. Learn the\n-  Organization and Ad Account role levels, Public Profile requirements, and the\n-  invite flow that gets your agency running campaigns without shared logins.\n+  Snapchat Business Manager has no access-request system. Your client must add\n+  you. Learn the Organization and Ad Account role levels, Public Profile\n+  requirements, and the invite flow that gets your agency running campaigns\n+  without shared logins.\n category: tutorials\n stage: consideration\n publishedAt: '2026-09-11'\n readTime: 9\n author:\n   name: Jon High\n   role: Founder\n tags:\n+  - Snapchat Business Manager\n+  - Snapchat ad account access\n   - Snapchat Ads\n-  - Business Manager\n   - permissions\n   - client onboarding\n-  - Snapchat ad account access\n-metaTitle: 'Snapchat Ads Access for Agencies: Business Manager Roles & Permissions (2026)'\n+  - agency operations\n+metaTitle: 'Snapchat Business Manager Access for Agencies: Roles & Permissions (2026)'\n metaDescription: >-\n-  How to get Snapchat Ads access for your agency. Complete guide to Business\n-  Manager organization roles, ad account permissions, and Public Profile access.\n+  How to get Snapchat Business Manager access for your agency: Organization\n+  roles, ad account permissions, and Public Profile setup — the exact steps\n+  that work.\n relatedPosts:\n   - meta-ads-access-guide\n   - tiktok-ads-access-guide\n   - linkedin-ads-access-guide\n+  - how-to-revoke-client-access-offboarding\n ---\n # Snapchat Ads Access for Agencies: Business Manager Roles & Permissions (2026)\n \n ## The Platform With No Access Request Button\n \n Google Ads has Manager Account linking. Meta has Business Manager partner requests. TikTok lets you request ad account access directly.\n \n Snapchat has none of these.\n \n There is no inbound access-request system in Snapchat Business Manager. Your client cannot approve a request you send, because you cannot send one. The client (or someone at their business with admin rights) must add you as a member of their Organization. If you onboard Snapchat clients regularly, this single design choice explains most of your access delays.\n \n The workaround most agencies use, asking the client to share their Snapchat login, is worse than the problem it solves. It breaks Snapchat's terms, it puts client credentials in Slack threads, and it gives you no permission boundary. You get everything, including billing, or nothing.\n \n This guide covers the correct process: how Snapchat's permission hierarchy works, exactly which roles your team needs, the invite flow to walk clients through, and the traps that stall Snapchat onboarding.\n \n ## Why Snapchat Access Trips Up Agencies\n \n Three constraints make Snapchat different from every other major ad platform:\n \n - **No access requests.** The client must initiate every invitation. You cannot start the process from your side.\n - **A Public Profile is mandatory.** You cannot run ads without one. If your client has never advertised on Snapchat, the profile must exist before anything else.\n - **One billing setup per ad account.** If you manage campaigns under the client's ad account, the client cannot run separate campaigns under a second billing arrangement in the same account.\n \n That third constraint matters for agencies that prefer to run client spend through their own card. On Snapchat, an ad account has one funding source. Decide who pays, client-direct or agency-pass-through, before you request access, because it determines which account structure you need.\n \n ## How Snapchat Business Manager Is Structured\n \n Snapchat's hierarchy has three layers:\n \n ```\n Organization (the business)\n     |\n     +-- Ad Accounts\n     |       |\n     |       +-- Campaigns, Ad Sets, Ads\n     |\n     +-- Snap Pixel / Conversions API\n     |\n     +-- Catalogs\n     |\n     +-- Public Profiles\n ```\n \n Everything starts with the Organization. Your client's business owns it, and it contains all advertising assets: ad accounts, pixels, catalogs, and Public Profiles. Access to each layer is controlled separately. Being in the Organization does not automatically grant access to individual ad accounts or profiles.\n \n This is the same basic pattern as Meta Business Manager, but the role names and capabilities differ enough to cause real mistakes. Here is what each level actually controls.\n \n ## Organization Roles: Who Runs the Business\n \n Snapchat offers five Organization-level roles:\n \n | Role | What it can do | What it cannot do |\n |------|----------------|-------------------|\n | **Organization Admin** | Everything: all ad accounts, members, roles, entities | Delete an entire ad account (needs Business Admin) |\n | **Business Admin** | Full Business Manager: payment methods, roles, org details; create/update/delete ad accounts | Manage campaigns inside individual ad accounts |\n | **Agency Admin** | Near-admin access; manage agency members and assigned accounts | Change business details |\n | **Data Admin** | Reporting access across all ad accounts | Any campaign or creative management |\n | **Member** | Base membership; prerequisite for ad account roles | Nothing on its own |\n \n **The role to request: Agency Admin.** It exists specifically for agencies. You get campaign and asset management across assigned accounts, you can manage your own agency team members, and you cannot accidentally change the client's business details. That is the right boundary for a client relationship.\n \n If your client's team is nervous about external access, the least-privilege setup is: each agency staff member gets Organization **Member**, then ad account roles are assigned per account (next section).\n \n ## Ad Account Roles: Who Runs the Campaigns\n \n Organization membership is step one. Step two is the role on each specific ad account:\n \n | Role | Best for | Capabilities |\n |------|----------|--------------|\n | **Account Admin** | Lead media buyer | Change account details, manage all collateral, view Snap Pixel code |\n | **Campaign Manager** | Day-to-day buyers | Create and manage campaigns, ad sets, and ads |\n | **Creative Manager** | Designers | Manage creative assets; read-only elsewhere |\n | **Data Manager** | Audience ops | Upload and manage audience segments |\n | **Data Analyst** | Reporting | View performance metrics only |\n | **Agency Member** | Agency billing management | Manage account details and payment methods; limited to assigned accounts |\n \n Most agency teams need two roles: **Campaign Manager** for buyers and **Data Analyst** for reporting. Reserve Account Admin for one lead. Avoid the temptation to give everyone admin because the client will ask you to remove all that access at contract end. Every role you hold is one more thing to revoke.\n \n ## Public Profile Access: A Separate Permission System\n \n Snapchat requires a Public Profile to run ads. The profile is how your client's brand appears on the platform, and ads attach to it. Public Profile permissions are managed separately from ad accounts:\n \n | Role | What it can do |\n |------|----------------|\n | **Admin** | Change profile, manage Snaps and Stories, assign roles, view insights |\n | **Collaborator** | View insights; add/remove Snaps from their own Public Story |\n \n To grant Public Profile access, the client goes to **Ads Manager → Public Profiles → Member Roles**, selects the team member, and assigns a role. The person must already be an Organization member first.\n \n If your client has no Public Profile, create it before requesting ad account access. Campaigns cannot attach to a business without one.\n \n ## The Invite Flow (Send This to Your Client)\n \n Because the client must drive, give them exact steps. Here is the sequence that works:\n \n ### If the client already has a Snapchat Business Manager\n \n 1. Log in to **Ads Manager** at ads.snapchat.com\n 2. Click the menu (top left) → **Members**\n 3. Click **Invite Members**\n 4. Enter your agency email addresses\n 5. Assign **Agency Admin** (or Organization Member for least-privilege setups)\n 6. Go to **Ad Accounts** → select the ad account → **Members and Billing** → assign ad account roles\n 7. Go to **Public Profiles** → **Member Roles** → assign profile access\n 8. Accept the email invitation from your agency inbox\n \n ### If the client has never used Snapchat Ads\n \n 1. Create a Snapchat account for the business at business.snapchat.com (use a company email, not a personal account)\n 2. Set up the Organization (business name and details)\n 3. Create a **Public Profile** for the business\n 4. Create an **Ad Account**\n 5. Then follow the invite steps above\n \n The email your team receives will come from Snapchat. Team members click through, and access activates immediately.\n \n The steps take minutes. The coordination takes days, and it repeats for every new Snapchat client. AuthHub exists for that coordination layer: it guides each client through the steps above, in order, with one link instead of a checklist in an email.\n \n ## Common Problems (and Fixes)\n \n ### \"My client can't find the Members option\"\n \n Only Business Admins and Organization Admins can invite members. If your contact is a Campaign Manager or lower, they cannot add you. Ask them to check with whoever set up the account, or have an admin handle the invite.\n \n ### \"We got Organization access but see no ad accounts\"\n \n Organization membership and ad account roles are separate. The client must also assign ad account roles under **Ad Accounts → Members and Billing**. This is the most common miss in the whole process.\n \n ### \"The client shared their login instead\"\n \n Untangle this immediately. Have the client change their password, then invite you properly through Members. Shared credentials violate Snapchat's terms, create audit risk, and make offboarding impossible to verify.\n \n ### \"We need to run spend on our own card\"\n \n Snapchat allows one funding source per ad account. If the client wants to keep their billing, run campaigns in their account. If your agency will pay for spend, the client creates a new ad account under their Organization with your card as funding, then assigns your team to that account.\n \n ### \"Access disappeared after we finished onboarding\"\n \n Snapchat does not expire access on its own, but client staff turnover does. If the person who invited you leaves and someone \"cleans up\" members, you lose access. Track who granted it and when, so you know who to contact when it lapses.\n \n ## Revoking Access at Offboarding\n \n Snapchat revocation mirrors the grant, in reverse:\n \n 1. **Ad Accounts** → select each account → **Members and Billing** → remove agency roles\n 2. **Public Profiles** → **Member Roles** → remove agency access\n 3. **Members** → remove the agency team from the Organization\n \n Verify all three layers. Agencies that skip step 3 leave team members in the client's Organization. That is visible to the client and a liability to you. Our [client offboarding guide](/blog/how-to-revoke-client-access-offboarding) covers the full revocation checklist across every platform.\n \n ## How AuthHub Handles Snapchat Access\n \n The Snapchat flow has one unavoidable constraint: the client does the inviting. What AuthHub changes is everything around that constraint:\n \n - **One link** guides the client through the exact steps above, in order, at their own pace\n - **Status tracking** shows you which stage each client is at: invited, ad account assigned, profile assigned, done\n - **No credentials** ever change hands, because the client works inside their own Business Manager\n - **Revocation checklists** make offboarding symmetric with onboarding\n \n Snapchat onboarding stops being a multi-day email thread and becomes a link you send once.\n \n ## Snapchat Ads Access: FAQ\n \n **Can I request Snapchat ad account access as an agency?**\n No. Snapchat has no inbound request system. The client must invite you as an Organization member and assign ad account roles.\n \n **What is the minimum access an agency needs?**\n Organization Member plus Campaign Manager on the ad account. Add Data Analyst for reporting-only staff.\n \n **Does my client need a Public Profile before I can run ads?**\n Yes. Snapchat requires a Public Profile for all advertising. Create it before assigning ad account access.\n \n **Can multiple agencies work in the same Snapchat ad account?**\n Yes, but each member gets their own role assignment. Snapchat's Agency Admin role is designed for exactly this. It cannot change business details.\n \n **Can the client and agency both pay for spend?**\n Not in the same ad account. Snapchat allows one funding source per ad account. Use separate accounts for separate billing arrangements.\n \n **How do I remove agency access later?**\n Remove ad account roles, Public Profile roles, and Organization membership, in that order. Verify all three.\n",
+              "additions": 14,
+              "deletions": 10,
+              "status": "modified"
+            }
+          ]
+        },
+        "id": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "type": "text",
+          "text": "Generate a title that will help the user recognize this T3 Code thread weeks later.\nReturn JSON with exactly one key: title.\n\nBefore answering, silently reduce the request to:\n- Subject: What system, feature, or problem is this really about?\n- Outcome: What does the user ultimately want to understand or change?\n- Incidental instructions: What only describes how the agent should do the work?\n\nTitle the subject and outcome. Discard incidental instructions.\n\nEditorial rules:\n- 3-8 words, fewer than 40 characters.\n- Use a compact noun phrase or clear action phrase.\n- Capture the umbrella goal when the request lists several symptoms or steps.\n- Name the product change, not the mock, plan, report, branch, or PR used to produce it.\n- Models, subagents, tools, output formats, and monitoring instructions do not belong in the title unless they are themselves the topic.\n- For reviews, name what is being reviewed and the relevant concern. Avoid generic titles such as \"Review PR 123\" when linked or attached context reveals the subject.\n- For research, name the question domain rather than the requested research process.\n- Do not claim the work is complete.\n- Do not copy and truncate the user's message.\n- Avoid project names already visible in the UI, quotes, labels, filler, and trailing punctuation.\n- Use attached images as primary context for UI issues.\n- When a URL or attachment is the only source of the subject, use available tools to inspect it directly.\n- Local git history is not evidence of what a linked PR or issue is about. Never title the thread after branch names, commit messages, or merged commits found in the checkout.\n- If a linked PR or issue cannot be read, fall back to the user's stated action plus its number, such as \"Take Over PR 8588\". This is the one case where a PR or issue number belongs in the title.\n\nUser message:\nLet's systematically work through implementing our /Users/jon.high/agency-access/marketing/content/CONTENT-CALENDAR-SEPTEMBER-2026.md",
+          "id": "prt_09bdd0a2b001xvaLrgHcNRZssb",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bdd0a2a001O4xFtAvYe5fTc7"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321350377,
+          "completed": 1789321373622
+        },
+        "finish": "unknown",
+        "id": "msg_09bdd0ce9001391OE2zJ3lWlhu",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09bdd6679001K6sPShwBuW6Oa5",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bdd0ce9001391OE2zJ3lWlhu"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09bdd66d50016qMDAW7QPZiVG2",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bdd0ce9001391OE2zJ3lWlhu"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321373623,
+          "completed": 1789321374911
+        },
+        "finish": "unknown",
+        "id": "msg_09bdd67b7001bI0JVHUrIWnkdi",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09bdd6b6c001eZ6TWrdrS6lYcQ",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bdd67b7001bI0JVHUrIWnkdi"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09bdd6bd4001sxnhjg3EPbdN9q",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bdd67b7001bI0JVHUrIWnkdi"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321374912,
+          "completed": 1789321376224
+        },
+        "finish": "unknown",
+        "id": "msg_09bdd6cc0001FEDga3jyClqHdu",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09bdd70b2001arXlqD9nCqRMC3",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bdd6cc0001FEDga3jyClqHdu"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09bdd710e001h7A1O913G3YNvm",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bdd6cc0001FEDga3jyClqHdu"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321376225,
+          "completed": 1789321377473
+        },
+        "finish": "unknown",
+        "id": "msg_09bdd71e1001Ge2zn0KOfGGt8e",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09bdd757e001oitX4PqUtEbURO",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bdd71e1001Ge2zn0KOfGGt8e"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09bdd75d4001PbrjtI7iQUxxf1",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bdd71e1001Ge2zn0KOfGGt8e"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321377474,
+          "completed": 1789321378947
+        },
+        "finish": "unknown",
+        "id": "msg_09bdd76c2001ho8VU2wjQtBwWQ",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09bdd7b18001WsAPR1UUyHcY9H",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bdd76c2001ho8VU2wjQtBwWQ"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09bdd7b830014xWSs2JpjnNpmd",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bdd76c2001ho8VU2wjQtBwWQ"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321378948,
+          "completed": 1789321380406
+        },
+        "finish": "unknown",
+        "id": "msg_09bdd7c840014iS00JnlVxjIus",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09bdd8098001iBeugDwUV49a1e",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bdd7c840014iS00JnlVxjIus"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09bdd8121001K0SN1yGOpoK6Aa",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bdd7c840014iS00JnlVxjIus"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321380407,
+          "completed": 1789321404215
+        },
+        "finish": "unknown",
+        "id": "msg_09bdd8237001S9t9nC6lnAhIls",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09bdd83e6001jxvFYzXTWdEtqx",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bdd8237001S9t9nC6lnAhIls"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09bddde6a001aksEu4ZnVpeUup",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bdd8237001S9t9nC6lnAhIls"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321404217,
+          "completed": 1789321405418
+        },
+        "finish": "unknown",
+        "id": "msg_09bdddf39001B0PheL8HZjh2oQ",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09bdde2b1001MiIGNIDSNibE4C",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bdddf39001B0PheL8HZjh2oQ"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09bdde30e001FWUjwbh1cn16Y2",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bdddf39001B0PheL8HZjh2oQ"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321405420,
+          "completed": 1789321406736
+        },
+        "finish": "unknown",
+        "id": "msg_09bdde3ec001p2YP4L3TNsKKKW",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09bdde7a2001pLNF97AQHWqXJp",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bdde3ec001p2YP4L3TNsKKKW"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09bdde805001RnmpCsg1O76zxO",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bdde3ec001p2YP4L3TNsKKKW"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321406738,
+          "completed": 1789321408132
+        },
+        "finish": "unknown",
+        "id": "msg_09bdde9120019O4TIVCT87ucwD",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09bddecfa001B7PO4tWTbXAU43",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bdde9120019O4TIVCT87ucwD"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09bdded5f001j5i1WbsXJ0p8Tg",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bdde9120019O4TIVCT87ucwD"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321408133,
+          "completed": 1789321409520
+        },
+        "finish": "unknown",
+        "id": "msg_09bddee85001tghRL62BT0O0fx",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09bddf2980013LVL79eYb4asGh",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bddee85001tghRL62BT0O0fx"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09bddf306001FvlhjoDRa0GgFo",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bddee85001tghRL62BT0O0fx"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321409522,
+          "completed": 1789321410798
+        },
+        "finish": "unknown",
+        "id": "msg_09bddf3f2001bqZteMYPSPw9UY",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09bddf792001Fw8Ny5rN7G72bP",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bddf3f2001bqZteMYPSPw9UY"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09bddf7f80010g753s2qACW1y0",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bddf3f2001bqZteMYPSPw9UY"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321410800,
+          "completed": 1789321412136
+        },
+        "finish": "unknown",
+        "id": "msg_09bddf8f0001AESMcqZLSoe4R1",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09bddfcd3001M32ivQO3Rh9tFz",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bddf8f0001AESMcqZLSoe4R1"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09bddfd360012n7ZYnCIzJ3sJL",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bddf8f0001AESMcqZLSoe4R1"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321412137,
+          "completed": 1789321413469
+        },
+        "finish": "unknown",
+        "id": "msg_09bddfe2900157HDTahhD06c9o",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09bde01f8001OhvXPoH8ShwI1X",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bddfe2900157HDTahhD06c9o"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09bde02670017bW3mzu1WGJgr8",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bddfe2900157HDTahhD06c9o"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321413470,
+          "completed": 1789321414779
+        },
+        "finish": "unknown",
+        "id": "msg_09bde035e001WgkusxLoWrjRwW",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09bde0741001ByH0P3VrGN3294",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bde035e001WgkusxLoWrjRwW"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09bde07a00015uyPWd5HfuTZXZ",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bde035e001WgkusxLoWrjRwW"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321414780,
+          "completed": 1789321416137
+        },
+        "finish": "unknown",
+        "id": "msg_09bde087c001izZw9FjqwFvxAv",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09bde0c6b00125NJbxF2rndRF0",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bde087c001izZw9FjqwFvxAv"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09bde0cd6001o8OMZ2FUg2Np2y",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bde087c001izZw9FjqwFvxAv"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321416138,
+          "completed": 1789321417446
+        },
+        "finish": "unknown",
+        "id": "msg_09bde0dca0012I6N9p55hvsRos",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09bde1181001C84l40KlO5KS79",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bde0dca0012I6N9p55hvsRos"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09bde11e7001DsXYSYGw2rM3N9",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bde0dca0012I6N9p55hvsRos"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321417447,
+          "completed": 1789321418747
+        },
+        "finish": "unknown",
+        "id": "msg_09bde12e7001TeWSjrQ3tNGYHl",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09bde169b00187ZM5r5OTF89P4",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bde12e7001TeWSjrQ3tNGYHl"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09bde1702001zCrfEko8ANFdcV",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bde12e7001TeWSjrQ3tNGYHl"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321418749,
+          "completed": 1789321419983
+        },
+        "finish": "unknown",
+        "id": "msg_09bde17fd001K4ml5PXj1KXrVu",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09bde1ba0001xmugpbksuaGryx",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bde17fd001K4ml5PXj1KXrVu"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09bde1bf5001F2PLsAy1s2WtG2",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bde17fd001K4ml5PXj1KXrVu"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321419984,
+          "completed": 1789321421271
+        },
+        "finish": "unknown",
+        "id": "msg_09bde1cd0001Ek3GyJrtc21k7S",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09bde207c001q35V7fZ1EreyLq",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bde1cd0001Ek3GyJrtc21k7S"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09bde20e00014F8SxMtakGFU9W",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bde1cd0001Ek3GyJrtc21k7S"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321421273,
+          "completed": 1789321449508
+        },
+        "finish": "unknown",
+        "id": "msg_09bde21d9001pF2bPbFrmbW4fJ",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09bde23820014SRcQVzy7lZB3f",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bde21d9001pF2bPbFrmbW4fJ"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09bde8f3a001Yi786KpY0EpolM",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bde21d9001pF2bPbFrmbW4fJ"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321449511,
+          "completed": 1789321450804
+        },
+        "finish": "unknown",
+        "id": "msg_09bde9027001Rr9ru3btsTNDEV",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09bde93ee001m5LOGtb3x8s7Pg",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bde9027001Rr9ru3btsTNDEV"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09bde9453001q99D2wI0biwKMW",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bde9027001Rr9ru3btsTNDEV"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321450806,
+          "completed": 1789321452323
+        },
+        "finish": "unknown",
+        "id": "msg_09bde95360012Ain6zBaS9KFFJ",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09bde99c1001jrUKpnu01WYjB4",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bde95360012Ain6zBaS9KFFJ"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09bde9a4e001rG106hQIKkL1vT",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bde95360012Ain6zBaS9KFFJ"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321452325,
+          "completed": 1789321453485
+        },
+        "finish": "unknown",
+        "id": "msg_09bde9b25001vu8IxzvxaIIlRX",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09bde9e7f0015HPBjJoQYDRCNr",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bde9b25001vu8IxzvxaIIlRX"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09bde9ed9001E0tYspS5uBJPVP",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bde9b25001vu8IxzvxaIIlRX"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321453487,
+          "completed": 1789321454861
+        },
+        "finish": "unknown",
+        "id": "msg_09bde9faf0012OrSoNP2I371q6",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09bdea3a80017VLgJFeida8JoC",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bde9faf0012OrSoNP2I371q6"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09bdea416001WhcRwGYHWNzKlT",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bde9faf0012OrSoNP2I371q6"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321454865,
+          "completed": 1789321456247
+        },
+        "finish": "unknown",
+        "id": "msg_09bdea511001srGz87a4PF7WWW",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09bdea944001zBHHYmLpWcTOOX",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bdea511001srGz87a4PF7WWW"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09bdea996001H1NLJLVNd7hDPQ",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bdea511001srGz87a4PF7WWW"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321456248,
+          "completed": 1789321457616
+        },
+        "finish": "unknown",
+        "id": "msg_09bdeaa78001dA0eujreyYPJJQ",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09bdeae86001cp8G7d1kOQffG8",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bdeaa78001dA0eujreyYPJJQ"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09bdeaeea001v621B6lJCFyi81",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bdeaa78001dA0eujreyYPJJQ"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321457618,
+          "completed": 1789321458957
+        },
+        "finish": "unknown",
+        "id": "msg_09bdeafd2001oZubQBJU4HbGAP",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09bdeb38c001Sdv26jSZy4hPLX",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bdeafd2001oZubQBJU4HbGAP"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09bdeb3f3001TokVdZW3GyuQ9G",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bdeafd2001oZubQBJU4HbGAP"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321458958,
+          "completed": 1789321460271
+        },
+        "finish": "unknown",
+        "id": "msg_09bdeb50e001Y0lN8YlMXSXLg4",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09bdeb8ca001Q5xKCiqT7A81pp",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bdeb50e001Y0lN8YlMXSXLg4"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09bdeb9300012hopxV33Yew8Bs",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bdeb50e001Y0lN8YlMXSXLg4"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321460272,
+          "completed": 1789321492195
+        },
+        "finish": "unknown",
+        "id": "msg_09bdeba30001lZMHdjHx5lZL4N",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09bdebbe6001fDOku0VFC2uJs5",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bdeba30001lZMHdjHx5lZL4N"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09bdf360c001DiQOrtrfvrseuk",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bdeba30001lZMHdjHx5lZL4N"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321492199,
+          "completed": 1789321493478
+        },
+        "finish": "unknown",
+        "id": "msg_09bdf36e7001cwheGqG6fKcVgP",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09bdf3ac6001ZVBbjsJ3ymbnGi",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bdf36e7001cwheGqG6fKcVgP"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09bdf3b20001TMjB7hUGmzUnwU",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bdf36e7001cwheGqG6fKcVgP"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321493480,
+          "completed": 1789321494816
+        },
+        "finish": "unknown",
+        "id": "msg_09bdf3be8001PRqXKdAYoZc05u",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09bdf3fb8001qlYuUWYf9Pxi4d",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bdf3be8001PRqXKdAYoZc05u"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09bdf4040001CD6zawZ5g5Cxp2",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bdf3be8001PRqXKdAYoZc05u"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321494817,
+          "completed": 1789321496012
+        },
+        "finish": "unknown",
+        "id": "msg_09bdf4121001v0Wv8TKMMeStJi",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09bdf44a2001MYAccYE3jl5rG5",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bdf4121001v0Wv8TKMMeStJi"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09bdf44fa001yvCkBN1F4XCAga",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bdf4121001v0Wv8TKMMeStJi"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321496013,
+          "completed": 1789321497270
+        },
+        "finish": "unknown",
+        "id": "msg_09bdf45cd0014r2FUtIyc58Fcy",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09bdf49780019lD5zZvNqQcFs2",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bdf45cd0014r2FUtIyc58Fcy"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09bdf49d4001kWWsfup3Dv7eh7",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bdf45cd0014r2FUtIyc58Fcy"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321497272,
+          "completed": 1789321498586
+        },
+        "finish": "unknown",
+        "id": "msg_09bdf4ab8001GmVX62Dp89fkl1",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09bdf4e7e001caCy2FouRbPo8b",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bdf4ab8001GmVX62Dp89fkl1"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09bdf4ee3001f4ChXWkZn54uEe",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bdf4ab8001GmVX62Dp89fkl1"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321498587,
+          "completed": 1789321499946
+        },
+        "finish": "unknown",
+        "id": "msg_09bdf4fdb0012LgysM5MXB78f0",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09bdf53b8001tyHdTxFUyvc8fZ",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bdf4fdb0012LgysM5MXB78f0"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09bdf5420001u5nvcKepZrvKSU",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bdf4fdb0012LgysM5MXB78f0"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321499948,
+          "completed": 1789321501265
+        },
+        "finish": "unknown",
+        "id": "msg_09bdf552c001NRbzf48zhBZH82",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09bdf58e9001Oz6K9TsAKa2ING",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bdf552c001NRbzf48zhBZH82"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09bdf594c001RtJmDQeFaUuFO1",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bdf552c001NRbzf48zhBZH82"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321501266,
+          "completed": 1789321502591
+        },
+        "finish": "unknown",
+        "id": "msg_09bdf5a52001oTPxJTwF3RnZpe",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09bdf5e1e001W3gwy3OpwARtim",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bdf5a52001oTPxJTwF3RnZpe"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09bdf5e8d001qrxlNWvY4B1m1R",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bdf5a52001oTPxJTwF3RnZpe"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321502593,
+          "completed": 1789321503970
+        },
+        "finish": "unknown",
+        "id": "msg_09bdf5f81001CogDkn3Tn8oKM2",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09bdf635b001E4NkOuUtTsS3Nd",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bdf5f81001CogDkn3Tn8oKM2"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09bdf63d8001O6apsLnP6bWIy9",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bdf5f81001CogDkn3Tn8oKM2"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321503972,
+          "completed": 1789321505366
+        },
+        "finish": "unknown",
+        "id": "msg_09bdf64e4001qB9XT11hWvzZAS",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09bdf6906001um42t9LM9AsjZK",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bdf64e4001qB9XT11hWvzZAS"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09bdf6968001FXYPXj8UC51Up0",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bdf64e4001qB9XT11hWvzZAS"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321505367,
+          "completed": 1789321506733
+        },
+        "finish": "unknown",
+        "id": "msg_09bdf6a57001R1kRSgzxgnqrOG",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09bdf6e3e001TRaDsUG6Fia1p9",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bdf6a57001R1kRSgzxgnqrOG"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09bdf6eb1001bc89p0E2rqd2hp",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bdf6a57001R1kRSgzxgnqrOG"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321506735,
+          "completed": 1789321542570
+        },
+        "finish": "unknown",
+        "id": "msg_09bdf6faf001AiS11VzwsRnSDn",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09bdf7438001eg6eM1apYUTVXq",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bdf6faf001AiS11VzwsRnSDn"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09bdffabd001qdDdHurmDByI1f",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bdf6faf001AiS11VzwsRnSDn"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321542572,
+          "completed": 1789321543821
+        },
+        "finish": "unknown",
+        "id": "msg_09bdffbac0013TigucynkjUKM4",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09bdfff450019Ng8rNJruRKMnc",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bdffbac0013TigucynkjUKM4"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09bdfffa9001O1fTyOHUU1KNlm",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09bdffbac0013TigucynkjUKM4"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321543822,
+          "completed": 1789321545050
+        },
+        "finish": "unknown",
+        "id": "msg_09be0008e001usvSRYpDJMagKt",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09be0041f001NBEIgYq0qTlr53",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be0008e001usvSRYpDJMagKt"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09be0048a001rbQoDEOiUcB9Em",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be0008e001usvSRYpDJMagKt"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321545051,
+          "completed": 1789321546320
+        },
+        "finish": "unknown",
+        "id": "msg_09be0055b001btIgSSTTuf3DVr",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09be009260018OhO2A1bxWJaGo",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be0055b001btIgSSTTuf3DVr"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09be0097e001bNAF1S8Kd852Lz",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be0055b001btIgSSTTuf3DVr"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321546322,
+          "completed": 1789321547512
+        },
+        "finish": "unknown",
+        "id": "msg_09be00a52001gr2KScUgurH0WG",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09be00db0001mO9mXIodGPjb03",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be00a52001gr2KScUgurH0WG"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09be00e14001v1JEtTeBGEfcN2",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be00a52001gr2KScUgurH0WG"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321547513,
+          "completed": 1789321548809
+        },
+        "finish": "unknown",
+        "id": "msg_09be00ef9001efsaGEnK2CpWVF",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09be0129d0011t4TjBSvkcn2AV",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be00ef9001efsaGEnK2CpWVF"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09be01307001RRg26Mca6kXPAi",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be00ef9001efsaGEnK2CpWVF"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321548813,
+          "completed": 1789321590129
+        },
+        "finish": "unknown",
+        "id": "msg_09be0140d001V0HrRTfA2Ovxza",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09be015bb001JFEhzXV6VDSkIv",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be0140d001V0HrRTfA2Ovxza"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09be0b4b1001XgvoXmuL5Pzrj9",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be0140d001V0HrRTfA2Ovxza"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321590133,
+          "completed": 1789321635923
+        },
+        "finish": "unknown",
+        "id": "msg_09be0b575001XAeF0JqCWTHlCt",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09be0b934001DEW58Ef4J6IQv8",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be0b575001XAeF0JqCWTHlCt"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09be1676c001IjAtP6l1Haw0v0",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be0b575001XAeF0JqCWTHlCt"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321635925,
+          "completed": 1789321637205
+        },
+        "finish": "unknown",
+        "id": "msg_09be16855001m7rDcqNYNs0LhU",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09be16c03001rloij3LeWLsbTr",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be16855001m7rDcqNYNs0LhU"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09be16c6a001uVZ9MG0TVCr7Bc",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be16855001m7rDcqNYNs0LhU"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321637208,
+          "completed": 1789321638559
+        },
+        "finish": "unknown",
+        "id": "msg_09be16d58001rvZCf9ifftE9x6",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09be1713a001r0cHy9DhZ4607D",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be16d58001rvZCf9ifftE9x6"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09be171b2001AAhazfnxxiRZPo",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be16d58001rvZCf9ifftE9x6"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321638560,
+          "completed": 1789321639843
+        },
+        "finish": "unknown",
+        "id": "msg_09be172a0001T4MVQtX1LP2qEx",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09be17655001uW5z8VixOzm7b1",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be172a0001T4MVQtX1LP2qEx"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09be176b40015CkeuUVndUAGWv",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be172a0001T4MVQtX1LP2qEx"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321639846,
+          "completed": 1789321641184
+        },
+        "finish": "unknown",
+        "id": "msg_09be177a6001u16l43SAH0H5In",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09be17b88001D4biz1SQylRFZV",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be177a6001u16l43SAH0H5In"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09be17bec001h0FXr7th8qOZAi",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be177a6001u16l43SAH0H5In"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321641186,
+          "completed": 1789321642502
+        },
+        "finish": "unknown",
+        "id": "msg_09be17ce20016c7XN9F1CjExox",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09be180ca0012o254aeeM13S5P",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be17ce20016c7XN9F1CjExox"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09be18130001ffMTapN9Xru92S",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be17ce20016c7XN9F1CjExox"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321642504,
+          "completed": 1789321643750
+        },
+        "finish": "unknown",
+        "id": "msg_09be18208001vB9pGGwnMdM7Sh",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09be18584001zMGSwRwahzU8Xb",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be18208001vB9pGGwnMdM7Sh"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09be185ed001KFT3auUKgbpdv3",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be18208001vB9pGGwnMdM7Sh"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321643752,
+          "completed": 1789321645058
+        },
+        "finish": "unknown",
+        "id": "msg_09be186e8001jskyx71habSECW",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09be18ab6001w7pf98eTmoKrTx",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be186e8001jskyx71habSECW"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09be18b18001RBsUWuPmHhbsms",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be186e8001jskyx71habSECW"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321645060,
+          "completed": 1789321646355
+        },
+        "finish": "unknown",
+        "id": "msg_09be18c04001OlEWK74drnRc2Y",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09be18fbb001lcUKyKx7JhI9RD",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be18c04001OlEWK74drnRc2Y"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09be1901f001UwvmJBANPVAK4L",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be18c04001OlEWK74drnRc2Y"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321646357,
+          "completed": 1789321647633
+        },
+        "finish": "unknown",
+        "id": "msg_09be19115001w4f5cFRcIddbDx",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09be194b7001o4x5lcQy3MXfTY",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be19115001w4f5cFRcIddbDx"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09be1951c0012lIjNr1hWVo4c1",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be19115001w4f5cFRcIddbDx"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321647635,
+          "completed": 1789321649023
+        },
+        "finish": "unknown",
+        "id": "msg_09be19613001RyLIbZ7YKHv0s3",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09be199d6001DWukWJ94TVTp35",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be19613001RyLIbZ7YKHv0s3"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09be19a49001p0K10nxnsqLGm2",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be19613001RyLIbZ7YKHv0s3"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321649025,
+          "completed": 1789321650361
+        },
+        "finish": "unknown",
+        "id": "msg_09be19b81001ejUTispmBS0sPu",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09be19f57001RJUY1bX5rnlBIY",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be19b81001ejUTispmBS0sPu"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09be19fc0001i1lysn3ZtamYYY",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be19b81001ejUTispmBS0sPu"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321650365,
+          "completed": 1789321651674
+        },
+        "finish": "unknown",
+        "id": "msg_09be1a0bd001sQ0IFK5sDyODFJ",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09be1a47f001ZxvuxP9eW7MO56",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be1a0bd001sQ0IFK5sDyODFJ"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09be1a4e3001xr7IEs1d3aFW76",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be1a0bd001sQ0IFK5sDyODFJ"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321651676,
+          "completed": 1789321653360
+        },
+        "finish": "unknown",
+        "id": "msg_09be1a5dc0018WGwau3Rj15iIK",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09be1aab5001FZ8VDkDSNgddYu",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be1a5dc0018WGwau3Rj15iIK"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09be1ab58001sBip24GDBvMB5q",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be1a5dc0018WGwau3Rj15iIK"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321653365,
+          "completed": 1789321703845
+        },
+        "finish": "unknown",
+        "id": "msg_09be1ac750019O5GOtkYsPFHTv",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09be1aeae001IwAy0fw7IJeU71",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be1ac750019O5GOtkYsPFHTv"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09be270dc001aL6TbBo6RaCH3R",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be1ac750019O5GOtkYsPFHTv"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321703849,
+          "completed": 1789321761952
+        },
+        "finish": "unknown",
+        "id": "msg_09be271a9001qqulUGnriOgRbO",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09be273490012rSIA6a79VgQCv",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be271a9001qqulUGnriOgRbO"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09be353bf001EjCEinmKMHUDSw",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be271a9001qqulUGnriOgRbO"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321761956,
+          "completed": 1789321763290
+        },
+        "finish": "unknown",
+        "id": "msg_09be354a4001LBqev66Po9AZKu",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09be35890001efAo4HMTsHgMkR",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be354a4001LBqev66Po9AZKu"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09be358fd001NLJx81xF2zPRoi",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be354a4001LBqev66Po9AZKu"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321763294,
+          "completed": 1789321829818
+        },
+        "finish": "unknown",
+        "id": "msg_09be359de00122jeF40J9KpTrx",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "type": "step-start",
+          "id": "prt_09be35bc8001MkA3Ix11VSk6As",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be359de00122jeF40J9KpTrx"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "902570f8bff0c449b3579771058ea615af8439fe",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09be45cb4001O7aW7155oDV16A",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be359de00122jeF40J9KpTrx"
+        },
+        {
+          "type": "patch",
+          "hash": "308c02ce753b42e680faca8aadfa87d6b3159938",
+          "files": [
+            "/Users/jon.high/agency-access/apps/web/content/blog/snapchat-ads-access-agencies.md"
+          ],
+          "id": "prt_09be45db80016UH07fljW6pRf7",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be359de00122jeF40J9KpTrx"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321829822,
+          "completed": 1789321830808
+        },
+        "finish": "unknown",
+        "id": "msg_09be45dbe001KTorSlhvPfon0I",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "902570f8bff0c449b3579771058ea615af8439fe",
+          "type": "step-start",
+          "id": "prt_09be4603d001UGrQTLab49W9t1",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be45dbe001KTorSlhvPfon0I"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "902570f8bff0c449b3579771058ea615af8439fe",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09be460a2001GrzlPD4JAMKRDe",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be45dbe001KTorSlhvPfon0I"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321830810,
+          "completed": 1789321832231
+        },
+        "finish": "unknown",
+        "id": "msg_09be4619a001m3NCMIiNPuw5PS",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "902570f8bff0c449b3579771058ea615af8439fe",
+          "type": "step-start",
+          "id": "prt_09be465c4001JlfuGQ7iVPpChV",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be4619a001m3NCMIiNPuw5PS"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "902570f8bff0c449b3579771058ea615af8439fe",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09be4663a001Rzfnhy8WeddZSP",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be4619a001m3NCMIiNPuw5PS"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321832233,
+          "completed": 1789321833592
+        },
+        "finish": "unknown",
+        "id": "msg_09be46729001vh5AJ8KtFoAu8u",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "902570f8bff0c449b3579771058ea615af8439fe",
+          "type": "step-start",
+          "id": "prt_09be46b0e001IxL9RxlHZbO6jp",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be46729001vh5AJ8KtFoAu8u"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "902570f8bff0c449b3579771058ea615af8439fe",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09be46b7a001VOjhXm1eRhtZD5",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be46729001vh5AJ8KtFoAu8u"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321833594,
+          "completed": 1789321835015
+        },
+        "finish": "unknown",
+        "id": "msg_09be46c7a001Xbcuda85B3boq6",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "902570f8bff0c449b3579771058ea615af8439fe",
+          "type": "step-start",
+          "id": "prt_09be47094001Ke5Xr88aJvWv9n",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be46c7a001Xbcuda85B3boq6"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "902570f8bff0c449b3579771058ea615af8439fe",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09be47110001MqTNLln3I9XmQg",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be46c7a001Xbcuda85B3boq6"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321835019,
+          "completed": 1789321836384
+        },
+        "finish": "unknown",
+        "id": "msg_09be4720b001qQs04A3jmGiMOc",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "902570f8bff0c449b3579771058ea615af8439fe",
+          "type": "step-start",
+          "id": "prt_09be47620001Avwij4AHSppbO0",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be4720b001qQs04A3jmGiMOc"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "902570f8bff0c449b3579771058ea615af8439fe",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09be47689001R0TktByMKRefdT",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be4720b001qQs04A3jmGiMOc"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321836388,
+          "completed": 1789321837576
+        },
+        "finish": "unknown",
+        "id": "msg_09be47764001DGHU3oK03Qszkx",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "902570f8bff0c449b3579771058ea615af8439fe",
+          "type": "step-start",
+          "id": "prt_09be47ad50012mZBBNR0kg39bP",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be47764001DGHU3oK03Qszkx"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "902570f8bff0c449b3579771058ea615af8439fe",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09be47b3d001PSsRpLO3C9in0B",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be47764001DGHU3oK03Qszkx"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321837580,
+          "completed": 1789321838775
+        },
+        "finish": "unknown",
+        "id": "msg_09be47c0c001II3jTFePmhSbFB",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "902570f8bff0c449b3579771058ea615af8439fe",
+          "type": "step-start",
+          "id": "prt_09be47f900019N2NB8zXoUgPIV",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be47c0c001II3jTFePmhSbFB"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "902570f8bff0c449b3579771058ea615af8439fe",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09be47feb001ns4fPSrgiprXCJ",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be47c0c001II3jTFePmhSbFB"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321838778,
+          "completed": 1789321839992
+        },
+        "finish": "unknown",
+        "id": "msg_09be480ba001ZCYUQXIUdp2t7y",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "902570f8bff0c449b3579771058ea615af8439fe",
+          "type": "step-start",
+          "id": "prt_09be48432001GKZpj88wvlbkNy",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be480ba001ZCYUQXIUdp2t7y"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "902570f8bff0c449b3579771058ea615af8439fe",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09be48495001SpEER2xRxJGB0p",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be480ba001ZCYUQXIUdp2t7y"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321839995,
+          "completed": 1789321841191
+        },
+        "finish": "unknown",
+        "id": "msg_09be4857b001tLyIxwWtMWTdJi",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "902570f8bff0c449b3579771058ea615af8439fe",
+          "type": "step-start",
+          "id": "prt_09be488f7001QH68p72Gi0f4Hu",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be4857b001tLyIxwWtMWTdJi"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "902570f8bff0c449b3579771058ea615af8439fe",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09be48958001mPX28G8MQ6AA5o",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be4857b001tLyIxwWtMWTdJi"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321841195,
+          "completed": 1789321842374
+        },
+        "finish": "unknown",
+        "id": "msg_09be48a2b001TYcY9fSf5wFjnt",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "902570f8bff0c449b3579771058ea615af8439fe",
+          "type": "step-start",
+          "id": "prt_09be48d980017VB5ETcCEllJMf",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be48a2b001TYcY9fSf5wFjnt"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "902570f8bff0c449b3579771058ea615af8439fe",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09be48df3001Np4SxwyVtDy25q",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be48a2b001TYcY9fSf5wFjnt"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321842377,
+          "completed": 1789321843562
+        },
+        "finish": "unknown",
+        "id": "msg_09be48ec9001Pa2k5oftb65r9F",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "902570f8bff0c449b3579771058ea615af8439fe",
+          "type": "step-start",
+          "id": "prt_09be49247001IGfpzkM11Do5EK",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be48ec9001Pa2k5oftb65r9F"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "902570f8bff0c449b3579771058ea615af8439fe",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09be4929e001hRBu2nNg5l4pdg",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be48ec9001Pa2k5oftb65r9F"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321843564,
+          "completed": 1789321844788
+        },
+        "finish": "unknown",
+        "id": "msg_09be4936c001syQvvqmKVSpCG9",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "902570f8bff0c449b3579771058ea615af8439fe",
+          "type": "step-start",
+          "id": "prt_09be497100018ie7i1yW0UoPqC",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be4936c001syQvvqmKVSpCG9"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "902570f8bff0c449b3579771058ea615af8439fe",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09be4976d001Wp8sI0SGVS8O5e",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be4936c001syQvvqmKVSpCG9"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321844790,
+          "completed": 1789321957624
+        },
+        "finish": "unknown",
+        "id": "msg_09be49836001Ia9V8GyZYfM5ge",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "902570f8bff0c449b3579771058ea615af8439fe",
+          "type": "step-start",
+          "id": "prt_09be499e7001bhugLVnwtpM0vR",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be49836001Ia9V8GyZYfM5ge"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "b860cab56c34b38fed1d1627afd8abfe40032f35",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09be64d830014m3oMjJvZPD3a4",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be49836001Ia9V8GyZYfM5ge"
+        },
+        {
+          "type": "patch",
+          "hash": "902570f8bff0c449b3579771058ea615af8439fe",
+          "files": [
+            "/Users/jon.high/agency-access/apps/web/content/blog/snapchat-ads-access-agencies.md"
+          ],
+          "id": "prt_09be650f6001Osz4wUfzTZWqIx",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be49836001Ia9V8GyZYfM5ge"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321957632,
+          "completed": 1789321959952
+        },
+        "finish": "unknown",
+        "id": "msg_09be65100001rgthvTUdOblbGK",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "b860cab56c34b38fed1d1627afd8abfe40032f35",
+          "type": "step-start",
+          "id": "prt_09be6589c001csPBsGGUfXVAKO",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be65100001rgthvTUdOblbGK"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "b860cab56c34b38fed1d1627afd8abfe40032f35",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09be6590f001K5vBq4rHHBS6kn",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be65100001rgthvTUdOblbGK"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "write": 0,
+            "read": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321959956,
+          "completed": 1789321961802
+        },
+        "finish": "unknown",
+        "id": "msg_09be65a140019Fuy01P4degSzT",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "b860cab56c34b38fed1d1627afd8abfe40032f35",
+          "type": "step-start",
+          "id": "prt_09be65f9b0012ex1OdVieWCFQ8",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be65a140019Fuy01P4degSzT"
+        },
+        {
+          "reason": "unknown",
+          "snapshot": "b860cab56c34b38fed1d1627afd8abfe40032f35",
+          "type": "step-finish",
+          "tokens": {
+            "input": 0,
+            "output": 0,
+            "reasoning": 0,
+            "cache": {
+              "write": 0,
+              "read": 0
+            }
+          },
+          "cost": 0,
+          "id": "prt_09be66016001z3URe13P8p2Y3K",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be65a140019Fuy01P4degSzT"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_09bdd0a2a001O4xFtAvYe5fTc7",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "read": 0,
+            "write": 0
+          }
+        },
+        "modelID": "glm-4.6",
+        "providerID": "z-ai",
+        "time": {
+          "created": 1789321961806
+        },
+        "id": "msg_09be6614e0016QmVpxVO0ulPph",
+        "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z"
+      },
+      "parts": [
+        {
+          "snapshot": "b860cab56c34b38fed1d1627afd8abfe40032f35",
+          "type": "step-start",
+          "id": "prt_09be6635a001zGoxag2kok4R1c",
+          "sessionID": "ses_f6422f5ddffekwQhEGZl8kZe8Z",
+          "messageID": "msg_09be6614e0016QmVpxVO0ulPph"
+        }
+      ]
+    }
+  ]
+}
