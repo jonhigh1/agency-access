@@ -51,7 +51,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   ) => {
     // Base styles common to all variants.
     // Two-ring focus (v2.0): inner 3px coral stroke + outer 6px soft halo.
-    const baseStyles = 'inline-flex items-center justify-center gap-2 font-semibold transition-all duration-150 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] touch-feedback focus-visible:outline-[3px] focus-visible:outline-coral/25 focus-visible:outline-offset-0 focus-visible:[box-shadow:0_0_0_6px_rgb(var(--primary)/0.08)]';
+    const baseStyles = 'relative inline-flex items-center justify-center gap-2 font-semibold transition-[background-color,border-color,color,opacity,transform] duration-150 disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] touch-feedback focus-visible:outline-[3px] focus-visible:outline-coral/25 focus-visible:outline-offset-0 focus-visible:[box-shadow:0_0_0_6px_rgb(var(--primary)/0.08)]';
 
     // Variant styles (use NonNullable to exclude undefined from Record key type)
     const variantStyles: Record<NonNullable<ButtonProps['variant']>, string> = {
@@ -80,20 +80,17 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         <Slot
           ref={ref}
           className={`${baseStyles} ${variantStyles[variant]} ${sizeStyles[size]} ${className}`}
+          aria-busy={isLoading || undefined}
           {...props}
         >
-          {isLoading ? (
-            <>
-              <LogoSpinner size="sm" />
-              {children && <span>Loading...</span>}
-            </>
-          ) : (
-            <>
+          <>
+            <span className={isLoading ? 'invisible inline-flex items-center gap-2' : 'inline-flex items-center gap-2'}>
               {leftIcon && <span className="flex-shrink-0">{leftIcon}</span>}
               {children}
               {rightIcon && <span className="flex-shrink-0">{rightIcon}</span>}
-            </>
-          )}
+            </span>
+            {isLoading && <span className="absolute inset-0 inline-flex items-center justify-center"><LogoSpinner size="sm" /></span>}
+          </>
         </Slot>
       );
     }
@@ -103,20 +100,15 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         ref={ref}
         disabled={disabled || isLoading}
         className={`${baseStyles} ${variantStyles[variant]} ${sizeStyles[size]} ${className}`}
+        aria-busy={isLoading || undefined}
         {...props}
       >
-        {isLoading ? (
-          <>
-            <LogoSpinner size="sm" />
-            {children && <span>Loading...</span>}
-          </>
-        ) : (
-          <>
-            {leftIcon && <span className="flex-shrink-0">{leftIcon}</span>}
-            {children}
-            {rightIcon && <span className="flex-shrink-0">{rightIcon}</span>}
-          </>
-        )}
+        <span className={isLoading ? 'invisible inline-flex items-center gap-2' : 'inline-flex items-center gap-2'}>
+          {leftIcon && <span className="flex-shrink-0">{leftIcon}</span>}
+          {children}
+          {rightIcon && <span className="flex-shrink-0">{rightIcon}</span>}
+        </span>
+        {isLoading && <span className="absolute inset-0 inline-flex items-center justify-center"><LogoSpinner size="sm" /></span>}
       </button>
     );
   }
