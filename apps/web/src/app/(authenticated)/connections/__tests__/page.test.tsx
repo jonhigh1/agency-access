@@ -561,6 +561,104 @@ describe('ConnectionsPage', () => {
     expect(within(dialog).queryByRole('button', { name: /^disconnect$/i })).not.toBeInTheDocument();
   });
 
+  it('loads Google connection settings when Manage Assets is opened', async () => {
+    (global.fetch as any).mockImplementation(async (input: RequestInfo | URL) => {
+      const url = String(input);
+
+      if (url.includes('/api/agencies?clerkUserId=')) {
+        return mockJsonResponse({ data: [{ id: 'test-agency-id' }] });
+      }
+
+      if (url.includes('/agency-platforms/available?agencyId=test-agency-id')) {
+        return mockJsonResponse({
+          data: [
+            {
+              platform: 'meta',
+              name: 'Meta',
+              category: 'recommended',
+              connected: true,
+              connectedEmail: 'meta@example.com',
+              status: 'active',
+            },
+            {
+              platform: 'google',
+              name: 'Google',
+              category: 'recommended',
+              connected: true,
+              connectedEmail: 'google@example.com',
+              status: 'active',
+            },
+          ],
+        });
+      }
+
+      if (url.includes('/agency-platforms/google/accounts')) {
+        return mockJsonResponse({
+          data: {
+            adsAccounts: [],
+            analyticsProperties: [],
+            businessAccounts: [],
+            tagManagerContainers: [],
+            searchConsoleSites: [],
+            merchantCenterAccounts: [],
+            hasAccess: true,
+          },
+        });
+      }
+
+      if (url.includes('/agency-platforms/google/asset-settings')) {
+        return mockJsonResponse({
+          data: {
+            googleAds: { enabled: true, requestManageUsers: false },
+            googleAnalytics: { enabled: false, requestManageUsers: false },
+            googleBusinessProfile: { enabled: false, requestManageUsers: false },
+            googleTagManager: { enabled: false, requestManageUsers: false },
+            googleSearchConsole: { enabled: false, requestManageUsers: false },
+            googleMerchantCenter: { enabled: false, requestManageUsers: false },
+          },
+        });
+      }
+
+      return mockJsonResponse({ data: null });
+    });
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByText('Google')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getAllByRole('button', { name: /manage assets/i })[1]);
+
+    expect(
+      await screen.findByRole('dialog', { name: /google connection settings/i })
+    ).toBeInTheDocument();
+    expect(await screen.findByText('Google products')).toBeInTheDocument();
+  });
+
+  it('loads the manual invitation modal when connecting a manual-invite platform', async () => {
+    (global.fetch as any)
+      .mockResolvedValueOnce(mockJsonResponse({ data: [{ id: 'test-agency-id' }] }))
+      .mockResolvedValueOnce(
+        mockJsonResponse({
+          data: [
+            { platform: 'kit', name: 'Kit', category: 'other', connected: false },
+          ],
+        })
+      );
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByText('Kit')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /connect/i }));
+
+    expect(await screen.findByText('Connect Kit')).toBeInTheDocument();
+    expect(screen.getByText('Team invitation setup')).toBeInTheDocument();
+  });
+
   // TODO: Loading state depends on agencyId + platforms query timing; mock chain can be flaky
   it.skip('should show loading indicator while platforms are fetching', async () => {
     (global.fetch as any).mockImplementation((url: string) => {

@@ -21,21 +21,81 @@
 'use client';
 
 import { Component, type ErrorInfo, type ReactNode, useEffect } from 'react';
+import nextDynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@clerk/nextjs';
 import { AlertCircle } from 'lucide-react';
 import { UnifiedWizard } from '@/components/onboarding/unified-wizard';
 import { UnifiedOnboardingProvider, useUnifiedOnboarding } from '@/contexts/unified-onboarding-context';
-import { WelcomeScreen } from '@/components/onboarding/screens/welcome-screen';
-import { AgencyProfileScreen } from '@/components/onboarding/screens/agency-profile-screen';
-import { ClientSelectionScreen } from '@/components/onboarding/screens/client-selection-screen';
-import { PlatformSelectionScreen } from '@/components/onboarding/screens/platform-selection-screen';
-import { SuccessLinkScreen } from '@/components/onboarding/screens/success-link-screen';
-import { TeamInviteScreen } from '@/components/onboarding/screens/team-invite-screen';
-import { FinalSuccessScreen } from '@/components/onboarding/screens/final-success-screen';
 import { ONBOARDING_TOTAL_STEPS } from '@/lib/onboarding-steps';
 
 const DASHBOARD_ONBOARDING_RECOVERY_URL = '/dashboard?onboardingRecovery=1';
+
+function onboardingScreenFallback(label: string) {
+  return (
+    <div
+      className="min-h-[220px] rounded-xl border border-border bg-muted/25"
+      aria-busy
+      aria-label={label}
+    />
+  );
+}
+
+const WelcomeScreen = nextDynamic(
+  () =>
+    import('@/components/onboarding/screens/welcome-screen').then((m) => ({
+      default: m.WelcomeScreen,
+    })),
+  { loading: () => onboardingScreenFallback('Loading welcome') }
+);
+
+const AgencyProfileScreen = nextDynamic(
+  () =>
+    import('@/components/onboarding/screens/agency-profile-screen').then((m) => ({
+      default: m.AgencyProfileScreen,
+    })),
+  { loading: () => onboardingScreenFallback('Loading agency profile') }
+);
+
+const ClientSelectionScreen = nextDynamic(
+  () =>
+    import('@/components/onboarding/screens/client-selection-screen').then((m) => ({
+      default: m.ClientSelectionScreen,
+    })),
+  { loading: () => onboardingScreenFallback('Loading client setup') }
+);
+
+const PlatformSelectionScreen = nextDynamic(
+  () =>
+    import('@/components/onboarding/screens/platform-selection-screen').then((m) => ({
+      default: m.PlatformSelectionScreen,
+    })),
+  { loading: () => onboardingScreenFallback('Loading platform selection') }
+);
+
+const SuccessLinkScreen = nextDynamic(
+  () =>
+    import('@/components/onboarding/screens/success-link-screen').then((m) => ({
+      default: m.SuccessLinkScreen,
+    })),
+  { loading: () => onboardingScreenFallback('Loading access link') }
+);
+
+const TeamInviteScreen = nextDynamic(
+  () =>
+    import('@/components/onboarding/screens/team-invite-screen').then((m) => ({
+      default: m.TeamInviteScreen,
+    })),
+  { loading: () => onboardingScreenFallback('Loading team invite') }
+);
+
+const FinalSuccessScreen = nextDynamic(
+  () =>
+    import('@/components/onboarding/screens/final-success-screen').then((m) => ({
+      default: m.FinalSuccessScreen,
+    })),
+  { loading: () => onboardingScreenFallback('Loading onboarding success') }
+);
 
 // ============================================================
 // ONBOARDING FLOW COMPONENT
