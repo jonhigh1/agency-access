@@ -64,6 +64,14 @@
     /* BORDERS & SHADOWS */
     --border-hard: 0 0 0;           /* #000000 - Pure black borders */
     --shadow-hard: 0 0 0;           /* Pure black for hard shadows */
+
+    /* Functional motion tokens: fast feedback, restrained surfaces. */
+    --motion-press: 100ms;
+    --motion-hover: 150ms;
+    --motion-surface-enter: 180ms;
+    --motion-surface-exit: 120ms;
+    --motion-modal-enter: 250ms;
+    --motion-modal-exit: 150ms;
   }
 
   .dark {
@@ -158,7 +166,7 @@
     @apply focus:border-coral focus:outline-none;
     @apply focus-visible:outline-[3px] focus-visible:outline-coral/25;
     box-shadow: 0 0 0 0 rgb(var(--primary) / 0);
-    transition: border-color 150ms ease, box-shadow 150ms ease;
+    transition: border-color 150ms ease, background-color 150ms ease, color 150ms ease;
   }
 
   input:focus-visible,
@@ -542,6 +550,10 @@
 
   /* Respect User's Motion Preferences */
   @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
     *,
     *::before,
     *::after {

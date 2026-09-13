@@ -1,6 +1,6 @@
 'use client';
 
-import { LazyMotion, domAnimation } from 'framer-motion';
+import { LazyMotion, MotionConfig, domAnimation } from 'framer-motion';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useState } from 'react';
 import { ThemeProvider } from '@/components/theme-provider';
@@ -22,9 +22,11 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
 
   return (
     <LazyMotion features={domAnimation} strict>
-      <QueryClientProvider client={queryClient}>
-        <ThemeProvider>{children}</ThemeProvider>
-      </QueryClientProvider>
+      <MotionConfig reducedMotion="user">
+        <QueryClientProvider client={queryClient}>
+          <ThemeProvider>{children}</ThemeProvider>
+        </QueryClientProvider>
+      </MotionConfig>
     </LazyMotion>
   );
 }
