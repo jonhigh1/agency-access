@@ -2,20 +2,18 @@ import { render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { UsageOverviewCard } from '../usage-overview-card';
 
-const mockUseQuota = vi.fn();
+const mockUseTierDetails = vi.fn();
 const mockUseAuth = vi.fn();
 
-vi.mock('@/lib/query/quota', () => ({
-  useQuota: () => mockUseQuota(),
+vi.mock('@/lib/query/billing', () => ({
+  useTierDetails: () => mockUseTierDetails(),
 }));
 
 vi.mock('@clerk/nextjs', () => ({
   useAuth: () => mockUseAuth(),
 }));
 
-const quota = {
-  currentTier: 'GROWTH',
-  updatedAt: new Date(),
+const limits = {
   clients: { limit: 10, used: 2, remaining: 8 },
   members: { limit: 5, used: 1, remaining: 4 },
   accessRequests: { limit: 20, used: 3, remaining: 17 },
@@ -29,7 +27,7 @@ describe('UsageOverviewCard', () => {
   });
 
   it('renders one row per metric and hides templates when unlimited', () => {
-    mockUseQuota.mockReturnValue({ data: quota, isLoading: false, isError: false });
+    mockUseTierDetails.mockReturnValue({ data: { tier: 'GROWTH', status: 'active', limits, features: [] }, isLoading: false, isError: false });
 
     render(<UsageOverviewCard />);
 
@@ -45,8 +43,8 @@ describe('UsageOverviewCard', () => {
   });
 
   it('renders a templates row when the limit is a number', () => {
-    mockUseQuota.mockReturnValue({
-      data: { ...quota, templates: { limit: 5, used: 4, remaining: 1 } },
+    mockUseTierDetails.mockReturnValue({
+      data: { tier: 'GROWTH', status: 'active', limits: { ...limits, templates: { limit: 5, used: 4, remaining: 1 } }, features: [] },
       isLoading: false,
       isError: false,
     });
@@ -58,25 +56,25 @@ describe('UsageOverviewCard', () => {
   });
 
   it('links to the billing tab', () => {
-    mockUseQuota.mockReturnValue({ data: quota, isLoading: false, isError: false });
+    mockUseTierDetails.mockReturnValue({ data: { tier: 'GROWTH', status: 'active', limits, features: [] }, isLoading: false, isError: false });
 
     render(<UsageOverviewCard />);
 
     expect(screen.getByRole('link', { name: /billing/i })).toHaveAttribute('href', '/settings?tab=billing');
   });
 
-  it('renders the organization-context row when orgId is null', () => {
+  it('renders usage for a personal principal with no orgId (same source as Billing)', () => {
     mockUseAuth.mockReturnValue({ orgId: null, userId: 'user_1' });
-    mockUseQuota.mockReturnValue({ data: undefined, isLoading: false, isError: false });
+    mockUseTierDetails.mockReturnValue({ data: { tier: null, status: 'free', limits, features: [] }, isLoading: false, isError: false });
 
     render(<UsageOverviewCard />);
 
-    expect(screen.getByText(/requires an active organization context/i)).toBeInTheDocument();
-    expect(screen.getAllByTestId('settings-row')).toHaveLength(1);
+    expect(screen.getByText('2 of 10')).toBeInTheDocument();
+    expect(screen.queryByText(/requires an active organization context/i)).toBeNull();
   });
 
   it('renders the error copy with the danger ink token', () => {
-    mockUseQuota.mockReturnValue({ data: undefined, isLoading: false, isError: true });
+    mockUseTierDetails.mockReturnValue({ data: undefined, isLoading: false, isError: true });
 
     render(<UsageOverviewCard />);
 
@@ -85,7 +83,7 @@ describe('UsageOverviewCard', () => {
   });
 
   it('renders square skeleton rows while loading', () => {
-    mockUseQuota.mockReturnValue({ data: undefined, isLoading: true, isError: false });
+    mockUseTierDetails.mockReturnValue({ data: undefined, isLoading: true, isError: false });
 
     const { container } = render(<UsageOverviewCard />);
 
