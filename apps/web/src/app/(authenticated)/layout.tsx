@@ -327,8 +327,8 @@ function AuthenticatedLayoutInner({
               <span
                 aria-hidden={!open}
                 className={cn(
-                  'inline-block origin-left overflow-hidden whitespace-nowrap text-xl font-semibold text-foreground transition-all duration-200 motion-reduce:transition-none',
-                  open ? 'scale-x-100 opacity-100' : 'pointer-events-none scale-x-0 opacity-0'
+                  'inline-block overflow-hidden whitespace-nowrap text-xl font-semibold text-foreground transition-opacity duration-150 motion-reduce:transition-none',
+                  open ? 'opacity-100' : 'pointer-events-none opacity-0'
                 )}
               >
                 AuthHub
