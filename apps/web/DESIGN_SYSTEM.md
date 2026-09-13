@@ -278,12 +278,50 @@ Defined and ready; adoption is planned — no consumer wired yet.
 ### Philosophy
 
 Functional motion only. One hero moment, honest feedback, no decoration for its
-own sake.
+own sake. Three app motion families cover nearly every screen — **press**,
+**surface**, and **state change**. Anything beyond them needs a reason.
 
-- **Reveals**: 450ms, `cubic-bezier(0.2, 0.8, 0.3, 1)` — decel with a settle
-- **Hovers**: 150ms — instant feedback
+- **Reveals (marketing)**: 450ms, `cubic-bezier(0.2, 0.8, 0.3, 1)` — decel with a
+  settle. Never reuse as a default dashboard transition.
+- **Hovers**: 150ms — instant feedback, fine-pointer only
 - **Continuous**: `animate-marquee` (proof strips) + `animate-float-pillar`
   (homepage hero) — that is the complete list
+
+### App motion contract (v2.3)
+
+Semantic timing tokens live in `globals.css`. Use the token; don't hardcode a
+nearby number.
+
+| Token | Value | Use |
+| --- | --- | --- |
+| `--motion-press` | 100ms | Press response |
+| `--motion-hover` | 150ms | Hover / release |
+| `--motion-surface-enter` | 180ms | Dropdown, tooltip, popover |
+| `--motion-surface-exit` | 120ms | Same surfaces, exit |
+| `--motion-modal-enter` | 250ms | Modal, mobile navigation |
+| `--motion-modal-exit` | 150ms | Same overlays, exit |
+
+- **Immediate (0ms)**: keyboard actions, focus, error text, typing, selection.
+  Focus indicators never fade or transition in.
+- **State feedback (150ms)**: copy confirmation, status change inside a stable
+  slot.
+- **Rare completion (≤300ms)**: one check or local accent after a confirmed
+  milestone. No route delay, no confetti.
+- **Ease**: `cubic-bezier(0.22, 1, 0.36, 1)` for surfaces and feedback. No
+  ease-in, no overshoot, for ordinary app controls.
+
+Rules:
+
+1. **Keyboard-initiated transitions finish instantly.** Detect keyboard
+   activation locally at the interaction boundary; no global input tracking.
+   Async work may still show a static pending label (`aria-busy`).
+2. **Animate transform and opacity.** Small color transitions are acceptable for
+   feedback. Width, blur, and clip effects need a local profile and browser
+   check before use. No global `will-change`.
+3. **Motion follows state, truthfully.** Success appears only after
+   confirmation; pending work cannot submit twice.
+4. **Feedback sits on the control, not the container.** Cards, rows, and panels
+   are static; hover/press feedback belongs to links and buttons.
 
 ### Removed in v2.0
 
@@ -295,7 +333,7 @@ growth, `scaleUp`, `scroll-left-slow`.
 
 1. Respect `prefers-reduced-motion` — built into all animations
 2. Wait for `animations-ready` — no SSR mismatch
-3. CSS over JS
+3. CSS over JS (Motion for lifecycle and gestures only; no second runtime)
 4. One hero animation per page
 5. Use the `Reveal` component — never raw `reveal-element` classes
 6. No hover on containers holding interactive elements
@@ -332,7 +370,12 @@ Two-ring system everywhere (buttons, inputs): inner 3px coral stroke + outer
 
 ### Motion Preferences
 
-`prefers-reduced-motion` collapses all animation — unchanged from v1.x.
+`prefers-reduced-motion` removes spatial animation and decorative loops;
+feedback stays clear through text and icons. `MotionConfig
+reducedMotion="user"` in `app-providers.tsx` covers Motion components; CSS,
+custom effects, and decorative loops still need their own effective checks.
+Verify after `animations-ready` is set and while the OS setting changes —
+not only at initial render.
 
 ---
 
@@ -379,6 +422,35 @@ Run: `npm run test --workspace=apps/web`. Visual reference: `/design-system`.
 | `~/Desktop/lazyweb.com-design-kit/` | The reference extraction (brief, tokens, scaffold) |
 
 ## Changelog
+
+### v2.3.0 (September 13, 2026) — App craft: motion contract + control completion
+
+- **App motion contract.** Semantic timing tokens land in `globals.css`
+  (`--motion-press/hover`, `--motion-surface-enter/exit`,
+  `--motion-modal-enter/exit`) with three motion families — press, surface,
+  state change. Keyboard-initiated transitions finish instantly; focus never
+  fades; motion animates transform/opacity only. See *Animation System → App
+  motion contract (v2.3)*.
+- **Reduced motion is one contract.** `MotionConfig reducedMotion="user"` wraps
+  the app in `app-providers.tsx`; CSS adds `scroll-behavior: auto` under reduced
+  motion. Verify while the OS setting changes, after `animations-ready`.
+- **Focus transitions enumerated.** Button and `.hover-lift-brutalist` drop
+  `transition-all`; focus rings appear with no transition. Form fields
+  transition color, not box-shadow.
+- **Buttons hold geometry while pending.** Label stays in place (invisible),
+  spinner overlays, `aria-busy` only while pending — no "Loading..." label swap.
+- **SingleSelect is a real select.** Arrow/Home/End/Enter/Space/Escape, listbox
+  + option ARIA, scroll/resize anchoring, trigger focus return. Documented on
+  the showcase's Form Controls section.
+- **One modal lifecycle owner.** `ManageAssetsModalShell` owns mount/exit;
+  callers render conditionally instead of wrapping in their own presence
+  boundary. `EditClientModal` closes on verified save (no forced dwell), gains
+  dialog roles, Escape handling, and a square surface.
+- **List containers are border-led.** Client cards lost resting shadows and
+  container hover motion; feedback lives on links and buttons
+  (`clients` design test pins the contract).
+- **Showcase**: form-controls section, success/danger ink swatches, corrected
+  font names, quiet-surface example.
 
 ### v2.2.0 (September 12, 2026) — Icon chips square + button cohesion sweep
 - **Platform logo chips are square.** Brandfetch logos are square assets; the
