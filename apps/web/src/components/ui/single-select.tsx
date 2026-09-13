@@ -9,7 +9,7 @@
  */
 
 import { ChevronDown, Check } from 'lucide-react';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useId } from 'react';
 import { createPortal } from 'react-dom';
 import { cn } from '@/lib/utils';
 
@@ -41,20 +41,36 @@ export function SingleSelect({
 }: SingleSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [position, setPosition] = useState({ top: 0, left: 0, width: 0 });
+  const [activeIndex, setActiveIndex] = useState(() => Math.max(0, options.findIndex((option) => option.value === value)));
+  const selectId = useId().replace(/:/g, '');
   const triggerRef = useRef<HTMLDivElement>(null);
+  const triggerButtonRef = useRef<HTMLButtonElement>(null);
   const dropdownRef = useRef<HTMLDivElement | null>(null);
 
   const selectedOption = options.find((opt) => opt.value === value);
   const displayLabel = selectedOption?.label ?? placeholder;
+  const listboxId = `${selectId}-listbox`;
+  const optionId = (optionValue: string) => `${selectId}-option-${encodeURIComponent(optionValue)}`;
 
   useEffect(() => {
-    if (isOpen && triggerRef.current && typeof document !== 'undefined') {
+    const updatePosition = () => {
+      if (!triggerRef.current) return;
       const rect = triggerRef.current.getBoundingClientRect();
       setPosition({
         top: rect.bottom + 4,
         left: rect.left,
         width: rect.width,
       });
+    };
+
+    if (isOpen && typeof document !== 'undefined') {
+      updatePosition();
+      window.addEventListener('resize', updatePosition);
+      window.addEventListener('scroll', updatePosition, true);
+      return () => {
+        window.removeEventListener('resize', updatePosition);
+        window.removeEventListener('scroll', updatePosition, true);
+      };
     }
   }, [isOpen]);
 
@@ -75,14 +91,54 @@ export function SingleSelect({
   const handleSelect = (option: SingleSelectOption) => {
     onChange(option.value, option.label);
     setIsOpen(false);
+    triggerButtonRef.current?.focus();
+  };
+
+  const open = (index = Math.max(0, options.findIndex((option) => option.value === value))) => {
+    if (options.length === 0) return;
+    setActiveIndex(index);
+    setIsOpen(true);
+  };
+
+  const handleTriggerKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>) => {
+    if (disabled) return;
+
+    if (!isOpen && (event.key === 'ArrowDown' || event.key === 'Enter' || event.key === ' ')) {
+      event.preventDefault();
+      const selectedIndex = Math.max(0, options.findIndex((option) => option.value === value));
+      open(event.key === 'ArrowDown' ? (selectedIndex + 1) % options.length : undefined);
+      return;
+    }
+
+    if (event.key === 'Escape') {
+      if (isOpen) event.preventDefault();
+      setIsOpen(false);
+      triggerButtonRef.current?.focus();
+      return;
+    }
+
+    if (!isOpen) return;
+
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      setActiveIndex((index) => (index + (event.key === 'ArrowDown' ? 1 : -1) + options.length) % options.length);
+    } else if (event.key === 'Home' || event.key === 'End') {
+      event.preventDefault();
+      setActiveIndex(event.key === 'Home' ? 0 : options.length - 1);
+    } else if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      const activeOption = options[activeIndex];
+      if (activeOption) handleSelect(activeOption);
+    }
   };
 
   const dropdownContent = isOpen && !disabled && typeof document !== 'undefined' && (
     <div
       ref={dropdownRef}
-      className="fixed z-[100] bg-white dark:bg-ink border border-border dark:border-white/30 rounded-md shadow-brutalist-sm overflow-auto max-h-[280px] py-1"
+      id={listboxId}
+      className="fixed z-[100] origin-top bg-white dark:bg-ink border border-border dark:border-white/30 rounded-none shadow-brutalist-sm overflow-auto max-h-[280px] py-1"
       role="listbox"
-      aria-activedescendant={value ? `option-${value}` : undefined}
+      aria-activedescendant={options[activeIndex] ? optionId(options[activeIndex].value) : undefined}
       style={{
         top: position.top,
         left: position.left,
@@ -95,17 +151,19 @@ export function SingleSelect({
         return (
           <button
             key={option.value}
-            id={`option-${option.value}`}
+            id={optionId(option.value)}
             type="button"
             onClick={() => handleSelect(option)}
             role="option"
             aria-selected={isSelected}
+            data-active={activeIndex === options.indexOf(option) ? 'true' : undefined}
             className={cn(
               'w-full px-3 py-2.5 text-left text-sm flex items-center justify-between gap-3',
-              'transition-colors cursor-pointer',
-              isSelected
-                ? 'bg-accent/20 dark:bg-accent/30 text-ink dark:text-ink font-medium'
-                : 'text-ink dark:text-ink hover:bg-coral/10 dark:hover:bg-white/10'
+            'transition-[background-color,color] duration-150 cursor-pointer',
+            isSelected
+              ? 'bg-accent/20 dark:bg-accent/30 text-ink dark:text-ink font-medium'
+                : 'text-ink dark:text-ink hover:bg-coral/10 dark:hover:bg-white/10',
+              activeIndex === options.indexOf(option) && 'bg-coral/10 dark:bg-white/10'
             )}
           >
             <span className="flex-1 truncate">{option.label}</span>
@@ -122,18 +180,25 @@ export function SingleSelect({
     <>
       <div ref={triggerRef} className={cn('relative', className)}>
         <button
+          ref={triggerButtonRef}
           type="button"
           role="combobox"
-          onClick={() => !disabled && setIsOpen(!isOpen)}
+          onClick={() => {
+            if (disabled) return;
+            if (isOpen) setIsOpen(false);
+            else open();
+          }}
           disabled={disabled}
           aria-haspopup="listbox"
           aria-expanded={isOpen}
+          aria-controls={listboxId}
+          onKeyDown={handleTriggerKeyDown}
           aria-label={ariaLabel ?? displayLabel}
           className={cn(
             'w-full min-h-[44px] px-3 py-2 pr-5 flex items-center justify-between gap-2',
-            'border border-border rounded-md text-sm text-ink',
+            'border border-border rounded-none text-sm text-ink',
             'focus:outline-none focus:ring-2 focus:ring-[rgb(var(--coral))] focus:border-[rgb(var(--coral))]',
-            'transition-all appearance-none cursor-pointer',
+            'transition-[border-color,background-color] duration-150 appearance-none cursor-pointer',
             disabled
               ? 'bg-muted/30 cursor-not-allowed opacity-70 dark:bg-muted/50'
               : 'bg-white dark:bg-ink hover:border-border/80 dark:border-white/30',
@@ -146,7 +211,7 @@ export function SingleSelect({
           </span>
           <ChevronDown
             className={cn(
-              'h-4 w-4 text-muted-foreground flex-shrink-0 transition-transform',
+              'h-4 w-4 text-muted-foreground flex-shrink-0 transition-transform duration-150',
               isOpen && 'rotate-180'
             )}
           />
