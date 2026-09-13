@@ -23,7 +23,16 @@ Publish = commit to `main` → Vercel auto-deploy. One commit per post.
 - [x] Shipped: commit `f86ab29` → build gate passed → live title verified in HTML
 - [ ] **Follow-up (deferred, needs TDD):** FAQPage JSON-LD schema in blog post page — parse FAQ Q&As from content or optional `faqs` frontmatter; write failing test first. Benefits all posts with FAQ sections.
 
+### A3. BOFU referee post — Leadsie vs AgencyAccess ✅ (added 9/13, out-of-plan)
+- [x] BOFU discovery: provider keyword-research unavailable (no provider installed — needs Jon's terminal approval); used GSC first-party (community-intent: `leadsie alternative(s)` = only classified BOFU cluster, pos 6.5) + live SERP checks for `leadsie review` / `leadsie alternatives` / `agencyaccess alternative` / `leadsie vs agencyaccess`
+- [x] Page-one extraction: AgencyAccess's Feb vs-post is the only ranker; extracted its structure (workflows, feature diff, pricing tables, who-should-choose); our 3-way post carries the intent but doesn't rank
+- [x] Written: `leadsie-vs-agencyaccess` (1,837 words, 9/10 rubric) — neutral referee angle, 60-second verdict table, "what neither vendor puts on the pricing page" section, honest third-option framing, G2-cited review discrepancy (4.9/55+ claim vs 4.8/66 on G2)
+- [x] Pricing fact-check caught source drift: Leadsie live = $49/$107/$299 with $50 overage blocks (AA's Feb post quotes stale $99/$249/$30; the 3-way post's Sep 8 figures were right). AA live: $44/$99/$199, $33/$74/$149 annual ✓
+- [x] Shipped: calendar item 10, tracker rows (`leadsie vs agencyaccess`, `agencyaccess alternative`), strategy inventory → 22
+- [ ] Deferred: `leadsie review` standalone post (G2 + vendor pages own the SERP; revisit only if the compare page stalls) · provider install for volume data · `/compare/authhub-vs-leadsie` tracker target 404s (covered by 3-way post + compare page instead)
+
 ## Phase B — Week 2 (Sep 15–21)
+
 - [ ] B1. GTM Access for Agencies (`gtm-access-agencies`) — full pipeline
 - [ ] B2. Microsoft Ads Access for Agencies (`microsoft-ads-access-agencies`) — full pipeline
 

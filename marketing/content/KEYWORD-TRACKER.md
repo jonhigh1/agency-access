@@ -29,6 +29,8 @@
 | linkedin campaign manager access | ~100-200 | N/A | Top 5 | /guides/linkedin-ads-access | P1 |
 | snapchat business manager | ~9,900 | N/A | Top 10 | /blog/snapchat-ads-access-agencies | P1 |
 | snapchat ad account access | long-tail | N/A | Top 10 | /blog/snapchat-ads-access-agencies | P1 |
+| leadsie vs agencyaccess | long-tail | N/A | Top 3 | /blog/leadsie-vs-agencyaccess | P1 |
+| agencyaccess alternative | long-tail | N/A | Top 5 | /compare/agencyaccess-alternative | P1 |
 
 ### Tier 3: Educational/Top of Funnel (P1-P2)
 

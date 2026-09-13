@@ -60,6 +60,7 @@ All trending up. One page-2 push = multiple page-one terms:
 | # | Piece | Slug | Type | Target + data |
 |---|---|---|---|---|
 | 3 | **Google Tag Manager Access for Agencies (2026)** | `gtm-access-agencies` | Blog guide | `gtm agency` 720/mo MEDIUM + `google tag manager agency` 90/mo LOW at **$52 CPC** (commercial intent). Container permissions, publish rights, version history. |
+| 10 | **Leadsie vs AgencyAccess referee post** ✅ published 9/13 *(added 9/13 — live-SERP gap)* | `leadsie-vs-agencyaccess` | Blog comparison | Only AgencyAccess's own vs-post ranks for the pairwise BOFU term; our 3-way post doesn't. Pricing verified live Sep 13 (Leadsie $49/$107/$299 + $50 overage blocks; AA $44/$99/$199, $33/$74/$149 annual). Neutrally framed, G2-cited, feeds both compare pages with exact anchors. |
 | 4 | **Microsoft Ads Access for Agencies (2026)** | `microsoft-ads-access-agencies` | Blog guide | Volume below provider threshold, but SERP has zero agency-focused guides — only Microsoft docs. Cheap long-tail win. Agency Center, customer ID linking, MCA structure. |
 
 ### Week 3 — Sep 22–28
