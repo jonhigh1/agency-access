@@ -10,7 +10,7 @@
 
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@clerk/nextjs';
 import {
@@ -44,13 +44,39 @@ type TokenHealth = {
 
 type HealthFilter = 'all' | 'healthy' | 'expiring' | 'expired';
 
+const HEALTH_FILTER_OPTIONS: { value: HealthFilter; label: string }[] = [
+  { value: 'all', label: 'All Tokens' },
+  { value: 'healthy', label: 'Healthy' },
+  { value: 'expiring', label: 'Expiring Soon' },
+  { value: 'expired', label: 'Expired' },
+];
+
+function healthFilterLabel(filter: HealthFilter): string {
+  switch (filter) {
+    case 'all':
+      return 'All Tokens';
+    case 'healthy':
+      return 'Healthy';
+    case 'expiring':
+      return 'Expiring Soon';
+    case 'expired':
+      return 'Expired';
+    default: {
+      const _exhaustive: never = filter;
+      return _exhaustive;
+    }
+  }
+}
+
 export default function TokenHealthPage() {
   const { getToken, isLoaded, isSignedIn } = useAuth();
   const [tokens, setTokens] = useState<TokenHealth[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<HealthFilter>('all');
+  const [filterOpen, setFilterOpen] = useState(false);
   const [refreshing, setRefreshing] = useState<Set<string>>(new Set());
+  const filterRef = useRef<HTMLDivElement>(null);
 
   const getAuthHeaders = useCallback(async (): Promise<Record<string, string>> => {
     const token = await getToken();
@@ -95,6 +121,28 @@ export default function TokenHealthPage() {
     }
   }, [fetchTokenHealth, isLoaded, isSignedIn]);
 
+  useEffect(() => {
+    if (!filterOpen) return;
+
+    const handlePointerDown = (event: MouseEvent) => {
+      if (filterRef.current && !filterRef.current.contains(event.target as Node)) {
+        setFilterOpen(false);
+      }
+    };
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setFilterOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [filterOpen]);
+
   const handleRefresh = async (tokenId: string, platform: Platform, refetch = true) => {
     setRefreshing((prev) => new Set(prev).add(tokenId));
     try {
@@ -136,6 +184,8 @@ export default function TokenHealthPage() {
     if (filter === 'all') return true;
     return token.health === filter;
   });
+
+  const filterLabel = healthFilterLabel(filter);
 
   const stats = {
     total: tokens.length,
@@ -196,40 +246,47 @@ export default function TokenHealthPage() {
         {/* Actions Bar */}
         <div className="flex items-center justify-between mb-6">
           {/* Filter Dropdown */}
-          <div className="relative">
-            <button className="inline-flex items-center gap-2 px-4 py-2 bg-card border border-border rounded-lg hover:bg-background transition-colors">
-              <Filter className="h-4 w-4" />
-              <span>
-                {filter === 'all'
-                  ? 'All Tokens'
-                  : filter === 'healthy'
-                    ? 'Healthy'
-                    : filter === 'expiring'
-                      ? 'Expiring Soon'
-                      : 'Expired'}
-              </span>
-              <ChevronDown className="h-4 w-4" />
+          <div className="relative" ref={filterRef}>
+            <button
+              type="button"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-card border border-border rounded-lg hover:bg-background transition-colors"
+              aria-label={`Filter tokens: ${filterLabel}`}
+              aria-haspopup="listbox"
+              aria-expanded={filterOpen}
+              aria-controls="token-health-filter-menu"
+              onClick={() => setFilterOpen((open) => !open)}
+            >
+              <Filter className="h-4 w-4" aria-hidden="true" />
+              <span>{filterLabel}</span>
+              <ChevronDown className="h-4 w-4" aria-hidden="true" />
             </button>
 
-            {/* Dropdown Menu */}
-            <div className="absolute top-full left-0 mt-2 w-48 bg-card border border-border rounded-lg shadow-sm overflow-hidden z-10">
-              {[
-                { value: 'all', label: 'All Tokens' },
-                { value: 'healthy', label: 'Healthy' },
-                { value: 'expiring', label: 'Expiring Soon' },
-                { value: 'expired', label: 'Expired' },
-              ].map((f) => (
-                <button
-                  key={f.value}
-                  onClick={() => setFilter(f.value as HealthFilter)}
-                  className={`w-full text-left px-4 py-2 hover:bg-background transition-colors ${
-                    filter === f.value ? 'bg-slate-100 font-medium' : ''
-                  }`}
-                >
-                  {f.label}
-                </button>
-              ))}
-            </div>
+            {filterOpen && (
+              <div
+                id="token-health-filter-menu"
+                role="listbox"
+                aria-label="Token health filters"
+                className="absolute top-full left-0 mt-2 w-48 bg-card border border-border rounded-lg shadow-sm overflow-hidden z-10"
+              >
+                {HEALTH_FILTER_OPTIONS.map((f) => (
+                  <button
+                    key={f.value}
+                    type="button"
+                    role="option"
+                    aria-selected={filter === f.value}
+                    onClick={() => {
+                      setFilter(f.value);
+                      setFilterOpen(false);
+                    }}
+                    className={`w-full text-left px-4 py-2 hover:bg-background transition-colors ${
+                      filter === f.value ? 'bg-slate-100 font-medium' : ''
+                    }`}
+                  >
+                    {f.label}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Refresh All Expiring */}
