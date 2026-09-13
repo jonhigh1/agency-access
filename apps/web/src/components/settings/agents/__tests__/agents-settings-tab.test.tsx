@@ -136,7 +136,8 @@ describe('AgentsSettingsTab', () => {
     const { container } = renderTab();
     expect(await screen.findByText('No agents connected')).toBeInTheDocument();
     expect(screen.getByText(/no agent can/i)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'How to connect an agent' })).toBeInTheDocument();
+    const docsLink = screen.getByRole('link', { name: 'How to connect an agent' });
+    expect(docsLink).toHaveAttribute('href', expect.stringMatching(/\/agentic-workflows\/connect-an-agent$/));
     expect(screen.getAllByText(/copy endpoint/i)).toHaveLength(1);
     expect(container.querySelector('[class*="border-dashed"]')).toBeNull();
   });

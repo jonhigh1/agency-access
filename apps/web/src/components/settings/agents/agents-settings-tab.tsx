@@ -136,7 +136,7 @@ export function AgentsSettingsTab() {
             description="Until you approve one, no agent can read or prepare anything for this workspace."
           >
             <a
-              href={getDocsUrl('/agents')}
+              href={getDocsUrl('/agentic-workflows/connect-an-agent')}
               target="_blank"
               rel="noreferrer"
               className="inline-flex min-h-[44px] items-center text-sm font-semibold text-ink underline underline-offset-4 hover:text-danger-ink"
