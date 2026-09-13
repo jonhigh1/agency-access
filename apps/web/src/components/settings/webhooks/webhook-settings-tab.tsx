@@ -21,6 +21,7 @@ import {
   upsertWebhookEndpoint,
 } from '@/lib/api/webhooks';
 import { SettingsGroup, SettingsRow } from '../settings-row';
+import { StatusBar } from '../status-bar';
 import { WebhookDeliveryInspector } from './webhook-delivery-inspector';
 import { WebhookStatusBadge } from './webhook-status-badge';
 
@@ -297,16 +298,16 @@ export function WebhookSettingsTab() {
   const stripUrl = endpoint ? endpoint.url : endpointQuery.isSuccess ? EMPTY_ENDPOINT_COPY : '—';
 
   const endpointStrip = (
-    <div className="ink-panel p-6">
-      <span className="label-micro">Endpoint</span>
-      <p className="mt-2 break-all text-sm">{stripUrl}</p>
-      <div className="mt-4 flex flex-wrap items-center gap-x-6 gap-y-2">
-        {endpoint ? <WebhookStatusBadge status={endpoint.status} /> : <span className="label-nano">Status —</span>}
-        <span className="label-nano">Last delivery {endpoint ? formatDateTime(endpoint.lastDeliveredAt) : '—'}</span>
-        <span className="label-nano">Failures {endpoint ? endpoint.failureCount : '—'}</span>
-        {endpoint?.secretLastFour && <span className="label-nano">Secret ••••{endpoint.secretLastFour}</span>}
-      </div>
-    </div>
+    <StatusBar
+      label="Endpoint"
+      items={[
+        { label: 'URL', value: stripUrl },
+        { label: 'Status', value: endpoint ? <WebhookStatusBadge status={endpoint.status} /> : null },
+        { label: 'Last delivery', value: endpoint ? formatDateTime(endpoint.lastDeliveredAt) : null },
+        { label: 'Failures', value: endpoint ? String(endpoint.failureCount) : null },
+        ...(endpoint?.secretLastFour ? [{ label: 'Secret', value: `••••${endpoint.secretLastFour}` }] : []),
+      ]}
+    />
   );
 
   let body: React.ReactNode;

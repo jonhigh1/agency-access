@@ -101,6 +101,12 @@ describe('SettingsTabs', () => {
       expect(document.activeElement).toBe(agents);
     });
 
+    it('does not wrap the rail in a scroll container (no stray scrollbar)', () => {
+      renderTabs();
+      const tablist = screen.getByRole('tablist');
+      expect(tablist.className).not.toMatch(/overflow-(x-)?auto|overflow-(x-)?scroll/);
+    });
+
     it('carries the two-ring focus classes on each tab', () => {
       renderTabs();
       for (const tab of screen.getAllByRole('tab')) {
