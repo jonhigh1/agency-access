@@ -72,6 +72,15 @@ Append-only log of what was done each session. Newest first. Read the last 3–5
 - Next steps: fix the pre-existing settings/success test failures; consider
   deleting `components/marketing/hero-copy-rewrite/` experiment.
 
+### Update (same session)
+- Merged `origin/main` (2 conflicts resolved: token-health filter a11y fix
+  kept with contract styling; lazy Clerk imports + Button import combined).
+  Main cleared 10 of the 11 pre-existing settings failures; the last
+  (success-page analytics test) was stale against the PostHog serialization
+  and is fixed here. Post-merge: walker 0, suite 1315/0, typecheck clean
+  (after `prisma generate` in the fresh worktree), build pass. Branch pushed;
+  PR #55 opened against main.
+
 ## Session: 2026-09-13 — Infisical off the Prisma transaction; bounded list APIs
 
 ### What was done
