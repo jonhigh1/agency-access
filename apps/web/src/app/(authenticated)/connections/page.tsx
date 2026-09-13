@@ -22,7 +22,6 @@ import {
   trackOAuthCallbackSuccess,
 } from '@/lib/analytics/oauth-events';
 import { LogoSpinner } from '@/components/ui/logo-spinner';
-import { AnimatePresence } from 'framer-motion';
 import { DEV_BYPASS_TOKEN, useAuthOrBypass } from '@/lib/dev-auth';
 import { useUserAgency } from '@/hooks/use-user-agency';
 import { finalizeMetaBusinessLogin, launchMetaBusinessLogin } from '@/lib/meta-business-login';
@@ -566,32 +565,28 @@ function ConnectionsPageContent() {
       </div>
 
       {/* Meta Unified Settings Modal */}
-      <AnimatePresence>
-        {managingMetaAssets && agencyId && platforms.some(p => p.platform === 'meta' && p.connected) && (
-          <ManageAssetsModalShell
-            isOpen={managingMetaAssets}
-            title="Meta connection settings"
-            description="Control the Business Portfolio and Meta asset types your agency uses when managing delegated access."
-            onClose={() => setManagingMetaAssets(false)}
-          >
-            <MetaUnifiedSettings agencyId={agencyId} />
-          </ManageAssetsModalShell>
-        )}
-      </AnimatePresence>
+      {agencyId && platforms.some(p => p.platform === 'meta' && p.connected) && (
+        <ManageAssetsModalShell
+          isOpen={managingMetaAssets}
+          title="Meta connection settings"
+          description="Control the Business Portfolio and Meta asset types your agency uses when managing delegated access."
+          onClose={() => setManagingMetaAssets(false)}
+        >
+          <MetaUnifiedSettings agencyId={agencyId} />
+        </ManageAssetsModalShell>
+      )}
 
       {/* Google Unified Settings Modal */}
-      <AnimatePresence>
-        {managingGoogleAssets && agencyId && platforms.some(p => p.platform === 'google' && p.connected) && (
-          <ManageAssetsModalShell
-            isOpen={managingGoogleAssets}
-            title="Google connection settings"
-            description="Choose which Google products and accounts are active for delegated access requests."
-            onClose={() => setManagingGoogleAssets(false)}
-          >
-            <GoogleUnifiedSettings agencyId={agencyId} />
-          </ManageAssetsModalShell>
-        )}
-      </AnimatePresence>
+      {agencyId && platforms.some(p => p.platform === 'google' && p.connected) && (
+        <ManageAssetsModalShell
+          isOpen={managingGoogleAssets}
+          title="Google connection settings"
+          description="Choose which Google products and accounts are active for delegated access requests."
+          onClose={() => setManagingGoogleAssets(false)}
+        >
+          <GoogleUnifiedSettings agencyId={agencyId} />
+        </ManageAssetsModalShell>
+      )}
 
       {/* Manual Invitation Modal */}
       {manualInvitationPlatform && agencyId && (
