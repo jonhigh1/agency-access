@@ -201,34 +201,38 @@ export function SuccessStoriesSection() {
 
           {/* Navigation Controls */}
           <div className="flex items-center justify-center gap-3 sm:gap-4 mt-8 sm:mt-12">
-            <button
+            <m.button
               onClick={handlePrev}
-              className="w-12 h-12 bg-card border-2 border-black rounded-[0.75rem] flex items-center justify-center shadow-[4px_4px_0px_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+              whileHover={{ x: 2, y: 2 }}
+              whileTap={{ x: 2, y: 2 }}
+              className="w-12 h-12 bg-card border-2 border-black rounded-none flex items-center justify-center shadow-[4px_4px_0px_#000] hover:shadow-none transition-shadow touch-feedback"
               aria-label="Previous case study"
             >
               <ChevronLeft size={24} className="text-ink" strokeWidth={2.5} />
-            </button>
+            </m.button>
 
             <div className="flex gap-2">
               {CASE_STUDIES.map((_, index) => (
                 <button
                   key={index}
                   onClick={() => setCurrentIndex(index)}
-                  className={`h-2 rounded-[0.5rem] border-2 border-black transition-all ${
-                    index === currentIndex ? 'w-8 bg-coral' : 'w-2 bg-gray-400'
+                  className={`h-2 rounded-none border-2 border-black transition-all ${
+                    index === currentIndex ? 'w-8 bg-coral' : 'w-2 bg-muted'
                   }`}
                   aria-label={`Go to case study ${index + 1}`}
                 />
               ))}
             </div>
 
-            <button
+            <m.button
               onClick={handleNext}
-              className="w-12 h-12 bg-card border-2 border-black rounded-[0.75rem] flex items-center justify-center shadow-[4px_4px_0px_#000] hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+              whileHover={{ x: 2, y: 2 }}
+              whileTap={{ x: 2, y: 2 }}
+              className="w-12 h-12 bg-card border-2 border-black rounded-none flex items-center justify-center shadow-[4px_4px_0px_#000] hover:shadow-none transition-shadow touch-feedback"
               aria-label="Next case study"
             >
               <ChevronRight size={24} className="text-ink" strokeWidth={2.5} />
-            </button>
+            </m.button>
           </div>
         </div>
       </div>

@@ -136,7 +136,7 @@ export function ScheduleDemoModal({ isOpen, onClose }: ScheduleDemoModalProps) {
                 </div>
                 <button
                   onClick={onClose}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors border-2 border-black hover:shadow-brutalist-sm"
+                  className="p-2 rounded-none border-2 border-black hover:bg-muted/10 transition-colors"
                   aria-label="Close modal"
                 >
                   <X className="h-5 w-5 text-ink" />

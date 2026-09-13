@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { m, AnimatePresence } from 'framer-motion';
 import { ChevronDown } from 'lucide-react';
 import { SUPPORTED_PLATFORM_COUNT } from '@agency-platform/shared';
+import { Button } from '@/components/ui/button';
 import { Reveal } from '../reveal';
 
 interface FAQItem {
@@ -104,7 +105,7 @@ export function FAQSection() {
                 {/* Question Button */}
                 <button
                   onClick={() => toggleFAQ(index)}
-                  className="w-full px-6 py-5 flex items-center justify-between text-left hover:bg-gray-50 transition-colors"
+                  className="w-full px-6 py-5 flex items-center justify-between text-left hover:bg-muted/10 transition-colors"
                 >
                   <span className="font-bold text-base sm:text-lg text-ink pr-8">
                     {faq.question}
@@ -114,7 +115,7 @@ export function FAQSection() {
                     transition={{ duration: 0.2 }}
                     className="flex-shrink-0"
                   >
-                    <ChevronDown size={20} className="text-gray-600" />
+                    <ChevronDown size={20} className="text-muted-foreground" />
                   </m.div>
                 </button>
 
@@ -153,14 +154,16 @@ export function FAQSection() {
               <p className="font-mono text-sm text-gray-700 mb-4">
                 Still have questions?
               </p>
-              <a
-                href="#"
-                className="inline-block font-bold uppercase tracking-wider text-xs px-6 py-3 border-2 border-black bg-coral text-white hover:bg-ink hover:shadow-brutalist transition-all duration-200"
-                onClick={handleContactSupportClick}
-                aria-label="Contact support"
+              <Button
+                variant="primary"
+                size="md"
+                asChild
+                className="font-bold uppercase tracking-wider text-xs"
               >
-                Contact Support
-              </a>
+                <a href="#" onClick={handleContactSupportClick} aria-label="Contact support">
+                  Contact Support
+                </a>
+              </Button>
             </div>
           </m.div>
         </Reveal>
