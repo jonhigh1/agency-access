@@ -137,10 +137,10 @@ function ClientsPageContent() {
   }
 
   return (
-    <div className="flex-1 bg-paper p-8">
+    <div className="flex-1 bg-paper p-4 sm:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Page Header */}
-        <div className="mb-8 flex items-center justify-between">
+        <div className="mb-8 flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="font-display text-[clamp(2rem,6vw,3rem)] font-semibold text-foreground leading-tight">
               Clients
@@ -160,7 +160,7 @@ function ClientsPageContent() {
         </div>
 
         {/* Search and Filter Bar */}
-        <div className="mb-8 flex gap-4">
+        <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:gap-4">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
             <input
@@ -168,18 +168,21 @@ function ClientsPageContent() {
               placeholder="Search clients by name, email, or company..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 border border-input bg-background rounded-lg focus:outline-none focus:ring-2 focus:ring-ring focus:border-ring min-h-[44px]"
+              className="w-full min-h-[44px] rounded-none border border-input bg-background py-3 pl-10 pr-4 focus:border-coral focus:outline-none focus-visible:outline-[3px] focus-visible:outline-coral/25 focus-visible:[box-shadow:0_0_0_6px_rgb(var(--primary)/0.08)]"
             />
           </div>
-          <button
+          <Button
+            type="button"
+            variant="secondary"
+            size="md"
             onClick={() => setShowFilters(!showFilters)}
-            className={`px-4 py-3 border border-border rounded-none hover:bg-coral/10 transition-colors flex items-center gap-2 min-h-[44px] ${
+            className={`shrink-0 ${
               showFilters ? 'bg-coral/10' : 'bg-background'
             }`}
           >
             <Filter className="h-5 w-5" />
             Filters
-          </button>
+          </Button>
         </div>
 
         {/* Empty state */}
@@ -194,7 +197,7 @@ function ClientsPageContent() {
 
         {/* No search results */}
         {clients.length === 0 && searchQuery && (
-          <div className="text-center py-12 bg-card rounded-lg shadow-brutalist border border-black/10">
+          <div className="border border-black/10 bg-card py-12 text-center">
             <div className="inline-flex p-4 bg-muted rounded-full mb-4">
               <Search className="h-8 w-8 text-muted-foreground" />
             </div>
@@ -211,7 +214,7 @@ function ClientsPageContent() {
             {clients.map((client: Client) => (
               <div
                 key={client.id}
-                className="bg-card rounded-lg shadow-brutalist border border-black/10 p-6 hover:translate-y-[-1px] hover:shadow-brutalist transition-all duration-300"
+                className="border border-black/10 bg-card p-6"
               >
                 {/* Client Info */}
                 <div className="flex items-start justify-between mb-4">
@@ -312,7 +315,7 @@ export default function ClientsPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex-1 bg-paper p-8">
+    <div className="flex-1 bg-paper p-4 sm:p-8">
           <div className="flex items-center justify-center py-12">
             <LogoSpinner size="md" />
             <span className="ml-2 text-muted-foreground">Loading...</span>

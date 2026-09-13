@@ -23,9 +23,12 @@ describe('Clients Page - Static Design Validation', () => {
     expect(code).not.toMatch(/shadow-\[.*rgb\(var\(/);
   });
 
-  it('should use design system hover pattern for cards', () => {
+  it('should keep client cards border-only and static (feedback on controls, not containers)', () => {
     const code = readComponent();
-    // Cards should either use clean-card (static) or standard hover-lift
-    expect(code).toMatch(/hover:-translate-y-\[1px\]|hover:translate-y-\[-1px\]|clean-card/);
+    // Craft plan P1: list containers are border-led with no resting shadow
+    // or hover motion; interaction feedback lives on links and buttons.
+    expect(code).toMatch(/border border-black\/10 bg-card p-6/);
+    expect(code).not.toMatch(/hover:(?:-)?translate-y/);
+    expect(code).not.toMatch(/transition-all/);
   });
 });

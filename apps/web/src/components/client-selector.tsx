@@ -37,7 +37,8 @@ export function ClientSelector({ onSelect, value }: ClientSelectorProps) {
   const auth = useAuthOrBypass(clerkAuth);
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [createError, setCreateError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState<'existing' | 'new'>('existing');
 
@@ -52,7 +53,7 @@ export function ClientSelector({ onSelect, value }: ClientSelectorProps) {
 
   const loadClients = useCallback(async (query: string, signal: AbortSignal) => {
     setLoading(true);
-    setError(null);
+    setLoadError(null);
 
     try {
       const token = await getToken();
@@ -79,7 +80,7 @@ export function ClientSelector({ onSelect, value }: ClientSelectorProps) {
       setClients(Array.isArray(result) ? result : (result as PaginatedClientsResponse).data || []);
     } catch (err) {
       if (signal.aborted) return;
-      setError(err instanceof Error ? err.message : 'Failed to load clients');
+      setLoadError(err instanceof Error ? err.message : 'Failed to load clients');
     } finally {
       if (!signal.aborted) setLoading(false);
     }
@@ -108,6 +109,7 @@ export function ClientSelector({ onSelect, value }: ClientSelectorProps) {
 
   const handleCreateClient = async () => {
     setFormErrors({});
+    setCreateError(null);
 
     // Validate
     const errors: Record<string, string> = {};
@@ -155,7 +157,7 @@ export function ClientSelector({ onSelect, value }: ClientSelectorProps) {
       onSelect(createdClient);
       refreshClients(); // Refresh client list
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create client');
+      setCreateError(err instanceof Error ? err.message : 'Failed to create client');
     } finally {
       setCreating(false);
     }
@@ -165,10 +167,11 @@ export function ClientSelector({ onSelect, value }: ClientSelectorProps) {
     setActiveTab('existing');
     setNewClient({ name: '', company: '', email: '' });
     setFormErrors({});
+    setCreateError(null);
   };
 
   return (
-    <div className="border border-border rounded-lg overflow-hidden">
+    <div className="overflow-hidden border border-border">
       {/* Tabs */}
       <div className="flex border-b border-border">
         <button
@@ -209,7 +212,7 @@ export function ClientSelector({ onSelect, value }: ClientSelectorProps) {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 aria-label="Search clients"
-                className="w-full pl-11 pr-4 py-2.5 border border-border rounded-lg focus:ring-2 focus:ring-ring focus:border-coral text-base"
+                className="w-full rounded-none border border-border py-2.5 pl-11 pr-4 text-base focus:border-coral focus:outline-none focus-visible:outline-[3px] focus-visible:outline-coral/25 focus-visible:[box-shadow:0_0_0_6px_rgb(var(--primary)/0.08)]"
               />
             </div>
 
@@ -222,7 +225,7 @@ export function ClientSelector({ onSelect, value }: ClientSelectorProps) {
           )}
 
           {/* Error State */}
-          {error && !loading && (
+          {loadError && !loading && (
             <div className="flex flex-col items-center gap-3 py-10 text-center">
               <AlertCircle className="h-9 w-9 text-danger-ink" />
               <p className="text-muted-foreground text-base">Failed to load clients</p>
@@ -239,7 +242,7 @@ export function ClientSelector({ onSelect, value }: ClientSelectorProps) {
           )}
 
           {/* Empty State */}
-          {!loading && !error && (clients?.length ?? 0) === 0 && (
+          {!loading && !loadError && (clients?.length ?? 0) === 0 && (
             <div className="flex flex-col items-center gap-3 py-10 text-center">
               <p className="text-muted-foreground text-base">No clients found</p>
               <p className="text-sm text-muted-foreground">
@@ -249,7 +252,7 @@ export function ClientSelector({ onSelect, value }: ClientSelectorProps) {
           )}
 
           {/* Client List */}
-          {!loading && !error && (clients?.length ?? 0) > 0 && (
+          {!loading && !loadError && (clients?.length ?? 0) > 0 && (
             <div className="space-y-2" role="listbox" aria-label="Clients">
               {clients?.map((client) => {
                 const isSelected = value === client.id;
@@ -295,10 +298,10 @@ export function ClientSelector({ onSelect, value }: ClientSelectorProps) {
             </div>
 
             {/* Error */}
-            {error && (
-              <div className="p-4 bg-coral/10 border border-coral/30 rounded-lg flex items-start gap-3">
+            {createError && (
+              <div className="flex items-start gap-3 border border-coral/30 bg-coral/10 p-4">
                 <AlertCircle className="h-5 w-5 text-danger-ink flex-shrink-0 mt-0.5" />
-                <p className="text-base text-danger-ink">{error}</p>
+                <p className="text-base text-danger-ink">{createError}</p>
               </div>
             )}
 
@@ -313,7 +316,7 @@ export function ClientSelector({ onSelect, value }: ClientSelectorProps) {
                 value={newClient.name}
                 onChange={(e) => setNewClient({ ...newClient, name: e.target.value })}
                 onKeyDown={(e) => e.key === 'Enter' && handleCreateClient()}
-                className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-ring focus:border-coral text-base ${
+                className={`w-full rounded-none border px-4 py-2.5 text-base focus:border-coral focus:outline-none focus-visible:outline-[3px] focus-visible:outline-coral/25 focus-visible:[box-shadow:0_0_0_6px_rgb(var(--primary)/0.08)] ${
                   formErrors.name ? 'border-coral/50' : 'border-border'
                 }`}
                 aria-invalid={!!formErrors.name}
@@ -337,7 +340,7 @@ export function ClientSelector({ onSelect, value }: ClientSelectorProps) {
                 value={newClient.company}
                 onChange={(e) => setNewClient({ ...newClient, company: e.target.value })}
                 onKeyDown={(e) => e.key === 'Enter' && handleCreateClient()}
-                className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-ring focus:border-coral text-base ${
+                className={`w-full rounded-none border px-4 py-2.5 text-base focus:border-coral focus:outline-none focus-visible:outline-[3px] focus-visible:outline-coral/25 focus-visible:[box-shadow:0_0_0_6px_rgb(var(--primary)/0.08)] ${
                   formErrors.company ? 'border-coral/50' : 'border-border'
                 }`}
                 aria-invalid={!!formErrors.company}
@@ -361,7 +364,7 @@ export function ClientSelector({ onSelect, value }: ClientSelectorProps) {
                 value={newClient.email}
                 onChange={(e) => setNewClient({ ...newClient, email: e.target.value })}
                 onKeyDown={(e) => e.key === 'Enter' && handleCreateClient()}
-                className={`w-full px-4 py-2.5 border rounded-lg focus:ring-2 focus:ring-ring focus:border-coral text-base ${
+                className={`w-full rounded-none border px-4 py-2.5 text-base focus:border-coral focus:outline-none focus-visible:outline-[3px] focus-visible:outline-coral/25 focus-visible:[box-shadow:0_0_0_6px_rgb(var(--primary)/0.08)] ${
                   formErrors.email ? 'border-coral/50' : 'border-border'
                 }`}
                 aria-invalid={!!formErrors.email}
@@ -381,9 +384,8 @@ export function ClientSelector({ onSelect, value }: ClientSelectorProps) {
                 variant="primary"
                 size="md"
                 onClick={handleCreateClient}
-                disabled={creating}
+                isLoading={creating}
               >
-                {creating && <Loader2 className="h-4 w-4 animate-spin" />}
                 Create Client
               </Button>
             </div>
