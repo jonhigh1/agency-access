@@ -5,7 +5,10 @@ import SuccessPage from '../page';
 
 const mockPush = vi.fn();
 const mockGetToken = vi.fn().mockResolvedValue('token');
-const mockCopy = vi.fn();
+// Mirrors the real hook: resolve, then run the on-copy callback.
+const mockCopy = vi.fn(async (_text: string, onCopy?: () => void) => {
+  onCopy?.();
+});
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockPush }),
@@ -38,6 +41,7 @@ vi.mock('@/lib/api/access-requests', () => ({
 
 vi.mock('@/lib/analytics/invite-events', () => ({
   trackInviteLinkCopied: vi.fn(),
+  trackInviteLinkCopyAndSent: vi.fn(),
   trackInviteSent: vi.fn(),
   buildInviteSentMailto: vi.fn(() => 'mailto:client@acme.com'),
 }));
@@ -95,19 +99,17 @@ describe('Access request success page', () => {
 
     await user.click(screen.getByRole('button', { name: /copy link/i }));
 
-    expect(inviteEvents.trackInviteLinkCopied).toHaveBeenCalledWith({
+    // Copy link emits the serialized wrapper (invite_link_copied + invite_sent
+    // with channel=copy), per the PostHog capture serialization.
+    expect(inviteEvents.trackInviteLinkCopyAndSent).toHaveBeenCalledWith({
       access_request_id: 'request-123',
       access_request_token: 'token-abc',
       status: 'pending',
       surface: 'success',
     });
-    expect(inviteEvents.trackInviteSent).toHaveBeenCalledWith({
-      access_request_id: 'request-123',
-      access_request_token: 'token-abc',
-      channel: 'copy',
-      surface: 'success',
-      status: 'pending',
-    });
-    expect(mockCopy).toHaveBeenCalledWith('https://authhub.co/invite/token-abc');
+    expect(mockCopy).toHaveBeenCalledWith(
+      'https://authhub.co/invite/token-abc',
+      expect.any(Function)
+    );
   });
 });
