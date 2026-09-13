@@ -38,6 +38,8 @@ Now you're stuck. You can't prepare for the kickoff call because you don't know 
 
 A good intake questionnaire solves this. It collects everything you need *before* the kickoff call, not after. The account manager walks into the call prepared, with context, ready to discuss strategy instead of asking "so, what's your website?"
 
+Pair it with a dedicated [agency onboarding platform](/blog/best-client-onboarding-software-agencies-2026) and the intake form plus platform access happen through the same link.
+
 Here are the 27 questions every agency needs to ask new clients, organized by when you need them and why they matter.
 
 ---

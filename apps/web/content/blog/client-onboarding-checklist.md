@@ -204,6 +204,8 @@ Client grants "Analyst" when you need "Advertiser" to create campaigns.
 
 **Fix**: Specify exact permission levels in your access request template. Include descriptions.
 
+The right [client onboarding software for agencies](/blog/best-client-onboarding-software-agencies-2026) handles this for you: it states the exact permission each platform needs and collects them all in one flow.
+
 ### 3. Multiple Business Managers
 
 Client has ad accounts spread across several Business Managers and doesn't know which to use.

@@ -53,7 +53,7 @@ All trending up. One page-2 push = multiple page-one terms:
 | # | Piece | Slug | Type | Target + data |
 |---|---|---|---|---|
 | 1 | **Snapchat Ads Access for Agencies (2026)** ✅ published 9/13 | `snapchat-ads-access-agencies` | Blog guide | `snapchat business manager` cluster: **9,900/mo, LOW KD**. Best volume/KD ratio on the board. Cover Business Center roles, Public Profiles, ad-account invites. **Note:** title front-loads exact keyword → "Snapchat Business Manager Access for Agencies: Roles & Permissions (2026)". 9/10. |
-| 2 | **Striking-distance cluster push** | `best-client-onboarding-software-agencies-2026` (existing post) | Optimization | Strengthen whichever URL ranks for the 7-term "agency onboarding X" cluster: tighten title/H1 to "agency client onboarding software", add 3–5 internal links from blog posts using exact anchor text, refresh the CTA. All terms at pos 15–22 and climbing. |
+| 2 | **Striking-distance cluster push** ✅ done 9/13 | `best-client-onboarding-software-agencies-2026` (existing post) | Optimization | Strengthen whichever URL ranks for the 7-term "agency onboarding X" cluster: tighten title/H1 to "agency client onboarding software", add 3–5 internal links from blog posts using exact anchor text, refresh the CTA. All terms at pos 15–22 and climbing. **Done:** title now carries "agency client onboarding software"; exact phrase in intro para 2; 6 exact-anchor inbounds (checklist, questionnaire, how-to-onboard, snapchat post); FAQ schema deferred → needs FAQPage JSON-LD in blog page code (TDD) — follow-up task. |
 
 ### Week 2 — Sep 15–21
 

@@ -1,58 +1,46 @@
-# Todo: Square-on-Round Icons + Button Treatment Cohesion Sweep
+# Content Calendar Implementation — September 2026
 
-Plan: `~/.claude/plans/eventual-moseying-harp.md` · Session: 2026-09-12/13
+Source: `marketing/content/CONTENT-CALENDAR-SEPTEMBER-2026.md`
+Pipeline: `.claude/skills/blog-pipeline` (7 phases, 9/10 gate)
+Publish = commit to `main` → Vercel auto-deploy. One commit per post.
 
-## Checklist
+---
 
-### Part 1 — Icon fix (TDD)
-- [x] Failing tests: platform-icon fallback `rounded-none`; dashboard chips `rounded-none`
-- [x] Fix `dashboard/page.tsx:559` + `:625` (rounded-full → rounded-none)
-- [x] Fix `platform-icon.tsx:54` (rounded-lg → rounded-none)
-- [x] Icon tests green
+## Phase A — Week 1 (Sep 9–14) — IN PROGRESS
 
-### Part 2 — Enforcement walker (written first, doubles as to-do list)
-- [x] `button-contract.design.test.ts` — global walker; also catches zeroed hovers, resting shadow-none, and arrow-fn attributes
+### A1. Snapchat Ads guide — draft exists, needs pipeline finish
+- [ ] SEO fixes: put "Snapchat Business Manager" in first paragraph + meta; add 2–3 official external sources; grow internal links 1→4 (incl. exact-anchor link to cluster-owner post); tags 5→6–8
+- [ ] Editorial pass (Phase 5): banned words, cut 20–30% where flabby, active voice
+- [ ] Quality gate (Phase 6): score ≥ 9/10 or stop and report
+- [ ] Docs sync (Phase 7): calendar status, CONTENT-STRATEGY-2026.md inventory, KEYWORD-TRACKER.md assignment
+- [ ] Commit + push; verify live URL renders
 
-### Tier 0 — Button contract overrides
-- [x] Dashboard `createRequestButton` → true brutalist; how-it-works (2); hero-section group-hover press removed; meta-page-permissions link-ghost sanctioned; hero-copy-rewrite excluded
-- [x] Commit (8186ffb, 6ab99bc)
+### A2. Striking-distance cluster push (7 terms at pos 15–22)
+- [ ] Title/H1: work in "agency client onboarding software"
+- [ ] Intro paragraph contains exact phrase "agency onboarding software"
+- [ ] Add/verify FAQ answers with exact phrases
+- [ ] Add exact-anchor internal links FROM checklist, questionnaire, how-to-onboard posts
+- [ ] Refresh CTA
+- [ ] Commit + push
 
-### Tier 1 — Authenticated pages
-- [x] 33 sites / 12 files (agent batch A) — commit b51d399
-### Tier 2 — Shared components
-- [x] 29 migrated + 9 tokenized / 13 files (agent batch B) — commit 87c915f
-### Tier 3 — Client auth + agency-meta + pinterest
-- [x] 18 migrated / 10 files (agent batch C) — commit e0c2717
-### Tier 4 — Marketing + blog + programmatic
-- [x] 17 migrated + 16 tokenized / 11 files (agent batch D) — commit b6523db
-### Tier 5 — Controls tokenization
-- [x] Done inside batches (rules 9/10); adjacent platform-card fix (6ab99bc)
-- [x] Walker green tree-wide (0 violations)
+## Phase B — Week 2 (Sep 15–21)
+- [ ] B1. GTM Access for Agencies (`gtm-access-agencies`) — full pipeline
+- [ ] B2. Microsoft Ads Access for Agencies (`microsoft-ads-access-agencies`) — full pipeline
 
-### Verification & docs
-- [x] web suite: 1276 passed / 11 failed — all 11 proven pre-existing at base 86fa16a (docs/ERRORS.md)
-- [x] typecheck clean
-- [x] Production build with real env sourced (worktree itself lacks .env.local)
-- [x] Visual QA: dashboard, pricing, about, blog, /design-system — variant pairs correct, icon tiles square
-- [x] DESIGN_SYSTEM.md v2.2.0 changelog; SESSION-LOG entry; docs/ERRORS.md created
+## Phase C — Week 3 (Sep 22–28)
+- [ ] C1. Client Offboarding Checklist (`client-offboarding-checklist`) — full pipeline, links to revoke guide + platform guides
+- [ ] C2. Pinterest Ads refresh — update steps, year, internal links
+
+## Phase D — Week 4 (Sep 29–30) — maintenance
+- [ ] D1. Internal link pass: new guides ← all platform guides + compare pages
+- [ ] D2. Compare-page pricing verify (Leadsie + AgencyAccess) vs `comparison-data.ts`
+- [ ] D3. Add 5 new keywords to rank tracking (seo CLI / SnowSEO)
+
+## Success check (Sep 30)
+1. 5 publishes live + indexed; Pinterest refresh live
+2. ≥2 of 7 cluster terms on page one (≤10)
+3. `leadsie alternative` holds ≤6
+4. New keywords tracked with baselines
 
 ## Review
-
-**Shipped (8 commits, `8186ffb` → docs):** both reported issues fixed plus the
-systemic drift behind them. Icon chips are square everywhere they wrap
-`PlatformIcon`; 214 walker violations across 46 files swept to zero; the walker
-now enforces the contract permanently (incl. override-neutering and the
-arrow-function attribute blind spot). Off-palette buttons (indigo, yellow,
-slate, raw hex, teal-as-primary) are gone.
-
-**Verification:** suite 1276 passed / 11 failed / 2 skipped — the 11 predate
-the session (proven via throwaway worktree at the base commit); typecheck
-clean; production build passes with env present; visual pass on six surfaces
-confirmed variant pairs and square icon tiles on the showcase.
-
-**Notable:** branch renamed externally to `jonhigh1/fix-access-request-visuals`.
-
-**Left open:** pre-existing settings/success test failures (docs/ERRORS.md has
-the diagnosis); `components/marketing/hero-copy-rewrite/` flagged for deletion
-decision; marketing nav keeps one brutalist across pages (global-chrome
-reading of the one-per-view rule).
+(appended at end of each phase)
