@@ -256,40 +256,41 @@ describe('ConnectionService', () => {
   });
 
   describe('getAgencyTokenHealth', () => {
-    it('should return agency-wide token health with refresh capability', async () => {
+    function authRow(overrides: Record<string, unknown> = {}) {
+      return {
+        id: 'auth-google',
+        connectionId: 'connection-1',
+        platform: 'google_ads',
+        status: 'active',
+        expiresAt: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000),
+        lastRefreshedAt: null,
+        secretId: 'secret-google',
+        connection: {
+          agencyId: 'agency-1',
+          clientEmail: 'client@example.com',
+        },
+        ...overrides,
+      };
+    }
+
+    it('should return agency-wide token health with refresh capability from stored expiry', async () => {
       const expiresAt = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000);
       vi.mocked(prisma.platformAuthorization.findMany).mockResolvedValue([
-        {
-          id: 'auth-google',
-          connectionId: 'connection-1',
-          platform: 'google_ads',
-          status: 'active',
-          expiresAt,
-          lastRefreshedAt: null,
-          secretId: 'secret-google',
-          connection: {
-            agencyId: 'agency-1',
-            clientEmail: 'client@example.com',
-          },
-        },
-        {
+        authRow({ expiresAt }),
+        authRow({
           id: 'auth-meta',
           connectionId: 'connection-2',
           platform: 'meta_ads',
-          status: 'active',
           expiresAt,
-          lastRefreshedAt: null,
           secretId: 'secret-meta',
           connection: {
             agencyId: 'agency-1',
             clientEmail: 'meta@example.com',
           },
-        },
+        }),
       ] as any);
-      vi.mocked(infisical.retrieveOAuthTokens)
-        .mockResolvedValueOnce({ accessToken: 'google-token' } as any)
-        .mockResolvedValueOnce({ accessToken: 'meta-token' } as any);
-      verifyTokenMock.mockResolvedValue(true);
+      verifyTokenMock.mockResolvedValue(false);
+      vi.mocked(infisical.retrieveOAuthTokens).mockResolvedValue({ accessToken: 'live-token' } as any);
 
       const result = await connectionService.getAgencyTokenHealth('agency-1');
 
@@ -308,56 +309,17 @@ describe('ConnectionService', () => {
           canRefresh: false,
         }),
       ]);
+      expect(infisical.retrieveOAuthTokens).not.toHaveBeenCalled();
+      expect(verifyTokenMock).not.toHaveBeenCalled();
     });
 
-    it('should mark tokens expired when live verification fails', async () => {
+    it('should classify health from expiresAt even when a live platform verify would fail', async () => {
       const expiresAt = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
       vi.mocked(prisma.platformAuthorization.findMany).mockResolvedValue([
-        {
-          id: 'auth-google',
-          connectionId: 'connection-1',
-          platform: 'google_ads',
-          status: 'active',
-          expiresAt,
-          lastRefreshedAt: null,
-          secretId: 'secret-google',
-          connection: {
-            agencyId: 'agency-1',
-            clientEmail: 'client@example.com',
-          },
-        },
+        authRow({ expiresAt }),
       ] as any);
       vi.mocked(infisical.retrieveOAuthTokens).mockResolvedValue({ accessToken: 'google-token' } as any);
       verifyTokenMock.mockResolvedValue(false);
-
-      const result = await connectionService.getAgencyTokenHealth('agency-1');
-
-      expect(result.error).toBeNull();
-      expect(result.data).toEqual([
-        expect.objectContaining({
-          id: 'auth-google',
-          health: 'expired',
-        }),
-      ]);
-    });
-
-    it('should skip live verification and audit rows for tokens beyond the near-expiry window', async () => {
-      const expiresAt = new Date(Date.now() + 45 * 24 * 60 * 60 * 1000);
-      vi.mocked(prisma.platformAuthorization.findMany).mockResolvedValue([
-        {
-          id: 'auth-google',
-          connectionId: 'connection-1',
-          platform: 'google_ads',
-          status: 'active',
-          expiresAt,
-          lastRefreshedAt: null,
-          secretId: 'secret-google',
-          connection: {
-            agencyId: 'agency-1',
-            clientEmail: 'client@example.com',
-          },
-        },
-      ] as any);
 
       const result = await connectionService.getAgencyTokenHealth('agency-1');
 
@@ -370,38 +332,23 @@ describe('ConnectionService', () => {
       ]);
       expect(infisical.retrieveOAuthTokens).not.toHaveBeenCalled();
       expect(verifyTokenMock).not.toHaveBeenCalled();
-      expect(prisma.auditLog.createMany).not.toHaveBeenCalled();
     });
 
-    it('should verify near-expiry tokens exactly once each and write audit rows in one batch', async () => {
+    it('should not Infisical-get, live-verify, or write TOKEN_HEALTH_CHECK audit rows', async () => {
       const expiresAt = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
       vi.mocked(prisma.platformAuthorization.findMany).mockResolvedValue([
-        {
-          id: 'auth-google',
-          connectionId: 'connection-1',
-          platform: 'google_ads',
-          status: 'active',
-          expiresAt,
-          lastRefreshedAt: null,
-          secretId: 'secret-google',
-          connection: {
-            agencyId: 'agency-1',
-            clientEmail: 'client@example.com',
-          },
-        },
-        {
+        authRow({ expiresAt }),
+        authRow({
           id: 'auth-meta',
           connectionId: 'connection-2',
           platform: 'meta_ads',
-          status: 'active',
           expiresAt,
-          lastRefreshedAt: null,
           secretId: 'secret-meta',
           connection: {
             agencyId: 'agency-1',
             clientEmail: 'meta@example.com',
           },
-        },
+        }),
       ] as any);
       vi.mocked(infisical.retrieveOAuthTokens).mockResolvedValue({ accessToken: 'token' } as any);
       verifyTokenMock.mockResolvedValue(true);
@@ -413,26 +360,56 @@ describe('ConnectionService', () => {
         expect.objectContaining({ id: 'auth-google', health: 'expiring' }),
         expect.objectContaining({ id: 'auth-meta', health: 'expiring' }),
       ]);
-      expect(verifyTokenMock).toHaveBeenCalledTimes(2);
-      expect(infisical.retrieveOAuthTokens).toHaveBeenCalledTimes(2);
-      expect(prisma.auditLog.createMany).toHaveBeenCalledTimes(1);
+      expect(verifyTokenMock).not.toHaveBeenCalled();
+      expect(infisical.retrieveOAuthTokens).not.toHaveBeenCalled();
+      expect(prisma.auditLog.createMany).not.toHaveBeenCalled();
+      expect(auditService.createAuditLog).not.toHaveBeenCalled();
+    });
 
-      const batch = vi.mocked(prisma.auditLog.createMany).mock.calls[0][0];
-      expect(batch.data).toHaveLength(2);
-      expect(batch.data).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({
-            action: 'TOKEN_HEALTH_CHECK',
-            resourceId: 'connection-1',
-            metadata: { platform: 'google_ads', authorizationId: 'auth-google' },
-          }),
-          expect.objectContaining({
-            action: 'TOKEN_HEALTH_CHECK',
-            resourceId: 'connection-2',
-            metadata: { platform: 'meta_ads', authorizationId: 'auth-meta' },
-          }),
-        ])
-      );
+    it('should mark stored non-active status as expired without reading secrets', async () => {
+      vi.mocked(prisma.platformAuthorization.findMany).mockResolvedValue([
+        authRow({
+          status: 'invalid',
+          expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+        }),
+      ] as any);
+
+      const result = await connectionService.getAgencyTokenHealth('agency-1');
+
+      expect(result.error).toBeNull();
+      expect(result.data).toEqual([
+        expect.objectContaining({
+          id: 'auth-google',
+          health: 'expired',
+          daysUntilExpiry: -1,
+        }),
+      ]);
+      expect(infisical.retrieveOAuthTokens).not.toHaveBeenCalled();
+      expect(verifyTokenMock).not.toHaveBeenCalled();
+    });
+
+    it('should report non-expiring API-key platforms as healthy without Infisical', async () => {
+      vi.mocked(prisma.platformAuthorization.findMany).mockResolvedValue([
+        authRow({
+          id: 'auth-beehiiv',
+          platform: 'beehiiv',
+          expiresAt: null,
+          secretId: 'secret-beehiiv',
+        }),
+      ] as any);
+
+      const result = await connectionService.getAgencyTokenHealth('agency-1');
+
+      expect(result.error).toBeNull();
+      expect(result.data).toEqual([
+        expect.objectContaining({
+          id: 'auth-beehiiv',
+          health: 'healthy',
+          canRefresh: false,
+        }),
+      ]);
+      expect(infisical.retrieveOAuthTokens).not.toHaveBeenCalled();
+      expect(verifyTokenMock).not.toHaveBeenCalled();
     });
 
     it('should classify a token that died 12 minutes ago as expired (no day-ceil round-up to day 0)', async () => {
@@ -442,7 +419,6 @@ describe('ConnectionService', () => {
           connectionId: 'connection-1',
           platform: 'snapchat',
           status: 'active',
-          // No secretId: health comes from the stored expiry only.
           expiresAt: new Date(Date.now() - 12 * 60 * 1000),
           lastRefreshedAt: null,
           connection: {
@@ -490,6 +466,38 @@ describe('ConnectionService', () => {
           daysUntilExpiry: 1,
         }),
       ]);
+    });
+  });
+
+  describe('getTokenHealth', () => {
+    it('should classify a single connection from stored expiry without Infisical or verifyToken', async () => {
+      const expiresAt = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
+      vi.mocked(prisma.platformAuthorization.findMany).mockResolvedValue([
+        {
+          id: 'auth-google',
+          connectionId: 'connection-1',
+          platform: 'google_ads',
+          status: 'active',
+          expiresAt,
+          lastRefreshedAt: null,
+          secretId: 'secret-google',
+        },
+      ] as any);
+      verifyTokenMock.mockResolvedValue(false);
+      vi.mocked(infisical.retrieveOAuthTokens).mockResolvedValue({ accessToken: 'google-token' } as any);
+
+      const result = await connectionService.getTokenHealth('connection-1');
+
+      expect(result.error).toBeNull();
+      expect(result.data).toEqual([
+        expect.objectContaining({
+          id: 'auth-google',
+          health: 'expiring',
+        }),
+      ]);
+      expect(infisical.retrieveOAuthTokens).not.toHaveBeenCalled();
+      expect(verifyTokenMock).not.toHaveBeenCalled();
+      expect(auditService.createAuditLog).not.toHaveBeenCalled();
     });
   });
 
