@@ -1,5 +1,15 @@
 import type { SubscriptionData } from '@/lib/query/billing';
 
+/** Plain-language subscription status, shared by every settings surface. */
+export const SUBSCRIPTION_STATUS_LABELS: Record<string, string> = {
+  active: 'Active',
+  trialing: 'Trialing',
+  past_due: 'Past due',
+  canceled: 'Cancelled',
+  incomplete: 'Incomplete',
+  expired: 'Expired',
+};
+
 export type BillingLifecycle = 'FREE' | 'TRIALING' | 'PAID';
 
 export function resolveBillingLifecycle(subscription: SubscriptionData | null | undefined): BillingLifecycle {

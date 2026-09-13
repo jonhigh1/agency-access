@@ -12,18 +12,12 @@
 import { SUBSCRIPTION_TIER_NAMES } from '@agency-platform/shared';
 import type { TierLimits } from '@agency-platform/shared';
 import { useSubscription, useTierDetails } from '@/lib/query/billing';
-import { resolveBillingLifecycle } from '../billing/billing-lifecycle';
+import { resolveBillingLifecycle, SUBSCRIPTION_STATUS_LABELS } from '../billing/billing-lifecycle';
+import { UNLOADED_VALUE } from '../settings-row';
+import { formatMediumDate } from '@/lib/format';
 
-const UNLOADED = '—';
-
-const STATUS_LABELS: Record<string, string> = {
-  active: 'Active',
-  trialing: 'Trial',
-  past_due: 'Past due',
-  canceled: 'Cancelled',
-  incomplete: 'Incomplete',
-  expired: 'Expired',
-};
+const UNLOADED = UNLOADED_VALUE;
+const STATUS_LABELS = SUBSCRIPTION_STATUS_LABELS;
 
 function formatLimit(entry: TierLimits[keyof TierLimits] | undefined, noun: string): string | null {
   if (!entry) return null;
@@ -58,7 +52,7 @@ export function PlanStrip() {
   const limitLine = limitParts && limitParts.length > 0 ? limitParts.join(' · ') : UNLOADED;
 
   const periodEnd = subscription?.currentPeriodEnd
-    ? new Date(subscription.currentPeriodEnd).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+    ? formatMediumDate(subscription.currentPeriodEnd)
     : null;
 
   return (

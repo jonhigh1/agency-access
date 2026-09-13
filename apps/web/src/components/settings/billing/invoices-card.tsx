@@ -11,6 +11,7 @@ import { Download } from 'lucide-react';
 import { useInvoices } from '@/lib/query/billing';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { SettingsGroup, SettingsRow } from '../settings-row';
+import { formatMediumDate } from '@/lib/format';
 
 export function InvoicesCard() {
   const { data: invoices, isLoading } = useInvoices();
@@ -39,11 +40,7 @@ export function InvoicesCard() {
         invoices.map((invoice) => (
           <SettingsRow
             key={invoice.id}
-            label={new Date(invoice.invoiceDate).toLocaleDateString('en-US', {
-              month: 'short',
-              day: 'numeric',
-              year: 'numeric',
-            })}
+            label={formatMediumDate(invoice.invoiceDate)}
             description={
               <span className="font-mono">
                 ${(invoice.amount / 100).toFixed(2)} {invoice.currency.toUpperCase()}

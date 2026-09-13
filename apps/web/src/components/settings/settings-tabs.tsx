@@ -16,6 +16,7 @@ import { SUBSCRIPTION_TIER_NAMES } from '@agency-platform/shared';
 import { usePrefetchBillingData, useSubscription } from '@/lib/query/billing';
 import { useUserAgency } from '@/hooks/use-user-agency';
 import { resolveBillingLifecycle } from './billing/billing-lifecycle';
+import { UNLOADED_VALUE } from './settings-row';
 
 const TAB_IDS = ['general', 'billing', 'webhooks', 'agents'] as const;
 type SettingsTab = (typeof TAB_IDS)[number];
@@ -27,7 +28,7 @@ const TAB_LABELS: Record<SettingsTab, string> = {
   agents: 'Agents',
 };
 
-const UNLOADED = '—';
+const UNLOADED = UNLOADED_VALUE;
 
 /** Two-ring focus, copied from Button base styles — globals.css only sets it on form fields. */
 const TAB_FOCUS =

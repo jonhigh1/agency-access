@@ -14,6 +14,8 @@ import { PRICING_DISPLAY_TIER_DETAILS, SUBSCRIPTION_TIER_NAMES, TIER_LIMITS } fr
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/ui/status-badge';
 import { SettingsGroup, SettingsRow } from '../settings-row';
+import { formatLongDate } from '@/lib/format';
+import { UNLOADED_VALUE } from '../settings-row';
 
 function formatMonthlyPrice(tier: SubscriptionTier | null): string {
   if (!tier) return 'Free';
@@ -55,13 +57,7 @@ export function CurrentPlanCard() {
     );
   };
 
-  const nextBilling = subscription?.currentPeriodEnd
-    ? new Date(subscription.currentPeriodEnd).toLocaleDateString('en-US', {
-        month: 'long',
-        day: 'numeric',
-        year: 'numeric',
-      })
-    : '—';
+  const nextBilling = subscription?.currentPeriodEnd ? formatLongDate(subscription.currentPeriodEnd) : UNLOADED_VALUE;
 
   return (
     <SettingsGroup title="Current plan" description="Your subscription details" aside={isLoading ? null : getStatusBadge()}>

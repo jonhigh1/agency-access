@@ -11,6 +11,9 @@
 
 import { useId } from 'react';
 
+/** Placeholder for a value that has not loaded yet. Keeps layout stable. */
+export const UNLOADED_VALUE = '—';
+
 interface SettingsGroupProps {
   title: string;
   description?: string;

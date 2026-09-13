@@ -18,26 +18,15 @@ import { buildPlanSelectedProps, trackPlanSelected } from '@/lib/analytics/billi
 import { getNextTierForCheckout, SUBSCRIPTION_TIER_NAMES } from '@agency-platform/shared';
 import { SettingsRow } from '../settings-row';
 import { persistBillingIntervalPreference, readBillingIntervalPreference } from './billing-interval';
-import { resolveBillingLifecycle } from './billing-lifecycle';
+import { resolveBillingLifecycle, SUBSCRIPTION_STATUS_LABELS } from './billing-lifecycle';
+import { UNLOADED_VALUE } from '../settings-row';
+import { formatLongDate } from '@/lib/format';
 
-const EMPTY_VALUE = '—';
+const EMPTY_VALUE = UNLOADED_VALUE;
+const STATUS_LABELS = SUBSCRIPTION_STATUS_LABELS;
 
-const STATUS_LABELS: Record<string, string> = {
-  active: 'Active',
-  trialing: 'Trialing',
-  past_due: 'Past due',
-  canceled: 'Canceled',
-  incomplete: 'Incomplete',
-  expired: 'Expired',
-};
-
-function formatLongDate(value: string | undefined): string | null {
-  if (!value) return null;
-  return new Date(value).toLocaleDateString('en-US', {
-    month: 'long',
-    day: 'numeric',
-    year: 'numeric',
-  });
+function formatOptionalLongDate(value: string | undefined): string | null {
+  return value ? formatLongDate(value) : null;
 }
 
 export function BillingHero() {
@@ -96,8 +85,8 @@ export function BillingHero() {
     document.getElementById('manage-subscription-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   };
 
-  const trialEndDate = formatLongDate(subscription?.trialEnd);
-  const nextBillDate = formatLongDate(subscription?.currentPeriodEnd);
+  const trialEndDate = formatOptionalLongDate(subscription?.trialEnd);
+  const nextBillDate = formatOptionalLongDate(subscription?.currentPeriodEnd);
 
   const heroCopy =
     lifecycle === 'FREE'
