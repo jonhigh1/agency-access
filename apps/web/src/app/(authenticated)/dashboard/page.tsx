@@ -272,8 +272,8 @@ export default function DashboardPage() {
   };
 
   // Shared Create Request button (header + Recent Access Requests panel).
-  // v2.0 rule: one brutalist per view. Header mount keeps it; the panel
-  // header mount renders primary.
+  // v2.0 rule: one brutalist per view. Header mount keeps it (true brutalist:
+  // uppercase, diagonal press); the panel header mount renders primary.
   const createRequestButton = (variant: 'brutalist' | 'primary' = 'brutalist') => (
     <Button
       type="button"
@@ -284,7 +284,7 @@ export default function DashboardPage() {
       disabled={isCreatingRequest}
       aria-busy={isCreatingRequest}
       aria-label={isCreatingRequest ? 'Checking quota before opening new request' : 'Create access request'}
-      className="px-6 sm:px-8 normal-case font-semibold tracking-normal hover:translate-x-0 hover:bg-coral/90 disabled:pointer-events-none disabled:opacity-80"
+      className="px-6 sm:px-8 disabled:pointer-events-none disabled:opacity-80"
     >
       {isCreatingRequest ? (
         <Loader2 className="h-4 w-4 shrink-0 animate-spin" aria-hidden />
@@ -464,16 +464,17 @@ export default function DashboardPage() {
               </Button>
 
               {isActivatedChecklist && (
-                <button
+                <Button
                   type="button"
+                  variant="secondary"
+                  size="sm"
                   onClick={() => {
                     void handleDismissOptionalSetup();
                   }}
                   disabled={onboardingProgressMutation.isPending}
-                  className="inline-flex min-h-[40px] items-center rounded-lg border-2 border-border bg-card px-4 py-2 text-sm font-semibold text-foreground transition-all duration-200 hover:border-teal/30 hover:bg-teal/10 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   Finish setup
-                </button>
+                </Button>
               )}
             </div>
           </div>
@@ -556,7 +557,7 @@ export default function DashboardPage() {
                         {[...new Set(request.platforms)].map((platform) => (
                           <div
                             key={platform}
-                            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-black/10 bg-muted/80 p-0.5"
+                            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-none border border-black/10 bg-muted/80 p-0.5"
                             title={platformLabel(platform)}
                           >
                             <PlatformIcon platform={platform as Platform} size="sm" />
@@ -622,24 +623,25 @@ export default function DashboardPage() {
                       {connection.platforms.map((platform) => (
                         <div
                           key={`${connection.id}-${platform}`}
-                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border-2 border-white bg-muted p-0.5 ring-2 ring-card"
+                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-none border-2 border-white bg-muted p-0.5 ring-2 ring-card"
                           title={platformLabel(platform)}
                         >
                           <PlatformIcon platform={platform as Platform} size="sm" />
                         </div>
                       ))}
                     </div>
-                    <Link
-                      href={
-                        connection.clientId
-                          ? `/clients/${connection.clientId}`
-                          : `/clients?email=${encodeURIComponent(connection.clientEmail)}`
-                      }
-                      className="inline-flex items-center justify-center gap-2 px-4 py-2 border-2 border-black/10 bg-transparent text-foreground rounded-lg hover:bg-black/5 hover:border-black/30 transition-all text-sm font-medium"
-                    >
-                      View Details
-                      <ExternalLink className="h-3.5 w-3.5" />
-                    </Link>
+                    <Button variant="secondary" size="sm" asChild>
+                      <Link
+                        href={
+                          connection.clientId
+                            ? `/clients/${connection.clientId}`
+                            : `/clients?email=${encodeURIComponent(connection.clientEmail)}`
+                        }
+                      >
+                        View Details
+                        <ExternalLink className="h-3.5 w-3.5" />
+                      </Link>
+                    </Button>
                   </div>
                 </div>
               ))}

@@ -333,7 +333,6 @@ export function HowItWorksSection() {
                       <Button
                         variant="brutalist"
                         size="lg"
-                        className="bg-coral text-white border-2 border-black hover:bg-coral/90 hover:translate-x-[4px] hover:translate-y-[4px] hover:shadow-brutalist-sm"
                         rightIcon={<Zap size={18} />}
                         onClick={handleTrialSignup}
                       >
@@ -343,7 +342,6 @@ export function HowItWorksSection() {
                     <Button
                       variant="secondary"
                       size="lg"
-                      className="bg-transparent text-ink border-2 border-black hover:bg-ink hover:text-paper hover:translate-x-[4px] hover:translate-y-[4px] hover:shadow-brutalist-sm"
                       onClick={() => setIsDemoModalOpen(true)}
                     >
                       Schedule Demo
