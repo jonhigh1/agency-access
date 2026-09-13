@@ -14,6 +14,7 @@ import { useAuth } from '@clerk/nextjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { getApiBaseUrl } from '@/lib/api/api-env';
 import { extractApiErrorMessage } from '@/lib/api/extract-error';
+import { Button } from '@/components/ui/button';
 
 interface CreateClientModalProps {
   onClose: () => void;
@@ -141,9 +142,9 @@ export function CreateClientModal({ onClose, onSuccess }: CreateClientModalProps
             </div>
             <button
               onClick={onClose}
-              className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+              className="p-1 text-muted-foreground hover:bg-muted/10 rounded-none transition-colors"
             >
-              <X className="h-5 w-5 text-gray-600" />
+              <X className="h-5 w-5 text-muted-foreground" />
             </button>
           </div>
 
@@ -227,18 +228,20 @@ export function CreateClientModal({ onClose, onSuccess }: CreateClientModalProps
 
             {/* Actions */}
             <div className="flex justify-end gap-3 pt-4 border-t border-black/10">
-              <button
+              <Button
                 type="button"
+                variant="secondary"
+                size="sm"
                 onClick={onClose}
                 disabled={createMutation.isPending}
-                className="px-4 py-2 border-2 border-black text-gray-700 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
               >
                 Cancel
-              </button>
-              <button
+              </Button>
+              <Button
                 type="submit"
+                variant="primary"
+                size="sm"
                 disabled={createMutation.isPending}
-                className="px-4 py-2 bg-coral text-white rounded-lg hover:bg-coral/90 transition-colors disabled:opacity-50 flex items-center gap-2"
               >
                 {createMutation.isPending ? (
                   <>
@@ -251,7 +254,7 @@ export function CreateClientModal({ onClose, onSuccess }: CreateClientModalProps
                     Create Client
                   </>
                 )}
-              </button>
+              </Button>
             </div>
           </form>
         </m.div>

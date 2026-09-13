@@ -15,6 +15,7 @@ import { useAuth } from '@clerk/nextjs';
 import { SUBSCRIPTION_TIER_NAMES, TIER_LIMITS } from '@agency-platform/shared';
 import type { QuotaExceededError } from '@/lib/query/quota';
 import { subscriptionTierToPlanSlug, trackCapHit } from '@/lib/analytics/billing';
+import { Button } from '@/components/ui/button';
 
 interface UpgradeModalProps {
   isOpen: boolean;
@@ -123,7 +124,7 @@ export function UpgradeModal({
               <h2 className="text-lg font-semibold text-ink">Upgrade Required</h2>
               <button
                 onClick={onClose}
-                className="p-1 hover:bg-muted rounded-lg transition-colors"
+                className="p-1 text-muted-foreground hover:bg-muted/10 rounded-none transition-colors"
               >
                 <X className="h-5 w-5 text-muted-foreground" />
               </button>
@@ -232,19 +233,13 @@ export function UpgradeModal({
 
               {/* Actions */}
               <div className="flex justify-end gap-3 px-6 py-4 border-t-2 border-black/10 bg-muted rounded-b-lg">
-                <button
-                  onClick={onClose}
-                  className="px-4 py-2 border-2 border-black text-foreground rounded-lg hover:bg-muted transition-colors"
-                >
+                <Button variant="secondary" size="sm" onClick={onClose}>
                   Maybe Later
-                </button>
-                <button
-                  onClick={handleUpgrade}
-                  className="px-4 py-2 bg-coral text-white rounded-lg hover:bg-coral/90 transition-colors flex items-center gap-2 shadow-brutalist"
-                >
+                </Button>
+                <Button variant="brutalist" size="sm" onClick={handleUpgrade}>
                   Upgrade Now
                   <ArrowRight className="h-4 w-4" />
-                </button>
+                </Button>
               </div>
             </div>
           </m.div>

@@ -9,7 +9,7 @@ import type {
   ClientDetailPlatformProduct,
   Platform,
 } from '@agency-platform/shared';
-import { Card, EmptyState, PlatformIcon, StatusBadge } from '@/components/ui';
+import { Card, EmptyState, PlatformIcon, StatusBadge, Button } from '@/components/ui';
 import {
   formatConnectedProgress,
   getPlatformGroupBadgeConfig,
@@ -136,20 +136,19 @@ export function RequestedAccessBoard({
                       </p>
                       {renderStatusBadge(badgeConfig)}
                       {group.latestRequestId ? (
-                        <Link
-                          href={`/access-requests/${group.latestRequestId}` as any}
-                          className="inline-flex min-h-[36px] items-center gap-1 rounded-md border border-border px-3 text-xs font-medium text-foreground transition-colors hover:bg-muted/50"
-                        >
-                          View request
-                          <ExternalLink className="h-3.5 w-3.5" />
-                        </Link>
+                        <Button asChild variant="secondary" size="sm">
+                          <Link href={`/access-requests/${group.latestRequestId}` as any}>
+                            View request
+                            <ExternalLink className="h-3.5 w-3.5" />
+                          </Link>
+                        </Button>
                       ) : null}
                       <button
                         type="button"
                         onClick={() => toggleGroup(group.platformGroup)}
                         aria-expanded={isExpanded}
                         aria-controls={`platform-group-${group.platformGroup}`}
-                        className="inline-flex min-h-[36px] items-center gap-1 rounded-md border border-border px-3 text-xs font-medium text-foreground transition-colors hover:bg-muted/50"
+                        className="inline-flex min-h-[36px] items-center gap-1 rounded-none border border-border px-3 text-xs font-medium text-foreground transition-colors hover:bg-muted/50"
                         aria-label={`${isExpanded ? 'Collapse' : 'Expand'} ${platformLabel} details`}
                       >
                         {isExpanded ? (

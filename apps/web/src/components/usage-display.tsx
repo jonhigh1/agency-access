@@ -18,6 +18,7 @@
 
 import { type MetricType } from '@agency-platform/shared';
 import { AlertTriangle, TrendingUp } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface UsageDisplayProps {
   metric: MetricType;
@@ -121,7 +122,7 @@ export function UsageDisplay({
       {showUpgradeNudge && !isUnlimited && remaining !== 'unlimited' && (remaining as number) <= 1 && (
         <button
           onClick={onUpgradeClick}
-          className="mt-2 w-full flex items-center justify-center gap-2 px-3 py-2 bg-coral/10 border border-coral/30 rounded-md hover:bg-coral/20 transition-colors"
+          className="mt-2 w-full flex items-center justify-center gap-2 px-3 py-2 bg-coral/10 border border-coral/30 rounded-none hover:bg-coral/20 transition-colors"
         >
           <TrendingUp className="h-4 w-4 text-danger-ink" />
           <span className={`${currentSize.text} text-danger-ink font-medium`}>
@@ -173,9 +174,11 @@ export function UsageDisplayInline({
   const shortName = metricShortNames[metric];
 
   return (
-    <button
+    <Button
+      variant="secondary"
+      size="sm"
       onClick={onClick}
-      className="flex items-center gap-2 px-3 py-1.5 bg-card border border-black/10 rounded-lg hover:bg-gray-50 transition-colors"
+      className="gap-2"
     >
       <span className="text-xs text-gray-600">{shortName}:</span>
       <span className="text-xs font-medium text-ink">
@@ -186,6 +189,6 @@ export function UsageDisplayInline({
           percentage >= 100 ? 'bg-coral' : 'bg-yellow-500'
         }`} />
       )}
-    </button>
+    </Button>
   );
 }
