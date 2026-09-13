@@ -9,6 +9,7 @@
  */
 
 import { useState, useMemo, useEffect, Suspense } from 'react';
+import dynamic from 'next/dynamic';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth, useUser } from '@clerk/nextjs';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -20,11 +21,7 @@ import {
   trackOAuthCallbackFailure,
   trackOAuthCallbackSuccess,
 } from '@/lib/analytics/oauth-events';
-import { MetaUnifiedSettings } from '@/components/meta-unified-settings';
-import { GoogleUnifiedSettings } from '@/components/google-unified-settings';
-import { ManageAssetsModalShell } from '@/components/manage-assets-modal-shell';
 import { LogoSpinner } from '@/components/ui/logo-spinner';
-import { ManualInvitationModal } from '@/components/manual-invitation-modal';
 import { AnimatePresence } from 'framer-motion';
 import { DEV_BYPASS_TOKEN, useAuthOrBypass } from '@/lib/dev-auth';
 import { useUserAgency } from '@/hooks/use-user-agency';
@@ -33,6 +30,48 @@ import { readPerfHarnessContext } from '@/lib/perf-harness';
 import { resolveApiUrl } from '@/lib/api/api-env';
 import { isManualInvitePlatform } from '@/lib/client-invite-platforms';
 import { useTransientMessage } from '@/hooks/use-transient-message';
+
+function gatedModalFallback(label: string) {
+  return (
+    <div
+      className="min-h-[220px] rounded-xl border border-border bg-muted/25"
+      aria-busy
+      aria-label={label}
+    />
+  );
+}
+
+const ManageAssetsModalShell = dynamic(
+  () =>
+    import('@/components/manage-assets-modal-shell').then((m) => ({
+      default: m.ManageAssetsModalShell,
+    })),
+  { loading: () => gatedModalFallback('Loading connection settings') }
+);
+
+const MetaUnifiedSettings = dynamic(
+  () =>
+    import('@/components/meta-unified-settings').then((m) => ({
+      default: m.MetaUnifiedSettings,
+    })),
+  { loading: () => gatedModalFallback('Loading Meta connection settings') }
+);
+
+const GoogleUnifiedSettings = dynamic(
+  () =>
+    import('@/components/google-unified-settings').then((m) => ({
+      default: m.GoogleUnifiedSettings,
+    })),
+  { loading: () => gatedModalFallback('Loading Google connection settings') }
+);
+
+const ManualInvitationModal = dynamic(
+  () =>
+    import('@/components/manual-invitation-modal').then((m) => ({
+      default: m.ManualInvitationModal,
+    })),
+  { loading: () => gatedModalFallback('Loading invitation setup') }
+);
 
 function ConnectionsPageContent() {
   const router = useRouter();

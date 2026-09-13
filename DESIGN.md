@@ -87,6 +87,10 @@ components:
     padding: "24px"
 ---
 
+> **Stale — do not use for product UI.** This file predates Design System v2.0 (September 2026).
+> The canonical system is [`apps/web/DESIGN_SYSTEM.md`](apps/web/DESIGN_SYSTEM.md) and the tokens in `apps/web/src/app/globals.css`
+> (binary radius, one coral accent, Fraunces dropped, no violet). See DEC-008. Regenerating this file from v2.0 is follow-up work.
+
 # Design System: AuthHub
 
 ## Overview

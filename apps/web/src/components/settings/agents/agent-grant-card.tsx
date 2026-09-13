@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Bot, ShieldX } from 'lucide-react';
+import { ShieldX } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { AgentGrantRecord } from '@/lib/api/agents';
 import type { AgentPermission } from '@agency-platform/shared';
@@ -43,19 +43,16 @@ export function AgentGrantCard({ grant, onRevoke, onUpdate, isRevoking = false, 
       : [...current, permission]);
   };
   return (
-    <article className="rounded-xl border border-border bg-card p-5" aria-label={`${grant.displayName} agent connection`}>
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex gap-3">
-          <span className="grid h-10 w-10 place-items-center rounded-lg bg-muted"><Bot className="h-5 w-5" /></span>
-          <div>
-            <h3 className="font-semibold text-foreground">{grant.displayName}</h3>
-            <p className="text-sm text-muted-foreground">Last used {formatDate(grant.lastUsedAt)}</p>
-          </div>
+    <article className="min-w-0" aria-label={`${grant.displayName} agent connection`}>
+      <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
+        <div className="min-w-0">
+          <h3 className="font-semibold text-ink">{grant.displayName}</h3>
+          <p className="text-sm text-muted-foreground">Last used {formatDate(grant.lastUsedAt)}</p>
         </div>
-        <span className={`rounded-full px-2.5 py-1 text-xs font-semibold ${grant.state === 'active' ? 'bg-teal/10 text-success-ink' : 'bg-muted text-muted-foreground'}`}>{grant.state}</span>
+        <span className={`rounded-full border px-2.5 py-1 text-xs font-semibold ${grant.state === 'active' ? 'border-teal/30 bg-teal/10 text-success-ink' : 'border-border bg-muted/10 text-muted-foreground'}`}>{grant.state}</span>
       </div>
       <div className="mt-4 flex flex-wrap gap-2" aria-label="Granted permissions">
-        {grant.permissions.map((permission) => <span key={permission} className="rounded-md border border-border px-2 py-1 text-xs text-muted-foreground">{permission}</span>)}
+        {grant.permissions.map((permission) => <code key={permission} className="border border-border px-2 py-1 text-xs text-muted-foreground">{permission}</code>)}
       </div>
       {grant.state === 'active' && !confirming && !managing && (
         <div className="mt-5 flex flex-wrap gap-2">
@@ -64,37 +61,37 @@ export function AgentGrantCard({ grant, onRevoke, onUpdate, isRevoking = false, 
         </div>
       )}
       {managing && (
-        <form className="mt-5 space-y-4 rounded-lg border border-border bg-muted/30 p-4" onSubmit={async (event) => {
+        <form className="mt-5 space-y-4 border border-border p-4" onSubmit={async (event) => {
           event.preventDefault();
           await onUpdate(grant.id, { displayName: displayName.trim(), permissions });
           setManaging(false);
         }}>
           <div>
             <label htmlFor={`agent-name-${grant.id}`} className="text-sm font-semibold">Agent name</label>
-            <input id={`agent-name-${grant.id}`} value={displayName} onChange={(event) => setDisplayName(event.target.value)} maxLength={120} required className="mt-1 min-h-11 w-full rounded-md border border-border bg-background px-3 text-sm" />
+            <input id={`agent-name-${grant.id}`} value={displayName} onChange={(event) => setDisplayName(event.target.value)} maxLength={120} required className="mt-1 min-h-11 w-full max-w-lg rounded-none border border-border bg-background px-3 text-sm" />
           </div>
           <fieldset>
             <legend className="text-sm font-semibold">Allowed capabilities</legend>
             <p className="mt-1 text-xs text-muted-foreground">Dispatches and cancellations still require a separate owner approval.</p>
-            <div className="mt-3 grid gap-2 sm:grid-cols-2">
-              {permissionOptions.map((option) => <label key={option.value} className="flex min-h-11 items-center gap-3 rounded-md border border-border bg-background px-3 text-sm">
+            <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2">
+              {permissionOptions.map((option) => <label key={option.value} className="flex min-h-11 items-center gap-3 border border-border bg-background px-3 py-2 text-sm">
                 <input type="checkbox" checked={permissions.includes(option.value)} onChange={() => togglePermission(option.value)} />
-                <span><span className="block font-medium">{option.label}</span><code className="text-xs text-muted-foreground">{option.value}</code></span>
+                <span className="min-w-0"><span className="block font-medium">{option.label}</span><code className="break-all text-xs text-muted-foreground">{option.value}</code></span>
               </label>)}
             </div>
           </fieldset>
           {permissions.length === 0 && <p role="alert" className="text-sm text-danger-ink">Select at least one capability.</p>}
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button type="submit" size="sm" isLoading={isUpdating} disabled={isUpdating || permissions.length === 0 || displayName.trim().length === 0}>Save access</Button>
             <Button type="button" size="sm" variant="ghost" disabled={isUpdating} onClick={() => { setDisplayName(grant.displayName); setPermissions(grant.permissions); setManaging(false); }}>Cancel</Button>
           </div>
         </form>
       )}
       {confirming && (
-        <div className="mt-5 rounded-lg border border-coral/40 bg-coral/5 p-4" role="alert">
+        <div className="mt-5 border border-coral/30 bg-coral/10 p-4" role="alert">
           <p className="font-medium">Revoke this agent immediately?</p>
           <p className="mt-1 text-sm text-muted-foreground">New calls will fail and pending unapproved operations will be canceled.</p>
-          <div className="mt-3 flex gap-2">
+          <div className="mt-3 flex flex-wrap gap-2">
             <Button size="sm" variant="danger" isLoading={isRevoking} onClick={() => onRevoke(grant.id)}>Confirm revoke</Button>
             <Button size="sm" variant="ghost" disabled={isRevoking} onClick={() => setConfirming(false)}>Keep connected</Button>
           </div>
