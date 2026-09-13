@@ -5,6 +5,8 @@
  *
  * Allows users to upgrade/downgrade their subscription tier
  * and cancel their subscription with proration options.
+ * Rendered as a settings group of rows; "Cancel Subscription" is the
+ * group's one danger button.
  */
 
 import { useState } from 'react';
@@ -18,7 +20,6 @@ import {
   X,
   CheckCircle2,
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { useCreateCheckout, useSubscription, useUpgradeSubscription } from '@/lib/query/billing';
 import { buildPlanSelectedProps, trackPlanSelected } from '@/lib/analytics/billing';
 import {
@@ -28,6 +29,7 @@ import {
 } from '@agency-platform/shared';
 import { CancelSubscriptionModal } from './cancel-subscription-modal';
 import { Button } from '@/components/ui/button';
+import { SettingsGroup, SettingsRow } from '../settings-row';
 import { readBillingIntervalPreference } from './billing-interval';
 import { resolveBillingLifecycle } from './billing-lifecycle';
 import { useTransientMessage } from '@/hooks/use-transient-message';
@@ -66,25 +68,6 @@ export function ManageSubscriptionCard() {
   const [updateBehavior, setUpdateBehavior] = useState<'immediate' | 'next-cycle'>('next-cycle');
   const [successMessage, showSuccessMessage, clearSuccessMessage] = useTransientMessage<string>();
   const [errorMessage, showErrorMessage, clearErrorMessage] = useTransientMessage<string>();
-
-  if (isLoading) {
-    return (
-      <section className="clean-card p-6">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="p-2 bg-coral/10 rounded-lg">
-            <Info className="h-5 w-5 text-danger-ink" />
-          </div>
-          <div>
-            <h2 className="font-display text-lg font-semibold text-ink">Manage Subscription</h2>
-            <p className="text-sm text-muted-foreground">Upgrade, downgrade, or cancel</p>
-          </div>
-        </div>
-        <div className="py-8 text-center">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mx-auto" />
-        </div>
-      </section>
-    );
-  }
 
   const currentTier = normalizeCurrentTier(subscription?.tier);
   const lifecycle = resolveBillingLifecycle(subscription);
@@ -140,183 +123,161 @@ export function ManageSubscriptionCard() {
     return 'The change will take effect at your next billing date. Any credit or charge will be applied to your next invoice.';
   };
 
-  return (
-    <section id="manage-subscription-card" className="clean-card p-6">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="p-2 bg-coral/10 rounded-lg">
-          <Info className="h-5 w-5 text-danger-ink" />
-        </div>
-        <div>
-          <h2 className="font-display text-lg font-semibold text-ink">Manage Subscription</h2>
-          <p className="text-sm text-muted-foreground">Upgrade, downgrade, or cancel your plan</p>
-        </div>
-      </div>
+  const isPending = upgradeMutation.isPending || createCheckoutMutation.isPending;
 
-      {/* Success Message */}
-      <AnimatePresence>
+  const behaviorOptionClass = (active: boolean) =>
+    `flex cursor-pointer items-start gap-3 border p-3 transition-colors duration-150 ${
+      active ? 'border-coral bg-coral/10' : 'border-border hover:border-muted-foreground'
+    }`;
+
+  return (
+    <div id="manage-subscription-card">
+      <SettingsGroup title="Manage subscription" description="Upgrade, downgrade, or cancel your plan">
         {successMessage && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="mb-4"
-          >
-            <div className="flex items-center gap-2 p-3 bg-teal/10 border border-teal/20 rounded-lg">
-              <CheckCircle2 className="h-5 w-5 text-success-ink flex-shrink-0" />
+          <SettingsRow label="Plan updated">
+            <div className="flex items-start gap-2 border border-teal/30 bg-teal/10 p-3">
+              <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-success-ink" />
               <p className="text-sm text-success-ink">{successMessage}</p>
               <button
+                type="button"
                 onClick={clearSuccessMessage}
-                className="ml-auto p-1 hover:bg-teal/20 rounded"
+                aria-label="Dismiss"
+                className="ml-auto p-1 transition-colors duration-150 hover:bg-teal/20"
               >
                 <X className="h-4 w-4 text-success-ink" />
               </button>
             </div>
-          </motion.div>
+          </SettingsRow>
         )}
-      </AnimatePresence>
 
-      {/* Error Message */}
-      <AnimatePresence>
         {errorMessage && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="mb-4"
-          >
-            <div className="flex items-center gap-2 p-3 bg-coral/10 border border-coral/20 rounded-lg">
-              <AlertCircle className="h-5 w-5 text-danger-ink flex-shrink-0" />
+          <SettingsRow label="Update failed">
+            <div className="flex items-start gap-2 border border-coral/30 bg-coral/10 p-3">
+              <AlertCircle className="mt-0.5 h-5 w-5 shrink-0 text-danger-ink" />
               <p className="text-sm text-danger-ink">{errorMessage}</p>
               <button
+                type="button"
                 onClick={clearErrorMessage}
-                className="ml-auto p-1 hover:bg-coral/20 rounded"
+                aria-label="Dismiss"
+                className="ml-auto p-1 transition-colors duration-150 hover:bg-coral/20"
               >
                 <X className="h-4 w-4 text-danger-ink" />
               </button>
             </div>
-          </motion.div>
+          </SettingsRow>
         )}
-      </AnimatePresence>
 
-      {/* Tier Selector */}
-      {!showTierSelector ? (
-        <div className="space-y-4">
-          <div className="p-4 bg-card rounded-lg border border-border">
-            <p className="text-sm text-muted-foreground mb-4">
-              Change your subscription plan at any time. Prorated charges or credits will apply.
-            </p>
-            <div className="flex flex-wrap gap-3">
-              <Button
-                variant="primary"
-                onClick={() => setShowTierSelector(true)}
-              >
-                <ArrowUp className="h-4 w-4" />
-                Change Plan
-              </Button>
-              {canCancelSubscription && (
+        {isLoading ? (
+          <SettingsRow label="Change plan">
+            <div aria-hidden="true" className="h-11 w-40 bg-muted animate-pulse" />
+          </SettingsRow>
+        ) : !showTierSelector ? (
+          <SettingsRow
+            label="Change plan"
+            description="Change your subscription plan at any time. Prorated charges or credits will apply."
+          >
+            <Button variant="secondary" onClick={() => setShowTierSelector(true)}>
+              <ArrowUp className="h-4 w-4" />
+              Change Plan
+            </Button>
+          </SettingsRow>
+        ) : (
+          <>
+            <SettingsRow label="Select new plan" description="Pick the tier you want to move to.">
+              <div className="space-y-2">
+                {MANAGEABLE_TIERS.map((tier) => {
+                  const isSelected = selectedTier === tier;
+                  const isCurrent = tier === currentTier;
+                  const tierName = getPricingTierNameFromSubscriptionTier(tier);
+                  const tierInfo = SUBSCRIPTION_TIER_DESCRIPTIONS[tier];
+                  const isUpgradeOption = TIER_RANK[tier] > currentTierRank;
+                  const isDowngradeOption = TIER_RANK[tier] < currentTierRank;
+
+                  return (
+                    <button
+                      key={tier}
+                      type="button"
+                      onClick={() => !isCurrent && setSelectedTier(tier)}
+                      disabled={isCurrent}
+                      className={`w-full border p-3 text-left transition-colors duration-150 ${
+                        isCurrent
+                          ? 'cursor-not-allowed border-border bg-muted opacity-60'
+                          : isSelected
+                            ? isUpgradeOption
+                              ? 'border-teal bg-teal/10'
+                              : 'border-warning bg-warning/10'
+                            : 'border-border bg-card hover:border-coral'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="min-w-0 flex-1">
+                          <div className="mb-1 flex flex-wrap items-center gap-2">
+                            <span className="font-semibold text-ink">{tierName}</span>
+                            {isCurrent && (
+                              <span className="rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+                                Current
+                              </span>
+                            )}
+                            {isUpgradeOption && !isCurrent && (
+                              <span className="flex items-center gap-1 rounded-full bg-teal/10 px-2 py-0.5 text-xs text-success-ink">
+                                <ArrowUp className="h-3 w-3" />
+                                Upgrade
+                              </span>
+                            )}
+                            {isDowngradeOption && !isCurrent && (
+                              <span className="flex items-center gap-1 rounded-full bg-warning/10 px-2 py-0.5 text-xs text-warning">
+                                <ArrowDown className="h-3 w-3" />
+                                Downgrade
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground">${tierInfo.price.monthly}/month</p>
+                        </div>
+                        {isSelected && (
+                          <div
+                            className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-full border-2 ${
+                              isUpgradeOption ? 'border-teal' : 'border-warning'
+                            }`}
+                          >
+                            <div className={`h-3 w-3 rounded-full ${isUpgradeOption ? 'bg-teal' : 'bg-warning'}`} />
+                          </div>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
                 <Button
                   variant="ghost"
+                  size="sm"
                   onClick={() => {
-                    setShowCancelModal(true);
+                    setShowTierSelector(false);
+                    setSelectedTier(null);
+                    clearErrorMessage();
                   }}
                 >
-                  Cancel Subscription
+                  <X className="h-4 w-4" />
+                  Close
                 </Button>
-              )}
-            </div>
-          </div>
-        </div>
-      ) : (
-        <div className="space-y-4">
-          <div className="p-4 bg-card rounded-lg border border-border">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold text-ink">Select New Plan</h3>
-              <button
-                onClick={() => {
-                  setShowTierSelector(false);
-                  setSelectedTier(null);
-                  clearErrorMessage();
-                }}
-                className="p-1 hover:bg-coral/10 rounded"
-              >
-                <X className="h-4 w-4 text-muted-foreground" />
-              </button>
-            </div>
+              </div>
+            </SettingsRow>
 
-            {/* Tier Options */}
-            <div className="space-y-2 mb-4">
-              {MANAGEABLE_TIERS.map((tier) => {
-                const isSelected = selectedTier === tier;
-                const isCurrent = tier === currentTier;
-                const tierName = getPricingTierNameFromSubscriptionTier(tier);
-                const tierInfo = SUBSCRIPTION_TIER_DESCRIPTIONS[tier];
-                const isUpgradeOption = TIER_RANK[tier] > currentTierRank;
-                const isDowngradeOption = TIER_RANK[tier] < currentTierRank;
-
-                return (
-                  <button
-                    key={tier}
-                    onClick={() => !isCurrent && setSelectedTier(tier)}
-                    disabled={isCurrent}
-                    className={`w-full text-left p-3 rounded-lg border-2 transition-all ${
-                      isCurrent
-                        ? 'border-border bg-muted opacity-60 cursor-not-allowed'
-                        : isSelected
-                        ? isUpgradeOption
-                        ? 'border-teal bg-teal/10 ring-2 ring-teal/20'
-                        : 'border-warning bg-warning/10 ring-2 ring-warning/20'
-                        : 'border-border bg-card hover:border-coral/30 hover:bg-coral/5'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="font-semibold text-ink">{tierName}</span>
-                          {isCurrent && (
-                            <span className="text-xs px-2 py-0.5 bg-muted text-muted-foreground rounded-full">
-                              Current
-                            </span>
-                          )}
-                          {isUpgradeOption && !isCurrent && (
-                            <span className="text-xs px-2 py-0.5 bg-teal/10 text-success-ink rounded-full flex items-center gap-1">
-                              <ArrowUp className="h-3 w-3" />
-                              Upgrade
-                            </span>
-                          )}
-                          {isDowngradeOption && !isCurrent && (
-                            <span className="text-xs px-2 py-0.5 bg-warning/10 text-warning rounded-full flex items-center gap-1">
-                              <ArrowDown className="h-3 w-3" />
-                              Downgrade
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-sm text-muted-foreground">${tierInfo.price.monthly}/month</p>
-                      </div>
-                      {isSelected && (
-                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
-                          isUpgradeOption ? 'border-teal' : 'border-warning'
-                        }`}>
-                          <div className={`w-3 h-3 rounded-full ${
-                            isUpgradeOption ? 'bg-teal' : 'bg-warning'
-                          }`} />
-                        </div>
-                      )}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Proration Options */}
             {selectedTier && selectedTier !== currentTier && (
-              <div className="pt-4 border-t border-border">
-                <h4 className="text-sm font-semibold text-ink mb-3">When should this change take effect?</h4>
-                <div className="space-y-2 mb-4">
-                  <label className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition-all ${
-                    updateBehavior === 'next-cycle'
-                      ? 'border-coral bg-coral/10'
-                      : 'border-border hover:border-muted-foreground'
-                  }`}>
+              <SettingsRow
+                label="When should this change take effect?"
+                description={
+                  <span className="flex items-start gap-2">
+                    <Info className="mt-0.5 h-4 w-4 shrink-0" />
+                    <span>
+                      <strong className="text-ink">
+                        {isUpgrade ? 'Upgrade' : 'Downgrade'} to {getPricingTierNameFromSubscriptionTier(selectedTier)}.
+                      </strong>{' '}
+                      {getProrationExplanation()}
+                    </span>
+                  </span>
+                }
+              >
+                <div className="space-y-2">
+                  <label className={behaviorOptionClass(updateBehavior === 'next-cycle')}>
                     <input
                       type="radio"
                       name="updateBehavior"
@@ -327,14 +288,12 @@ export function ManageSubscriptionCard() {
                     />
                     <div>
                       <p className="font-medium text-ink">Next billing cycle (Recommended)</p>
-                      <p className="text-sm text-muted-foreground">{getProrationExplanation()}</p>
+                      <p className="text-sm text-muted-foreground">
+                        The change will take effect at your next billing date. Any credit or charge will be applied to your next invoice.
+                      </p>
                     </div>
                   </label>
-                  <label className={`flex items-start gap-3 p-3 border rounded-lg cursor-pointer transition-all ${
-                    updateBehavior === 'immediate'
-                      ? 'border-coral bg-coral/10'
-                      : 'border-border hover:border-muted-foreground'
-                  }`}>
+                  <label className={behaviorOptionClass(updateBehavior === 'immediate')}>
                     <input
                       type="radio"
                       name="updateBehavior"
@@ -346,68 +305,55 @@ export function ManageSubscriptionCard() {
                     <div>
                       <p className="font-medium text-ink">Immediately</p>
                       <p className="text-sm text-muted-foreground">
-                        {updateBehavior === 'immediate' ? getProrationExplanation() : 'The prorated difference will be charged immediately.'}
+                        The prorated difference will be charged immediately, and your new billing cycle starts today.
                       </p>
                     </div>
                   </label>
                 </div>
-
-                {/* Summary */}
-                <div className="p-3 bg-coral/5 border border-coral/20 rounded-lg mb-4">
-                  <div className="flex items-start gap-2">
-                    <Info className="h-5 w-5 text-danger-ink flex-shrink-0 mt-0.5" />
-                    <div className="text-sm text-danger-ink">
-                      <p className="font-semibold mb-1">
-                        {isUpgrade ? 'Upgrade' : 'Downgrade'} to {getPricingTierNameFromSubscriptionTier(selectedTier)}
-                      </p>
-                      <p>{getProrationExplanation()}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              </SettingsRow>
             )}
 
-            {/* Actions */}
             {selectedTier && selectedTier !== currentTier && (
-              <div className="flex justify-end gap-3">
-                <Button
-                  variant="ghost"
-                  onClick={() => setSelectedTier(null)}
-                  disabled={upgradeMutation.isPending || createCheckoutMutation.isPending}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  variant="primary"
-                  onClick={handleTierChange}
-                  disabled={upgradeMutation.isPending || createCheckoutMutation.isPending}
-                >
-                  {upgradeMutation.isPending || createCheckoutMutation.isPending ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      {isUpgrade ? (
-                        <>
-                          <ArrowUp className="h-4 w-4" />
-                          Upgrade Now
-                        </>
-                      ) : (
-                        <>
-                          <ArrowDown className="h-4 w-4" />
-                          Downgrade Now
-                        </>
-                      )}
-                    </>
-                  )}
-                </Button>
-              </div>
+              <SettingsRow label="Confirm change">
+                <div className="flex flex-wrap gap-3">
+                  <Button variant="ghost" onClick={() => setSelectedTier(null)} disabled={isPending}>
+                    Cancel
+                  </Button>
+                  <Button variant="secondary" onClick={handleTierChange} disabled={isPending}>
+                    {isPending ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Processing...
+                      </>
+                    ) : isUpgrade ? (
+                      <>
+                        <ArrowUp className="h-4 w-4" />
+                        Upgrade Now
+                      </>
+                    ) : (
+                      <>
+                        <ArrowDown className="h-4 w-4" />
+                        Downgrade Now
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </SettingsRow>
             )}
-          </div>
-        </div>
-      )}
+          </>
+        )}
+
+        {!isLoading && canCancelSubscription && (
+          <SettingsRow
+            label="Cancel subscription"
+            description="Cancel at the end of the billing period or immediately. You can reactivate later."
+          >
+            <Button variant="danger" onClick={() => setShowCancelModal(true)}>
+              Cancel Subscription
+            </Button>
+          </SettingsRow>
+        )}
+      </SettingsGroup>
 
       {/* Cancel Subscription Modal */}
       {subscription && (
@@ -417,6 +363,6 @@ export function ManageSubscriptionCard() {
           currentTier={subscription.tier}
         />
       )}
-    </section>
+    </div>
   );
 }
