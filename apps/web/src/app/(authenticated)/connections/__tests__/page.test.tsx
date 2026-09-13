@@ -30,6 +30,26 @@ const { clerkState, devAuthState } = vi.hoisted(() => ({
 const mockReplace = vi.fn();
 const mockSearchParams = new URLSearchParams();
 
+vi.mock('next/dynamic', async () => {
+  const React = await vi.importActual<typeof import('react')>('react');
+
+  return {
+    default: (
+      loader: () => Promise<{ default: React.ComponentType }>,
+      options?: { loading?: React.ComponentType }
+    ) => {
+      const LazyComponent = React.lazy(loader);
+      return function DynamicComponent(props: Record<string, unknown>) {
+        return React.createElement(
+          React.Suspense,
+          { fallback: options?.loading ? React.createElement(options.loading) : null },
+          React.createElement(LazyComponent, props)
+        );
+      };
+    },
+  };
+});
+
 vi.mock('next/navigation', () => ({
   useRouter: () => ({
     replace: mockReplace,

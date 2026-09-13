@@ -6,6 +6,26 @@ const searchParamsState = vi.hoisted(() => ({
   tab: null as string | null,
 }));
 
+vi.mock('next/dynamic', async () => {
+  const React = await vi.importActual<typeof import('react')>('react');
+
+  return {
+    default: (
+      loader: () => Promise<{ default: React.ComponentType }>,
+      options?: { loading?: React.ComponentType }
+    ) => {
+      const LazyComponent = React.lazy(loader);
+      return function DynamicComponent(props: Record<string, unknown>) {
+        return React.createElement(
+          React.Suspense,
+          { fallback: options?.loading ? React.createElement(options.loading) : null },
+          React.createElement(LazyComponent, props)
+        );
+      };
+    },
+  };
+});
+
 vi.mock('next/navigation', () => ({
   useRouter: () => ({
     replace: vi.fn(),
@@ -35,24 +55,12 @@ vi.mock('@/components/settings/general', () => ({
   NotificationsCard: () => <div>Notifications</div>,
 }));
 
-vi.mock('@/components/settings/billing', () => ({
-  BillingTab: () => <div>Billing settings panel</div>,
-}));
-
 vi.mock('@/components/settings/billing/billing-tab', () => ({
   BillingTab: () => <div>Billing settings panel</div>,
 }));
 
-vi.mock('@/components/settings/webhooks', () => ({
-  WebhookSettingsTab: () => <div>Webhook settings panel</div>,
-}));
-
 vi.mock('@/components/settings/webhooks/webhook-settings-tab', () => ({
   WebhookSettingsTab: () => <div>Webhook settings panel</div>,
-}));
-
-vi.mock('@/components/settings/agents', () => ({
-  AgentsSettingsTab: () => <div>Agents settings panel</div>,
 }));
 
 vi.mock('@/components/settings/agents/agents-settings-tab', () => ({
