@@ -1,0 +1,42 @@
+{
+  "cli_version": "0.10.2",
+  "checkpoint_id": "01M2E0GKK361K9BQ9G9E65ZTE0",
+  "session_id": "ses_f6418a9feffeSm0LqhmxaSKObr",
+  "strategy": "manual-commit",
+  "created_at": "2026-09-13T18:29:47.73314Z",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "apps/web/content/blog/leadsie-vs-agencyaccess.md",
+    "apps/web/content/blog/leadsie-vs-authhub-comparison.md",
+    "marketing/CONTENT-STRATEGY-2026.md",
+    "marketing/content/CONTENT-CALENDAR-SEPTEMBER-2026.md",
+    "marketing/content/KEYWORD-TRACKER.md",
+    "tasks/todo.md"
+  ],
+  "agent": "OpenCode",
+  "model": "",
+  "turn_id": "bc7d371d455b",
+  "checkpoint_transcript_start": 40,
+  "transcript_lines_at_start": 40,
+  "compact_transcript_start": 40,
+  "token_usage": {
+    "input_tokens": 0,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 0,
+    "api_call_count": 0
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-09-13T18:29:47.72746Z",
+    "agent_lines": 0,
+    "agent_removed": 0,
+    "human_added": 175,
+    "human_modified": 1,
+    "human_removed": 0,
+    "total_committed": 175,
+    "total_lines_changed": 176,
+    "agent_percentage": 0,
+    "metric_version": 2
+  }
+}
