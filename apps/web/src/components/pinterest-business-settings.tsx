@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { ExternalLink, Edit2, Plus, Check } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface PinterestBusinessSettingsProps {
   agencyId: string;
@@ -58,23 +59,25 @@ export function PinterestBusinessSettings({
             maxLength={20}
             disabled={isSaving}
           />
-          <button
+          <Button
             onClick={handleSave}
             disabled={!isValidBusinessId || isSaving}
-            className="inline-flex items-center gap-1 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:bg-slate-100 disabled:text-slate-400 disabled:cursor-not-allowed transition-colors"
+            variant="primary"
+            size="sm"
           >
             {isSaving ? 'Saving...' : <><Check className="h-4 w-4" /> Save</>}
-          </button>
-          <button
+          </Button>
+          <Button
             onClick={() => {
               setValue(businessId || '');
               setIsEditing(false);
             }}
             disabled={isSaving}
-            className="px-4 py-2 text-slate-600 hover:text-slate-900 text-sm font-medium transition-colors"
+            variant="ghost"
+            size="sm"
           >
             Cancel
-          </button>
+          </Button>
         </div>
       </div>
     );
@@ -94,7 +97,7 @@ export function PinterestBusinessSettings({
                 href={`https://www.pinterest.com/business/business-manager/${businessId}/settings/`}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-700 font-medium"
+                className="inline-flex items-center gap-1 text-xs font-medium text-ink underline-offset-4 hover:underline"
               >
                 View in Business Manager
                 <ExternalLink className="h-3 w-3" />
@@ -104,9 +107,11 @@ export function PinterestBusinessSettings({
             <p className="text-sm text-slate-500">No Business ID set</p>
           )}
         </div>
-        <button
+        <Button
           onClick={() => setIsEditing(true)}
-          className="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 rounded-lg transition-colors"
+          variant="ghost"
+          size="sm"
+          className="px-3 py-1.5"
         >
           {businessId ? (
             <>
@@ -117,7 +122,7 @@ export function PinterestBusinessSettings({
               <Plus className="h-4 w-4" /> Add
             </>
           )}
-        </button>
+        </Button>
       </div>
     </div>
   );

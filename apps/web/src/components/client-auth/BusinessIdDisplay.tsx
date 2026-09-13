@@ -2,6 +2,7 @@
 
 import { Copy, Check } from 'lucide-react';
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard';
+import { Button } from '@/components/ui/button';
 
 interface BusinessIdDisplayProps {
   businessId: string;
@@ -30,14 +31,15 @@ export function BusinessIdDisplay({
           value={businessId}
           className="flex-1 px-4 py-2 bg-muted/20 border-2 border-border rounded-lg text-ink font-mono text-sm focus:outline-none focus:border-border"
         />
-        <button
+        <Button
           onClick={handleCopy}
-          className="px-4 py-2 bg-card border-2 border-border rounded-lg text-ink font-medium hover:bg-muted/20 transition-colors flex items-center gap-2"
+          variant="secondary"
+          size="sm"
           aria-label="Copy Business Manager ID"
         >
           {copied ? (
             <>
-              <Check className="w-4 h-4 text-emerald-600" />
+              <Check className="w-4 h-4 text-success-ink" />
               <span className="text-sm">Copied!</span>
             </>
           ) : (
@@ -46,7 +48,7 @@ export function BusinessIdDisplay({
               <span className="text-sm">Copy</span>
             </>
           )}
-        </button>
+        </Button>
       </div>
     </div>
   );

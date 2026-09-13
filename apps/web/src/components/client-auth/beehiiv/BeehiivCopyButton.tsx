@@ -9,6 +9,7 @@
 
 import { Copy, Check } from 'lucide-react';
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard';
+import { Button } from '@/components/ui/button';
 
 interface BeehiivCopyButtonProps {
   text: string;           // Text to copy
@@ -25,26 +26,12 @@ export function BeehiivCopyButton({
 
   const handleCopy = () => copy(text);
 
-  const buttonClasses = [
-    'inline-flex items-center gap-2 px-4 py-2',
-    'bg-card border border-border rounded-lg',
-    'text-foreground font-medium text-sm',
-    'hover:bg-muted/20 hover:border-border',
-    'active:bg-muted/30',
-    'transition-all duration-200',
-    copied ? 'border-teal bg-teal/10 text-success-ink' : '',
-    className,
-  ].filter(Boolean).join(' ');
-
   return (
     <div className="relative">
-      <button
-        onClick={handleCopy}
-        className={buttonClasses}
-      >
+      <Button onClick={handleCopy} variant="secondary" size="sm" className={className}>
         {copied ? (
           <>
-            <Check className="h-4 w-4" />
+            <Check className="h-4 w-4 text-success-ink" />
             Copied!
           </>
         ) : (
@@ -53,7 +40,7 @@ export function BeehiivCopyButton({
             {label}
           </>
         )}
-      </button>
+      </Button>
 
       {/* Optional tooltip/subtle confirmation below button */}
       {copied && (

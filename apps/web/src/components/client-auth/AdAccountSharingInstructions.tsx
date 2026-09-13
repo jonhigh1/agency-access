@@ -5,6 +5,7 @@ import { ExternalLink, CheckCircle2, Loader2, AlertCircle } from 'lucide-react';
 import { META_AD_ACCOUNT_INSTRUCTIONS } from '@/lib/content/meta-ad-account-instructions';
 import { getApiBaseUrl } from '@/lib/api/api-env';
 import { parseJsonResponse } from '@/lib/api/parse-json-response';
+import { Button } from '@/components/ui/button';
 import { BusinessIdDisplay } from './BusinessIdDisplay';
 
 interface AdAccount {
@@ -290,19 +291,21 @@ export function AdAccountSharingInstructions({
 
       {/* Actions */}
       <div className="flex gap-4 pt-4 border-t-2 border-border">
-        <a
-          href="https://business.facebook.com/settings"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="flex-1 px-6 py-3 bg-card border-2 border-border rounded-lg text-ink font-semibold hover:bg-muted/20 transition-colors flex items-center justify-center gap-2"
-        >
-          <ExternalLink className="w-5 h-5" />
-          {content.openBusinessManager}
-        </a>
-        <button
+        <Button asChild variant="secondary" className="flex-1">
+          <a
+            href="https://business.facebook.com/settings"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <ExternalLink className="w-5 h-5" />
+            {content.openBusinessManager}
+          </a>
+        </Button>
+        <Button
           onClick={handleVerifyAccess}
           disabled={isStarting || isVerifying || status === 'verified'}
-          className="flex-1 px-6 py-3 bg-coral text-white font-semibold rounded-lg hover:bg-coral/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+          variant="primary"
+          className="flex-1"
         >
           {isVerifying ? (
             <>
@@ -320,7 +323,7 @@ export function AdAccountSharingInstructions({
               {content.checkAccess}
             </>
           )}
-        </button>
+        </Button>
       </div>
     </div>
   );

@@ -5,6 +5,7 @@ import { Loader2, X, CheckCircle2, AlertCircle } from 'lucide-react';
 import { META_GRANT_ACCESS } from '@/lib/content/meta-grant-access';
 import { getApiBaseUrl } from '@/lib/api/api-env';
 import { parseJsonResponse } from '@/lib/api/parse-json-response';
+import { Button } from '@/components/ui/button';
 
 interface Page {
   id: string;
@@ -213,14 +214,12 @@ export function AutomaticPagesGrant({
         </div>
 
         {/* Grant Access Button */}
-        <button
+        <Button
           onClick={handleGrantAccess}
           disabled={isGranting || displayPages.length === 0 || hasGranted}
-          className={`w-full py-3 px-6 rounded-lg font-semibold text-lg transition-all ${
-            isGranting || displayPages.length === 0 || hasGranted
-              ? 'bg-muted/40 text-muted-foreground cursor-not-allowed'
-              : 'bg-ink text-white hover:bg-muted/60'
-          }`}
+          variant="primary"
+          size="lg"
+          className="w-full px-6 py-3"
         >
           {isGranting ? (
             <span className="flex items-center justify-center gap-2">
@@ -235,7 +234,7 @@ export function AutomaticPagesGrant({
           ) : (
             content.facebookPages.grantButton
           )}
-        </button>
+        </Button>
       </div>
     </div>
   );

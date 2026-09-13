@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { ExternalLink, Info, ChevronRight } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface PinterestBusinessIdInputProps {
   agencyId: string;
@@ -71,7 +72,7 @@ export function PinterestBusinessIdInput({
                   href="https://www.pinterest.com/business/business-manager/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 text-indigo-700 font-semibold hover:underline"
+                  className="inline-flex items-center gap-1 font-semibold text-ink underline-offset-4 hover:underline"
                 >
                   Pinterest Business Manager
                   <ExternalLink className="h-3 w-3" />
@@ -121,25 +122,20 @@ export function PinterestBusinessIdInput({
 
           {/* Actions */}
           <div className="pt-4 flex items-center justify-between gap-3">
-            <button
+            <Button
               onClick={onSkip}
               disabled={isSaving}
               type="button"
-              className="text-sm font-medium text-slate-600 hover:text-slate-900 disabled:text-slate-400 disabled:cursor-not-allowed transition-colors"
+              variant="ghost"
+              size="sm"
             >
               Skip for now
-            </button>
-            <button
+            </Button>
+            <Button
               onClick={handleSubmit}
               disabled={!canSubmit}
               type="button"
-              className={`
-                inline-flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-bold transition-all
-                ${canSubmit
-                  ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-200'
-                  : 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                }
-              `}
+              variant="primary"
             >
               {isSaving ? (
                 'Saving...'
@@ -149,7 +145,7 @@ export function PinterestBusinessIdInput({
                   <ChevronRight className="h-4 w-4" />
                 </>
               )}
-            </button>
+            </Button>
           </div>
         </div>
       </div>

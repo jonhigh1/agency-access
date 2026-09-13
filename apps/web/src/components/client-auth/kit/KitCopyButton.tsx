@@ -2,6 +2,7 @@
 
 import { Check, Copy } from 'lucide-react';
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard';
+import { Button } from '@/components/ui/button';
 
 interface KitCopyButtonProps {
   text: string;
@@ -13,10 +14,7 @@ export function KitCopyButton({ text }: KitCopyButtonProps) {
   const handleCopy = () => copy(text);
 
   return (
-    <button
-      onClick={handleCopy}
-      className="px-4 py-2 bg-coral text-white rounded-lg hover:bg-coral/90 transition-colors text-sm font-medium flex items-center gap-2"
-    >
+    <Button onClick={handleCopy} variant="secondary" size="sm">
       {copied ? (
         <>
           <Check className="h-4 w-4" />
@@ -28,6 +26,6 @@ export function KitCopyButton({ text }: KitCopyButtonProps) {
           Copy
         </>
       )}
-    </button>
+    </Button>
   );
 }

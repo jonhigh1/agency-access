@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useAuth, useUser } from '@clerk/nextjs';
 import { Loader2, ChevronRight, AlertCircle, RefreshCw } from 'lucide-react';
 import { SingleSelect } from '@/components/ui/single-select';
+import { Button } from '@/components/ui/button';
 import { finalizeMetaBusinessLogin, launchMetaBusinessLogin } from '@/lib/meta-business-login';
 import { resolveApiUrl } from '@/lib/api/api-env';
 
@@ -115,13 +116,10 @@ export function MetaBusinessPortfolioSelector({
         <AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-3" />
         <p className="text-red-900 font-semibold mb-1">Failed to load portfolios</p>
         <p className="text-red-700 text-sm mb-4">Please try refreshing the page or connecting again.</p>
-        <button 
-          onClick={() => refetch()}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-card border border-red-200 text-red-700 rounded-md hover:bg-red-50 transition-colors text-sm font-medium"
-        >
+        <Button onClick={() => refetch()} variant="ghost" size="sm" className="text-danger-ink">
           <RefreshCw className="h-4 w-4" />
           Retry
-        </button>
+        </Button>
       </div>
     );
   }
@@ -208,16 +206,11 @@ export function MetaBusinessPortfolioSelector({
                 {isReauthenticating ? 'Logging in again…' : 'Log in again'}
               </button>
             </p>
-            <button
+            <Button
               onClick={handleConnect}
               disabled={!selectedId || isSaving}
               type="button"
-              className={`
-                inline-flex items-center gap-2 px-6 py-3 rounded-lg text-sm font-bold transition-all
-                ${!selectedId || isSaving 
-                  ? 'bg-slate-100 text-slate-400 cursor-not-allowed' 
-                  : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-200'}
-              `}
+              variant="primary"
             >
               {isSaving ? (
                 <>
@@ -230,7 +223,7 @@ export function MetaBusinessPortfolioSelector({
                   <ChevronRight className="h-4 w-4" />
                 </>
               )}
-            </button>
+            </Button>
           </div>
           {reauthError && (
             <p className="text-xs text-red-700 pt-2">{reauthError}</p>

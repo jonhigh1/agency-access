@@ -12,6 +12,7 @@ import { PermissionSelect } from './PermissionSelect';
 import { SingleSelect } from '@/components/ui/single-select';
 import { Search, Loader2, AlertCircle } from 'lucide-react';
 import { resolveApiUrl } from '@/lib/api/api-env';
+import { Button } from '@/components/ui/button';
 
 interface AgencyMetaAssetSelectorProps {
   businessId: string;
@@ -122,7 +123,7 @@ export function AgencyMetaAssetSelector({
   return (
     <div className="flex flex-col h-full max-h-[80vh] bg-card">
       {/* Header & Search */}
-      <div className="p-4 border-b border-slate-200 space-y-4">
+      <div className="p-4 border-b border-border space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-slate-900">{businessName}</h2>
           <div className="text-[10px] font-mono text-slate-400 uppercase tracking-wider">{businessId}</div>
@@ -134,7 +135,7 @@ export function AgencyMetaAssetSelector({
             <input
               type="text"
               placeholder="Search assets..."
-              className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-sm text-sm focus:outline-none focus:border-slate-400 transition-colors"
+              className="w-full pl-9 pr-4 py-2 border border-border rounded-sm text-sm focus:outline-none focus:border-slate-400 transition-colors"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -152,7 +153,7 @@ export function AgencyMetaAssetSelector({
             placeholder="All Types"
             ariaLabel="Asset type filter"
             className="flex-1 min-w-0"
-            triggerClassName="px-3 py-2 border border-slate-200 rounded-sm text-sm min-h-auto"
+            triggerClassName="px-3 py-2 border border-border rounded-sm text-sm min-h-auto"
           />
         </div>
       </div>
@@ -215,16 +216,13 @@ export function AgencyMetaAssetSelector({
       </div>
 
       {/* Footer */}
-      <div className="p-4 border-t border-slate-200 bg-slate-50 flex items-center justify-between">
+      <div className="p-4 border-t border-border bg-slate-50 flex items-center justify-between">
         <div className="text-sm text-slate-600">
           <span className="font-semibold text-slate-900">{selections.length}</span> assets selected
         </div>
-        <button
-          onClick={onSave}
-          className="px-6 py-2 bg-slate-900 text-white text-sm font-semibold rounded-sm hover:bg-slate-800 transition-colors"
-        >
+        <Button onClick={onSave} variant="primary" size="sm">
           Save Selections
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -248,7 +246,7 @@ function AssetSection({
   return (
     <div className="space-y-3">
       <h3 className="text-[10px] font-bold text-slate-400 uppercase tracking-widest px-1">{title}</h3>
-      <div className="border border-slate-200 rounded-sm overflow-x-hidden divide-y divide-slate-100">
+      <div className="border border-border rounded-sm overflow-x-hidden divide-y divide-slate-100">
         {assets.map((asset) => {
           const selection = selections.find(s => s.assetId === asset.id);
           const isSelected = !!selection;
