@@ -6,22 +6,22 @@ Publish = commit to `main` → Vercel auto-deploy. One commit per post.
 
 ---
 
-## Phase A — Week 1 (Sep 9–14) — IN PROGRESS
+## Phase A — Week 1 (Sep 9–14) — ✅ COMPLETE
 
-### A1. Snapchat Ads guide — draft exists, needs pipeline finish
-- [ ] SEO fixes: put "Snapchat Business Manager" in first paragraph + meta; add 2–3 official external sources; grow internal links 1→4 (incl. exact-anchor link to cluster-owner post); tags 5→6–8
-- [ ] Editorial pass (Phase 5): banned words, cut 20–30% where flabby, active voice
-- [ ] Quality gate (Phase 6): score ≥ 9/10 or stop and report
-- [ ] Docs sync (Phase 7): calendar status, CONTENT-STRATEGY-2026.md inventory, KEYWORD-TRACKER.md assignment
-- [ ] Commit + push; verify live URL renders
+### A1. Snapchat Ads guide — draft existed, needed pipeline finish
+- [x] SEO fixes: "Snapchat Business Manager" in first 100 words + meta title front-loaded; 3 official external sources (2× businesshelp.snapchat.com roles docs + Snap Q2-2026 investor DAU stat); internal links 1→5 (exact-anchor to cluster post); tags 5→6, primary keyword first
+- [x] Editorial pass (Phase 5): banned-word scan clean
+- [x] Quality gate (Phase 6): 9/10 — original "no access-request system" angle, three-layer permission framework, honest positioning
+- [x] Docs sync (Phase 7): calendar, CONTENT-STRATEGY-2026.md (21 posts), KEYWORD-TRACKER.md Tier-2 rows
+- [x] Shipped: commit `552bfab` → build gate passed → live at `authhub.co/blog/snapchat-ads-access-agencies` (title + description verified in HTML)
 
 ### A2. Striking-distance cluster push (7 terms at pos 15–22)
-- [ ] Title/H1: work in "agency client onboarding software"
-- [ ] Intro paragraph contains exact phrase "agency onboarding software"
-- [ ] Add/verify FAQ answers with exact phrases
-- [ ] Add exact-anchor internal links FROM checklist, questionnaire, how-to-onboard posts
-- [ ] Refresh CTA
-- [ ] Commit + push
+- [x] Title/H1: "Best **Agency Client Onboarding Software** for Agencies (2026)" — exact cluster term nested one word after "Best"; #8 ranking phrase preserved
+- [x] Intro para 2 carries exact "agency onboarding software"; FAQ H2 + 5 Q&As already exact-match (pre-existing)
+- [x] 6 exact-anchor inbound links: checklist ("client onboarding software for agencies"), questionnaire ("agency onboarding platform"), how-to-onboard ("onboarding platforms for agencies"), Snapchat guide ("client onboarding software for agencies")
+- [x] Closing CTA refreshed (bottleneck framing + /pricing path)
+- [x] Shipped: commit `f86ab29` → build gate passed → live title verified in HTML
+- [ ] **Follow-up (deferred, needs TDD):** FAQPage JSON-LD schema in blog post page — parse FAQ Q&As from content or optional `faqs` frontmatter; write failing test first. Benefits all posts with FAQ sections.
 
 ## Phase B — Week 2 (Sep 15–21)
 - [ ] B1. GTM Access for Agencies (`gtm-access-agencies`) — full pipeline

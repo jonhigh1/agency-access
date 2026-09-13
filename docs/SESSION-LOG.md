@@ -25,7 +25,33 @@ Append-only log of what was done each session. Newest first. Read the last 3–5
 
 ---
 
-## Sessions
+## Session: 2026-09-13 — Content calendar Week 1 shipped (Snapchat guide + cluster push)
+
+### What was done
+- Implemented Week 1 of `marketing/content/CONTENT-CALENDAR-SEPTEMBER-2026.md` end to end.
+- Finished the pre-existing Snapchat draft through blog-pipeline phases 4–7: exact keyword "Snapchat Business Manager" front-loaded in meta title/H1/first 100 words; 3 cited external sources (Snapchat Business Help Center roles docs ×2 + Snap Q2-2026 investor results for the 493M DAU stat); internal links 1→5 incl. exact-anchor to the cluster post; tags/meta/relatedPosts normalized; scored 9/10.
+- Cluster push on `best-client-onboarding-software-agencies-2026`: title/H1 now "Best Agency Client Onboarding Software for Agencies (2026)…" (exact cluster term, #8 phrase preserved); exact phrase moved to intro para 2; meta description trimmed to ≤160; 6 exact-anchor inbound links added across checklist, questionnaire, how-to-onboard, and the Snapchat guide; closing CTA refreshed with /pricing path.
+- Both commits passed the pre-push production build gate; both live URLs verified via curl (title + meta present in rendered HTML at authhub.co).
+- KEYWORD-TRACKER.md: added `snapchat business manager` (+ long-tail) Tier-2 rows; CONTENT-STRATEGY-2026.md inventory → 21 posts.
+
+### Files changed
+- `apps/web/content/blog/snapchat-ads-access-agencies.md` — new post (commit 552bfab)
+- `apps/web/content/blog/best-client-onboarding-software-agencies-2026.md` — title/intro/meta/tags/CTA (commit f86ab29)
+- `apps/web/content/blog/client-onboarding-checklist.md`, `client-onboarding-questionnaire-27-questions.md`, `how-to-onboard-new-marketing-client.md` — exact-anchor internal links
+- `marketing/content/CONTENT-CALENDAR-SEPTEMBER-2026.md` — Week 1 marked done (committed for the first time)
+- `marketing/content/KEYWORD-TRACKER.md`, `marketing/CONTENT-STRATEGY-2026.md`, `tasks/todo.md` — tracking sync
+
+### Decisions made
+- Cluster title keeps "Best … for Agencies (2026)" skeleton (protects the #8-ranking term) and nests "Agency Client Onboarding Software" one word in — expands coverage of the 7-term cluster without breaking the proven ranking.
+- FAQPage JSON-LD deferred: needs a code change to the blog page (TDD) — tracked as follow-up in tasks/todo.md.
+
+### Next steps
+- Week 2 (Sep 15–21): GTM Access guide (`gtm-access-agencies`) + Microsoft Ads Access guide (`microsoft-ads-access-agencies`), full pipeline.
+- FAQPage JSON-LD schema follow-up (tasks/todo.md).
+- Sep 30: verify ≥2 of 7 cluster terms on page one; add 5 keywords to SnowSEO rank tracking.
+
+---
+
 
 ## Session: 2026-09-13 — Square icon chips + app-wide button cohesion sweep
 
