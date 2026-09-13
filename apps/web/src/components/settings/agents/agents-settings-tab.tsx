@@ -68,16 +68,13 @@ export function AgentsSettingsTab() {
         <span className="label-micro block">MCP endpoint</span>
         <p className="mt-2 break-all text-sm">{endpoint}</p>
         <div className="mt-3 flex flex-col items-start gap-y-1">
-          <a
-            href={endpoint}
+          <button
+            type="button"
             className="label-micro inline-flex min-h-[44px] items-center underline underline-offset-4"
-            onClick={(event) => {
-              event.preventDefault();
-              void copyEndpoint();
-            }}
+            onClick={() => void copyEndpoint()}
           >
             {copied ? 'Copied' : 'Copy endpoint'}
-          </a>
+          </button>
           <span className="text-xs text-paper/70">Provider sign-in and client authorization always remain human-only.</span>
         </div>
       </div>

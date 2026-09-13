@@ -12,6 +12,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import SettingsPage from '@/app/(authenticated)/settings/page';
+import { isBrutalistButton } from '@/test/utils/design-system';
 
 let searchParamsState = new URLSearchParams();
 const { mockUseSubscription, mutation } = vi.hoisted(() => ({
@@ -118,12 +119,6 @@ vi.mock('@/lib/api/webhooks', () => ({
   sendWebhookTestEvent: vi.fn(),
 }));
 
-const BRUTALIST_MARKERS = ['uppercase', 'bg-coral', 'border-2'];
-
-function isBrutalist(el: Element): boolean {
-  const cls = el.className ?? '';
-  return BRUTALIST_MARKERS.every((marker) => cls.split(/\s+/).includes(marker));
-}
 
 async function renderTab(query: string) {
   searchParamsState = new URLSearchParams(query);
@@ -137,7 +132,7 @@ async function renderTab(query: string) {
   await new Promise((resolve) => setTimeout(resolve, 0));
   const { container } = utils;
   const panels = container.querySelectorAll('.ink-panel');
-  const brutalistButtons = Array.from(container.querySelectorAll('button, a')).filter(isBrutalist);
+  const brutalistButtons = Array.from(container.querySelectorAll('button, a')).filter(isBrutalistButton);
   const shadows = container.querySelectorAll('[class*="shadow-brutalist"]');
   return { container, panels, brutalistButtons, shadows };
 }

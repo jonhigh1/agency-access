@@ -40,7 +40,9 @@ const FORBIDDEN: Array<{ label: string; pattern: RegExp }> = [
   { label: 'non-binary radius', pattern: /\brounded-(sm|md|lg|xl|2xl|3xl)\b/ },
   { label: 'arbitrary radius', pattern: /rounded-\[/ },
   { label: 'soft shadow', pattern: /\bshadow-(sm|md|lg|xl|2xl|3xl)\b/ },
-  { label: 'gray colour family', pattern: /\bgray-\d/ },
+  { label: 'generic colour family', pattern: /\b(gray|zinc|neutral|stone|orange|sky|cyan|pink|lime|fuchsia)-\d/ },
+  // Only inside class strings: a quote/backtick opens and closes the token run, so prose never matches.
+  { label: 'bare or arbitrary shadow', pattern: /["'`](?:[^"'`\n]*\s)?(shadow|shadow-inner|drop-shadow(?:-[\w[\]]+)?|shadow-\[[^\]]*\])(?=\s|["'`])/ },
   { label: 'clean-card', pattern: /clean-card/ },
   { label: 'gradient', pattern: /bg-gradient/ },
   { label: 'font-dela', pattern: /font-dela/ },

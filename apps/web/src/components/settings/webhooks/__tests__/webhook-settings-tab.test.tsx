@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { WebhookSettingsTab } from '../webhook-settings-tab';
+import { isBrutalistButton } from '@/test/utils/design-system';
 
 const mockAuthorizedApiFetch = vi.fn();
 const mockGetToken = vi.fn().mockResolvedValue('token-123');
@@ -340,9 +341,7 @@ describe('WebhookSettingsTab', () => {
   });
 
   describe('Design System v2.0 layout contract', () => {
-    const BRUTALIST_MARKERS = ['uppercase', 'bg-coral', 'border-2'];
-    const isBrutalist = (el: Element) =>
-      BRUTALIST_MARKERS.every((marker) => (el.className ?? '').split(/\s+/).includes(marker));
+    const isBrutalist = isBrutalistButton;
 
     it('renders one ink-panel strip with the wrapped endpoint URL and one brutalist button outside it', async () => {
       const longUrl = 'https://hooks.example.com/a/very/long/path/that/keeps/going/and/going/until/it/must/wrap/somewhere';

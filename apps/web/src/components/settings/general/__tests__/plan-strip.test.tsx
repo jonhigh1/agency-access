@@ -78,4 +78,27 @@ describe('PlanStrip', () => {
     expect(container.querySelectorAll('.ink-panel')).toHaveLength(1);
     expect(screen.getByTestId('plan-strip-plan')).toHaveTextContent('Free');
   });
+
+  it('says "Ends" instead of "Renews" when the subscription is cancelling', () => {
+    mockUseSubscription.mockReturnValue({
+      data: { id: 's', tier: 'GROWTH', status: 'active', cancelAtPeriodEnd: true, currentPeriodEnd: '2026-10-01T12:00:00.000Z' },
+      isLoading: false,
+    });
+    mockUseTierDetails.mockReturnValue({ data: { tier: 'GROWTH', status: 'active', limits, features: [] }, isLoading: false });
+
+    render(<PlanStrip />);
+
+    expect(screen.getByText(/^Ends /)).toBeInTheDocument();
+    expect(screen.queryByText(/^Renews /)).toBeNull();
+  });
+
+  it('renders dashes, not Free, when the subscription query errors', () => {
+    mockUseSubscription.mockReturnValue({ data: undefined, isLoading: false, isError: true });
+    mockUseTierDetails.mockReturnValue({ data: undefined, isLoading: false, isError: true });
+
+    render(<PlanStrip />);
+
+    expect(screen.getByTestId('plan-strip-plan')).toHaveTextContent('—');
+    expect(screen.getByTestId('plan-strip-status')).toHaveTextContent('—');
+  });
 });

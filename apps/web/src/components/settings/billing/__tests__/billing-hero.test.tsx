@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { BillingHero } from '../billing-hero';
+import { isBrutalistButton } from '@/test/utils/design-system';
 
 const mockUseSubscription = vi.fn();
 const mockCreateCheckoutMutateAsync = vi.fn();
@@ -111,9 +112,7 @@ describe('BillingHero', () => {
     expect(panels[0].querySelector('button')).toBeNull();
 
     const cta = screen.getByRole('button', { name: /start free trial/i });
-    for (const marker of ['uppercase', 'bg-coral', 'border-2']) {
-      expect(cta.className.split(/\s+/)).toContain(marker);
-    }
+    expect(isBrutalistButton(cta)).toBe(true);
     expect(panels[0].contains(cta)).toBe(false);
   });
 
@@ -171,5 +170,17 @@ describe('BillingHero', () => {
     await waitFor(() => {
       expect(mockOpenPortalMutateAsync).toHaveBeenCalled();
     });
+  });
+
+  it('labels the period end as "Access ends" when the subscription is cancelling', () => {
+    mockUseSubscription.mockReturnValue({
+      data: { id: 'sub_1', tier: 'GROWTH', status: 'active', cancelAtPeriodEnd: true, currentPeriodEnd: '2026-10-01T12:00:00.000Z' },
+      isLoading: false,
+    });
+
+    const { container } = render(<BillingHero />);
+    const panel = container.querySelector('.ink-panel') as HTMLElement;
+    expect(within(panel).getByText('Access ends')).toBeInTheDocument();
+    expect(within(panel).queryByText('Next bill')).toBeNull();
   });
 });

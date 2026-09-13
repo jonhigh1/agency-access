@@ -152,4 +152,18 @@ describe('SettingsTabs', () => {
       expect(shell.className).not.toMatch(/max-w-(4|5)xl/);
     });
   });
+
+  describe('identity line while the subscription is unresolved', () => {
+    it('renders — for the plan while useSubscription is loading', () => {
+      mockUseSubscription.mockReturnValue({ data: undefined, isLoading: true });
+      renderTabs();
+      expect(screen.getByTestId('settings-identity')).toHaveTextContent('Acme · — · ag_123');
+    });
+
+    it('renders — for the plan when useSubscription errors', () => {
+      mockUseSubscription.mockReturnValue({ data: undefined, isLoading: false, isError: true });
+      renderTabs();
+      expect(screen.getByTestId('settings-identity')).toHaveTextContent('Acme · — · ag_123');
+    });
+  });
 });

@@ -286,7 +286,8 @@
   }
 
   /* Links on ink panels are raw coral — on ink, raw tokens are correct (7.5:1). */
-  .ink-panel a.label-micro {
+  .ink-panel a.label-micro,
+  .ink-panel button.label-micro {
     color: rgb(var(--coral));
   }
 

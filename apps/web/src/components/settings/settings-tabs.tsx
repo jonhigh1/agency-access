@@ -28,7 +28,6 @@ const TAB_LABELS: Record<SettingsTab, string> = {
   agents: 'Agents',
 };
 
-const UNLOADED = UNLOADED_VALUE;
 
 /** Two-ring focus, copied from Button base styles — globals.css only sets it on form fields. */
 const TAB_FOCUS =
@@ -50,7 +49,7 @@ export function SettingsTabs({ generalContent, billingContent, webhooksContent, 
   const searchParams = useSearchParams();
   const prefetchBilling = usePrefetchBillingData();
   const { data: agency } = useUserAgency();
-  const { data: subscription } = useSubscription();
+  const { data: subscription, isLoading: subscriptionLoading, isError: subscriptionError } = useSubscription();
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
   const requested = searchParams.get('tab');
@@ -95,9 +94,12 @@ export function SettingsTabs({ generalContent, billingContent, webhooksContent, 
   };
 
   const lifecycle = resolveBillingLifecycle(subscription);
-  const planName =
-    lifecycle === 'FREE' || !subscription?.tier ? 'Free' : SUBSCRIPTION_TIER_NAMES[subscription.tier];
-  const identity = [agency?.name || UNLOADED, planName, agency?.id || UNLOADED].join(' · ');
+  const planName = subscriptionLoading || subscriptionError
+    ? UNLOADED_VALUE
+    : lifecycle === 'FREE' || !subscription?.tier
+      ? 'Free'
+      : SUBSCRIPTION_TIER_NAMES[subscription.tier];
+  const identity = [agency?.name || UNLOADED_VALUE, planName, agency?.id || UNLOADED_VALUE].join(' · ');
 
   const content: Record<SettingsTab, React.ReactNode> = {
     general: generalContent,

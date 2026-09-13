@@ -18,12 +18,10 @@ import { buildPlanSelectedProps, trackPlanSelected } from '@/lib/analytics/billi
 import { getNextTierForCheckout, SUBSCRIPTION_TIER_NAMES } from '@agency-platform/shared';
 import { SettingsRow } from '../settings-row';
 import { persistBillingIntervalPreference, readBillingIntervalPreference } from './billing-interval';
-import { resolveBillingLifecycle, SUBSCRIPTION_STATUS_LABELS } from './billing-lifecycle';
+import { isSubscriptionEnding, resolveBillingLifecycle, SUBSCRIPTION_STATUS_LABELS } from './billing-lifecycle';
 import { UNLOADED_VALUE } from '../settings-row';
 import { formatLongDate } from '@/lib/format';
 
-const EMPTY_VALUE = UNLOADED_VALUE;
-const STATUS_LABELS = SUBSCRIPTION_STATUS_LABELS;
 
 function formatOptionalLongDate(value: string | undefined): string | null {
   return value ? formatLongDate(value) : null;
@@ -135,17 +133,17 @@ export function BillingHero() {
 
   // Panel values: "—" until the subscription has loaded (KTD4).
   const planName = isLoading
-    ? EMPTY_VALUE
+    ? UNLOADED_VALUE
     : subscription?.tier
       ? SUBSCRIPTION_TIER_NAMES[subscription.tier]
       : 'Free';
   const statusLabel = isLoading
-    ? EMPTY_VALUE
+    ? UNLOADED_VALUE
     : subscription
-      ? STATUS_LABELS[subscription.status] ?? subscription.status
+      ? SUBSCRIPTION_STATUS_LABELS[subscription.status] ?? subscription.status
       : 'No subscription';
-  const dateLabel = lifecycle === 'TRIALING' ? 'Trial ends' : 'Next bill';
-  const dateValue = isLoading ? EMPTY_VALUE : (lifecycle === 'TRIALING' ? trialEndDate : nextBillDate) ?? EMPTY_VALUE;
+  const dateLabel = lifecycle === 'TRIALING' ? 'Trial ends' : isSubscriptionEnding(subscription) ? 'Access ends' : 'Next bill';
+  const dateValue = isLoading ? UNLOADED_VALUE : (lifecycle === 'TRIALING' ? trialEndDate : nextBillDate) ?? UNLOADED_VALUE;
 
   const isPending = createCheckout.isPending || openPortal.isPending;
 

@@ -170,6 +170,15 @@ export function hasClassMatching(className: string | undefined, pattern: RegExp)
 }
 
 /**
+ * True when an element carries the Button `brutalist` variant class set
+ * (uppercase coral CTA with a 2px border). Used by rendered per-view counts.
+ */
+export function isBrutalistButton(el: Element): boolean {
+  const classes = (el.className ?? '').toString().split(/\s+/);
+  return ['uppercase', 'bg-coral', 'border-2'].every((marker) => classes.includes(marker));
+}
+
+/**
  * Design system violation
  */
 export interface DesignSystemViolation {

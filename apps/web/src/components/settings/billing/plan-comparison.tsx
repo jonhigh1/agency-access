@@ -153,7 +153,8 @@ export function PlanComparison() {
     }
   };
 
-  const tierIndex = PRICING_DISPLAY_TIER_ORDER.indexOf(currentTier);
+  // No subscription means no current tier: every card offers the trial.
+  const tierIndex = subscription?.tier ? PRICING_DISPLAY_TIER_ORDER.indexOf(currentTier) : -1;
 
   const intervalNote = isYearly
     ? 'Pay for 10 months, get 12. Cancel anytime.'

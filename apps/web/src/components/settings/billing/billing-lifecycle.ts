@@ -10,6 +10,11 @@ export const SUBSCRIPTION_STATUS_LABELS: Record<string, string> = {
   expired: 'Expired',
 };
 
+/** True when the current period will not renew: cancelling at period end or already cancelled. */
+export function isSubscriptionEnding(subscription: SubscriptionData | null | undefined): boolean {
+  return Boolean(subscription?.cancelAtPeriodEnd) || subscription?.status === 'canceled';
+}
+
 export type BillingLifecycle = 'FREE' | 'TRIALING' | 'PAID';
 
 export function resolveBillingLifecycle(subscription: SubscriptionData | null | undefined): BillingLifecycle {

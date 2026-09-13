@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { AgentsSettingsTab } from '../agents-settings-tab';
+import { isBrutalistButton } from '@/test/utils/design-system';
 
 const mockAuthorizedApiFetch = vi.fn();
 const mockListGrants = vi.fn();
@@ -28,12 +29,8 @@ vi.mock('@/lib/api/agents', () => ({
   updateAgentGrant: (...args: any[]) => mockUpdate(...args),
 }));
 
-const BRUTALIST_MARKERS = ['uppercase', 'bg-coral', 'border-2'];
 function brutalistButtons(container: HTMLElement) {
-  return Array.from(container.querySelectorAll('button, a')).filter((el) => {
-    const classes = (el.className ?? '').split(/\s+/);
-    return BRUTALIST_MARKERS.every((marker) => classes.includes(marker));
-  });
+  return Array.from(container.querySelectorAll('button, a')).filter(isBrutalistButton);
 }
 
 function renderTab() {
@@ -87,14 +84,14 @@ describe('AgentsSettingsTab', () => {
     }), mockGetToken);
   });
 
-  it('renders one ink-panel with "Copy endpoint" as a link inside it and no brutalist button', async () => {
+  it('renders one ink-panel with "Copy endpoint" as a button inside it and no brutalist button', async () => {
     const { container } = renderTab();
     await screen.findByText('Chief of Staff');
     const panels = container.querySelectorAll('.ink-panel');
     expect(panels).toHaveLength(1);
-    const copyLink = screen.getByRole('link', { name: 'Copy endpoint' });
+    const copyLink = screen.getByRole('button', { name: 'Copy endpoint' });
     expect(panels[0].contains(copyLink)).toBe(true);
-    expect(panels[0].querySelector('button')).toBeNull();
+    expect(panels[0].querySelector('button[class*="bg-coral"]')).toBeNull();
     expect(brutalistButtons(container)).toHaveLength(0);
   });
 
@@ -104,9 +101,9 @@ describe('AgentsSettingsTab', () => {
     const writeText = vi.spyOn(navigator.clipboard, 'writeText').mockResolvedValue(undefined);
     renderTab();
     await screen.findByText('Chief of Staff');
-    await user.click(screen.getByRole('link', { name: 'Copy endpoint' }));
+    await user.click(screen.getByRole('button', { name: 'Copy endpoint' }));
     expect(writeText).toHaveBeenCalledWith('https://api.example.com/mcp');
-    expect(await screen.findByRole('link', { name: 'Copied' })).toBeInTheDocument();
+    expect(await screen.findByRole('button', { name: 'Copied' })).toBeInTheDocument();
   });
 
   it('with connect=abc renders the approval group first with the only brutalist button "Approve agent"', async () => {
