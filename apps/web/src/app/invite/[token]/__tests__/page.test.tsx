@@ -358,6 +358,125 @@ describe('Invite Flow Page', () => {
     expect(screen.queryByRole('button', { name: /back to connect/i })).not.toBeInTheDocument();
   });
 
+  it('does not show success until delayed finalization confirms it', async () => {
+    let resolveCompletion: ((response: Response) => void) | undefined;
+    const fetchMock = vi.fn((url: string) => {
+      if (url.includes('/api/client/token-123/complete')) {
+        return new Promise<Response>((resolve) => {
+          resolveCompletion = resolve;
+        });
+      }
+
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({
+          data: {
+            id: 'request-1', agencyId: 'agency-1', agencyName: 'Demo Agency', clientName: 'Client',
+            clientEmail: 'client@test.com', status: 'pending', uniqueToken: 'token-123',
+            expiresAt: new Date().toISOString(), intakeFields: [], branding: {},
+            platforms: [{ platformGroup: 'google', products: [{ product: 'google_ads', accessLevel: 'admin' }] }],
+            manualInviteTargets: { google: {} }, authorizationProgress: { completedPlatforms: [], isComplete: false },
+          },
+          error: null,
+        }),
+      } as Response);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<InvitePage />);
+    await userEvent.click(await screen.findByRole('button', { name: /continue to connect/i }));
+    await userEvent.click(await screen.findByRole('button', { name: /complete platform/i }));
+
+    await waitFor(() => expect(screen.getByRole('heading', { name: /confirming access/i })).toBeInTheDocument());
+    expect(screen.queryByRole('heading', { name: /all set/i })).not.toBeInTheDocument();
+
+    resolveCompletion?.({ ok: true, json: async () => ({ data: { success: true }, error: null }) } as Response);
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: /all set — you're done/i })).toBeInTheDocument();
+    });
+  });
+
+  it('submits finalization once when the platform completion callback fires twice', async () => {
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url.includes('/api/client/token-123/complete')) {
+        return { ok: true, json: async () => ({ data: { success: true }, error: null }) } as Response;
+      }
+      return {
+        ok: true,
+        json: async () => ({
+          data: {
+            id: 'request-1', agencyId: 'agency-1', agencyName: 'Demo Agency', clientName: 'Client',
+            clientEmail: 'client@test.com', status: 'pending', uniqueToken: 'token-123',
+            expiresAt: new Date().toISOString(), intakeFields: [], branding: {},
+            platforms: [{ platformGroup: 'google', products: [{ product: 'google_ads', accessLevel: 'admin' }] }],
+            manualInviteTargets: { google: {} }, authorizationProgress: { completedPlatforms: [], isComplete: false },
+          },
+          error: null,
+        }),
+      } as Response;
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<InvitePage />);
+    await userEvent.click(await screen.findByRole('button', { name: /continue to connect/i }));
+    const completeButton = await screen.findByRole('button', { name: /complete platform/i });
+    fireEvent.click(completeButton);
+    fireEvent.click(completeButton);
+
+    await waitFor(() => {
+      expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/complete'))).toHaveLength(1);
+    });
+  });
+
+  it('keeps intake answers on save failure and continues only after saved readback', async () => {
+    let intakeAttempts = 0;
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url.includes('/api/client/token-123/intake')) {
+        intakeAttempts += 1;
+        if (intakeAttempts === 1) {
+          return { ok: false, json: async () => ({ error: { message: 'Save failed' } }) } as Response;
+        }
+        return {
+          ok: true,
+          json: async () => ({ data: { intakeResponses: { company: 'Acme' } }, error: null }),
+        } as Response;
+      }
+      return {
+        ok: true,
+        json: async () => ({
+          data: {
+            id: 'request-1', agencyId: 'agency-1', agencyName: 'Demo Agency', clientName: 'Client',
+            clientEmail: 'client@test.com', status: 'pending', uniqueToken: 'token-123',
+            expiresAt: new Date().toISOString(),
+            intakeFields: [{ id: 'company', label: 'Company name', type: 'text', required: true }],
+            branding: {},
+            platforms: [{ platformGroup: 'google', products: [{ product: 'google_ads', accessLevel: 'admin' }] }],
+            manualInviteTargets: { google: {} }, authorizationProgress: { completedPlatforms: [], isComplete: false },
+          },
+          error: null,
+        }),
+      } as Response;
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<InvitePage />);
+    const company = await screen.findByRole('textbox');
+    await userEvent.type(company, 'Acme');
+    await userEvent.click(screen.getByRole('button', { name: /^continue$/i }));
+
+    await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent('Save failed'));
+    expect(company).toHaveValue('Acme');
+
+    await userEvent.click(screen.getByRole('button', { name: /^continue$/i }));
+    await waitFor(() => expect(screen.getByText('Active platform: Google')).toBeInTheDocument());
+    expect(intakeAttempts).toBe(2);
+    expect(fetchMock).toHaveBeenCalledWith(
+      expect.stringContaining('/api/client/token-123/intake'),
+      expect.objectContaining({ body: JSON.stringify({ intakeResponses: { company: 'Acme' } }) })
+    );
+  });
+
   it('skips intake for a returning visitor who already completed a platform', async () => {
     sessionStorage.setItem('invite-progress:token-123', JSON.stringify(['google']));
 
