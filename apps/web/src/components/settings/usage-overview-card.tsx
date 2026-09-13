@@ -64,13 +64,13 @@ export function UsageOverviewCard() {
       )}
 
       {!isLoading && !orgId && (
-        <SettingsRow label="Usage" description="Usage data requires an active organization context.">
+        <SettingsRow label="Quota" description="Usage data requires an active organization context.">
           <p className="text-sm text-muted-foreground">Switch to an organization to see quota usage.</p>
         </SettingsRow>
       )}
 
       {!isLoading && orgId && isError && (
-        <SettingsRow label="Usage">
+        <SettingsRow label="Quota">
           <p className="text-sm text-danger-ink">Failed to load usage data. Reload the page to try again.</p>
         </SettingsRow>
       )}

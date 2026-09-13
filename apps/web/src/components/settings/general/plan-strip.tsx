@@ -63,16 +63,17 @@ export function PlanStrip() {
 
   return (
     <div className="ink-panel p-6" data-testid="plan-strip">
-      <div className="grid gap-6 md:grid-cols-3">
+      <span className="label-micro">Plan</span>
+      <div className="mt-4 grid gap-6 md:grid-cols-3">
         <div>
-          <span className="label-micro">Plan</span>
-          <p className="mt-2 text-2xl font-bold" data-testid="plan-strip-plan">
+          <span className="label-nano">Tier</span>
+          <p className="mt-1 text-2xl font-bold" data-testid="plan-strip-plan">
             {plan}
           </p>
         </div>
         <div>
-          <span className="label-micro">Status</span>
-          <p className="mt-2 text-lg" data-testid="plan-strip-status">
+          <span className="label-nano">Status</span>
+          <p className="mt-1 text-lg" data-testid="plan-strip-status">
             {status}
           </p>
           {periodEnd && lifecycle !== 'FREE' && (
@@ -82,8 +83,8 @@ export function PlanStrip() {
           )}
         </div>
         <div>
-          <span className="label-micro">Limits</span>
-          <p className="mt-2 text-sm leading-relaxed" data-testid="plan-strip-limits">
+          <span className="label-nano">Limits</span>
+          <p className="mt-1 text-sm leading-relaxed" data-testid="plan-strip-limits">
             {limitLine}
           </p>
         </div>

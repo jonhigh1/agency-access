@@ -118,7 +118,7 @@ export function SettingsTabs({ generalContent, billingContent, webhooksContent, 
           </p>
         </header>
 
-        <div role="tablist" aria-label="Settings sections" className="flex gap-4 sm:gap-6 mb-8 hairline-b overflow-x-auto">
+        <div role="tablist" aria-label="Settings sections" className="flex gap-3 sm:gap-6 mb-8 hairline-b overflow-x-auto">
           {TAB_IDS.map((tab, index) => {
             const selected = currentTab === tab;
             return (

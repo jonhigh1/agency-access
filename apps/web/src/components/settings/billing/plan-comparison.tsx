@@ -163,8 +163,8 @@ export function PlanComparison() {
     isYearly ? Math.round(tierPricing[tier].yearly / 12) : Math.round(tierPricing[tier].monthly);
 
   const toggleClass = (active: boolean) =>
-    `px-6 py-3 min-h-[44px] font-bold uppercase tracking-wider text-xs transition-colors duration-150 ${
-      active ? 'bg-coral text-black' : 'text-muted-foreground hover:text-ink dark:hover:text-white'
+    `px-6 py-3 min-h-[44px] text-sm font-semibold transition-colors duration-150 ${
+      active ? 'bg-ink text-paper' : 'text-muted-foreground hover:text-ink'
     }`;
 
   return (
@@ -182,14 +182,14 @@ export function PlanComparison() {
       )}
 
       <SettingsRow label="Billing interval" description={intervalNote}>
-        <div className="inline-flex max-w-full flex-wrap items-center gap-1 border border-black bg-card p-1 dark:border-white">
+        <div className="inline-flex max-w-full flex-wrap items-center border border-black bg-card dark:border-white">
           <button type="button" onClick={() => setBillingInterval('monthly')} className={toggleClass(!isYearly)}>
             Monthly
           </button>
           <button type="button" onClick={() => setBillingInterval('yearly')} className={toggleClass(isYearly)}>
             <span className="inline-flex items-center gap-2">
               Yearly
-              <span className="rounded-full border border-black/20 bg-white px-2 py-0.5 text-[10px] font-bold tracking-wider text-danger-ink">
+              <span className="rounded-full border border-black/20 bg-paper px-2 py-0.5 font-mono text-[10px] font-bold tracking-wider text-ink">
                 2 Months Free
               </span>
             </span>
@@ -198,7 +198,7 @@ export function PlanComparison() {
       </SettingsRow>
 
       <SettingsRow label="Included on every plan">
-        <ul className="flex flex-wrap gap-x-4 gap-y-2 font-mono text-xs text-muted-foreground">
+        <ul className="grid gap-x-6 gap-y-2 font-mono text-xs text-muted-foreground sm:grid-cols-2">
           <li className="flex items-center gap-1.5">
             <Check size={14} color="rgb(var(--teal))" />
             Cancel anytime
@@ -211,7 +211,7 @@ export function PlanComparison() {
             <Check size={14} color="rgb(var(--teal))" />
             No credit card for trial
           </li>
-          <li className="flex items-center gap-1.5 text-success-ink">
+          <li className="flex items-center gap-1.5">
             <Check size={14} color="rgb(var(--teal))" />
             Pays for itself in 1 onboard
           </li>
@@ -258,7 +258,7 @@ export function PlanComparison() {
           const persona = PRICING_DISPLAY_TIER_DETAILS[tier].persona;
           const description = PRICING_DISPLAY_TIER_DETAILS[tier].description;
           const features = tierFeatures[tier];
-          const isCurrentTier = tier === currentTier;
+          const isCurrentTier = Boolean(subscription?.tier) && tier === currentTier;
           const isRecommended = tier === 'GROWTH'; // Growth is the most popular tier
           const canUpgrade = index > tierIndex;
 
@@ -274,13 +274,15 @@ export function PlanComparison() {
                 isCurrentTier
                   ? 'border-2 border-ink'
                   : isRecommended
-                    ? 'border border-coral'
+                    ? subscription?.tier
+                      ? 'border border-coral'
+                      : 'border-2 border-ink'
                     : 'border border-border'
               }`}
             >
               {/* Recommended Badge */}
               {isRecommended && !isCurrentTier && (
-                <div className="absolute top-3 right-3 z-10 border border-black bg-coral px-2 py-1 font-mono text-xs font-bold uppercase tracking-wider text-white">
+                <div className="absolute top-3 right-3 z-10 border border-black bg-ink px-2 py-1 font-mono text-xs font-bold uppercase tracking-wider text-paper">
                   Most Popular
                 </div>
               )}
@@ -289,9 +291,7 @@ export function PlanComparison() {
               <div className="p-4 hairline-b">
                 {/* Persona Label */}
                 <span
-                  className={`font-mono text-[10px] font-bold uppercase tracking-widest ${
-                    isRecommended ? 'text-danger-ink' : 'text-muted-foreground'
-                  }`}
+                  className="font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground"
                 >
                   {persona}
                 </span>

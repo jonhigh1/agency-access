@@ -75,7 +75,7 @@ const EVENT_OPTIONS: Array<{
 ];
 
 const ENDPOINT_GROUP_DESCRIPTION =
-  'Send signed lifecycle events from AgencyAccess into your CRM, automation, or warehouse.';
+  'Send signed lifecycle events from AuthHub into your CRM, automation, or warehouse.';
 
 const EMPTY_ENDPOINT_COPY =
   'No endpoint is configured yet. Add a destination URL, choose the events you want, and create the endpoint to start receiving signed notifications.';
