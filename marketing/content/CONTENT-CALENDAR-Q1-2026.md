@@ -9,7 +9,7 @@
 
 ## What's Actually Live (Ground Truth)
 
-### Blog Posts (20) — `/blog/[slug]`
+### Blog Posts (22) — `/blog/[slug]`
 | Slug | Title | Year | Quality Rating |
 |------|-------|------|---------------|
 | `how-to-get-meta-ads-access-from-clients` | How to Get Meta Ads Access From Clients | 2026 | 7/10 — dates fixed, canonical added, links fixed |
@@ -33,6 +33,7 @@
 | `client-onboarding-questionnaire-27-questions` | Client Onboarding Questionnaire: 27 Questions Every Agency Needs to Ask | 2026 | 9/10 — publish-ready, 27 questions across 6 categories, downloadable template |
 | `marketing-agency-onboarding-best-practices-2026` | Agency Onboarding Best Practices (7 Mistakes That Make Clients Question Hiring You) | 2026 | 9/10 — publish-ready, client-POV mistakes + recovery playbook, unique from existing pillar posts |
 | `oauth-token-management-agencies` | OAuth Token Management for Agencies: What Expires, What Breaks, and How to Fix It | 2026 | 9/10 — DRAFT complete, agency ops angle, 5-phase lifecycle framework, no competitor covers this |
+| `unable-to-assign-assets-meta-business-suite` | Unable to Assign Assets in Meta Business Suite: 7 Fixes (2026 Guide) | 2026 | 9/10 — DRAFT complete, 7-cause diagnostic framework, People vs Partners table, 5 internal links |
 
 ### Dedicated Guides (2) — `/guides/[slug]`
 | Slug | Title | SEO Score |
@@ -205,7 +206,7 @@ All housekeeping items were completed ahead of schedule as part of the competiti
 | Day | Content | Type | Keyword Target |
 |-----|---------|------|---------------|
 | Tue | #9 `/blog/oauth-token-management-agencies` | Blog (technical) | "oauth token management" | ✅ **DRAFT COMPLETE** — 9/10, publish-ready, 5-phase token lifecycle framework, agency ops angle (no competitor covers this), 3 authoritative external sources |
-| Thu | #11 `/blog/unable-to-assign-assets-meta-business-suite` | Blog | "unable to assign assets meta business suite" |
+| Thu | #11 `/blog/unable-to-assign-assets-meta-business-suite` | Blog | "unable to assign assets meta business suite" | ✅ **DRAFT COMPLETE** — 9/10, publish-ready, 7-cause diagnostic framework, People vs Partners table, 5 internal links, 4 Meta doc citations, unique agency angle on a common pain point |
 
 ### Week 14 (May 12-18)
 

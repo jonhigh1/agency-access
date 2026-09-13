@@ -114,6 +114,8 @@ Keywords Leadsie ranks for that we should target:
 | oauth token management | ~100-200 | N/A | Top 10 | /blog/oauth-token-management-agencies | P2 |
 | ad account access expired | ~50-100 | N/A | Top 10 | /blog/oauth-token-management-agencies | P2 |
 | google ads token refresh | ~50-100 | N/A | Top 10 | /blog/oauth-token-management-agencies | P2 |
+| unable to assign assets meta business suite | ~200-500 | N/A | Top 5 | /blog/unable-to-assign-assets-meta-business-suite | P1 |
+| meta business suite assign assets greyed out | ~100-200 | N/A | Top 5 | /blog/unable-to-assign-assets-meta-business-suite | P1 |
 
 ---
 
