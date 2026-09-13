@@ -13,7 +13,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth } from '@clerk/nextjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
-import posthog from 'posthog-js';
+import { capturePosthogEvent } from '@/lib/analytics/capture-posthog';
 import { MetaBusinessPortfolioSelector } from '@/components/meta-business-portfolio-selector';
 import { resolveApiUrl } from '@/lib/api/api-env';
 import {
@@ -85,7 +85,7 @@ function CallbackPageContent() {
   });
 
   const handlePortfolioSelect = (businessId: string, businessName: string) => {
-    posthog.capture('meta_business_portfolio_selected', {
+    void capturePosthogEvent('meta_business_portfolio_selected', {
       agency_id: agencyIdParam || orgId,
       connection_id: connectionId,
       platform: 'meta',

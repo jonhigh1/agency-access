@@ -11,7 +11,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { AlertTriangle, KeyRound, Send, ShieldCheck } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { authorizedApiFetch } from '@/lib/api/authorized-api-fetch';
+import { useUserAgency } from '@/hooks/use-user-agency';
 import {
   disableWebhookEndpoint,
   getWebhookEndpoint,
@@ -23,11 +23,6 @@ import {
 import { SettingsGroup, SettingsRow } from '../settings-row';
 import { WebhookDeliveryInspector } from './webhook-delivery-inspector';
 import { WebhookStatusBadge } from './webhook-status-badge';
-
-interface AgencyRecord {
-  id: string;
-  name: string;
-}
 
 const DELIVERY_LIMIT = 8;
 
@@ -108,6 +103,7 @@ export function WebhookSettingsTab() {
   const { userId, orgId, getToken } = useAuth();
   const queryClient = useQueryClient();
   const principalClerkId = orgId || userId;
+  const agencyQuery = useUserAgency();
   const [destinationUrl, setDestinationUrl] = useState('');
   const [selectedEvents, setSelectedEvents] = useState<WebhookEventType[]>(['access_request.completed']);
   const [selectedApiVersion, setSelectedApiVersion] = useState<WebhookApiVersion>(WEBHOOK_API_VERSION_V1);
@@ -115,19 +111,6 @@ export function WebhookSettingsTab() {
   const [feedbackError, setFeedbackError] = useState(false);
   const [signingSecret, setSigningSecret] = useState<string | null>(null);
   const [selectedDeliveryId, setSelectedDeliveryId] = useState<string | null>(null);
-
-  const agencyQuery = useQuery({
-    queryKey: ['settings-webhooks-agency', principalClerkId],
-    enabled: Boolean(principalClerkId),
-    queryFn: async () => {
-      const response = await authorizedApiFetch<{ data: AgencyRecord[]; error: null }>(
-        `/api/agencies?clerkUserId=${encodeURIComponent(principalClerkId as string)}`,
-        { getToken }
-      );
-
-      return response.data[0] ?? null;
-    },
-  });
 
   const agencyId = agencyQuery.data?.id ?? null;
 

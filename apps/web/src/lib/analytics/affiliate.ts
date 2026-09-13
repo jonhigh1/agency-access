@@ -1,4 +1,4 @@
-import posthog from 'posthog-js';
+import { capturePosthogEvent } from '@/lib/analytics/capture-posthog';
 
 type AffiliateEventProperties = Record<string, unknown>;
 
@@ -6,11 +6,7 @@ export function trackAffiliateEvent(
   eventName: string,
   properties: AffiliateEventProperties
 ) {
-  try {
-    posthog.capture(eventName, properties);
-  } catch {
-    // Non-blocking analytics path.
-  }
+  void capturePosthogEvent(eventName, properties);
 
   if (typeof window === 'undefined') {
     return;

@@ -23,13 +23,9 @@ vi.mock('next/navigation', () => ({
 }));
 
 // Mock Clerk components
-vi.mock('@clerk/nextjs', () => ({
-  SignInButton: ({ children, mode }: any) => (
-    <button data-testid="sign-in-button">{children}</button>
-  ),
-  SignUpButton: ({ children, mode }: any) => (
-    <button data-testid="sign-up-button">{children}</button>
-  ),
+vi.mock('@/components/lazy-clerk-auth-buttons', () => ({
+  SignInButton: ({ children }: any) => <>{children}</>,
+  SignUpButton: ({ children }: any) => <>{children}</>,
 }));
 
 // Mock framer-motion

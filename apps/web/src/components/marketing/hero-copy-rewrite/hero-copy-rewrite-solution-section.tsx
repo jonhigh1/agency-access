@@ -2,7 +2,7 @@
 
 import { m } from 'framer-motion';
 import { ArrowRight, AlertCircle, Link2, Mail } from 'lucide-react';
-import { SignUpButton } from '@clerk/nextjs';
+import { SignUpButton } from '@/components/lazy-clerk-auth-buttons';
 import {
   ImageComparison,
   ImageComparisonImage,

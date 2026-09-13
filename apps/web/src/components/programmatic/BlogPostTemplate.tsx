@@ -10,7 +10,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Calendar, Clock, User, Share2, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { SignUpButton } from "@clerk/nextjs";
+import { SignUpButton } from '@/components/lazy-clerk-auth-buttons';
 import Link from "next/link";
 import type { ProgrammaticBlogPost, BlogFAQ } from "@/lib/programmatic-types";
 import type { Components } from "react-markdown";

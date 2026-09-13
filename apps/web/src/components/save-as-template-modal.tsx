@@ -10,7 +10,7 @@ import { useState } from 'react';
 import { useAuth } from '@clerk/nextjs';
 import { X, Loader2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import posthog from 'posthog-js';
+import { capturePosthogEvent } from '@/lib/analytics/capture-posthog';
 import { useAccessRequest } from '@/contexts/access-request-context';
 import { createTemplate } from '@/lib/api/templates';
 import { useQuotaCheck, QuotaExceededError } from '@/lib/query/quota';
@@ -108,7 +108,7 @@ export function SaveAsTemplateModal({
         (sum, products) => sum + products.length,
         0
       );
-      posthog.capture('template_saved', {
+      void capturePosthogEvent('template_saved', {
         template_id: result.data?.id,
         agency_id: agencyId,
         template_name: name.trim(),

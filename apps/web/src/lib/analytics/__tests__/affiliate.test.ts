@@ -4,10 +4,8 @@ const { captureMock } = vi.hoisted(() => ({
   captureMock: vi.fn(),
 }));
 
-vi.mock('posthog-js', () => ({
-  default: {
-    capture: captureMock,
-  },
+vi.mock('@/lib/analytics/capture-posthog', () => ({
+  capturePosthogEvent: captureMock,
 }));
 
 import { trackAffiliateEvent } from '../affiliate';

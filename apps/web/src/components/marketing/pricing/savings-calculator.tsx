@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { m } from 'framer-motion';
-import { SignUpButton } from '@clerk/nextjs';
+import { SignUpButton } from '@/components/lazy-clerk-auth-buttons';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Check, Info } from 'lucide-react';
 import { Reveal } from '../reveal';

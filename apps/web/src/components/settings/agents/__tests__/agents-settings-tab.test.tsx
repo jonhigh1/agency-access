@@ -35,6 +35,7 @@ function brutalistButtons(container: HTMLElement) {
 
 function renderTab() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false }, mutations: { retry: false } } });
+  queryClient.setQueryData(['user-agency', 'user-1'], { id: 'agency-1', name: 'Agency' });
   const utils = render(<QueryClientProvider client={queryClient}><AgentsSettingsTab /></QueryClientProvider>);
   return { ...utils, queryClient };
 }
@@ -138,5 +139,14 @@ describe('AgentsSettingsTab', () => {
     expect(screen.getByRole('link', { name: 'How to connect an agent' })).toBeInTheDocument();
     expect(screen.getAllByText(/copy endpoint/i)).toHaveLength(1);
     expect(container.querySelector('[class*="border-dashed"]')).toBeNull();
+  });
+
+  it('reuses the shared user-agency cache instead of fetching agencies again', async () => {
+    const fetchSpy = vi.fn();
+    global.fetch = fetchSpy;
+    renderTab();
+    expect(await screen.findByText('Chief of Staff')).toBeInTheDocument();
+    expect(mockAuthorizedApiFetch).not.toHaveBeenCalled();
+    expect(fetchSpy).not.toHaveBeenCalled();
   });
 });
