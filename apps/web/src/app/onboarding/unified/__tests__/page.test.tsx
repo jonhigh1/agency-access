@@ -18,6 +18,26 @@ vi.mock('next/navigation', () => ({
   }),
 }));
 
+vi.mock('next/dynamic', async () => {
+  const React = await vi.importActual<typeof import('react')>('react');
+
+  return {
+    default: (
+      loader: () => Promise<{ default: React.ComponentType }>,
+      options?: { loading?: React.ComponentType }
+    ) => {
+      const LazyComponent = React.lazy(loader);
+      return function DynamicComponent(props: Record<string, unknown>) {
+        return React.createElement(
+          React.Suspense,
+          { fallback: options?.loading ? React.createElement(options.loading) : null },
+          React.createElement(LazyComponent, props)
+        );
+      };
+    },
+  };
+});
+
 vi.mock('@clerk/nextjs', () => ({
   useAuth: () => ({
     isLoaded: true,
@@ -73,15 +93,24 @@ vi.mock('@/components/onboarding/unified-wizard', () => ({
   },
 }));
 
-vi.mock('@/components/onboarding/screens/welcome-screen', () => ({ WelcomeScreen: () => null }));
-vi.mock('@/components/onboarding/screens/agency-profile-screen', () => ({ AgencyProfileScreen: () => null }));
+vi.mock('@/components/onboarding/screens/welcome-screen', () => ({
+  WelcomeScreen: () => <div>Welcome screen</div>,
+}));
+vi.mock('@/components/onboarding/screens/agency-profile-screen', () => ({
+  AgencyProfileScreen: () => <div>Agency profile screen</div>,
+}));
 vi.mock('@/components/onboarding/screens/client-selection-screen', () => ({
   ClientSelectionScreen: ({ onDefer, onLoadClients }: any) => {
     useEffect(() => {
       void onLoadClients?.();
     }, [onLoadClients]);
 
-    return <button onClick={onDefer}>No client yet</button>;
+    return (
+      <div>
+        <p>Client selection screen</p>
+        <button onClick={onDefer}>No client yet</button>
+      </div>
+    );
   },
 }));
 vi.mock('@/components/onboarding/screens/platform-selection-screen', () => ({
@@ -89,12 +118,18 @@ vi.mock('@/components/onboarding/screens/platform-selection-screen', () => ({
     if (shouldThrowPlatformScreen) {
       throw new Error('platform step exploded');
     }
-    return null;
+    return <div>Platform selection screen</div>;
   },
 }));
-vi.mock('@/components/onboarding/screens/success-link-screen', () => ({ SuccessLinkScreen: () => null }));
-vi.mock('@/components/onboarding/screens/team-invite-screen', () => ({ TeamInviteScreen: () => null }));
-vi.mock('@/components/onboarding/screens/final-success-screen', () => ({ FinalSuccessScreen: () => null }));
+vi.mock('@/components/onboarding/screens/success-link-screen', () => ({
+  SuccessLinkScreen: () => <div>Success link screen</div>,
+}));
+vi.mock('@/components/onboarding/screens/team-invite-screen', () => ({
+  TeamInviteScreen: () => <div>Team invite screen</div>,
+}));
+vi.mock('@/components/onboarding/screens/final-success-screen', () => ({
+  FinalSuccessScreen: () => <div>Final success screen</div>,
+}));
 
 describe('UnifiedOnboardingPage step progression', () => {
   beforeEach(() => {
@@ -131,17 +166,33 @@ describe('UnifiedOnboardingPage step progression', () => {
     });
   });
 
-  it('renders an in-flow fallback instead of crashing the page when step rendering throws', () => {
+  it('renders an in-flow fallback instead of crashing the page when step rendering throws', async () => {
     const consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
     shouldThrowPlatformScreen = true;
 
     render(<UnifiedOnboardingPage />);
 
-    expect(screen.getByText(/something went wrong in onboarding/i)).toBeInTheDocument();
+    expect(await screen.findByText(/something went wrong in onboarding/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: /go to dashboard/i }));
     expect(mockPush).toHaveBeenCalledWith('/dashboard?onboardingRecovery=1');
 
     consoleErrorSpy.mockRestore();
+  });
+
+  it.each([
+    [0, 'Welcome screen'],
+    [1, 'Agency profile screen'],
+    [2, 'Client selection screen'],
+    [3, 'Platform selection screen'],
+    [4, 'Success link screen'],
+    [5, 'Team invite screen'],
+    [6, 'Final success screen'],
+  ] as const)('loads onboarding screen for step %s', async (step, label) => {
+    mockCurrentStep = step;
+
+    render(<UnifiedOnboardingPage />);
+
+    expect(await screen.findByText(label)).toBeInTheDocument();
   });
 
   it('loads existing clients when the client step is shown', async () => {

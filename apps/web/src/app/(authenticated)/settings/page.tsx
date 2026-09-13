@@ -11,12 +11,44 @@
  */
 
 import { Suspense } from 'react';
+import dynamic from 'next/dynamic';
 import { SettingsTabs } from '@/components/settings/settings-tabs';
 import { AgencyProfileCard, PlanStrip } from '@/components/settings/general';
-import { BillingTab } from '@/components/settings/billing';
 import { UsageOverviewCard } from '@/components/settings/usage-overview-card';
-import { WebhookSettingsTab } from '@/components/settings/webhooks';
-import { AgentsSettingsTab } from '@/components/settings/agents';
+
+function gatedTabFallback(label: string) {
+  return (
+    <div
+      className="min-h-[220px] border border-border bg-muted/25"
+      aria-busy
+      aria-label={label}
+    />
+  );
+}
+
+const BillingTab = dynamic(
+  () =>
+    import('@/components/settings/billing/billing-tab').then((m) => ({
+      default: m.BillingTab,
+    })),
+  { loading: () => gatedTabFallback('Loading billing settings') }
+);
+
+const WebhookSettingsTab = dynamic(
+  () =>
+    import('@/components/settings/webhooks/webhook-settings-tab').then((m) => ({
+      default: m.WebhookSettingsTab,
+    })),
+  { loading: () => gatedTabFallback('Loading webhook settings') }
+);
+
+const AgentsSettingsTab = dynamic(
+  () =>
+    import('@/components/settings/agents/agents-settings-tab').then((m) => ({
+      default: m.AgentsSettingsTab,
+    })),
+  { loading: () => gatedTabFallback('Loading agent settings') }
+);
 
 function GeneralTabContent() {
   return (

@@ -32,12 +32,8 @@
     "perf:dashboard:gate": "node scripts/perf/benchmark-api.mjs --enforce-budget true",
     "perf:web:inp-smoke": "bash scripts/perf/web-inp-smoke.sh"
   },
-  "dependencies": {
-    "nanoid": "^5.1.6"
-  },
   "devDependencies": {
     "@googleworkspace/cli": "^0.11.1",
-    "@sentry/cli": "^3.7.0",
     "concurrently": "^9.1.0",
     "typescript": "^5.7.2"
   },
