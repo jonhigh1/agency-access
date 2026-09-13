@@ -17,10 +17,8 @@ export function BlogCard({ post, variant = "default" }: BlogCardProps) {
 
   if (variant === "compact") {
     return (
-      <Link
-        href={`/blog/${post.slug}`}
-        className="group block border-2 border-black bg-card p-4 rounded-none shadow-brutalist-sm hover:shadow-brutalist hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
-      >
+      <Link href={`/blog/${post.slug}`} className="group block">
+        <div className="border-2 border-black bg-card p-4 rounded-none shadow-brutalist-sm hover:shadow-brutalist hover:translate-x-[2px] hover:translate-y-[2px] transition-all">
         <div className="flex items-start justify-between gap-4">
           <div className="flex-1 min-w-0">
             <span
@@ -46,16 +44,15 @@ export function BlogCard({ post, variant = "default" }: BlogCardProps) {
             </div>
           </div>
         </div>
+        </div>
       </Link>
     );
   }
 
   if (variant === "featured") {
     return (
-      <Link
-        href={`/blog/${post.slug}`}
-        className="group block border-[3px] border-black bg-card rounded-none shadow-brutalist-lg hover:-translate-y-1 transition-all overflow-hidden"
-      >
+      <Link href={`/blog/${post.slug}`} className="group block">
+        <div className="border-[3px] border-black bg-card rounded-none shadow-brutalist-lg hover:-translate-y-1 transition-all overflow-hidden">
         {/* Category badge - tilted */}
         <div className="relative">
           <div className="absolute top-4 left-4 z-10">
@@ -116,16 +113,15 @@ export function BlogCard({ post, variant = "default" }: BlogCardProps) {
             </div>
           )}
         </div>
+        </div>
       </Link>
     );
   }
 
   // Default variant
   return (
-    <Link
-      href={`/blog/${post.slug}`}
-      className="group block border-2 border-black bg-card rounded-none shadow-brutalist-sm hover:shadow-brutalist hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
-    >
+    <Link href={`/blog/${post.slug}`} className="group block">
+      <div className="border-2 border-black bg-card rounded-none shadow-brutalist-sm hover:shadow-brutalist hover:translate-x-[2px] hover:translate-y-[2px] transition-all">
       {/* Category badge */}
       <div className="relative p-6 pb-0">
         <span
@@ -162,6 +158,7 @@ export function BlogCard({ post, variant = "default" }: BlogCardProps) {
             </span>
           </div>
         </div>
+      </div>
       </div>
     </Link>
   );

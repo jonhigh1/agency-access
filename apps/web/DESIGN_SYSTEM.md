@@ -380,6 +380,35 @@ Run: `npm run test --workspace=apps/web`. Visual reference: `/design-system`.
 
 ## Changelog
 
+### v2.2.0 (September 12, 2026) — Icon chips square + button cohesion sweep
+- **Platform logo chips are square.** Brandfetch logos are square assets; the
+  dashboard's legacy `rounded-full` chips showed the ground behind the logo
+  corners. Binary radius applies to logo chips: `rounded-none` + hairline
+  border (`PlatformIcon` fallback tile likewise). Circular chips remain for
+  avatars and circular icon badges only.
+- **Button cohesion sweep.** 133+ hand-rolled button-like elements across 46
+  files migrated to the five variants. Mapping rulings: ink-filled CTAs →
+  `primary` on app surfaces, `secondary` on marketing; teal-filled action
+  buttons → `primary` (teal stays a success fill); quiet destructive actions →
+  `ghost` with `text-danger-ink` (a text token, not a variant); off-palette
+  fills (indigo, yellow, slate, raw hex) → nearest variant. Controls that are
+  not buttons (tabs, segmented radios, filter pills, accordion headers,
+  dashed add-field rows, pagination) stay raw but must be tokenized:
+  `rounded-none`, on-palette, tinted hovers only.
+- **Sanctioned patterns:** link-style ghost (`px-0` + `hover:bg-transparent`
+  for inline text actions inside tinted banners); padding-only className
+  overrides on Button for dense layouts. Everything else that touches a
+  variant's hover, border, radius, or fill is a violation.
+- **Enforcement:** `src/app/__tests__/button-contract.design.test.ts` walks
+  `app/**` + `components/**` (ui/, showcase, dev/test previews, prototypes,
+  and the hero-copy-rewrite experiment excluded) and fails on hand-rolled
+  button signatures (solid fills, `shadow-brutalist`, hover movement on raw
+  elements), non-binary radius, off-palette colors, dynamic classNames on raw
+  `<button>`, and Button-neutering overrides (`translate-*-0`, `normal-case`,
+  resting `shadow-none`, radius overrides).
+- `PlatformCard` rebuilt on the contract card (1px border, no shadow, square);
+  deprecated `clean-card` usage removed there.
+
 ### v2.1.0 (September 12, 2026) — Settings adoption
 - Settings page rebuilt on rows: `SettingsRow` / `SettingsGroup` primitives (`src/components/settings/settings-row.tsx`), hairline dividers, no cards
 - `.ink-panel` gets its first consumers: one strip per Settings tab (plan, subscription, endpoint, MCP)

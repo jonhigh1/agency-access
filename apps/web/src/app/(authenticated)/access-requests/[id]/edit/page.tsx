@@ -465,14 +465,15 @@ export default function EditAccessRequestPage({ params }: EditAccessRequestPageP
                 </div>
               </div>
             ))}
-            <button
+            <Button
               type="button"
+              variant="secondary"
+              className="px-3 py-2 text-sm"
               onClick={addIntakeField}
-              className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm text-foreground hover:bg-paper"
             >
               <Plus className="h-4 w-4" />
               Add Field
-            </button>
+            </Button>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2">

@@ -4,6 +4,7 @@
 
 import type { Metadata } from "next";
 import { BlogHeader } from "@/components/blog/blog-header";
+import { Button } from "@/components/ui/button";
 import { BlogCard } from "@/components/blog/blog-card";
 import { getBlogPosts, getBlogPostsByCategory } from "@/lib/blog-data";
 import { BlogCategory } from "@/lib/blog-types";
@@ -108,12 +109,9 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
                 className="flex-1 px-4 py-3 border-2 border-black rounded-none font-mono text-sm focus:outline-none focus:ring-2 focus:ring-coral"
                 required
               />
-              <button
-                type="submit"
-                className="px-6 py-3 bg-ink text-white font-bold uppercase tracking-wider border-2 border-black rounded-none hover:bg-coral transition-colors"
-              >
+              <Button type="submit" variant="secondary">
                 Subscribe
-              </button>
+              </Button>
             </form>
             <p className="font-mono text-xs text-gray-500 mt-3">
               No spam. Unsubscribe anytime.

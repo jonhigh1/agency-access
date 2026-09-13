@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 
+import { Button } from '@/components/ui/button';
 import { getApiBaseUrl } from '@/lib/api/api-env';
 import { trackAffiliateEvent } from '@/lib/analytics/affiliate';
 
@@ -134,13 +135,15 @@ export function AffiliateProgramForm() {
         <p className="max-w-[18rem] text-xs leading-relaxed text-muted-foreground">
           By applying, you agree to a manual review and approval process.
         </p>
-        <button
+        <Button
           type="submit"
-          className="inline-flex items-center justify-center rounded-lg bg-coral px-5 py-3 text-sm font-semibold text-white transition hover:bg-coral/90 disabled:cursor-not-allowed disabled:opacity-60 sm:min-w-[12rem]"
+          variant="primary"
+          size="sm"
+          className="sm:min-w-[12rem]"
           disabled={status === 'submitting'}
         >
           {status === 'submitting' ? 'Submitting...' : 'Apply to the program'}
-        </button>
+        </Button>
       </div>
 
       {status === 'success' ? (

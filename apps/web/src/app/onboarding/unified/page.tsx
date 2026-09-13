@@ -26,6 +26,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@clerk/nextjs';
 import { AlertCircle } from 'lucide-react';
 import { UnifiedWizard } from '@/components/onboarding/unified-wizard';
+import { Button } from '@/components/ui/button';
 import { UnifiedOnboardingProvider, useUnifiedOnboarding } from '@/contexts/unified-onboarding-context';
 import { ONBOARDING_TOTAL_STEPS } from '@/lib/onboarding-steps';
 
@@ -138,13 +139,15 @@ class OnboardingStepErrorBoundary extends Component<
           <p className="mt-2 text-sm">
             We hit an unexpected issue while loading this step. Please return to your dashboard and try onboarding again.
           </p>
-          <button
+          <Button
             type="button"
+            variant="danger"
+            size="sm"
+            className="mt-4"
             onClick={this.props.onExit}
-            className="mt-4 rounded-lg bg-red-700 px-4 py-2 text-sm font-semibold text-white hover:bg-red-800"
           >
             Go to dashboard
-          </button>
+          </Button>
         </div>
       );
     }

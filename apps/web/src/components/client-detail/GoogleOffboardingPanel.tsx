@@ -13,7 +13,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '@clerk/nextjs';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Card } from '@/components/ui';
+import { Card, Button } from '@/components/ui';
 import { StatusBadge } from '@/components/ui/status-badge';
 import {
   type OffboardingItem,
@@ -229,14 +229,16 @@ export function GoogleOffboardingPanel({
           <div className="flex-1">
             <p className="text-sm font-semibold text-ink">Something went wrong</p>
             <p className="text-sm text-ink/70 mt-1">{error}</p>
-            <button
+            <Button
               type="button"
-              className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-ink bg-paper border border-border-hard rounded hover:bg-warm-gray cursor-pointer"
+              variant="secondary"
+              size="sm"
+              className="mt-3 cursor-pointer"
               onClick={handleReset}
             >
               <RefreshCw className="h-3.5 w-3.5" />
               Try again
-            </button>
+            </Button>
           </div>
         </div>
       </Card>
@@ -253,9 +255,11 @@ export function GoogleOffboardingPanel({
             <p className="text-sm text-ink/60 mt-1">
               Revoke access and clean up secrets for this Google connection ({connectionLabel}).
             </p>
-            <button
+            <Button
               type="button"
-              className="mt-4 inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-paper bg-coral border border-coral rounded hover:bg-coral/90 cursor-pointer"
+              variant="primary"
+              size="sm"
+              className="mt-4 cursor-pointer"
               onClick={handleBegin}
               disabled={prepareMutation.isPending}
             >
@@ -265,7 +269,7 @@ export function GoogleOffboardingPanel({
                 <Unplug className="h-4 w-4" />
               )}
               Begin Offboarding
-            </button>
+            </Button>
           </div>
         </div>
       </Card>
@@ -301,20 +305,24 @@ export function GoogleOffboardingPanel({
           </ul>
 
           <div className="flex gap-2 pt-2">
-            <button
+            <Button
               type="button"
-              className="px-4 py-2 text-sm font-medium text-ink bg-paper border-2 border-border-hard rounded hover:bg-warm-gray cursor-pointer"
+              variant="secondary"
+              size="sm"
+              className="cursor-pointer"
               onClick={handleReset}
             >
               Cancel
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
-              className="px-4 py-2 text-sm font-medium text-paper bg-coral border border-coral rounded hover:bg-coral/90 cursor-pointer"
+              variant="primary"
+              size="sm"
+              className="cursor-pointer"
               onClick={handleConfirm}
             >
               Confirm Offboarding
-            </button>
+            </Button>
           </div>
         </div>
       </Card>
@@ -348,16 +356,20 @@ export function GoogleOffboardingPanel({
           </ul>
 
           <div className="flex gap-2 pt-2">
-            <button
+            <Button
               type="button"
-              className="px-4 py-2 text-sm font-medium text-ink bg-paper border-2 border-border-hard rounded hover:bg-warm-gray cursor-pointer"
+              variant="secondary"
+              size="sm"
+              className="cursor-pointer"
               onClick={() => setPhase('preview')}
             >
               Go back
-            </button>
-            <button
+            </Button>
+            <Button
               type="button"
-              className="px-4 py-2 text-sm font-medium text-paper bg-coral border border-coral rounded hover:bg-coral/90 cursor-pointer"
+              variant="danger"
+              size="sm"
+              className="cursor-pointer"
               onClick={handleConfirmExecute}
               disabled={confirmMutation.isPending}
             >
@@ -367,7 +379,7 @@ export function GoogleOffboardingPanel({
                 <Unplug className="h-4 w-4" />
               )}
               Confirm Offboarding
-            </button>
+            </Button>
           </div>
         </div>
       </Card>
@@ -386,14 +398,16 @@ export function GoogleOffboardingPanel({
             <div className="flex-1">
               <p className="text-sm font-semibold text-ink">Offboarding progress unavailable</p>
               <p className="text-sm text-ink/70 mt-1">{msg}</p>
-              <button
+              <Button
                 type="button"
-                className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-ink bg-paper border border-border-hard rounded hover:bg-warm-gray cursor-pointer"
+                variant="secondary"
+                size="sm"
+                className="mt-3 cursor-pointer"
                 onClick={() => queryClient.invalidateQueries({ queryKey: runQueryKey })}
               >
                 <RefreshCw className="h-3.5 w-3.5" />
                 Refresh
-              </button>
+              </Button>
             </div>
           </div>
         </Card>
@@ -444,15 +458,17 @@ export function GoogleOffboardingPanel({
                   )}
                   {item.status === 'failed_retryable' && (
                     <div className="flex items-center gap-2 mt-1">
-                      <button
+                      <Button
                         type="button"
-                        className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium text-ink bg-paper border border-border-hard rounded hover:bg-warm-gray cursor-pointer"
+                        variant="secondary"
+                        size="sm"
+                        className="cursor-pointer"
                         onClick={handleRetry}
                         disabled={retryMutation.isPending}
                       >
                         <RefreshCw className="h-3.5 w-3.5" />
                         Retry
-                      </button>
+                      </Button>
                     </div>
                   )}
                 </div>
@@ -562,14 +578,16 @@ export function GoogleOffboardingPanel({
                   </div>
                   {item.verificationMethod === 'human_reported' &&
                     run.status === 'completed_with_manual_follow_up' && (
-                      <button
+                      <Button
                         type="button"
-                        className="px-3 py-1 text-xs font-medium text-ink bg-paper border border-border-hard rounded hover:bg-warm-gray cursor-pointer"
+                        variant="secondary"
+                        size="sm"
+                        className="cursor-pointer"
                         onClick={() => handleAttest(item.id)}
                         disabled={attestMutation.isPending}
                       >
                         {attestMutation.isPending ? 'Recording...' : 'Attest'}
-                      </button>
+                      </Button>
                     )}
                 </div>
               </li>
@@ -577,14 +595,16 @@ export function GoogleOffboardingPanel({
           </ul>
 
           <div className="pt-2">
-            <button
+            <Button
               type="button"
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-ink bg-paper border border-border-hard rounded hover:bg-warm-gray cursor-pointer"
+              variant="secondary"
+              size="sm"
+              className="cursor-pointer"
               onClick={handleReset}
             >
               <RefreshCw className="h-3.5 w-3.5" />
               Start new offboarding
-            </button>
+            </Button>
           </div>
         </div>
       </Card>

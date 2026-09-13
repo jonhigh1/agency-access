@@ -15,6 +15,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { capturePosthogEvent } from '@/lib/analytics/capture-posthog';
 import { MetaBusinessPortfolioSelector } from '@/components/meta-business-portfolio-selector';
+import { Button } from '@/components/ui/button';
 import { resolveApiUrl } from '@/lib/api/api-env';
 import {
   trackOAuthCallbackFailure,
@@ -242,22 +243,20 @@ function CallbackPageContent() {
 
           {/* Action buttons */}
           <div className="space-y-3">
-            <Link
-              href={
-                platform
-                  ? `/connections?success=true&platform=${encodeURIComponent(platform)}`
-                  : '/connections'
-              }
-              className="block w-full bg-blue-600 text-white text-center px-6 py-3 rounded-lg hover:bg-blue-700 transition"
-            >
-              View Connections
-            </Link>
-            <Link
-              href="/dashboard"
-              className="block w-full border border-gray-300 text-center px-6 py-3 rounded-lg hover:bg-gray-50 transition"
-            >
-              Continue to Dashboard
-            </Link>
+            <Button className="w-full" asChild>
+              <Link
+                href={
+                  platform
+                    ? `/connections?success=true&platform=${encodeURIComponent(platform)}`
+                    : '/connections'
+                }
+              >
+                View Connections
+              </Link>
+            </Button>
+            <Button variant="secondary" className="w-full" asChild>
+              <Link href="/dashboard">Continue to Dashboard</Link>
+            </Button>
           </div>
         </div>
       </div>
@@ -301,18 +300,12 @@ function CallbackPageContent() {
 
         {/* Action buttons */}
         <div className="space-y-3">
-          <Link
-            href="/onboarding/platforms"
-            className="block w-full bg-blue-600 text-white text-center px-6 py-3 rounded-lg hover:bg-blue-700 transition"
-          >
-            Try Again
-          </Link>
-          <Link
-            href="/dashboard"
-            className="block w-full border border-gray-300 text-center px-6 py-3 rounded-lg hover:bg-gray-50 transition"
-          >
-            Go to Dashboard
-          </Link>
+          <Button className="w-full" asChild>
+            <Link href="/onboarding/platforms">Try Again</Link>
+          </Button>
+          <Button variant="secondary" className="w-full" asChild>
+            <Link href="/dashboard">Go to Dashboard</Link>
+          </Button>
         </div>
       </div>
     </div>

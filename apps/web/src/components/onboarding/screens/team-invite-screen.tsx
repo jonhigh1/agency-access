@@ -25,6 +25,7 @@ import { OpinionatedInput } from '../opinionated-input';
 import { SingleSelect } from '@/components/ui/single-select';
 import { fadeVariants, fadeTransition } from '@/lib/animations';
 import { formatOnboardingStepLabel } from '@/lib/onboarding-steps';
+import { Button } from '@/components/ui/button';
 import { X, Plus, Mail } from 'lucide-react';
 
 // ============================================================
@@ -145,7 +146,7 @@ export function TeamInviteScreen({
                     type="button"
                     onClick={() => setNewRole(role.value)}
                     className={`
-                      p-3 rounded-lg border-2 text-left transition-all
+                      p-3 rounded-none border-2 text-left transition-all
                       ${newRole === role.value
                         ? 'border-coral bg-coral/10'
                         : 'border-border hover:border-border bg-card'
@@ -160,15 +161,17 @@ export function TeamInviteScreen({
             </div>
 
             {/* Add Button */}
-            <button
+            <Button
               type="button"
+              variant="primary"
+              size="sm"
+              className="w-full"
               onClick={handleAddInvite}
               disabled={!newEmail || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newEmail)}
-              className="w-full px-4 py-3 bg-coral hover:bg-coral/90 disabled:bg-muted/30 disabled:cursor-not-allowed text-white font-semibold rounded-lg transition-all flex items-center justify-center gap-2"
             >
               <Plus className="w-5 h-5" />
               Add Team Member
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -207,7 +210,7 @@ export function TeamInviteScreen({
                 <button
                   type="button"
                   onClick={() => handleRemoveInvite(invite.email)}
-                  className="p-2 text-muted-foreground hover:text-danger-ink hover:bg-coral/10 rounded-lg transition-all"
+                  className="p-2 text-muted-foreground hover:text-danger-ink hover:bg-coral/10 rounded-none transition-all"
                   aria-label="Remove invite"
                 >
                   <X className="w-5 h-5" />

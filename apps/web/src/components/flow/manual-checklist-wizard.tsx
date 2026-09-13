@@ -2,6 +2,7 @@
 
 import { ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import { Check, ChevronRight } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 export interface ManualStepAction {
   label: string;
@@ -236,49 +237,55 @@ export function ManualChecklistWizard({
 
       <div className="hidden lg:block sticky bottom-4 z-10 px-5 pb-4">
         <div className="rounded-lg border border-border bg-paper px-3 py-3 flex items-center justify-between gap-3">
-          <button
+          <Button
             type="button"
+            variant="secondary"
+            size="sm"
             onClick={handleBack}
             disabled={!canGoBack || currentStep.primaryAction.loading}
-            className="px-4 py-2 rounded-lg text-sm font-medium bg-card border border-border text-foreground hover:bg-muted/20 disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Back
-          </button>
+          </Button>
 
-          <button
+          <Button
             type="button"
+            variant="primary"
+            size="sm"
             onClick={() => void handlePrimaryAction()}
             disabled={primaryDisabled}
-            className="px-4 py-2 rounded-lg text-sm font-medium bg-coral text-white hover:bg-coral/90 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center gap-2"
           >
             {currentStep.primaryAction.loading
               ? currentStep.primaryAction.loadingLabel || 'Processing...'
               : currentStep.primaryAction.label}
             {!currentStep.primaryAction.loading ? <ChevronRight className="h-4 w-4" /> : null}
-          </button>
+          </Button>
         </div>
       </div>
 
       <div className="border-t border-border bg-paper px-4 py-3 lg:hidden">
         <div className="mx-auto max-w-3xl flex items-center gap-3">
-          <button
+          <Button
             type="button"
+            variant="secondary"
+            size="sm"
+            className="flex-1"
             onClick={handleBack}
             disabled={!canGoBack || currentStep.primaryAction.loading}
-            className="flex-1 px-4 py-2 rounded-lg text-sm font-medium bg-paper border border-border text-foreground disabled:opacity-40 disabled:cursor-not-allowed"
           >
             Back
-          </button>
-          <button
+          </Button>
+          <Button
             type="button"
+            variant="primary"
+            size="sm"
+            className="flex-[1.4]"
             onClick={() => void handlePrimaryAction()}
             disabled={primaryDisabled}
-            className="flex-[1.4] px-4 py-2 rounded-lg text-sm font-medium bg-coral text-white disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2"
           >
             {currentStep.primaryAction.loading
               ? currentStep.primaryAction.loadingLabel || 'Processing...'
               : currentStep.primaryAction.label}
-          </button>
+          </Button>
         </div>
       </div>
 

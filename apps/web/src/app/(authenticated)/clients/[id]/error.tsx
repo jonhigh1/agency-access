@@ -6,6 +6,8 @@
 
 import { useEffect } from 'react';
 
+import { Button } from '@/components/ui/button';
+
 export default function Error({
   error,
   reset,
@@ -22,7 +24,7 @@ export default function Error({
       <div className="max-w-7xl mx-auto">
         <a
           href="/clients"
-          className="inline-flex items-center text-sm text-slate-600 hover:text-slate-900 mb-6"
+          className="inline-flex items-center text-sm text-muted-foreground hover:text-ink mb-6"
         >
           ← All clients
         </a>
@@ -49,18 +51,10 @@ export default function Error({
             {error.message || 'Failed to load client details'}
           </p>
           <div className="flex justify-center gap-4">
-            <button
-              onClick={reset}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-            >
-              Try again
-            </button>
-            <a
-              href="/clients"
-              className="px-4 py-2 border border-border text-slate-700 rounded-lg hover:bg-background transition-colors"
-            >
-              Back to clients
-            </a>
+            <Button onClick={reset}>Try again</Button>
+            <Button variant="secondary" asChild>
+              <a href="/clients">Back to clients</a>
+            </Button>
           </div>
         </div>
       </div>

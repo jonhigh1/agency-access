@@ -14,6 +14,7 @@ import { Client } from '@agency-platform/shared';
 import { useAuthOrBypass } from '@/lib/dev-auth';
 import { getApiBaseUrl } from '@/lib/api/api-env';
 import { extractMessageFromBody } from '@/lib/api/extract-error';
+import { Button } from '@/components/ui/button';
 
 interface ClientSelectorProps {
   agencyId: string;
@@ -225,13 +226,15 @@ export function ClientSelector({ onSelect, value }: ClientSelectorProps) {
             <div className="flex flex-col items-center gap-3 py-10 text-center">
               <AlertCircle className="h-9 w-9 text-danger-ink" />
               <p className="text-muted-foreground text-base">Failed to load clients</p>
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="md"
                 onClick={refreshClients}
-                className="px-5 py-2.5 text-danger-ink hover:text-danger-ink text-base rounded-lg hover:bg-muted/20 transition-colors"
+                className="text-danger-ink"
               >
                 Retry
-              </button>
+              </Button>
             </div>
           )}
 
@@ -256,7 +259,7 @@ export function ClientSelector({ onSelect, value }: ClientSelectorProps) {
                     type="button"
                     role="button"
                     onClick={() => handleSelectClient(client)}
-                    className={`w-full text-left px-4 py-3.5 border rounded-lg transition-colors flex items-center gap-3 ${
+                    className={`w-full text-left px-4 py-3.5 border rounded-none transition-colors flex items-center gap-3 ${
                       isSelected
                         ? 'border-coral bg-coral/10'
                         : 'border-border hover:border-border hover:bg-muted/20'
@@ -373,15 +376,16 @@ export function ClientSelector({ onSelect, value }: ClientSelectorProps) {
 
             {/* Actions */}
             <div className="flex justify-end">
-              <button
+              <Button
                 type="button"
+                variant="primary"
+                size="md"
                 onClick={handleCreateClient}
                 disabled={creating}
-                className="px-6 py-2.5 bg-coral text-white rounded-lg hover:bg-coral/90 disabled:opacity-50 flex items-center gap-2 text-base font-medium"
               >
                 {creating && <Loader2 className="h-4 w-4 animate-spin" />}
                 Create Client
-              </button>
+              </Button>
             </div>
           </div>
         )}

@@ -16,6 +16,7 @@ import { useRouter } from 'next/navigation';
 import { useAuth, useUser } from '@clerk/nextjs';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ManualInvitationModal } from '@/components/manual-invitation-modal';
+import { Button } from '@/components/ui/button';
 import { authorizedApiFetch } from '@/lib/api/authorized-api-fetch';
 import { getGoogleAdsAccountLabel } from '@/lib/google-ads-account-label';
 import { finalizeMetaBusinessLogin, launchMetaBusinessLogin } from '@/lib/meta-business-login';
@@ -483,13 +484,13 @@ export default function PlatformsPage() {
                   )}
                 </div>
               ) : (
-                <button
+                <Button
+                  size="sm"
                   onClick={() => handleConnect(platform.id)}
                   disabled={isPending || isMetaConnecting}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
                 >
                   {isPending || (platform.id === 'meta' && isMetaConnecting) ? 'Connecting...' : 'Connect'}
-                </button>
+                </Button>
               )}
             </div>
           );
@@ -503,26 +504,25 @@ export default function PlatformsPage() {
             <h2 className="text-xl font-bold">Your Google Accounts</h2>
             <div className="flex gap-2">
               {!showGoogleAccounts ? (
-                <button
-                  onClick={() => setShowGoogleAccounts(true)}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-                >
+                <Button size="sm" onClick={() => setShowGoogleAccounts(true)}>
                   View Accounts
-                </button>
+                </Button>
               ) : (
                 <>
-                  <button
+                  <Button
+                    variant="secondary"
+                    size="sm"
                     onClick={() => refetchGoogleAccounts()}
-                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
                   >
                     Refresh
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
                     onClick={() => setShowGoogleAccounts(false)}
-                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
                   >
                     Hide
-                  </button>
+                  </Button>
                 </>
               )}
             </div>
@@ -586,26 +586,25 @@ export default function PlatformsPage() {
             <h2 className="text-xl font-bold">Your Meta Business Manager Accounts</h2>
             <div className="flex gap-2">
               {!showMetaBusinesses ? (
-                <button
-                  onClick={() => setShowMetaBusinesses(true)}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
-                >
+                <Button size="sm" onClick={() => setShowMetaBusinesses(true)}>
                   View Business Accounts
-                </button>
+                </Button>
               ) : (
                 <>
-                  <button
+                  <Button
+                    variant="secondary"
+                    size="sm"
                     onClick={() => refetchMetaBusinesses()}
-                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
                   >
                     Refresh
-                  </button>
-                  <button
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
                     onClick={() => setShowMetaBusinesses(false)}
-                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
                   >
                     Hide
-                  </button>
+                  </Button>
                 </>
               )}
             </div>
@@ -664,20 +663,14 @@ export default function PlatformsPage() {
 
       {/* Navigation buttons */}
       <div className="flex justify-between">
-        <button
-          onClick={handleSkip}
-          className="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50"
-        >
+        <Button variant="secondary" onClick={handleSkip}>
           Skip for now
-        </button>
+        </Button>
 
         {hasConnectedPlatforms && (
-          <button
-            onClick={handleContinue}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-          >
+          <Button onClick={handleContinue}>
             Continue
-          </button>
+          </Button>
         )}
       </div>
 

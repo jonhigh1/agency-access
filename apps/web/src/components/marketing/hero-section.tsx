@@ -213,7 +213,7 @@ export function HeroSection() {
                       </m.div>
                     ))}
                   </div>
-                  <Button variant="brutalist" className="w-full h-12 text-sm font-bold group-hover:shadow-none group-hover:translate-x-[2px] group-hover:translate-y-[2px] transition-all">
+                  <Button variant="brutalist" className="w-full h-12 text-sm font-bold">
                     Grant Access
                   </Button>
                 </div>

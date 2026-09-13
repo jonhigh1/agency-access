@@ -136,10 +136,18 @@ export function MarketingNav() {
 
         {/* Desktop Navigation - Brutalist pills */}
         <div className="hidden md:flex items-center space-x-3">
-          <Link href="#trusted-by-agencies" onClick={handleLinkClick} className="px-4 py-2 text-sm font-bold text-ink border-2 border-black rounded-none hover:bg-black hover:text-white hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[4px_4px_0px_#000] transition-all duration-200 uppercase tracking-wider">Features</Link>
-          <Link href="#how-it-works" onClick={handleLinkClick} className="px-4 py-2 text-sm font-bold text-ink border-2 border-black rounded-none hover:bg-black hover:text-white hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[4px_4px_0px_#000] transition-all duration-200 uppercase tracking-wider">How It Works</Link>
-          <Link href="/pricing" className="px-4 py-2 text-sm font-bold text-danger-ink border-2 border-black rounded-none hover:bg-coral hover:text-white hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[4px_4px_0px_#000] transition-all duration-200 uppercase tracking-wider">Pricing</Link>
-          <Link href="/blog" onClick={handleLinkClick} className="px-4 py-2 text-sm font-bold text-success-ink border-2 border-black rounded-none hover:bg-teal hover:text-white hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[4px_4px_0px_#000] transition-all duration-200 uppercase tracking-wider">Blog</Link>
+          <Button variant="secondary" size="sm" asChild className="font-bold uppercase tracking-wider">
+            <Link href="#trusted-by-agencies" onClick={handleLinkClick}>Features</Link>
+          </Button>
+          <Button variant="secondary" size="sm" asChild className="font-bold uppercase tracking-wider">
+            <Link href="#how-it-works" onClick={handleLinkClick}>How It Works</Link>
+          </Button>
+          <Button variant="secondary" size="sm" asChild className="font-bold uppercase tracking-wider">
+            <Link href="/pricing">Pricing</Link>
+          </Button>
+          <Button variant="secondary" size="sm" asChild className="font-bold uppercase tracking-wider">
+            <Link href="/blog" onClick={handleLinkClick}>Blog</Link>
+          </Button>
         </div>
 
         {/* Desktop Actions - Brutalist buttons */}
@@ -168,7 +176,7 @@ export function MarketingNav() {
         {/* Mobile Menu Button */}
         <button
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          className="md:hidden flex items-center justify-center p-2 min-h-[44px] min-w-[44px] rounded-lg hover:bg-muted/10 touch-feedback"
+          className="md:hidden flex items-center justify-center p-2 min-h-[44px] min-w-[44px] rounded-none hover:bg-muted/10 touch-feedback"
           aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
           aria-expanded={mobileMenuOpen}
         >
@@ -206,7 +214,7 @@ export function MarketingNav() {
                 <span className="font-dela text-xl font-bold">Menu</span>
                 <button
                   onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center justify-center p-2 min-h-[44px] min-w-[44px] border-2 border-black rounded-none hover:bg-black hover:text-white hover:shadow-[4px_4px_0px_#000] hover:translate-x-[-2px] hover:translate-y-[-2px] touch-feedback transition-all duration-200"
+                  className="flex items-center justify-center p-2 min-h-[44px] min-w-[44px] border-2 border-black rounded-none hover:bg-black hover:text-white touch-feedback transition-colors duration-200"
                   aria-label="Close menu"
                 >
                   <MenuIcon open={true} />
@@ -217,33 +225,26 @@ export function MarketingNav() {
               <div className="flex-1 p-4 overflow-y-auto bg-card">
                   {/* Navigation Links - Brutalist grid */}
                   <div className="grid grid-cols-1 gap-3 mb-6">
-                    <Link
-                      href="#trusted-by-agencies"
-                      onClick={handleLinkClick}
-                      className="py-4 px-6 text-lg font-bold min-h-[60px] flex items-center border-2 border-black rounded-none hover:bg-black hover:text-white hover:shadow-[4px_4px_0px_#000] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200 touch-feedback"
-                    >
-                      Features
-                    </Link>
-                    <Link
-                      href="#how-it-works"
-                      onClick={handleLinkClick}
-                      className="py-4 px-6 text-lg font-bold min-h-[60px] flex items-center border-2 border-black rounded-none hover:bg-black hover:text-white hover:shadow-[4px_4px_0px_#000] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200 touch-feedback"
-                    >
-                      How It Works
-                    </Link>
-                    <Link
-                      href="/pricing"
-                      className="py-4 px-6 text-lg font-bold min-h-[60px] flex items-center border-2 border-coral bg-coral/5 text-danger-ink hover:bg-coral hover:text-white hover:shadow-[4px_4px_0px_#000] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200 touch-feedback"
-                    >
-                      Pricing
-                    </Link>
-                    <Link
-                      href="/blog"
-                      onClick={handleLinkClick}
-                      className="py-4 px-6 text-lg font-bold min-h-[60px] flex items-center border-2 border-teal bg-teal/5 text-success-ink hover:bg-teal hover:text-white hover:shadow-[4px_4px_0px_#000] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200 touch-feedback"
-                    >
-                      Blog
-                    </Link>
+                    <Button variant="secondary" size="lg" asChild className="w-full min-h-[60px] font-bold">
+                      <Link href="#trusted-by-agencies" onClick={handleLinkClick}>
+                        Features
+                      </Link>
+                    </Button>
+                    <Button variant="secondary" size="lg" asChild className="w-full min-h-[60px] font-bold">
+                      <Link href="#how-it-works" onClick={handleLinkClick}>
+                        How It Works
+                      </Link>
+                    </Button>
+                    <Button variant="secondary" size="lg" asChild className="w-full min-h-[60px] font-bold">
+                      <Link href="/pricing">
+                        Pricing
+                      </Link>
+                    </Button>
+                    <Button variant="secondary" size="lg" asChild className="w-full min-h-[60px] font-bold">
+                      <Link href="/blog" onClick={handleLinkClick}>
+                        Blog
+                      </Link>
+                    </Button>
                   </div>
 
                   {/* Auth Buttons - Brutalist */}

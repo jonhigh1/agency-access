@@ -15,6 +15,7 @@ import { useAccessRequest } from '@/contexts/access-request-context';
 import { createTemplate } from '@/lib/api/templates';
 import { useQuotaCheck, QuotaExceededError } from '@/lib/query/quota';
 import { UpgradeModal } from '@/components/upgrade-modal';
+import { Button } from '@/components/ui/button';
 
 interface SaveAsTemplateModalProps {
   agencyId: string;
@@ -161,7 +162,7 @@ export function SaveAsTemplateModal({
                 <button
                   type="button"
                   onClick={onClose}
-                  className="p-1 hover:bg-muted/30 rounded-lg transition-colors"
+                  className="p-1 text-muted-foreground hover:bg-muted/10 rounded-none transition-colors"
                 >
                   <X className="h-5 w-5 text-muted-foreground" />
                 </button>
@@ -220,23 +221,25 @@ export function SaveAsTemplateModal({
 
               {/* Footer */}
               <div className="flex justify-end gap-3 p-6 border-t border-border">
-                <button
+                <Button
                   type="button"
+                  variant="ghost"
+                  size="sm"
                   onClick={onClose}
                   disabled={saving}
-                  className="px-4 py-2 text-foreground hover:text-ink hover:bg-muted/30 rounded-lg transition-colors disabled:opacity-50"
                 >
                   Cancel
-                </button>
-                <button
+                </Button>
+                <Button
                   type="button"
+                  variant="primary"
+                  size="sm"
                   onClick={handleSave}
                   disabled={saving || !name.trim()}
-                  className="px-4 py-2 bg-coral text-white rounded-lg hover:bg-coral/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
                 >
                   {saving && <Loader2 className="h-4 w-4 animate-spin" />}
                   {saving ? 'Saving...' : 'Save Template'}
-                </button>
+                </Button>
               </div>
             </motion.div>
           </div>

@@ -72,11 +72,12 @@ describe('Dashboard Page - Static Design Validation', () => {
       expect(componentCode).not.toMatch(/variant="brutalist-(ghost-)?rounded"/);
     });
 
-    it('should use teal for success states', () => {
+    it('renders success states through the teal-bearing badge system', () => {
       const fs = require('fs');
       const componentCode = fs.readFileSync(COMPONENT_PATH, 'utf-8');
-
-      expect(componentCode).toMatch(/(?:text|bg|border|hover:bg|hover:border)-teal/);
+      // Success color lives in StatusBadge (teal fills per v2.0 contract);
+      // the dashboard itself no longer hand-rolls teal states.
+      expect(componentCode).toMatch(/StatusBadge/);
     });
 
     it('should use coral for accent states', () => {
@@ -101,6 +102,31 @@ describe('Dashboard Page - Static Design Validation', () => {
       // Should not have raw Link or button with inline bg-coral + rounded-lg styling
       const inlineButtonPattern = /<(Link|button)\s[^>]*className="[^"]*bg-coral[^"]*rounded-lg[^"]*"/;
       expect(componentCode).not.toMatch(inlineButtonPattern);
+    });
+  });
+
+  describe('Platform icon chips are square (binary radius)', () => {
+    it('does not wrap PlatformIcon in rounded-full chips', () => {
+      // Brandfetch logos are square; a round chip shows the ground behind
+      // the logo corners. Binary radius: logo chips are square.
+      const fs = require('fs');
+      const componentCode = fs.readFileSync(COMPONENT_PATH, 'utf-8');
+      const roundChipPattern = /rounded-full[^"]*"[^>]*>\s*<PlatformIcon/;
+      const roundChipPattern2 = /<PlatformIcon[^>]*\/>\s*<\/div>/; // sanity: wrapper closes after icon
+      expect(componentCode).not.toMatch(roundChipPattern);
+      expect(componentCode).toMatch(roundChipPattern2);
+    });
+
+    it('uses rounded-none for platform chip wrappers', () => {
+      const fs = require('fs');
+      const componentCode = fs.readFileSync(COMPONENT_PATH, 'utf-8');
+      // Both chip wrappers (requests row + connections stack) are square,
+      // regardless of class order inside the className string.
+      const classNames = componentCode.match(/className="[^"]*"/g) ?? [];
+      const squareChips = classNames.filter(
+        (cls) => cls.includes('rounded-none') && cls.includes('shrink-0')
+      );
+      expect(squareChips.length).toBeGreaterThanOrEqual(2);
     });
   });
 });

@@ -23,4 +23,12 @@ describe('PlatformIcon - Static Design Validation', () => {
     expect(code).toMatch(/text-muted-foreground/);
     expect(code).toMatch(/text-foreground/);
   });
+
+  it('fallback container is square (binary radius)', () => {
+    // Brandfetch logos are square assets; the fallback tile must match the
+    // binary radius contract (square or circular, nothing between).
+    const code = readComponent();
+    expect(code).not.toContain('rounded-lg');
+    expect(code).toContain('rounded-none');
+  });
 });

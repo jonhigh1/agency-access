@@ -1,5 +1,7 @@
 import type { Metadata } from 'next';
 
+import { Button } from '@/components/ui/button';
+
 export const metadata: Metadata = {
   title: 'About AuthHub | Secure Agency Access Management',
   description: 'AuthHub replaces weeks of manual OAuth setup with a single 5-minute link. Built for marketing agencies who onboard clients across Meta, Google, LinkedIn, and more.',
@@ -116,12 +118,9 @@ export default function AboutPage() {
           <p className="text-gray-600 text-lg mb-8">
             Start your 14-day free trial. No credit card required.
           </p>
-          <a
-            href="/sign-up"
-            className="inline-block bg-ink text-paper font-dela text-lg px-8 py-3 border-2 border-ink shadow-brutalist hover:shadow-brutalist-hover hover:-translate-y-1 transition-all"
-          >
-            Get Started Free
-          </a>
+          <Button variant="secondary" size="lg" className="font-dela" asChild>
+            <a href="/sign-up">Get Started Free</a>
+          </Button>
         </div>
       </section>
     </main>

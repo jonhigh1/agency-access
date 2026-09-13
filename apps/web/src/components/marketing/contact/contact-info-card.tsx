@@ -61,7 +61,6 @@ export function ContactInfoCard() {
                 variant="secondary"
                 size="sm"
                 onClick={() => setIsDemoModalOpen(true)}
-                className="hover:bg-coral/10 hover:border-coral"
               >
                 Schedule a Demo
               </Button>
@@ -94,7 +93,7 @@ export function ContactInfoCard() {
               href="https://linkedin.com/company/authhub"
               target="_blank"
               rel="noopener noreferrer"
-              className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center text-gray-600 hover:bg-coral/10 hover:text-danger-ink transition-colors"
+              className="w-10 h-10 bg-muted/10 rounded-none flex items-center justify-center text-muted-foreground hover:bg-coral/10 hover:text-danger-ink transition-colors"
               aria-label="LinkedIn"
             >
               <Linkedin className="w-5 h-5" />
@@ -103,7 +102,7 @@ export function ContactInfoCard() {
               href="https://twitter.com/authhub"
               target="_blank"
               rel="noopener noreferrer"
-              className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center text-gray-600 hover:bg-coral/10 hover:text-danger-ink transition-colors"
+              className="w-10 h-10 bg-muted/10 rounded-none flex items-center justify-center text-muted-foreground hover:bg-coral/10 hover:text-danger-ink transition-colors"
               aria-label="X (Twitter)"
             >
               <Twitter className="w-5 h-5" />

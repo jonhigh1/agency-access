@@ -28,6 +28,7 @@ import { GuidedRedirectCard } from './GuidedRedirectModal';
 import { Plus } from 'lucide-react';
 import { getApiBaseUrl } from '@/lib/api/api-env';
 import { parseJsonResponse } from '@/lib/api/parse-json-response';
+import { Button } from '@/components/ui/button';
 
 interface MetaAssets {
   businesses?: Array<{
@@ -493,14 +494,14 @@ export function MetaAssetSelector({
               ariaLabel="Business Portfolio"
               triggerClassName="border-2 border-black dark:border-white min-h-[48px]"
             />
-            <button
+            <Button
               type="button"
+              variant="primary"
               onClick={handleBusinessSelectionLoad}
               disabled={!pendingBusinessId || isLoading}
-              className="inline-flex min-h-[48px] items-center justify-center bg-[rgb(var(--ink))] px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:bg-[rgb(var(--muted))]/40 disabled:text-[rgb(var(--muted-foreground))]"
             >
               Load accounts
-            </button>
+            </Button>
           </div>
         </div>
       ) : null}
@@ -519,13 +520,14 @@ export function MetaAssetSelector({
               ) : null}
             </div>
             {availableBusinesses.length > 1 ? (
-              <button
+              <Button
                 type="button"
+                variant="secondary"
+                size="sm"
                 onClick={handleSwitchBusiness}
-                className="inline-flex min-h-[44px] items-center justify-center border-2 border-black dark:border-white bg-[rgb(var(--paper))] px-4 py-2 text-sm font-bold text-[rgb(var(--ink))] hover:bg-[rgb(var(--muted))]/20"
               >
                 Switch business
-              </button>
+              </Button>
             ) : null}
           </div>
         </div>
@@ -599,13 +601,10 @@ export function MetaAssetSelector({
 
               {/* Create button */}
               {creationBusinessId ? (
-                <button
-                  onClick={() => setShowAdAccountCreator(true)}
-                  className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-[rgb(var(--coral))] text-white border-2 border-black dark:border-white rounded-[0.75rem] font-bold uppercase tracking-wide shadow-brutalist hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all min-h-[48px]"
-                >
+                <Button variant="primary" onClick={() => setShowAdAccountCreator(true)}>
                   <Plus className="w-5 h-5" />
                   Create Ad Account
-                </button>
+                </Button>
               ) : (
                 <div className="border-2 border-[rgb(var(--warning))] bg-[rgb(var(--warning))]/10 p-4 text-sm text-[rgb(var(--warning))] max-w-sm mx-auto">
                   Select a Business Portfolio before creating ad accounts.
@@ -675,13 +674,10 @@ export function MetaAssetSelector({
 
               {/* Create button */}
               {creationBusinessId ? (
-                <button
-                  onClick={() => setShowPageCreator(true)}
-                  className="inline-flex items-center justify-center gap-2 px-6 py-3 bg-[rgb(var(--coral))] text-white border-2 border-black dark:border-white rounded-[0.75rem] font-bold uppercase tracking-wide shadow-brutalist hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all min-h-[48px]"
-                >
+                <Button variant="primary" onClick={() => setShowPageCreator(true)}>
                   <Plus className="w-5 h-5" />
                   Create Page
-                </button>
+                </Button>
               ) : (
                 <div className="border-2 border-[rgb(var(--warning))] bg-[rgb(var(--warning))]/10 p-4 text-sm text-[rgb(var(--warning))] max-w-sm mx-auto">
                   Select a Business Portfolio before creating pages.

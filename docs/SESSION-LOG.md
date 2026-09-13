@@ -27,6 +27,60 @@ Append-only log of what was done each session. Newest first. Read the last 3–5
 
 ## Sessions
 
+## Session: 2026-09-13 — Square icon chips + app-wide button cohesion sweep
+
+### What was done
+- Fixed reported dashboard bug: square Brandfetch logos sat in `rounded-full`
+  chips, showing the ground behind the logo corners. Chips are `rounded-none`
+  (binary radius); `PlatformIcon` fallback tile likewise.
+- Full button-cohesion sweep: 133+ hand-rolled button-like elements across 46
+  files migrated to the five Button variants (four parallel batches);
+  off-palette fills (indigo/yellow/slate/raw hex/teal-as-primary) eliminated.
+- Dashboard header CTA restored to a true brutalist (uppercase, diagonal
+  press); previously neutered via className (`normal-case hover:translate-x-0`).
+- New global enforcement: `src/app/__tests__/button-contract.design.test.ts`
+  walks app/** + components/** and bans hand-rolled button signatures and
+  variant-fighting overrides (incl. zeroed hovers, resting `shadow-none`).
+  Walker regex survives `=>` in arrow-function attributes.
+- `PlatformCard` onto the contract card (was deprecated `clean-card` +
+  `rounded-xl`); its Connect button no longer cancels primary's shadow/lift.
+- DESIGN_SYSTEM.md changelog v2.2.0 documents mapping rulings.
+
+### Files changed
+- `apps/web/src/app/(authenticated)/dashboard/page.tsx` — chips + CTA + 2 hand-rolled buttons
+- `apps/web/src/components/ui/platform-icon.tsx` — square fallback tile
+- `apps/web/src/app/__tests__/button-contract.design.test.ts` — NEW enforcement walker
+- 44 files swept (see commits b51d399, 87c915f, e0c2717, b6523db for lists)
+- `apps/web/DESIGN_SYSTEM.md` — v2.2.0 changelog
+
+### Decisions made
+- Ink-filled CTAs → primary (app) / secondary (marketing); teal action fills →
+  primary; quiet destructive → ghost + `text-danger-ink` text token.
+- Controls (tabs/pills/accordions/dashed add-field/pagination) stay raw,
+  tokenized to rounded-none + on-palette — not Button-wrapped.
+- Sanctioned: link-style ghost (`px-0` + `hover:bg-transparent`) and
+  padding-only Button overrides. Dark-ground CTAs may add `border-white`.
+- Branch renamed (not by session): `jonhigh1/spiderfish` →
+  `jonhigh1/fix-access-request-visuals`.
+
+### Verification
+- web suite: 1276 passed / 11 failed — all 11 proven pre-existing at base
+  commit 86fa16a via throwaway worktree (settings page/view-counts +
+  access-requests success analytics; see docs/ERRORS.md). typecheck clean.
+  Production build + visual QA (dashboard, pricing, about, blog,
+  /design-system showcase) confirmed variant pairs and square icon tiles.
+- Next steps: fix the pre-existing settings/success test failures; consider
+  deleting `components/marketing/hero-copy-rewrite/` experiment.
+
+### Update (same session)
+- Merged `origin/main` (2 conflicts resolved: token-health filter a11y fix
+  kept with contract styling; lazy Clerk imports + Button import combined).
+  Main cleared 10 of the 11 pre-existing settings failures; the last
+  (success-page analytics test) was stale against the PostHog serialization
+  and is fixed here. Post-merge: walker 0, suite 1315/0, typecheck clean
+  (after `prisma generate` in the fresh worktree), build pass. Branch pushed;
+  PR #55 opened against main.
+
 ## Session: 2026-09-13 — Infisical off the Prisma transaction; bounded list APIs
 
 ### What was done

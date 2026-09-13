@@ -20,6 +20,7 @@
 import { useEffect, useCallback, ReactNode, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 // ============================================================
 // TYPES
@@ -251,7 +252,7 @@ export function UnifiedWizard({
                 {showClose && onClose && (
                   <button
                     onClick={onClose}
-                    className="absolute top-4 right-4 z-10 p-2 rounded-full bg-muted/20 hover:bg-muted/20 transition-colors"
+                    className="absolute top-4 right-4 z-10 p-2 text-muted-foreground hover:bg-muted/10 rounded-none transition-colors"
                     aria-label="Close"
                   >
                     <X className="w-5 h-5 text-muted-foreground" />
@@ -271,35 +272,38 @@ export function UnifiedWizard({
           <div className="flex items-center justify-between">
             {/* Back Button */}
             {canGoBack ? (
-              <button
+              <Button
+                variant="secondary"
+                size="sm"
                 onClick={handleBack}
                 disabled={loading}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg bg-card hover:bg-muted/10 text-ink font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed border border-border"
                 aria-label="Go back to previous step"
               >
                 <ChevronLeft className="w-5 h-5" />
                 Back
-              </button>
+              </Button>
             ) : (
               <div /> // Spacer for flex layout
             )}
 
             {/* Skip Button (optional steps only) */}
             {canSkip && onSkip && (
-              <button
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={handleSkip}
                 disabled={loading}
-                className="px-4 py-2 rounded-lg bg-transparent hover:bg-muted/10 text-muted-foreground hover:text-ink font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Skip for now →
-              </button>
+              </Button>
             )}
 
             {/* Next/Continue Button */}
-            <button
+            <Button
+              variant="brutalist"
+              size="md"
               onClick={handleNext}
               disabled={!canGoNext || loading}
-              className="flex items-center gap-2 px-6 py-3 rounded-lg bg-coral hover:bg-coral/90 text-white font-bold shadow-brutalist transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:shadow-none"
               aria-label={currentStep === totalSteps - 1 ? 'Complete onboarding' : 'Continue to next step'}
             >
               {loading ? (
@@ -318,7 +322,7 @@ export function UnifiedWizard({
                   <ChevronRight className="w-5 h-5" />
                 </>
               )}
-            </button>
+            </Button>
           </div>
 
           {/* Keyboard Shortcuts Hint */}

@@ -70,8 +70,8 @@ describe('UnifiedWizard - Static Design Validation', () => {
   describe('Component uses brand colors for CTAs', () => {
     it('should use coral for primary actions', () => {
       const componentCode = fs.readFileSync(COMPONENT_PATH, 'utf-8');
-      // Primary buttons should use coral
-      expect(componentCode).toMatch(/bg-coral/);
+      // Primary CTA delegates the coral fill to the design-system Button (brutalist variant)
+      expect(componentCode).toMatch(/variant="brutalist"/);
     });
   });
 

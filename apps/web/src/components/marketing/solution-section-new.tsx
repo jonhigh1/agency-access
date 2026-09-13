@@ -4,6 +4,7 @@ import { m } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import { Mail, Link2, AlertCircle } from 'lucide-react';
 import { SignUpButton } from '@/components/lazy-clerk-auth-buttons';
+import { Button } from '@/components/ui/button';
 import {
   ImageComparison,
   ImageComparisonImage,
@@ -258,14 +259,16 @@ export function SolutionSectionNew() {
                 transition={{ delay: 0.6, duration: 0.5 }}
               >
                 <SignUpButton mode="modal">
-                  <button
+                  <Button
                     type="button"
-                    className="inline-flex items-center justify-center gap-3 bg-teal text-white px-8 sm:px-10 py-5 rounded-2xl font-bold text-xl uppercase tracking-wide border-2 border-black shadow-brutalist hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all duration-200 min-h-[56px] touch-feedback"
+                    variant="primary"
+                    size="xl"
+                    className="sm:px-10"
                     onClick={handleTrialSignup}
                   >
                     Start Free Trial
                     <ArrowRight className="w-5 h-5" />
-                  </button>
+                  </Button>
                 </SignUpButton>
               </m.div>
             </div>

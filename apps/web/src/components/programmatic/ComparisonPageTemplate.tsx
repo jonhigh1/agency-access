@@ -10,6 +10,7 @@ import { Check, X, ArrowRight, Clock, DollarSign, Globe, Zap, Shield, Users } fr
 import Link from "next/link";
 import type { Route } from "next";
 import { SUPPORTED_PLATFORM_COUNT } from "@agency-platform/shared";
+import { Button } from "@/components/ui/button";
 import type { ProgrammaticComparisonPage } from "@/lib/programmatic-types";
 
 // Icon mapping for dynamic icon rendering
@@ -97,12 +98,14 @@ function AgencyAccessPricingSection({ page }: ComparisonPageTemplateProps) {
               ))}
             </ul>
 
-            <Link
-              href={"/signup" as Route}
-              className="mt-4 flex h-[34px] w-full items-center justify-center border-2 border-black bg-[#E97A4A] px-4 font-sans text-[11px] font-black uppercase tracking-[0.06em] text-white shadow-[3px_3px_0_0_#000] transition-transform hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-[2px_2px_0_0_#000]"
+            <Button
+              variant="primary"
+              size="sm"
+              asChild
+              className="mt-4 w-full font-sans text-[11px] font-black uppercase tracking-[0.06em]"
             >
-              Start Free Trial
-            </Link>
+              <Link href={"/signup" as Route}>Start Free Trial</Link>
+            </Button>
           </article>
 
           <article className="border-2 border-black bg-white px-[24px] pb-[22px] pt-[24px] shadow-[4px_4px_0_0_#000]">
@@ -221,19 +224,27 @@ export function ComparisonPageTemplate({ page }: ComparisonPageTemplateProps) {
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-10">
-              <Link
-                href={(cta.primaryLink || "/signup") as Route}
-                className="group inline-flex items-center justify-center gap-2 font-bold uppercase tracking-wider px-10 py-4 bg-coral text-white border-2 border-black rounded-none shadow-brutalist hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] transition-all"
+              <Button
+                variant="brutalist"
+                size="lg"
+                asChild
+                className="group px-10"
               >
-                Start Free Trial
-                <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
-              </Link>
-              <Link
-                href={(cta.secondaryLink || "/pricing") as Route}
-                className="inline-flex items-center justify-center gap-2 font-bold uppercase tracking-wider px-10 py-4 bg-white text-[#1A1A1A] border-2 border-black rounded-none hover:bg-gray-50 transition-colors"
+                <Link href={(cta.primaryLink || "/signup") as Route}>
+                  Start Free Trial
+                  <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
+                </Link>
+              </Button>
+              <Button
+                variant="secondary"
+                size="lg"
+                asChild
+                className="px-10 font-bold uppercase tracking-wider"
               >
-                Schedule Demo
-              </Link>
+                <Link href={(cta.secondaryLink || "/pricing") as Route}>
+                  Schedule Demo
+                </Link>
+              </Button>
             </div>
 
             {/* Trust badges with orange checkmarks */}
@@ -374,12 +385,16 @@ export function ComparisonPageTemplate({ page }: ComparisonPageTemplateProps) {
                 </ul>
 
                 {/* CTA */}
-                <Link
-                  href={(cta.secondaryLink || "/pricing") as Route}
-                  className="block w-full text-center py-3 px-6 bg-white text-[#1A365D] border-2 border-[#1A365D] rounded-lg font-semibold hover:bg-gray-50 transition-colors"
+                <Button
+                  variant="secondary"
+                  size="md"
+                  asChild
+                  className="w-full font-semibold uppercase tracking-wider"
                 >
-                  CHOOSE PLAN
-                </Link>
+                  <Link href={(cta.secondaryLink || "/pricing") as Route}>
+                    CHOOSE PLAN
+                  </Link>
+                </Button>
               </div>
 
               {/* AuthHub Card - Featured */}
@@ -439,13 +454,17 @@ export function ComparisonPageTemplate({ page }: ComparisonPageTemplateProps) {
                 </ul>
 
                 {/* CTA */}
-                <Link
-                  href={(cta.primaryLink || "/signup") as Route}
-                  className="group flex items-center justify-center gap-2 w-full text-center py-3 px-6 bg-[#FF6B35] text-white rounded-lg font-semibold hover:bg-[#e55a2b] transition-all"
+                <Button
+                  variant="primary"
+                  size="md"
+                  asChild
+                  className="group w-full font-semibold uppercase tracking-wider"
                 >
-                  START FREE TRIAL
-                  <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
-                </Link>
+                  <Link href={(cta.primaryLink || "/signup") as Route}>
+                    START FREE TRIAL
+                    <ArrowRight size={16} className="transition-transform group-hover:translate-x-1" />
+                  </Link>
+                </Button>
               </div>
             </div>
 
@@ -703,12 +722,16 @@ export function ComparisonPageTemplate({ page }: ComparisonPageTemplateProps) {
             {cta.subheadline}
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link
-              href={(cta.primaryLink ?? "/signup") as Route}
-              className="inline-flex items-center justify-center gap-2 font-bold uppercase tracking-wider px-8 py-4 bg-coral text-white border-2 border-white rounded-none shadow-brutalist hover:shadow-brutalist-lg hover:-translate-y-0.5 transition-all"
+            <Button
+              variant="primary"
+              size="lg"
+              asChild
+              className="border-white font-bold uppercase tracking-wider"
             >
-              {cta.primaryButton}
-            </Link>
+              <Link href={(cta.primaryLink ?? "/signup") as Route}>
+                {cta.primaryButton}
+              </Link>
+            </Button>
             {cta.secondaryButton && (
               <Link
                 href={(cta.secondaryLink ?? "/pricing") as Route}

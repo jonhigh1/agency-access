@@ -332,7 +332,7 @@ function RelatedPostsSection({ posts }: { posts: string[] }) {
           <Link
             key={slug}
             href={`/blog/${slug}`}
-            className="px-4 py-2 bg-gray-100 border-2 border-black font-mono text-sm text-ink hover:bg-coral hover:text-white transition-colors"
+            className="px-4 py-2 bg-muted/20 border-2 border-black rounded-none font-mono text-sm text-ink hover:bg-coral hover:text-white transition-colors"
           >
             {slug.replace(/-/g, " ").replace(/^\w/, (c) => c.toUpperCase())}
           </Link>

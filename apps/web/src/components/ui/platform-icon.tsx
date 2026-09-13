@@ -51,7 +51,7 @@ export function PlatformIcon({
     return (
       <div className="inline-flex items-center gap-2">
         <div
-          className={'rounded-lg flex items-center justify-center bg-muted'}
+          className={'rounded-none flex items-center justify-center bg-muted'}
           style={{ width: config.width, height: config.height }}
         >
           <span className="text-muted-foreground font-bold">{initial}</span>

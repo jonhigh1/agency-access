@@ -67,7 +67,8 @@ describe('CreateClientModal - Static Design Validation', () => {
         'utf-8'
       );
 
-      expect(componentCode).toMatch(/bg-coral[^/]/);
+      // Primary action delegates coral fill to the design-system Button (primary variant)
+      expect(componentCode).toMatch(/variant="primary"/);
     });
 
     it('should use teal for success states', () => {

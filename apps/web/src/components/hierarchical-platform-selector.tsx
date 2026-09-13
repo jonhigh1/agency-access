@@ -17,7 +17,7 @@ import { PLATFORM_HIERARCHY, AccessLevel, ACCESS_LEVEL_DESCRIPTIONS } from '@age
 import { normalizePlatformToGroup } from '@/lib/transform-platforms';
 import Link from 'next/link';
 import { ManualInvitationModal } from '@/components/manual-invitation-modal';
-import { PlatformIcon } from '@/components/ui';
+import { PlatformIcon, Button } from '@/components/ui';
 import { SingleSelect } from '@/components/ui/single-select';
 import type { Platform } from '@agency-platform/shared';
 import { cn } from '@/lib/utils';
@@ -199,13 +199,12 @@ export function HierarchicalPlatformSelector({
         <p className="text-sm text-muted-foreground mb-4 max-w-sm mx-auto">
           Connect platforms in your settings before creating access requests.
         </p>
-        <Link
-          href="/connections"
-          className="inline-flex items-center gap-2 px-4 py-2 bg-coral text-white rounded-lg hover:bg-coral/90 transition-colors text-sm font-medium"
-        >
-          <Link2 className="h-4 w-4" />
-          Go to Connections
-        </Link>
+        <Button asChild variant="primary" size="sm">
+          <Link href="/connections">
+            <Link2 className="h-4 w-4" />
+            Go to Connections
+          </Link>
+        </Button>
       </div>
     );
   }

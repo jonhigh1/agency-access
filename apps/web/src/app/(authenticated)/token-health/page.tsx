@@ -22,7 +22,7 @@ import {
   AlertCircle,
   XCircle,
 } from 'lucide-react';
-import { StatCard, HealthBadge, ExpirationCountdown, PlatformIcon, StatusBadge, formatRelativeTime } from '@/components/ui';
+import { StatCard, HealthBadge, ExpirationCountdown, PlatformIcon, StatusBadge, formatRelativeTime, Button } from '@/components/ui';
 import type { Platform, HealthStatus, AuthorizationStatus } from '@agency-platform/shared';
 import { resolveApiUrl } from '@/lib/api/api-env';
 import { parseJsonResponse } from '@/lib/api/parse-json-response';
@@ -207,7 +207,7 @@ export default function TokenHealthPage() {
           </div>
           <button
             onClick={fetchTokenHealth}
-            className="p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-colors"
+            className="p-2 text-muted-foreground hover:bg-muted/10 rounded-none transition-colors"
             disabled={loading}
           >
             <RefreshCw className={`h-5 w-5 ${loading ? 'animate-spin' : ''}`} />
@@ -247,9 +247,11 @@ export default function TokenHealthPage() {
         <div className="flex items-center justify-between mb-6">
           {/* Filter Dropdown */}
           <div className="relative" ref={filterRef}>
-            <button
+            <Button
               type="button"
-              className="inline-flex items-center gap-2 px-4 py-2 bg-card border border-border rounded-lg hover:bg-background transition-colors"
+              variant="secondary"
+              size="sm"
+              className="px-4 py-2"
               aria-label={`Filter tokens: ${filterLabel}`}
               aria-haspopup="listbox"
               aria-expanded={filterOpen}
@@ -259,7 +261,7 @@ export default function TokenHealthPage() {
               <Filter className="h-4 w-4" aria-hidden="true" />
               <span>{filterLabel}</span>
               <ChevronDown className="h-4 w-4" aria-hidden="true" />
-            </button>
+            </Button>
 
             {filterOpen && (
               <div
@@ -278,8 +280,8 @@ export default function TokenHealthPage() {
                       setFilter(f.value);
                       setFilterOpen(false);
                     }}
-                    className={`w-full text-left px-4 py-2 hover:bg-background transition-colors ${
-                      filter === f.value ? 'bg-slate-100 font-medium' : ''
+                    className={`w-full text-left px-4 py-2 rounded-none hover:bg-background transition-colors ${
+                      filter === f.value ? 'bg-muted/30 font-medium' : ''
                     }`}
                   >
                     {f.label}
@@ -291,13 +293,10 @@ export default function TokenHealthPage() {
 
           {/* Refresh All Expiring */}
           {stats.expiring > 0 && (
-            <button
-              onClick={handleRefreshAll}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors"
-            >
+            <Button variant="primary" size="sm" onClick={handleRefreshAll}>
               <RefreshCw className="h-4 w-4" />
               Refresh All Expiring
-            </button>
+            </Button>
           )}
         </div>
 
@@ -393,12 +392,12 @@ export default function TokenHealthPage() {
                           onClick={() => handleRefresh(token.id, token.platform)}
                           aria-label={`Refresh ${token.platform} token`}
                           disabled={isRefreshing || !canRefreshRow}
-                          className={`p-2 rounded-lg transition-colors ${
+                          className={`p-2 rounded-none transition-colors ${
                             isRefreshing
                               ? 'opacity-50 cursor-not-allowed'
                               : canRefreshRow
-                                ? 'text-indigo-700 hover:text-indigo-800 hover:bg-indigo-50'
-                                : 'text-slate-300 cursor-not-allowed'
+                                ? 'text-danger-ink hover:bg-coral/10'
+                                : 'text-muted-foreground/50 cursor-not-allowed'
                           }`}
                         >
                           <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
