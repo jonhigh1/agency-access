@@ -1,14 +1,17 @@
 'use client';
 
 /**
- * Invoices Card
+ * Invoices
  *
- * Shows invoice history with download links.
+ * One row per invoice (date, amount, status, PDF link). No table, so the
+ * list never scrolls horizontally at 320px.
  */
 
-import { FileText, Download, Loader2 } from 'lucide-react';
+import { Download } from 'lucide-react';
 import { useInvoices } from '@/lib/query/billing';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { SettingsGroup, SettingsRow } from '../settings-row';
+import { formatMediumDate } from '@/lib/format';
 
 export function InvoicesCard() {
   const { data: invoices, isLoading } = useInvoices();
@@ -25,70 +28,49 @@ export function InvoicesCard() {
   };
 
   return (
-    <section className="clean-card p-6">
-      <div className="flex items-center gap-3 mb-4">
-        <div className="p-2 bg-muted/50 rounded-lg">
-          <FileText className="h-5 w-5 text-muted-foreground" />
-        </div>
-        <div>
-          <h2 className="font-display text-lg font-semibold text-ink">Invoices</h2>
-          <p className="text-sm text-muted-foreground">Your billing history</p>
-        </div>
-      </div>
-
+    <SettingsGroup title="Invoices" description="Your billing history">
       {isLoading ? (
-        <div className="py-8 text-center">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground mx-auto" />
-        </div>
+        <SettingsRow label="Recent invoices">
+          <div className="space-y-2">
+            <div aria-hidden="true" className="h-5 w-full max-w-xs bg-muted animate-pulse" />
+            <div aria-hidden="true" className="h-5 w-full max-w-xs bg-muted animate-pulse" />
+          </div>
+        </SettingsRow>
       ) : invoices && invoices.length > 0 ? (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-border">
-                <th className="text-left py-2 font-medium text-muted-foreground">Date</th>
-                <th className="text-left py-2 font-medium text-muted-foreground">Amount</th>
-                <th className="text-left py-2 font-medium text-muted-foreground">Status</th>
-                <th className="text-right py-2 font-medium text-muted-foreground">Invoice</th>
-              </tr>
-            </thead>
-            <tbody>
-              {invoices.map((invoice) => (
-                <tr key={invoice.id} className="border-b border-border/50">
-                  <td className="py-3 text-ink">
-                    {new Date(invoice.invoiceDate).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric',
-                    })}
-                  </td>
-                  <td className="py-3 text-ink">
-                    ${(invoice.amount / 100).toFixed(2)} {invoice.currency.toUpperCase()}
-                  </td>
-                  <td className="py-3">{getStatusBadge(invoice.status)}</td>
-                  <td className="py-3 text-right">
-                    {invoice.pdfUrl && (
-                      <a
-                        href={invoice.pdfUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1 text-danger-ink hover:text-danger-ink font-medium"
-                      >
-                        <Download className="h-4 w-4" />
-                        PDF
-                      </a>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+        invoices.map((invoice) => (
+          <SettingsRow
+            key={invoice.id}
+            label={formatMediumDate(invoice.invoiceDate)}
+            description={
+              <span className="font-mono">
+                ${(invoice.amount / 100).toFixed(2)} {invoice.currency.toUpperCase()}
+              </span>
+            }
+          >
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              {getStatusBadge(invoice.status)}
+              {invoice.pdfUrl && (
+                <a
+                  href={invoice.pdfUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-sm font-medium text-ink underline-offset-4 hover:underline"
+                >
+                  <Download className="h-4 w-4" />
+                  PDF
+                </a>
+              )}
+            </div>
+          </SettingsRow>
+        ))
       ) : (
-        <div className="text-center py-6 border-2 border-dashed border-border rounded-lg">
-          <FileText className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-          <p className="text-sm text-foreground">No invoices yet</p>
-        </div>
+        <SettingsRow
+          label="No invoices yet"
+          description="Invoices appear here after your first payment, with a PDF for your records."
+        >
+          <p className="font-mono text-sm text-muted-foreground">—</p>
+        </SettingsRow>
       )}
-    </section>
+    </SettingsGroup>
   );
 }

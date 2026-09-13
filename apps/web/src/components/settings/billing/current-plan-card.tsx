@@ -1,28 +1,31 @@
 'use client';
 
 /**
- * Current Plan Card
+ * Current Plan
  *
- * Displays current subscription tier, status, and next billing date.
+ * Rows for the current subscription tier, price, next billing date, and the
+ * billing-portal link. Flat rows on the page ground — no card, no shadow.
  */
 
-import {
-  CreditCard,
-  AlertCircle,
-  Loader2,
-  ExternalLink,
-} from 'lucide-react';
+import { AlertCircle, Loader2, ExternalLink } from 'lucide-react';
 import { useSubscription, useOpenPortal } from '@/lib/query/billing';
 import type { SubscriptionTier } from '@agency-platform/shared';
 import { PRICING_DISPLAY_TIER_DETAILS, SUBSCRIPTION_TIER_NAMES, TIER_LIMITS } from '@agency-platform/shared';
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { SettingsGroup, SettingsRow } from '../settings-row';
+import { formatLongDate } from '@/lib/format';
+import { UNLOADED_VALUE } from '../settings-row';
 
 function formatMonthlyPrice(tier: SubscriptionTier | null): string {
   if (!tier) return 'Free';
   const limits = TIER_LIMITS[tier];
   if (!limits) return 'Free';
   return `$${limits.priceMonthly}`;
+}
+
+function Skeleton({ className = '' }: { className?: string }) {
+  return <div aria-hidden="true" className={`bg-muted animate-pulse ${className}`} />;
 }
 
 export function CurrentPlanCard() {
@@ -33,25 +36,6 @@ export function CurrentPlanCard() {
     const result = await openPortal.mutateAsync(window.location.href);
     window.location.href = result.portalUrl;
   };
-
-  if (isLoading) {
-    return (
-      <section className="clean-card p-6">
-        <div className="flex items-center gap-3 mb-6">
-          <div className="p-2 bg-teal/10 rounded-lg">
-            <CreditCard className="h-5 w-5 text-success-ink" />
-          </div>
-          <div>
-            <h2 className="font-display text-lg font-semibold text-ink">Current Plan</h2>
-            <p className="text-sm text-muted-foreground">Your subscription details</p>
-          </div>
-        </div>
-        <div className="py-8 text-center">
-          <Loader2 className="h-8 w-8 animate-spin text-muted-foreground mx-auto" />
-        </div>
-      </section>
-    );
-  }
 
   const currentTier: SubscriptionTier | null = subscription?.tier ?? null;
   const tierName = currentTier ? SUBSCRIPTION_TIER_NAMES[currentTier] : 'Free';
@@ -73,50 +57,52 @@ export function CurrentPlanCard() {
     );
   };
 
+  const nextBilling = subscription?.currentPeriodEnd ? formatLongDate(subscription.currentPeriodEnd) : UNLOADED_VALUE;
+
   return (
-    <section className="clean-card p-6">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="p-2 bg-teal/10 rounded-lg">
-          <CreditCard className="h-5 w-5 text-success-ink" />
-        </div>
-        <div className="flex-1">
-          <h2 className="font-display text-lg font-semibold text-ink">Current Plan</h2>
-          <p className="text-sm text-muted-foreground">Your subscription details</p>
-        </div>
-        {getStatusBadge()}
-      </div>
-
-      <div className="p-4 bg-card rounded-lg border border-border">
-        <div className="flex items-center justify-between mb-2">
-          <div>
-            <h3 className="text-lg font-semibold text-ink">{tierName} Plan</h3>
-            <p className="text-sm text-muted-foreground">
-              {currentTier ? PRICING_DISPLAY_TIER_DETAILS[currentTier].description : 'Try before you commit'}
-            </p>
+    <SettingsGroup title="Current plan" description="Your subscription details" aside={isLoading ? null : getStatusBadge()}>
+      <SettingsRow
+        label="Plan"
+        description={
+          isLoading
+            ? undefined
+            : currentTier
+              ? PRICING_DISPLAY_TIER_DETAILS[currentTier].description
+              : 'Try before you commit'
+        }
+      >
+        {isLoading ? (
+          <div className="space-y-2">
+            <Skeleton className="h-6 w-40" />
+            <Skeleton className="h-4 w-24" />
           </div>
-          <div className="text-right">
-            <p className="text-2xl font-bold text-ink">
-              {monthlyPrice}
-            </p>
-            <p className="text-sm text-muted-foreground">
-              {!currentTier ? 'forever' : '/month'}
-            </p>
-          </div>
-        </div>
-
-        {subscription?.cancelAtPeriodEnd && (
-          <div className="mt-3 p-2 bg-warning/10 border border-warning/30 rounded">
-            <p className="text-sm text-warning">
-              <AlertCircle className="h-4 w-4 inline mr-1" />
-              Your subscription will cancel at the end of the current billing period.
+        ) : (
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <h3 className="font-display text-lg font-semibold text-ink">{tierName} Plan</h3>
+            <p className="font-mono text-sm text-ink">
+              <span className="text-lg font-semibold">{monthlyPrice}</span>
+              <span className="text-muted-foreground"> {!currentTier ? 'forever' : '/month'}</span>
             </p>
           </div>
         )}
-      </div>
+      </SettingsRow>
 
-      <div className="flex items-center justify-between mt-4">
+      {subscription?.cancelAtPeriodEnd && (
+        <SettingsRow label="Scheduled change">
+          <p className="flex items-start gap-2 border border-warning/30 bg-warning/10 p-3 text-sm text-warning">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>Your subscription will cancel at the end of the current billing period.</span>
+          </p>
+        </SettingsRow>
+      )}
+
+      <SettingsRow label="Next billing" description="The date your next invoice is issued.">
+        {isLoading ? <Skeleton className="h-5 w-32" /> : <p className="font-mono text-sm text-ink">{nextBilling}</p>}
+      </SettingsRow>
+
+      <SettingsRow label="Billing portal" description="Update payment details, view invoices, and manage your plan.">
         <Button
-          variant="ghost"
+          variant="secondary"
           onClick={handleManageSubscription}
           disabled={openPortal.isPending || !subscription}
         >
@@ -132,18 +118,7 @@ export function CurrentPlanCard() {
             </>
           )}
         </Button>
-
-        {subscription?.currentPeriodEnd && (
-          <p className="text-sm text-muted-foreground">
-            Next billing:{' '}
-            {new Date(subscription.currentPeriodEnd).toLocaleDateString('en-US', {
-              month: 'long',
-              day: 'numeric',
-              year: 'numeric',
-            })}
-          </p>
-        )}
-      </div>
-    </section>
+      </SettingsRow>
+    </SettingsGroup>
   );
 }

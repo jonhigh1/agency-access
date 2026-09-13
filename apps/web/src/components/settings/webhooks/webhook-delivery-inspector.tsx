@@ -1,5 +1,5 @@
 import type { WebhookDeliverySummary } from '@agency-platform/shared';
-import { ChevronRight, Clock3, ReceiptText } from 'lucide-react';
+import { ChevronRight, Clock3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { WebhookDeliveryStatusPill } from './webhook-delivery-status-pill';
 
@@ -36,7 +36,7 @@ export function WebhookDeliveryInspector({
 }: WebhookDeliveryInspectorProps) {
   if (deliveries.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-border bg-paper/60 p-5 text-sm text-muted-foreground">
+      <div className="py-5 text-sm text-muted-foreground">
         Delivery history appears here after your first test send or lifecycle event.
       </div>
     );
@@ -46,22 +46,23 @@ export function WebhookDeliveryInspector({
     deliveries.find((delivery) => delivery.id === selectedDeliveryId) ?? deliveries[0];
 
   return (
-    <div className="grid gap-4 lg:grid-cols-[minmax(0,1.1fr)_minmax(18rem,0.9fr)]">
-      <div className="space-y-3">
+    <div className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]">
+      <ul className="min-w-0">
         {deliveries.map((delivery) => {
           const isSelected = delivery.id === selectedDelivery.id;
 
           return (
-            <div
+            <li
               key={delivery.id}
-              className={`rounded-2xl border p-4 transition-colors ${
-                isSelected ? 'border-coral bg-coral/5' : 'border-border bg-paper/60'
+              aria-current={isSelected ? 'true' : undefined}
+              className={`hairline-b px-3 py-4 transition-colors duration-150 last:border-b-0 ${
+                isSelected ? 'bg-coral/10' : ''
               }`}
             >
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                <div className="space-y-2">
+                <div className="min-w-0 space-y-2">
                   <div className="flex flex-wrap items-center gap-2">
-                    <code className="rounded bg-ink px-2 py-1 text-xs font-semibold text-paper">
+                    <code className="bg-ink px-2 py-1 text-xs font-semibold text-paper">
                       {EVENT_LABELS[delivery.eventType]}
                     </code>
                     <WebhookDeliveryStatusPill status={delivery.status} />
@@ -85,39 +86,36 @@ export function WebhookDeliveryInspector({
                   Inspect
                 </Button>
               </div>
-            </div>
+            </li>
           );
         })}
-      </div>
+      </ul>
 
-      <aside className="rounded-2xl border border-border bg-card/70 p-5">
-        <div className="flex items-center gap-2 text-sm font-semibold text-ink">
-          <ReceiptText className="h-4 w-4 text-danger-ink" />
-          Delivery inspector
-        </div>
+      <aside className="min-w-0 border border-border bg-card p-5">
+        <p className="text-sm font-semibold text-ink">Delivery inspector</p>
 
         <dl className="mt-4 space-y-4 text-sm">
           <div>
-            <dt className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Event Type</dt>
+            <dt className="label-nano">Event type</dt>
             <dd className="mt-1 text-ink">{EVENT_LABELS[selectedDelivery.eventType]}</dd>
           </div>
           <div>
-            <dt className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Response</dt>
+            <dt className="label-nano">Response</dt>
             <dd className="mt-1 text-ink">
               {selectedDelivery.responseStatus ? `HTTP ${selectedDelivery.responseStatus}` : 'No response recorded'}
             </dd>
           </div>
           <div>
-            <dt className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Delivered At</dt>
+            <dt className="label-nano">Delivered at</dt>
             <dd className="mt-1 text-ink">{formatDateTime(selectedDelivery.deliveredAt)}</dd>
           </div>
           <div>
-            <dt className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Error</dt>
-            <dd className="mt-1 text-ink">{selectedDelivery.errorMessage || 'None'}</dd>
+            <dt className="label-nano">Error</dt>
+            <dd className="mt-1 break-words text-ink">{selectedDelivery.errorMessage || 'None'}</dd>
           </div>
           <div>
-            <dt className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Payload Preview</dt>
-            <dd className="mt-1 rounded-xl border border-border bg-paper/80 p-3 text-xs text-muted-foreground">
+            <dt className="label-nano">Payload preview</dt>
+            <dd className="mt-1 whitespace-pre-wrap break-all border border-border bg-paper p-3 font-mono text-xs text-muted-foreground">
               {selectedDelivery.responseBodySnippet || 'Response body was not captured for this attempt.'}
             </dd>
           </div>

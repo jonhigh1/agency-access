@@ -1,10 +1,12 @@
 'use client';
 
 /**
- * Plan Comparison Card
+ * Plan Comparison
  *
- * Tier comparison grid with upgrade CTAs.
+ * Tier comparison grid with upgrade CTAs, rendered as a settings group.
  * Matches the marketing site pricing tiers at https://www.authhub.co/pricing
+ * Layout contract (KTD8): `lg:grid-cols-2 xl:grid-cols-3`, no horizontal
+ * scroll, badge inside card bounds, one shadow (the recommended tier CTA).
  */
 
 import { useEffect, useState } from 'react';
@@ -24,6 +26,7 @@ import {
   getPricingDisplayTierFromSubscriptionTier,
 } from '@agency-platform/shared';
 import { Button } from '@/components/ui/button';
+import { SettingsGroup, SettingsRow } from '../settings-row';
 import { persistBillingIntervalPreference, readBillingIntervalPreference } from './billing-interval';
 import { resolveBillingLifecycle } from './billing-lifecycle';
 
@@ -150,201 +153,168 @@ export function PlanComparison() {
     }
   };
 
-  const tierIndex = PRICING_DISPLAY_TIER_ORDER.indexOf(currentTier);
+  // No subscription means no current tier: every card offers the trial.
+  const tierIndex = subscription?.tier ? PRICING_DISPLAY_TIER_ORDER.indexOf(currentTier) : -1;
+
+  const intervalNote = isYearly
+    ? 'Pay for 10 months, get 12. Cancel anytime.'
+    : 'Billed monthly. Switch to yearly and get 2 months free.';
+
+  const monthlyEquivalent = (tier: PricingDisplayTier) =>
+    isYearly ? Math.round(tierPricing[tier].yearly / 12) : Math.round(tierPricing[tier].monthly);
+
+  const toggleClass = (active: boolean) =>
+    `px-6 py-3 min-h-[44px] text-sm font-semibold transition-colors duration-150 ${
+      active ? 'bg-ink text-paper' : 'text-muted-foreground hover:text-ink'
+    }`;
 
   return (
-    <section className="border-2 border-border rounded-lg shadow-brutalist p-6 bg-card">
-      {/* Section Header */}
-      <div className="mb-6">
-        <div className="inline-block mb-3">
-          <div className="bg-coral/10 text-danger-ink border-2 border-coral/30 px-3 py-1 font-mono text-xs font-bold uppercase tracking-wider inline-block">
-            Compare Plans
-          </div>
-        </div>
-        <h2 className="font-display text-xl font-semibold text-ink mb-1">
-          Find the right plan for your agency
-        </h2>
-        <p className="text-sm text-muted-foreground font-mono">
-          Scale your client onboarding without the complexity
-        </p>
-      </div>
-
+    <SettingsGroup
+      title="Compare plans"
+      description="Find the right plan for your agency. Scale your client onboarding without the complexity."
+    >
       {errorMessage && (
-        <div className="mb-6 p-3 bg-coral/10 border border-coral/20 rounded-lg flex items-start gap-2">
-          <AlertCircle className="h-5 w-5 text-danger-ink flex-shrink-0 mt-0.5" />
-          <p className="text-sm text-danger-ink">{errorMessage}</p>
-        </div>
+        <SettingsRow label="Checkout error">
+          <p className="flex items-start gap-2 text-sm text-danger-ink">
+            <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>{errorMessage}</span>
+          </p>
+        </SettingsRow>
       )}
 
-      {/* Monthly/Yearly Toggle */}
-      <div className="flex flex-col items-center gap-3 mb-8">
-        <div className="relative inline-flex items-center gap-2 bg-card border-2 border-border-hard dark:border-white p-1 shadow-brutalist-sm">
-          <button
-            onClick={() => setBillingInterval('monthly')}
-            className={`relative px-6 py-3 min-h-[44px] font-bold uppercase tracking-wider text-xs transition-all ${
-              !isYearly
-                ? 'bg-coral text-black shadow-[2px_2px_0px_var(--shadow-hard)]'
-                : 'text-gray-600 dark:text-gray-400 hover:text-ink dark:hover:text-white'
-            }`}
-          >
+      <SettingsRow label="Billing interval" description={intervalNote}>
+        <div className="inline-flex max-w-full flex-wrap items-center border border-black bg-card dark:border-white">
+          <button type="button" onClick={() => setBillingInterval('monthly')} className={toggleClass(!isYearly)}>
             Monthly
           </button>
-          <button
-            onClick={() => setBillingInterval('yearly')}
-            className={`relative px-6 py-3 min-h-[44px] font-bold uppercase tracking-wider text-xs transition-all ${
-              isYearly
-                ? 'bg-coral text-black shadow-[2px_2px_0px_var(--shadow-hard)]'
-                : 'text-gray-600 dark:text-gray-400 hover:text-ink dark:hover:text-white'
-            }`}
-          >
+          <button type="button" onClick={() => setBillingInterval('yearly')} className={toggleClass(isYearly)}>
             <span className="inline-flex items-center gap-2">
               Yearly
-              <span className="rounded-full border border-black/20 bg-white px-2 py-0.5 text-[10px] font-bold tracking-wider text-danger-ink">
+              <span className="rounded-full border border-black/20 bg-paper px-2 py-0.5 font-mono text-[10px] font-bold tracking-wider text-ink">
                 2 Months Free
               </span>
             </span>
           </button>
         </div>
-        <p className="text-sm text-gray-500 dark:text-gray-400 font-mono">
-          {isYearly
-            ? 'Pay for 10 months, get 12. Cancel anytime.'
-            : 'Billed monthly. Switch to yearly and get 2 months free.'}
-        </p>
-      </div>
+      </SettingsRow>
 
-      {/* Trust signals */}
-      <div className="flex flex-wrap items-center gap-4 mb-8 text-xs font-mono text-muted-foreground pb-6 border-b-2 border-border">
-        <span className="flex items-center gap-1.5">
-          <Check size={14} color="rgb(var(--teal))" />
-          Cancel anytime
-        </span>
-        <span className="flex items-center gap-1.5">
-          <Check size={14} color="rgb(var(--teal))" />
-          14-day free trial on all plans
-        </span>
-        <span className="flex items-center gap-1.5">
-          <Check size={14} color="rgb(var(--teal))" />
-          No credit card for trial
-        </span>
-        <span className="flex items-center gap-1.5 ml-auto text-success-ink">
-          <Check size={14} color="rgb(var(--teal))" />
-          Pays for itself in 1 onboard
-        </span>
-      </div>
+      <SettingsRow label="Included on every plan">
+        <ul className="grid gap-x-6 gap-y-2 font-mono text-xs text-muted-foreground sm:grid-cols-2">
+          <li className="flex items-center gap-1.5">
+            <Check size={14} color="rgb(var(--teal))" />
+            Cancel anytime
+          </li>
+          <li className="flex items-center gap-1.5">
+            <Check size={14} color="rgb(var(--teal))" />
+            14-day free trial on all plans
+          </li>
+          <li className="flex items-center gap-1.5">
+            <Check size={14} color="rgb(var(--teal))" />
+            No credit card for trial
+          </li>
+          <li className="flex items-center gap-1.5">
+            <Check size={14} color="rgb(var(--teal))" />
+            Pays for itself in 1 onboard
+          </li>
+        </ul>
+      </SettingsRow>
 
-      {/* Mobile-Friendly Tier Summary */}
-      <div className="md:hidden mb-8">
-        <div className="border-2 border-black bg-card p-4 shadow-brutalist-sm">
+      {/* Mobile tier summary — full grid appears at md and up */}
+      <div className="py-5 md:hidden">
+        <div className="border border-border bg-card p-4">
           <div className="space-y-3 font-mono text-sm">
-            <div className="flex justify-between items-center py-2 border-b border-gray-200">
-              <div>
-                <span className="font-bold text-ink">Starter</span>
-                <span className="block text-xs text-gray-500">
-                  {PRICING_DISPLAY_TIER_DETAILS.STARTER.persona}
-                </span>
-              </div>
-              <span className="text-gray-600">{isYearly ? '$24/mo' : '$29/mo'}</span>
-            </div>
-            <div className="flex justify-between items-center py-2 border-b border-gray-200 bg-coral/5 -mx-2 px-2 rounded">
-              <div>
-                <span className="font-bold text-danger-ink">Growth</span>
-                <span className="text-xs text-danger-ink/70 block">Most Popular</span>
-              </div>
-              <span className="text-gray-600">{isYearly ? '$66/mo' : '$79/mo'}</span>
-            </div>
-            <div className="flex justify-between items-center py-2">
-              <div>
-                <span className="font-bold text-ink">Scale</span>
-                <span className="block text-xs text-gray-500">
-                  {PRICING_DISPLAY_TIER_DETAILS.SCALE.persona}
-                </span>
-              </div>
-              <span className="text-gray-600">{isYearly ? '$124/mo' : '$149/mo'}</span>
-            </div>
+            {PRICING_DISPLAY_TIER_ORDER.map((tier) => {
+              const isRecommended = tier === 'GROWTH';
+              return (
+                <div
+                  key={tier}
+                  className={`flex items-center justify-between gap-3 py-2 hairline-b last:border-b-0 ${
+                    isRecommended ? 'bg-coral/5 -mx-2 px-2' : ''
+                  }`}
+                >
+                  <div className="min-w-0">
+                    <span className={`font-bold ${isRecommended ? 'text-danger-ink' : 'text-ink'}`}>
+                      {PRICING_DISPLAY_TIER_DETAILS[tier].name}
+                    </span>
+                    <span className={`block text-xs ${isRecommended ? 'text-danger-ink/70' : 'text-muted-foreground'}`}>
+                      {isRecommended ? 'Most Popular' : PRICING_DISPLAY_TIER_DETAILS[tier].persona}
+                    </span>
+                  </div>
+                  <span className="shrink-0 text-muted-foreground">${monthlyEquivalent(tier)}/mo</span>
+                </div>
+              );
+            })}
           </div>
-          <p className="text-xs text-gray-500 mt-4 text-center font-mono">
+          <p className="mt-4 text-center font-mono text-xs text-muted-foreground">
             Full plan details available on larger screens
           </p>
         </div>
       </div>
 
-      {/* Pricing Grid - Hidden on mobile, shown on md+ */}
-      <div className="hidden md:grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-5 pt-2">
+      {/* Pricing grid — hidden on mobile, shown on md+ */}
+      <div className="hidden md:grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-5 py-5">
         {PRICING_DISPLAY_TIER_ORDER.map((tier, index) => {
           const pricing = tierPricing[tier];
           const tierName = PRICING_DISPLAY_TIER_DETAILS[tier].name;
           const persona = PRICING_DISPLAY_TIER_DETAILS[tier].persona;
           const description = PRICING_DISPLAY_TIER_DETAILS[tier].description;
           const features = tierFeatures[tier];
-          const isCurrentTier = tier === currentTier;
+          const isCurrentTier = Boolean(subscription?.tier) && tier === currentTier;
           const isRecommended = tier === 'GROWTH'; // Growth is the most popular tier
           const canUpgrade = index > tierIndex;
 
           // Calculate display price based on billing period
           const yearlyPrice = pricing.yearly;
-          const monthlyDisplayPrice = Math.round(pricing.monthly);
-          const yearlyMonthlyEquivalent = Math.round(yearlyPrice / 12);
-          const displayPrice = isYearly ? yearlyMonthlyEquivalent : monthlyDisplayPrice;
+          const displayPrice = monthlyEquivalent(tier);
           const alternatePrice = isYearly ? `$${yearlyPrice} billed yearly` : 'billed monthly';
 
           return (
             <div
               key={tier}
-              className={`relative border-2 rounded-lg transition-all ${
+              className={`relative bg-card ${
                 isCurrentTier
-                  ? 'border-indigo-500 bg-indigo-50/50 shadow-brutalist-sm'
+                  ? 'border-2 border-ink'
                   : isRecommended
-                  ? 'border-coral bg-card shadow-brutalist'
-                  : 'border-slate-300 bg-card hover:shadow-brutalist-sm'
+                    ? subscription?.tier
+                      ? 'border border-coral'
+                      : 'border-2 border-ink'
+                    : 'border border-border'
               }`}
             >
               {/* Recommended Badge */}
               {isRecommended && !isCurrentTier && (
-                <div className="absolute top-3 right-3 bg-coral text-white border-2 border-black px-2 py-1 font-mono text-xs font-bold uppercase tracking-wider shadow-brutalist-sm z-10">
+                <div className="absolute top-3 right-3 z-10 border border-black bg-ink px-2 py-1 font-mono text-xs font-bold uppercase tracking-wider text-paper">
                   Most Popular
                 </div>
               )}
 
               {/* Tier Header */}
-              <div className="p-4 border-b-2 border-border">
+              <div className="p-4 hairline-b">
                 {/* Persona Label */}
-                <span className={`font-mono text-[10px] font-bold uppercase tracking-widest ${
-                  isRecommended ? 'text-danger-ink' : 'text-gray-500'
-                }`}>
+                <span
+                  className="font-mono text-[10px] font-bold uppercase tracking-widest text-muted-foreground"
+                >
                   {persona}
                 </span>
-                <h3 className="font-dela text-lg text-ink mt-1 mb-0.5">{tierName}</h3>
-                <p className="text-xs text-muted-foreground font-mono mb-3">
-                  {description}
-                </p>
+                <h3 className="mt-1 mb-0.5 font-display text-lg font-semibold text-ink">{tierName}</h3>
+                <p className="mb-3 font-mono text-xs text-muted-foreground">{description}</p>
                 <div className="flex items-baseline gap-1">
-                  <span className="font-dela text-3xl text-ink">
-                    ${displayPrice}
-                  </span>
-                  <span className="text-xs text-muted-foreground font-mono">/mo</span>
+                  <span className="font-display text-3xl font-semibold text-ink">${displayPrice}</span>
+                  <span className="font-mono text-xs text-muted-foreground">/mo</span>
                 </div>
-                <p className="text-xs text-muted-foreground font-mono mt-1">
-                  {alternatePrice}
-                </p>
+                <p className="mt-1 font-mono text-xs text-muted-foreground">{alternatePrice}</p>
               </div>
 
               {/* Features List */}
               <div className="p-4">
-                <ul className="space-y-1 mb-4">
+                <ul className="mb-4 space-y-1">
                   {features.map((feature, featureIndex) => (
-                    <li
-                      key={featureIndex}
-                      className="flex flex-col gap-0.5 py-0.5"
-                    >
+                    <li key={featureIndex} className="flex flex-col gap-0.5 py-0.5">
                       <div className="flex items-start gap-2 text-sm">
                         {feature.included ? (
-                          <Check
-                            size={14}
-                            className="mt-0.5 flex-shrink-0"
-                            color="rgb(var(--coral))"
-                          />
+                          <Check size={14} className="mt-0.5 shrink-0" color="rgb(var(--coral))" />
                         ) : (
-                          <X size={14} className="mt-0.5 flex-shrink-0 text-muted-foreground dark:text-white/50" />
+                          <X size={14} className="mt-0.5 shrink-0 text-muted-foreground dark:text-white/50" />
                         )}
                         <span
                           className={
@@ -358,9 +328,7 @@ export function PlanComparison() {
                       </div>
                       {/* Value context */}
                       {feature.included && feature.value && (
-                        <span className="text-xs font-mono text-gray-500 ml-6">
-                          {feature.value}
-                        </span>
+                        <span className="ml-6 font-mono text-xs text-muted-foreground">{feature.value}</span>
                       )}
                     </li>
                   ))}
@@ -368,14 +336,14 @@ export function PlanComparison() {
 
                 {/* CTA Button */}
                 {isCurrentTier ? (
-                  <div className="text-center py-2 text-sm font-medium text-indigo-600 bg-indigo-100 rounded-lg border border-indigo-300">
+                  <div className="border border-ink py-2 text-center text-sm font-medium text-ink">
                     Current Plan
                   </div>
                 ) : canUpgrade ? (
                   <Button
                     onClick={() => handleUpgrade(tier)}
                     disabled={createCheckout.isPending}
-                    variant={isRecommended ? 'brutalist' : 'secondary'}
+                    variant={isRecommended ? 'primary' : 'secondary'}
                     size="sm"
                     className="w-full"
                     rightIcon={<ArrowRight size={16} />}
@@ -383,15 +351,13 @@ export function PlanComparison() {
                     Start Free Trial
                   </Button>
                 ) : (
-                  <div className="text-center py-2 text-sm text-muted-foreground border border-border rounded-lg">
-                    —
-                  </div>
+                  <div className="border border-border py-2 text-center text-sm text-muted-foreground">—</div>
                 )}
               </div>
             </div>
           );
         })}
       </div>
-    </section>
+    </SettingsGroup>
   );
 }

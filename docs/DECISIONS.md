@@ -108,6 +108,13 @@ Old manual-only AgencyPlatformConnection rows (active, secretId null) are set to
 ## DEC-006 — needs_reconnect product status + ms-precision server health (2026-09-10)
 ClientDetailProductStatus gains 'needs_reconnect' (client authorized; grant died — distinct from 'pending' never-authorized and 'revoked' request-level). Server calculateHealthStatus now uses ms-precision expiry (<= 0 -> expired) to match the web countdown, replacing day-ceil rounding.
 
+## DEC-008 — Settings page runs on Design System v2.0 with a rendered design contract; root design.md is stale (2026-09-12)
+`apps/web/DESIGN_SYSTEM.md` v2.0 is the canonical design system; the code and `globals.css` implement it. The root `design.md` / `DESIGN.md` (July 2026: Fraunces display, 8–12px radii, violet hover) predate v2.0 and carry a stale notice rather than being deleted — regenerating them is follow-up work.
+
+The Settings page is rebuilt as one shell (`SettingsTabs`) over a flat row layer (`SettingsRow` / `SettingsGroup`): one `.ink-panel` strip per tab, at most one `brutalist` button per tab in the row layer (never on ink ground), ≤3 hard shadows per rendered view, binary radius, no `.clean-card`. The four tabs and the `?tab=` URL model stay; hooks, mutations, analytics, and Creem calls are untouched. The Team Members placeholder and the fake-save Notifications card are removed rather than restyled.
+
+Enforcement is two-layered on purpose: a source walker (`settings.design.test.ts`, first consumer of `src/test/utils/design-system.ts` plus regex assertions the validator misses at string edges) and a rendered per-view count test (`settings-view-counts.test.tsx`) because conditional variants and `Button`-carried shadows are invisible to source text. Chosen over per-file design tests, which drift file by file.
+
 ## DEC-007 — AGENCY→SCALE ships as a split migration: Postgres in-deploy, Clerk operator-gated (2026-09-11)
 The tier rename rewrites two stores that cannot share a transaction. PostgreSQL migrates inside the Render deploy: `render.yaml` runs `npm run db:migrate:deploy && npm start`, so `20260911_rename_agency_tier_to_scale` applies before the new API serves. Clerk `publicMetadata.subscriptionTier` is backfilled separately by `apps/api/scripts/backfill-clerk-tier-agency-to-scale.ts`, run by an operator after the deploy is healthy, with dry-run → `--limit 5` canary → full `--apply` gates.
 

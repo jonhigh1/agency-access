@@ -160,4 +160,13 @@ describe('PlanComparison', () => {
 
     expect(localStorageMock.getItem('selectedBillingInterval')).toBe('monthly');
   });
+
+  it('offers a free trial on every tier, including Starter, when there is no subscription', () => {
+    mockUseSubscription.mockReturnValue({ data: null, isLoading: false });
+
+    render(<PlanComparison />);
+
+    expect(screen.queryByText('Current Plan')).toBeNull();
+    expect(screen.getAllByRole('button', { name: /start free trial/i }).length).toBeGreaterThanOrEqual(3);
+  });
 });
