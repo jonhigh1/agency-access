@@ -72,6 +72,9 @@ vi.mock('@/services/audit.service', async (importOriginal) => {
     auditService: {
       ...actual.auditService,
       createAuditLog: vi.fn().mockResolvedValue({ data: null, error: null }),
+      createAuditLogs: vi.fn((...args: Parameters<typeof actual.auditService.createAuditLogs>) =>
+        actual.auditService.createAuditLogs(...args)
+      ),
     },
   };
 });
@@ -83,6 +86,7 @@ describe('ConnectionService', () => {
       verifyToken: verifyTokenMock,
     });
     verifyTokenMock.mockResolvedValue(true);
+    vi.mocked(infisical.storeOAuthTokens).mockResolvedValue(undefined as any);
   });
 
   describe('createClientConnection', () => {
@@ -194,6 +198,159 @@ describe('ConnectionService', () => {
         expect.objectContaining({
           accessToken: 'secret-token',
           refreshToken: 'secret-refresh',
+        })
+      );
+    });
+
+    it('should store Infisical secrets before opening a database transaction', async () => {
+      const callOrder: string[] = [];
+      vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue({
+        id: 'request-1',
+        agencyId: 'agency-1',
+        clientEmail: 'client@test.com',
+      } as any);
+      vi.mocked(infisical.storeOAuthTokens).mockImplementation(async () => {
+        callOrder.push('infisical');
+      });
+      vi.mocked(prisma.$transaction).mockImplementation(async (callback) => {
+        callOrder.push('transaction');
+        return callback({
+          clientConnection: {
+            create: vi.fn().mockResolvedValue({ id: 'connection-1' }),
+          },
+          platformAuthorization: {
+            create: vi.fn(),
+          },
+        } as any);
+      });
+
+      await connectionService.createClientConnection({
+        requestId: 'request-1',
+        platforms: {
+          meta_ads: {
+            accessToken: 'secret-token',
+            refreshToken: 'secret-refresh',
+            expiresAt: new Date(),
+          },
+        },
+      });
+
+      expect(callOrder).toEqual(['infisical', 'transaction']);
+    });
+
+    it('should not open a database transaction when Infisical storage fails', async () => {
+      vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue({
+        id: 'request-1',
+        agencyId: 'agency-1',
+        clientEmail: 'client@test.com',
+      } as any);
+      vi.mocked(infisical.storeOAuthTokens).mockRejectedValue(new Error('Infisical unavailable'));
+
+      const result = await connectionService.createClientConnection({
+        requestId: 'request-1',
+        platforms: {
+          meta_ads: {
+            accessToken: 'secret-token',
+            expiresAt: new Date(),
+          },
+        },
+      });
+
+      expect(result.data).toBeNull();
+      expect(result.error).toEqual({
+        code: 'INTERNAL_ERROR',
+        message: 'Failed to create client connection',
+      });
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+    });
+
+    it('should log token grant audit entries without writing OAuth tokens', async () => {
+      vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue({
+        id: 'request-1',
+        agencyId: 'agency-1',
+        clientEmail: 'client@test.com',
+      } as any);
+      vi.mocked(infisical.storeOAuthTokens).mockResolvedValue(undefined as any);
+      vi.mocked(prisma.$transaction).mockImplementation(async (callback) => {
+        return callback({
+          clientConnection: {
+            create: vi.fn().mockResolvedValue({ id: 'connection-1' }),
+          },
+          platformAuthorization: {
+            create: vi.fn().mockResolvedValue({ id: 'auth-1' }),
+          },
+        } as any);
+      });
+
+      const result = await connectionService.createClientConnection({
+        requestId: 'request-1',
+        platforms: {
+          meta_ads: {
+            accessToken: 'secret-token',
+            refreshToken: 'secret-refresh',
+            expiresAt: new Date(),
+          },
+        },
+      });
+
+      expect(result.error).toBeNull();
+      expect(auditService.createAuditLogs).toHaveBeenCalledWith([
+        expect.objectContaining({
+          agencyId: 'agency-1',
+          userEmail: 'client@test.com',
+          action: 'GRANTED',
+          resourceType: 'connection',
+          resourceId: 'connection-1',
+          metadata: expect.objectContaining({ platform: 'meta_ads' }),
+        }),
+      ]);
+      expect(JSON.stringify(vi.mocked(auditService.createAuditLogs).mock.calls[0][0])).not.toContain(
+        'secret-token'
+      );
+    });
+  });
+
+  describe('getAgencyConnections', () => {
+    it('should return connection summaries with a default limit and without secretId', async () => {
+      vi.mocked(prisma.clientConnection.findMany).mockResolvedValue([] as any);
+
+      const result = await connectionService.getAgencyConnections('agency-1');
+
+      expect(result.error).toBeNull();
+      expect(prisma.clientConnection.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { agencyId: 'agency-1' },
+          take: 50,
+          skip: 0,
+          select: {
+            id: true,
+            clientEmail: true,
+            status: true,
+            createdAt: true,
+            authorizations: {
+              select: {
+                platform: true,
+                status: true,
+              },
+            },
+          },
+        })
+      );
+      const query = vi.mocked(prisma.clientConnection.findMany).mock.calls[0][0] as {
+        include?: unknown;
+      };
+      expect(query.include).toBeUndefined();
+    });
+
+    it('should cap an oversized connections list limit at 100', async () => {
+      vi.mocked(prisma.clientConnection.findMany).mockResolvedValue([] as any);
+
+      await connectionService.getAgencyConnections('agency-1', { limit: 500, offset: 10 });
+
+      expect(prisma.clientConnection.findMany).toHaveBeenCalledWith(
+        expect.objectContaining({
+          take: 100,
+          skip: 10,
         })
       );
     });

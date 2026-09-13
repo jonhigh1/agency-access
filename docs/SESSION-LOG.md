@@ -27,6 +27,31 @@ Append-only log of what was done each session. Newest first. Read the last 3–5
 
 ## Sessions
 
+## Session: 2026-09-13 — Infisical off the Prisma transaction; bounded list APIs
+
+### What was done
+- Moved Infisical I/O out of `createClientConnection`'s Prisma `$transaction`: store secrets first, then a short DB write of `secretId` only, with secret cleanup if the DB write fails.
+- Logged `GRANTED` audit rows (agencyId, no token material) after persist.
+- Added `(status, expiresAt)` indexes on `PlatformAuthorization` and `AccessRequest`, and `(resourceType, resourceId, createdAt)` on `AuditLog`. Migration committed, not applied to production.
+- Capped `GET /agencies/:id/access-requests` and `GET /connections` at default 50 / max 100. Connection list uses summary select. Slimmed `getClientDetail` nested payload (no `secretId` on the response).
+
+### Files changed
+- `apps/api/src/services/connection.service.ts` — Infisical-first persist; slim bounded connection list
+- `apps/api/src/services/access-request.service.ts` — default/capped list + slim select
+- `apps/api/src/services/client.service.ts` — slim client-detail query and response
+- `apps/api/src/routes/access-requests.ts`, `apps/api/src/routes/token-health.ts` — list query validation
+- `apps/api/src/lib/list-pagination.ts` — shared default 50 / max 100
+- `apps/api/prisma/schema.prisma` + `apps/api/prisma/migrations/20260913_status_expires_at_and_audit_indexes/migration.sql`
+
+### Decisions made
+- DEC-008: Infisical stays off the Prisma transaction; list APIs are bounded summaries
+
+### Next steps
+- Review draft PR against main. Do not apply the index migration to production from this PR.
+- Token-health live-verify change, BACKGROUND_WORKERS, Redis cache, and frontend RSC remain out of scope.
+
+---
+
 ## Session: 2026-09-11 — ce-simplify-code pass on uncommitted AGENCY→SCALE tier rename
 
 ### What was done

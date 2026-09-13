@@ -725,5 +725,101 @@ describe('Phase 5: Client Service - TDD Tests', () => {
         }),
       ]);
     });
+
+    it('should query a slim nested payload and omit secretId from the response', async () => {
+      vi.mocked(mockPrisma.client.findUnique).mockResolvedValue({
+        id: 'client-1',
+        agencyId: 'agency-1',
+        name: 'Taylor Client',
+        company: 'Acme',
+        email: 'taylor@acme.com',
+        website: null,
+        language: 'en',
+        createdAt: new Date('2026-03-01T00:00:00.000Z'),
+        updatedAt: new Date('2026-03-05T00:00:00.000Z'),
+        accessRequests: [
+          {
+            id: 'request-slim',
+            clientName: 'Meta access',
+            status: 'completed',
+            createdAt: new Date('2026-03-08T00:00:00.000Z'),
+            authorizedAt: new Date('2026-03-08T01:00:00.000Z'),
+            platforms: { meta: ['meta_ads'] },
+            connection: {
+              id: 'connection-slim',
+              status: 'active',
+              createdAt: new Date('2026-03-08T01:00:00.000Z'),
+              grantedAssets: {},
+              authorizations: [
+                {
+                  platform: 'meta_ads',
+                  status: 'active',
+                  metadata: {},
+                },
+              ],
+            },
+          },
+        ],
+      } as any);
+
+      const result = await clientService.getClientDetail({
+        clientId: 'client-1',
+        agencyId: 'agency-1',
+      });
+
+      expect(mockPrisma.client.findUnique).toHaveBeenCalledWith({
+        where: { id: 'client-1' },
+        select: {
+          id: true,
+          agencyId: true,
+          name: true,
+          company: true,
+          email: true,
+          website: true,
+          language: true,
+          createdAt: true,
+          updatedAt: true,
+          accessRequests: {
+            select: {
+              id: true,
+              clientName: true,
+              status: true,
+              createdAt: true,
+              authorizedAt: true,
+              platforms: true,
+              connection: {
+                select: {
+                  id: true,
+                  status: true,
+                  createdAt: true,
+                  revokedAt: true,
+                  grantedAssets: true,
+                  authorizations: {
+                    select: {
+                      platform: true,
+                      status: true,
+                      metadata: true,
+                    },
+                  },
+                },
+              },
+            },
+            orderBy: { createdAt: 'desc' },
+          },
+        },
+      });
+      expect(result?.client).toEqual({
+        id: 'client-1',
+        name: 'Taylor Client',
+        company: 'Acme',
+        email: 'taylor@acme.com',
+        website: null,
+        language: 'en',
+        createdAt: new Date('2026-03-01T00:00:00.000Z'),
+        updatedAt: new Date('2026-03-05T00:00:00.000Z'),
+      });
+      expect(result?.client).not.toHaveProperty('accessRequests');
+      expect(JSON.stringify(result)).not.toMatch(/secretId|oauth_/);
+    });
   });
 });

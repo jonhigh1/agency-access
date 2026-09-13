@@ -8,6 +8,25 @@ Record significant technical choices so future sessions (and humans) understand 
 
 ---
 
+### DEC-008: Infisical stays off the Prisma transaction; list APIs are bounded summaries
+**Date:** 2026-09-13
+
+**Context:** `createClientConnection` stored OAuth tokens in Infisical while holding a pooled Prisma `$transaction`. `GET /connections` and `GET /agencies/:id/access-requests` returned unbounded full rows (`secretId`, authorization metadata, branding JSON). Token-refresh and expiry jobs filtered `status + expiresAt` with no matching index.
+
+**Decision:**
+- Store secrets in Infisical first (pre-generated connection id), then a short DB write of `secretId` only. On DB failure, delete the stored secrets. Log `GRANTED` audit rows with `agencyId` and no token material.
+- Default list `limit` 50, max 100 on access-request and connection list endpoints. Connection lists use the summary `select` (platform + status only). Client detail maps a slim client object and does not return nested `secretId`.
+- Add `(status, expiresAt)` on `PlatformAuthorization` and `AccessRequest`, and `(resourceType, resourceId, createdAt)` on `AuditLog`. Migration is committed; it is not applied to production from this change.
+
+**Rationale:** Infisical RTT must not pin a Postgres connection. List payloads and expiry scans are the cheap wins after unused-deps cleanup. Tokens never belong in PostgreSQL.
+
+**Consequences:**
+- Positive: OAuth persist holds the pool only for the DB write; list routes stop shipping secrets and large JSON by default
+- Negative: callers that omitted `limit` now receive at most 50 rows; page with `offset` for more
+- Migration must be reviewed before a production apply (`CREATE INDEX CONCURRENTLY` in ops, not this PR)
+
+---
+
 ### DEC-003: Design System v2.0 — refinement by subtraction (lazyweb extraction)
 **Date:** 2026-09-03
 
