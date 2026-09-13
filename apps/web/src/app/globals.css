@@ -548,6 +548,15 @@
       animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
     }
+
+    /* Hover lift/shift on buttons becomes a static state. The duration rule
+       above only shortens the transition; the transform would still apply.
+       Kept here (not as motion-reduce: utilities) because the design-system
+       validator substring-matches "-red" inside "motion-reduce". */
+    button:hover,
+    a:hover {
+      transform: none !important;
+    }
   }
 
   /* Suppress animations until animations-ready to prevent glitches

@@ -1,19 +1,41 @@
+/* Hallmark · genre: modern-minimal · macrostructure: Index-First · design-system: DESIGN_SYSTEM.md v2.0 · designed-as-app */
+/* Hallmark · pre-emit critique: P_ H_ E_ S_ R_ V_ */
 'use client';
 
 /**
- * Settings Tabs Container
+ * Settings shell
  *
- * Three-tab layout for settings with URL state sync.
- * - General: Agency profile, team, notifications
- * - Billing: Subscription, usage, invoices
- * - Webhooks: Endpoint config, test sends, deliveries
+ * Owns the page header, the mono identity line, the accessible tab rail,
+ * and the `?tab=` URL model. Tab bodies are passed in; this file never
+ * fetches tab data. Four tabs: General, Billing, Webhooks, Agents.
  */
 
+import { useCallback, useRef } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Settings, CreditCard, Webhook, Bot } from 'lucide-react';
-import { usePrefetchBillingData } from '@/lib/query/billing';
+import { SUBSCRIPTION_TIER_NAMES } from '@agency-platform/shared';
+import { usePrefetchBillingData, useSubscription } from '@/lib/query/billing';
+import { useUserAgency } from '@/hooks/use-user-agency';
+import { resolveBillingLifecycle } from './billing/billing-lifecycle';
 
-type SettingsTab = 'general' | 'billing' | 'webhooks' | 'agents';
+const TAB_IDS = ['general', 'billing', 'webhooks', 'agents'] as const;
+type SettingsTab = (typeof TAB_IDS)[number];
+
+const TAB_LABELS: Record<SettingsTab, string> = {
+  general: 'General',
+  billing: 'Billing',
+  webhooks: 'Webhooks',
+  agents: 'Agents',
+};
+
+const UNLOADED = '—';
+
+/** Two-ring focus, copied from Button base styles — globals.css only sets it on form fields. */
+const TAB_FOCUS =
+  'focus-visible:outline-[3px] focus-visible:outline-coral/25 focus-visible:outline-offset-0 focus-visible:[box-shadow:0_0_0_6px_rgb(var(--primary)/0.08)]';
+
+function isSettingsTab(value: string | null): value is SettingsTab {
+  return value !== null && (TAB_IDS as readonly string[]).includes(value);
+}
 
 interface SettingsTabsProps {
   generalContent: React.ReactNode;
@@ -26,61 +48,114 @@ export function SettingsTabs({ generalContent, billingContent, webhooksContent, 
   const router = useRouter();
   const searchParams = useSearchParams();
   const prefetchBilling = usePrefetchBillingData();
-  
-  const currentTab = (searchParams.get('tab') as SettingsTab) || 'general';
+  const { data: agency } = useUserAgency();
+  const { data: subscription } = useSubscription();
+  const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
 
-  const setTab = (tab: SettingsTab) => {
-    const params = new URLSearchParams(searchParams.toString());
-    params.set('tab', tab);
-    router.replace(`?${params.toString()}`, { scroll: false });
+  const requested = searchParams.get('tab');
+  const currentTab: SettingsTab = isSettingsTab(requested) ? requested : 'general';
+
+  const setTab = useCallback(
+    (tab: SettingsTab) => {
+      const params = new URLSearchParams(searchParams.toString());
+      params.set('tab', tab);
+      router.replace(`?${params.toString()}`, { scroll: false });
+    },
+    [router, searchParams]
+  );
+
+  const focusTab = (index: number) => {
+    const count = TAB_IDS.length;
+    const next = ((index % count) + count) % count;
+    tabRefs.current[next]?.focus();
   };
 
-  const tabs = [
-    { id: 'general' as const, label: 'General', icon: Settings },
-    { id: 'billing' as const, label: 'Billing', icon: CreditCard },
-    { id: 'webhooks' as const, label: 'Webhooks', icon: Webhook },
-    { id: 'agents' as const, label: 'Agents', icon: Bot },
-  ];
+  const onTabKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>, index: number) => {
+    switch (event.key) {
+      case 'ArrowRight':
+        event.preventDefault();
+        focusTab(index + 1);
+        break;
+      case 'ArrowLeft':
+        event.preventDefault();
+        focusTab(index - 1);
+        break;
+      case 'Home':
+        event.preventDefault();
+        focusTab(0);
+        break;
+      case 'End':
+        event.preventDefault();
+        focusTab(TAB_IDS.length - 1);
+        break;
+      default:
+        break;
+    }
+  };
+
+  const lifecycle = resolveBillingLifecycle(subscription);
+  const planName =
+    lifecycle === 'FREE' || !subscription?.tier ? 'Free' : SUBSCRIPTION_TIER_NAMES[subscription.tier];
+  const identity = [agency?.name || UNLOADED, planName, agency?.id || UNLOADED].join(' · ');
+
+  const content: Record<SettingsTab, React.ReactNode> = {
+    general: generalContent,
+    billing: billingContent,
+    webhooks: webhooksContent,
+    agents: agentsContent,
+  };
 
   return (
-    <div className="flex-1 bg-paper p-8">
-      <div className="max-w-4xl mx-auto">
-        {/* Page Header */}
-        <div className="mb-6">
-          <h1 className="font-display text-3xl font-semibold text-ink">Settings</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Manage your agency settings and preferences
+    <div className="flex-1 bg-paper p-6 md:p-8">
+      <div className="max-w-7xl mx-auto" data-testid="settings-shell">
+        <header className="mb-8">
+          <h1 className="font-display text-2xl font-semibold text-ink tracking-display-md">Settings</h1>
+          <p
+            className="mt-1 font-mono text-xs tracking-[0.04em] text-muted-foreground"
+            data-testid="settings-identity"
+          >
+            {identity}
           </p>
+        </header>
+
+        <div role="tablist" aria-label="Settings sections" className="flex gap-6 mb-8 hairline-b">
+          {TAB_IDS.map((tab, index) => {
+            const selected = currentTab === tab;
+            return (
+              <button
+                key={tab}
+                ref={(el) => {
+                  tabRefs.current[index] = el;
+                }}
+                type="button"
+                role="tab"
+                id={`settings-tab-${tab}`}
+                aria-selected={selected}
+                aria-controls={`settings-panel-${tab}`}
+                tabIndex={selected ? 0 : -1}
+                onClick={() => setTab(tab)}
+                onKeyDown={(event) => onTabKeyDown(event, index)}
+                onMouseEnter={tab === 'billing' ? prefetchBilling : undefined}
+                onFocus={tab === 'billing' ? prefetchBilling : undefined}
+                className={`-mb-px min-h-[44px] px-1 pb-3 text-sm font-semibold transition-colors duration-150 border-b-2 ${
+                  selected
+                    ? 'border-coral text-ink'
+                    : 'border-transparent text-muted-foreground hover:text-ink'
+                } ${TAB_FOCUS}`}
+              >
+                {TAB_LABELS[tab]}
+              </button>
+            );
+          })}
         </div>
 
-        {/* Tab Navigation */}
-        <div className="flex gap-1 mb-6 border-b border-border">
-          {tabs.map((tab) => (
-            <button
-              key={tab.id}
-              onClick={() => setTab(tab.id)}
-              onMouseEnter={tab.id === 'billing' ? prefetchBilling : undefined}
-              className={`flex items-center gap-2 px-4 py-3 text-sm font-medium transition-colors relative ${
-                currentTab === tab.id
-                  ? 'text-danger-ink'
-                  : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              <tab.icon className="h-4 w-4" />
-              {tab.label}
-              {currentTab === tab.id && (
-                <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-coral" />
-              )}
-            </button>
-          ))}
-        </div>
-
-        {/* Tab Content */}
-        <div className="space-y-6">
-          {currentTab === 'general' && generalContent}
-          {currentTab === 'billing' && billingContent}
-          {currentTab === 'webhooks' && webhooksContent}
-          {currentTab === 'agents' && agentsContent}
+        <div
+          role="tabpanel"
+          id={`settings-panel-${currentTab}`}
+          aria-labelledby={`settings-tab-${currentTab}`}
+          className="space-y-10"
+        >
+          {content[currentTab]}
         </div>
       </div>
     </div>
