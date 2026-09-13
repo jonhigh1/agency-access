@@ -30,6 +30,17 @@ export function formatMediumDate(value: string | Date): string {
 }
 
 /**
+ * Format a date as e.g. "August 18, 2026" (en-US, stable).
+ */
+export function formatLongDate(value: string | Date): string {
+  return new Date(value).toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}
+
+/**
  * Format a USD currency amount from an integer cents value.
  */
 export function formatUsdFromCents(cents: number): string {

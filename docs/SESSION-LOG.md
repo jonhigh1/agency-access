@@ -27,6 +27,56 @@ Append-only log of what was done each session. Newest first. Read the last 3–5
 
 ## Sessions
 
+## Session: 2026-09-13 — Infisical off the Prisma transaction; bounded list APIs
+
+### What was done
+- Moved Infisical I/O out of `createClientConnection`'s Prisma `$transaction`: store secrets first, then a short DB write of `secretId` only, with secret cleanup if the DB write fails.
+- Logged `GRANTED` audit rows (agencyId, no token material) after persist.
+- Added `(status, expiresAt)` indexes on `PlatformAuthorization` and `AccessRequest`, and `(resourceType, resourceId, createdAt)` on `AuditLog`. Migration committed, not applied to production.
+- Capped `GET /agencies/:id/access-requests` and `GET /connections` at default 50 / max 100. Connection list uses summary select. Slimmed `getClientDetail` nested payload (no `secretId` on the response).
+
+### Files changed
+- `apps/api/src/services/connection.service.ts` — Infisical-first persist; slim bounded connection list
+- `apps/api/src/services/access-request.service.ts` — default/capped list + slim select
+- `apps/api/src/services/client.service.ts` — slim client-detail query and response
+- `apps/api/src/routes/access-requests.ts`, `apps/api/src/routes/token-health.ts` — list query validation
+- `apps/api/src/lib/list-pagination.ts` — shared default 50 / max 100
+- `apps/api/prisma/schema.prisma` + `apps/api/prisma/migrations/20260913_status_expires_at_and_audit_indexes/migration.sql`
+
+### Decisions made
+- DEC-009: Infisical stays off the Prisma transaction; list APIs are bounded summaries
+
+### Next steps
+- Review draft PR against main. Do not apply the index migration to production from this PR.
+- Token-health live-verify change, BACKGROUND_WORKERS, Redis cache, and frontend RSC remain out of scope.
+
+---
+
+## Session: 2026-09-12 — Settings page revamp on Design System v2.0 (hallmark + ce-plan + ce-work)
+
+### What was done
+- Planned with `hallmark redesign` + `ce-plan`: plan at `docs/plans/2026-09-12-1912-feat-settings-page-revamp-plan.md` (Durable, 8 units), reviewed by 5 doc-review personas (19 fixes applied; cross-model pass skipped — no external egress sanctioned).
+- Settled with Jon: DESIGN_SYSTEM.md v2.0 canonical (root design.md stale); keep four tabs + `?tab=`; utilitarian mood; remove the Team Members placeholder and fake-save Notifications card; container widened to `max-w-7xl`.
+- Built test-first. U1 contract tests (source walker + rendered per-view counts) went red on 15 of 25 files, then U2–U7 turned them green: `SettingsTabs` shell (identity line, ARIA tab rail, Home/End, two-ring focus), `SettingsRow`/`SettingsGroup`, General (PlanStrip ink-panel + usage rows + profile rows), Billing (hero strip + rows, plan-comparison debt cleared: 7 shadows, font-dela, 22 generic colours), Webhooks (endpoint strip, rows, gradient gone), Agents (MCP strip, approval brutalist only with `connect=`). U5–U7 ran as parallel worktree workers and were merged in dependency order.
+- Render gate (visual-qa, dev server with auth bypass, no API): rule layer clean at 1440/768/390/320 (no overflow, no console errors, tap targets ≥24px); two blind taste passes → PASS-WITH-NITS. Fixes: coral limited to one action per view, tier-card emphasis, panel label consistency, 320px rail.
+- Verification: settings suite 18 files / 335 tests green; full web suite 1239 passed with the one pre-existing `access-requests/success` failure; `tsc` clean; `next build` succeeds and `/settings` prerenders statically; eslint 0 errors.
+
+### Files changed
+- `apps/web/src/components/settings/**` — shell, row primitive, all four tabs, tests; `team-members-card.tsx` and `notifications-card.tsx` deleted
+- `apps/web/src/app/(authenticated)/settings/page.tsx` — no Reveal, square skeleton, PlanStrip wired
+- `apps/web/src/app/globals.css` — reduced-motion hover transform rule
+- `apps/web/DESIGN_SYSTEM.md` (v2.1.0 changelog, clean-card deprecated), `design.md`/`DESIGN.md` (stale notice), `docs/DECISIONS.md` (DEC-008), `.hallmark/log.json`
+
+### Decisions made
+- DEC-008 (see DECISIONS.md).
+
+### Next steps
+- Follow-ups from the plan's Deferred section: real team management; persisted notification preferences; delete `.clean-card` from globals.css; regenerate root design.md from v2.0; fix `stat-card.tsx` radius/shadow; `UsageDisplayInline` → `Link`.
+- Render gate ran without a backend; loaded-data states are covered by the rendered tests only. Worth one manual look at `/settings?tab=billing` on staging with a real subscription.
+- Judge nits left open: "Included on every plan" list wraps unevenly at some widths; the agents empty-state link sits lower than its row label.
+
+---
+
 ## Session: 2026-09-11 — ce-simplify-code pass on uncommitted AGENCY→SCALE tier rename
 
 ### What was done

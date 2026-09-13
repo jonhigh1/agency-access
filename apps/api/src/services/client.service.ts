@@ -378,7 +378,16 @@ export interface ClientDetailDto {
 }
 
 export interface ClientDetailResponse {
-  client: Client;
+  client: {
+    id: string;
+    name: string;
+    company: string;
+    email: string;
+    website: string | null;
+    language: ClientLanguage;
+    createdAt: Date;
+    updatedAt: Date;
+  };
   stats: {
     totalRequests: number;
     activeConnections: number;
@@ -444,9 +453,13 @@ type ClientDetailAccessRequestRecord = {
   clientName: string;
   status: string;
   createdAt: Date;
+  authorizedAt?: Date | null;
   platforms: unknown;
   connection?: {
+    id?: string;
     status?: string | null;
+    createdAt?: Date;
+    revokedAt?: Date | null;
     grantedAssets?: unknown;
     authorizations?: Array<{
       platform: string;
@@ -919,12 +932,38 @@ export async function getClientDetail(
   // Fetch client with all related data
   const client = await prisma.client.findUnique({
     where: { id: clientId },
-    include: {
+    select: {
+      id: true,
+      agencyId: true,
+      name: true,
+      company: true,
+      email: true,
+      website: true,
+      language: true,
+      createdAt: true,
+      updatedAt: true,
       accessRequests: {
-        include: {
+        select: {
+          id: true,
+          clientName: true,
+          status: true,
+          createdAt: true,
+          authorizedAt: true,
+          platforms: true,
           connection: {
-            include: {
-              authorizations: true,
+            select: {
+              id: true,
+              status: true,
+              createdAt: true,
+              revokedAt: true,
+              grantedAssets: true,
+              authorizations: {
+                select: {
+                  platform: true,
+                  status: true,
+                  metadata: true,
+                },
+              },
             },
           },
         },
@@ -1079,7 +1118,16 @@ export async function getClientDetail(
   activity.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
 
   return {
-    client,
+    client: {
+      id: client.id,
+      name: client.name,
+      company: client.company,
+      email: client.email,
+      website: client.website,
+      language: client.language as ClientLanguage,
+      createdAt: client.createdAt,
+      updatedAt: client.updatedAt,
+    },
     stats: {
       totalRequests,
       activeConnections,

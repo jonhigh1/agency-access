@@ -1,15 +1,17 @@
 'use client';
 
 /**
- * Payment Methods Card
+ * Payment Methods
  *
- * Shows saved payment methods or redirects to portal.
+ * One row per saved payment method, or a three-beat empty row that sends
+ * the operator to the billing portal.
  */
 
-import { CreditCard, ExternalLink, Loader2 } from 'lucide-react';
+import { ExternalLink, Loader2 } from 'lucide-react';
 import { usePaymentMethods, useOpenPortal } from '@/lib/query/billing';
 import { Button } from '@/components/ui/button';
 import { StatusBadge } from '@/components/ui/status-badge';
+import { SettingsGroup, SettingsRow } from '../settings-row';
 
 export function PaymentMethodsCard() {
   const { data: paymentMethods, isLoading } = usePaymentMethods();
@@ -20,79 +22,61 @@ export function PaymentMethodsCard() {
     window.location.href = result.portalUrl;
   };
 
-  return (
-    <section className="clean-card p-6">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-coral/10 rounded-lg">
-            <CreditCard className="h-5 w-5 text-danger-ink" />
-          </div>
-          <div>
-            <h2 className="font-display text-lg font-semibold text-ink">Payment Methods</h2>
-            <p className="text-sm text-muted-foreground">Manage your payment options</p>
-          </div>
-        </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          onClick={handleManagePayments}
-          disabled={openPortal.isPending}
-        >
-          {openPortal.isPending ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <>
-              <ExternalLink className="h-4 w-4" />
-              Manage
-            </>
-          )}
-        </Button>
-      </div>
-
-      {isLoading ? (
-        <div className="py-8 text-center">
-          <Loader2 className="h-6 w-6 animate-spin text-muted-foreground mx-auto" />
-        </div>
-      ) : paymentMethods && paymentMethods.length > 0 ? (
-        <div className="space-y-3">
-          {paymentMethods.map((method) => (
-            <div
-              key={method.id}
-              className="flex items-center justify-between p-3 bg-card rounded-lg border border-border"
-            >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-6 bg-muted rounded flex items-center justify-center text-xs font-medium text-muted-foreground">
-                  {method.brand.toUpperCase()}
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-ink">
-                    •••• •••• •••• {method.last4}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Expires {method.expMonth}/{method.expYear}
-                  </p>
-                </div>
-              </div>
-              {method.isDefault && (
-                <StatusBadge badgeVariant="success">Default</StatusBadge>
-              )}
-            </div>
-          ))}
-        </div>
+  const manageButton = (
+    <Button variant="secondary" size="sm" onClick={handleManagePayments} disabled={openPortal.isPending}>
+      {openPortal.isPending ? (
+        <Loader2 className="h-4 w-4 animate-spin" />
       ) : (
-        <div className="text-center py-6 border-2 border-dashed border-border rounded-lg">
-          <CreditCard className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-          <p className="text-sm text-foreground">No payment methods saved</p>
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleManagePayments}
-            className="mt-2"
-          >
-            Add a payment method
-          </Button>
-        </div>
+        <>
+          <ExternalLink className="h-4 w-4" />
+          Manage
+        </>
       )}
-    </section>
+    </Button>
+  );
+
+  return (
+    <SettingsGroup
+      title="Payment methods"
+      description="Manage your payment options"
+      aside={paymentMethods && paymentMethods.length > 0 ? manageButton : undefined}
+    >
+      {isLoading ? (
+        <SettingsRow label="Saved cards">
+          <div aria-hidden="true" className="h-10 w-full max-w-xs bg-muted animate-pulse" />
+        </SettingsRow>
+      ) : paymentMethods && paymentMethods.length > 0 ? (
+        paymentMethods.map((method) => (
+          <SettingsRow
+            key={method.id}
+            label={`•••• •••• •••• ${method.last4}`}
+            description={`Expires ${method.expMonth}/${method.expYear}`}
+          >
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="flex h-6 w-10 items-center justify-center border border-border bg-muted font-mono text-xs font-medium text-muted-foreground">
+                {method.brand.toUpperCase()}
+              </span>
+              {method.isDefault && <StatusBadge badgeVariant="success">Default</StatusBadge>}
+            </div>
+          </SettingsRow>
+        ))
+      ) : (
+        <SettingsRow
+          label="No payment methods saved"
+          description="Add a card so your plan renews without interruption."
+        >
+          <Button variant="secondary" size="sm" onClick={handleManagePayments} disabled={openPortal.isPending}>
+            {openPortal.isPending ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Opening...
+              </>
+            ) : (
+              'Add a payment method'
+            )}
+          </Button>
+        </SettingsRow>
+      )}
+    </SettingsGroup>
   );
 }

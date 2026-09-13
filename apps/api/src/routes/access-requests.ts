@@ -6,6 +6,7 @@
  */
 
 import { FastifyInstance } from 'fastify';
+import { z } from 'zod';
 import { accessRequestService } from '../services/access-request.service.js';
 import { agencyPlatformService } from '../services/agency-platform.service.js';
 import { auditService } from '../services/audit.service.js';
@@ -14,6 +15,13 @@ import { authenticate } from '@/middleware/auth.js';
 import { assertAgencyAccess } from '@/lib/authorization.js';
 import { requirePrincipalAgency } from '@/lib/agency-guard.js';
 import { sendError } from '../lib/response.js';
+import { DEFAULT_LIST_LIMIT, MAX_LIST_LIMIT } from '@/lib/list-pagination.js';
+
+const listAccessRequestsQuerySchema = z.object({
+  status: z.string().optional(),
+  limit: z.coerce.number().int().min(1).max(MAX_LIST_LIMIT).default(DEFAULT_LIST_LIMIT),
+  offset: z.coerce.number().int().min(0).default(0),
+});
 
 const ACCESS_LEVEL_MAP: Record<string, 'manage' | 'view_only'> = {
   admin: 'manage',
@@ -159,7 +167,15 @@ export async function accessRequestRoutes(fastify: FastifyInstance) {
     onRequest: [authenticate(), requirePrincipalAgency],
   }, async (request, reply) => {
     const { id } = request.params as { id: string };
-    const { status, limit, offset } = request.query as any;
+    const query = listAccessRequestsQuerySchema.safeParse(request.query);
+    if (!query.success) {
+      return sendError(
+        reply,
+        'VALIDATION_ERROR',
+        query.error.errors[0]?.message || 'Invalid list query',
+        400
+      );
+    }
     const principalAgencyId = (request as any).principalAgencyId as string;
 
     const accessError = assertAgencyAccess(id, principalAgencyId);
@@ -171,9 +187,9 @@ export async function accessRequestRoutes(fastify: FastifyInstance) {
     }
 
     const result = await accessRequestService.getAgencyAccessRequests(id, {
-      status,
-      limit: limit ? parseInt(limit) : undefined,
-      offset: offset ? parseInt(offset) : undefined,
+      status: query.data.status as any,
+      limit: query.data.limit,
+      offset: query.data.offset,
     });
 
     if (result.error) {

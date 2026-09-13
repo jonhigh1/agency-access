@@ -76,6 +76,45 @@ describe('Access Requests Routes - Platform Connection Validation', () => {
     await app.close();
   });
 
+  describe('GET /agencies/:id/access-requests', () => {
+    it('should default the list limit to 50 when the query omits limit', async () => {
+      vi.mocked(accessRequestService.getAgencyAccessRequests).mockResolvedValue({
+        data: [],
+        error: null,
+      });
+
+      const response = await app.inject({
+        method: 'GET',
+        url: '/agencies/agency-1/access-requests',
+      });
+
+      expect(response.statusCode).toBe(200);
+      expect(accessRequestService.getAgencyAccessRequests).toHaveBeenCalledWith(
+        'agency-1',
+        expect.objectContaining({
+          limit: 50,
+          offset: 0,
+        })
+      );
+    });
+
+    it('should reject an oversized list limit with VALIDATION_ERROR', async () => {
+      const response = await app.inject({
+        method: 'GET',
+        url: '/agencies/agency-1/access-requests?limit=500',
+      });
+
+      expect(response.statusCode).toBe(400);
+      expect(response.json()).toEqual({
+        data: null,
+        error: expect.objectContaining({
+          code: 'VALIDATION_ERROR',
+        }),
+      });
+      expect(accessRequestService.getAgencyAccessRequests).not.toHaveBeenCalled();
+    });
+  });
+
   describe('POST /access-requests - payload normalization', () => {
     it('should accept Record<string, string[]> platform payloads', async () => {
       vi.mocked(accessRequestService.createAccessRequest).mockResolvedValue({

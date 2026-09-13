@@ -5,6 +5,7 @@
  * Works with Infisical for token storage - never stores tokens directly in database.
  */
 
+import { randomUUID } from 'node:crypto';
 import { prisma } from '@/lib/prisma';
 import { infisical } from '@/lib/infisical';
 import { auditService } from '@/services/audit.service';
@@ -16,6 +17,7 @@ import {
   type HealthStatus,
 } from '@agency-platform/shared';
 import { invalidateDashboardCache } from '@/lib/cache.js';
+import { resolveListLimit, resolveListOffset } from '@/lib/list-pagination.js';
 
 /** One day in milliseconds, used for the day-granular countdown field. */
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -83,41 +85,71 @@ export async function createClientConnection(input: {
       };
     }
 
-    // Create connection and platform authorizations in a transaction
-    const result = await prisma.$transaction(async (tx: any) => {
-      // Create the connection
-      const connection = await tx.clientConnection.create({
-        data: {
-          accessRequestId: input.requestId,
-          agencyId: accessRequest.agencyId,
-          clientEmail: accessRequest.clientEmail,
-          status: 'active',
-        },
-      });
+    const connectionId = randomUUID();
+    const storedSecrets: Array<{ platform: Platform; secretId: string; expiresAt: Date }> = [];
 
-      // Create platform authorizations
+    try {
       for (const [platform, tokens] of Object.entries(input.platforms)) {
-        const secretId = infisical.generateSecretName(platform as Platform, connection.id);
-
-        // Store tokens in Infisical
+        const secretId = infisical.generateSecretName(platform as Platform, connectionId);
         await infisical.storeOAuthTokens(secretId, tokens);
+        storedSecrets.push({
+          platform: platform as Platform,
+          secretId,
+          expiresAt: tokens.expiresAt,
+        });
+      }
+    } catch (error) {
+      await Promise.allSettled(
+        storedSecrets.map((secret) => infisical.deleteSecret(secret.secretId))
+      );
+      throw error;
+    }
 
-        // Create database record with only secretId
-        await tx.platformAuthorization.create({
+    let result;
+    try {
+      result = await prisma.$transaction(async (tx: any) => {
+        const connection = await tx.clientConnection.create({
           data: {
-            connectionId: connection.id,
-            platform: platform as Platform,
-            secretId,
-            expiresAt: tokens.expiresAt,
+            id: connectionId,
+            accessRequestId: input.requestId,
+            agencyId: accessRequest.agencyId,
+            clientEmail: accessRequest.clientEmail,
             status: 'active',
           },
         });
-      }
 
-      return connection;
-    });
+        for (const secret of storedSecrets) {
+          await tx.platformAuthorization.create({
+            data: {
+              connectionId: connection.id,
+              platform: secret.platform,
+              secretId: secret.secretId,
+              expiresAt: secret.expiresAt,
+              status: 'active',
+            },
+          });
+        }
 
-    // Invalidate dashboard cache for this agency
+        return connection;
+      });
+    } catch (error) {
+      await Promise.allSettled(
+        storedSecrets.map((secret) => infisical.deleteSecret(secret.secretId))
+      );
+      throw error;
+    }
+
+    await auditService.createAuditLogs(
+      storedSecrets.map((secret) => ({
+        agencyId: accessRequest.agencyId,
+        userEmail: accessRequest.clientEmail,
+        action: 'GRANTED',
+        resourceType: 'connection',
+        resourceId: result.id,
+        metadata: { platform: secret.platform },
+      }))
+    );
+
     await invalidateDashboardCache(accessRequest.agencyId);
 
     return { data: result, error: null };
@@ -494,17 +526,33 @@ export async function getAgencyTokenHealth(agencyId: string) {
   }
 }
 
+const CONNECTION_LIST_SELECT = {
+  id: true,
+  clientEmail: true,
+  status: true,
+  createdAt: true,
+  authorizations: {
+    select: {
+      platform: true,
+      status: true,
+    },
+  },
+} as const;
+
 /**
- * Get all connections for an agency
+ * Get connections for an agency as summaries (no secretId / metadata JSON).
  */
-export async function getAgencyConnections(agencyId: string) {
+export async function getAgencyConnections(
+  agencyId: string,
+  filters?: { limit?: number; offset?: number }
+) {
   try {
     const connections = await prisma.clientConnection.findMany({
       where: { agencyId },
-      include: {
-        authorizations: true,
-      },
+      select: CONNECTION_LIST_SELECT,
       orderBy: { createdAt: 'desc' },
+      take: resolveListLimit(filters?.limit),
+      skip: resolveListOffset(filters?.offset),
     });
 
     return { data: connections, error: null };
@@ -524,36 +572,11 @@ export async function getAgencyConnections(agencyId: string) {
  * Returns only essential data (platform badges) without full authorization details
  * This reduces payload size significantly for agencies with many connections
  */
-export async function getAgencyConnectionSummaries(agencyId: string) {
-  try {
-    const connections = await prisma.clientConnection.findMany({
-      where: { agencyId },
-      select: {
-        id: true,
-        clientEmail: true,
-        status: true,
-        createdAt: true,
-        // Only select platform from authorizations, not full details
-        authorizations: {
-          select: {
-            platform: true,
-            status: true,
-          },
-        },
-      },
-      orderBy: { createdAt: 'desc' },
-    });
-
-    return { data: connections, error: null };
-  } catch (error) {
-    return {
-      data: null,
-      error: {
-        code: 'INTERNAL_ERROR',
-        message: 'Failed to get agency connection summaries',
-      },
-    };
-  }
+export async function getAgencyConnectionSummaries(
+  agencyId: string,
+  filters?: { limit?: number; offset?: number }
+) {
+  return getAgencyConnections(agencyId, filters);
 }
 
 /**
