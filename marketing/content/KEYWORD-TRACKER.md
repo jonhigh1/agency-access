@@ -13,8 +13,8 @@
 | Keyword | Monthly Volume | Current Rank | Target Rank | Target Page | Priority |
 |---------|----------------|--------------|-------------|-------------|----------|
 | leadsie alternative | ~500-1,000 | N/A | Top 3 | /compare/leadsie-alternative | P0 |
-| authhub vs leadsie | ~100-200 | N/A | Top 3 | /compare/authhub-vs-leadsie | P0 |
-| client onboarding software for agencies | ~300-500 | N/A | Top 10 | /blog/client-onboarding-checklist | P0 |
+| authhub vs leadsie | unvalidated est. | 0 imp/90d (GSC) | Top 3 | /blog/leadsie-vs-authhub-comparison | P2 — build /compare page only when GSC shows impressions |
+| client onboarding software for agencies | ~300-500 | pos 16 cluster (pos 8 for "best…in 2026") | Top 10 | /blog/best-client-onboarding-software-agencies-2026 | P0 |
 | agency client onboarding | ~200-400 | N/A | Top 10 | Homepage | P0 |
 
 ### Tier 2: Platform Access Guides (P0-P1)
