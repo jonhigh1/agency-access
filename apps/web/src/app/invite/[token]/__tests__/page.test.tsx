@@ -56,6 +56,21 @@ vi.mock('@/components/client-auth/PlatformAuthWizard', async () => {
   };
 });
 
+// Fetch stubs in this file are object literals with `json`; the page parses
+// via parseJsonResponse, which reads `text` like a real Response. Derive
+// `text` from the stubbed body so stubs stay Response-shaped.
+const stubFetch = (
+  impl: (url: string, init?: unknown) => Promise<Record<string, unknown>>
+) => {
+  vi.stubGlobal('fetch', async (url: string, init?: unknown) => {
+    const response = await impl(url, init);
+    return {
+      ...response,
+      text: async () => JSON.stringify(await (response.json as () => Promise<unknown>)()),
+    };
+  });
+};
+
 describe('Invite Flow Page', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -132,7 +147,7 @@ describe('Invite Flow Page', () => {
       } as Response;
     });
 
-    vi.stubGlobal('fetch', fetchMock);
+    stubFetch( fetchMock);
 
     render(<InvitePage />);
 
@@ -287,7 +302,7 @@ describe('Invite Flow Page', () => {
       } as Response;
     });
 
-    vi.stubGlobal('fetch', fetchMock);
+    stubFetch( fetchMock);
 
     render(<InvitePage />);
 
@@ -342,7 +357,7 @@ describe('Invite Flow Page', () => {
       } as Response;
     });
 
-    vi.stubGlobal('fetch', fetchMock);
+    stubFetch( fetchMock);
 
     render(<InvitePage />);
 
@@ -381,7 +396,7 @@ describe('Invite Flow Page', () => {
         }),
       } as Response);
     });
-    vi.stubGlobal('fetch', fetchMock);
+    stubFetch( fetchMock);
 
     render(<InvitePage />);
     await userEvent.click(await screen.findByRole('button', { name: /continue to connect/i }));
@@ -416,7 +431,7 @@ describe('Invite Flow Page', () => {
         }),
       } as Response;
     });
-    vi.stubGlobal('fetch', fetchMock);
+    stubFetch( fetchMock);
 
     render(<InvitePage />);
     await userEvent.click(await screen.findByRole('button', { name: /continue to connect/i }));
@@ -458,7 +473,7 @@ describe('Invite Flow Page', () => {
         }),
       } as Response;
     });
-    vi.stubGlobal('fetch', fetchMock);
+    stubFetch( fetchMock);
 
     render(<InvitePage />);
     const company = await screen.findByRole('textbox');
@@ -569,7 +584,7 @@ describe('Invite Flow Page', () => {
       } as Response;
     });
 
-    vi.stubGlobal('fetch', fetchMock);
+    stubFetch( fetchMock);
 
     render(<InvitePage />);
 
@@ -627,7 +642,7 @@ describe('Invite Flow Page', () => {
       } as Response;
     });
 
-    vi.stubGlobal('fetch', fetchMock);
+    stubFetch( fetchMock);
 
     render(<InvitePage />);
 
@@ -930,7 +945,7 @@ describe('Invite Flow Page', () => {
       } as Response;
     });
 
-    vi.stubGlobal('fetch', fetchMock);
+    stubFetch( fetchMock);
 
     render(<InvitePage />);
 
@@ -992,7 +1007,7 @@ describe('Invite Flow Page', () => {
       } as Response;
     });
 
-    vi.stubGlobal('fetch', fetchMock);
+    stubFetch( fetchMock);
 
     render(<InvitePage />);
 
@@ -1052,7 +1067,7 @@ describe('Invite Flow Page', () => {
       } as Response;
     });
 
-    vi.stubGlobal('fetch', fetchMock);
+    stubFetch( fetchMock);
 
     render(<InvitePage />);
 
@@ -1112,7 +1127,7 @@ describe('Invite Flow Page', () => {
       } as Response;
     });
 
-    vi.stubGlobal('fetch', fetchMock);
+    stubFetch( fetchMock);
 
     render(<InvitePage />);
 
@@ -1209,7 +1224,7 @@ describe('Invite Flow Page', () => {
         }),
       }));
 
-      vi.stubGlobal('fetch', fetchMock);
+      stubFetch( fetchMock);
 
       render(<InvitePage />);
 
@@ -1243,7 +1258,7 @@ describe('Invite Flow Page', () => {
         }),
       }));
 
-      vi.stubGlobal('fetch', fetchMock);
+      stubFetch( fetchMock);
 
       render(<InvitePage />);
 

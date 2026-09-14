@@ -564,29 +564,25 @@ function ConnectionsPageContent() {
 
       </div>
 
-      {/* Meta Unified Settings Modal */}
-      {agencyId && platforms.some(p => p.platform === 'meta' && p.connected) && (
-        <ManageAssetsModalShell
-          isOpen={managingMetaAssets}
-          title="Meta connection settings"
-          description="Control the Business Portfolio and Meta asset types your agency uses when managing delegated access."
-          onClose={() => setManagingMetaAssets(false)}
-        >
-          <MetaUnifiedSettings agencyId={agencyId} />
-        </ManageAssetsModalShell>
-      )}
+      {/* Meta Unified Settings Modal — the shell owns mount/exit; keep it mounted */}
+      <ManageAssetsModalShell
+        isOpen={managingMetaAssets}
+        title="Meta connection settings"
+        description="Control the Business Portfolio and Meta asset types your agency uses when managing delegated access."
+        onClose={() => setManagingMetaAssets(false)}
+      >
+        {agencyId ? <MetaUnifiedSettings agencyId={agencyId} /> : null}
+      </ManageAssetsModalShell>
 
-      {/* Google Unified Settings Modal */}
-      {agencyId && platforms.some(p => p.platform === 'google' && p.connected) && (
-        <ManageAssetsModalShell
-          isOpen={managingGoogleAssets}
-          title="Google connection settings"
-          description="Choose which Google products and accounts are active for delegated access requests."
-          onClose={() => setManagingGoogleAssets(false)}
-        >
-          <GoogleUnifiedSettings agencyId={agencyId} />
-        </ManageAssetsModalShell>
-      )}
+      {/* Google Unified Settings Modal — the shell owns mount/exit; keep it mounted */}
+      <ManageAssetsModalShell
+        isOpen={managingGoogleAssets}
+        title="Google connection settings"
+        description="Choose which Google products and accounts are active for delegated access requests."
+        onClose={() => setManagingGoogleAssets(false)}
+      >
+        {agencyId ? <GoogleUnifiedSettings agencyId={agencyId} /> : null}
+      </ManageAssetsModalShell>
 
       {/* Manual Invitation Modal */}
       {manualInvitationPlatform && agencyId && (

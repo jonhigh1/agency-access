@@ -30,7 +30,12 @@ import { FlowShell } from '@/components/flow/flow-shell';
 import { SingleSelect } from '@/components/ui/single-select';
 
 // Context & Utilities
-import { AccessRequestProvider, useAccessRequest } from '@/contexts/access-request-context';
+import {
+  AccessRequestProvider,
+  useAccessRequest,
+  INTAKE_LABELS_ERROR,
+  SUBDOMAIN_ERROR_PREFIX,
+} from '@/contexts/access-request-context';
 import type { IntakeField } from '@/contexts/access-request-context';
 import { getPlatformCount } from '@/lib/transform-platforms';
 import { useAuthOrBypass } from '@/lib/dev-auth';
@@ -474,14 +479,14 @@ function AccessRequestWizardContent() {
                 }}
                 placeholder="Field label (e.g., Company Website)"
                 className="w-full px-3 py-2 border border-border rounded-lg text-sm focus:ring-2 focus:ring-ring focus:border-coral"
-                aria-invalid={state.error === 'All intake fields must have a label' && !field.label.trim()}
+                aria-invalid={state.error === INTAKE_LABELS_ERROR && !field.label.trim()}
                 aria-describedby={
-                  state.error === 'All intake fields must have a label' && !field.label.trim()
+                  state.error === INTAKE_LABELS_ERROR && !field.label.trim()
                     ? `intake-field-${field.id}-error`
                     : undefined
                 }
                   />
-                  {state.error === 'All intake fields must have a label' && !field.label.trim() ? (
+                  {state.error === INTAKE_LABELS_ERROR && !field.label.trim() ? (
                     <p id={`intake-field-${field.id}-error`} className="text-sm text-danger-ink">
                       Enter a label for this field.
                     </p>
@@ -591,14 +596,14 @@ function AccessRequestWizardContent() {
                       className="flex-1 px-3 py-2 border border-border rounded-l-lg focus:ring-2 focus:ring-ring focus:border-coral"
                       placeholder="my-agency"
                       pattern="[a-z0-9]([a-z0-9-]{1,61}[a-z0-9])?"
-                      aria-invalid={state.error?.startsWith('Subdomain must') || undefined}
-                      aria-describedby={state.error?.startsWith('Subdomain must') ? 'subdomain-error' : undefined}
+                      aria-invalid={state.error?.startsWith(SUBDOMAIN_ERROR_PREFIX) || undefined}
+                      aria-describedby={state.error?.startsWith(SUBDOMAIN_ERROR_PREFIX) ? 'subdomain-error' : undefined}
                     />
                     <span className="px-4 py-2 bg-muted/30 border border-l-0 border-border rounded-r-lg text-muted-foreground text-sm">
                       .agencyplatform.com
                     </span>
                   </div>
-                  {state.error?.startsWith('Subdomain must') ? (
+                  {state.error?.startsWith(SUBDOMAIN_ERROR_PREFIX) ? (
                     <p id="subdomain-error" className="mt-2 text-sm text-danger-ink">
                       Use 3–63 lowercase letters, numbers, or hyphens. Do not start or end with a hyphen.
                     </p>

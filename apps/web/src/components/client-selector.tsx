@@ -212,7 +212,7 @@ export function ClientSelector({ onSelect, value }: ClientSelectorProps) {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 aria-label="Search clients"
-                className="w-full rounded-none border border-border py-2.5 pl-11 pr-4 text-base focus:border-coral focus:outline-none focus-visible:outline-[3px] focus-visible:outline-coral/25 focus-visible:[box-shadow:0_0_0_6px_rgb(var(--primary)/0.08)]"
+                className="w-full rounded-none border border-border py-2.5 pl-11 pr-4 text-base"
               />
             </div>
 
@@ -316,7 +316,7 @@ export function ClientSelector({ onSelect, value }: ClientSelectorProps) {
                 value={newClient.name}
                 onChange={(e) => setNewClient({ ...newClient, name: e.target.value })}
                 onKeyDown={(e) => e.key === 'Enter' && handleCreateClient()}
-                className={`w-full rounded-none border px-4 py-2.5 text-base focus:border-coral focus:outline-none focus-visible:outline-[3px] focus-visible:outline-coral/25 focus-visible:[box-shadow:0_0_0_6px_rgb(var(--primary)/0.08)] ${
+                className={`w-full rounded-none border px-4 py-2.5 text-base ${
                   formErrors.name ? 'border-coral/50' : 'border-border'
                 }`}
                 aria-invalid={!!formErrors.name}
@@ -340,7 +340,7 @@ export function ClientSelector({ onSelect, value }: ClientSelectorProps) {
                 value={newClient.company}
                 onChange={(e) => setNewClient({ ...newClient, company: e.target.value })}
                 onKeyDown={(e) => e.key === 'Enter' && handleCreateClient()}
-                className={`w-full rounded-none border px-4 py-2.5 text-base focus:border-coral focus:outline-none focus-visible:outline-[3px] focus-visible:outline-coral/25 focus-visible:[box-shadow:0_0_0_6px_rgb(var(--primary)/0.08)] ${
+                className={`w-full rounded-none border px-4 py-2.5 text-base ${
                   formErrors.company ? 'border-coral/50' : 'border-border'
                 }`}
                 aria-invalid={!!formErrors.company}
@@ -364,7 +364,7 @@ export function ClientSelector({ onSelect, value }: ClientSelectorProps) {
                 value={newClient.email}
                 onChange={(e) => setNewClient({ ...newClient, email: e.target.value })}
                 onKeyDown={(e) => e.key === 'Enter' && handleCreateClient()}
-                className={`w-full rounded-none border px-4 py-2.5 text-base focus:border-coral focus:outline-none focus-visible:outline-[3px] focus-visible:outline-coral/25 focus-visible:[box-shadow:0_0_0_6px_rgb(var(--primary)/0.08)] ${
+                className={`w-full rounded-none border px-4 py-2.5 text-base ${
                   formErrors.email ? 'border-coral/50' : 'border-border'
                 }`}
                 aria-invalid={!!formErrors.email}

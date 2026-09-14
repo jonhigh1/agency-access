@@ -1,7 +1,7 @@
 'use client';
 
 import { AnimatePresence, m, useReducedMotion } from 'framer-motion';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 
 interface ManageAssetsModalShellProps {
@@ -22,21 +22,25 @@ export function ManageAssetsModalShell({
   children,
 }: ManageAssetsModalShellProps) {
   const shouldReduceMotion = useReducedMotion();
+  // Parents pass inline close handlers; keep the listener subscription stable.
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
 
   useEffect(() => {
     if (!isOpen) return;
     const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose();
+      if (event.key === 'Escape') onCloseRef.current();
     };
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [isOpen, onClose]);
+  }, [isOpen]);
 
   return (
     <AnimatePresence>
       {isOpen && (
         <m.div
-          initial={false}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: shouldReduceMotion ? 0 : 0.25 }}

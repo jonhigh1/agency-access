@@ -7,13 +7,25 @@
 
 'use client';
 
-import { createContext, useContext, useState, useCallback, useEffect, ReactNode, useMemo } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, useRef, ReactNode, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { QueryClient } from '@tanstack/react-query';
-import { Client, AccessLevel, AccessRequestTemplate, IntakeField } from '@agency-platform/shared';
+import {
+  Client,
+  AccessLevel,
+  AccessRequestTemplate,
+  IntakeField,
+  IntakeFieldTypeSchema,
+  SUPPORTED_LANGUAGES,
+} from '@agency-platform/shared';
 import { transformPlatformsForAPI } from '@/lib/transform-platforms';
 import { createAccessRequest, type CreateAccessRequestPayload } from '@/lib/api/access-requests';
 import { capturePosthogEvent } from '@/lib/analytics/capture-posthog';
+
+// Validation messages the wizard page matches on to focus the offending
+// field. Keep the page reading these constants, never a literal.
+export const INTAKE_LABELS_ERROR = 'All intake fields must have a label';
+export const SUBDOMAIN_ERROR_PREFIX = 'Subdomain must';
 
 // ============================================================
 // TYPES
@@ -128,7 +140,7 @@ function readDraft(agencyId: string): AccessRequestFormState {
         typeof client.company === 'string' &&
         typeof client.email === 'string' &&
         (client.website === null || typeof client.website === 'string') &&
-        ['en', 'es', 'nl'].includes(client.language) &&
+        client.language in SUPPORTED_LANGUAGES &&
         !Number.isNaN(Date.parse(String(client.createdAt))) &&
         !Number.isNaN(Date.parse(String(client.updatedAt))));
 
@@ -143,7 +155,7 @@ function readDraft(agencyId: string): AccessRequestFormState {
       ) ||
       !saved.platformAccessLevels ||
       Object.values(saved.platformAccessLevels).some(
-        (level) => !['admin', 'standard', 'read_only'].includes(level)
+        (level) => !['admin', 'standard', 'read_only', 'email_only'].includes(level)
       ) ||
       !Array.isArray(saved.intakeFields) ||
       saved.intakeFields.some(
@@ -151,7 +163,7 @@ function readDraft(agencyId: string): AccessRequestFormState {
           !field ||
           typeof field.id !== 'string' ||
           typeof field.label !== 'string' ||
-          !['text', 'email', 'phone', 'url', 'dropdown', 'textarea'].includes(field.type) ||
+          !IntakeFieldTypeSchema.safeParse(field.type).success ||
           typeof field.required !== 'boolean' ||
           typeof field.order !== 'number'
       ) ||
@@ -224,10 +236,16 @@ export function AccessRequestProvider({
 }: AccessRequestProviderProps) {
   const router = useRouter();
   const [state, setState] = useState<AccessRequestFormState>(() => readDraft(agencyId));
+  // Last serialized draft written per agency; skips byte-identical rewrites
+  // caused by state changes that do not affect the draft payload.
+  const lastWriteRef = useRef<{ agencyId: string; serialized: string | null } | null>(null);
 
   useEffect(() => {
     if (!hasDraftContent(state)) {
-      sessionStorage.removeItem(draftKey(agencyId));
+      if (lastWriteRef.current?.agencyId !== agencyId || lastWriteRef.current.serialized !== null) {
+        sessionStorage.removeItem(draftKey(agencyId));
+      }
+      lastWriteRef.current = { agencyId, serialized: null };
       return;
     }
 
@@ -253,10 +271,12 @@ export function AccessRequestProvider({
       branding: state.branding,
       currentStep: state.currentStep,
     };
-    sessionStorage.setItem(
-      draftKey(agencyId),
-      JSON.stringify({ version: DRAFT_VERSION, state: draftState })
-    );
+    const serialized = JSON.stringify({ version: DRAFT_VERSION, state: draftState });
+    const last = lastWriteRef.current;
+    if (!last || last.agencyId !== agencyId || last.serialized !== serialized) {
+      sessionStorage.setItem(draftKey(agencyId), serialized);
+    }
+    lastWriteRef.current = { agencyId, serialized };
   }, [agencyId, state]);
 
   // ============================================================
@@ -413,7 +433,7 @@ export function AccessRequestProvider({
           // Intake fields validation - all labels must be filled
           const invalidFields = state.intakeFields.filter((field) => !field.label.trim());
           if (invalidFields.length > 0) {
-            return { valid: false, error: 'All intake fields must have a label' };
+            return { valid: false, error: INTAKE_LABELS_ERROR };
           }
 
           // Subdomain validation (optional field)
@@ -423,7 +443,7 @@ export function AccessRequestProvider({
             if (!subdomainRegex.test(state.branding.subdomain)) {
               return {
                 valid: false,
-                error: 'Subdomain must be 3-63 characters, alphanumeric with hyphens',
+                error: `${SUBDOMAIN_ERROR_PREFIX} be 3-63 characters, alphanumeric with hyphens`,
               };
             }
           }

@@ -168,7 +168,7 @@ function ClientsPageContent() {
               placeholder="Search clients by name, email, or company..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full min-h-[44px] rounded-none border border-input bg-background py-3 pl-10 pr-4 focus:border-coral focus:outline-none focus-visible:outline-[3px] focus-visible:outline-coral/25 focus-visible:[box-shadow:0_0_0_6px_rgb(var(--primary)/0.08)]"
+              className="w-full min-h-[44px] rounded-none border border-input bg-background py-3 pl-10 pr-4"
             />
           </div>
           <Button

@@ -41,7 +41,8 @@ export function SingleSelect({
 }: SingleSelectProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [position, setPosition] = useState({ top: 0, left: 0, width: 0 });
-  const [activeIndex, setActiveIndex] = useState(() => Math.max(0, options.findIndex((option) => option.value === value)));
+  const selectedIndex = Math.max(0, options.findIndex((option) => option.value === value));
+  const [activeIndex, setActiveIndex] = useState(selectedIndex);
   const selectId = useId().replace(/:/g, '');
   const triggerRef = useRef<HTMLDivElement>(null);
   const triggerButtonRef = useRef<HTMLButtonElement>(null);
@@ -56,17 +57,17 @@ export function SingleSelect({
     const updatePosition = () => {
       if (!triggerRef.current) return;
       const rect = triggerRef.current.getBoundingClientRect();
-      setPosition({
-        top: rect.bottom + 4,
-        left: rect.left,
-        width: rect.width,
-      });
+      const next = { top: rect.bottom + 4, left: rect.left, width: rect.width };
+      setPosition((prev) =>
+        prev.top === next.top && prev.left === next.left && prev.width === next.width ? prev : next
+      );
     };
 
     if (isOpen && typeof document !== 'undefined') {
       updatePosition();
       window.addEventListener('resize', updatePosition);
-      window.addEventListener('scroll', updatePosition, true);
+      // Passive: the handler only reads the trigger rect; it never blocks scroll.
+      window.addEventListener('scroll', updatePosition, { capture: true, passive: true });
       return () => {
         window.removeEventListener('resize', updatePosition);
         window.removeEventListener('scroll', updatePosition, true);
@@ -94,7 +95,7 @@ export function SingleSelect({
     triggerButtonRef.current?.focus();
   };
 
-  const open = (index = Math.max(0, options.findIndex((option) => option.value === value))) => {
+  const open = (index = selectedIndex) => {
     if (options.length === 0) return;
     setActiveIndex(index);
     setIsOpen(true);
@@ -105,7 +106,6 @@ export function SingleSelect({
 
     if (!isOpen && (event.key === 'ArrowDown' || event.key === 'Enter' || event.key === ' ')) {
       event.preventDefault();
-      const selectedIndex = Math.max(0, options.findIndex((option) => option.value === value));
       open(event.key === 'ArrowDown' ? (selectedIndex + 1) % options.length : undefined);
       return;
     }
@@ -146,8 +146,9 @@ export function SingleSelect({
         minWidth: position.width,
       }}
     >
-      {options.map((option) => {
+      {options.map((option, index) => {
         const isSelected = option.value === value;
+        const isActive = activeIndex === index;
         return (
           <button
             key={option.value}
@@ -156,14 +157,14 @@ export function SingleSelect({
             onClick={() => handleSelect(option)}
             role="option"
             aria-selected={isSelected}
-            data-active={activeIndex === options.indexOf(option) ? 'true' : undefined}
+            data-active={isActive ? 'true' : undefined}
             className={cn(
               'w-full px-3 py-2.5 text-left text-sm flex items-center justify-between gap-3',
             'transition-[background-color,color] duration-150 cursor-pointer',
             isSelected
               ? 'bg-accent/20 dark:bg-accent/30 text-ink dark:text-ink font-medium'
                 : 'text-ink dark:text-ink hover:bg-coral/10 dark:hover:bg-white/10',
-              activeIndex === options.indexOf(option) && 'bg-coral/10 dark:bg-white/10'
+              isActive && 'bg-coral/10 dark:bg-white/10'
             )}
           >
             <span className="flex-1 truncate">{option.label}</span>

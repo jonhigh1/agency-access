@@ -10,7 +10,7 @@
 
 import { useEffect, useState } from 'react';
 import { m, AnimatePresence, useReducedMotion } from 'framer-motion';
-import { X, CheckCircle2 } from 'lucide-react';
+import { X } from 'lucide-react';
 import { useAuth } from '@clerk/nextjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui';
@@ -37,7 +37,6 @@ export function EditClientModal({ client, onClose }: EditClientModalProps) {
   const [company, setCompany] = useState(client.company);
   const [website, setWebsite] = useState(client.website || '');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
   // Update client mutation
   const updateMutation = useMutation({
     mutationFn: async (data: { name: string; company: string; website?: string }) => {
@@ -65,7 +64,6 @@ export function EditClientModal({ client, onClose }: EditClientModalProps) {
       // Also invalidate clients list query
       queryClient.invalidateQueries({ queryKey: ['clients-with-connections'] });
 
-      setSuccess(true);
       onClose();
     },
     onError: (error: Error) => {
@@ -150,7 +148,7 @@ export function EditClientModal({ client, onClose }: EditClientModalProps) {
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full rounded-none border border-border px-3 py-2 focus:border-coral focus:outline-none focus-visible:outline-[3px] focus-visible:outline-coral/25 focus-visible:[box-shadow:0_0_0_6px_rgb(var(--primary)/0.08)]"
+                className="w-full rounded-none border border-border px-3 py-2"
                 placeholder="Client contact name"
               />
             </div>
@@ -164,7 +162,7 @@ export function EditClientModal({ client, onClose }: EditClientModalProps) {
                 type="text"
                 value={company}
                 onChange={(e) => setCompany(e.target.value)}
-                className="w-full rounded-none border border-border px-3 py-2 focus:border-coral focus:outline-none focus-visible:outline-[3px] focus-visible:outline-coral/25 focus-visible:[box-shadow:0_0_0_6px_rgb(var(--primary)/0.08)]"
+                className="w-full rounded-none border border-border px-3 py-2"
                 placeholder="Company name"
               />
             </div>
@@ -193,7 +191,7 @@ export function EditClientModal({ client, onClose }: EditClientModalProps) {
                 type="url"
                 value={website}
                 onChange={(e) => setWebsite(e.target.value)}
-                className="w-full rounded-none border border-border px-3 py-2 focus:border-coral focus:outline-none focus-visible:outline-[3px] focus-visible:outline-coral/25 focus-visible:[box-shadow:0_0_0_6px_rgb(var(--primary)/0.08)]"
+                className="w-full rounded-none border border-border px-3 py-2"
                 placeholder="https://example.com"
               />
             </div>
@@ -202,13 +200,6 @@ export function EditClientModal({ client, onClose }: EditClientModalProps) {
             {errorMessage && (
               <div className="border border-coral bg-coral/10 p-3">
                 <p className="text-sm text-danger-ink">{errorMessage}</p>
-              </div>
-            )}
-
-            {success && (
-              <div className="flex items-center gap-2 border border-teal bg-teal/10 p-3">
-                <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-success-ink" />
-                <p className="text-sm text-success-ink">Client updated successfully</p>
               </div>
             )}
 

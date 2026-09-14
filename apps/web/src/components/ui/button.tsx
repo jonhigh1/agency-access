@@ -75,6 +75,17 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       icon: 'p-0 w-11 h-11 rounded-full min-h-[44px]',
     };
 
+    const content = (
+      <>
+        <span className={isLoading ? 'invisible inline-flex items-center gap-2' : 'inline-flex items-center gap-2'}>
+          {leftIcon && <span className="flex-shrink-0">{leftIcon}</span>}
+          {children}
+          {rightIcon && <span className="flex-shrink-0">{rightIcon}</span>}
+        </span>
+        {isLoading && <span className="absolute inset-0 inline-flex items-center justify-center"><LogoSpinner size="sm" /></span>}
+      </>
+    );
+
     if (asChild) {
       return (
         <Slot
@@ -83,14 +94,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           aria-busy={isLoading || undefined}
           {...props}
         >
-          <>
-            <span className={isLoading ? 'invisible inline-flex items-center gap-2' : 'inline-flex items-center gap-2'}>
-              {leftIcon && <span className="flex-shrink-0">{leftIcon}</span>}
-              {children}
-              {rightIcon && <span className="flex-shrink-0">{rightIcon}</span>}
-            </span>
-            {isLoading && <span className="absolute inset-0 inline-flex items-center justify-center"><LogoSpinner size="sm" /></span>}
-          </>
+          {content}
         </Slot>
       );
     }
@@ -103,12 +107,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
         aria-busy={isLoading || undefined}
         {...props}
       >
-        <span className={isLoading ? 'invisible inline-flex items-center gap-2' : 'inline-flex items-center gap-2'}>
-          {leftIcon && <span className="flex-shrink-0">{leftIcon}</span>}
-          {children}
-          {rightIcon && <span className="flex-shrink-0">{rightIcon}</span>}
-        </span>
-        {isLoading && <span className="absolute inset-0 inline-flex items-center justify-center"><LogoSpinner size="sm" /></span>}
+        {content}
       </button>
     );
   }

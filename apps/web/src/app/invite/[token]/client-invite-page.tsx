@@ -14,9 +14,10 @@ import { InviteLoadStateCard } from '@/components/flow/invite-load-state-card';
 import { InviteTrustNote } from '@/components/flow/invite-trust-note';
 import { Button, SingleSelect } from '@/components/ui';
 import { PlatformIcon } from '@/components/ui/platform-icon';
-import { ACCESS_LEVEL_DESCRIPTIONS, PLATFORM_NAMES } from '@agency-platform/shared';
+import { ACCESS_LEVEL_DESCRIPTIONS, PLATFORM_NAMES, IntakeField } from '@agency-platform/shared';
 import { useInviteRequestLoader } from '@/lib/query/use-invite-request-loader';
 import { resolveApiUrl } from '@/lib/api/api-env';
+import { parseJsonResponse } from '@/lib/api/parse-json-response';
 import {
   getInviteSecuritySummary,
   isClientInviteManualCallbackPlatform,
@@ -307,10 +308,7 @@ export default function ClientAuthorizationPage({
         method: 'POST',
       });
 
-      const result = await response.json();
-      if (!response.ok || result.error) {
-        throw new Error(result.error?.message || 'Failed to finalize authorization');
-      }
+      await parseJsonResponse(response, { fallbackErrorMessage: 'Failed to finalize authorization' });
 
       completionConfirmedRef.current = true;
       void capturePosthogEvent('client_authorization_completed', {
@@ -344,7 +342,6 @@ export default function ClientAuthorizationPage({
   }, [data, phase, isComplete, token, completedPlatforms, storageKey, isReviewingConnectStatus]);
 
   const handleRetryComplete = async () => {
-    setCompletionError(null);
     setIsReviewingConnectStatus(false);
     await finalizeCompletion();
   };
@@ -370,10 +367,10 @@ export default function ClientAuthorizationPage({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ intakeResponses }),
       });
-      const result = await response.json();
-      if (!response.ok || result.error) {
-        throw new Error(result.error?.message || 'Could not save your responses. Please try again.');
-      }
+      const result = await parseJsonResponse<{ data?: { intakeResponses?: Record<string, string> } }>(
+        response,
+        { fallbackErrorMessage: 'Could not save your responses. Please try again.' }
+      );
 
       setIntakeResponses(result.data?.intakeResponses || intakeResponses);
       setPhase('platforms');
@@ -385,6 +382,10 @@ export default function ClientAuthorizationPage({
       setIsSavingIntake(false);
     }
   };
+
+  // An unanswered required field is only an error once a submit attempt failed.
+  const showFieldUnanswered = (field: IntakeField) =>
+    Boolean(intakeError && field.required && !(intakeResponses[field.id] || '').trim());
 
   const handlePlatformComplete = (platform: Platform) => {
     setIsReviewingConnectStatus(false);
@@ -520,7 +521,7 @@ export default function ClientAuthorizationPage({
                         }))
                       }
                       required={field.required}
-                      aria-invalid={Boolean(intakeError && field.required && !(intakeResponses[field.id] || '').trim())}
+                      aria-invalid={showFieldUnanswered(field)}
                       rows={4}
                       className="w-full"
                     />
@@ -552,7 +553,7 @@ export default function ClientAuthorizationPage({
                         }))
                       }
                       required={field.required}
-                      aria-invalid={Boolean(intakeError && field.required && !(intakeResponses[field.id] || '').trim())}
+                      aria-invalid={showFieldUnanswered(field)}
                       className="w-full"
                     />
                   )}
