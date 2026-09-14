@@ -1,6 +1,5 @@
 import { FastifyInstance } from 'fastify';
 import { Prisma } from '@prisma/client';
-import { accessRequestService } from '../../services/access-request.service.js';
 import { prisma } from '../../lib/prisma.js';
 import { submitIntakeSchema } from './schemas.js';
 import { sendError } from '../../lib/response.js';
@@ -63,14 +62,29 @@ export async function registerIntakeRoutes(fastify: FastifyInstance) {
   fastify.post('/client/:token/intake', async (request, reply) => {
     const { token } = request.params as { token: string };
 
-    const accessRequest = await accessRequestService.getAccessRequestByToken(token);
+    // Narrow read: intake only needs id, fields, and expiry — not the full
+    // client-facing payload the by-token service assembles.
+    const accessRequest = await prisma.accessRequest.findUnique({
+      where: { uniqueToken: token },
+      select: { id: true, intakeFields: true, expiresAt: true },
+    });
 
-    if (accessRequest.error || !accessRequest.data) {
+    if (!accessRequest) {
       return reply.code(404).send({
         data: null,
-        error: accessRequest.error || {
-          code: 'NOT_FOUND',
+        error: {
+          code: 'REQUEST_NOT_FOUND',
           message: 'Access request not found',
+        },
+      });
+    }
+
+    if (accessRequest.expiresAt < new Date()) {
+      return reply.code(404).send({
+        data: null,
+        error: {
+          code: 'REQUEST_EXPIRED',
+          message: 'Access request has expired',
         },
       });
     }
@@ -81,7 +95,7 @@ export async function registerIntakeRoutes(fastify: FastifyInstance) {
     }
 
     const errors = validateIntakeResponses(
-      accessRequest.data.intakeFields,
+      accessRequest.intakeFields,
       validated.data.intakeResponses
     );
     if (errors.length > 0) {
@@ -90,7 +104,7 @@ export async function registerIntakeRoutes(fastify: FastifyInstance) {
 
     try {
       const saved = await prisma.accessRequest.update({
-        where: { id: accessRequest.data.id },
+        where: { id: accessRequest.id },
         data: {
           intakeResponses: validated.data.intakeResponses as Prisma.InputJsonValue,
         },

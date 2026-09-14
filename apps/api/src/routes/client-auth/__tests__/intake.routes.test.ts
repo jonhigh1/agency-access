@@ -1,15 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { registerIntakeRoutes } from '../intake.routes.js';
-import { accessRequestService } from '@/services/access-request.service.js';
 import { prisma } from '@/lib/prisma.js';
 
-vi.mock('@/services/access-request.service.js', () => ({
-  accessRequestService: { getAccessRequestByToken: vi.fn() },
-}));
-
 vi.mock('@/lib/prisma.js', () => ({
-  prisma: { accessRequest: { update: vi.fn() } },
+  prisma: { accessRequest: { findUnique: vi.fn(), update: vi.fn() } },
 }));
 
 describe('Client intake routes', () => {
@@ -19,16 +14,15 @@ describe('Client intake routes', () => {
     vi.resetAllMocks();
     app = Fastify();
     await registerIntakeRoutes(app);
-    vi.mocked(accessRequestService.getAccessRequestByToken).mockResolvedValue({
-      data: {
-        id: 'request-1',
-        intakeFields: [
-          { id: 'company', label: 'Company name', type: 'text', required: true },
-          { id: 'size', label: 'Company size', type: 'dropdown', required: false, options: ['1-10', '11-50'] },
-        ],
-      } as any,
-      error: null,
-    });
+    // The route reads narrowly: id, fields, and expiry only.
+    vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue({
+      id: 'request-1',
+      intakeFields: [
+        { id: 'company', label: 'Company name', type: 'text', required: true },
+        { id: 'size', label: 'Company size', type: 'dropdown', required: false, options: ['1-10', '11-50'] },
+      ],
+      expiresAt: new Date(Date.now() + 60_000),
+    } as any);
   });
 
   afterEach(async () => {
@@ -70,6 +64,37 @@ describe('Client intake routes', () => {
     });
 
     expect(response.statusCode).toBe(400);
+    expect(prisma.accessRequest.update).not.toHaveBeenCalled();
+  });
+
+  it('returns 404 REQUEST_NOT_FOUND for an unknown token', async () => {
+    vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue(null as any);
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/client/token-1/intake',
+      payload: { intakeResponses: { company: 'Acme' } },
+    });
+
+    expect(response.statusCode).toBe(404);
+    expect(response.json().error).toMatchObject({ code: 'REQUEST_NOT_FOUND' });
+  });
+
+  it('returns 404 REQUEST_EXPIRED for an expired request before persisting', async () => {
+    vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue({
+      id: 'request-1',
+      intakeFields: [],
+      expiresAt: new Date(Date.now() - 60_000),
+    } as any);
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/client/token-1/intake',
+      payload: { intakeResponses: { company: 'Acme' } },
+    });
+
+    expect(response.statusCode).toBe(404);
+    expect(response.json().error).toMatchObject({ code: 'REQUEST_EXPIRED' });
     expect(prisma.accessRequest.update).not.toHaveBeenCalled();
   });
 });
