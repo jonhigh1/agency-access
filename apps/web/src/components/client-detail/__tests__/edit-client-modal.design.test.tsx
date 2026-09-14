@@ -73,14 +73,17 @@ describe('EditClientModal - Static Design Validation', () => {
       expect(componentCode).toMatch(/<Button/g);
     });
 
-    it('should use teal for success states', () => {
+    it('closes on verified save without an in-modal success banner', () => {
       const fs = require('fs');
       const componentCode = fs.readFileSync(
         'src/components/client-detail/EditClientModal.tsx',
         'utf-8'
       );
 
-      expect(componentCode).toMatch(/text-success-ink[^/]/);
+      // Craft plan P1: the modal closes on verified save and success feedback
+      // lives at the destination, not inside the modal.
+      expect(componentCode).not.toMatch(/useState.*success|success &&/i);
+      expect(componentCode).not.toMatch(/Client updated successfully/);
     });
   });
 });

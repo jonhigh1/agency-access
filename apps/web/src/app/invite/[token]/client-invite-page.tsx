@@ -14,9 +14,10 @@ import { InviteLoadStateCard } from '@/components/flow/invite-load-state-card';
 import { InviteTrustNote } from '@/components/flow/invite-trust-note';
 import { Button, SingleSelect } from '@/components/ui';
 import { PlatformIcon } from '@/components/ui/platform-icon';
-import { ACCESS_LEVEL_DESCRIPTIONS, PLATFORM_NAMES } from '@agency-platform/shared';
+import { ACCESS_LEVEL_DESCRIPTIONS, PLATFORM_NAMES, IntakeField } from '@agency-platform/shared';
 import { useInviteRequestLoader } from '@/lib/query/use-invite-request-loader';
 import { resolveApiUrl } from '@/lib/api/api-env';
+import { parseJsonResponse } from '@/lib/api/parse-json-response';
 import {
   getInviteSecuritySummary,
   isClientInviteManualCallbackPlatform,
@@ -33,7 +34,7 @@ const PlatformAuthWizard = dynamic(
   {
     loading: () => (
       <div
-        className="min-h-[220px] rounded-xl border border-border bg-muted/25"
+        className="min-h-[220px] rounded-none border border-border bg-muted/25"
         aria-busy
         aria-label="Loading platform connection"
       />
@@ -48,9 +49,15 @@ export type ClientInvitePageProps = {
     | { status: 'error'; message: string };
 };
 
-type PagePhase = 'intake' | 'platforms' | 'complete';
+type PagePhase = 'intake' | 'platforms' | 'finalizing' | 'complete';
 
 const SESSION_STORAGE_PREFIX = 'invite-progress:';
+
+// Mirrors the 20s deadline in useInviteRequestLoader so a stalled request
+// cannot wedge the client on a spinner with no exit.
+const REQUEST_TIMEOUT_MS = 20000;
+
+const isAbortError = (error: unknown) => error instanceof Error && error.name === 'AbortError';
 
 function buildPlatformSummary(platforms: Platform[]): string {
   const uniqueNames = Array.from(new Set(platforms.map((platform) => PLATFORM_NAMES[platform])));
@@ -81,6 +88,8 @@ export default function ClientAuthorizationPage({
   );
   const [completionError, setCompletionError] = useState<string | null>(null);
   const [intakeResponses, setIntakeResponses] = useState<Record<string, string>>({});
+  const [intakeError, setIntakeError] = useState<string | null>(null);
+  const [isSavingIntake, setIsSavingIntake] = useState(false);
   const [completedPlatforms, setCompletedPlatforms] = useState<Set<Platform>>(new Set());
   const [oauthConnectionInfo, setOauthConnectionInfo] = useState<{
     connectionId: string;
@@ -88,7 +97,9 @@ export default function ClientAuthorizationPage({
   } | null>(null);
   const [isReviewingConnectStatus, setIsReviewingConnectStatus] = useState(false);
 
-  const completionSubmittedRef = useRef(false);
+  const finalizationInFlightRef = useRef(false);
+  const completionConfirmedRef = useRef(false);
+  const intakeHydratedForTokenRef = useRef<string | null>(null);
   const startedTrackedRef = useRef(false);
   const platformStageRef = useRef<HTMLDivElement | null>(null);
 
@@ -136,13 +147,14 @@ export default function ClientAuthorizationPage({
     if (!data) return [];
 
     const targets = data.manualInviteTargets || {};
-    const identities: Array<{ label: string; value: string }> = [];
+    const identities: Array<{ platform: Platform; label: string; value: string }> = [];
 
     const emailPlatforms: Array<Platform> = ['beehiiv', 'kit', 'klaviyo', 'mailchimp'];
     for (const platform of emailPlatforms) {
       const value = (targets as any)?.[platform]?.agencyEmail;
       if (value) {
         identities.push({
+          platform,
           label: `${PLATFORM_NAMES[platform]} invite email`,
           value,
         });
@@ -151,26 +163,38 @@ export default function ClientAuthorizationPage({
 
     const pinterestBusinessId = (targets as any)?.pinterest?.businessId;
     if (pinterestBusinessId) {
-      identities.push({ label: 'Pinterest Business ID', value: pinterestBusinessId });
+      identities.push({ platform: 'pinterest', label: 'Pinterest Business ID', value: pinterestBusinessId });
     }
 
     const shopifyDomain = (targets as any)?.shopify?.shopDomain;
     if (shopifyDomain) {
-      identities.push({ label: 'Shopify store', value: shopifyDomain });
+      identities.push({ platform: 'shopify', label: 'Shopify store', value: shopifyDomain });
     }
 
     const shopifyCollaboratorCode = (targets as any)?.shopify?.collaboratorCode;
     if (shopifyCollaboratorCode) {
-      identities.push({ label: 'Shopify collaborator code', value: shopifyCollaboratorCode });
+      identities.push({ platform: 'shopify', label: 'Shopify collaborator code', value: shopifyCollaboratorCode });
     }
 
     return identities;
   }, [data]);
 
+  const activePlatformIdentities = useMemo(() => {
+    const activePlatform = platformQueue.activePlatform?.platformGroup as Platform | undefined;
+    if (!activePlatform) return [];
+    return railIdentities
+      .filter((identity) => identity.platform === activePlatform)
+      .map(({ label, value }) => ({ label, value }));
+  }, [platformQueue.activePlatform?.platformGroup, railIdentities]);
+
   useEffect(() => {
     if (!loadedPayload) return;
 
     setData(loadedPayload);
+    if (intakeHydratedForTokenRef.current !== token) {
+      setIntakeResponses(loadedPayload.intakeResponses || {});
+      intakeHydratedForTokenRef.current = token;
+    }
 
     const apiCompleted = new Set<Platform>(
       (loadedPayload.authorizationProgress?.completedPlatforms || []) as Platform[]
@@ -215,6 +239,13 @@ export default function ClientAuthorizationPage({
       });
     }
 
+    // A finalization or confirmed completion owns the phase from here on; a
+    // hydration re-run (e.g. after OAuth params are stripped from the URL)
+    // must not clobber 'finalizing'/'complete' back to 'platforms'.
+    if (finalizationInFlightRef.current || completionConfirmedRef.current) {
+      return;
+    }
+
     if (urlStep === '2' && urlConnectionId && urlPlatform) {
       setIsReviewingConnectStatus(false);
       if (isClientInviteManualCallbackPlatform(urlPlatform)) {
@@ -242,9 +273,16 @@ export default function ClientAuthorizationPage({
       return;
     }
 
+    if (loadedPayload.status === 'completed') {
+      setIsReviewingConnectStatus(false);
+      completionConfirmedRef.current = true;
+      setPhase('complete');
+      return;
+    }
+
     if (allRequestedPlatformsComplete || loadedPayload.authorizationProgress?.isComplete) {
       setIsReviewingConnectStatus(false);
-      setPhase('complete');
+      setPhase('platforms');
       return;
     }
 
@@ -271,23 +309,25 @@ export default function ClientAuthorizationPage({
     });
   }, [phase, platformQueue.activePlatform?.platformGroup]);
 
-  /**
-   * Posts the completion call for both the auto-submit effect and the manual
-   * retry button. Marks completionSubmittedRef on success and clears it on
-   * failure so either path can retry.
-   */
   const finalizeCompletion = async () => {
+    if (finalizationInFlightRef.current || completionConfirmedRef.current) return;
+
+    finalizationInFlightRef.current = true;
+    setCompletionError(null);
+    setPhase('finalizing');
+
+    const abortController = new AbortController();
+    const timeoutTimer = window.setTimeout(() => abortController.abort(), REQUEST_TIMEOUT_MS);
+
     try {
       const response = await fetch(resolveApiUrl(`/api/client/${token}/complete`), {
         method: 'POST',
+        signal: abortController.signal,
       });
 
-      const result = await response.json();
-      if (!response.ok || result.error) {
-        throw new Error(result.error?.message || 'Failed to finalize authorization');
-      }
+      await parseJsonResponse(response, { fallbackErrorMessage: 'Failed to finalize authorization' });
 
-      completionSubmittedRef.current = true;
+      completionConfirmedRef.current = true;
       void capturePosthogEvent('client_authorization_completed', {
         access_request_token: token,
         agency_name: data?.agencyName,
@@ -297,46 +337,85 @@ export default function ClientAuthorizationPage({
       });
 
       sessionStorage.removeItem(storageKey);
+      setPhase('complete');
     } catch (error) {
-      completionSubmittedRef.current = false;
       setCompletionError(
-        error instanceof Error
+        isAbortError(error)
+          ? 'The final confirmation is taking longer than expected. Retry below.'
+          : error instanceof Error
           ? error.message
           : 'Authorization was completed, but we could not finalize status. Retry below.'
       );
+      setPhase('complete');
+    } finally {
+      window.clearTimeout(timeoutTimer);
+      finalizationInFlightRef.current = false;
     }
   };
 
   useEffect(() => {
     if (!data) return;
     if (isReviewingConnectStatus) return;
-    const readyToComplete = phase === 'complete' || (phase === 'platforms' && isComplete);
+    const readyToComplete = phase === 'platforms' && isComplete;
     if (!readyToComplete) return;
-    if (phase === 'platforms' && isComplete) {
-      setPhase('complete');
-    }
-
-    if (completionSubmittedRef.current) return;
-
-    const submitCompletion = async () => {
-      completionSubmittedRef.current = true;
-      await finalizeCompletion();
-    };
-
-    submitCompletion();
+    void finalizeCompletion();
   }, [data, phase, isComplete, token, completedPlatforms, storageKey, isReviewingConnectStatus]);
 
   const handleRetryComplete = async () => {
-    setCompletionError(null);
     setIsReviewingConnectStatus(false);
     await finalizeCompletion();
   };
 
-  const handleIntakeSubmit = (event: React.FormEvent) => {
+  const handleIntakeSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+    if (isSavingIntake) return;
+
+    const missingRequiredField = intakeFields.find(
+      (field) => field.required && !(intakeResponses[field.id] || '').trim()
+    );
+    if (missingRequiredField) {
+      setIntakeError(`Complete ${missingRequiredField.label} before continuing.`);
+      return;
+    }
+
+    setIsSavingIntake(true);
+    setIntakeError(null);
     setIsReviewingConnectStatus(false);
-    setPhase('platforms');
+
+    const abortController = new AbortController();
+    const timeoutTimer = window.setTimeout(() => abortController.abort(), REQUEST_TIMEOUT_MS);
+
+    try {
+      const response = await fetch(resolveApiUrl(`/api/client/${token}/intake`), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ intakeResponses }),
+        signal: abortController.signal,
+      });
+      const result = await parseJsonResponse<{ data?: { intakeResponses?: Record<string, string> } }>(
+        response,
+        { fallbackErrorMessage: 'Could not save your responses. Please try again.' }
+      );
+
+      setIntakeResponses(result.data?.intakeResponses || intakeResponses);
+      setPhase('platforms');
+    } catch (error) {
+      setIntakeError(
+        isAbortError(error)
+          ? 'Saving your responses is taking longer than expected. Please try again.'
+          : error instanceof Error
+          ? error.message
+          : 'Could not save your responses. Please try again.'
+      );
+    } finally {
+      window.clearTimeout(timeoutTimer);
+      setIsSavingIntake(false);
+    }
   };
+
+  // An unanswered required field is only an error once a submit attempt failed.
+  const showFieldUnanswered = (field: IntakeField) =>
+    Boolean(intakeError && field.required && !(intakeResponses[field.id] || '').trim());
 
   const handlePlatformComplete = (platform: Platform) => {
     setIsReviewingConnectStatus(false);
@@ -360,9 +439,6 @@ export default function ClientAuthorizationPage({
     setCompletedPlatforms((prev) => {
       const updated = new Set(prev);
       updated.add(platform);
-      if (data?.platforms && updated.size >= data.platforms.length) {
-        queueMicrotask(() => setPhase('complete'));
-      }
       return updated;
     });
 
@@ -416,9 +492,15 @@ export default function ClientAuthorizationPage({
         ? `Finish ${activePlatformName} first. The rest of the request is listed below.`
         : 'Finish the remaining platform connection steps.',
     },
+    finalizing: {
+      title: 'Confirming your authorization',
+      description: 'Your connected platforms are being confirmed with the agency.',
+    },
     complete: {
-      title: `${data.agencyName} needs access to ${platformSummary || 'your platforms'}`,
-      description: `Review the request, then continue only with the accounts you want to share.`,
+      title: completionError ? 'Final confirmation needs attention' : 'Authorization complete',
+      description: completionError
+        ? 'Your connected platforms are safe. Retry the final confirmation below.'
+        : `${data.agencyName} can now access the accounts you approved.`,
     },
   };
   const phaseCopy = phaseCopyByPhase[phase];
@@ -469,6 +551,7 @@ export default function ClientAuthorizationPage({
                         }))
                       }
                       required={field.required}
+                      aria-invalid={showFieldUnanswered(field)}
                       rows={4}
                       className="w-full"
                     />
@@ -500,19 +583,25 @@ export default function ClientAuthorizationPage({
                         }))
                       }
                       required={field.required}
+                      aria-invalid={showFieldUnanswered(field)}
                       className="w-full"
                     />
                   )}
                 </div>
               ))}
+              {intakeError ? (
+                <p className="border border-danger-ink bg-coral/10 p-3 text-sm text-danger-ink" role="alert">
+                  {intakeError}
+                </p>
+              ) : null}
             </div>
 
-            <div className="border-t border-border bg-muted/10 px-6 py-3 flex items-center justify-between gap-4">
+            <div className="flex flex-col items-stretch gap-3 border-t border-border bg-muted/10 px-6 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Lock className="h-4 w-4" />
                 {securitySummary.detail}
               </div>
-              <Button type="submit" variant="primary">
+              <Button type="submit" variant="primary" className="w-full sm:w-auto" isLoading={isSavingIntake}>
                 Continue
               </Button>
             </div>
@@ -555,12 +644,12 @@ export default function ClientAuthorizationPage({
               />
             </div>
 
-            <div className="border-t border-border bg-muted/10 px-5 py-3 sm:px-6 flex items-center justify-between gap-4">
+            <div className="flex flex-col items-stretch gap-3 border-t border-border bg-muted/10 px-5 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-6">
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Lock className="h-3.5 w-3.5 shrink-0" />
                 <span>Passwords are never requested</span>
               </div>
-              <Button variant="primary" onClick={() => setPhase('platforms')}>
+              <Button className="w-full sm:w-auto" variant="primary" onClick={() => setPhase('platforms')}>
                 Continue to connect
               </Button>
             </div>
@@ -582,10 +671,10 @@ export default function ClientAuthorizationPage({
                   variant="secondary"
                   onClick={() => {
                     setIsReviewingConnectStatus(false);
-                    setPhase('complete');
+                    void finalizeCompletion();
                   }}
                 >
-                  Return to done
+                  Confirm completion
                 </Button>
               </div>
             </div>
@@ -609,7 +698,7 @@ export default function ClientAuthorizationPage({
                   ? `This takes about two minutes inside ${PLATFORM_NAMES[platformQueue.activePlatform.platformGroup as Platform]}. You stay on this page.`
                   : `You will leave for ${PLATFORM_NAMES[platformQueue.activePlatform.platformGroup as Platform]} and come right back here.`
               }
-              identities={railIdentities}
+              identities={activePlatformIdentities}
             >
               <PlatformAuthWizard
                 key={platformQueue.activePlatform.platformGroup}
@@ -667,6 +756,16 @@ export default function ClientAuthorizationPage({
               </div>
             </div>
           ) : null}
+        </div>
+      )}
+
+      {phase === 'finalizing' && (
+        <div className="border-2 border-black bg-card p-8 text-center shadow-brutalist" aria-live="polite">
+          <RefreshCw className="mx-auto h-8 w-8 animate-spin text-ink" aria-hidden="true" />
+          <h2 className="mt-5 text-2xl font-semibold text-ink font-display">Confirming access</h2>
+          <p className="mt-2 text-sm text-muted-foreground">
+            Your platforms are connected. We are confirming the final status with {data.agencyName}.
+          </p>
         </div>
       )}
 

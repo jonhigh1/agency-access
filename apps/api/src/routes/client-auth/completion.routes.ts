@@ -30,17 +30,21 @@ export async function registerCompletionRoutes(fastify: FastifyInstance) {
       });
     }
 
-    await notificationService.queueNotification({
-      agencyId: accessRequest.agencyId,
-      accessRequestId: accessRequest.id,
-      clientEmail: accessRequest.clientEmail,
-      clientName: accessRequest.clientEmail.split('@')[0],
-      platforms:
-        accessRequest.authorizationProgress?.fulfilledProducts?.map((item) => item.product) ||
-        accessRequest.authorizationProgress?.completedPlatforms ||
-        [],
-      completedAt: new Date(),
-    });
+    // Completion is idempotent: revisiting an already-completed request must
+    // not re-notify the agency.
+    if (result.previousStatus !== 'completed') {
+      await notificationService.queueNotification({
+        agencyId: accessRequest.agencyId,
+        accessRequestId: accessRequest.id,
+        clientEmail: accessRequest.clientEmail,
+        clientName: accessRequest.clientEmail.split('@')[0],
+        platforms:
+          accessRequest.authorizationProgress?.fulfilledProducts?.map((item) => item.product) ||
+          accessRequest.authorizationProgress?.completedPlatforms ||
+          [],
+        completedAt: new Date(),
+      });
+    }
 
     return reply.send({
       data: {

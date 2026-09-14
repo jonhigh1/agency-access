@@ -1,3 +1,25 @@
+---
+
+## Session: 2026-09-13/14 — App craft and motion plan implementation (PR #56)
+
+### What was done
+- Implemented plan 2026-09-13-001: intake persistence (API + migration), SingleSelect keyboard semantics, button pending/focus states, wizard sessionStorage draft + customize-step validation, invite finalizing state, single modal lifecycle owner, motion tokens, DESIGN_SYSTEM.md v2.3.
+- Landed prior-session WIP as 12 reviewable commits; added the design-system motion contract; ran a full ce-code-review (24 findings, 18 applied in fix(review) 0df1dc2); opened PR #56.
+
+### Files changed
+- apps/api: intake.routes.ts, schemas.ts, completion.routes.ts, access-request.service.ts, schema.prisma + migration, new route tests
+- apps/web: contexts/access-request-context.tsx, invite page, wizard page, ui/button|single-select|sidebar, manage-assets-modal-shell, connections/clients/layout pages, globals.css, DESIGN_SYSTEM.md, new behavior tests
+- packages/shared: intakeResponses on ClientAccessRequestPayload
+
+### Decisions made
+- Intake answers stored on AccessRequest.intakeResponses (nullable JSONB); label-keyed fallback for id-less legacy forms; 422 INVALID_INTAKE_FORM for mixed ids; revoked/completed gated 404.
+- Wizard draft: per-agency sessionStorage key, version-stamped, whole-draft discard on invalid, throw-safe storage helpers.
+- Motion: six semantic tokens; reduced motion stricter than MotionConfig (fades suppressed) per plan.
+- Review residuals #7/#9/#16/#23 accepted into PR Known Residuals.
+
+### Next steps
+- Phases 4-5: carry polish to dashboard/onboarding/settings/diagnostics; browser/device matrix + contrast + reduced-motion browser verification; performance traces.
+
 # Session Log
 
 Append-only log of what was done each session. Newest first. Read the last 3–5 entries at session start to get current status.

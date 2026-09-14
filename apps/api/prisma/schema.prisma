@@ -160,6 +160,7 @@ model AccessRequest {
   expiresAt         DateTime  @map("expires_at")
   createdAt         DateTime  @default(now()) @map("created_at")
   intakeFields      Json?     @map("intake_fields") // Custom form fields for client intake
+  intakeResponses   Json?     @map("intake_responses") // Client-provided answers to configured intake fields
   branding          Json? // Custom branding (logo, colors, subdomain)
   metaAccessConfig  Json?     @map("meta_access_config")
   authorizedAt      DateTime? @map("authorized_at") // When client completed authorization

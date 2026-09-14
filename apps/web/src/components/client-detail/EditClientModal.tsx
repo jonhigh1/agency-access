@@ -8,9 +8,9 @@
  * Email is read-only since it's the unique identifier.
  */
 
-import { useState } from 'react';
-import { m, AnimatePresence } from 'framer-motion';
-import { X, Loader2, CheckCircle2 } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { m, AnimatePresence, useReducedMotion } from 'framer-motion';
+import { X } from 'lucide-react';
 import { useAuth } from '@clerk/nextjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui';
@@ -37,8 +37,6 @@ export function EditClientModal({ client, onClose }: EditClientModalProps) {
   const [company, setCompany] = useState(client.company);
   const [website, setWebsite] = useState(client.website || '');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [success, setSuccess] = useState(false);
-
   // Update client mutation
   const updateMutation = useMutation({
     mutationFn: async (data: { name: string; company: string; website?: string }) => {
@@ -66,15 +64,22 @@ export function EditClientModal({ client, onClose }: EditClientModalProps) {
       // Also invalidate clients list query
       queryClient.invalidateQueries({ queryKey: ['clients-with-connections'] });
 
-      setSuccess(true);
-      setTimeout(() => {
-        onClose();
-      }, 1000);
+      onClose();
     },
     onError: (error: Error) => {
       setErrorMessage(error.message);
     },
   });
+
+  const shouldReduceMotion = useReducedMotion();
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !updateMutation.isPending) onClose();
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [onClose, updateMutation.isPending]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -101,22 +106,29 @@ export function EditClientModal({ client, onClose }: EditClientModalProps) {
   return (
     <AnimatePresence>
       <m.div
-        initial={{ opacity: 0 }}
+        initial={shouldReduceMotion ? false : { opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
+        transition={{ duration: shouldReduceMotion ? 0 : 0.15 }}
         className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
-        onClick={onClose}
+        onClick={() => {
+          if (!updateMutation.isPending) onClose();
+        }}
       >
         <m.div
-          initial={{ scale: 0.95, opacity: 0 }}
+          initial={shouldReduceMotion ? false : { scale: 0.98, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.95, opacity: 0 }}
+          exit={shouldReduceMotion ? { opacity: 0 } : { scale: 0.98, opacity: 0 }}
+          transition={{ duration: shouldReduceMotion ? 0 : 0.25, ease: [0.22, 1, 0.36, 1] }}
           onClick={(e) => e.stopPropagation()}
-          className="bg-card rounded-lg shadow-brutalist max-w-md w-full border border-black/10"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="edit-client-modal-title"
+          className="w-full max-w-md border-2 border-black bg-card shadow-brutalist"
         >
           {/* Header */}
           <div className="flex items-center justify-between px-6 py-4 border-b border-black/10">
-            <h2 className="text-lg font-semibold text-ink font-display">Edit Client</h2>
+            <h2 id="edit-client-modal-title" className="text-lg font-semibold text-ink font-display">Edit Client</h2>
             <Button
               onClick={onClose}
               variant="ghost"
@@ -138,7 +150,7 @@ export function EditClientModal({ client, onClose }: EditClientModalProps) {
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                className="w-full rounded-none border border-border px-3 py-2"
                 placeholder="Client contact name"
               />
             </div>
@@ -152,7 +164,7 @@ export function EditClientModal({ client, onClose }: EditClientModalProps) {
                 type="text"
                 value={company}
                 onChange={(e) => setCompany(e.target.value)}
-                className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                className="w-full rounded-none border border-border px-3 py-2"
                 placeholder="Company name"
               />
             </div>
@@ -166,7 +178,7 @@ export function EditClientModal({ client, onClose }: EditClientModalProps) {
                 type="email"
                 value={client.email}
                 disabled
-                className="w-full px-3 py-2 border border-border rounded-lg bg-muted/20 text-muted-foreground cursor-not-allowed"
+                className="w-full cursor-not-allowed rounded-none border border-border bg-muted/20 px-3 py-2 text-muted-foreground"
                 title="Email cannot be changed"
               />
               <p className="text-xs text-muted-foreground mt-1">Email cannot be changed</p>
@@ -181,23 +193,15 @@ export function EditClientModal({ client, onClose }: EditClientModalProps) {
                 type="url"
                 value={website}
                 onChange={(e) => setWebsite(e.target.value)}
-                className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent"
+                className="w-full rounded-none border border-border px-3 py-2"
                 placeholder="https://example.com"
               />
             </div>
 
             {/* Error message */}
             {errorMessage && (
-              <div className="p-3 bg-coral/10 border border-coral rounded-lg">
+              <div className="border border-coral bg-coral/10 p-3">
                 <p className="text-sm text-danger-ink">{errorMessage}</p>
-              </div>
-            )}
-
-            {/* Success message */}
-            {success && (
-              <div className="p-3 bg-teal/10 border border-teal rounded-lg flex items-center gap-2">
-                <CheckCircle2 className="h-4 w-4 text-success-ink flex-shrink-0" />
-                <p className="text-sm text-success-ink">Client updated successfully</p>
               </div>
             )}
 
@@ -214,11 +218,10 @@ export function EditClientModal({ client, onClose }: EditClientModalProps) {
               </Button>
               <Button
                 type="submit"
-                disabled={updateMutation.isPending}
+                isLoading={updateMutation.isPending}
                 size="sm"
-                leftIcon={!updateMutation.isPending ? undefined : <Loader2 className="h-4 w-4 animate-spin" />}
               >
-                {updateMutation.isPending ? 'Saving...' : 'Save Changes'}
+                Save Changes
               </Button>
             </div>
           </form>

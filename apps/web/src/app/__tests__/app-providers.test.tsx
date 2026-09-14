@@ -12,6 +12,17 @@ vi.mock('framer-motion', () => ({
   LazyMotion: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="app-motion-provider">{children}</div>
   ),
+  MotionConfig: ({
+    children,
+    reducedMotion,
+  }: {
+    children: React.ReactNode;
+    reducedMotion?: string;
+  }) => (
+    <div data-testid="app-motion-config" data-reduced-motion={reducedMotion}>
+      {children}
+    </div>
+  ),
   domAnimation: {},
 }));
 
@@ -37,6 +48,11 @@ describe('AppProviders', () => {
     );
 
     expect(screen.getByTestId('app-motion-provider')).toBeInTheDocument();
+    // Reduced motion follows the OS setting for every Motion animation.
+    expect(screen.getByTestId('app-motion-config')).toHaveAttribute(
+      'data-reduced-motion',
+      'user'
+    );
     expect(screen.getByTestId('query-provider')).toBeInTheDocument();
     expect(screen.getByTestId('theme-provider')).toBeInTheDocument();
     expect(screen.getByText('Child')).toBeInTheDocument();

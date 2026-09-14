@@ -7,13 +7,25 @@
 
 'use client';
 
-import { createContext, useContext, useState, useCallback, ReactNode, useMemo } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, useRef, ReactNode, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { QueryClient } from '@tanstack/react-query';
-import { Client, AccessLevel, AccessRequestTemplate, IntakeField } from '@agency-platform/shared';
+import {
+  Client,
+  AccessLevel,
+  AccessRequestTemplate,
+  IntakeField,
+  IntakeFieldTypeSchema,
+  SUPPORTED_LANGUAGES,
+} from '@agency-platform/shared';
 import { transformPlatformsForAPI } from '@/lib/transform-platforms';
 import { createAccessRequest, type CreateAccessRequestPayload } from '@/lib/api/access-requests';
 import { capturePosthogEvent } from '@/lib/analytics/capture-posthog';
+
+// Validation messages the wizard page matches on to focus the offending
+// field. Keep the page reading these constants, never a literal.
+export const INTAKE_LABELS_ERROR = 'All intake fields must have a label';
+export const SUBDOMAIN_ERROR_PREFIX = 'Subdomain must';
 
 // ============================================================
 // TYPES
@@ -106,6 +118,125 @@ const initialState: AccessRequestFormState = {
   error: null,
 };
 
+const DRAFT_VERSION = 1;
+const draftKey = (agencyId: string) => `access-request-draft:${agencyId}`;
+
+// sessionStorage access can throw (Safari private mode, quota). Draft
+// persistence is best-effort: a storage failure must never crash the wizard.
+function safeSaveDraft(agencyId: string, serialized: string) {
+  try {
+    sessionStorage.setItem(draftKey(agencyId), serialized);
+  } catch {
+    /* storage unavailable or full */
+  }
+}
+
+function safeRemoveDraft(agencyId: string) {
+  try {
+    sessionStorage.removeItem(draftKey(agencyId));
+  } catch {
+    /* storage unavailable */
+  }
+}
+
+function readDraft(agencyId: string): AccessRequestFormState {
+  if (typeof window === 'undefined') return initialState;
+
+  try {
+    const raw = sessionStorage.getItem(draftKey(agencyId));
+    if (!raw) return initialState;
+
+    const parsed = JSON.parse(raw) as { version?: number; state?: Partial<AccessRequestFormState> };
+    const saved = parsed.state;
+    const client = saved?.client;
+    // No agencyId check here: the provider receives orgId || userId (a Clerk
+    // id) while clients come from GET /api/clients with the Prisma Agency
+    // uuid. Tenant scoping is preserved by the per-agency draft key.
+    const validClient =
+      client === null ||
+      (client &&
+        typeof client.id === 'string' &&
+        typeof client.name === 'string' &&
+        typeof client.company === 'string' &&
+        typeof client.email === 'string' &&
+        (client.website === null || typeof client.website === 'string') &&
+        client.language in SUPPORTED_LANGUAGES &&
+        !Number.isNaN(Date.parse(String(client.createdAt))) &&
+        !Number.isNaN(Date.parse(String(client.updatedAt))));
+
+    if (
+      parsed.version !== DRAFT_VERSION ||
+      !saved ||
+      !validClient ||
+      typeof saved.externalReference !== 'string' ||
+      !saved.selectedPlatforms ||
+      Object.values(saved.selectedPlatforms).some(
+        (products) => !Array.isArray(products) || products.some((product) => typeof product !== 'string')
+      ) ||
+      !saved.platformAccessLevels ||
+      Object.values(saved.platformAccessLevels).some(
+        (level) => !['admin', 'standard', 'read_only', 'email_only'].includes(level)
+      ) ||
+      !Array.isArray(saved.intakeFields) ||
+      saved.intakeFields.some(
+        (field) =>
+          !field ||
+          typeof field.id !== 'string' ||
+          typeof field.label !== 'string' ||
+          !IntakeFieldTypeSchema.safeParse(field.type).success ||
+          typeof field.required !== 'boolean' ||
+          typeof field.order !== 'number'
+      ) ||
+      !saved.branding ||
+      typeof saved.branding.logoUrl !== 'string' ||
+      typeof saved.branding.primaryColor !== 'string' ||
+      typeof saved.branding.subdomain !== 'string' ||
+      typeof saved.currentStep !== 'number' ||
+      saved.currentStep < 1 ||
+      saved.currentStep > 4
+    ) {
+      throw new Error('Invalid access request draft');
+    }
+
+    return {
+      ...initialState,
+      client: client
+        ? {
+            ...client,
+            createdAt: new Date(String(client.createdAt)),
+            updatedAt: new Date(String(client.updatedAt)),
+          }
+        : null,
+      externalReference: saved.externalReference,
+      selectedPlatforms: saved.selectedPlatforms,
+      globalAccessLevel: saved.globalAccessLevel ?? initialState.globalAccessLevel,
+      platformAccessLevels: saved.platformAccessLevels,
+      intakeFields: saved.intakeFields,
+      branding: saved.branding,
+      currentStep: saved.currentStep,
+    };
+  } catch {
+    safeRemoveDraft(agencyId);
+    return initialState;
+  }
+}
+
+function hasDraftContent(state: AccessRequestFormState): boolean {
+  return Boolean(
+    state.client ||
+      state.externalReference ||
+      Object.keys(state.selectedPlatforms).length ||
+      state.currentStep > 1 ||
+      state.intakeFields.length !== initialState.intakeFields.length ||
+      state.intakeFields.some((field, index) =>
+        JSON.stringify(field) !== JSON.stringify(initialState.intakeFields[index])
+      ) ||
+      state.branding.logoUrl ||
+      state.branding.primaryColor !== initialState.branding.primaryColor ||
+      state.branding.subdomain
+  );
+}
+
 // ============================================================
 // PROVIDER
 // ============================================================
@@ -124,7 +255,49 @@ export function AccessRequestProvider({
   getToken,
 }: AccessRequestProviderProps) {
   const router = useRouter();
-  const [state, setState] = useState<AccessRequestFormState>(initialState);
+  const [state, setState] = useState<AccessRequestFormState>(() => readDraft(agencyId));
+  // Last serialized draft written per agency; skips byte-identical rewrites
+  // caused by state changes that do not affect the draft payload.
+  const lastWriteRef = useRef<{ agencyId: string; serialized: string | null } | null>(null);
+
+  useEffect(() => {
+    if (!hasDraftContent(state)) {
+      if (lastWriteRef.current?.agencyId !== agencyId || lastWriteRef.current.serialized !== null) {
+        safeRemoveDraft(agencyId);
+      }
+      lastWriteRef.current = { agencyId, serialized: null };
+      return;
+    }
+
+    const draftState = {
+      client: state.client
+        ? {
+            id: state.client.id,
+            agencyId: state.client.agencyId,
+            name: state.client.name,
+            company: state.client.company,
+            email: state.client.email,
+            website: state.client.website,
+            language: state.client.language,
+            createdAt: state.client.createdAt,
+            updatedAt: state.client.updatedAt,
+          }
+        : null,
+      externalReference: state.externalReference,
+      selectedPlatforms: state.selectedPlatforms,
+      globalAccessLevel: state.globalAccessLevel,
+      platformAccessLevels: state.platformAccessLevels,
+      intakeFields: state.intakeFields,
+      branding: state.branding,
+      currentStep: state.currentStep,
+    };
+    const serialized = JSON.stringify({ version: DRAFT_VERSION, state: draftState });
+    const last = lastWriteRef.current;
+    if (!last || last.agencyId !== agencyId || last.serialized !== serialized) {
+      safeSaveDraft(agencyId, serialized);
+    }
+    lastWriteRef.current = { agencyId, serialized };
+  }, [agencyId, state]);
 
   // ============================================================
   // UPDATE METHODS
@@ -280,7 +453,7 @@ export function AccessRequestProvider({
           // Intake fields validation - all labels must be filled
           const invalidFields = state.intakeFields.filter((field) => !field.label.trim());
           if (invalidFields.length > 0) {
-            return { valid: false, error: 'All intake fields must have a label' };
+            return { valid: false, error: INTAKE_LABELS_ERROR };
           }
 
           // Subdomain validation (optional field)
@@ -290,7 +463,7 @@ export function AccessRequestProvider({
             if (!subdomainRegex.test(state.branding.subdomain)) {
               return {
                 valid: false,
-                error: 'Subdomain must be 3-63 characters, alphanumeric with hyphens',
+                error: `${SUBDOMAIN_ERROR_PREFIX} be 3-63 characters, alphanumeric with hyphens`,
               };
             }
           }
@@ -375,8 +548,7 @@ export function AccessRequestProvider({
 
       // Success! Navigate to success page
       if (result.data) {
-        // Reset submitting state before navigation
-        setState((prev) => ({ ...prev, submitting: false }));
+        setState(initialState);
 
         // Track access request creation in PostHog
         const platformCount = Object.values(state.selectedPlatforms).reduce(
@@ -398,6 +570,8 @@ export function AccessRequestProvider({
         // Invalidate dashboard cache so it shows fresh data when user returns
         // We use the wildcard pattern to invalidate all dashboard queries
         queryClient?.invalidateQueries({ queryKey: ['dashboard'] });
+
+        safeRemoveDraft(agencyId);
 
         router.push(`/access-requests/${result.data.id}/success`);
       }
