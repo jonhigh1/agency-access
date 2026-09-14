@@ -3,7 +3,7 @@
   "checkpoint_id": "01M2ENF7JXH2JGKM2R4TS5SG3S",
   "strategy": "manual-commit",
   "branch": "main",
-  "checkpoints_count": 5,
+  "checkpoints_count": 6,
   "files_touched": [
     "marketing/content/KEYWORD-TRACKER.md"
   ],
@@ -41,6 +41,13 @@
       "transcript": "/4/full.jsonl",
       "compact_transcript": "/4/transcript.jsonl",
       "content_hash": "/4/content_hash.txt",
+      "prompt": ""
+    },
+    {
+      "metadata": "/5/metadata.json",
+      "transcript": "/5/full.jsonl",
+      "compact_transcript": "/5/transcript.jsonl",
+      "content_hash": "/5/content_hash.txt",
       "prompt": ""
     }
   ],
