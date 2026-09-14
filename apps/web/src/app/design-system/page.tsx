@@ -10,7 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { StatusBadge } from '@/components/ui/status-badge';
 import { HealthBadge } from '@/components/ui/health-badge';
 import { PlatformIcon } from '@/components/ui/platform-icon';
-import { SingleSelect } from '@/components/ui/single-select';
+import { SelectDemo } from './showcase-client';
 
 export default function DesignSystemPage() {
   return (
@@ -195,16 +195,7 @@ export default function DesignSystemPage() {
             </div>
             <div>
               <label className="mb-2 block text-sm font-semibold text-foreground">Platform</label>
-              <SingleSelect
-                options={[
-                  { value: 'meta', label: 'Meta Ads' },
-                  { value: 'google', label: 'Google Ads' },
-                  { value: 'shopify', label: 'Shopify' },
-                ]}
-                value="meta"
-                onChange={() => undefined}
-                ariaLabel="Platform"
-              />
+              <SelectDemo />
               <p className="mt-2 text-sm text-muted-foreground">Arrow keys, Enter, Space, Home, End, and Escape.</p>
             </div>
           </div>
