@@ -968,6 +968,7 @@ export async function setAccessRequestLifecycleStatus(
     return {
       data: currentRequest,
       error: null,
+      previousStatus: existing.status,
     };
   }
 
@@ -991,6 +992,7 @@ export async function setAccessRequestLifecycleStatus(
   return {
     data: accessRequest,
     error: null,
+    previousStatus: existing.status,
   };
 }
 

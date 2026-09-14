@@ -14,9 +14,10 @@ describe('Client intake routes', () => {
     vi.resetAllMocks();
     app = Fastify();
     await registerIntakeRoutes(app);
-    // The route reads narrowly: id, fields, and expiry only.
+    // The route reads narrowly: id, status, fields, and expiry only.
     vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue({
       id: 'request-1',
+      status: 'pending',
       intakeFields: [
         { id: 'company', label: 'Company name', type: 'text', required: true },
         { id: 'size', label: 'Company size', type: 'dropdown', required: false, options: ['1-10', '11-50'] },
@@ -83,6 +84,7 @@ describe('Client intake routes', () => {
   it('returns 404 REQUEST_EXPIRED for an expired request before persisting', async () => {
     vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue({
       id: 'request-1',
+      status: 'pending',
       intakeFields: [],
       expiresAt: new Date(Date.now() - 60_000),
     } as any);
@@ -95,6 +97,139 @@ describe('Client intake routes', () => {
 
     expect(response.statusCode).toBe(404);
     expect(response.json().error).toMatchObject({ code: 'REQUEST_EXPIRED' });
+    expect(prisma.accessRequest.update).not.toHaveBeenCalled();
+  });
+
+  it('returns 500 INTAKE_SAVE_FAILED when persistence fails', async () => {
+    vi.mocked(prisma.accessRequest.update).mockRejectedValue(new Error('write failed'));
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/client/token-1/intake',
+      payload: { intakeResponses: { company: 'Acme', size: '11-50' } },
+    });
+
+    expect(response.statusCode).toBe(500);
+    expect(response.json().error).toMatchObject({ code: 'INTAKE_SAVE_FAILED' });
+  });
+
+  it('returns 400 with field intakeFields when the stored form is not an array', async () => {
+    vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue({
+      id: 'request-1',
+      status: 'pending',
+      intakeFields: 'not-an-array',
+      expiresAt: new Date(Date.now() + 60_000),
+    } as any);
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/client/token-1/intake',
+      payload: { intakeResponses: { Company: 'Acme' } },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json().error.details).toEqual([
+      { field: 'intakeFields', message: 'This request has an invalid intake form.' },
+    ]);
+    expect(prisma.accessRequest.update).not.toHaveBeenCalled();
+  });
+
+  it.each(['completed', 'revoked'])(
+    'returns 404 for a %s request before persisting',
+    async (status) => {
+      vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue({
+        id: 'request-1',
+        status,
+        intakeFields: [],
+        expiresAt: new Date(Date.now() + 60_000),
+      } as any);
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/client/token-1/intake',
+        payload: { intakeResponses: { company: 'Acme' } },
+      });
+
+      expect(response.statusCode).toBe(404);
+      expect(response.json().error).toMatchObject({ code: 'REQUEST_NOT_FOUND' });
+      expect(prisma.accessRequest.update).not.toHaveBeenCalled();
+    }
+  );
+
+  it('accepts label-keyed answers for legacy id-less intake forms', async () => {
+    vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue({
+      id: 'request-1',
+      status: 'pending',
+      intakeFields: [
+        { label: 'Company name', type: 'text', required: true },
+        { label: 'Company size', type: 'dropdown', required: false, options: ['1-10', '11-50'] },
+      ],
+      expiresAt: new Date(Date.now() + 60_000),
+    } as any);
+    vi.mocked(prisma.accessRequest.update).mockResolvedValue({
+      intakeResponses: { 'Company name': 'Acme', 'Company size': '11-50' },
+    } as any);
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/client/token-1/intake',
+      payload: {
+        intakeResponses: { 'Company name': 'Acme', 'Company size': '11-50' },
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(prisma.accessRequest.update).toHaveBeenCalledWith({
+      where: { id: 'request-1' },
+      data: { intakeResponses: { 'Company name': 'Acme', 'Company size': '11-50' } },
+      select: { intakeResponses: true },
+    });
+  });
+
+  it('enforces required and dropdown rules under label-keyed matching', async () => {
+    vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue({
+      id: 'request-1',
+      status: 'pending',
+      intakeFields: [
+        { label: 'Company name', type: 'text', required: true },
+        { label: 'Company size', type: 'dropdown', required: false, options: ['1-10', '11-50'] },
+      ],
+      expiresAt: new Date(Date.now() + 60_000),
+    } as any);
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/client/token-1/intake',
+      payload: { intakeResponses: { 'Company size': 'enterprise' } },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json().error.details).toEqual([
+      { field: 'Company name', message: 'This field is required.' },
+      { field: 'Company size', message: 'Choose one of the provided options.' },
+    ]);
+    expect(prisma.accessRequest.update).not.toHaveBeenCalled();
+  });
+
+  it('returns 422 INVALID_INTAKE_FORM for a stored form with mixed ids', async () => {
+    vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue({
+      id: 'request-1',
+      status: 'pending',
+      intakeFields: [
+        { id: 'company', label: 'Company name', type: 'text', required: true },
+        { label: 'Company size', type: 'dropdown', required: false, options: ['1-10', '11-50'] },
+      ],
+      expiresAt: new Date(Date.now() + 60_000),
+    } as any);
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/client/token-1/intake',
+      payload: { intakeResponses: { company: 'Acme' } },
+    });
+
+    expect(response.statusCode).toBe(422);
+    expect(response.json().error).toMatchObject({ code: 'INVALID_INTAKE_FORM' });
     expect(prisma.accessRequest.update).not.toHaveBeenCalled();
   });
 });

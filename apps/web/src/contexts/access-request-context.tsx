@@ -121,6 +121,24 @@ const initialState: AccessRequestFormState = {
 const DRAFT_VERSION = 1;
 const draftKey = (agencyId: string) => `access-request-draft:${agencyId}`;
 
+// sessionStorage access can throw (Safari private mode, quota). Draft
+// persistence is best-effort: a storage failure must never crash the wizard.
+function safeSaveDraft(agencyId: string, serialized: string) {
+  try {
+    sessionStorage.setItem(draftKey(agencyId), serialized);
+  } catch {
+    /* storage unavailable or full */
+  }
+}
+
+function safeRemoveDraft(agencyId: string) {
+  try {
+    sessionStorage.removeItem(draftKey(agencyId));
+  } catch {
+    /* storage unavailable */
+  }
+}
+
 function readDraft(agencyId: string): AccessRequestFormState {
   if (typeof window === 'undefined') return initialState;
 
@@ -131,11 +149,13 @@ function readDraft(agencyId: string): AccessRequestFormState {
     const parsed = JSON.parse(raw) as { version?: number; state?: Partial<AccessRequestFormState> };
     const saved = parsed.state;
     const client = saved?.client;
+    // No agencyId check here: the provider receives orgId || userId (a Clerk
+    // id) while clients come from GET /api/clients with the Prisma Agency
+    // uuid. Tenant scoping is preserved by the per-agency draft key.
     const validClient =
       client === null ||
       (client &&
         typeof client.id === 'string' &&
-        client.agencyId === agencyId &&
         typeof client.name === 'string' &&
         typeof client.company === 'string' &&
         typeof client.email === 'string' &&
@@ -196,7 +216,7 @@ function readDraft(agencyId: string): AccessRequestFormState {
       currentStep: saved.currentStep,
     };
   } catch {
-    sessionStorage.removeItem(draftKey(agencyId));
+    safeRemoveDraft(agencyId);
     return initialState;
   }
 }
@@ -243,7 +263,7 @@ export function AccessRequestProvider({
   useEffect(() => {
     if (!hasDraftContent(state)) {
       if (lastWriteRef.current?.agencyId !== agencyId || lastWriteRef.current.serialized !== null) {
-        sessionStorage.removeItem(draftKey(agencyId));
+        safeRemoveDraft(agencyId);
       }
       lastWriteRef.current = { agencyId, serialized: null };
       return;
@@ -274,7 +294,7 @@ export function AccessRequestProvider({
     const serialized = JSON.stringify({ version: DRAFT_VERSION, state: draftState });
     const last = lastWriteRef.current;
     if (!last || last.agencyId !== agencyId || last.serialized !== serialized) {
-      sessionStorage.setItem(draftKey(agencyId), serialized);
+      safeSaveDraft(agencyId, serialized);
     }
     lastWriteRef.current = { agencyId, serialized };
   }, [agencyId, state]);
@@ -551,7 +571,7 @@ export function AccessRequestProvider({
         // We use the wildcard pattern to invalidate all dashboard queries
         queryClient?.invalidateQueries({ queryKey: ['dashboard'] });
 
-        sessionStorage.removeItem(draftKey(agencyId));
+        safeRemoveDraft(agencyId);
 
         router.push(`/access-requests/${result.data.id}/success`);
       }

@@ -324,6 +324,71 @@ describe('AccessRequestContext', () => {
 
       expect(sessionStorage.getItem('access-request-draft:agency-123')).toBeNull();
     });
+
+    it('restores a draft whose client uses a different id namespace', () => {
+      // The provider receives orgId || userId (a Clerk id) while saved clients
+      // come from GET /api/clients with the Prisma Agency uuid.
+      const prismaAgencyId = 'f47ac10b-58cc-4372-a567-0e02b2c3d479';
+      sessionStorage.setItem(
+        'access-request-draft:agency-123',
+        JSON.stringify({
+          version: 1,
+          state: {
+            client: {
+              id: 'client-uuid',
+              agencyId: prismaAgencyId,
+              name: 'Test Client',
+              company: 'Test Company',
+              email: 'test@example.com',
+              website: null,
+              language: 'en',
+              createdAt: '2026-01-01T00:00:00.000Z',
+              updatedAt: '2026-01-02T00:00:00.000Z',
+            },
+            externalReference: '',
+            selectedPlatforms: {},
+            platformAccessLevels: {},
+            intakeFields: [
+              { id: '1', label: 'Company Website', type: 'url', required: true, order: 0 },
+            ],
+            branding: { logoUrl: '', primaryColor: '#FF6B35', subdomain: '' },
+            currentStep: 1,
+          },
+        })
+      );
+
+      const { result } = renderHook(() => useAccessRequest(), { wrapper });
+
+      expect(result.current.state.client).toMatchObject({
+        id: 'client-uuid',
+        agencyId: prismaAgencyId,
+        email: 'test@example.com',
+      });
+      expect(result.current.state.client?.createdAt).toBeInstanceOf(Date);
+    });
+
+    it('keeps working when sessionStorage.setItem throws', () => {
+      const setItemSpy = vi.spyOn(sessionStorage, 'setItem').mockImplementation(() => {
+        throw new DOMException('QuotaExceededError');
+      });
+
+      try {
+        const { result } = renderHook(() => useAccessRequest(), { wrapper });
+
+        expect(() => {
+          act(() => {
+            result.current.updateExternalReference('crm-123');
+            result.current.updatePlatforms({ google: ['google_ads'] });
+          });
+        }).not.toThrow();
+
+        expect(result.current.state.externalReference).toBe('crm-123');
+        expect(result.current.state.selectedPlatforms).toEqual({ google: ['google_ads'] });
+      } finally {
+        setItemSpy.mockRestore();
+        sessionStorage.clear();
+      }
+    });
   });
 
   describe('validateStep', () => {

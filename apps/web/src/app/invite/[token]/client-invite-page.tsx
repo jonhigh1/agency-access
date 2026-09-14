@@ -53,6 +53,12 @@ type PagePhase = 'intake' | 'platforms' | 'finalizing' | 'complete';
 
 const SESSION_STORAGE_PREFIX = 'invite-progress:';
 
+// Mirrors the 20s deadline in useInviteRequestLoader so a stalled request
+// cannot wedge the client on a spinner with no exit.
+const REQUEST_TIMEOUT_MS = 20000;
+
+const isAbortError = (error: unknown) => error instanceof Error && error.name === 'AbortError';
+
 function buildPlatformSummary(platforms: Platform[]): string {
   const uniqueNames = Array.from(new Set(platforms.map((platform) => PLATFORM_NAMES[platform])));
 
@@ -233,6 +239,13 @@ export default function ClientAuthorizationPage({
       });
     }
 
+    // A finalization or confirmed completion owns the phase from here on; a
+    // hydration re-run (e.g. after OAuth params are stripped from the URL)
+    // must not clobber 'finalizing'/'complete' back to 'platforms'.
+    if (finalizationInFlightRef.current || completionConfirmedRef.current) {
+      return;
+    }
+
     if (urlStep === '2' && urlConnectionId && urlPlatform) {
       setIsReviewingConnectStatus(false);
       if (isClientInviteManualCallbackPlatform(urlPlatform)) {
@@ -303,9 +316,13 @@ export default function ClientAuthorizationPage({
     setCompletionError(null);
     setPhase('finalizing');
 
+    const abortController = new AbortController();
+    const timeoutTimer = window.setTimeout(() => abortController.abort(), REQUEST_TIMEOUT_MS);
+
     try {
       const response = await fetch(resolveApiUrl(`/api/client/${token}/complete`), {
         method: 'POST',
+        signal: abortController.signal,
       });
 
       await parseJsonResponse(response, { fallbackErrorMessage: 'Failed to finalize authorization' });
@@ -323,12 +340,15 @@ export default function ClientAuthorizationPage({
       setPhase('complete');
     } catch (error) {
       setCompletionError(
-        error instanceof Error
+        isAbortError(error)
+          ? 'The final confirmation is taking longer than expected. Retry below.'
+          : error instanceof Error
           ? error.message
           : 'Authorization was completed, but we could not finalize status. Retry below.'
       );
       setPhase('complete');
     } finally {
+      window.clearTimeout(timeoutTimer);
       finalizationInFlightRef.current = false;
     }
   };
@@ -361,11 +381,16 @@ export default function ClientAuthorizationPage({
     setIsSavingIntake(true);
     setIntakeError(null);
     setIsReviewingConnectStatus(false);
+
+    const abortController = new AbortController();
+    const timeoutTimer = window.setTimeout(() => abortController.abort(), REQUEST_TIMEOUT_MS);
+
     try {
       const response = await fetch(resolveApiUrl(`/api/client/${token}/intake`), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ intakeResponses }),
+        signal: abortController.signal,
       });
       const result = await parseJsonResponse<{ data?: { intakeResponses?: Record<string, string> } }>(
         response,
@@ -376,9 +401,14 @@ export default function ClientAuthorizationPage({
       setPhase('platforms');
     } catch (error) {
       setIntakeError(
-        error instanceof Error ? error.message : 'Could not save your responses. Please try again.'
+        isAbortError(error)
+          ? 'Saving your responses is taking longer than expected. Please try again.'
+          : error instanceof Error
+          ? error.message
+          : 'Could not save your responses. Please try again.'
       );
     } finally {
+      window.clearTimeout(timeoutTimer);
       setIsSavingIntake(false);
     }
   };

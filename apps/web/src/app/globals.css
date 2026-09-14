@@ -166,7 +166,7 @@
     @apply focus:border-coral focus:outline-none;
     @apply focus-visible:outline-[3px] focus-visible:outline-coral/25;
     box-shadow: 0 0 0 0 rgb(var(--primary) / 0);
-    transition: border-color 150ms ease, background-color 150ms ease, color 150ms ease;
+    transition: border-color var(--motion-hover) ease, background-color var(--motion-hover) ease, color var(--motion-hover) ease;
   }
 
   input:focus-visible,

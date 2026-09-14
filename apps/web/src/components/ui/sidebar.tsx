@@ -229,7 +229,7 @@ export const SidebarLink = ({
           <span
             aria-hidden={!open}
             className={cn(
-              "inline-block whitespace-nowrap !m-0 !p-0 font-sans text-lg transition-opacity duration-150 motion-reduce:transition-none",
+              "inline-block whitespace-nowrap !m-0 !p-0 font-sans text-lg transition-opacity duration-[var(--motion-hover)] motion-reduce:transition-none",
               open ? "opacity-100" : "pointer-events-none opacity-0",
               isActive
                 ? "font-semibold text-foreground"

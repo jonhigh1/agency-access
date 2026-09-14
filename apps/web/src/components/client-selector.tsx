@@ -108,6 +108,7 @@ export function ClientSelector({ onSelect, value }: ClientSelectorProps) {
   };
 
   const handleCreateClient = async () => {
+    if (creating) return;
     setFormErrors({});
     setCreateError(null);
 

@@ -75,6 +75,7 @@ function AccessRequestWizardContent() {
   // Advanced settings state (for Step 1: Optional downstream configuration)
   const [advancedSettingsExpanded, setAdvancedSettingsExpanded] = useState(false);
   const [validationFocusId, setValidationFocusId] = useState<string | null>(null);
+  const [validationAttempt, setValidationAttempt] = useState(0);
 
   // Fetch agency by clerkUserId - shared hook with the connections page
   const { data: agencyData } = useUserAgency();
@@ -134,7 +135,10 @@ function AccessRequestWizardContent() {
   // Intake field handlers
   const addIntakeField = () => {
     const newField: IntakeField = {
-      id: String(state.intakeFields.length + 1),
+      id:
+        typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+          ? crypto.randomUUID()
+          : `field-${Date.now()}-${Math.random().toString(36).slice(2, 11)}`,
       label: '',
       type: 'text',
       required: false,
@@ -169,12 +173,18 @@ function AccessRequestWizardContent() {
     const emptyField = state.intakeFields.find((field) => !field.label.trim());
     setCustomizeTab(emptyField ? 'fields' : 'branding');
     setValidationFocusId(emptyField ? `intake-field-${emptyField.id}` : 'subdomain');
+    setValidationAttempt((attempt) => attempt + 1);
+  };
+
+  const handleCustomizeTabChange = (tab: 'fields' | 'branding') => {
+    setCustomizeTab(tab);
+    setValidationFocusId(null);
   };
 
   useEffect(() => {
     if (!validationFocusId) return;
     document.getElementById(validationFocusId)?.focus();
-  }, [customizeTab, validationFocusId]);
+  }, [validationAttempt, validationFocusId]);
 
   // Step labels (1-4 with new streamlined flow)
   const steps = [
@@ -432,7 +442,7 @@ function AccessRequestWizardContent() {
               <div className="flex gap-4 border-b border-border">
                 <button
                   type="button"
-                  onClick={() => setCustomizeTab('fields')}
+                  onClick={() => handleCustomizeTabChange('fields')}
                   className={`pb-3 px-1 text-sm font-medium transition-colors ${
                     customizeTab === 'fields'
                       ? 'text-danger-ink border-b-2 border-coral'
@@ -443,7 +453,7 @@ function AccessRequestWizardContent() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => setCustomizeTab('branding')}
+                  onClick={() => handleCustomizeTabChange('branding')}
                   className={`pb-3 px-1 text-sm font-medium transition-colors ${
                     customizeTab === 'branding'
                       ? 'text-danger-ink border-b-2 border-coral'

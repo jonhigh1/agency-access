@@ -111,7 +111,9 @@ export function EditClientModal({ client, onClose }: EditClientModalProps) {
         exit={{ opacity: 0 }}
         transition={{ duration: shouldReduceMotion ? 0 : 0.15 }}
         className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
-        onClick={onClose}
+        onClick={() => {
+          if (!updateMutation.isPending) onClose();
+        }}
       >
         <m.div
           initial={shouldReduceMotion ? false : { scale: 0.98, opacity: 0 }}

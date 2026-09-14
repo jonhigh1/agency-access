@@ -59,6 +59,7 @@ vi.mock('@/components/client-auth/PlatformAuthWizard', async () => {
 // Fetch stubs in this file are object literals with `json`; the page parses
 // via parseJsonResponse, which reads `text` like a real Response. Derive
 // `text` from the stubbed body so stubs stay Response-shaped.
+// Note: this bypasses non-JSON responses — tests for those stub fetch directly.
 const stubFetch = (
   impl: (url: string, init?: unknown) => Promise<Record<string, unknown>>
 ) => {
@@ -605,6 +606,60 @@ describe('Invite Flow Page', () => {
     });
   });
 
+  it('renders the finalize fallback error when the completion body is not JSON', async () => {
+    // Direct vi.stubGlobal (not stubFetch): the non-JSON finalize response must
+    // keep its real `text` and have no `json` so parseJsonResponse's non-JSON
+    // branch is exercised.
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url.includes('/api/client/token-123/complete')) {
+        return {
+          ok: false,
+          text: async () => 'gateway timeout',
+        } as Response;
+      }
+
+      return {
+        ok: true,
+        json: async () => ({
+          data: {
+            id: 'request-1',
+            agencyId: 'agency-1',
+            agencyName: 'Demo Agency',
+            clientName: 'Client',
+            clientEmail: 'client@test.com',
+            status: 'pending',
+            uniqueToken: 'token-123',
+            expiresAt: new Date().toISOString(),
+            intakeFields: [],
+            branding: {},
+            platforms: [
+              {
+                platformGroup: 'google',
+                products: [{ product: 'google_ads', accessLevel: 'admin' }],
+              },
+            ],
+            manualInviteTargets: { google: {} },
+            authorizationProgress: { completedPlatforms: [], isComplete: false },
+          },
+          error: null,
+        }),
+      } as Response;
+    });
+
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<InvitePage />);
+
+    await userEvent.click(await screen.findByRole('button', { name: /continue to connect/i }));
+    await userEvent.click(await screen.findByRole('button', { name: /complete platform/i }));
+
+    await waitFor(() => {
+      expect(screen.getByRole('heading', { name: /almost done — one step failed/i })).toBeInTheDocument();
+      expect(screen.getByText('Failed to finalize authorization')).toBeInTheDocument();
+    });
+    expect(screen.queryByRole('heading', { name: /all set/i })).not.toBeInTheDocument();
+  });
+
   it('keeps the connect step visible until a platform is completed', async () => {
     const fetchMock = vi.fn(async (url: string) => {
       if (url.includes('/api/client/token-123/complete')) {
@@ -959,7 +1014,10 @@ describe('Invite Flow Page', () => {
       const completionCall = fetchMock.mock.calls.find(([url]) =>
         String(url).includes('/api/client/token-123/complete')
       );
-      expect(completionCall?.[1]).toEqual({ method: 'POST' });
+      expect(completionCall?.[1]).toEqual({
+        method: 'POST',
+        signal: expect.any(AbortSignal),
+      });
     });
   });
 

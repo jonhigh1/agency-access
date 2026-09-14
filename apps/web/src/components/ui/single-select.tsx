@@ -111,7 +111,12 @@ export function SingleSelect({
     }
 
     if (event.key === 'Escape') {
-      if (isOpen) event.preventDefault();
+      if (isOpen) {
+        // Escape over an open dropdown is the dropdown's keypress, not an
+        // ancestor modal's — stop it from closing the modal (e.g. Manage Assets).
+        event.preventDefault();
+        event.stopPropagation();
+      }
       setIsOpen(false);
       triggerButtonRef.current?.focus();
       return;
@@ -136,6 +141,17 @@ export function SingleSelect({
     <div
       ref={dropdownRef}
       id={listboxId}
+      onKeyDown={(event) => {
+        // The dropdown is portaled to document.body, so Escape while option
+        // focus is inside the listbox would otherwise bubble straight to an
+        // ancestor modal's document listener. Close only the dropdown here.
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          event.stopPropagation();
+          setIsOpen(false);
+          triggerButtonRef.current?.focus();
+        }
+      }}
       className="fixed z-[100] origin-top bg-white dark:bg-ink border border-border dark:border-white/30 rounded-none shadow-brutalist-sm overflow-auto max-h-[280px] py-1"
       role="listbox"
       aria-activedescendant={options[activeIndex] ? optionId(options[activeIndex].value) : undefined}
@@ -160,7 +176,7 @@ export function SingleSelect({
             data-active={isActive ? 'true' : undefined}
             className={cn(
               'w-full px-3 py-2.5 text-left text-sm flex items-center justify-between gap-3',
-            'transition-[background-color,color] duration-150 cursor-pointer',
+            'transition-[background-color,color] duration-[var(--motion-hover)] cursor-pointer',
             isSelected
               ? 'bg-accent/20 dark:bg-accent/30 text-ink dark:text-ink font-medium'
                 : 'text-ink dark:text-ink hover:bg-coral/10 dark:hover:bg-white/10',

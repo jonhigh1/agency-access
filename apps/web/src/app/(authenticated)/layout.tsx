@@ -327,7 +327,7 @@ function AuthenticatedLayoutInner({
               <span
                 aria-hidden={!open}
                 className={cn(
-                  'inline-block overflow-hidden whitespace-nowrap text-xl font-semibold text-foreground transition-opacity duration-150 motion-reduce:transition-none',
+                  'inline-block overflow-hidden whitespace-nowrap text-xl font-semibold text-foreground transition-opacity duration-[var(--motion-hover)] motion-reduce:transition-none',
                   open ? 'opacity-100' : 'pointer-events-none opacity-0'
                 )}
               >
