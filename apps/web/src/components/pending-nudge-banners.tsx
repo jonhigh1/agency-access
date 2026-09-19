@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { PendingNudgeBanner } from '@/components/pending-nudge-banner';
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard';
 import {
+  buildInviteReminderMailto,
   trackInviteLinkCopyAndSent,
   trackInviteReminderSent,
 } from '@/lib/analytics/invite-events';
@@ -46,6 +47,33 @@ function PendingNudgeBannerItem({
   }, [authorizationUrl, copy, surface, target.id, target.status, target.uniqueToken]);
 
   const handleSendReminder = useCallback(async () => {
+    const clientEmail = target.clientEmail?.trim();
+    if (clientEmail) {
+      const expirationText = target.expiresAt
+        ? new Date(target.expiresAt).toLocaleDateString('en-US', {
+            weekday: 'long',
+            month: 'long',
+            day: 'numeric',
+            year: 'numeric',
+          })
+        : null;
+      const mailtoHref = buildInviteReminderMailto({
+        clientEmail,
+        clientName: target.clientName,
+        authorizationUrl,
+        expirationText,
+      });
+      trackInviteReminderSent({
+        access_request_id: target.id,
+        access_request_token: target.uniqueToken,
+        status: target.status,
+        channel: 'email',
+        surface,
+      });
+      window.location.assign(mailtoHref);
+      return;
+    }
+
     await copyReminderLink(authorizationUrl);
     trackInviteReminderSent({
       access_request_id: target.id,
@@ -54,17 +82,20 @@ function PendingNudgeBannerItem({
       channel: 'copy',
       surface,
     });
-  }, [authorizationUrl, copyReminderLink, surface, target.id, target.status, target.uniqueToken]);
+  }, [authorizationUrl, copyReminderLink, surface, target]);
+
+  const canEmailReminder = Boolean(target.clientEmail?.trim());
 
   return (
     <PendingNudgeBanner
       accessRequestId={target.id}
       accessRequestToken={target.uniqueToken}
       clientName={target.clientName}
+      clientEmail={target.clientEmail}
       cliff={target.cliff}
       surface={surface}
       copied={copied}
-      reminderCopied={reminderCopied}
+      reminderCopied={canEmailReminder ? false : reminderCopied}
       onCopyLink={() => {
         void handleCopyLink();
       }}

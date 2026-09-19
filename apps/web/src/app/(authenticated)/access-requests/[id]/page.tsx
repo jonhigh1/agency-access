@@ -8,8 +8,10 @@ import { useAuthOrBypass } from '@/lib/dev-auth';
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard';
 import {
   buildInviteReminderMailto,
+  buildInviteSentMailto,
   trackInviteLinkCopyAndSent,
   trackInviteReminderSent,
+  trackInviteSent,
 } from '@/lib/analytics/invite-events';
 import { getAccessRequest, getAuthorizationUrl } from '@/lib/api/access-requests';
 import type { AccessRequest } from '@/lib/api/access-requests';
@@ -125,6 +127,32 @@ export default function AccessRequestDetailPage({ params }: AccessRequestDetailP
     }
 
     void trackAction('send_reminder');
+    const clientEmail = accessRequest.clientEmail?.trim();
+    const expirationText = new Date(accessRequest.expiresAt).toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+    });
+
+    if (clientEmail) {
+      const mailtoHref = buildInviteReminderMailto({
+        clientEmail,
+        clientName: accessRequest.clientName,
+        authorizationUrl,
+        expirationText,
+      });
+      trackInviteReminderSent({
+        access_request_id: accessRequest.id,
+        access_request_token: accessRequest.uniqueToken,
+        status: accessRequest.status,
+        channel: 'email',
+        surface: 'detail',
+      });
+      window.location.assign(mailtoHref);
+      return;
+    }
+
     await copyReminderLink(authorizationUrl);
     trackInviteReminderSent({
       access_request_id: accessRequest.id,
@@ -147,13 +175,13 @@ export default function AccessRequestDetailPage({ params }: AccessRequestDetailP
       day: 'numeric',
       year: 'numeric',
     });
-    const mailtoHref = buildInviteReminderMailto({
+    const mailtoHref = buildInviteSentMailto({
       clientEmail: accessRequest.clientEmail,
       clientName: accessRequest.clientName,
       authorizationUrl,
       expirationText,
     });
-    trackInviteReminderSent({
+    trackInviteSent({
       access_request_id: accessRequest.id,
       access_request_token: accessRequest.uniqueToken,
       status: accessRequest.status,
@@ -222,6 +250,8 @@ export default function AccessRequestDetailPage({ params }: AccessRequestDetailP
             {
               id: accessRequest.id,
               clientName: accessRequest.clientName,
+              clientEmail: accessRequest.clientEmail,
+              expiresAt: accessRequest.expiresAt,
               status: accessRequest.status,
               createdAt: accessRequest.createdAt,
               uniqueToken: accessRequest.uniqueToken,

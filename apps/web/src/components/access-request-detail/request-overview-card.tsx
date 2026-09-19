@@ -34,6 +34,7 @@ export function RequestOverviewCard({
   const awaitingClient = isAwaitingClient(request.status);
   const shouldShowAwaitingCallout =
     showAwaitingClientCallout ?? awaitingClient;
+  const canEmailReminder = Boolean(request.clientEmail?.trim());
 
   return (
     <Card className="border-black/10 shadow-sm">
@@ -117,9 +118,13 @@ export function RequestOverviewCard({
               size="sm"
               leftIcon={<Bell className="h-4 w-4" />}
               onClick={onSendReminder}
-              aria-label="Send reminder to client"
+              aria-label={canEmailReminder ? 'Send reminder to client' : 'Copy reminder link'}
             >
-              {reminderCopied ? 'Link copied — send when ready' : 'Send Reminder'}
+              {canEmailReminder
+                ? 'Send Reminder'
+                : reminderCopied
+                  ? 'Copied'
+                  : 'Copy reminder link'}
             </Button>
           )}
           {awaitingClient && onEmailClient && (

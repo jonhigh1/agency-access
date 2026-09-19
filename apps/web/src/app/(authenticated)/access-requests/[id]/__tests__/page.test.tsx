@@ -35,7 +35,9 @@ vi.mock('@/lib/analytics/invite-events', () => ({
   trackInviteLinkCopied: vi.fn(),
   trackInviteLinkCopyAndSent: vi.fn(),
   trackInviteReminderSent: vi.fn(),
-  buildInviteReminderMailto: vi.fn(() => 'mailto:client@acme.com'),
+  trackInviteSent: vi.fn(),
+  buildInviteReminderMailto: vi.fn(() => 'mailto:client@acme.com?subject=reminder'),
+  buildInviteSentMailto: vi.fn(() => 'mailto:client@acme.com?subject=invite'),
 }));
 
 vi.mock('@/lib/analytics/pending-nudge-events', () => ({
@@ -105,8 +107,14 @@ describe('AccessRequestDetailPage', () => {
     expect(screen.queryByText(/waiting on client authorization/i)).not.toBeInTheDocument();
   });
 
-  it('fires invite reminder analytics when Send Reminder is clicked', async () => {
+  it('fires invite reminder analytics with email channel when Send Reminder is clicked', async () => {
     const user = userEvent.setup();
+    const assignSpy = vi.fn();
+    Object.defineProperty(window, 'location', {
+      configurable: true,
+      value: { ...window.location, assign: assignSpy },
+    });
+
     vi.mocked(accessRequestsApi.getAccessRequest).mockResolvedValue({
       data: {
         id: 'request-1',
@@ -127,14 +135,54 @@ describe('AccessRequestDetailPage', () => {
 
     await user.click(screen.getAllByRole('button', { name: /send reminder/i })[0]);
 
+    expect(inviteEvents.buildInviteReminderMailto).toHaveBeenCalled();
+    expect(assignSpy).toHaveBeenCalledWith('mailto:client@acme.com?subject=reminder');
     expect(inviteEvents.trackInviteReminderSent).toHaveBeenCalledWith({
       access_request_id: 'request-1',
       access_request_token: 'token-123',
       status: 'pending',
-      channel: 'copy',
+      channel: 'email',
       surface: 'detail',
     });
     expect(inviteEvents.trackInviteLinkCopyAndSent).not.toHaveBeenCalled();
+  });
+
+  it('copies reminder link with copy channel when client email is missing', async () => {
+    const user = userEvent.setup();
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    vi.spyOn(navigator.clipboard, 'writeText').mockImplementation(writeText);
+
+    vi.mocked(accessRequestsApi.getAccessRequest).mockResolvedValue({
+      data: {
+        id: 'request-no-email',
+        agencyId: 'agency-1',
+        clientName: 'No Email Client',
+        clientEmail: '',
+        status: 'pending',
+        uniqueToken: 'token-no-email',
+        expiresAt: '2026-03-14T00:00:00.000Z',
+        createdAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+        updatedAt: '2026-03-01T00:00:00.000Z',
+        platforms: [],
+      } as any,
+    });
+
+    renderWithProviders(
+      <AccessRequestDetailPage params={Promise.resolve({ id: 'request-no-email' })} />
+    );
+    await screen.findByText('Access Request Details');
+
+    await user.click(screen.getByRole('button', { name: /copy reminder link/i }));
+
+    expect(writeText).toHaveBeenCalledWith('https://app.authhub.co/invite/token-no-email');
+    expect(inviteEvents.trackInviteReminderSent).toHaveBeenCalledWith({
+      access_request_id: 'request-no-email',
+      access_request_token: 'token-no-email',
+      status: 'pending',
+      channel: 'copy',
+      surface: 'detail',
+    });
+    expect(inviteEvents.buildInviteReminderMailto).not.toHaveBeenCalled();
   });
 
   it('fires invite copy/send analytics when Copy Link is clicked', async () => {
