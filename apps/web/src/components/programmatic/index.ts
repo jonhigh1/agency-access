@@ -6,6 +6,7 @@
 // Components
 export { BlogPostTemplate } from "./BlogPostTemplate";
 export { ComparisonPageTemplate } from "./ComparisonPageTemplate";
+export { LeadsiePricingPageTemplate } from "./LeadsiePricingPageTemplate";
 
 // Types
 export type {
@@ -40,6 +41,7 @@ export {
   generateBlogPostSchema,
   generateBlogListSchema,
   generateComparisonSchema,
+  generateLeadsiePricingSchema,
   generateFAQSchema,
   generateHowToSchema,
   generateOrganizationSchema,

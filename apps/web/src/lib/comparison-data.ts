@@ -5,6 +5,7 @@
 
 import { SUPPORTED_PLATFORM_COUNT } from "@agency-platform/shared";
 
+import { LEADSIE_PRICING_SLUG } from "./leadsie-pricing-page";
 import type { ProgrammaticComparisonPage } from "./programmatic-types";
 
 /**
@@ -371,7 +372,7 @@ export const leadsieAlternativePage: ProgrammaticComparisonPage = {
     },
   ],
   pricingScenariosNote:
-    "Worked examples use the lowest published monthly Leadsie plan that covers the workload, including its listed overage packs. Prices are pre-tax and were verified on September 8, 2026.",
+    "Worked examples use the lowest published monthly Leadsie plan that covers the workload, including its listed overage packs. Prices are pre-tax and were verified on September 19, 2026.",
   faqs: [
     {
       question: "How does Leadsie pricing work?",
@@ -417,7 +418,7 @@ export const leadsieAlternativePage: ProgrammaticComparisonPage = {
     "Leadsie competitor",
   ],
 
-  relatedComparisons: ["agencyaccess-alternative"],
+  relatedComparisons: ["agencyaccess-alternative", "leadsie-pricing"],
   relatedBlogPosts: [
     "how-to-get-meta-ads-access-from-clients",
     "google-ads-access-agency",
@@ -437,7 +438,7 @@ export const leadsieAlternativePage: ProgrammaticComparisonPage = {
 
   isProgrammatic: true,
   templateId: "comparison-aida-v1",
-  lastVerified: "2026-09-08",
+  lastVerified: "2026-09-19",
 };
 
 /**
@@ -898,7 +899,7 @@ export function getComparisonPageBySlug(slug: string): ProgrammaticComparisonPag
  * Get all comparison page slugs for static generation
  */
 export function getAllComparisonPageSlugs(): string[] {
-  return COMPARISON_PAGES.map((page) => page.slug);
+  return [...COMPARISON_PAGES.map((page) => page.slug), LEADSIE_PRICING_SLUG];
 }
 
 /**

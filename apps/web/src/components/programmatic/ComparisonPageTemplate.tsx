@@ -525,6 +525,16 @@ export function ComparisonPageTemplate({ page }: ComparisonPageTemplateProps) {
                 {pricingScenariosNote && (
                   <p className="mt-3 text-xs text-[#6B7280]">{pricingScenariosNote}</p>
                 )}
+                {page.slug === "leadsie-alternative" && (
+                  <p className="mt-4 font-mono text-sm font-semibold">
+                    <Link
+                      href={"/compare/leadsie-pricing" as Route}
+                      className="text-coral underline-offset-2 hover:underline"
+                    >
+                      Full Leadsie pricing breakdown →
+                    </Link>
+                  </p>
+                )}
               </div>
             )}
           </div>
