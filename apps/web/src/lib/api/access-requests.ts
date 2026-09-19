@@ -7,6 +7,7 @@
 
 import { PlatformGroupConfig } from '@/lib/transform-platforms';
 import type { IntakeField } from '@agency-platform/shared';
+import { buildInviteUrl } from '@/lib/app-url';
 import { AuthorizedApiError, authorizedApiFetch } from './authorized-api-fetch';
 
 // ============================================================
@@ -280,4 +281,43 @@ export async function cancelAccessRequest(
 export function getAuthorizationUrl(accessRequest: AccessRequest): string {
   return buildInviteUrl(accessRequest.uniqueToken);
 }
-import { buildInviteUrl } from '@/lib/app-url';
+
+export interface SendAccessRequestReminderResponse {
+  accessRequestId: string;
+  sentAt: string;
+  recipientEmail: string;
+}
+
+export async function sendAccessRequestReminder(
+  id: string,
+  getToken?: TokenProvider
+): Promise<{ data?: SendAccessRequestReminderResponse; error?: ApiError }> {
+  try {
+    const response = await authorizedApiFetch<{ data: SendAccessRequestReminderResponse; error: null }>(
+      `/api/access-requests/${id}/remind`,
+      {
+        method: 'POST',
+        getToken: getToken ?? (async () => null),
+      }
+    );
+
+    return { data: response.data };
+  } catch (err) {
+    if (err instanceof AuthorizedApiError) {
+      return {
+        error: {
+          code: err.code,
+          message: err.message,
+          details: err.details,
+        },
+      };
+    }
+
+    return {
+      error: {
+        code: 'NETWORK_ERROR',
+        message: err instanceof Error ? err.message : 'Network error. Please try again.',
+      },
+    };
+  }
+}

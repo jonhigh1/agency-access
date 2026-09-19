@@ -13,6 +13,8 @@ interface RequestOverviewCardProps {
   onEmailClient?: () => void;
   copied: boolean;
   reminderCopied?: boolean;
+  reminderLoading?: boolean;
+  reminderStatusMessage?: string | null;
   showAwaitingClientCallout?: boolean;
 }
 
@@ -29,6 +31,8 @@ export function RequestOverviewCard({
   onEmailClient,
   copied,
   reminderCopied = false,
+  reminderLoading = false,
+  reminderStatusMessage = null,
   showAwaitingClientCallout,
 }: RequestOverviewCardProps) {
   const awaitingClient = isAwaitingClient(request.status);
@@ -53,6 +57,11 @@ export function RequestOverviewCard({
             Your client authorizes when they are ready. Access tokens are stored only after they
             complete authorization — not when the link is sent.
           </p>
+          {reminderStatusMessage ? (
+            <p className="mt-2 text-sm font-medium text-ink" role="status">
+              {reminderStatusMessage}
+            </p>
+          ) : null}
         </div>
       )}
 
@@ -118,13 +127,17 @@ export function RequestOverviewCard({
               size="sm"
               leftIcon={<Bell className="h-4 w-4" />}
               onClick={onSendReminder}
+              disabled={reminderLoading}
+              aria-busy={reminderLoading}
               aria-label={canEmailReminder ? 'Send reminder to client' : 'Copy reminder link'}
             >
-              {canEmailReminder
-                ? 'Send Reminder'
-                : reminderCopied
-                  ? 'Copied'
-                  : 'Copy reminder link'}
+              {reminderLoading
+                ? 'Sending…'
+                : canEmailReminder
+                  ? 'Send Reminder'
+                  : reminderCopied
+                    ? 'Copied'
+                    : 'Copy reminder link'}
             </Button>
           )}
           {awaitingClient && onEmailClient && (

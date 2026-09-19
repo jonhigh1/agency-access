@@ -4,6 +4,7 @@ import {
   getAccessRequest,
   updateAccessRequest,
   cancelAccessRequest,
+  sendAccessRequestReminder,
 } from '../access-requests';
 
 function getAuthorizationHeader(headers: HeadersInit | undefined): string | undefined {
@@ -108,5 +109,27 @@ describe('access-requests api client', () => {
     );
     const [, requestOptions] = fetchMock.mock.calls[0];
     expect(getAuthorizationHeader(requestOptions.headers)).toBe('Bearer token-123');
+  });
+
+  it('calls POST /api/access-requests/:id/remind when sending a reminder', async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        data: {
+          accessRequestId: 'request-456',
+          sentAt: '2026-09-19T12:00:00.000Z',
+          recipientEmail: 'client@example.com',
+        },
+        error: null,
+      }),
+    });
+
+    const result = await sendAccessRequestReminder('request-456', async () => 'token-123');
+
+    expect(result.data?.recipientEmail).toBe('client@example.com');
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://api.example.com/api/access-requests/request-456/remind',
+      expect.objectContaining({ method: 'POST' })
+    );
   });
 });

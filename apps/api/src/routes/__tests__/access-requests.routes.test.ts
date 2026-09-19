@@ -11,11 +11,17 @@ import { accessRequestRoutes } from '../access-requests.js';
 import * as accessRequestService from '@/services/access-request.service';
 import * as agencyPlatformService from '@/services/agency-platform.service';
 import * as auditService from '@/services/audit.service';
+import * as accessRequestReminderService from '@/services/access-request-reminder.service';
 import * as authorization from '@/lib/authorization.js';
 
 // Mock services
 vi.mock('@/services/access-request.service');
 vi.mock('@/services/agency-platform.service');
+vi.mock('@/services/access-request-reminder.service', () => ({
+  accessRequestReminderService: {
+    sendInviteReminder: vi.fn(),
+  },
+}));
 vi.mock('@/services/audit.service');
 vi.mock('@/lib/authorization.js');
 vi.mock('@/services/quota.service', () => ({
@@ -519,6 +525,110 @@ describe('Access Requests Routes - Platform Connection Validation', () => {
 
       expect(response.statusCode).toBe(404);
       expect(response.json().error.code).toBe('REQUEST_EXPIRED');
+    });
+  });
+
+  describe('POST /access-requests/:id/remind', () => {
+    it('sends reminder and writes audit log on success', async () => {
+      vi.mocked(accessRequestService.getAccessRequestById).mockResolvedValue({
+        data: {
+          id: 'req-1',
+          agencyId: 'agency-1',
+          clientName: 'Jamie',
+          clientEmail: 'jamie@client.com',
+        } as any,
+        error: null,
+      });
+      vi.mocked(accessRequestReminderService.accessRequestReminderService.sendInviteReminder).mockResolvedValue({
+        data: {
+          accessRequestId: 'req-1',
+          sentAt: '2026-09-19T12:00:00.000Z',
+          recipientEmail: 'jamie@client.com',
+        },
+        error: null,
+      });
+      vi.mocked(auditService.auditService.createAuditLog).mockResolvedValue({
+        data: {} as any,
+        error: null,
+      });
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/access-requests/req-1/remind',
+      });
+
+      expect(response.statusCode).toBe(200);
+      expect(accessRequestReminderService.accessRequestReminderService.sendInviteReminder).toHaveBeenCalledWith('req-1');
+      expect(auditService.auditService.createAuditLog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'ACCESS_REQUEST_REMINDER_SENT',
+          resourceId: 'req-1',
+        })
+      );
+    });
+
+    it('returns 403 when agency does not match', async () => {
+      vi.mocked(accessRequestService.getAccessRequestById).mockResolvedValue({
+        data: {
+          id: 'req-1',
+          agencyId: 'agency-other',
+        } as any,
+        error: null,
+      });
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/access-requests/req-1/remind',
+      });
+
+      expect(response.statusCode).toBe(403);
+      expect(accessRequestReminderService.accessRequestReminderService.sendInviteReminder).not.toHaveBeenCalled();
+    });
+
+    it('returns 429 with retryAfter on cooldown', async () => {
+      vi.mocked(accessRequestService.getAccessRequestById).mockResolvedValue({
+        data: { id: 'req-1', agencyId: 'agency-1' } as any,
+        error: null,
+      });
+      vi.mocked(accessRequestReminderService.accessRequestReminderService.sendInviteReminder).mockResolvedValue({
+        data: null,
+        error: {
+          code: 'REMINDER_COOLDOWN',
+          message: 'A reminder was sent recently. Try again later.',
+          details: { retryAfter: '2026-09-19T13:00:00.000Z', retryAfterSeconds: 1800 },
+        },
+      });
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/access-requests/req-1/remind',
+      });
+
+      expect(response.statusCode).toBe(429);
+      expect(response.json().error.code).toBe('REMINDER_COOLDOWN');
+      expect(response.json().error.details.retryAfter).toBeDefined();
+    });
+
+    it('returns 503 when email is not configured', async () => {
+      vi.mocked(accessRequestService.getAccessRequestById).mockResolvedValue({
+        data: { id: 'req-1', agencyId: 'agency-1' } as any,
+        error: null,
+      });
+      vi.mocked(accessRequestReminderService.accessRequestReminderService.sendInviteReminder).mockResolvedValue({
+        data: null,
+        error: {
+          code: 'EMAIL_NOT_CONFIGURED',
+          message: 'Email delivery is not configured on this server',
+        },
+      });
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/access-requests/req-1/remind',
+      });
+
+      expect(response.statusCode).toBe(503);
+      expect(response.json().error.code).toBe('EMAIL_NOT_CONFIGURED');
     });
   });
 });
