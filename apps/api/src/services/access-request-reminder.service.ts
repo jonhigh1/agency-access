@@ -124,7 +124,10 @@ export const accessRequestReminderService = {
     });
 
     if (emailResult.error) {
-      const providerCode = emailResult.error.code;
+      const providerCode =
+        'code' in emailResult.error && typeof emailResult.error.code === 'string'
+          ? emailResult.error.code
+          : undefined;
       if (providerCode === 'RESEND_NOT_CONFIGURED') {
         return {
           data: null,
