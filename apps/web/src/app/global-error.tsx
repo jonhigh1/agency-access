@@ -1,7 +1,8 @@
 "use client";
 
 import * as Sentry from "@sentry/nextjs";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { isDeploymentSkewError, recoverFromDeploymentSkew } from "@/lib/deployment-skew";
 
 export default function GlobalError({
   error,
@@ -10,9 +11,38 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const [recovering, setRecovering] = useState(false);
+
   useEffect(() => {
+    // A stale tab that posts a Server Action the current build no longer knows
+    // is not a real fault. Reload to the fresh bundle instead of crashing.
+    if (isDeploymentSkewError(error) && recoverFromDeploymentSkew()) {
+      setRecovering(true);
+      return;
+    }
+
     Sentry.captureException(error);
   }, [error]);
+
+  if (recovering) {
+    return (
+      <html>
+        <body>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            minHeight: '100vh',
+            padding: '2rem',
+            fontFamily: 'system-ui, -apple-system, sans-serif',
+            color: '#666',
+          }}>
+            <p>Loading the latest version…</p>
+          </div>
+        </body>
+      </html>
+    );
+  }
 
   return (
     <html>
