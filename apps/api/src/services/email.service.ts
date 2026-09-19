@@ -117,3 +117,88 @@ export async function sendClientAuthorizationEmail(options: {
     html,
   });
 }
+
+function escapeHtml(value: string): string {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
+
+/**
+ * Send a client invite reminder (agency-initiated follow-up).
+ */
+export async function sendClientInviteReminderEmail(options: {
+  to: string;
+  clientName: string;
+  agencyName: string;
+  authorizationUrl: string;
+  expirationText?: string | null;
+  replyTo?: string;
+  idempotencyKey: string;
+}) {
+  const {
+    to,
+    clientName,
+    agencyName,
+    authorizationUrl,
+    expirationText,
+    replyTo,
+    idempotencyKey,
+  } = options;
+
+  const expirationLine = expirationText
+    ? `<p style="margin: 16px 0 0;">This link expires on ${escapeHtml(expirationText)}.</p>`
+    : '';
+  const expirationTextPlain = expirationText ? `\n\nThis link expires on ${expirationText}.` : '';
+
+  const html = `
+    <div style="font-family: sans-serif; color: #1e293b; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #09090B;">Reminder: authorize platform access</h2>
+      <p>Hi ${escapeHtml(clientName)},</p>
+      <p>
+        This is a friendly reminder from <strong>${escapeHtml(agencyName)}</strong> to authorize platform access when you are ready.
+        Open the secure link below and complete authorization on your schedule — tokens are issued only after you finish.
+      </p>
+      ${expirationLine}
+      <p style="margin-top: 24px;">
+        <a href="${authorizationUrl}" style="background-color: #FF6B35; color: white; padding: 12px 24px; border-radius: 6px; text-decoration: none; font-weight: bold; display: inline-block;">
+          Authorize access
+        </a>
+      </p>
+      <p style="margin-top: 16px; font-size: 14px; word-break: break-all;">
+        <a href="${authorizationUrl}">${authorizationUrl}</a>
+      </p>
+      <p style="margin-top: 24px; font-size: 14px; color: #64748b;">
+        If you were not expecting this request, contact ${escapeHtml(agencyName)} before continuing.
+      </p>
+      <hr style="margin: 32px 0; border: 0; border-top: 1px solid #e2e8f0;" />
+      <p style="font-size: 12px; color: #64748b;">
+        Sent on behalf of ${escapeHtml(agencyName)} via AuthHub.
+      </p>
+    </div>
+  `;
+
+  const text = `Hi ${clientName},
+
+This is a friendly reminder from ${agencyName} to authorize platform access when you are ready. Open the secure link below and complete authorization on your schedule — tokens are issued only after you finish.${expirationTextPlain}
+
+${authorizationUrl}
+
+If you were not expecting this request, contact ${agencyName} before continuing.`;
+
+  return sendEmail({
+    to,
+    subject: 'Reminder: authorize platform access when ready',
+    html,
+    text,
+    replyTo,
+    idempotencyKey,
+  });
+}
+
+export function isEmailDeliveryConfigured(): boolean {
+  return Boolean(env.RESEND_API_KEY);
+}

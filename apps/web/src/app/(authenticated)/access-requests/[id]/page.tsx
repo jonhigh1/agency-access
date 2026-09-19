@@ -7,12 +7,11 @@ import { useAuth } from '@clerk/nextjs';
 import { useAuthOrBypass } from '@/lib/dev-auth';
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard';
 import {
-  buildInviteReminderMailto,
   buildInviteSentMailto,
   trackInviteLinkCopyAndSent,
-  trackInviteReminderSent,
   trackInviteSent,
 } from '@/lib/analytics/invite-events';
+import { executeSendInviteReminder } from '@/lib/invite-reminder';
 import { getAccessRequest, getAuthorizationUrl } from '@/lib/api/access-requests';
 import type { AccessRequest } from '@/lib/api/access-requests';
 import {
@@ -37,6 +36,8 @@ export default function AccessRequestDetailPage({ params }: AccessRequestDetailP
   const [error, setError] = useState<string | null>(null);
   const { copied, copy } = useCopyToClipboard();
   const { copied: reminderCopied, copy: copyReminderLink } = useCopyToClipboard();
+  const [reminderLoading, setReminderLoading] = useState(false);
+  const [reminderStatusMessage, setReminderStatusMessage] = useState<string | null>(null);
 
   const resolveApiToken = useMemo(
     () => async () => {
@@ -127,7 +128,9 @@ export default function AccessRequestDetailPage({ params }: AccessRequestDetailP
     }
 
     void trackAction('send_reminder');
-    const clientEmail = accessRequest.clientEmail?.trim();
+    setReminderLoading(true);
+    setReminderStatusMessage(null);
+
     const expirationText = new Date(accessRequest.expiresAt).toLocaleDateString('en-US', {
       weekday: 'long',
       month: 'long',
@@ -135,32 +138,32 @@ export default function AccessRequestDetailPage({ params }: AccessRequestDetailP
       year: 'numeric',
     });
 
-    if (clientEmail) {
-      const mailtoHref = buildInviteReminderMailto({
-        clientEmail,
+    try {
+      const result = await executeSendInviteReminder({
+        accessRequestId: accessRequest.id,
+        accessRequestToken: accessRequest.uniqueToken,
+        status: accessRequest.status,
+        surface: 'detail',
+        clientEmail: accessRequest.clientEmail,
         clientName: accessRequest.clientName,
         authorizationUrl,
         expirationText,
+        getToken: resolveApiToken,
+        copyReminderLink: async (url) => {
+          await copyReminderLink(url);
+        },
       });
-      trackInviteReminderSent({
-        access_request_id: accessRequest.id,
-        access_request_token: accessRequest.uniqueToken,
-        status: accessRequest.status,
-        channel: 'email',
-        surface: 'detail',
-      });
-      window.location.assign(mailtoHref);
-      return;
-    }
 
-    await copyReminderLink(authorizationUrl);
-    trackInviteReminderSent({
-      access_request_id: accessRequest.id,
-      access_request_token: accessRequest.uniqueToken,
-      status: accessRequest.status,
-      channel: 'copy',
-      surface: 'detail',
-    });
+      if (result.outcome === 'sent') {
+        setReminderStatusMessage('Reminder sent to client.');
+      } else if (result.outcome === 'cooldown') {
+        setReminderStatusMessage(result.message);
+      } else if (result.outcome === 'error') {
+        setReminderStatusMessage(result.message);
+      }
+    } finally {
+      setReminderLoading(false);
+    }
   };
 
   const handleEmailClient = () => {
@@ -265,6 +268,8 @@ export default function AccessRequestDetailPage({ params }: AccessRequestDetailP
           authorizationUrl={authorizationUrl}
           copied={copied}
           reminderCopied={reminderCopied}
+          reminderLoading={reminderLoading}
+          reminderStatusMessage={reminderStatusMessage}
           onCopyLink={handleCopyLink}
           onPreviewLink={handlePreviewLink}
           showAwaitingClientCallout={

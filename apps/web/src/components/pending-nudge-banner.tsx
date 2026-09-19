@@ -19,6 +19,8 @@ interface PendingNudgeBannerProps {
   surface: PendingNudgeSurface;
   copied?: boolean;
   reminderCopied?: boolean;
+  reminderLoading?: boolean;
+  reminderStatusMessage?: string | null;
   onCopyLink: () => void;
   onSendReminder: () => void;
   onDismiss: () => void;
@@ -41,6 +43,8 @@ export function PendingNudgeBanner({
   surface,
   copied = false,
   reminderCopied = false,
+  reminderLoading = false,
+  reminderStatusMessage = null,
   onCopyLink,
   onSendReminder,
   onDismiss,
@@ -106,6 +110,11 @@ export function PendingNudgeBanner({
         <div className="min-w-0">
           <p className="text-sm font-semibold text-ink">Pending invite needs follow-up</p>
           <p className="mt-1 text-sm text-muted-foreground">{cliffMessage(cliff, clientName)}</p>
+          {reminderStatusMessage ? (
+            <p className="mt-2 text-sm font-medium text-ink" role="status">
+              {reminderStatusMessage}
+            </p>
+          ) : null}
         </div>
         <button
           type="button"
@@ -131,13 +140,17 @@ export function PendingNudgeBanner({
           size="sm"
           leftIcon={<Bell className="h-4 w-4" />}
           onClick={handleSendReminder}
+          disabled={reminderLoading}
+          aria-busy={reminderLoading}
           aria-label={canEmailReminder ? 'Send reminder to client' : 'Copy reminder link'}
         >
-          {canEmailReminder
-            ? 'Send Reminder'
-            : reminderCopied
-              ? 'Copied'
-              : 'Copy reminder link'}
+          {reminderLoading
+            ? 'Sending…'
+            : canEmailReminder
+              ? 'Send Reminder'
+              : reminderCopied
+                ? 'Copied'
+                : 'Copy reminder link'}
         </Button>
       </div>
     </div>
