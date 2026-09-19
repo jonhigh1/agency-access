@@ -50,6 +50,7 @@ describe("ComparisonPageTemplate marketing hardening", () => {
     const template = readRelative("src/components/programmatic/ComparisonPageTemplate.tsx");
 
     expect(template).toMatch(/pricingScenarios\.map/);
+    expect(template).toMatch(/Full Leadsie pricing breakdown/);
     expect(template).toMatch(/Leadsie pricing explained/);
     expect(template).toMatch(/Lowest published Leadsie option/);
     expect(template).not.toMatch(/migrationTimeMinutes/);
