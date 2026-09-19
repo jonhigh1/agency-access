@@ -7,6 +7,8 @@ export type PendingCliff = '24h' | '72h';
 export type PendingNudgeRequest = {
   id: string;
   clientName: string;
+  clientEmail?: string | null;
+  expiresAt?: string | null;
   status: string;
   createdAt: string;
   uniqueToken: string;

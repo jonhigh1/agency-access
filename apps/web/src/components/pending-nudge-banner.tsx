@@ -14,6 +14,7 @@ interface PendingNudgeBannerProps {
   accessRequestId: string;
   accessRequestToken: string;
   clientName: string;
+  clientEmail?: string | null;
   cliff: PendingNudgeCliff;
   surface: PendingNudgeSurface;
   copied?: boolean;
@@ -35,6 +36,7 @@ export function PendingNudgeBanner({
   accessRequestId,
   accessRequestToken,
   clientName,
+  clientEmail,
   cliff,
   surface,
   copied = false,
@@ -44,6 +46,7 @@ export function PendingNudgeBanner({
   onDismiss,
 }: PendingNudgeBannerProps) {
   const hasTrackedShown = useRef(false);
+  const canEmailReminder = Boolean(clientEmail?.trim());
 
   useEffect(() => {
     if (hasTrackedShown.current) {
@@ -128,9 +131,13 @@ export function PendingNudgeBanner({
           size="sm"
           leftIcon={<Bell className="h-4 w-4" />}
           onClick={handleSendReminder}
-          aria-label="Send reminder to client"
+          aria-label={canEmailReminder ? 'Send reminder to client' : 'Copy reminder link'}
         >
-          {reminderCopied ? 'Link copied — send when ready' : 'Send Reminder'}
+          {canEmailReminder
+            ? 'Send Reminder'
+            : reminderCopied
+              ? 'Copied'
+              : 'Copy reminder link'}
         </Button>
       </div>
     </div>
