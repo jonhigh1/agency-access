@@ -1299,6 +1299,45 @@ describe('AccessRequestService', () => {
     });
   });
 
+  describe('cancelAccessRequest', () => {
+    it('returns after durable revoke even when webhook delivery stalls', async () => {
+      vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue({
+        agencyId: 'agency-1',
+        status: 'pending',
+      } as any);
+      vi.mocked(prisma.accessRequest.update).mockResolvedValue({
+        id: 'request-1',
+        status: 'revoked',
+      } as any);
+      vi.mocked(prisma.webhookEndpoint.findUnique).mockReturnValue(
+        new Promise(() => {}) as any
+      );
+
+      const result = await accessRequestService.cancelAccessRequest('request-1');
+
+      expect(result).toEqual({ data: { success: true }, error: null });
+      expect(prisma.accessRequest.update).toHaveBeenCalledWith({
+        where: { id: 'request-1' },
+        data: { status: 'revoked' },
+      });
+    });
+
+    it('returns database errors instead of starting side effects', async () => {
+      vi.mocked(prisma.accessRequest.findUnique).mockRejectedValue(new Error('database unavailable'));
+
+      const result = await accessRequestService.cancelAccessRequest('request-1');
+
+      expect(result).toEqual({
+        data: null,
+        error: {
+          code: 'INTERNAL_ERROR',
+          message: 'Failed to cancel access request',
+        },
+      });
+      expect(prisma.accessRequest.update).not.toHaveBeenCalled();
+    });
+  });
+
   describe('getDashboardAccessRequestSummaries', () => {
     it('should exclude revoked (canceled) and expired requests from dashboard', async () => {
       const mockRequests = [

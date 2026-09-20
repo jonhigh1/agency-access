@@ -402,6 +402,14 @@ export async function accessRequestRoutes(fastify: FastifyInstance) {
     const principalAgencyId = (request as any).principalAgencyId as string;
 
     const existing = await accessRequestService.getAccessRequestById(id);
+    if (existing.error) {
+      const statusCode = existing.error.code === 'NOT_FOUND' ? 404 : 500;
+      return reply.code(statusCode).send({
+        data: null,
+        error: existing.error,
+      });
+    }
+
     if (!existing.error && existing.data) {
       const accessError = assertAgencyAccess((existing.data as any).agencyId, principalAgencyId);
       if (accessError) {
@@ -415,14 +423,15 @@ export async function accessRequestRoutes(fastify: FastifyInstance) {
     const result = await accessRequestService.cancelAccessRequest(id);
 
     if (result.error) {
-      return reply.code(404).send({
+      const statusCode = result.error.code === 'NOT_FOUND' ? 404 : 500;
+      return reply.code(statusCode).send({
         data: null,
         error: result.error,
       });
     }
 
     if (existing.data) {
-      await auditService.createAuditLog({
+      void auditService.createAuditLog({
         agencyId: (existing.data as any).agencyId,
         userEmail:
           ((request as any).user?.email as string | undefined) ||
@@ -436,6 +445,11 @@ export async function accessRequestRoutes(fastify: FastifyInstance) {
           clientEmail: (existing.data as any).clientEmail,
         },
         request,
+      }).catch((error) => {
+        fastify.log.warn({
+          accessRequestId: id,
+          error: error instanceof Error ? error.message : String(error),
+        }, 'Failed to audit access request cancellation');
       });
     }
 

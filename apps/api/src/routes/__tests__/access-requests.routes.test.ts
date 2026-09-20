@@ -452,6 +452,63 @@ describe('Access Requests Routes - Platform Connection Validation', () => {
     });
   });
 
+  describe('POST /access-requests/:id/cancel', () => {
+    it('returns after revoke without waiting for audit logging', async () => {
+      vi.mocked(accessRequestService.getAccessRequestById).mockResolvedValue({
+        data: {
+          id: 'req-1',
+          agencyId: 'agency-1',
+          clientName: 'Client',
+          clientEmail: 'client@example.com',
+        } as any,
+        error: null,
+      });
+      vi.mocked(accessRequestService.cancelAccessRequest).mockResolvedValue({
+        data: { success: true },
+        error: null,
+      });
+      vi.mocked(auditService.auditService.createAuditLog).mockReturnValue(
+        new Promise(() => {}) as any
+      );
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/access-requests/req-1/cancel',
+      });
+
+      expect(response.statusCode).toBe(200);
+      expect(response.json()).toEqual({ data: { success: true }, error: null });
+      expect(auditService.auditService.createAuditLog).toHaveBeenCalledWith(
+        expect.objectContaining({
+          action: 'ACCESS_REQUEST_REVOKED',
+          resourceId: 'req-1',
+        })
+      );
+    });
+
+    it('surfaces database errors from the authorization lookup', async () => {
+      vi.mocked(accessRequestService.getAccessRequestById).mockResolvedValue({
+        data: null,
+        error: {
+          code: 'INTERNAL_ERROR',
+          message: 'Failed to retrieve access request',
+        } as any,
+      });
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/access-requests/req-1/cancel',
+      });
+
+      expect(response.statusCode).toBe(500);
+      expect(response.json().error).toEqual({
+        code: 'INTERNAL_ERROR',
+        message: 'Failed to retrieve access request',
+      });
+      expect(accessRequestService.cancelAccessRequest).not.toHaveBeenCalled();
+    });
+  });
+
   describe('GET /client/:token - public client payload', () => {
     it('should return enriched client payload from service', async () => {
       vi.mocked(accessRequestService.getAccessRequestByToken).mockResolvedValue({

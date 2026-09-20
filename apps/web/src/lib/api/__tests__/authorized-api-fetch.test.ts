@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { authorizedApiFetch } from '../authorized-api-fetch';
+import { AuthorizedApiError, authorizedApiFetch } from '../authorized-api-fetch';
 
 describe('authorizedApiFetch', () => {
   const fetchMock = vi.fn();
@@ -59,5 +59,29 @@ describe('authorizedApiFetch', () => {
         getToken: async () => 'token-123',
       })
     ).rejects.toThrow('Missing or invalid Authorization header');
+  });
+
+  it('fails with a bounded timeout when the request never resolves', async () => {
+    vi.useFakeTimers();
+    fetchMock.mockImplementation((_url: string, options: RequestInit) =>
+      new Promise((_resolve, reject) => {
+        options.signal?.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')));
+      })
+    );
+
+    const request = authorizedApiFetch('/api/access-requests/request-1/cancel', {
+      method: 'POST',
+      getToken: async () => 'token-123',
+    });
+    const expectation = expect(request).rejects.toMatchObject<Partial<AuthorizedApiError>>({
+      code: 'TIMEOUT',
+      status: 408,
+      message: 'Request timed out. Please try again.',
+    });
+
+    await vi.advanceTimersByTimeAsync(15_000);
+
+    await expectation;
+    vi.useRealTimers();
   });
 });

@@ -1585,18 +1585,21 @@ export async function cancelAccessRequest(id: string) {
       data: { status: 'revoked' },
     });
 
-    // Emit access_request.revoked webhook
-    if (existing && existing.status !== 'revoked') {
-      await emitAccessRequestLifecycleWebhook({
+    void Promise.all([
+      existing && existing.status !== 'revoked'
+        ? emitAccessRequestLifecycleWebhook({
+            accessRequestId: id,
+            previousStatus: existing.status,
+            nextStatus: 'revoked',
+          })
+        : Promise.resolve(),
+      existing?.agencyId ? invalidateDashboardCache(existing.agencyId) : Promise.resolve(),
+    ]).catch((error) => {
+      logger.warn('Failed to complete access request cancellation side effects', {
         accessRequestId: id,
-        previousStatus: existing.status,
-        nextStatus: 'revoked',
+        error: error instanceof Error ? error.message : String(error),
       });
-    }
-
-    if (existing?.agencyId) {
-      await invalidateDashboardCache(existing.agencyId);
-    }
+    });
 
     return { data: { success: true }, error: null };
   } catch (error) {
