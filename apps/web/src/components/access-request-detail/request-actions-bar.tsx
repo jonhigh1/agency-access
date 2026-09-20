@@ -2,12 +2,14 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { ArrowLeft, Edit3, Plus, Unlink } from 'lucide-react';
 import { useAuth } from '@clerk/nextjs';
 import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/components/ui';
 import { CancelRequestModal } from './CancelRequestModal';
 import { cancelAccessRequest } from '@/lib/api/access-requests';
+import { capturePosthogEvent } from '@/lib/analytics/capture-posthog';
 
 interface RequestActionsBarProps {
   requestId: string;
@@ -33,23 +35,49 @@ export function RequestActionsBar({
   onRevokeSuccess,
 }: RequestActionsBarProps) {
   const { getToken } = useAuth();
+  const router = useRouter();
   const queryClient = useQueryClient();
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelPending, setCancelPending] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
   const editable = isEditable(status);
   const revocable = isRevocable(status);
 
+  const openCancelModal = () => {
+    setCancelError(null);
+    setShowCancelModal(true);
+  };
+
   const handleCancelConfirm = async () => {
     setCancelPending(true);
+    setCancelError(null);
     try {
       const result = await cancelAccessRequest(requestId, getToken);
       if (result.error) {
-        throw new Error(result.error.message);
+        void capturePosthogEvent('cancel_request_failed', {
+          access_request_id: requestId,
+          error_code: result.error.code,
+        });
+        // A 401 means the session lapsed. Send the user to sign in again
+        // instead of failing silently, then keep the modal open with the reason.
+        if (result.error.code === 'UNAUTHORIZED') {
+          setCancelError('Your session has expired. Please sign in again to cancel this request.');
+          router.push('/sign-in' as any);
+          return;
+        }
+        setCancelError(result.error.message || 'Could not cancel the request. Please try again.');
+        return;
       }
       onAction?.('cancel_request');
       onRevokeSuccess?.();
       queryClient.invalidateQueries({ queryKey: ['dashboard'] });
       setShowCancelModal(false);
+    } catch (err) {
+      void capturePosthogEvent('cancel_request_failed', {
+        access_request_id: requestId,
+        error_code: 'UNEXPECTED',
+      });
+      setCancelError(err instanceof Error ? err.message : 'Could not cancel the request. Please try again.');
     } finally {
       setCancelPending(false);
     }
@@ -75,7 +103,7 @@ export function RequestActionsBar({
               variant="secondary"
               size="sm"
               leftIcon={<Unlink className="h-4 w-4" />}
-              onClick={() => setShowCancelModal(true)}
+              onClick={openCancelModal}
               aria-label="Cancel request"
             >
               Cancel Request
@@ -113,6 +141,7 @@ export function RequestActionsBar({
           onConfirm={handleCancelConfirm}
           onClose={() => setShowCancelModal(false)}
           isPending={cancelPending}
+          errorMessage={cancelError}
         />
       )}
     </>
