@@ -8,7 +8,10 @@ type OnboardingEmailKey =
   | 'get_to_first_link'
   | 'send_the_link'
   | 'track_status_keep_momentum'
-  | 'turn_one_request_into_workflow';
+  | 'turn_one_request_into_workflow'
+  | 'still_waiting_day14'
+  | 'one_client_day30'
+  | 'closing_the_loop_day60';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const EMAIL_DELAYS: Record<Exclude<OnboardingEmailKey, 'send_the_link'>, number> = {
@@ -16,6 +19,9 @@ const EMAIL_DELAYS: Record<Exclude<OnboardingEmailKey, 'send_the_link'>, number>
   get_to_first_link: DAY_MS,
   track_status_keep_momentum: 3 * DAY_MS,
   turn_one_request_into_workflow: 7 * DAY_MS,
+  still_waiting_day14: 14 * DAY_MS,
+  one_client_day30: 30 * DAY_MS,
+  closing_the_loop_day60: 60 * DAY_MS,
 };
 
 function getOnboardingUrl(): string {
@@ -232,6 +238,113 @@ If you are still testing, run one more real client through the flow. That is usu
   return { subject, text };
 }
 
+const CHURN_OPTOUT_ACTION = 'CHURN_OPTOUT';
+
+async function hasChurnOptOut(agencyId: string): Promise<boolean> {
+  const existing = await prisma.auditLog.findFirst({
+    where: {
+      agencyId,
+      action: CHURN_OPTOUT_ACTION,
+      resourceType: 'onboarding_email',
+    },
+  });
+
+  return Boolean(existing);
+}
+
+async function logChurnOptOut(agencyId: string) {
+  await prisma.auditLog.create({
+    data: {
+      agencyId,
+      userEmail: 'system',
+      action: CHURN_OPTOUT_ACTION,
+      resourceType: 'onboarding_email',
+      resourceId: `${agencyId}:churn_optout`,
+      metadata: {
+        source: 'one_client_day30_optout',
+      },
+    },
+  });
+}
+
+export async function recordChurnOptOut(input: { agencyId: string }) {
+  try {
+    await logChurnOptOut(input.agencyId);
+    return { data: true, error: null };
+  } catch (error: any) {
+    return {
+      data: null,
+      error: {
+        code: 'CHURN_OPTOUT_FAILED',
+        message: 'Failed to record churn opt-out',
+      },
+    };
+  }
+}
+
+function buildStillWaitingDay14Email() {
+  const subject = 'The part where most agencies get stuck';
+  const text = `Hi there,
+
+Two weeks ago you signed up to kill the access-handoff email loop. Still nothing set up. That is normal, and it is almost never the product that stopped you.
+
+It is picking which client goes first.
+
+So here is the shortcut: pick the next client you are already chasing for access. Not the biggest one. The one where the back-and-forth is actively annoying you this week.
+
+That client already needs to give you access. AuthHub just turns three days of email into one link.
+
+Create that request here:
+${getOnboardingUrl()}
+
+If it is something else blocking you, reply with one sentence about what it is. We read every reply.
+
+- The AuthHub team`;
+
+  return { subject, text };
+}
+
+function buildOneClientDay30Email() {
+  const subject = 'Five minutes, one client, done';
+  const text = `Hi there,
+
+One month in, so this is the short version.
+
+Setting up AuthHub takes about five minutes: pick a client, choose their platforms, generate the link. The link does the rest — your client authorizes Meta, Google, GA4, or LinkedIn without a single email thread.
+
+If you have a client waiting on access right now, this is your moment:
+
+Create the link here:
+${getOnboardingUrl()}
+
+And if AuthHub turned out to be not for you, that is fine too. Reply with the word "pass" and we will stop emailing. No hard feelings. Marcus had whole chapters on letting go.
+
+- The AuthHub team`;
+
+  return { subject, text };
+}
+
+function buildClosingTheLoopDay60Email() {
+  const subject = 'Before we stop emailing you';
+  const text = `Hi there,
+
+This is the last email in this sequence. After this, we go quiet unless you reach out first.
+
+Before that, one honest question:
+
+What would have made you set up your first access link in those first days?
+
+Reply with one sentence. If the answer is something we can fix, you will have made the product better for every agency after you. If the answer means we are not for you, that is useful too.
+
+The door stays open. Your account is live whenever a client handoff gets painful again:
+
+${getDashboardUrl()}
+
+— The AuthHub team`;
+
+  return { subject, text };
+}
+
 export async function queueSequenceStart(input: { agencyId: string }) {
   try {
     const jobs = Object.entries(EMAIL_DELAYS) as Array<[Exclude<OnboardingEmailKey, 'send_the_link'>, number]>;
@@ -386,6 +499,36 @@ export async function sendOnboardingEmail(input: {
     message = buildWorkflowEmail();
   }
 
+  if (emailKey === 'still_waiting_day14') {
+    if (agency.accessRequests.length > 0) {
+      return { data: { skipped: true, reason: 'already_activated' }, error: null };
+    }
+    if (await hasChurnOptOut(agencyId)) {
+      return { data: { skipped: true, reason: 'churn_optout' }, error: null };
+    }
+    message = buildStillWaitingDay14Email();
+  }
+
+  if (emailKey === 'one_client_day30') {
+    if (agency.accessRequests.length > 0) {
+      return { data: { skipped: true, reason: 'already_activated' }, error: null };
+    }
+    if (await hasChurnOptOut(agencyId)) {
+      return { data: { skipped: true, reason: 'churn_optout' }, error: null };
+    }
+    message = buildOneClientDay30Email();
+  }
+
+  if (emailKey === 'closing_the_loop_day60') {
+    if (agency.accessRequests.length > 0) {
+      return { data: { skipped: true, reason: 'already_activated' }, error: null };
+    }
+    if (await hasChurnOptOut(agencyId)) {
+      return { data: { skipped: true, reason: 'churn_optout' }, error: null };
+    }
+    message = buildClosingTheLoopDay60Email();
+  }
+
   if (!message) {
     return {
       data: null,
@@ -422,4 +565,5 @@ export const onboardingEmailService = {
   queueSequenceStart,
   queueActivatedFollowUp,
   sendOnboardingEmail,
+  recordChurnOptOut,
 };

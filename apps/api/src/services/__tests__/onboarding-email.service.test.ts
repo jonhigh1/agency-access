@@ -50,7 +50,7 @@ describe('onboardingEmailService', () => {
     it('queues the welcome sequence jobs with expected delays', async () => {
       await onboardingEmailService.queueSequenceStart({ agencyId: 'agency-1' });
 
-      expect(pgBoss.enqueueJob).toHaveBeenCalledTimes(4);
+      expect(pgBoss.enqueueJob).toHaveBeenCalledTimes(7);
       expect(pgBoss.enqueueJob).toHaveBeenCalledWith(
         'onboarding-email',
         expect.objectContaining({
@@ -71,6 +71,39 @@ describe('onboardingEmailService', () => {
         expect.objectContaining({
           singletonKey: 'onboarding-email:agency-1:get_to_first_link',
           startAfter: 86400, // 24 hours in seconds
+        })
+      );
+      expect(pgBoss.enqueueJob).toHaveBeenCalledWith(
+        'onboarding-email',
+        expect.objectContaining({
+          agencyId: 'agency-1',
+          emailKey: 'still_waiting_day14',
+        }),
+        expect.objectContaining({
+          singletonKey: 'onboarding-email:agency-1:still_waiting_day14',
+          startAfter: 14 * 86400,
+        })
+      );
+      expect(pgBoss.enqueueJob).toHaveBeenCalledWith(
+        'onboarding-email',
+        expect.objectContaining({
+          agencyId: 'agency-1',
+          emailKey: 'one_client_day30',
+        }),
+        expect.objectContaining({
+          singletonKey: 'onboarding-email:agency-1:one_client_day30',
+          startAfter: 30 * 86400,
+        })
+      );
+      expect(pgBoss.enqueueJob).toHaveBeenCalledWith(
+        'onboarding-email',
+        expect.objectContaining({
+          agencyId: 'agency-1',
+          emailKey: 'closing_the_loop_day60',
+        }),
+        expect.objectContaining({
+          singletonKey: 'onboarding-email:agency-1:closing_the_loop_day60',
+          startAfter: 60 * 86400,
         })
       );
     });
@@ -169,6 +202,111 @@ describe('onboardingEmailService', () => {
       expect(sendEmail).toHaveBeenCalledWith(expect.objectContaining({
         subject: 'Need help getting your first request live?',
       }));
+    });
+
+    describe('churned re-engagement sequence', () => {
+      const dormantAgency = {
+        id: 'agency-1',
+        name: 'Northstar',
+        email: 'owner@northstar.co',
+        settings: {},
+        accessRequests: [],
+      };
+
+      it('sends the day-14 email to a dormant agency', async () => {
+        vi.mocked(prisma.agency.findUnique).mockResolvedValue(dormantAgency as any);
+
+        const result = await onboardingEmailService.sendOnboardingEmail({
+          agencyId: 'agency-1',
+          emailKey: 'still_waiting_day14',
+        });
+
+        expect(result.error).toBeNull();
+        expect(sendEmail).toHaveBeenCalledWith(expect.objectContaining({
+          to: 'owner@northstar.co',
+          subject: 'The part where most agencies get stuck',
+        }));
+      });
+
+      it('sends the day-30 email to a dormant agency', async () => {
+        vi.mocked(prisma.agency.findUnique).mockResolvedValue(dormantAgency as any);
+
+        const result = await onboardingEmailService.sendOnboardingEmail({
+          agencyId: 'agency-1',
+          emailKey: 'one_client_day30',
+        });
+
+        expect(result.error).toBeNull();
+        expect(sendEmail).toHaveBeenCalledWith(expect.objectContaining({
+          subject: 'Five minutes, one client, done',
+        }));
+      });
+
+      it('sends the day-60 closing email to a dormant agency', async () => {
+        vi.mocked(prisma.agency.findUnique).mockResolvedValue(dormantAgency as any);
+
+        const result = await onboardingEmailService.sendOnboardingEmail({
+          agencyId: 'agency-1',
+          emailKey: 'closing_the_loop_day60',
+        });
+
+        expect(result.error).toBeNull();
+        expect(sendEmail).toHaveBeenCalledWith(expect.objectContaining({
+          subject: 'Before we stop emailing you',
+        }));
+      });
+
+      it.each(['still_waiting_day14', 'one_client_day30', 'closing_the_loop_day60'] as const)(
+        'skips %s once the agency activated',
+        async (emailKey) => {
+          vi.mocked(prisma.agency.findUnique).mockResolvedValue({
+            ...dormantAgency,
+            accessRequests: [{ id: 'req-1' }],
+          } as any);
+
+          const result = await onboardingEmailService.sendOnboardingEmail({
+            agencyId: 'agency-1',
+            emailKey,
+          });
+
+          expect(result.data).toEqual({ skipped: true, reason: 'already_activated' });
+          expect(sendEmail).not.toHaveBeenCalled();
+        }
+      );
+
+      it.each(['still_waiting_day14', 'one_client_day30', 'closing_the_loop_day60'] as const)(
+        'skips %s when the agency opted out',
+        async (emailKey) => {
+          vi.mocked(prisma.agency.findUnique).mockResolvedValue(dormantAgency as any);
+          vi.mocked(prisma.auditLog.findFirst).mockImplementation(async (args: any) => {
+            if (args?.where?.action === 'CHURN_OPTOUT') {
+              return { id: 1n } as any;
+            }
+            return null;
+          });
+
+          const result = await onboardingEmailService.sendOnboardingEmail({
+            agencyId: 'agency-1',
+            emailKey,
+          });
+
+          expect(result.data).toEqual({ skipped: true, reason: 'churn_optout' });
+          expect(sendEmail).not.toHaveBeenCalled();
+        }
+      );
+
+      it('records a churn opt-out', async () => {
+        const result = await onboardingEmailService.recordChurnOptOut({ agencyId: 'agency-1' });
+
+        expect(result.error).toBeNull();
+        expect(prisma.auditLog.create).toHaveBeenCalledWith(expect.objectContaining({
+          data: expect.objectContaining({
+            agencyId: 'agency-1',
+            action: 'CHURN_OPTOUT',
+            resourceType: 'onboarding_email',
+          }),
+        }));
+      });
     });
   });
 });

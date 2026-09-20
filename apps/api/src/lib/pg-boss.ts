@@ -50,7 +50,7 @@ export interface JobRegistry {
   // Onboarding emails
   'onboarding-email': {
     agencyId: string;
-    emailKey: 'welcome_first_step' | 'get_to_first_link' | 'send_the_link' | 'track_status_keep_momentum' | 'turn_one_request_into_workflow';
+    emailKey: 'welcome_first_step' | 'get_to_first_link' | 'send_the_link' | 'track_status_keep_momentum' | 'turn_one_request_into_workflow' | 'still_waiting_day14' | 'one_client_day30' | 'closing_the_loop_day60';
     accessRequestId?: string;
   };
 
