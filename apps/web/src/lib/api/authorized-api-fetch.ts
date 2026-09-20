@@ -1,5 +1,7 @@
 import { resolveApiUrl } from './api-env';
 
+const AUTHORIZED_API_TIMEOUT_MS = 15_000;
+
 export interface ApiErrorPayload {
   code: string;
   message: string;
@@ -29,7 +31,7 @@ export async function authorizedApiFetch<TResponse = any>(
   endpoint: string,
   options: AuthorizedApiFetchOptions
 ): Promise<TResponse> {
-  const { getToken, headers, method = 'GET', ...rest } = options;
+  const { getToken, headers, method = 'GET', signal: callerSignal, ...rest } = options;
 
   const token = await getToken();
   if (!token) {
@@ -46,28 +48,53 @@ export async function authorizedApiFetch<TResponse = any>(
     requestHeaders.set('Content-Type', 'application/json');
   }
 
-  const response = await fetch(resolveApiUrl(endpoint), {
-    ...rest,
-    method,
-    headers: requestHeaders,
-  });
+  const controller = new AbortController();
+  let didTimeout = false;
+  const timeoutId = setTimeout(() => {
+    didTimeout = true;
+    controller.abort();
+  }, AUTHORIZED_API_TIMEOUT_MS);
+  const abortFromCaller = () => controller.abort();
+  callerSignal?.addEventListener('abort', abortFromCaller, { once: true });
+  if (callerSignal?.aborted) controller.abort();
 
-  let payload: any = null;
   try {
-    payload = await response.json();
-  } catch {
-    payload = null;
-  }
-
-  const responseError = payload?.error;
-  if (!response.ok || responseError) {
-    throw new AuthorizedApiError({
-      code: responseError?.code || 'REQUEST_FAILED',
-      message: responseError?.message || `Request failed with status ${response.status}`,
-      status: response.status,
-      details: responseError?.details,
+    const response = await fetch(resolveApiUrl(endpoint), {
+      ...rest,
+      method,
+      headers: requestHeaders,
+      signal: controller.signal,
     });
-  }
 
-  return payload as TResponse;
+    let payload: any = null;
+    try {
+      payload = await response.json();
+    } catch {
+      payload = null;
+    }
+
+    const responseError = payload?.error;
+    if (!response.ok || responseError) {
+      throw new AuthorizedApiError({
+        code: responseError?.code || 'REQUEST_FAILED',
+        message: responseError?.message || `Request failed with status ${response.status}`,
+        status: response.status,
+        details: responseError?.details,
+      });
+    }
+
+    return payload as TResponse;
+  } catch (error) {
+    if (didTimeout) {
+      throw new AuthorizedApiError({
+        code: 'TIMEOUT',
+        message: 'Request timed out. Please try again.',
+        status: 408,
+      });
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+    callerSignal?.removeEventListener('abort', abortFromCaller);
+  }
 }
