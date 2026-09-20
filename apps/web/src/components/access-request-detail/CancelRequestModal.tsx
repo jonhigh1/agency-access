@@ -7,7 +7,7 @@
  */
 
 import { useEffect, useRef } from 'react';
-import { Loader2, Unlink } from 'lucide-react';
+import { AlertCircle, Loader2, Unlink } from 'lucide-react';
 import { Button } from '@/components/ui';
 
 interface CancelRequestModalProps {
@@ -15,6 +15,7 @@ interface CancelRequestModalProps {
   onConfirm: () => void | Promise<void>;
   onClose: () => void;
   isPending?: boolean;
+  errorMessage?: string | null;
 }
 
 export function CancelRequestModal({
@@ -22,6 +23,7 @@ export function CancelRequestModal({
   onConfirm,
   onClose,
   isPending = false,
+  errorMessage = null,
 }: CancelRequestModalProps) {
   const panelRef = useRef<HTMLDivElement>(null);
 
@@ -37,8 +39,14 @@ export function CancelRequestModal({
   }, [isPending, onClose]);
 
   const handleConfirm = async () => {
-    await onConfirm();
-    onClose();
+    // The parent owns closing on success and keeps the modal open on failure,
+    // so it stays visible with the error. Swallow a rejected promise here so it
+    // never escapes as an unhandled rejection.
+    try {
+      await onConfirm();
+    } catch {
+      // Parent surfaces the failure through errorMessage.
+    }
   };
 
   return (
@@ -75,6 +83,15 @@ export function CancelRequestModal({
               </>
             ) : null}
           </p>
+          {errorMessage ? (
+            <div
+              role="alert"
+              className="mb-4 flex items-start gap-2 border border-coral/40 bg-paper px-3 py-2 text-sm text-danger-ink"
+            >
+              <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+              <span>{errorMessage}</span>
+            </div>
+          ) : null}
           <div className="flex justify-end gap-3 border-t border-black/20 pt-4">
             <Button type="button" onClick={onClose} disabled={isPending} variant="secondary" size="sm">
               Keep Request
