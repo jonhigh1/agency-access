@@ -19,6 +19,7 @@ export async function fetchClientInvitePayload(token: string): Promise<FetchClie
     const response = await fetch(url, {
       cache: 'no-store',
       headers: { Accept: 'application/json' },
+      signal: AbortSignal.timeout(10_000),
     });
 
     const body = (await response.json()) as {

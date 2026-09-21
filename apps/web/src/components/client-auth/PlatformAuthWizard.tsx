@@ -25,6 +25,7 @@ import { GoogleAssetSelector } from './GoogleAssetSelector';
 import { LinkedInAssetSelector } from './LinkedInAssetSelector';
 import { TikTokAssetSelector } from './TikTokAssetSelector';
 import { AutomaticPagesGrant } from './AutomaticPagesGrant';
+import { MetaPageEngagementProof } from './MetaPageEngagementProof';
 import { AdAccountSharingInstructions } from './AdAccountSharingInstructions';
 import type { ManualMetaShareCompletionResult } from './AdAccountSharingInstructions';
 import { StepHelpText } from './StepHelpText';
@@ -1029,7 +1030,7 @@ export function PlatformAuthWizard({
             {/* Grant Access Section (for Meta after assets are saved) - Brutalist Card */}
             {platform === 'meta' && metaNeedsGrantStep && connectionId && assetsSaved && (() => {
           const metaAssets = groupAssets['meta_ads'] || {};
-          const selectedPages = metaAssets.selectedPagesWithNames ||
+          const selectedPages: Array<{ id: string; name: string }> = metaAssets.selectedPagesWithNames ||
             (metaAssets.pages || []).map((id: string) => {
               const allPages = metaAssets.allPages || [];
               const page = allPages.find((p: any) => p.id === id);
@@ -1093,6 +1094,19 @@ export function PlatformAuthWizard({
               {error && (
                     <div className="border-2 border-[var(--coral)] bg-[var(--coral)]/10 p-4 text-[var(--coral)] mb-4">
                   {error}
+                </div>
+              )}
+
+              {hasPages && (
+                <div className="mb-5 space-y-5">
+                  {selectedPages.map((selectedPage) => (
+                    <MetaPageEngagementProof
+                      key={selectedPage.id}
+                      selectedPage={selectedPage}
+                      connectionId={connectionId}
+                      accessRequestToken={accessRequestToken}
+                    />
+                  ))}
                 </div>
               )}
 

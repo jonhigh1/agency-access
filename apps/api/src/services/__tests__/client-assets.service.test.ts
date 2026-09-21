@@ -179,6 +179,46 @@ describe('ClientAssetsService - Meta', () => {
       code: 'INVALID_META_BUSINESS_PORTFOLIO',
     });
   });
+
+  it('reads selected Page content with a Page access token without returning the token', async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          id: 'page_1',
+          name: 'Client Page',
+          access_token: 'page-token-secret',
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: [
+            { id: 'post_1', message: 'Hello from the Page', created_time: '2026-09-21T00:00:00+0000' },
+            { id: 'post_2' },
+          ],
+        }),
+      } as Response);
+
+    const result = await clientAssetsService.fetchPageEngagementProof('user-token', 'page_1');
+
+    expect(result).toEqual({
+      page: { id: 'page_1', name: 'Client Page' },
+      posts: [
+        {
+          id: 'post_1',
+          message: 'Hello from the Page',
+          createdTime: '2026-09-21T00:00:00+0000',
+        },
+        { id: 'post_2' },
+      ],
+    });
+    expect(JSON.stringify(result)).not.toContain('page-token-secret');
+    expect(String(vi.mocked(fetch).mock.calls[0]?.[0])).toContain('/page_1');
+    expect(String(vi.mocked(fetch).mock.calls[0]?.[0])).toContain('fields=id%2Cname%2Caccess_token');
+    expect(String(vi.mocked(fetch).mock.calls[1]?.[0])).toContain('/page_1/feed');
+    expect(String(vi.mocked(fetch).mock.calls[1]?.[0])).toContain('fields=id%2Cmessage%2Ccreated_time');
+  });
 });
 
 describe('ClientAssetsService - TikTok', () => {

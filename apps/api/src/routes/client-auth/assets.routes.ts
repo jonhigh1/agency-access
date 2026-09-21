@@ -35,7 +35,7 @@ import {
 import { metaOBOService } from '@/services/meta-obo.service';
 import { metaPartnerService } from '@/services/meta-partner.service';
 import { MetaConnector } from '@/services/connectors/meta';
-import { sendError, sendValidationError } from '../../lib/response.js';
+import { sendError, sendSuccess, sendValidationError } from '../../lib/response.js';
 
 type ShareResultWithVerification = TikTokPartnerShareResultItem & { verified?: boolean };
 
@@ -141,7 +141,14 @@ function getSelectedMetaAssets(selectedAssets: unknown): Record<string, unknown>
       ? (record.meta_pages as Record<string, unknown>)
       : null;
 
-  return metaAdsAssets || metaPagesAssets || {};
+  const merged = { ...(metaPagesAssets || {}), ...(metaAdsAssets || {}) };
+  for (const key of ['pages', 'adAccounts', 'selectedAdvertiserIds', 'advertisers', 'instagramAccounts']) {
+    const values = [metaPagesAssets?.[key], metaAdsAssets?.[key]].flatMap((value) =>
+      Array.isArray(value) ? value : []
+    );
+    if (values.length > 0) merged[key] = Array.from(new Set(values));
+  }
+  return merged;
 }
 
 function readMetaClientAuthorizationMetadata(metadata: unknown): {
@@ -497,6 +504,78 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
       });
     } catch (error) {
       return sendError(reply, 'SAVE_ASSETS_ERROR', `Failed to save selected assets: ${error}`, 500);
+    }
+  });
+
+  fastify.get('/client/:token/meta-page-proof', async (request, reply) => {
+    const { token } = request.params as { token: string };
+    const { connectionId, pageId } = request.query as {
+      connectionId?: string;
+      pageId?: string;
+    };
+
+    if (!connectionId || !pageId) {
+      return sendError(reply, 'VALIDATION_ERROR', 'connectionId and pageId are required', 400);
+    }
+
+    try {
+      const authContext = await resolveAuthorizedConnection(token, connectionId);
+      if (authContext.error || !authContext.connection) {
+        const statusCode = authContext.error?.code === 'FORBIDDEN' ? 403 : 404;
+        return reply.code(statusCode).send({
+          data: null,
+          error: authContext.error,
+        });
+      }
+
+      const platformAuth = await prisma.platformAuthorization.findUnique({
+        where: {
+          connectionId_platform: {
+            connectionId,
+            platform: 'meta',
+          },
+        },
+      });
+
+      if (!platformAuth) {
+        return sendError(reply, 'AUTHORIZATION_NOT_FOUND', 'Meta authorization not found', 404);
+      }
+
+      const { rootMetadata } = readMetaClientAuthorizationMetadata(platformAuth.metadata);
+      const selectedMetaAssets = getSelectedMetaAssets(rootMetadata.selectedAssets);
+      const selectedPageIds = normalizeStringIds(selectedMetaAssets.pages);
+
+      if (!selectedPageIds.includes(pageId)) {
+        return sendError(reply, 'PAGE_NOT_SELECTED', 'The requested Page was not selected for this access request', 403);
+      }
+
+      const tokens = await infisical.getOAuthTokens(platformAuth.secretId);
+
+      await auditService.createAuditLog({
+        agencyId: authContext.accessRequest!.agencyId,
+        action: 'META_PAGE_ENGAGEMENT_PROOF_READ',
+        userEmail: authContext.connection.clientEmail,
+        resourceType: 'client_connection',
+        resourceId: connectionId,
+        metadata: {
+          authorizationId: platformAuth.id,
+          platform: 'meta',
+          pageId,
+          purpose: 'page_engagement_proof',
+        },
+        request,
+      });
+
+      const proof = await clientAssetsService.fetchPageEngagementProof(tokens.accessToken, pageId);
+
+      return sendSuccess(reply, proof);
+    } catch (error) {
+      return sendError(
+        reply,
+        'META_PAGE_PROOF_UNAVAILABLE',
+        error instanceof Error ? error.message : 'Failed to read Page content',
+        403
+      );
     }
   });
 

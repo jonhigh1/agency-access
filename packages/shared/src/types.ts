@@ -1322,6 +1322,15 @@ export interface MetaPage {
   tasks: string[];
 }
 
+export interface MetaPageEngagementProof {
+  page: Pick<MetaPage, 'id' | 'name'>;
+  posts: Array<{
+    id: string;
+    message?: string;
+    createdTime?: string;
+  }>;
+}
+
 export interface MetaInstagramAccount {
   id: string;
   username: string;

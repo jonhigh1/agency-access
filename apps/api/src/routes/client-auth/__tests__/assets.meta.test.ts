@@ -298,6 +298,60 @@ describe('Client Auth Asset Routes - Meta', () => {
     });
   });
 
+  it('returns Page content proof only for a selected Page and does not expose the Page token', async () => {
+    vi.mocked(prisma.platformAuthorization.findUnique).mockResolvedValue({
+      id: 'pa-1',
+      connectionId: 'conn-1',
+      platform: 'meta',
+      secretId: 'secret-1',
+      status: 'active',
+      metadata: {
+        selectedAssets: {
+          meta_ads: { pages: ['page_1'] },
+          meta_pages: { pages: ['page_2'] },
+        },
+      },
+    } as any);
+
+    global.fetch = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          id: 'page_1',
+          name: 'Client Page',
+          access_token: 'page-token-secret',
+        }),
+      } as any)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: [{ id: 'post_1', message: 'Page post' }],
+        }),
+      } as any);
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/client/token-a/meta-page-proof?connectionId=conn-1&pageId=page_1',
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json()).toEqual({
+      data: {
+        page: { id: 'page_1', name: 'Client Page' },
+        posts: [{ id: 'post_1', message: 'Page post' }],
+      },
+      error: null,
+    });
+    expect(response.body).not.toContain('page-token-secret');
+    expect(auditService.createAuditLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        action: 'META_PAGE_ENGAGEMENT_PROOF_READ',
+        metadata: expect.objectContaining({ pageId: 'page_1' }),
+      })
+    );
+  });
+
   it('verifies Meta page and ad-account grants through the OBO flow before marking success', async () => {
     vi.mocked(prisma.platformAuthorization.findUnique).mockResolvedValue({
       id: 'pa-1',

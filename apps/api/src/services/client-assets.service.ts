@@ -13,6 +13,7 @@
 
 import { logger } from '../lib/logger.js';
 import { META_GRAPH_VERSION } from '../lib/meta-constants.js';
+import type { MetaPageEngagementProof } from '@agency-platform/shared';
 import { MetaConnector } from './connectors/meta.js';
 
 export interface MetaAdAccount {
@@ -200,6 +201,61 @@ class ClientAssetsService {
         `Failed to fetch Meta assets: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
     }
+  }
+
+  async fetchPageEngagementProof(
+    accessToken: string,
+    pageId: string
+  ): Promise<MetaPageEngagementProof> {
+    const pageUrl = new URL(`${this.GRAPH_API_BASE}/${pageId}`);
+    pageUrl.searchParams.set('fields', 'id,name,access_token');
+    pageUrl.searchParams.set('access_token', accessToken);
+
+    const pageResponse = await fetch(pageUrl, {
+      signal: AbortSignal.timeout(15_000),
+    });
+    if (!pageResponse.ok) {
+      const error = await pageResponse.text();
+      throw new Error(`Meta Page access lookup failed: ${error}`);
+    }
+
+    const page = (await pageResponse.json()) as {
+      id?: string;
+      name?: string;
+      access_token?: string;
+    };
+
+    if (!page?.id || !page.name || !page.access_token) {
+      throw new Error('Meta did not return a Page access token for the selected Page');
+    }
+
+    const feedUrl = new URL(`${this.GRAPH_API_BASE}/${pageId}/feed`);
+    feedUrl.searchParams.set('fields', 'id,message,created_time');
+    feedUrl.searchParams.set('limit', '3');
+    feedUrl.searchParams.set('access_token', page.access_token);
+
+    const feedResponse = await fetch(feedUrl, {
+      signal: AbortSignal.timeout(15_000),
+    });
+    if (!feedResponse.ok) {
+      const error = await feedResponse.text();
+      throw new Error(`Meta Page content access failed: ${error}`);
+    }
+
+    const feedData = (await feedResponse.json()) as {
+      data?: Array<{ id?: string; message?: string; created_time?: string }>;
+    };
+
+    return {
+      page: { id: page.id, name: page.name },
+      posts: (feedData.data || [])
+        .filter((post): post is { id: string; message?: string; created_time?: string } => Boolean(post.id))
+        .map((post) => ({
+          id: post.id,
+          ...(post.message ? { message: post.message } : {}),
+          ...(post.created_time ? { createdTime: post.created_time } : {}),
+        })),
+    };
   }
 
   private mergeById<T extends { id: string }>(items: T[]): T[] {
