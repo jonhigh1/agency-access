@@ -454,7 +454,7 @@ describe('Access Requests Routes - Platform Connection Validation', () => {
 
   describe('POST /access-requests/:id/cancel', () => {
     it('returns after revoke without waiting for audit logging', async () => {
-      vi.mocked(accessRequestService.getAccessRequestById).mockResolvedValue({
+      vi.mocked(accessRequestService.getAccessRequestOwnershipById).mockResolvedValue({
         data: {
           id: 'req-1',
           agencyId: 'agency-1',
@@ -478,6 +478,8 @@ describe('Access Requests Routes - Platform Connection Validation', () => {
 
       expect(response.statusCode).toBe(200);
       expect(response.json()).toEqual({ data: { success: true }, error: null });
+      expect(accessRequestService.getAccessRequestOwnershipById).toHaveBeenCalledWith('req-1');
+      expect(accessRequestService.getAccessRequestById).not.toHaveBeenCalled();
       expect(auditService.auditService.createAuditLog).toHaveBeenCalledWith(
         expect.objectContaining({
           action: 'ACCESS_REQUEST_REVOKED',
@@ -487,7 +489,7 @@ describe('Access Requests Routes - Platform Connection Validation', () => {
     });
 
     it('surfaces database errors from the authorization lookup', async () => {
-      vi.mocked(accessRequestService.getAccessRequestById).mockResolvedValue({
+      vi.mocked(accessRequestService.getAccessRequestOwnershipById).mockResolvedValue({
         data: null,
         error: {
           code: 'INTERNAL_ERROR',

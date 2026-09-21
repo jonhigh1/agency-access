@@ -401,7 +401,7 @@ export async function accessRequestRoutes(fastify: FastifyInstance) {
     const { id } = request.params as { id: string };
     const principalAgencyId = (request as any).principalAgencyId as string;
 
-    const existing = await accessRequestService.getAccessRequestById(id);
+    const existing = await accessRequestService.getAccessRequestOwnershipById(id);
     if (existing.error) {
       const statusCode = existing.error.code === 'NOT_FOUND' ? 404 : 500;
       return reply.code(statusCode).send({

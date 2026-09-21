@@ -1151,6 +1151,42 @@ export async function getAccessRequestById(id: string, agencyId?: string) {
   }
 }
 
+/**
+ * Get only fields needed to authorize and audit a request cancellation.
+ */
+export async function getAccessRequestOwnershipById(id: string) {
+  try {
+    const accessRequest = await prisma.accessRequest.findUnique({
+      where: { id },
+      select: {
+        agencyId: true,
+        clientName: true,
+        clientEmail: true,
+      },
+    });
+
+    if (!accessRequest) {
+      return {
+        data: null,
+        error: {
+          code: 'NOT_FOUND',
+          message: 'Access request not found',
+        },
+      };
+    }
+
+    return { data: accessRequest, error: null };
+  } catch {
+    return {
+      data: null,
+      error: {
+        code: 'INTERNAL_ERROR',
+        message: 'Failed to retrieve access request',
+      },
+    };
+  }
+}
+
 export async function findByAgentOperation(agencyId: string, operationId: string) {
   try {
     const accessRequest = await prisma.accessRequest.findFirst({
@@ -1661,6 +1697,7 @@ export async function deleteExpiredRequests() {
 export const accessRequestService = {
   createAccessRequest,
   getAccessRequestById,
+  getAccessRequestOwnershipById,
   findByAgentOperation,
   getAccessRequestByToken,
   getAgencyAccessRequests,

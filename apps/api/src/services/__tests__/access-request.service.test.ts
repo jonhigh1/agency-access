@@ -893,6 +893,37 @@ describe('AccessRequestService', () => {
     });
   });
 
+  describe('getAccessRequestOwnershipById', () => {
+    it('reads only fields needed for cancellation authorization and audit logging', async () => {
+      vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue({
+        agencyId: 'agency-1',
+        clientName: 'Jane Client',
+        clientEmail: 'jane@example.com',
+      } as any);
+
+      const result = await accessRequestService.getAccessRequestOwnershipById('request-1');
+
+      expect(result).toEqual({
+        data: {
+          agencyId: 'agency-1',
+          clientName: 'Jane Client',
+          clientEmail: 'jane@example.com',
+        },
+        error: null,
+      });
+      expect(prisma.accessRequest.findUnique).toHaveBeenCalledWith({
+        where: { id: 'request-1' },
+        select: {
+          agencyId: true,
+          clientName: true,
+          clientEmail: true,
+        },
+      });
+      expect(prisma.clientConnection.findFirst).not.toHaveBeenCalled();
+      expect(prisma.clientConnection.findMany).not.toHaveBeenCalled();
+    });
+  });
+
   describe('markRequestAuthorized', () => {
     it('should mark request as completed and emit a completed webhook event once', async () => {
       vi.mocked(prisma.accessRequest.findUnique)
