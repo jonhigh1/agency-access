@@ -207,6 +207,7 @@ export async function registerOAuthStateRoutes(fastify: FastifyInstance) {
           'ads_read',
           'business_management',
           'pages_read_engagement',
+          'pages_show_list',
         ];
       }
 
