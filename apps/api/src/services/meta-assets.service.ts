@@ -7,6 +7,21 @@ import { metaSystemUserService } from './meta-system-user.service.js';
 
 const META_PARTNER_ADMIN_SCOPES = ['ads_management', 'ads_read', 'business_management'];
 
+/**
+ * Error returned when the business save works but the partner admin
+ * system-user token could not be provisioned. Without this token the client
+ * Grant Access flow dead-ends at its last step, so we surface the failure to
+ * the agency instead of reporting a silent success.
+ */
+function buildProvisionFailedError(details: Record<string, unknown>) {
+  return {
+    code: 'META_PARTNER_SYSTEM_USER_PROVISION_FAILED',
+    message:
+      'Meta setup is incomplete: AuthHub could not provision the partner system-user token. Reconnect Meta with full Business permissions and try again.',
+    details,
+  };
+}
+
 function buildPartnerAdminSystemUserSecretName(agencyId: string, businessId: string): string {
   return `meta_partner_admin_system_user_${agencyId}_${businessId}`;
 }
@@ -66,9 +81,16 @@ export const metaAssetsService = {
 
       // After business ID is set, provision the partner admin system user token source.
       // We do this even if metadata already exists in case the agency switched business portfolios.
+      let provisioningError: ReturnType<typeof buildProvisionFailedError> | null = null;
       try {
         const tokenResult = await agencyPlatformService.getValidToken(agencyId, 'meta');
-        if (!tokenResult.error && tokenResult.data) {
+        if (tokenResult.error || !tokenResult.data) {
+          provisioningError = buildProvisionFailedError({
+            businessId,
+            reason: 'no_valid_agency_token',
+            errorCode: tokenResult.error?.code,
+          });
+        } else {
           const systemUserResult = await metaSystemUserService.getOrCreateSystemUser(
             businessId,
             tokenResult.data,
@@ -111,6 +133,12 @@ export const metaAssetsService = {
                 errorCode: systemUserResult.error?.code,
                 errorMessage: systemUserResult.error?.message,
               },
+            });
+
+            provisioningError = buildProvisionFailedError({
+              businessId,
+              reason: 'system_user_create_failed',
+              errorCode: systemUserResult.error?.code,
             });
           } else {
             const tokenSecretResult = await metaSystemUserService.createSystemUserAccessToken({
@@ -156,6 +184,13 @@ export const metaAssetsService = {
                   errorMessage: tokenSecretResult.error?.message,
                 },
               });
+
+              provisioningError = buildProvisionFailedError({
+                businessId,
+                systemUserId: systemUserResult.data,
+                reason: 'system_user_token_create_failed',
+                errorCode: tokenSecretResult.error?.code,
+              });
             } else {
               const {
                 partnerAdminSystemUserLastAttemptAt,
@@ -198,11 +233,18 @@ export const metaAssetsService = {
           }
         }
       } catch (error) {
-        // Log but don't fail - token source can be provisioned later
         console.error('Failed to create system user when setting business ID:', error);
+        provisioningError = buildProvisionFailedError({
+          businessId,
+          reason: 'system_user_provision_threw',
+          errorMessage: error instanceof Error ? error.message : 'Unknown error',
+        });
       }
 
-      return { data: updatedConnection, error: null };
+      // The business ID is persisted either way, but if the partner system-user
+      // token could not be provisioned the agency's Meta setup is incomplete.
+      // Surface that failure so clients do not dead-end at the grant step.
+      return { data: updatedConnection, error: provisioningError };
     } catch (error) {
       return {
         data: null,

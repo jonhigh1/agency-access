@@ -16,6 +16,14 @@ import { META_GRAPH_VERSION } from '../lib/meta-constants.js';
 import type { MetaPageEngagementProof } from '@agency-platform/shared';
 import { MetaConnector } from './connectors/meta.js';
 
+/**
+ * Client-safe message for a failed Page content check. The raw Graph API
+ * response can hold token hints and permission codes, so we log it on the
+ * server and show this friendly sentence to the client instead.
+ */
+export const META_PAGE_PROOF_FRIENDLY_ERROR =
+  'AuthHub could not read this Page yet. Ask the Page admin to confirm the connection, then try again.';
+
 export interface MetaAdAccount {
   id: string;
   name: string;
@@ -215,8 +223,13 @@ class ClientAssetsService {
       signal: AbortSignal.timeout(15_000),
     });
     if (!pageResponse.ok) {
-      const error = await pageResponse.text();
-      throw new Error(`Meta Page access lookup failed: ${error}`);
+      const body = await pageResponse.text();
+      logger.error('Meta Page access lookup failed', {
+        pageId,
+        status: pageResponse.status,
+        body,
+      });
+      throw new Error(META_PAGE_PROOF_FRIENDLY_ERROR);
     }
 
     const page = (await pageResponse.json()) as {
@@ -238,8 +251,13 @@ class ClientAssetsService {
       signal: AbortSignal.timeout(15_000),
     });
     if (!feedResponse.ok) {
-      const error = await feedResponse.text();
-      throw new Error(`Meta Page content access failed: ${error}`);
+      const body = await feedResponse.text();
+      logger.error('Meta Page content access failed', {
+        pageId,
+        status: feedResponse.status,
+        body,
+      });
+      throw new Error(META_PAGE_PROOF_FRIENDLY_ERROR);
     }
 
     const feedData = (await feedResponse.json()) as {
