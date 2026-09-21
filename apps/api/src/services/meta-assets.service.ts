@@ -82,11 +82,12 @@ export const metaAssetsService = {
       // After business ID is set, provision the partner admin system user token source.
       // We do this even if metadata already exists in case the agency switched business portfolios.
       let provisioningError: ReturnType<typeof buildProvisionFailedError> | null = null;
+      const provisionFailed = (details: Record<string, unknown>) =>
+        buildProvisionFailedError({ businessId, ...details });
       try {
         const tokenResult = await agencyPlatformService.getValidToken(agencyId, 'meta');
         if (tokenResult.error || !tokenResult.data) {
-          provisioningError = buildProvisionFailedError({
-            businessId,
+          provisioningError = provisionFailed({
             reason: 'no_valid_agency_token',
             errorCode: tokenResult.error?.code,
           });
@@ -135,8 +136,7 @@ export const metaAssetsService = {
               },
             });
 
-            provisioningError = buildProvisionFailedError({
-              businessId,
+            provisioningError = provisionFailed({
               reason: 'system_user_create_failed',
               errorCode: systemUserResult.error?.code,
             });
@@ -185,8 +185,7 @@ export const metaAssetsService = {
                 },
               });
 
-              provisioningError = buildProvisionFailedError({
-                businessId,
+              provisioningError = provisionFailed({
                 systemUserId: systemUserResult.data,
                 reason: 'system_user_token_create_failed',
                 errorCode: tokenSecretResult.error?.code,
@@ -234,8 +233,7 @@ export const metaAssetsService = {
         }
       } catch (error) {
         console.error('Failed to create system user when setting business ID:', error);
-        provisioningError = buildProvisionFailedError({
-          businessId,
+        provisioningError = provisionFailed({
           reason: 'system_user_provision_threw',
           errorMessage: error instanceof Error ? error.message : 'Unknown error',
         });

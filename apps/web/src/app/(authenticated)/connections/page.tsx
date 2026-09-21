@@ -94,10 +94,10 @@ function ConnectionsPageContent() {
   const [currentEmail, setCurrentEmail] = useState<string>('');
   const perfHarness = useMemo(() => readPerfHarnessContext(), []);
 
-  // Guards the OAuth-callback effect so each callback is captured once. The
+  // Guards the OAuth-callback effect so the callback is captured once. The
   // effect re-runs while the agency id resolves and before router.replace
   // strips the params, which otherwise fired the same capture many times.
-  const processedOAuthCallbackRef = useRef<string | null>(null);
+  const hasHandledOAuthCallbackRef = useRef(false);
 
   const principalClerkId = (isDevelopmentBypass ? perfHarness?.principalId : null) || orgId || userId;
 
@@ -137,8 +137,7 @@ function ConnectionsPageContent() {
       return;
     }
 
-    const callbackSignature = `${success ?? ''}|${error ?? ''}|${platform ?? ''}`;
-    if (processedOAuthCallbackRef.current === callbackSignature) {
+    if (hasHandledOAuthCallbackRef.current) {
       return;
     }
 
@@ -149,7 +148,7 @@ function ConnectionsPageContent() {
       if (!agencyId) {
         return;
       }
-      processedOAuthCallbackRef.current = callbackSignature;
+      hasHandledOAuthCallbackRef.current = true;
 
       void capturePosthogEvent('platform_connected', {
         agency_id: agencyId,
@@ -167,7 +166,7 @@ function ConnectionsPageContent() {
     }
 
     if (error) {
-      processedOAuthCallbackRef.current = callbackSignature;
+      hasHandledOAuthCallbackRef.current = true;
       trackOAuthCallbackFailure({
         platform: platform,
         error_code: error,

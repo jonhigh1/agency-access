@@ -70,6 +70,13 @@ export function AutomaticPagesGrant({
       page_count: displayPages.length,
     });
 
+    const captureGrantFailed = (extra: Record<string, unknown>) =>
+      void capturePosthogEvent('client_meta_grant_failed', {
+        access_request_token: accessRequestToken,
+        connection_id: connectionId,
+        ...extra,
+      });
+
     try {
       setIsGranting(true);
       setGrantResults(null); // Clear previous results
@@ -94,9 +101,7 @@ export function AutomaticPagesGrant({
         const errorMessage = json.error.message || 'Failed to grant access';
         setLocalError(errorMessage);
         onError?.(errorMessage);
-        void capturePosthogEvent('client_meta_grant_failed', {
-          access_request_token: accessRequestToken,
-          connection_id: connectionId,
+        captureGrantFailed({
           failure_reason: 'api_error',
           error_code: json.error.code ?? null,
           error_message: errorMessage,
@@ -123,9 +128,7 @@ export function AutomaticPagesGrant({
           setLocalError(errorMsg);
           onError?.(errorMsg);
         }
-        void capturePosthogEvent('client_meta_grant_failed', {
-          access_request_token: accessRequestToken,
-          connection_id: connectionId,
+        captureGrantFailed({
           failure_reason: 'assets_not_verified',
           granted_count: results.filter((r) => r.status === 'granted').length,
           failed_count: failedPages.length,
@@ -144,9 +147,7 @@ export function AutomaticPagesGrant({
       const errorMessage = error instanceof Error ? error.message : 'Failed to grant access';
       setLocalError(errorMessage);
       onError?.(errorMessage);
-      void capturePosthogEvent('client_meta_grant_failed', {
-        access_request_token: accessRequestToken,
-        connection_id: connectionId,
+      captureGrantFailed({
         failure_reason: 'request_exception',
         error_message: errorMessage,
       });

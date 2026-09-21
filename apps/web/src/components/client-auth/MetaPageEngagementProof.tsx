@@ -33,6 +33,7 @@ export function MetaPageEngagementProof({
       page_id: selectedPage.id,
     });
 
+    let failureCode = 'request_exception';
     try {
       const query = new URLSearchParams({ connectionId, pageId: selectedPage.id });
       const response = await fetch(
@@ -45,9 +46,8 @@ export function MetaPageEngagementProof({
       );
 
       if (!response.ok || json.error || !json.data) {
-        const proofError = new Error(json.error?.message || 'Failed to read Page content');
-        (proofError as { proofErrorCode?: string }).proofErrorCode = json.error?.code ?? 'api_error';
-        throw proofError;
+        failureCode = json.error?.code ?? 'api_error';
+        throw new Error(json.error?.message || 'Failed to read Page content');
       }
 
       setProof(json.data);
@@ -62,13 +62,11 @@ export function MetaPageEngagementProof({
       const message =
         requestError instanceof Error ? requestError.message : 'Failed to read Page content';
       setError(message);
-      const errorCode =
-        (requestError as { proofErrorCode?: string })?.proofErrorCode ?? 'request_exception';
       void capturePosthogEvent('client_meta_page_proof_failed', {
         access_request_token: accessRequestToken,
         connection_id: connectionId,
         page_id: selectedPage.id,
-        error_code: errorCode,
+        error_code: failureCode,
         error_message: message,
       });
     } finally {
