@@ -6,6 +6,7 @@ import { parseJsonResponse } from '@/lib/api/parse-json-response';
 const META_SDK_SCRIPT_ID = 'meta-business-login-sdk';
 const META_SDK_SRC = 'https://connect.facebook.net/en_US/sdk.js';
 const META_GRAPH_VERSION = 'v21.0';
+const META_LOGIN_TIMEOUT_MS = 15_000;
 
 type MetaBusinessLoginOptions = {
   appId: string;
@@ -172,14 +173,14 @@ export async function launchMetaBusinessLogin({
  * Does not use Facebook Login for Business config; avoids the "Feature Unavailable"
  * error for non-role client users.
  *
- * Scopes match the backend client Meta OAuth flow: ads_management, ads_read,
- * business_management, pages_read_engagement.
+ * Scopes match the backend client Meta OAuth flow, including the Page access surface.
  */
 const META_CLIENT_SCOPES = [
   'ads_management',
   'ads_read',
   'business_management',
   'pages_read_engagement',
+  'pages_show_list',
 ].join(',');
 
 export async function launchMetaClientPopupLogin(appId: string): Promise<MetaBusinessLoginAuthPayload> {
@@ -190,28 +191,45 @@ export async function launchMetaClientPopupLogin(appId: string): Promise<MetaBus
   const sdk = await loadMetaBusinessLoginSdk({ appId });
 
   return new Promise<MetaBusinessLoginAuthPayload>((resolve, reject) => {
-    sdk.login(
-      (response) => {
-        const authResponse = response.authResponse;
-        if (
-          response.status !== 'connected' ||
-          !authResponse?.accessToken ||
-          !authResponse.userID
-        ) {
-          reject(new Error('Meta login was cancelled or did not return a usable session.'));
-          return;
-        }
+    const timeoutId = setTimeout(() => {
+      reject(new Error('Meta login timed out. Falling back to redirect login.'));
+    }, META_LOGIN_TIMEOUT_MS);
 
-        resolve({
-          accessToken: authResponse.accessToken,
-          userId: authResponse.userID,
-          expiresIn: authResponse.expiresIn,
-          signedRequest: authResponse.signedRequest,
-          dataAccessExpirationTime: authResponse.data_access_expiration_time,
-        });
-      },
-      { scope: META_CLIENT_SCOPES, enable_profile_selector: true }
-    );
+    const finish = (callback: () => void) => {
+      clearTimeout(timeoutId);
+      callback();
+    };
+
+    try {
+      sdk.login(
+        (response) => {
+          const authResponse = response.authResponse;
+          const accessToken = authResponse?.accessToken;
+          const userId = authResponse?.userID;
+          if (
+            response.status !== 'connected' ||
+            !accessToken ||
+            !userId
+          ) {
+            finish(() => reject(new Error('Meta login was cancelled or did not return a usable session.')));
+            return;
+          }
+
+          finish(() =>
+            resolve({
+              accessToken,
+              userId,
+              expiresIn: authResponse.expiresIn,
+              signedRequest: authResponse.signedRequest,
+              dataAccessExpirationTime: authResponse.data_access_expiration_time,
+            })
+          );
+        },
+        { scope: META_CLIENT_SCOPES, enable_profile_selector: true }
+      );
+    } catch (error) {
+      finish(() => reject(error));
+    }
   });
 }
 
