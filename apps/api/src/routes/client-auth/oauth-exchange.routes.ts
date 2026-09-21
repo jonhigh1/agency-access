@@ -228,7 +228,15 @@ function buildOAuthExchangeHandler(fastify: FastifyInstance, options: OAuthExcha
       });
     } catch (error) {
       const sanitized = sanitizeOAuthError(error);
-      fastify.log.error({ error, sanitized }, 'OAuth exchange failed');
+      fastify.log.error(
+        {
+          error: error instanceof Error
+            ? { name: error.name, message: error.message }
+            : error,
+          sanitized,
+        },
+        'OAuth exchange failed'
+      );
       return reply.code(500).send({
         data: null,
         error: sanitized,
