@@ -480,6 +480,7 @@ export default function DashboardPage() {
             requests={requests.map((request) => ({
               id: request.id,
               clientName: request.clientName,
+              clientEmail: request.clientEmail,
               status: request.status,
               createdAt: request.createdAt,
               uniqueToken: request.uniqueToken,

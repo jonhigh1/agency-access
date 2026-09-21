@@ -893,6 +893,37 @@ describe('AccessRequestService', () => {
     });
   });
 
+  describe('getAccessRequestOwnershipById', () => {
+    it('reads only fields needed for cancellation authorization and audit logging', async () => {
+      vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue({
+        agencyId: 'agency-1',
+        clientName: 'Jane Client',
+        clientEmail: 'jane@example.com',
+      } as any);
+
+      const result = await accessRequestService.getAccessRequestOwnershipById('request-1');
+
+      expect(result).toEqual({
+        data: {
+          agencyId: 'agency-1',
+          clientName: 'Jane Client',
+          clientEmail: 'jane@example.com',
+        },
+        error: null,
+      });
+      expect(prisma.accessRequest.findUnique).toHaveBeenCalledWith({
+        where: { id: 'request-1' },
+        select: {
+          agencyId: true,
+          clientName: true,
+          clientEmail: true,
+        },
+      });
+      expect(prisma.clientConnection.findFirst).not.toHaveBeenCalled();
+      expect(prisma.clientConnection.findMany).not.toHaveBeenCalled();
+    });
+  });
+
   describe('markRequestAuthorized', () => {
     it('should mark request as completed and emit a completed webhook event once', async () => {
       vi.mocked(prisma.accessRequest.findUnique)
@@ -1296,6 +1327,45 @@ describe('AccessRequestService', () => {
       expect(result.error).toBeNull();
       expect(prisma.webhookEvent.create).not.toHaveBeenCalled();
       expect(queueWebhookDelivery).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('cancelAccessRequest', () => {
+    it('returns after durable revoke even when webhook delivery stalls', async () => {
+      vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue({
+        agencyId: 'agency-1',
+        status: 'pending',
+      } as any);
+      vi.mocked(prisma.accessRequest.update).mockResolvedValue({
+        id: 'request-1',
+        status: 'revoked',
+      } as any);
+      vi.mocked(prisma.webhookEndpoint.findUnique).mockReturnValue(
+        new Promise(() => {}) as any
+      );
+
+      const result = await accessRequestService.cancelAccessRequest('request-1');
+
+      expect(result).toEqual({ data: { success: true }, error: null });
+      expect(prisma.accessRequest.update).toHaveBeenCalledWith({
+        where: { id: 'request-1' },
+        data: { status: 'revoked' },
+      });
+    });
+
+    it('returns database errors instead of starting side effects', async () => {
+      vi.mocked(prisma.accessRequest.findUnique).mockRejectedValue(new Error('database unavailable'));
+
+      const result = await accessRequestService.cancelAccessRequest('request-1');
+
+      expect(result).toEqual({
+        data: null,
+        error: {
+          code: 'INTERNAL_ERROR',
+          message: 'Failed to cancel access request',
+        },
+      });
+      expect(prisma.accessRequest.update).not.toHaveBeenCalled();
     });
   });
 

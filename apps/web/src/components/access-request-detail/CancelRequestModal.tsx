@@ -6,7 +6,7 @@
  * Dialog semantics: Escape closes, focus moves to the panel, backdrop never closes.
  */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Loader2, Unlink } from 'lucide-react';
 import { Button } from '@/components/ui';
 
@@ -24,6 +24,7 @@ export function CancelRequestModal({
   isPending = false,
 }: CancelRequestModalProps) {
   const panelRef = useRef<HTMLDivElement>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     panelRef.current?.focus();
@@ -37,8 +38,13 @@ export function CancelRequestModal({
   }, [isPending, onClose]);
 
   const handleConfirm = async () => {
-    await onConfirm();
-    onClose();
+    setError(null);
+    try {
+      await onConfirm();
+      onClose();
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Failed to cancel request. Please try again.');
+    }
   };
 
   return (
@@ -75,6 +81,11 @@ export function CancelRequestModal({
               </>
             ) : null}
           </p>
+          {error ? (
+            <p role="alert" className="mb-4 text-sm text-danger-ink" aria-live="assertive">
+              {error}
+            </p>
+          ) : null}
           <div className="flex justify-end gap-3 border-t border-black/20 pt-4">
             <Button type="button" onClick={onClose} disabled={isPending} variant="secondary" size="sm">
               Keep Request

@@ -5,14 +5,14 @@
 
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { ComparisonPageTemplate } from "@/components/programmatic";
-import { generateComparisonSchema } from "@/lib/schema-generators";
+import { ComparisonPageTemplate, LeadsiePricingPageTemplate } from "@/components/programmatic";
+import { generateComparisonSchema, generateLeadsiePricingSchema } from "@/lib/schema-generators";
 import { Schema } from "@/components/seo";
 import {
   getComparisonPageBySlug,
   getAllComparisonPageSlugs,
-  COMPARISON_PAGES,
 } from "@/lib/comparison-data";
+import { getLeadsiePricingPage, isLeadsiePricingSlug } from "@/lib/leadsie-pricing-page";
 
 interface ComparisonPageProps {
   params: Promise<{ slug: string }>;
@@ -20,6 +20,21 @@ interface ComparisonPageProps {
 
 export async function generateMetadata({ params }: ComparisonPageProps): Promise<Metadata> {
   const { slug } = await params;
+
+  if (isLeadsiePricingSlug(slug)) {
+    const pricingPage = getLeadsiePricingPage();
+    return {
+      title: pricingPage.metaTitle,
+      description: pricingPage.metaDescription,
+      keywords: pricingPage.keywords,
+      openGraph: {
+        title: pricingPage.metaTitle,
+        description: pricingPage.metaDescription,
+        type: "article",
+      },
+    };
+  }
+
   const page = getComparisonPageBySlug(slug);
 
   if (!page) {
@@ -42,6 +57,19 @@ export async function generateMetadata({ params }: ComparisonPageProps): Promise
 
 export default async function ComparisonPage({ params }: ComparisonPageProps) {
   const { slug } = await params;
+
+  if (isLeadsiePricingSlug(slug)) {
+    const pricingPage = getLeadsiePricingPage();
+    const schema = generateLeadsiePricingSchema(pricingPage);
+
+    return (
+      <>
+        <Schema schema={schema} />
+        <LeadsiePricingPageTemplate page={pricingPage} />
+      </>
+    );
+  }
+
   const page = getComparisonPageBySlug(slug);
 
   if (!page) {

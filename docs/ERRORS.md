@@ -40,3 +40,8 @@ billing hooks does not cover a code path added by the "code-split gated UI"
 work (9c474cd..0929df9). Fix by extending the test mocks or wrapping renders
 in a QueryClientProvider. No product bug demonstrated.
 
+
+## 2026-09-14 — Flaky API test: quota/agency-resolution race
+
+- Symptom: full API suite intermittently fails 1 test (quota-fingerprint 'boom' race in agency-resolution/quota tests); passes on re-run.
+- Classification: infrastructure/timing flake, not deterministic. No conclusion yet; re-run before diagnosing.

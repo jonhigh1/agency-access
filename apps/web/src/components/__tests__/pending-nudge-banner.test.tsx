@@ -17,6 +17,7 @@ const baseProps = {
   accessRequestId: 'req-1',
   accessRequestToken: 'token-1',
   clientName: 'Acme Client',
+  clientEmail: 'owner@acme.com',
   cliff: '24h' as const,
   surface: 'dashboard' as const,
   onCopyLink: vi.fn(),
@@ -75,6 +76,20 @@ describe('PendingNudgeBanner', () => {
     expect(onSendReminder).toHaveBeenCalledTimes(1);
     expect(trackPendingNudgeBannerCta).toHaveBeenCalledWith(
       expect.objectContaining({ cta: 'send_reminder' })
+    );
+  });
+
+  it('labels reminder CTA as Send Reminder when client email is available', () => {
+    render(<PendingNudgeBanner {...baseProps} clientEmail="owner@acme.com" />);
+
+    expect(screen.getByRole('button', { name: /send reminder/i })).toHaveTextContent('Send Reminder');
+  });
+
+  it('labels reminder CTA as Copy reminder link when client email is missing', () => {
+    render(<PendingNudgeBanner {...baseProps} clientEmail="" reminderCopied={false} />);
+
+    expect(screen.getByRole('button', { name: /copy reminder link/i })).toHaveTextContent(
+      'Copy reminder link'
     );
   });
 

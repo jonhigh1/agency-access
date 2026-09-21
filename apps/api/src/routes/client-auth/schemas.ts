@@ -18,7 +18,10 @@ const clientOAuthPlatform = z.enum([
 ]);
 
 export const submitIntakeSchema = z.object({
-  intakeResponses: z.record(z.any()),
+  intakeResponses: z.record(z.string().max(10_000)).refine(
+    (responses) => Object.keys(responses).length <= 50,
+    'Too many intake responses'
+  ),
 });
 
 export const createOAuthStateSchema = z.object({

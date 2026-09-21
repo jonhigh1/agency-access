@@ -95,4 +95,12 @@ describe('Button v2.0 variant consolidation', () => {
     expect(cls).toContain('focus-visible:outline-coral/25');
     expect(cls).toContain('focus-visible:[box-shadow:0_0_0_6px_rgb(var(--primary)/0.08)]');
   });
+
+  it('keeps the action label in the layout while loading', () => {
+    const { container } = render(<Button isLoading>Save changes</Button>);
+    const button = container.firstElementChild;
+    expect(button).toHaveAttribute('aria-busy', 'true');
+    expect(button?.textContent).toContain('Save changes');
+    expect(button?.querySelector('.invisible')).toHaveTextContent('Save changes');
+  });
 });

@@ -1953,6 +1953,7 @@ export interface ClientAccessRequestPayload {
   expiresAt: string;
   platforms: ClientAccessRequestPlatformGroup[];
   intakeFields: IntakeField[];
+  intakeResponses?: Record<string, string>;
   branding: Partial<BrandingConfig>;
   manualInviteTargets: Record<string, ManualInviteTarget>;
   authorizationProgress: ClientAuthorizationProgress;

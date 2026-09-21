@@ -10,6 +10,7 @@ import { z } from 'zod';
 import { accessRequestService } from '../services/access-request.service.js';
 import { agencyPlatformService } from '../services/agency-platform.service.js';
 import { auditService } from '../services/audit.service.js';
+import { accessRequestReminderService } from '../services/access-request-reminder.service.js';
 import { quotaEnforcementMiddleware } from '../middleware/quota-enforcement.js';
 import { authenticate } from '@/middleware/auth.js';
 import { assertAgencyAccess } from '@/lib/authorization.js';
@@ -329,8 +330,8 @@ export async function accessRequestRoutes(fastify: FastifyInstance) {
     return reply.send(result);
   });
 
-  // Cancel access request
-  fastify.post('/access-requests/:id/cancel', {
+  // Send client invite reminder email (Resend)
+  fastify.post('/access-requests/:id/remind', {
     onRequest: [authenticate(), requirePrincipalAgency],
   }, async (request, reply) => {
     const { id } = request.params as { id: string };
@@ -345,12 +346,27 @@ export async function accessRequestRoutes(fastify: FastifyInstance) {
           error: accessError,
         });
       }
+    } else if (existing.error) {
+      return reply.code(404).send({
+        data: null,
+        error: existing.error,
+      });
     }
 
-    const result = await accessRequestService.cancelAccessRequest(id);
+    const result = await accessRequestReminderService.sendInviteReminder(id);
 
     if (result.error) {
-      return reply.code(404).send({
+      const statusByCode: Record<string, number> = {
+        NOT_FOUND: 404,
+        FORBIDDEN: 403,
+        INVALID_STATUS: 400,
+        MISSING_CLIENT_EMAIL: 400,
+        REMINDER_COOLDOWN: 429,
+        EMAIL_NOT_CONFIGURED: 503,
+        REMINDER_DELIVERY_FAILED: 502,
+      };
+      const statusCode = statusByCode[result.error.code] ?? 400;
+      return reply.code(statusCode).send({
         data: null,
         error: result.error,
       });
@@ -358,6 +374,64 @@ export async function accessRequestRoutes(fastify: FastifyInstance) {
 
     if (existing.data) {
       await auditService.createAuditLog({
+        agencyId: (existing.data as any).agencyId,
+        userEmail:
+          ((request as any).user?.email as string | undefined) ||
+          ((request as any).user?.sub as string | undefined) ||
+          'agency',
+        action: 'ACCESS_REQUEST_REMINDER_SENT',
+        resourceType: 'access_request',
+        resourceId: id,
+        metadata: {
+          clientName: (existing.data as any).clientName,
+          clientEmail: (existing.data as any).clientEmail,
+          recipientEmail: result.data?.recipientEmail,
+        },
+        request,
+      });
+    }
+
+    return reply.send(result);
+  });
+
+  // Cancel access request
+  fastify.post('/access-requests/:id/cancel', {
+    onRequest: [authenticate(), requirePrincipalAgency],
+  }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const principalAgencyId = (request as any).principalAgencyId as string;
+
+    const existing = await accessRequestService.getAccessRequestOwnershipById(id);
+    if (existing.error) {
+      const statusCode = existing.error.code === 'NOT_FOUND' ? 404 : 500;
+      return reply.code(statusCode).send({
+        data: null,
+        error: existing.error,
+      });
+    }
+
+    if (!existing.error && existing.data) {
+      const accessError = assertAgencyAccess((existing.data as any).agencyId, principalAgencyId);
+      if (accessError) {
+        return reply.code(403).send({
+          data: null,
+          error: accessError,
+        });
+      }
+    }
+
+    const result = await accessRequestService.cancelAccessRequest(id);
+
+    if (result.error) {
+      const statusCode = result.error.code === 'NOT_FOUND' ? 404 : 500;
+      return reply.code(statusCode).send({
+        data: null,
+        error: result.error,
+      });
+    }
+
+    if (existing.data) {
+      void auditService.createAuditLog({
         agencyId: (existing.data as any).agencyId,
         userEmail:
           ((request as any).user?.email as string | undefined) ||
@@ -371,6 +445,11 @@ export async function accessRequestRoutes(fastify: FastifyInstance) {
           clientEmail: (existing.data as any).clientEmail,
         },
         request,
+      }).catch((error) => {
+        fastify.log.warn({
+          accessRequestId: id,
+          error: error instanceof Error ? error.message : String(error),
+        }, 'Failed to audit access request cancellation');
       });
     }
 

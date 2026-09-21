@@ -7,10 +7,11 @@ import { useAuth } from '@clerk/nextjs';
 import { useAuthOrBypass } from '@/lib/dev-auth';
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard';
 import {
-  buildInviteReminderMailto,
+  buildInviteSentMailto,
   trackInviteLinkCopyAndSent,
-  trackInviteReminderSent,
+  trackInviteSent,
 } from '@/lib/analytics/invite-events';
+import { executeSendInviteReminder } from '@/lib/invite-reminder';
 import { getAccessRequest, getAuthorizationUrl } from '@/lib/api/access-requests';
 import type { AccessRequest } from '@/lib/api/access-requests';
 import {
@@ -35,6 +36,8 @@ export default function AccessRequestDetailPage({ params }: AccessRequestDetailP
   const [error, setError] = useState<string | null>(null);
   const { copied, copy } = useCopyToClipboard();
   const { copied: reminderCopied, copy: copyReminderLink } = useCopyToClipboard();
+  const [reminderLoading, setReminderLoading] = useState(false);
+  const [reminderStatusMessage, setReminderStatusMessage] = useState<string | null>(null);
 
   const resolveApiToken = useMemo(
     () => async () => {
@@ -125,14 +128,42 @@ export default function AccessRequestDetailPage({ params }: AccessRequestDetailP
     }
 
     void trackAction('send_reminder');
-    await copyReminderLink(authorizationUrl);
-    trackInviteReminderSent({
-      access_request_id: accessRequest.id,
-      access_request_token: accessRequest.uniqueToken,
-      status: accessRequest.status,
-      channel: 'copy',
-      surface: 'detail',
+    setReminderLoading(true);
+    setReminderStatusMessage(null);
+
+    const expirationText = new Date(accessRequest.expiresAt).toLocaleDateString('en-US', {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
     });
+
+    try {
+      const result = await executeSendInviteReminder({
+        accessRequestId: accessRequest.id,
+        accessRequestToken: accessRequest.uniqueToken,
+        status: accessRequest.status,
+        surface: 'detail',
+        clientEmail: accessRequest.clientEmail,
+        clientName: accessRequest.clientName,
+        authorizationUrl,
+        expirationText,
+        getToken: resolveApiToken,
+        copyReminderLink: async (url) => {
+          await copyReminderLink(url);
+        },
+      });
+
+      if (result.outcome === 'sent') {
+        setReminderStatusMessage('Reminder sent to client.');
+      } else if (result.outcome === 'cooldown') {
+        setReminderStatusMessage(result.message);
+      } else if (result.outcome === 'error') {
+        setReminderStatusMessage(result.message);
+      }
+    } finally {
+      setReminderLoading(false);
+    }
   };
 
   const handleEmailClient = () => {
@@ -147,13 +178,13 @@ export default function AccessRequestDetailPage({ params }: AccessRequestDetailP
       day: 'numeric',
       year: 'numeric',
     });
-    const mailtoHref = buildInviteReminderMailto({
+    const mailtoHref = buildInviteSentMailto({
       clientEmail: accessRequest.clientEmail,
       clientName: accessRequest.clientName,
       authorizationUrl,
       expirationText,
     });
-    trackInviteReminderSent({
+    trackInviteSent({
       access_request_id: accessRequest.id,
       access_request_token: accessRequest.uniqueToken,
       status: accessRequest.status,
@@ -222,6 +253,8 @@ export default function AccessRequestDetailPage({ params }: AccessRequestDetailP
             {
               id: accessRequest.id,
               clientName: accessRequest.clientName,
+              clientEmail: accessRequest.clientEmail,
+              expiresAt: accessRequest.expiresAt,
               status: accessRequest.status,
               createdAt: accessRequest.createdAt,
               uniqueToken: accessRequest.uniqueToken,
@@ -235,6 +268,8 @@ export default function AccessRequestDetailPage({ params }: AccessRequestDetailP
           authorizationUrl={authorizationUrl}
           copied={copied}
           reminderCopied={reminderCopied}
+          reminderLoading={reminderLoading}
+          reminderStatusMessage={reminderStatusMessage}
           onCopyLink={handleCopyLink}
           onPreviewLink={handlePreviewLink}
           showAwaitingClientCallout={

@@ -3,6 +3,7 @@
  * Generates structured data for blog posts, comparison pages, and FAQs
  */
 
+import type { LeadsiePricingPageData } from "./leadsie-pricing-page";
 import type {
   ProgrammaticBlogPost,
   ProgrammaticComparisonPage,
@@ -333,6 +334,99 @@ export function generateComparisonSchema(
       },
     ],
   });
+
+  return {
+    "@context": "https://schema.org",
+    "@graph": schemas,
+  };
+}
+
+/**
+ * Article + FAQ schema for /compare/leadsie-pricing
+ */
+export function generateLeadsiePricingSchema(
+  page: LeadsiePricingPageData,
+  options: BlogSchemaOptions = {},
+): Record<string, unknown> {
+  const opts = { ...defaultOptions, ...options };
+  const pageUrl = `${opts.siteUrl}/compare/${page.slug}`;
+
+  const schemas: Record<string, unknown>[] = [
+    {
+      "@type": "Article",
+      "@id": `${pageUrl}#article`,
+      headline: page.metaTitle,
+      description: page.metaDescription,
+      dateModified: page.lastVerified,
+      datePublished: page.lastVerified,
+      mainEntityOfPage: {
+        "@type": "WebPage",
+        "@id": pageUrl,
+      },
+      author: {
+        "@type": "Organization",
+        name: opts.siteName,
+        url: opts.siteUrl,
+      },
+      publisher: {
+        "@type": "Organization",
+        name: opts.siteName,
+        logo: {
+          "@type": "ImageObject",
+          url: opts.siteLogo,
+        },
+      },
+      keywords: page.keywords.join(", "),
+    },
+    {
+      "@type": "FAQPage",
+      "@id": `${pageUrl}#faq`,
+      mainEntity: page.faqs.map((faq) => ({
+        "@type": "Question",
+        name: faq.question,
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: faq.answer,
+        },
+      })),
+    },
+    {
+      "@type": "BreadcrumbList",
+      "@id": `${pageUrl}#breadcrumb`,
+      itemListElement: [
+        {
+          "@type": "ListItem",
+          position: 1,
+          name: "Home",
+          item: opts.siteUrl,
+        },
+        {
+          "@type": "ListItem",
+          position: 2,
+          name: "Compare",
+          item: `${opts.siteUrl}/compare`,
+        },
+        {
+          "@type": "ListItem",
+          position: 3,
+          name: page.title,
+          item: pageUrl,
+        },
+      ],
+    },
+    {
+      "@type": "WebPage",
+      "@id": pageUrl,
+      url: pageUrl,
+      name: page.metaTitle,
+      description: page.metaDescription,
+      isPartOf: {
+        "@type": "WebSite",
+        name: opts.siteName,
+        url: opts.siteUrl,
+      },
+    },
+  ];
 
   return {
     "@context": "https://schema.org",
