@@ -5,7 +5,12 @@ import { prisma } from '@/lib/prisma';
 import { createAuditLog } from '@/services/audit.service';
 import { metaSystemUserService } from './meta-system-user.service.js';
 
-const META_PARTNER_ADMIN_SCOPES = ['ads_management', 'ads_read', 'business_management'];
+const META_PARTNER_ADMIN_SCOPES = [
+  'ads_management',
+  'ads_read',
+  'business_management',
+  'pages_read_engagement',
+];
 
 function buildPartnerAdminSystemUserSecretName(agencyId: string, businessId: string): string {
   return `meta_partner_admin_system_user_${agencyId}_${businessId}`;

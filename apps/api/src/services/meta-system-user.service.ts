@@ -24,6 +24,7 @@ const DEFAULT_PARTNER_ADMIN_SYSTEM_USER_SCOPES = [
   'ads_management',
   'ads_read',
   'business_management',
+  'pages_read_engagement',
 ];
 
 class MetaSystemUserService {

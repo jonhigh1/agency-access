@@ -852,6 +852,85 @@ describe('Agency Platforms Routes', () => {
       );
       expect(response.json().data.secretId).toBeUndefined();
     });
+
+    it('reprovisions the selected portfolio after refreshing an existing Meta connection', async () => {
+      mockMetaConnectorInstance.verifyToken.mockResolvedValue(true);
+      mockMetaConnectorInstance.getUserInfo.mockResolvedValue({
+        id: 'meta-user-1',
+        name: 'Jon High',
+      });
+      mockMetaConnectorInstance.getTokenMetadata.mockResolvedValue({
+        scopes: ['ads_management', 'ads_read', 'business_management', 'pages_read_engagement'],
+        dataAccessExpiresAt: new Date('2026-07-01T00:00:00.000Z'),
+      });
+      mockMetaConnectorInstance.getLongLivedToken.mockResolvedValue({
+        accessToken: 'long-lived-token',
+        tokenType: 'bearer',
+        expiresAt: new Date('2026-05-10T00:00:00.000Z'),
+      });
+      mockMetaConnectorInstance.getBusinessAccounts.mockResolvedValue({
+        businesses: [{ id: 'biz-1', name: 'Jon High' }],
+        hasAccess: true,
+      });
+
+      vi.mocked(agencyPlatformService.getConnection).mockResolvedValue({
+        data: {
+          id: 'conn-meta-1',
+          agencyId: 'agency-1',
+          platform: 'meta',
+          metadata: {
+            selectedBusinessId: 'biz-1',
+            selectedBusinessName: 'Jon High',
+            partnerAdminSystemUserStatus: 'failed',
+          },
+        },
+        error: null,
+      } as any);
+      vi.mocked(infisical.storeOAuthTokens).mockResolvedValue('meta_agency_agency-1');
+      vi.mocked(prisma.agencyPlatformConnection.update).mockResolvedValue({
+        id: 'conn-meta-1',
+        agencyId: 'agency-1',
+        platform: 'meta',
+        status: 'active',
+        metadata: {
+          selectedBusinessId: 'biz-1',
+          selectedBusinessName: 'Jon High',
+        },
+      } as any);
+      vi.mocked(prisma.agencyPlatformConnection.findFirst).mockResolvedValue({
+        id: 'conn-meta-1',
+        agencyId: 'agency-1',
+        platform: 'meta',
+        status: 'active',
+        metadata: {
+          selectedBusinessId: 'biz-1',
+          selectedBusinessName: 'Jon High',
+        },
+      } as any);
+      vi.mocked(metaAssetsService.saveBusinessPortfolio).mockResolvedValue({
+        data: { id: 'conn-meta-1' },
+        error: null,
+      } as any);
+      vi.mocked(createAuditLog).mockResolvedValue({ data: {} as any, error: null });
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/agency-platforms/meta/business-login/finalize',
+        payload: {
+          agencyId: 'agency-1',
+          userEmail: 'jon.highmu@gmail.com',
+          accessToken: 'short-lived-token',
+          userId: 'meta-user-1',
+        },
+      });
+
+      expect(response.statusCode).toBe(200);
+      expect(metaAssetsService.saveBusinessPortfolio).toHaveBeenCalledWith(
+        'agency-1',
+        'biz-1',
+        'Jon High'
+      );
+    });
   });
 
   describe('GET /agency-platforms/:platform/callback', () => {

@@ -759,7 +759,12 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
           userEmail: connection.clientEmail,
           ipAddress: request.ip,
           clientBusinessId: selectedBusinessId,
-          scopes: ['ads_management', 'ads_read', 'business_management'],
+          scopes: [
+            'ads_management',
+            'ads_read',
+            'business_management',
+            'pages_read_engagement',
+          ],
           partnerBusinessAdminSystemUserAccessToken:
             partnerAdminSystemUserTokens.accessToken,
         });
