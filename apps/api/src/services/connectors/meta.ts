@@ -19,7 +19,7 @@ interface MetaTokenResponse {
 interface MetaLongLivedTokenResponse {
   access_token: string;
   token_type: string;
-  expires_in: number;
+  expires_in?: number;
 }
 
 interface MetaTokens {
@@ -172,11 +172,15 @@ export class MetaConnector {
 
     const data = (await response.json()) as MetaLongLivedTokenResponse;
 
+    const expiresIn = Number(data.expires_in);
+
     return {
       accessToken: data.access_token,
       tokenType: data.token_type,
-      expiresIn: data.expires_in,
-      expiresAt: new Date(Date.now() + data.expires_in * 1000),
+      expiresIn: Number.isFinite(expiresIn) ? expiresIn : undefined,
+      expiresAt: Number.isFinite(expiresIn)
+        ? new Date(Date.now() + expiresIn * 1000)
+        : undefined,
     };
   }
 

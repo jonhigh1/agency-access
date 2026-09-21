@@ -71,6 +71,22 @@ describe('MetaConnector Asset Discovery', () => {
     });
   });
 
+  describe('getLongLivedToken', () => {
+    it('does not create an invalid expiry when Meta omits expires_in', async () => {
+      vi.mocked(fetch).mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ access_token: 'long-lived-token', token_type: 'bearer' }),
+      } as Response);
+
+      await expect(connector.getLongLivedToken(accessToken)).resolves.toMatchObject({
+        accessToken: 'long-lived-token',
+        tokenType: 'bearer',
+        expiresIn: undefined,
+        expiresAt: undefined,
+      });
+    });
+  });
+
   describe('getBusinessAccounts', () => {
     it('follows pagination so all businesses are returned', async () => {
       vi.mocked(fetch)
