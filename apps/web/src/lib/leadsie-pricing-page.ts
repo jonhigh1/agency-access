@@ -1,8 +1,8 @@
 /**
- * Leadsie pricing breakdown — programmatic compare article (copy verified 2026-09-19)
+ * Leadsie pricing breakdown — programmatic compare article (copy verified 2026-09-23)
  */
 
-import { SUPPORTED_PLATFORM_COUNT } from "@agency-platform/shared";
+const LEADSIE_PRICING_AUTHHUB_PLATFORM_BREADTH = "15+";
 
 export const LEADSIE_PRICING_SLUG = "leadsie-pricing";
 
@@ -39,6 +39,7 @@ export interface LeadsiePricingPageData {
   title: string;
   metaTitle: string;
   metaDescription: string;
+  openGraphDescription?: string;
   lastVerified: string;
   introLead: string;
   plans: LeadsiePlanRow[];
@@ -60,9 +61,11 @@ export const leadsiePricingPage: LeadsiePricingPageData = {
   metaTitle: "Leadsie Pricing (2026): Plans, Credits & Real Cost",
   metaDescription:
     "Leadsie plans start at $59/mo for 3 client credits. See credit rules, $50 overages, and busy-month cost vs AuthHub fixed tiers.",
-  lastVerified: "2026-09-19",
+  openGraphDescription:
+    "Leadsie pricing explained: Starter, Agency, Pro, onboarding vs audit credits, $50 overage packs, and what a 10- or 20-client month actually costs.",
+  lastVerified: "2026-09-23",
   introLead:
-    "Leadsie plans start at $59/month for 3 onboarding credits. Busy months add $50 overage packs. Below is how credits work, what a real month costs at 5 / 10 / 15 / 20 / 50 new clients, and how AuthHub’s fixed tiers compare. Prices are pre-tax and were checked on Leadsie’s pricing page on September 19, 2026 — confirm both vendors before you buy.",
+    "Leadsie plans start at $59/month for 3 onboarding credits. Busy months add $50 overage packs. Below is how credits work, what a real month costs at 5 / 10 / 15 / 20 / 50 new clients, and how AuthHub’s fixed tiers compare. Prices are pre-tax and were checked on Leadsie’s pricing page on September 23, 2026 — confirm both vendors before you buy.",
   plans: [
     {
       name: "Starter",
@@ -167,10 +170,11 @@ export const leadsiePricingPage: LeadsiePricingPageData = {
     "You are happy with credit rollover and overage math",
   ],
   switchToAuthHub: [
-    "You need predictable monthly bills without credit overages",
-    "You want intake answers and OAuth in the same client flow",
-    "You want token-health monitoring and Infisical-backed audit events",
-    `Your clients use AuthHub's ${SUPPORTED_PLATFORM_COUNT} core connectors`,
+    "You want a predictable monthly number without credit math",
+    "You regularly onboard in the 5–20 client band where overage packs show up",
+    "You want intake fields + OAuth in one client link",
+    "You care about token health monitoring and Infisical-backed audit events on AuthHub's core connectors",
+    `Your clients use AuthHub's ${LEADSIE_PRICING_AUTHHUB_PLATFORM_BREADTH} core connectors`,
   ],
   faqs: [
     {

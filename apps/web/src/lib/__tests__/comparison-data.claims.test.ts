@@ -7,7 +7,8 @@ import {
 import { generateComparisonSchema } from "@/lib/schema-generators";
 
 const AUTHHUB_FORBIDDEN = [
-  /SOC\s*2/i,
+  /SOC\s*2[- ]ready/i,
+  /SOC\s*2 certified/i,
   /Type\s*II/i,
   /unlimited clients/i,
   /Unlimited clients/i,
@@ -77,6 +78,7 @@ describe("AgencyAccess comparison page claims", () => {
 const LEADSIE_FORBIDDEN = [
   /flat.rate/i,
   /\$240/,
+  /\$600/,
   /\$49\/mo/,
   /Save 25%/,
   /AgencyAccess charges/i,
@@ -84,6 +86,7 @@ const LEADSIE_FORBIDDEN = [
   /Mike Torres/,
   /Jennifer Walsh/,
   /API access \(all tiers\)/i,
+  /all Leadsie platforms plus/i,
 ];
 
 function leadsieRenderedCriticalSnapshot(page: typeof leadsieAlternativePage) {
@@ -120,16 +123,20 @@ describe("Leadsie comparison page claims", () => {
     expect(leadsieAlternativePage.competitor.pricing.pro?.price).toBe(129);
     expect(leadsieAlternativePage.competitor.pricing.enterprise?.price).toBe("299");
     expect(leadsieAlternativePage.ourProduct.pricing.enterprise?.price).toBe("149");
-    expect(leadsieAlternativePage.pricingComparison.savings.yearly).toBe(600);
-    expect(leadsieAlternativePage.pricingComparison.savings.monthly).toBe(50);
+    expect(leadsieAlternativePage.pricingComparison.savings.yearly).toBe(360);
+    expect(leadsieAlternativePage.pricingComparison.savings.monthly).toBe(30);
 
     LEADSIE_FORBIDDEN.forEach((pattern) => {
       expect(copy, "leadsie comparison copy").not.toMatch(pattern);
     });
 
-    expect(leadsieAlternativePage.metaDescription).toMatch(
-      /credit pricing, \$29\/\$79\/\$149 monthly tiers, migration/,
+    expect(leadsieAlternativePage.metaTitle).toBe(
+      "Leadsie Alternative for Agencies: AuthHub vs Leadsie (Pricing & Switch)",
     );
+    expect(leadsieAlternativePage.metaDescription).toBe(
+      "Comparing Leadsie alternatives? See AuthHub's tiered plans ($29/$79/$149), intake + OAuth in one link, token health + Infisical audit — plus Leadsie credit & overage math at 5–50 clients.",
+    );
+    expect(leadsieAlternativePage.openGraphDescription).toMatch(/15\+ core connectors vs 31\+/);
     expect(leadsieAlternativePage.excerpt).toMatch(/Leadsie still wins for 31\+ integrations/);
     expect(leadsieAlternativePage.painPoints[0]?.solution).toMatch(
       /\$29 \/ \$79 \/ \$149 monthly tiers with 5 \/ 20 \/ 50 client caps/,
@@ -139,7 +146,7 @@ describe("Leadsie comparison page claims", () => {
         expect.objectContaining({
           feature: "Platform Count",
           competitor: "31+",
-          authhub: `${SUPPORTED_PLATFORM_COUNT}`,
+          authhub: "15+",
         }),
         expect.objectContaining({
           feature: "Starting Price",
@@ -148,19 +155,21 @@ describe("Leadsie comparison page claims", () => {
         }),
       ]),
     );
-    expect(leadsieAlternativePage.cta.guarantee).toMatch(/\$29\/\$79\/\$149 monthly tiers/);
+    expect(leadsieAlternativePage.cta.guarantee).toMatch(/\$29\/\$79\/\$149 tiers/);
     expect(leadsieAlternativePage.ourProduct.differentiators).toContain(
       "Predictable tiered pricing (no credits)",
     );
     expect(leadsieAlternativePage.valueCallout?.headline).toMatch(
       /How Leadsie credits work/,
     );
-    expect(leadsieAlternativePage.valueCallout?.body).toMatch(/manager\/admin access/);
+    expect(leadsieAlternativePage.valueCallout?.body).toMatch(/manager or admin access/);
     expect(leadsieAlternativePage.valueCallout?.body).not.toMatch(/AgencyAccess charges/);
     expect(leadsieAlternativePage.competitorPricingSubtitle).toMatch(
       /\$59 · \$129 · \$299/,
     );
-    expect(leadsieAlternativePage.authhubSavingsHighlight).toMatch(/\$600\/yr/);
+    expect(leadsieAlternativePage.authhubSavingsHighlight).toMatch(/\$360\/yr/);
+    expect(leadsieAlternativePage.authhubSavingsHighlight).not.toMatch(/\$600/);
+    expect(leadsieAlternativePage.lastVerified).toBe("2026-09-23");
     expect(leadsieAlternativePage.pricingScenarios).toEqual([
       expect.objectContaining({ clients: "5", competitorCost: "$109", authHubCost: "$29" }),
       expect.objectContaining({ clients: "10", competitorCost: "$129", authHubCost: "$79" }),

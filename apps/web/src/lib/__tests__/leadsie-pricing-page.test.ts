@@ -21,7 +21,8 @@ describe("Leadsie pricing SEO page", () => {
     expect(leadsiePricingPage.title).toBe(
       "Leadsie Pricing (2026): Plans, Credits, and Real Monthly Cost",
     );
-    expect(leadsiePricingPage.lastVerified).toBe("2026-09-19");
+    expect(leadsiePricingPage.lastVerified).toBe("2026-09-23");
+    expect(leadsiePricingPage.openGraphDescription).toMatch(/Starter, Agency, Pro/);
   });
 
   it("keeps verified Leadsie and AuthHub list prices in worked examples", () => {
