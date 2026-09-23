@@ -38,8 +38,11 @@ export async function generateMetadata({
       canonical: canonicalUrl,
     },
     openGraph: {
-      title: post.title,
-      description: post.excerpt,
+      title: post.metaTitle || post.title,
+      description:
+        post.openGraphDescription ||
+        post.metaDescription ||
+        post.excerpt,
       type: "article",
       publishedTime: post.publishedAt,
       authors: [post.author.name],
@@ -153,7 +156,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
           "name": "What is agency onboarding software?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "Any tool that removes a step between signed contract and live campaigns. That covers four categories: platform access management, client intake forms, contracts and e-signature, and internal project management.",
+            "text": "Agency onboarding software is any tool that removes a step between signed contract and live work. That usually spans four jobs: platform access (OAuth permissions to Meta, Google, and similar), intake forms, contracts/e-sign, and internal project management.",
           },
         },
         {
@@ -161,15 +164,31 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
           "name": "Which agency onboarding software should I buy first?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "Whichever category is your current bottleneck. For most agencies that is access management, because platform permissions block billable work while forms and contracts do not.",
+            "text": "Buy for your current bottleneck. If campaigns are blocked waiting on Meta Business Manager or Google Ads permissions, start with access management (AuthHub, Leadsie, or Agency Access). If the pain is brand assets, questionnaires, signatures, and deposits in one client link, start with a client portal.",
           },
         },
         {
           "@type": "Question",
-          "name": "How much does agency onboarding software cost?",
+          "name": "How is AuthHub different in this category?",
           "acceptedAnswer": {
             "@type": "Answer",
-            "text": "Access management platforms run $29 to $99 per month. Intake and document tools run $20 to $50 per month each. A minimum viable stack of four tools lands near $100 per month total.",
+            "text": "AuthHub is client OAuth onboarding for agencies: one link for featured platforms (Meta, Google Ads, GA4, LinkedIn, TikTok) across an honest 15+ platform set, with in-link intake, flat-rate plans ($29 / $79 / $149, caps 5 / 20 / 50), Infisical-backed token storage, and audit logs.",
+          },
+        },
+        {
+          "@type": "Question",
+          "name": "Portal vs access — which do I need?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "Portals collect forms, files, signatures, and often payments. Access tools collect platform permissions. If work is blocked on Meta/Google access, buy access first. If work is blocked on missing brand kits or unsigned SOWs, buy portal / contracts first.",
+          },
+        },
+        {
+          "@type": "Question",
+          "name": "How much does access-oriented onboarding software cost?",
+          "acceptedAnswer": {
+            "@type": "Answer",
+            "text": "AuthHub monthly list: $29 / $79 / $149. Leadsie monthly list: $59 / $129 / $299 (credits plus $50 packs). Agency Access: roughly $33–44 / $74–99 / $149–199 depending on monthly vs yearly billing.",
           },
         },
       ],
