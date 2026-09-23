@@ -1,14 +1,14 @@
 ---
 id: best-client-onboarding-software-agencies-2026
-title: Best Client Onboarding Software for Agencies (2026)
+title: 'Best Client Onboarding Software for Agencies (2026): Access Tools vs Portals'
 excerpt: >-
-  Agency onboarding tools aren't one category. Here's the 4 types (access,
-  intake, PM, contracts), which bottleneck to fix first, and what to buy in
-  2026.
+  Most "best onboarding software" lists mix portals, PM tools, and access tools.
+  Here's the four-job map for agencies—and when AuthHub's one-link OAuth access
+  belongs in the stack.
 category: operations
 stage: consideration
 publishedAt: '2026-04-10'
-readTime: 15
+readTime: 18
 author:
   name: Jon High
   role: Founder
@@ -20,313 +20,261 @@ tags:
   - leadsie alternative
   - client access management
   - agency operations
-metaTitle: Best Client Onboarding Software for Agencies (2026)
+metaTitle: 'Best Client Onboarding Software for Agencies (2026): Access Tools vs Portals'
 metaDescription: >-
-  Agency onboarding tools aren't one category. Here's the 4 types (access,
-  intake, PM, contracts), which bottleneck to fix first, and what to buy in
-  2026.
+  Most "best onboarding software" lists mix portals, PM tools, and access tools.
+  Here's the four-job map for agencies—and when AuthHub's one-link OAuth access
+  belongs in the stack.
+openGraphDescription: >-
+  Searching agency onboarding software? Portals collect forms and signatures;
+  access tools unlock Meta and Google. Compare categories, then shortlist AuthHub,
+  Leadsie, and Agency Access.
 relatedPosts:
   - client-onboarding-checklist
   - how-to-onboard-new-marketing-client
   - what-is-client-access-management
   - flat-rate-vs-credit-pricing
+  - oauth-token-management-agencies
   - leadsie-vs-authhub-comparison
 ---
-# Best Client Onboarding Software for Agencies (2026)
+# Best Client Onboarding Software for Agencies (2026): Access Tools vs Portals
 
-You searched for the best client onboarding software for agencies. Most results rank Asana, Dubsado, Typeform, and Leadsie in one list — as if they solve the same problem.
+You searched for the **best client onboarding software for agencies**. Most results rank Portico-style portals, Asana, Dubsado, Typeform, and Leadsie in one list — as if they solve the same problem.
 
 They don't.
 
-Agency client onboarding has four jobs: platform access, intake, project coordination, and contracts. A project tool won't get you Meta Ads access. A form tool won't sign the SOW. Pick the category that matches your bottleneck, then pick the tool.
+**Agency onboarding software** is not one product. It usually spans four jobs: **platform access** (OAuth / partner permissions to Meta, Google Ads, and similar), **intake**, **project coordination**, and **contracts / e-sign**. A branded client portal won't grant Meta Business Manager access. A project tool won't sign the SOW. An access tool won't collect your deposit.
 
-This guide maps the four categories, names the tools that actually fit each one, and shows why access management is where most agencies bleed non-billable hours. Updated for 2026 pricing and coverage.
+This guide maps the four categories, draws a hard line between **portals** and **access tools**, and shortlists AuthHub, Leadsie, and Agency Access for the access job — with pricing verified **September 23, 2026**. Pick the category that matches your bottleneck first; then pick the tool.
 
----
-
-## The Problem Nobody's Categorizing
-
-Agency client onboarding has four distinct operational problems. Most tools solve one of them. Almost none solve the one that costs agencies the most time.
-
-**Problem 1: Information Collection.** Gathering business details, brand assets, platform logins, goals, and budget info from the client. The tool: intake forms and questionnaires.
-
-**Problem 2: Task Coordination.** Managing the internal workflow — who does what, when, and what's blocking what. The tool: project management.
-
-**Problem 3: Document Execution.** Contracts, NDAs, SOWs, proposals — getting them signed and stored. The tool: document management.
-
-**Problem 4: Platform Access.** Getting permissions to the client's Meta Business Manager, Google Ads, GA4, LinkedIn, TikTok, and every other platform where they run ads. The tool: access management.
-
-In a 2024 survey of 850+ onboarding professionals, 62% said their single biggest time sink during onboarding was chasing clients for access and information — not managing tasks, not getting contracts signed, not scheduling calls. **Access and information collection together account for the majority of onboarding delays.**
-
-Yet if you look at any "best onboarding software" listicle, the tools are ranked by popularity and feature count — not by which bottleneck they actually address. Here's a better way to evaluate them.
+**[Start 14-day free trial — no credit card](/pricing)** · [AuthHub vs Leadsie](/compare/leadsie-alternative) · [Leadsie pricing math](/compare/leadsie-pricing) · [AuthHub vs Agency Access](/compare/agencyaccess-alternative)
 
 ---
 
-## Category 1: Access Management — The Bottleneck
+## Agency onboarding software is not one category
 
-This is the category most listicles bury at the bottom or skip entirely. It's also the one that costs agencies the most money.
+**What is agency / client onboarding software?** Agency onboarding software is any tool that removes a step between signed contract and live work. That usually spans four jobs: platform access (OAuth permissions to Meta, Google, and similar), intake forms, contracts/e-sign, and internal project management. Lists that rank Asana next to Leadsie next to Portico are mixing different jobs.
 
-Platform access is the step between "contract signed" and "first campaign live." Your account manager sends instructions for Meta Business Manager. The client can't find the button. Three days of email threads later, you have access to the wrong ad account. Google Ads goes to a personal email. LinkedIn expires. TikTok requires a QR code the client doesn't understand.
+SERP mindshare for "client onboarding software for agencies" is dominated by **branded portals** — forms, files, e-sign, payments, magic links (Portico, Onvoy, Valuecase-style listicles). Access specialists (AuthHub, Leadsie, Agency Access) show up when the query leans marketing or ad-account access. Both categories are "onboarding software." They are **neighbors, not substitutes.**
 
-Five platforms. Five different flows. Five different failure modes. Agencies spend 8-12 hours per month on this problem alone. At a $150/hour billing rate, that's $1,200-1,800/month in non-billable time.
+If campaigns can't launch because Meta or Google permissions are missing, buying another portal will not fix it. If the pain is questionnaires, brand assets, signatures, and deposits in one client login, buying an OAuth tool will not fix it either.
+
+---
+
+## The four jobs of agency client onboarding
+
+### Platform access (OAuth / partner permissions)
+
+The step between "contract signed" and "first campaign live." Your account manager needs partner or admin access to the client's Meta Business Manager, Google Ads, GA4, LinkedIn Ads, TikTok Ads, and whatever else the media plan uses. Each platform has its own invite flow, failure mode, and expiry pattern. This is the category most generic listicles bury — and the one that blocks billable work when it stalls.
+
+### Intake / information collection
+
+Business details, brand assets, goals, budgets, audiences, competitors. Forms and document portals live here (Typeform, Content Snare, Formstack — and intake fields inside some access tools).
+
+### Project coordination
+
+Internal who-does-what after access and intake land. Asana, Monday.com, and similar. Your team already has one. These tools do not grant ad-account access.
+
+### Contracts and e-sign
+
+SOWs, NDAs, proposals, signatures. PandaDoc, DocuSign, Proposify. Necessary — and still a different job from OAuth.
+
+Scheduling (Calendly) and automation (Zapier) support the stack. They are not the bottleneck thesis for most paid-media agencies.
+
+---
+
+## Portal tools vs access tools (pick the job first)
+
+| | **Client portals** (Portico / Onvoy / Valuecase-style) | **Access tools** (AuthHub / Leadsie / Agency Access) |
+| --- | --- | --- |
+| **Job** | Forms, files, e-sign, payments, branded client experience | One-link (or guided) OAuth / partner access to ad & analytics platforms |
+| **Client sees** | Magic-link portal, questionnaires, uploads, signatures | Platform permission screens (Meta, Google, etc.) |
+| **Unblocks** | Docs, deposits, brand assets | Live campaigns and reporting |
+| **Does not replace** | Access management | Full portal / e-sign / payments |
+| **Buy when** | Pain is chasing assets, signatures, and deposits | Pain is chasing Meta Business Manager / Google Ads permissions |
+
+**Decision rule:** If campaigns can't launch because Meta or Google permissions are missing, **buy access first**. If the pain is brand kits, questionnaires, signatures, and deposits in one place, **buy a portal first**. Many agencies eventually need both — but buying the wrong category first is how you end up with a polished portal and still no ad account access.
+
+---
+
+## Category 1 deep dive: access management
+
+This is the category most "best onboarding software" lists skip or bury. It is also where paid-media agencies lose the most non-billable time — chasing invite emails, wrong ad accounts, expired LinkedIn seats, and TikTok QR flows the client does not understand.
 
 ### AuthHub
 
-**What it does**: Centralized platform access collection. Send one link, the client grants access to all platforms (Meta, Google, GA4, LinkedIn, TikTok, Pinterest) in one session. Includes intake forms, so access and information collection happen simultaneously.
+**What it does:** Client OAuth onboarding for agencies. Send **one link**; the client grants access across featured platforms — **Meta, Google Ads, GA4, LinkedIn, TikTok** — within an honest **15+** platform set. Request templates can include **custom intake fields**, so authorization and client context arrive in the **same client flow**.
 
-**What makes it different**: Only tool that combines access management and intake forms in a single client flow. Tiered flat-rate pricing with predictable caps—no per-client overage fees. OAuth tokens stored in Infisical (secrets management), not a database.
+**What makes it different (honest):** AuthHub **combines access + intake in one client flow**, with **flat-rate** Starter / Growth / Scale plans, **token-health** monitoring, **Infisical**-backed token storage, and **audit logs**. It is **not** a full client portal for e-sign and payments, and it does **not** match Leadsie's long-tail **31+** breadth. We do **not** claim SOC 2 on this page.
 
-**Best for**: Agencies onboarding 3+ clients/month across multiple ad platforms.
+**Best for:** Agencies onboarding multiple clients per month across core ad/analytics platforms who want predictable monthly cost inside an active-client cap.
 
-**Pricing**: Starter $29/mo ($24/mo billed yearly) · 5 clients/mo · Growth $79/mo (or $66/mo billed yearly) · 20 clients/mo · Scale $149/mo ($124/mo billed yearly) · 50 clients/mo
+**Pricing (monthly list; verify on [/pricing](/pricing)):**
+
+| Plan | Monthly | Yearly effective (labeled) | Active-client cap |
+| --- | --- | --- | --- |
+| Starter | **$29/mo** | ~$24/mo billed yearly | **5** |
+| Growth | **$79/mo** | ~$66/mo billed yearly | **20** |
+| Scale | **$149/mo** | ~$124/mo billed yearly | **50** |
+
+API + webhooks: **Growth + Scale only**. Support: **US-based** (no same-day SLA claimed here). Migration from another access tool: dual-run + re-authorize — **no** "15-minute free CS migration" promise.
 
 ### Leadsie
 
-**What it does**: Similar to AuthHub — one link for platform access collection. Supports 31+ platforms including Meta, Google, TikTok, LinkedIn, Shopify, WordPress, and more.
+**What it does:** One-link platform access collection. Positions strongly as client onboarding software for digital marketing agencies — meaning **access**, not a full portal. Publishes **31+** platforms, including long-tail connectors AuthHub does not highlight (notably WordPress and YouTube on many public lists).
 
-**What makes it different**: Largest platform coverage (31+ vs AuthHub's focused ad platform set). Credit-based pricing model — each client onboarding costs one credit.
+**What makes it different:** Breadth, Access Detective / Meta-heavy workflows, and credit-based pricing. Each new client that grants manager/admin access typically costs **one onboarding credit**; busy months can require **$50 overage packs**.
 
-**Trade-off**: Credit-based pricing means costs scale with volume. The Starter plan ($49/month, 3 credits) works for low-volume agencies. A busy month with 8 clients on the $49 plan costs $199 ($49 + 5 overages at $30 each). [Full pricing comparison](/blog/flat-rate-vs-credit-pricing).
+**When Leadsie wins:** You need 31+ long-tail integrations, Access Detective or influencer/Meta asset workflows AuthHub does not lead with, or your team/clients are best served in UK/EU hours.
 
-**Pricing**: From $49/month (credit-based, 3 credits)
+**Pricing (public list; verified framing Sep 23, 2026 — confirm on leadsie.com and [/compare/leadsie-pricing](/compare/leadsie-pricing)):** **$59 / $129 / $299** for **3 / 10 / 50** onboarding credits, plus **$50** overage packs. Older "$49 / 3 credits" figures on some pages are stale.
 
-### AgencyAccess
+Deep dive: [AuthHub vs Leadsie](/compare/leadsie-alternative) · [Leadsie pricing worked examples](/compare/leadsie-pricing)
 
-**What it does**: Platform access requests for Meta, Google, and LinkedIn. Sends branded emails with step-by-step instructions.
+### Agency Access (agencyaccess.co)
 
-**Trade-off**: More manual than AuthHub or Leadsie — relies on email instructions rather than a guided client flow. Fewer platform integrations.
+**What it does:** Access competitor for marketing agencies — automatic / one-link style platform access, **intake forms**, custom branding, subdomains. Featured platforms include **Google, Meta, Shopify**, with LinkedIn and others on the broader list. Higher plans add **Zapier** (7,000+ tools framing on their pricing page).
 
-**Pricing**: Contact for pricing
+**Honest framing:** Do **not** treat Agency Access as "email-only" or "no guided flow" if you are shopping their current product — clients follow an onboarding link and approve access on official platform screens. Do **not** call AuthHub "OAuth-only" either: AuthHub's in-link intake is real.
 
----
+**AuthHub differentiators vs Agency Access (typical buy criteria):** Infisical-backed token storage + audit trail, token-health monitoring, and flat active-client caps with a clear Starter entry at **$29/mo**. Agency Access differentiators to respect: their branding/subdomain packaging, Zapier on Premium+, and their own intake + access bundle.
 
-## Category 2: Intake Forms & Information Collection
+**Pricing (agencyaccess.co/pricing, verified Sep 23, 2026 — monthly vs yearly):**
 
-Once you've signed the client, you need their information. Business details, brand guidelines, platform logins, ad spend budgets, target audiences, competitor names. The faster you collect this, the faster your team can start working.
+| Plan | Monthly | Yearly billed | Clients / mo |
+| --- | --- | --- | --- |
+| Starter | **~$44/mo** | **~$33/mo** | **5** |
+| Premium | **~$99/mo** | **~$74/mo** | **15** (+ Zapier) |
+| Agency | **~$199/mo** | **~$149/mo** | **50**, then custom |
 
-### Typeform
-
-**What it does**: Conversational, interactive forms. One question at a time, conditional logic, branded themes. Feels less like a government form and more like a conversation.
-
-**What makes it different**: Best-in-class form experience. Clients actually enjoy filling these out. 1,500+ templates, strong integrations (Google Sheets, Slack, Zapier).
-
-**Trade-off**: Forms only — no project management, no access collection, no contracts. You'll need other tools alongside it.
-
-**Pricing**: From $25/month
-
-### Content Snare
-
-**What it does**: Branded client portal for collecting documents, files, and information. Built specifically for agencies. Includes automated reminders, in-document comments, and approval/rejection workflows.
-
-**What makes it different**: Agency-native. The portal feels professional, not generic. Clients can ask questions directly in the platform instead of email threads.
-
-**Trade-off**: Narrow focus — excellent at what it does, but doesn't handle access collection or project management.
-
-**Pricing**: From $29/month
-
-### Formstack
-
-**What it does**: Advanced forms with data validation, conditional logic, document generation, and built-in e-signatures.
-
-**What makes it different**: The closest thing to an all-in-one form solution. You can build the intake form, generate the contract from the same data, and get it signed — all in one platform.
-
-**Trade-off**: Expensive. The Suite plan (which includes all features) starts at $250/month. The forms-only plan is $83/month — steep if you only need forms.
-
-**Pricing**: From $83/month (forms), $250/month (suite)
+Compare page: [AuthHub vs Agency Access](/compare/agencyaccess-alternative)
 
 ---
 
-## Category 3: Project Management — Internal Coordination
+## Categories 2–4: intake, project management, contracts
 
-Once you have the client's information and platform access, your team needs to execute. Task assignment, milestone tracking, client communication, reporting cadences. This is the most crowded category on every listicle.
+Keep these short — they matter, but they are not the access bottleneck.
 
-### Asana
+### Intake forms & information collection
 
-**What it does**: Task and project management with timelines, dependencies, and team workloads. The default choice for most agencies.
+- **Typeform** — conversational forms, strong UX; forms only. From ~$25/mo.
+- **Content Snare** — agency-native document/info portal with reminders. From ~$29/mo.
+- **Formstack** — advanced forms + docs + e-sign; suite pricing climbs fast (~$83 forms / ~$250 suite).
 
-**What makes it different**: Mature, flexible, integrates with everything. Your team probably already knows how to use it.
+None of these grant Meta or Google partner access. If you already use AuthHub or Leadsie with intake in-flow, you may not need a second form tool for first-pass onboarding.
 
-**Trade-off**: Doesn't handle any client-facing onboarding steps — no intake forms, no access collection, no contracts. It's the tool you use after onboarding is done.
+### Project management
 
-**Pricing**: From $10.99/user/month
+- **Asana** — default agency PM; from ~$10.99/user/mo.
+- **Monday.com** — visual workflows; from ~$9/seat/mo.
 
-### Monday.com
+Internal coordination only. The client still needs a separate path for OAuth and usually for signatures.
 
-**What it does**: Visual project management with customizable workflows, automations, and dashboards.
+### Contracts & e-sign
 
-**What makes it different**: Highly customizable. You can build a workflow that mirrors your exact onboarding process, including automations that trigger when a client completes a step.
+- **PandaDoc** — proposals + e-sign; from ~$19/mo.
+- **DocuSign** — signature standard; from ~$15 personal / ~$25/seat business.
+- **Proposify** — agency-native proposals; from ~$39/user/mo.
 
-**Trade-off**: Same limitation as Asana — internal coordination only. The client never interacts with Monday directly. You still need something for the client-facing steps.
-
-**Pricing**: From $9/seat/month
-
----
-
-## Category 4: Contracts & Document Management
-
-Getting the SOW signed, the NDA executed, the proposal approved. These tools handle the legal/administrative layer of onboarding.
-
-### PandaDoc
-
-**What it does**: Proposal creation, contract management, and e-signatures. Create branded proposals with pricing tables, get them signed, and store them.
-
-**What makes it different**: Proposals look polished. The pricing table feature lets you present tiered service packages clearly. Integrates with CRM and payment tools.
-
-**Trade-off**: Document-focused only. No intake forms, no access collection, no project management.
-
-**Pricing**: From $19/month
-
-### DocuSign
-
-**What it does**: Industry-standard e-signatures. Send contracts, get them signed, store them securely.
-
-**What makes it different**: Name recognition. Clients trust the DocuSign interface. Legally robust with audit trails.
-
-**Trade-off**: Expensive for small agencies ($15/month for individuals, $25/seat/month for business). Only handles signatures — not proposals, not intake, not access.
-
-**Pricing**: From $15/month (personal), $25/seat/month (business)
-
-### Proposify
-
-**What it does**: Proposals, contracts, and client engagement tools. Similar to PandaDoc but built specifically for agencies and professional services.
-
-**What makes it different**: Agency-native templates and workflows. Content library lets you reuse approved proposal sections across clients.
-
-**Trade-off**: Narrow scope. Excellent at proposals and contracts, but that's one step in a multi-step process.
-
-**Pricing**: From $39/user/month
+Necessary. Still not access management.
 
 ---
 
-## Category 5: Scheduling
-
-The kickoff call sets the tone for the entire client relationship. The tools here make it easy to schedule — but they don't prepare anything for the call itself.
-
-### Calendly
-
-**What it does**: Scheduling automation. Clients book meetings without email back-and-forth. Round-robin assignment, timezone detection, calendar sync.
-
-**What makes it different**: Solves a real friction point. The kickoff call is the first client-facing touchpoint — Calendly makes it easy to schedule.
-
-**Trade-off**: One step of many. Calendly gets the meeting on the calendar but doesn't prepare anything for it.
-
-**Pricing**: From $10/seat/month
-
-### Zapier
-
-**What it does**: Workflow automation between tools. When a client fills out a Typeform, create a task in Asana and send a notification in Slack.
-
-**What makes it different**: Connects everything to everything. If you're using separate tools for intake, project management, and contracts, Zapier automates the handoffs between them.
-
-**Trade-off**: Requires technical setup. Each integration is a mini-project. At scale, the cost adds up — pricing is based on task volume, not seats. Only worth adding after your core stack is solid.
-
-**Pricing**: From $19.99/month
-
----
-
-## The Honest Evaluation Framework
-
-Before you pick any tool, answer three questions:
+## Honest evaluation framework
 
 ### 1. Which bottleneck is costing you the most time?
 
-Track your account manager's time for one week during onboarding. How much goes to:
-- Chasing platform access?
-- Following up on intake forms?
-- Managing internal tasks?
-- Getting contracts signed?
-- Scheduling calls?
-
-The category that gets the most hours is the one to invest in first. For most agencies onboarding 3+ clients per month, the answer is platform access. It's the step with the most variables, the most failure modes, and the least tooling.
+Track one onboarding week. Hours to: chase platform access · follow up on intake · internal tasks · contracts · scheduling. Invest in the category that burns the most non-billable time first. For many paid-media agencies onboarding several clients a month, that is **platform access** — highest variables, most failure modes, least coverage in generic listicles.
 
 ### 2. How many tools are you willing to manage?
 
-Each tool is a subscription, a login, a learning curve, and an integration to maintain. The agencies with the smoothest onboarding use the fewest tools possible.
-
-**The minimum viable stack:**
-- **Access + Intake**: AuthHub (one tool handles both)
-- **Project Management**: Asana or Monday (your team already uses one)
-- **Contracts**: PandaDoc or Proposify
-- **Scheduling**: Calendly
-
-That's four tools. Some agencies consolidate to three by using a tool that spans categories — AuthHub for access + intake, or Dubsado for contracts + invoicing + basic CRM.
-
-**The maximum before diminishing returns**: six tools. Beyond that, the integration overhead exceeds the efficiency gains. You're not building a tech stack. You're onboarding a client.
+Each tool is a subscription, a login, and an integration to maintain. Minimum viable stack (below) is four. Past ~six tools, integration overhead usually exceeds the gain.
 
 ### 3. What happens when you scale?
 
-The tool that works for 3 clients/month might break at 10. Ask specifically:
-- Does pricing scale linearly or does it jump? (Credit-based models compound. Flat-rate stays flat.)
-- Can account managers self-serve, or does every client setup require an admin?
-- Can you add team members without a per-seat cost explosion?
+Ask: Does price stay flat inside a cap, or do credits/overages compound on busy months? Can AMs self-serve? Do seats explode cost? Flat-rate active-client caps (AuthHub) and credit packs (Leadsie) behave very differently at 10–20 new clients in a spike month — see [/compare/leadsie-pricing](/compare/leadsie-pricing).
 
 ---
 
-## Why Most Lists Get This Wrong
+## Minimum viable onboarding stack (2026)
 
-The standard listicle format ranks tools by feature count and popularity. Asana gets ranked #1 because everyone uses it. Dubsado gets ranked high because it has the most features. The implicit promise: "Install this tool and your onboarding will be faster."
+1. **Access (+ intake if bundled):** AuthHub or Leadsie (or Agency Access if their packaging fits) — the billable-work blocker.
+2. **Project management:** Asana or Monday — you probably already have one.
+3. **Contracts:** PandaDoc or Proposify.
+4. **Scheduling:** Calendly.
 
-But feature count doesn't matter if the tool doesn't solve your bottleneck. We've seen agencies with six-figure tech stacks that still spend three days chasing Meta Business Manager access — because not one of those six tools handles the actual problem.
+Four tools. One covers the access bottleneck. Add Zapier only after the core handoffs work. Portal products (Portico / Onvoy / Valuecase-style) slot in when you need a branded forms/files/e-sign experience — **in addition to**, not instead of, access.
 
-A project management tool with 500 features won't help if your problem is that the client can't find the "Accept Partnership" button in Meta Business Manager. A form builder with 1,500 templates won't help if your problem is that the Google Ads invitation went to the wrong email.
+Playbooks already on AuthHub:
 
-The agencies that onboard clients fastest don't have more tools. They have the right tools for the right problem — and for most agencies, that's access management first, everything else second.
-
----
-
-## Quick-Reference Comparison
-
-| Category | Tool | Starts At | Solves the bottleneck? |
-|----------|------|----------|----------------------|
-| **Access + Intake** | **AuthHub** | **$29/mo+** | **Yes** — access + intake in one flow |
-| **Access** | Leadsie | $49/mo | Yes — access collection (31+ platforms) |
-| **Access** | AgencyAccess | Custom | Partial — email-based, no guided flow |
-| **Forms** | Typeform | $25/mo | Partial — intake only, no access |
-| **Forms** | Content Snare | $29/mo | Partial — document collection only |
-| **Forms** | Formstack | $83/mo | No — forms + docs, no access |
-| **Projects** | Asana | $10.99/user | No — internal coordination only |
-| **Projects** | Monday.com | $9/seat | No — internal coordination only |
-| **Contracts** | PandaDoc | $19/mo | No — document signing only |
-| **Contracts** | DocuSign | $15/mo | No — signatures only |
-| **Contracts** | Proposify | $39/user | No — proposals only |
-| **Scheduling** | Calendly | $10/seat | No — meeting scheduling only |
-| **Automation** | Zapier | $19.99/mo | No — connects other tools, doesn't solve a bottleneck directly |
+- [Client onboarding checklist](/blog/client-onboarding-checklist)
+- [What client access management is](/blog/what-is-client-access-management) — and why access chase burns non-billable time
+- [Flat-rate vs credit pricing](/blog/flat-rate-vs-credit-pricing)
+- [OAuth token management for agencies](/blog/oauth-token-management-agencies)
 
 ---
 
-## The Minimum Viable Onboarding Stack
+## Quick-reference comparison
 
-If you're choosing tools today, start here:
+Prices are **pre-tax list** snapshots verified **September 23, 2026**. **Re-check vendor pricing pages before you buy.**
 
-**1. AuthHub or Leadsie** — for platform access and intake (the bottleneck).
-**2. Asana or Monday.com** — for internal task management (you probably have one).
-**3. PandaDoc or Proposify** — for contracts and proposals.
-**4. Calendly** — for scheduling.
-
-Four tools. One covers the bottleneck. The other three cover the supporting steps. Add Zapier if you want to automate handoffs between them, but only after the core stack is working.
-
-The agencies that try to solve onboarding with seven different tools spend more time managing tools than onboarding clients. The ones that pick the right four and execute consistently are the ones that get campaigns live in under a week.
+| Category | Tool | Starts at (list) | Solves access bottleneck? |
+| --- | --- | --- | --- |
+| Access + intake (one flow) | **AuthHub** | **$29/mo** (5 active clients) | **Yes** — featured Meta / Google Ads / GA4 / LinkedIn / TikTok; **15+** platforms; Infisical + audit logs |
+| Access (credits) | **Leadsie** | **$59/mo** (3 credits) | **Yes** — **31+** platforms; $50 overage packs |
+| Access (+ intake / branding) | **Agency Access** | **~$33–44/mo** Starter | **Yes** — one-link access; intake forms; Zapier on higher plans |
+| **Portal (different job)** | Portico / Onvoy / Valuecase-style | Varies | **No** — forms / files / e-sign / payments, not OAuth partner access |
+| Forms | Typeform | ~$25/mo | Partial — intake only |
+| Forms / docs portal | Content Snare | ~$29/mo | Partial — document collection |
+| Forms + docs | Formstack | ~$83/mo | No — no ad-platform OAuth |
+| Projects | Asana | ~$10.99/user | No — internal only |
+| Projects | Monday.com | ~$9/seat | No — internal only |
+| Contracts | PandaDoc | ~$19/mo | No — documents only |
+| Contracts | DocuSign | ~$15/mo | No — signatures only |
+| Contracts | Proposify | ~$39/user | No — proposals only |
+| Scheduling | Calendly | ~$10/seat | No — meetings only |
 
 ---
 
-*For the operational playbook, see our [client onboarding checklist](/blog/client-onboarding-checklist). For a deeper look at the access bottleneck specifically, read [what client access management is and why it costs agencies $1,500/month](/blog/what-is-client-access-management). And if you're evaluating pricing models, our [flat-rate vs credit pricing comparison](/blog/flat-rate-vs-credit-pricing) has the math.*
+## Who should not buy AuthHub
 
+- You need a **full client portal** (e-sign, payments, asset library) as the primary buy — look at Portico / Onvoy / Valuecase-style products first.
+- You need Leadsie's **31+** long-tail set (e.g. WordPress / YouTube) or Access Detective-class Meta workflows AuthHub does not lead with.
+- You only need **internal PM** or **contracts** — buy Asana/PandaDoc, not an access tool.
+- You require a marketed **SOC 2** attestation from your access vendor today — we do not claim that here (Infisical + audit logs only).
 
-## Agency Onboarding Software: FAQ
+---
 
-**What is agency onboarding software?**
-Any tool that removes a step between signed contract and live campaigns. That covers four categories: platform access management, client intake forms, contracts and e-signature, and internal project management. Most lists mix all four into one ranking, which is why they are hard to act on.
+## Agency onboarding software: FAQ
 
-**Which agency onboarding software should I buy first?**
-Whichever category is your current bottleneck. For most agencies that is access management, because platform permissions block billable work while forms and contracts do not. Start there, then add intake and project tools only if a second bottleneck appears.
+### What is agency onboarding software?
 
-**What is the difference between agency onboarding software and project management tools?**
-Project management tools coordinate your internal team. Onboarding software faces the client: it collects their permissions, information, and signatures. Asana and Monday cannot get you Meta Ads access. That is a different job.
+Agency onboarding software is any tool that removes a step between signed contract and live work. That usually spans four jobs: platform access (OAuth permissions to Meta, Google, and similar), intake forms, contracts/e-sign, and internal project management. Lists that rank Asana next to Leadsie next to Portico are mixing different jobs.
 
-**How much does agency onboarding software cost?**
-Access management platforms run $29 to $99 per month. Intake and document tools run $20 to $50 per month each. A minimum viable stack of four tools lands near $100 per month total. Avoid credit-based pricing where cost scales with client count.
+### Which agency onboarding software should I buy first?
 
-**Can I build agency onboarding without dedicated software?**
-Yes, with a checklist, manual permission requests, and email templates. Agencies that do this spend 10 to 20 non-billable hours per month on coordination. Software pays for itself when that time exceeds the subscription cost.
+Buy for your current bottleneck. If campaigns are blocked waiting on Meta Business Manager or Google Ads permissions, start with **access management** (AuthHub, Leadsie, or Agency Access). If the pain is brand assets, questionnaires, signatures, and deposits in one client link, start with a **client portal**. Project tools coordinate your team; they do not grant ad-account access.
 
-**The short version:** pick for the bottleneck, not the feature count. For most agencies the bottleneck is platform access — the only category that blocks every billable step behind it. [AuthHub](/pricing) handles access and intake in one client flow from $29/month, flat-rate; each supporting tool above does exactly one job.
+### How is AuthHub different in this category?
+
+AuthHub is client OAuth onboarding for agencies: one link for featured platforms (Meta, Google Ads, GA4, LinkedIn, TikTok) across an honest **15+** platform set, with **in-link intake**, flat-rate plans (**$29 / $79 / $149**, caps **5 / 20 / 50**), **Infisical**-backed token storage, and audit logs. It is not a full client portal for e-sign and payments, and it does not match Leadsie's long-tail platform breadth. We do not claim SOC 2 on this page.
+
+### Portal vs access — which do I need?
+
+Portals collect forms, files, signatures, and often payments. Access tools collect platform permissions. If work is blocked on Meta/Google access, buy access first. If work is blocked on missing brand kits or unsigned SOWs, buy portal / contracts first. Many agencies eventually run both.
+
+### How much does access-oriented onboarding software cost?
+
+AuthHub monthly list: **$29 / $79 / $149**. Leadsie monthly list: **$59 / $129 / $299** (credits + $50 packs). Agency Access: roughly **$33–44 / $74–99 / $149–199** depending on monthly vs yearly billing. A minimum viable four-tool stack (access + PM you already have + contracts + scheduling) often lands near ~$100/mo before seats — verify live prices.
+
+### Can I build agency onboarding without dedicated software?
+
+Yes — checklists, manual permission invites, email templates. That path usually burns more non-billable coordination time as volume grows. Software pays for itself when chase-time exceeds the subscription for your real monthly client count.
+
+---
+
+## Closing
+
+Pick for the **bottleneck**, not the feature count. For most paid-media agencies, the bottleneck that blocks every billable step behind it is **platform access**. Portals are the right buy for a different job. AuthHub is the flat-rate access + in-link intake option inside an honest 15+ platform set — with Infisical and audit logs, without SOC 2 theater.
+
+**[Start free trial](/pricing)** · [Compare Leadsie](/compare/leadsie-alternative) · [Leadsie pricing](/compare/leadsie-pricing) · [Compare Agency Access](/compare/agencyaccess-alternative)

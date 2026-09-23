@@ -35,6 +35,8 @@ export interface BlogPost {
   tags: string[];
   metaTitle?: string;
   metaDescription?: string;
+  /** Optional OG description when it should differ from metaDescription */
+  openGraphDescription?: string;
   canonical?: string;
   relatedPosts?: string[];
 }

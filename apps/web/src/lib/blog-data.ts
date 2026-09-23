@@ -104,6 +104,9 @@ function parseFileToPost(filePath: string, slug: string): BlogPost {
     metaDescription: data.metaDescription
       ? String(data.metaDescription)
       : undefined,
+    openGraphDescription: data.openGraphDescription
+      ? String(data.openGraphDescription)
+      : undefined,
     relatedPosts: Array.isArray(data.relatedPosts)
       ? data.relatedPosts.map(String)
       : undefined,
