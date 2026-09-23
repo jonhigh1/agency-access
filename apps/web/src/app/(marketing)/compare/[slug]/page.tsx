@@ -23,13 +23,15 @@ export async function generateMetadata({ params }: ComparisonPageProps): Promise
 
   if (isLeadsiePricingSlug(slug)) {
     const pricingPage = getLeadsiePricingPage();
+    const ogDescription =
+      pricingPage.openGraphDescription ?? pricingPage.metaDescription;
     return {
       title: pricingPage.metaTitle,
       description: pricingPage.metaDescription,
       keywords: pricingPage.keywords,
       openGraph: {
         title: pricingPage.metaTitle,
-        description: pricingPage.metaDescription,
+        description: ogDescription,
         type: "article",
       },
     };
@@ -43,13 +45,15 @@ export async function generateMetadata({ params }: ComparisonPageProps): Promise
     };
   }
 
+  const ogDescription = page.openGraphDescription ?? page.metaDescription;
+
   return {
     title: page.metaTitle,
     description: page.metaDescription,
     keywords: page.keywords,
     openGraph: {
       title: page.metaTitle,
-      description: page.metaDescription,
+      description: ogDescription,
       type: "website",
     },
   };

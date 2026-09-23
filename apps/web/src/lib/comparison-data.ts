@@ -12,13 +12,18 @@ import type { ProgrammaticComparisonPage } from "./programmatic-types";
  * Leadsie Alternative Comparison Page Data
  * Target keywords: "Leadsie alternative", "Leadsie vs AuthHub", "AuthHub vs Leadsie"
  */
+/** Honest published connector breadth on Leadsie compare pages (not full enum count). */
+const LEADSIE_COMPARE_AUTHHUB_PLATFORM_BREADTH = "15+";
+
 export const leadsieAlternativePage: ProgrammaticComparisonPage = {
   id: "leadsie-alternative",
   slug: "leadsie-alternative",
-  title: "Leadsie Alternative | Why Agencies Switch to AuthHub",
-  metaTitle: "Leadsie Alternative | Why Agencies Switch to AuthHub",
+  title: "AuthHub vs Leadsie: the Leadsie alternative for agency OAuth + intake",
+  metaTitle: "Leadsie Alternative for Agencies: AuthHub vs Leadsie (Pricing & Switch)",
   metaDescription:
-    "Comparing Leadsie alternatives? See AuthHub vs Leadsie: credit pricing, $29/$79/$149 monthly tiers, migration, and when Leadsie wins.",
+    "Comparing Leadsie alternatives? See AuthHub's tiered plans ($29/$79/$149), intake + OAuth in one link, token health + Infisical audit — plus Leadsie credit & overage math at 5–50 clients.",
+  openGraphDescription:
+    "AuthHub vs Leadsie for agencies: predictable tiers vs credits, 15+ core connectors vs 31+, dual-run migration, and worked monthly cost examples. Verify prices live.",
 
   competitor: {
     name: "Leadsie",
@@ -106,7 +111,7 @@ export const leadsieAlternativePage: ProgrammaticComparisonPage = {
         price: 29,
         features: [
           "Up to 5 active clients",
-          `${SUPPORTED_PLATFORM_COUNT} platforms`,
+          `${LEADSIE_COMPARE_AUTHHUB_PLATFORM_BREADTH} core platforms`,
           "Unlimited team seats",
           "One-link onboarding",
           "Token auto-refresh",
@@ -142,7 +147,7 @@ export const leadsieAlternativePage: ProgrammaticComparisonPage = {
       "Access + Intake in One Link",
       "Predictable tiered pricing (no credits)",
       "Token Health + Infisical Audit",
-      `${SUPPORTED_PLATFORM_COUNT} Platform Connectors`,
+      `${LEADSIE_COMPARE_AUTHHUB_PLATFORM_BREADTH} Core Connectors`,
     ],
     platforms: [
       "Meta Ads",
@@ -169,7 +174,7 @@ export const leadsieAlternativePage: ProgrammaticComparisonPage = {
   },
 
   excerpt:
-    "AuthHub is a Leadsie alternative for agencies that need client OAuth plus intake in one link, predictable monthly tiers, and token-health monitoring with Infisical-backed audit trails. Leadsie still wins for 31+ integrations and specialized Meta or influencer workflows. Compare current pricing, platforms, and migration.",
+    "AuthHub is a Leadsie alternative for agencies that need client OAuth plus intake in one link, predictable monthly tiers ($29 / $79 / $149 with 5 / 20 / 50 active-client caps), and token-health monitoring with Infisical-backed audit trails. Leadsie still wins for 31+ integrations and specialized Meta or influencer workflows. Compare current pricing, platforms, and how to dual-run a switch without breaking live platform permissions.",
 
   content: "", // Rendered by component from structured data
 
@@ -197,13 +202,26 @@ export const leadsieAlternativePage: ProgrammaticComparisonPage = {
       icon: "Clock",
       quote: "I need to know which connections are healthy before a campaign launch.",
       description:
-        "Expired or revoked access can stop work. AuthHub monitors token health, uses provider-supported refresh, stores token references in Infisical, and records audit events.",
+        "Expired or revoked access can stop work. AuthHub monitors token health, uses provider-supported refresh where the provider allows it, stores token references in Infisical, and records audit events.",
       solution: "Token health, provider-supported refresh, and audit trails",
+    },
+    {
+      title: "Support Hours",
+      icon: "Globe",
+      quote: "My team and clients need coverage during US business hours.",
+      description:
+        "Leadsie's team and many of its customers are strongest in UK/EU hours. AuthHub offers US-based support only — no published guaranteed response-time SLA.",
+      solution: "US-based support for US agency ops hours",
     },
   ],
 
   quickComparison: [
-    { feature: "Platform Count", competitor: "31+", authhub: `${SUPPORTED_PLATFORM_COUNT}`, winner: "competitor" },
+    {
+      feature: "Platform Count",
+      competitor: "31+",
+      authhub: LEADSIE_COMPARE_AUTHHUB_PLATFORM_BREADTH,
+      winner: "competitor",
+    },
     { feature: "Client Intake Forms", competitor: false, authhub: true, winner: "authhub", isExclusive: true },
     { feature: "API & Webhooks", competitor: "Enterprise", authhub: "Growth+", winner: "authhub" },
     { feature: "Pricing Model", competitor: "Credits + overages", authhub: "Fixed monthly tiers" },
@@ -232,8 +250,14 @@ export const leadsieAlternativePage: ProgrammaticComparisonPage = {
       features: [
         { name: "Client Intake Forms", competitor: false, authhub: true },
         { name: "Reusable Templates", competitor: false, authhub: true },
-        { name: "Custom Branding", competitor: "Agency tier", authhub: "All plans" },
-        { name: "API Access", competitor: "Enterprise only", authhub: "Growth and Scale" },
+        { name: "Custom Branding", competitor: "Agency tier", authhub: "All plans (depth by tier)" },
+        { name: "API + Webhooks", competitor: "Enterprise", authhub: "Growth + Scale only" },
+        { name: "Pricing model", competitor: "Credits + $50 overages", authhub: "Fixed monthly tiers" },
+        {
+          name: "Active-client / credit caps",
+          competitor: "3 / 10 / 50 credits",
+          authhub: "5 / 20 / 50 active clients",
+        },
       ],
     },
     {
@@ -256,10 +280,12 @@ export const leadsieAlternativePage: ProgrammaticComparisonPage = {
       "You are happy with credit rollover and overage math",
     ],
     switchToAuthHub: [
-      "You need predictable monthly bills without credit overages",
+      "You want predictable monthly bills without credit overages inside 5 / 20 / 50 caps",
       "You want intake answers and OAuth in the same client flow",
       "You want token-health monitoring and Infisical-backed audit events",
-      `Your clients use AuthHub's ${SUPPORTED_PLATFORM_COUNT} core connectors`,
+      `Your clients use AuthHub's ${LEADSIE_COMPARE_AUTHHUB_PLATFORM_BREADTH} core connectors (Meta, Google, LinkedIn, TikTok, and related)`,
+      "You need API + webhooks on Growth or Scale",
+      "US-based support fits your ops hours better than UK/EU-first coverage",
     ],
   },
 
@@ -280,7 +306,7 @@ export const leadsieAlternativePage: ProgrammaticComparisonPage = {
       step: 3,
       title: "Dual-Run the Transition",
       description:
-        "Send AuthHub links for new onboarding and renewed authorizations. Clients must re-authorize through AuthHub; existing platform permissions do not auto-port.",
+        "Send AuthHub links for new onboarding and renewed authorizations. Clients must re-authorize through AuthHub; existing Leadsie-managed connections do not auto-port. Run both tools in parallel until the clients you care about have completed AuthHub authorization and your team trusts token health in the new system. No 15-minute migration promise and no free CS migration claim.",
     },
   ],
 
@@ -297,7 +323,7 @@ export const leadsieAlternativePage: ProgrammaticComparisonPage = {
         price: 29,
         features: [
           "Up to 5 active clients",
-          `${SUPPORTED_PLATFORM_COUNT} platforms`,
+          `${LEADSIE_COMPARE_AUTHHUB_PLATFORM_BREADTH} core platforms`,
           "Access + Intake",
           "US-based support",
         ],
@@ -322,17 +348,18 @@ export const leadsieAlternativePage: ProgrammaticComparisonPage = {
       },
     },
     savings: {
-      monthly: 50,
-      yearly: 600,
-      percentage: 50,
+      monthly: 30,
+      yearly: 360,
+      percentage: 28,
     },
   },
 
   competitorPricingSubtitle: "$59 · $129 · $299 (3 / 10 / 50 client credits)",
-  authhubSavingsHighlight: "$600/yr at 10 clients: Growth $79 vs Leadsie Agency $129",
+  authhubSavingsHighlight:
+    "$360/yr (~$30/mo) at 10 clients: Growth $79 vs Leadsie Agency yearly effective ~$107/mo",
   valueCallout: {
     headline: "How Leadsie credits work",
-    body: "One onboarding credit is used for each new client that grants manager/admin access. View-only audits use separate credits. Unused credits roll over for three months; overage packs cost $50 and add 3, 5, or 10 onboarding credits by tier.",
+    body: "One onboarding credit is used when a new client grants manager or admin access (one client = one credit). View-only audits use separate audit credits. Unused credits typically roll for about three months. Overage packs cost $50 and add onboarding + view-only credits by tier (commonly 3 / 5 / 10 onboarding credits on Starter / Agency / Pro). Active subscriptions generally keep links live when over cap — the pack is the bill shock, not a hard mid-client stop.",
   },
   pricingScenarios: [
     {
@@ -372,17 +399,22 @@ export const leadsieAlternativePage: ProgrammaticComparisonPage = {
     },
   ],
   pricingScenariosNote:
-    "Worked examples use the lowest published monthly Leadsie plan that covers the workload, including its listed overage packs. Prices are pre-tax and were verified on September 19, 2026.",
+    "Worked examples use the lowest published monthly Leadsie option that covers the onboarding load, including listed overage packs, versus AuthHub monthly list tiers. Prices are pre-tax and were checked on September 23, 2026. Verify both vendors' live pricing pages before you buy.",
   faqs: [
+    {
+      question: "What is the best Leadsie alternative for marketing agencies?",
+      answer:
+        "For agencies that need a branded client link to collect OAuth access to Meta, Google Ads, GA4, LinkedIn, and TikTok — with predictable monthly pricing instead of onboarding credits — AuthHub is built as a Leadsie alternative focused on access + intake in one flow, provider-supported token refresh, and Infisical-backed token storage with audit logs. Agencies that need Leadsie's widest 31+ platform list, Access Detective, or Meta asset-creation / influencer workflows may still prefer Leadsie.",
+    },
     {
       question: "How does Leadsie pricing work?",
       answer:
-        "Leadsie's monthly plans cost $59 for 3 client credits, $129 for 10, and $299 for 50. View-only audit credits are separate. Unused credits roll over for three months. If you exceed the cap, Leadsie sells $50 packs with 3, 5, or 10 onboarding credits depending on the plan.",
+        "Leadsie's published monthly plans are $59 / $129 / $299 for 3 / 10 / 50 onboarding credits (Starter / Agency / Pro). View-only audit credits are separate. Unused credits typically roll for about three months. If you exceed the cap, Leadsie sells $50 overage packs (onboarding + view-only credits by tier). Always confirm on Leadsie's pricing page.",
     },
     {
-      question: "How does AuthHub pricing compare for 5, 10, 15, 20, and 50 clients?",
+      question: "How does AuthHub pricing compare at 5, 10, 15, 20, and 50 clients?",
       answer:
-        "At 5, 10, 15, 20, and 50 monthly clients, the worked examples above cost $29, $79, $79, $79, and $149 on AuthHub. The lowest published monthly Leadsie options in those scenarios are $109, $129, $179, $229, and $299. Verify both pricing pages before purchase.",
+        "In the worked examples above (pre-tax, checked September 23, 2026), AuthHub costs $29 / $79 / $79 / $79 / $149 at those volumes on Starter → Growth → Scale. The lowest published monthly Leadsie paths in those scenarios are $109 / $129 / $179 / $229 / $299. For a 10-client savings headline we use AuthHub Growth $79/mo vs Leadsie Agency yearly effective ~$107/mo ≈ $360/yr only. Yearly AuthHub equivalents (~$24 / $66 / $124) are on /pricing. Full credit teardown: /compare/leadsie-pricing.",
     },
     {
       question: "Will switching from Leadsie break client access?",
@@ -392,7 +424,7 @@ export const leadsieAlternativePage: ProgrammaticComparisonPage = {
     {
       question: "Does AuthHub support every Leadsie platform?",
       answer:
-        `No. Leadsie advertises 31+ integrations, including platforms AuthHub does not currently expose. AuthHub has ${SUPPORTED_PLATFORM_COUNT} core connectors across ad, analytics, commerce, and email platforms. Check both integration lists for the platforms your clients actually use.`,
+        `No. Leadsie advertises 31+ integrations, including platforms AuthHub does not currently expose (for example WordPress and YouTube on many Leadsie lists). AuthHub has ${LEADSIE_COMPARE_AUTHHUB_PLATFORM_BREADTH} core connectors across ads, analytics, commerce, and email. Match the matrix to the platforms your clients actually use.`,
     },
     {
       question: "What is the difference between AuthHub and Leadsie's intake approach?",
@@ -403,6 +435,15 @@ export const leadsieAlternativePage: ProgrammaticComparisonPage = {
       question: "Do I keep client access if I cancel either tool?",
       answer:
         "Platform access remains until the client or platform removes it. Neither vendor owns the granted permission. You may lose vendor-side automation, monitoring, and audit history, but the direct platform authorization does not disappear just because a subscription ends.",
+    },
+    {
+      question: "Does AuthHub include API and webhooks on every plan?",
+      answer: "No. API + webhooks are on Growth and Scale only — not Starter.",
+    },
+    {
+      question: "Does AuthHub claim formal SOC 2 certification on this page?",
+      answer:
+        "No. We do not use a SOC 2 readiness marketing claim here. We do describe Infisical-backed token references and audit logs. Ask security/compliance for current paperwork if you need a formal attestation.",
     },
   ],
 
@@ -426,19 +467,19 @@ export const leadsieAlternativePage: ProgrammaticComparisonPage = {
   ],
 
   cta: {
-    headline: "Ready to Streamline Your Onboarding?",
+    headline: "Ready to compare on a real month?",
     subheadline:
-      "Start your 14-day free trial today. No credit card required. See why agencies switched from Leadsie to AuthHub.",
+      "Start a 14-day free trial (no credit card), or go straight to AuthHub and Leadsie pricing numbers.",
     primaryButton: "Start 14 Day Free Trial",
     primaryLink: "/signup",
-    secondaryButton: "View Pricing",
+    secondaryButton: "AuthHub Pricing",
     secondaryLink: "/pricing",
-    guarantee: "✓ Access + Intake in one link  ✓ $29/$79/$149 monthly tiers  ✓ No credit overage packs",
+    guarantee: "✓ Intake + OAuth in one link  ✓ $29/$79/$149 tiers (5/20/50 caps)  ✓ Dual-run migration",
   },
 
   isProgrammatic: true,
   templateId: "comparison-aida-v1",
-  lastVerified: "2026-09-19",
+  lastVerified: "2026-09-23",
 };
 
 /**

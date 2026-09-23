@@ -267,6 +267,8 @@ export interface ProgrammaticComparisonPage {
   title: string;                  // "{Competitor} Alternative | Why Agencies Switch"
   metaTitle: string;              // 50-60 chars
   metaDescription: string;        // 105-155 chars with value prop
+  /** Optional OG description when it should differ from metaDescription */
+  openGraphDescription?: string;
 
   // Competitor data
   competitor: CompetitorData;
