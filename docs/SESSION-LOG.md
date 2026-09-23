@@ -1,5 +1,21 @@
 ---
 
+## Session: 2026-09-23 — Client list recovers from stale-token 401s
+
+### What was done
+- `ClientSelector` loads the client list through `authorizedApiFetch`. On a 401, it forces a Clerk token refresh (`getToken({ skipCache: true })`) and retries one time before it shows the error.
+- The load path captures `client_list_load_failed` (status, error_code, token_refreshed) and `client_list_auth_recovered`, so the failure rate is measurable.
+
+### Files changed
+- `apps/web/src/components/client-selector.tsx` — typed fetch, 401 refresh-and-retry, analytics captures
+- `apps/web/src/components/__tests__/client-selector.test.tsx` — tests for retry, repeated 401, and non-401 failure
+
+### Next steps
+- Measure the 401 share of client-list loads with the new events.
+- Other components on `/access-requests/new` and the create-client POST still use raw `fetch` with no 401 recovery.
+
+---
+
 ## Session: 2026-09-13/14 — App craft and motion plan implementation (PR #56)
 
 ### What was done
