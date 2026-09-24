@@ -193,6 +193,17 @@ function AgencyAccessPricingSection({ page }: ComparisonPageTemplateProps) {
           </div>
         )}
 
+        {page.supplementalProse?.costMathDetail && (
+          <p className="mt-6 font-mono text-[11px] leading-relaxed text-[#626A78]">
+            {page.supplementalProse.costMathDetail}
+          </p>
+        )}
+        {page.supplementalProse?.pricingSourcesNote && (
+          <p className="mt-3 font-mono text-[11px] font-semibold text-[#596276]">
+            {page.supplementalProse.pricingSourcesNote}
+          </p>
+        )}
+
         <p className="mt-6 text-center font-mono text-xs text-[#7B8492]">
           Also comparing Leadsie?{" "}
           <Link href={"/compare/leadsie-alternative" as Route} className="font-semibold text-coral underline-offset-2 hover:underline">
@@ -231,6 +242,8 @@ export function ComparisonPageTemplate({ page }: ComparisonPageTemplateProps) {
     authhubSavingsHighlight,
     pricingScenarios,
     pricingScenariosNote,
+    aeoSections,
+    supplementalProse,
   } = page;
 
   return (
@@ -360,11 +373,17 @@ export function ComparisonPageTemplate({ page }: ComparisonPageTemplateProps) {
               ? "Shared job: one-link client access for agencies"
               : `Why Agencies Look for ${competitor.name} Alternatives`}
           </h2>
-          <p className="font-mono text-muted-foreground text-center mb-12 max-w-2xl mx-auto">
+          <p className="font-mono text-muted-foreground text-center mb-6 max-w-2xl mx-auto">
             {isAgencyAccessPage
               ? "Both solve access onboarding with official OAuth behind one client link. Decide on token expiry, vaulting and audit, automation hooks, and how plan caps hit a busy month. Intake is not a monopoly—both include it."
               : `Growing agencies hit these walls with ${competitor.name}. Sound familiar?`}
           </p>
+          {isAgencyAccessPage && supplementalProse?.sharedJobLead && (
+            <div className="mx-auto mb-12 max-w-2xl space-y-4 font-mono text-sm text-muted-foreground">
+              <p>{supplementalProse.sharedJobLead}</p>
+              {supplementalProse.sharedJobFollow && <p>{supplementalProse.sharedJobFollow}</p>}
+            </div>
+          )}
 
           <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
             {painPoints.map((pain, index) => {
@@ -610,6 +629,21 @@ export function ComparisonPageTemplate({ page }: ComparisonPageTemplateProps) {
         </section>
       )}
 
+      {isAgencyAccessPage && aeoSections && aeoSections.length > 0 && (
+        <section className="border-b-2 border-black bg-paper">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-10">
+            <div className="mx-auto max-w-3xl space-y-6">
+              {aeoSections.map((section) => (
+                <article key={section.headline} className="border-2 border-black bg-white p-5 shadow-brutalist-sm">
+                  <h3 className="font-dela text-lg text-ink">{section.headline}</h3>
+                  <p className="mt-3 font-mono text-sm text-muted-foreground leading-relaxed">{section.body}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Feature-by-Feature Comparison */}
       {detailedComparison.length > 0 && (
         <section className="border-b-2 border-black bg-card">
@@ -687,6 +721,11 @@ export function ComparisonPageTemplate({ page }: ComparisonPageTemplateProps) {
                   <li key={i}>• {item}</li>
                 ))}
               </ul>
+              {isAgencyAccessPage && supplementalProse?.stickWithClosing && (
+                <p className="mt-4 font-mono text-sm font-semibold text-ink">
+                  {supplementalProse.stickWithClosing}
+                </p>
+              )}
             </div>
 
             {/* Switch to AuthHub */}
@@ -699,6 +738,11 @@ export function ComparisonPageTemplate({ page }: ComparisonPageTemplateProps) {
                   <li key={i}>• {item}</li>
                 ))}
               </ul>
+              {isAgencyAccessPage && supplementalProse?.switchOptionalNote && (
+                <p className="mt-4 font-mono text-xs text-muted-foreground leading-relaxed">
+                  {supplementalProse.switchOptionalNote}
+                </p>
+              )}
             </div>
           </div>
         </div>

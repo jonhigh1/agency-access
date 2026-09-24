@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   agencyAccessAlternativePage,
+  FORBIDDEN_AGENCYACCESS_COMPARE_TESTIMONIAL_NAMES,
   leadsieAlternativePage,
 } from "@/lib/comparison-data";
 import { generateComparisonSchema } from "@/lib/schema-generators";
@@ -10,10 +11,6 @@ const AUTHHUB_POSITIVE_FORBIDDEN = [
   /Type\s*II/i,
   /bank-grade/i,
   /enterprise-grade security at a startup/i,
-  /Mike Torres/,
-  /Jennifer Walsh/,
-  /David Park/,
-  /Sarah Mitchell/,
 ];
 
 const AGENCYACCESS_STALE_PHRASES = [
@@ -23,8 +20,6 @@ const AGENCYACCESS_STALE_PHRASES = [
   "Premium for unlimited invites",
   "Keep Existing Connections",
   "Migration takes about 5 minutes",
-  "David Park",
-  "Sarah Mitchell",
 ];
 
 function expectNoPositiveForbiddenClaims(text: string, context: string) {
@@ -54,6 +49,8 @@ function authHubCopySnapshot(page: typeof agencyAccessAlternativePage) {
     testimonials: page.testimonials,
     pricingComparison: page.pricingComparison,
     valueCallout: page.valueCallout,
+    aeoSections: page.aeoSections,
+    supplementalProse: page.supplementalProse,
     faqs: page.faqs,
     cta: page.cta,
     migrationSteps: page.migrationSteps,
@@ -92,6 +89,21 @@ describe("AgencyAccess comparison page claims", () => {
     );
     expect(agencyAccessAlternativePage.cta.guarantee).toMatch(/\$29\/\$79\/\$149/);
     expect(agencyAccessAlternativePage.testimonials).toEqual([]);
+  });
+
+  it("excludes forbidden testimonial names (Growth + draft list)", () => {
+    const pageCopy = JSON.stringify(agencyAccessAlternativePage);
+
+    expect(FORBIDDEN_AGENCYACCESS_COMPARE_TESTIMONIAL_NAMES).toEqual([
+      "Mike Torres",
+      "Jennifer Walsh",
+      "David Park",
+      "Sarah Mitchell",
+    ]);
+
+    FORBIDDEN_AGENCYACCESS_COMPARE_TESTIMONIAL_NAMES.forEach((name) => {
+      expect(pageCopy, `forbidden testimonial: ${name}`).not.toContain(name);
+    });
   });
 
   it("states both vendors have APIs and AgencyAccess Premium is 15 clients/month", () => {

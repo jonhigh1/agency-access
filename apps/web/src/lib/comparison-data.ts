@@ -483,6 +483,14 @@ export const leadsieAlternativePage: ProgrammaticComparisonPage = {
 /** Honest published connector breadth on AgencyAccess compare pages (not full enum count). */
 const AGENCYACCESS_COMPARE_AUTHHUB_PLATFORM_BREADTH = "15+";
 
+/** Cleared testimonial names — must not appear on /compare/agencyaccess-alternative */
+export const FORBIDDEN_AGENCYACCESS_COMPARE_TESTIMONIAL_NAMES = [
+  "Mike Torres",
+  "Jennifer Walsh",
+  "David Park",
+  "Sarah Mitchell",
+] as const;
+
 /**
  * AgencyAccess.co Alternative Comparison Page Data
  * Target keywords: "AgencyAccess alternative", "AuthHub vs AgencyAccess"
@@ -867,6 +875,31 @@ export const agencyAccessAlternativePage: ProgrammaticComparisonPage = {
   ],
   pricingScenariosNote:
     "Worked examples use monthly list prices (pre-tax), checked September 24, 2026 (PT). AuthHub annual equivalents (~$24 / $66 / $124) are on /pricing. AgencyAccess annual ($33 / $74 / $149) shown as footnote on their pricing page. AgencyAccess FAQ copy may list Zapier on “Pro and Agency” while the pricing page shows Zapier on Premium+—this page follows agencyaccess.co/pricing. Verify both vendors live before you buy.",
+
+  supplementalProse: {
+    sharedJobLead:
+      "Agency founders and ops leads share the same pain: chasing Meta Business Manager invites, Google Ads access, GA4, LinkedIn, TikTok, and the rest across email threads that stall campaigns.",
+    sharedJobFollow:
+      "AuthHub and AgencyAccess both solve that with official OAuth (or platform permission) flows behind one client link. The shared job is access onboarding. Decide on what happens after the first grant: token expiry, vaulting and audit, automation hooks, and how plan caps hit a busy month.",
+    costMathDetail:
+      "~5 clients/mo: $44 − $29 = $15/mo ($180/yr) if both monthly. Against AgencyAccess annual $33, AuthHub monthly $29 is $4/mo lower; both annualized (~$24 vs $33) is $9/mo. ~15 clients: $99 − $79 = $20/mo ($240/yr) both monthly. Against Premium annual $74, AuthHub monthly $79 is $5/mo higher; AuthHub annual ~$66 vs $74 is $8/mo lower. ~20 clients: AgencyAccess needs Agency $199 → $199 − $79 = $120/mo ($1,440/yr). Against Agency annual $149, AuthHub monthly $79 is $70/mo lower ($840/yr). AuthHub usually wins on predictable tiers once you cross Premium’s 15/month wall. AgencyAccess can still win on platform breadth, trial length, support hours, or volume inside Starter/Premium.",
+    pricingSourcesNote:
+      "Sources: authhub.co/pricing and agencyaccess.co/pricing, checked September 24, 2026 (PT).",
+    stickWithClosing: "Staying is a valid outcome.",
+    switchOptionalNote:
+      "Optional: AuthHub also fits teams mixing humans and agents in access workflows—see OAuth token management for agencies (/blog/oauth-token-management-agencies). No MCP product-page claims here.",
+  },
+
+  aeoSections: [
+    {
+      headline: "Does AgencyAccess have an API?",
+      body: "Yes. AgencyAccess documents a public API for creating and managing clients and access requests (API key via X-Auth). AuthHub also offers API and webhooks starting on Growth. The useful comparison is workflow depth and token lifecycle—not whether an API exists.",
+    },
+    {
+      headline: "Who should switch from AgencyAccess to AuthHub?",
+      body: "Switch (or dual-run) if expired tokens and reconnect friction are costing you campaigns, if vendor review needs Infisical-style vaulting and audit logs, or if you want AuthHub’s Growth-tier API/webhook packaging with predictable active-client tiers. Stay if you need AgencyAccess’s broader niche integrations, longer trial, or support model.",
+    },
+  ],
 
   faqs: [
     {
