@@ -64,7 +64,8 @@ describe("ComparisonPageTemplate marketing hardening", () => {
       template.indexOf("export function ComparisonPageTemplate"),
     );
 
-    expect(agencyAccessSection).toMatch(/AgencyAccess Premium/);
+    expect(agencyAccessSection).toMatch(/AgencyAccess \(monthly list\)/);
+    expect(agencyAccessSection).not.toMatch(/Unlimited invites/);
     expect(template).not.toMatch(
       /isLeadsiePage[\s\S]*AgencyAccess charges per seat/,
     );
