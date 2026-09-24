@@ -3,8 +3,6 @@
  * Structured data for programmatic comparison pages
  */
 
-import { SUPPORTED_PLATFORM_COUNT } from "@agency-platform/shared";
-
 import { LEADSIE_PRICING_SLUG } from "./leadsie-pricing-page";
 import type { ProgrammaticComparisonPage } from "./programmatic-types";
 
@@ -482,24 +480,35 @@ export const leadsieAlternativePage: ProgrammaticComparisonPage = {
   lastVerified: "2026-09-23",
 };
 
+/** Honest published connector breadth on AgencyAccess compare pages (not full enum count). */
+const AGENCYACCESS_COMPARE_AUTHHUB_PLATFORM_BREADTH = "15+";
+
+/** Cleared testimonial names — must not appear on /compare/agencyaccess-alternative */
+export const FORBIDDEN_AGENCYACCESS_COMPARE_TESTIMONIAL_NAMES = [
+  "Mike Torres",
+  "Jennifer Walsh",
+  "David Park",
+  "Sarah Mitchell",
+] as const;
+
 /**
  * AgencyAccess.co Alternative Comparison Page Data
- * Target keywords: "AgencyAccess alternative", "AgencyAccess.co vs AuthHub"
+ * Target keywords: "AgencyAccess alternative", "AuthHub vs AgencyAccess"
  *
- * Research verified 2026-03-06:
- * - Pricing: $33/$74/$149 monthly (Starter/Premium/Agency) - annual discount
- * - Location: AgencyAccess B.V. (Netherlands/EU)
- * - Claimed agencies: 500+
- * - Platforms: Meta, Google, TikTok, LinkedIn, Shopify, HubSpot, YouTube, Instagram (20+)
- * - Has intake forms, Zapier integration, custom branding
- * - 24/7 chat support on higher tiers
+ * Research verified 2026-09-24 (PT):
+ * - AgencyAccess monthly: $44 / $99 / $199; annual equiv. $33 / $74 / $149
+ * - Caps: 5 / 15 / 50 clients per month (Agency: 50 then custom)
+ * - Both AuthHub and AgencyAccess publish public APIs
  */
 export const agencyAccessAlternativePage: ProgrammaticComparisonPage = {
   id: "agencyaccess-alternative",
   slug: "agencyaccess-alternative",
-  title: "AuthHub vs AgencyAccess: Best Client Onboarding Software for Agencies [2026]",
-  metaTitle: "AuthHub vs AgencyAccess: Best Client Onboarding Software for Agencies [2026]",
-  metaDescription: "Both platforms help agencies collect client permissions through a single link. Compare automatic token refresh, Infisical-backed token storage with audit logs, tiered plans (5/20/50 clients/month), and developer-friendly API access.",
+  title: "AuthHub vs AgencyAccess (2026): Token Refresh, Pricing, and Who Should Switch",
+  metaTitle: "AuthHub vs AgencyAccess (2026): Token Refresh, Pricing, and Who Should Switch",
+  metaDescription:
+    "Compare AuthHub and AgencyAccess on token auto-refresh, Infisical audit logs, API/webhooks, intake, and plan caps—plus honest reasons to stay on AgencyAccess.",
+  openGraphDescription:
+    "Both have APIs. Compare token auto-refresh, Infisical audit logs, AuthHub Growth+ webhooks, intake parity, and plan caps ($29/$79/$149 vs $44/$99/$199)—plus when to stay on AgencyAccess.",
 
   competitor: {
     name: "AgencyAccess",
@@ -507,13 +516,13 @@ export const agencyAccessAlternativePage: ProgrammaticComparisonPage = {
     logo: "/images/competitors/agencyaccess-logo.png",
     website: "https://www.agencyaccess.co",
     pricing: {
-      starting: 33,
+      starting: 44,
       currency: "USD",
       billing: "monthly",
       starter: {
-        price: 33,
+        price: 44,
         features: [
-          "5 invites",
+          "5 clients/month",
           "Up to 3 team members",
           "Email support weekdays",
           "All platforms",
@@ -521,22 +530,23 @@ export const agencyAccessAlternativePage: ProgrammaticComparisonPage = {
         ],
       },
       pro: {
-        price: 74,
+        price: 99,
         features: [
-          "Unlimited invites",
+          "15 clients/month",
           "Up to 10 team members",
           "Priority email + chat",
-          "Zapier integration",
+          "Zapier integration (Premium+)",
           "Static invite links",
         ],
       },
       enterprise: {
-        price: "149",
+        price: "199",
         features: [
+          "50 clients/month, then custom",
           "Unlimited team members",
           "Multiple brands",
           "24/7 chat support",
-          "Priority support",
+          "Public REST API + Zapier",
         ],
       },
     },
@@ -561,18 +571,16 @@ export const agencyAccessAlternativePage: ProgrammaticComparisonPage = {
       "20+ total platforms",
     ],
     weaknesses: [
-      "Invite limits on Starter tier (5 invites)",
-      "No automatic token refresh (manual reconnect required)",
-      "No public API for custom development",
-      "Limited audit log functionality",
+      "Clients-per-month caps (5 / 15 / 50)",
+      "Automatic token refresh not advertised as primary",
+      "Infisical-style vaulting and audit packaging not advertised",
     ],
     strengths: [
-      "500+ agencies using the platform",
-      "20+ platform integrations (Shopify, HubSpot, Klaviyo)",
-      "Zapier integration (7000+ tools)",
-      "Custom branding on all tiers",
-      "Intake forms included",
-      "GDPR compliant",
+      "Broader niche platform coverage (HubSpot, YouTube Studio)",
+      "Public REST API (X-Auth) plus Zapier on Premium+",
+      "Built-in intake forms",
+      "Custom branding and subdomain emphasis",
+      "GDPR-oriented security framing",
       "30-day free trial",
       "24/7 chat support on Premium/Agency plans",
     ],
@@ -580,7 +588,7 @@ export const agencyAccessAlternativePage: ProgrammaticComparisonPage = {
 
   ourProduct: {
     name: "AuthHub",
-    tagline: "Enterprise-grade client access with automation built-in",
+    tagline: "Access + intake with token lifecycle automation",
     logo: "/logo.png",
     pricing: {
       starting: 29,
@@ -591,13 +599,13 @@ export const agencyAccessAlternativePage: ProgrammaticComparisonPage = {
         features: [
           "Up to 5 active clients",
           "Unlimited team seats",
-          "One-link onboarding",
-          "Token auto-refresh",
-          "Complete audit logs",
-          "Infisical-backed token storage",
-          `${SUPPORTED_PLATFORM_COUNT} platform connectors`,
+          "One-link onboarding + intake fields",
+          "Token auto-refresh (provider-supported)",
+          "Audit logs",
+          "Infisical-backed token references",
+          `${AGENCYACCESS_COMPARE_AUTHHUB_PLATFORM_BREADTH} core connectors`,
           "AuthHub-branded client link",
-          "US-based support",
+          "US-based support (no same-day SLA)",
         ],
       },
       pro: {
@@ -608,6 +616,7 @@ export const agencyAccessAlternativePage: ProgrammaticComparisonPage = {
           "Full white-label branding",
           "Custom domain",
           "API + webhooks",
+          "Token health monitoring",
           "Priority support",
         ],
       },
@@ -617,7 +626,7 @@ export const agencyAccessAlternativePage: ProgrammaticComparisonPage = {
           "Everything in Pro",
           "Up to 50 active clients",
           "Multi-brand (3 brands)",
-          "Custom integrations",
+          "API + webhooks",
           "Priority support",
         ],
       },
@@ -625,7 +634,7 @@ export const agencyAccessAlternativePage: ProgrammaticComparisonPage = {
     differentiators: [
       "Automatic Token Refresh",
       "Infisical-backed Token Storage",
-      "API & Webhooks Built-In",
+      "API + Webhooks on Growth+",
     ],
     platforms: [
       "Meta Ads",
@@ -638,11 +647,13 @@ export const agencyAccessAlternativePage: ProgrammaticComparisonPage = {
       "Search Console",
       "LinkedIn Ads",
       "TikTok Ads",
-      `${SUPPORTED_PLATFORM_COUNT} platform connectors`,
+      "Shopify",
+      `${AGENCYACCESS_COMPARE_AUTHHUB_PLATFORM_BREADTH} core connectors`,
     ],
   },
 
-  excerpt: "Both platforms help agencies collect client permissions through a single link. Compare automatic token refresh, Infisical-backed token storage with audit logs, tiered plans (5/20/50 clients/month), and developer-friendly API access.",
+  excerpt:
+    "Both AuthHub and AgencyAccess help agencies collect client ad- and analytics-platform permissions through a single branded link. Compare token auto-refresh, Infisical-backed storage with audit logs, API/webhooks, intake, and plan caps—plus honest reasons to stay on AgencyAccess when their platform breadth, trial, or support model fits better. Prices pre-tax from public list pages, checked September 24, 2026 (PT). Verify both vendors live before you buy.",
 
   content: "", // Rendered by template
 
@@ -650,172 +661,161 @@ export const agencyAccessAlternativePage: ProgrammaticComparisonPage = {
 
   painPoints: [
     {
-      title: "Manual Token Reconnection",
-      icon: "RefreshCw",
-      quote: "When tokens expire, clients need to manually reconnect, which can interrupt live campaigns.",
-      description: "AgencyAccess uses official platform APIs but doesn't advertise automatic token refresh. This means expired tokens require client action to restore access—often at the worst possible time during active campaigns.",
-      solution: "AuthHub monitors token health and automatically refreshes credentials before they expire—with zero client involvement.",
+      title: "Token ops / refresh",
+      icon: "Clock",
+      quote: "Expired tokens keep pulling us back into support threads mid-campaign.",
+      description:
+        "AuthHub monitors token health and automatically refreshes where the provider supports it. AgencyAccess uses official platform APIs and does not advertise automatic refresh as a primary story.",
+      solution: "Provider-supported refresh before expiry with token health monitoring on Growth+.",
     },
     {
-      title: "No Infisical-Grade Token Storage",
+      title: "Security & audit",
       icon: "Shield",
-      quote: "We need audit trails and secure token vaulting, but AgencyAccess doesn't advertise Infisical-backed storage.",
-      description: "AgencyAccess is GDPR compliant and secure by design, but lacks public documentation of Infisical-backed token storage or comprehensive audit logs. For agencies serving regulated industries or enterprise clients, this can slow vendor approval.",
-      solution: "AuthHub stores OAuth tokens in Infisical with complete audit logs—bank-grade encryption without storing tokens in the database.",
+      quote: "Enterprise clients ask for vaulting and audit trails—not just GDPR copy.",
+      description:
+        "AuthHub stores OAuth token references in Infisical and ships audit logs. AgencyAccess is GDPR-oriented and secure by design; it does not advertise Infisical-backed vaulting or the same audit packaging. AuthHub does not claim SOC 2 on this page.",
+      solution: "Infisical-backed token references and audit logs (no SOC 2 claim).",
     },
     {
-      title: "Zapier-Only Automation",
-      icon: "Code",
-      quote: "We want to build custom workflows, but AgencyAccess only offers Zapier—no public API.",
-      description: "AgencyAccess offers Zapier integration on Premium plans ($74+/mo) for connecting to other tools. But there's no public API for custom development or advanced automation beyond pre-built connectors.",
-      solution: "AuthHub includes webhooks and API access on paid tiers with live OAuth event telemetry. Build internal workflows, data pipelines, and custom automation beyond pre-built connectors.",
+      title: "Automation (both have APIs)",
+      icon: "Zap",
+      quote: "We need more than Zapier—but both vendors publish APIs.",
+      description:
+        "AgencyAccess documents a public REST API (X-Auth) for clients and access requests, plus Zapier on higher plans. AuthHub offers API + webhooks from Growth (not Starter). Compare workflow depth and token lifecycle—not whether an API exists.",
+      solution: "API + webhooks on AuthHub Growth and Scale; AgencyAccess API + Zapier on Premium+.",
     },
     {
-      title: "Invite Limits on Starter",
-      icon: "Users",
-      quote: "I hit the 5-invite limit on Starter and now I'm stuck until next month.",
-      description: "AgencyAccess caps Starter at 5 invites/month. Growing agencies can blow through that in one busy week. You need Premium ($74/mo) for more invites.",
-      solution: "AuthHub Growth includes 20 clients/month at $79/mo—no invite caps, no upgrade pressure.",
+      title: "Pricing, trial, support",
+      icon: "DollarSign",
+      quote: "Premium’s 15 clients/month wall hits faster than our onboarding pace.",
+      description:
+        "AuthHub: flat active-client tiers (5 / 20 / 50), 14-day trial, US-based support (no same-day SLA). AgencyAccess: clients-per-month (5 / 15 / 50), 30-day trial, 24/7 chat emphasis.",
+      solution: "$29 / $79 / $149 monthly with 5 / 20 / 50 active clients; annual ~$24 / $66 / $124 on /pricing.",
     },
   ],
 
   quickComparison: [
-    { feature: "Client onboarding", competitor: true, authhub: true, winner: "tie" },
-    { feature: "Access request management", competitor: true, authhub: true, winner: "tie" },
-    { feature: "Multi-platform OAuth", competitor: true, authhub: true, winner: "tie" },
-    { feature: "Priority support", competitor: false, authhub: true, winner: "authhub" },
-    { feature: "API access", competitor: false, authhub: true, winner: "authhub", isExclusive: true },
-    { feature: "Custom branding", competitor: false, authhub: true, winner: "authhub", isExclusive: true },
+    { feature: "One-link onboarding", competitor: true, authhub: true, winner: "tie" },
+    { feature: "Client intake in flow", competitor: true, authhub: true, winner: "tie" },
+    { feature: "Public API", competitor: "Yes (X-Auth)", authhub: "Growth+", winner: "tie" },
+    { feature: "Automatic token refresh", competitor: "Not primary pitch", authhub: "Yes", winner: "authhub" },
+    { feature: "Monthly list price", competitor: "$44/mo", authhub: "$29/mo", winner: "authhub" },
   ],
 
   detailedComparison: [
     {
-      category: "Core Features",
+      category: "Core onboarding",
       features: [
-        { name: "One-Link Client Onboarding", competitor: true, authhub: true },
-        { name: "Automatic Token Refresh", competitor: false, authhub: true, notes: "AuthHub exclusive" },
-        { name: "Token Health Monitoring", competitor: false, authhub: true, notes: "Proactive refresh before expiry" },
-        { name: "Client Intake Forms", competitor: true, authhub: true, notes: "AuthHub: custom fields on request templates" },
-        { name: "Custom Branding", competitor: true, authhub: true },
-        { name: "Custom Subdomain", competitor: true, authhub: true },
+        { name: "One-link client onboarding", competitor: true, authhub: true },
+        { name: "Client intake in the access flow", competitor: true, authhub: true, notes: "AuthHub: custom intake fields on templates" },
+        { name: "Custom branding", competitor: "Premium+", authhub: "Growth+" },
+        { name: "Custom subdomain / branded URL", competitor: "Strong AA emphasis", authhub: "Custom domain on Growth+" },
       ],
     },
     {
-      category: "Security & Compliance",
+      category: "Token ops & security",
       features: [
-        { name: "Infisical-backed Token Storage", competitor: false, authhub: true, notes: "AuthHub exclusive" },
-        { name: "GDPR Compliant", competitor: true, authhub: true },
-        { name: "Complete Audit Logs", competitor: false, authhub: true },
-        { name: "Bank-Grade Token Encryption", competitor: false, authhub: true, notes: "Via Infisical" },
+        { name: "Automatic token refresh", competitor: "Not advertised as primary", authhub: "Yes (provider-supported)" },
+        { name: "Token health monitoring", competitor: "Not the primary pitch", authhub: "Yes (Growth+)" },
+        { name: "Token storage", competitor: "Secure platform OAuth; GDPR framing", authhub: "Infisical-backed references" },
+        { name: "Audit logs", competitor: "Not Infisical-style packaging", authhub: "Yes" },
+        { name: "SOC 2 claim", competitor: "—", authhub: "Not claimed on this page" },
       ],
     },
     {
-      category: "Automation & Integration",
+      category: "Automation",
       features: [
-        { name: "API Access", competitor: false, authhub: true, notes: "All paid plans" },
-        { name: "Webhooks", competitor: false, authhub: true, notes: "Live OAuth event telemetry" },
-        { name: "Zapier Integration", competitor: true, authhub: true, notes: "$74+/mo on AgencyAccess" },
+        { name: "Public API", competitor: "Yes — REST (X-Auth)", authhub: "Yes — Growth + Scale" },
+        { name: "Webhooks", competitor: "Confirm on AA docs/plans", authhub: "Yes on Growth + Scale" },
+        { name: "Zapier", competitor: "Premium / Agency", authhub: "Not primary packaging" },
       ],
     },
     {
-      category: "Pricing & Limits",
+      category: "Pricing & limits",
       features: [
-        { name: "Starting Price", competitor: "$33/mo (annual)", authhub: "$29 Starter · $79 Growth · $149 Scale" },
-        { name: "Client Caps by Tier", competitor: "Premium for unlimited invites", authhub: "5 / 20 / 50 clients/month" },
-        { name: "Starter Invite Limit", competitor: "5/month", authhub: "5 clients/month" },
-        { name: "Free Trial", competitor: "30 days", authhub: "14 days" },
+        { name: "Monthly list (primary)", competitor: "$44 / $99 / $199", authhub: "$29 / $79 / $149" },
+        { name: "Annual effective (footnote)", competitor: "$33 / $74 / $149 per mo yearly", authhub: "$24 / $66 / $124 per mo yearly" },
+        { name: "Caps", competitor: "5 / 15 / 50 clients/month", authhub: "5 / 20 / 50 active clients" },
+        { name: "Team seats (public)", competitor: "Up to 3 / 10 / unlimited", authhub: "Unlimited on all plans" },
+        { name: "API + webhooks", competitor: "Public API; Zapier Premium+", authhub: "Growth + Scale only" },
+        { name: "Trial / support", competitor: "30 days; 24/7 chat emphasis", authhub: "14 days; US-based support, no same-day SLA" },
       ],
     },
     {
-      category: "Platform Support",
+      category: "Platforms",
       features: [
         { name: "Meta (Facebook, Instagram)", competitor: true, authhub: true },
-        { name: "Google (Ads, Analytics, GTM)", competitor: true, authhub: true },
-        { name: "LinkedIn", competitor: true, authhub: true },
-        { name: "TikTok Ads", competitor: true, authhub: true },
+        { name: "Google Ads / Analytics / GTM", competitor: true, authhub: true },
+        { name: "LinkedIn / TikTok Ads", competitor: true, authhub: true },
         { name: "Shopify", competitor: true, authhub: true },
-        { name: "HubSpot", competitor: true, authhub: false },
-        { name: "Klaviyo", competitor: true, authhub: true },
-        { name: "YouTube Studio", competitor: true, authhub: false },
+        { name: "HubSpot", competitor: true, authhub: "Not a current highlight" },
+        { name: "YouTube Studio", competitor: true, authhub: "Not a current highlight" },
+        { name: "Published breadth", competitor: "Broader niche coverage", authhub: `${AGENCYACCESS_COMPARE_AUTHHUB_PLATFORM_BREADTH} core connectors` },
       ],
     },
   ],
 
   recommendations: {
     stickWithCompetitor: [
-      "You need HubSpot or YouTube Studio integrations",
-      "You value 24/7 chat support and longer trial periods",
-      "You're comfortable with Zapier-based automation only",
-      "You have multi-language client requirements",
+      "You need niches AuthHub does not highlight—especially HubSpot, YouTube Studio, or other long-tail connectors",
+      "You want a 30-day trial and 24/7 chat",
+      "You prefer their invite / clients-per-month model and team-seat packaging",
+      "Branding / multi-language flows on AgencyAccess already fit",
+      "Tokens are stable enough, vendor review does not need Infisical-style vaulting, and their API + Zapier cover automation",
     ],
     switchToAuthHub: [
-      "You need Infisical-backed token storage and audit trails",
-      "You're building custom automation with API/webhooks",
-      "You want predictable tiered pricing (5/20/50 clients/month)",
-      "You need always-on access with automatic token refresh",
-      "You're a developer who needs more than Zapier integrations",
-      "You want enterprise-grade security at a startup price",
+      "Expired tokens and reconnect friction are costing campaigns—and you want automatic token refresh where providers allow it",
+      "Vendor review needs Infisical-backed token references and audit logs (no SOC 2 claim)",
+      "You want API + webhooks on Growth or Scale with flat 5 / 20 / 50 active-client caps",
+      `Clients live primarily on AuthHub's ${AGENCYACCESS_COMPARE_AUTHHUB_PLATFORM_BREADTH} core set (Meta, Google Ads, GA4, LinkedIn, TikTok, related)`,
+      "You want predictable monthly math without hitting Premium's 15 clients/month wall at ~20 onboardings",
     ],
   },
 
   migrationSteps: [
     {
       step: 1,
-      title: "Keep Existing Connections",
-      description: "OAuth connections are direct between client and platform. Your existing authorizations remain intact—no need to re-authorize current clients.",
-      icon: "Link",
+      title: "Inventory",
+      description:
+        "List active clients, platforms granted, and what must stay live. Neither SaaS moves existing platform permissions—they live in Meta, Google, LinkedIn, TikTok, and the other platforms.",
+      icon: "Users",
     },
     {
       step: 2,
-      title: "Set Up AuthHub",
-      description: "Create your AuthHub account and configure branding. Set up API webhooks if you're building custom automation.",
-      icon: "Settings",
+      title: "Dual-run",
+      description:
+        "Keep AgencyAccess for clients you are not ready to touch. Build AuthHub templates (intake + branding) for new onboardings and moves.",
+      icon: "Globe",
     },
     {
       step: 3,
-      title: "Send New Links",
-      description: "Use AuthHub links for future client onboarding. Migration takes about 5 minutes per client for new authorizations.",
-      icon: "Send",
+      title: "Re-authorize",
+      description:
+        "Clients managed in AuthHub must complete a fresh AuthHub authorization. AgencyAccess connections do not auto-port. Run both tools until token health looks right. No 15-minute migration and no free CS migration claim.",
+      icon: "ArrowRight",
     },
   ],
 
-  migrationTimeMinutes: 5,
-
-  testimonials: [
-    {
-      quote: "Automatic token refresh alone saved us 3-4 support tickets per week. Clients never even know their access was about to expire.",
-      author: "David Park",
-      company: "Growth Engine Agency",
-      role: "Founder",
-      metric: "Eliminated token expiry tickets",
-    },
-    {
-      quote: "We needed Infisical-backed token storage and audit logs for an enterprise client. AuthHub had both documented; AgencyAccess didn't. That was the entire decision.",
-      author: "Sarah Mitchell",
-      company: "Compliance-first Marketing",
-      role: "Director of Operations",
-    },
-  ],
-
-  customerCount: 250,
-  hoursSavedMetric: 12,
+  testimonials: [],
 
   pricingComparison: {
     competitor: {
-      starting: 33,
+      starting: 44,
       currency: "USD",
       billing: "monthly",
+      starter: { price: 44, features: ["5 clients/month"] },
+      pro: { price: 99, features: ["15 clients/month"] },
+      enterprise: { price: "199", features: ["50 clients/month, then custom"] },
     },
     authhub: {
       starter: {
         price: 29,
         features: [
           "Up to 5 active clients",
-          `${SUPPORTED_PLATFORM_COUNT} platform connectors`,
+          `${AGENCYACCESS_COMPARE_AUTHHUB_PLATFORM_BREADTH} core connectors`,
           "Automatic token refresh",
-          "Complete audit logs",
-          "Infisical-backed token storage",
-          "AuthHub-branded client link",
+          "Audit logs",
+          "Infisical-backed token references",
         ],
       },
       pro: {
@@ -823,9 +823,8 @@ export const agencyAccessAlternativePage: ProgrammaticComparisonPage = {
         features: [
           "Up to 20 active clients",
           "Full white-label + custom domain",
-          "API + webhooks included",
-          "Priority support",
-          "Token health monitoring dashboard",
+          "API + webhooks",
+          "Token health monitoring",
         ],
       },
       enterprise: {
@@ -833,88 +832,150 @@ export const agencyAccessAlternativePage: ProgrammaticComparisonPage = {
         features: [
           "Up to 50 active clients",
           "Multi-brand (3 brands)",
-          "Custom integrations",
-          "Priority support",
+          "API + webhooks",
         ],
       },
     },
-    // Starter vs Starter, both billed annually: AuthHub $24/mo vs AgencyAccess $33/mo.
     savings: {
-      monthly: 9,
-      yearly: 108,
-      percentage: 27,
+      monthly: 15,
+      yearly: 180,
+      percentage: 34,
     },
   },
 
-  authhubSavingsHighlight: "$108/yr less on Starter: AuthHub $24/mo billed yearly vs AgencyAccess $33/mo billed annually",
+  competitorPricingSubtitle: "$44 · $99 · $199 monthly ($33 · $74 · $149 annual equiv.)",
+  authhubSavingsHighlight:
+    "~5 clients/mo: $44 − $29 = $15/mo vs AgencyAccess Starter (monthly list); verify live before you buy",
+  valueCallout: {
+    headline: "What is the difference between AuthHub and AgencyAccess?",
+    body: "Both are one-link client access tools for marketing agencies. AuthHub emphasizes automatic OAuth token refresh, Infisical-backed token storage with audit logs, and API/webhooks on Growth and Scale plans at flat active-client caps ($29 / $79 / $149 for 5 / 20 / 50). AgencyAccess emphasizes broader platform coverage, invite-based plans, deep branding, and built-in intake, with its own public API and Zapier automation. Intake is not a monopoly—both include it.",
+  },
+  pricingScenarios: [
+    {
+      clients: "~5",
+      competitorPlan: "Starter",
+      competitorCost: "$44",
+      authHubPlan: "Starter",
+      authHubCost: "$29",
+    },
+    {
+      clients: "~15",
+      competitorPlan: "Premium",
+      competitorCost: "$99",
+      authHubPlan: "Growth",
+      authHubCost: "$79",
+    },
+    {
+      clients: "~20",
+      competitorPlan: "Agency (Premium cap is 15/mo)",
+      competitorCost: "$199",
+      authHubPlan: "Growth",
+      authHubCost: "$79",
+    },
+  ],
+  pricingScenariosNote:
+    "Worked examples use monthly list prices (pre-tax), checked September 24, 2026 (PT). AuthHub annual equivalents (~$24 / $66 / $124) are on /pricing. AgencyAccess annual ($33 / $74 / $149) shown as footnote on their pricing page. AgencyAccess FAQ copy may list Zapier on “Pro and Agency” while the pricing page shows Zapier on Premium+—this page follows agencyaccess.co/pricing. Verify both vendors live before you buy.",
+
+  supplementalProse: {
+    sharedJobLead:
+      "Agency founders and ops leads share the same pain: chasing Meta Business Manager invites, Google Ads access, GA4, LinkedIn, TikTok, and the rest across email threads that stall campaigns.",
+    sharedJobFollow:
+      "AuthHub and AgencyAccess both solve that with official OAuth (or platform permission) flows behind one client link. The shared job is access onboarding. Decide on what happens after the first grant: token expiry, vaulting and audit, automation hooks, and how plan caps hit a busy month.",
+    costMathDetail:
+      "~5 clients/mo: $44 − $29 = $15/mo ($180/yr) if both monthly. Against AgencyAccess annual $33, AuthHub monthly $29 is $4/mo lower; both annualized (~$24 vs $33) is $9/mo. ~15 clients: $99 − $79 = $20/mo ($240/yr) both monthly. Against Premium annual $74, AuthHub monthly $79 is $5/mo higher; AuthHub annual ~$66 vs $74 is $8/mo lower. ~20 clients: AgencyAccess needs Agency $199 → $199 − $79 = $120/mo ($1,440/yr). Against Agency annual $149, AuthHub monthly $79 is $70/mo lower ($840/yr). AuthHub usually wins on predictable tiers once you cross Premium’s 15/month wall. AgencyAccess can still win on platform breadth, trial length, support hours, or volume inside Starter/Premium.",
+    pricingSourcesNote:
+      "Sources: authhub.co/pricing and agencyaccess.co/pricing, checked September 24, 2026 (PT).",
+    stickWithClosing: "Staying is a valid outcome.",
+    switchOptionalNote:
+      "Optional: AuthHub also fits teams mixing humans and agents in access workflows—see OAuth token management for agencies (/blog/oauth-token-management-agencies). No MCP product-page claims here.",
+  },
+
+  aeoSections: [
+    {
+      headline: "Does AgencyAccess have an API?",
+      body: "Yes. AgencyAccess documents a public API for creating and managing clients and access requests (API key via X-Auth). AuthHub also offers API and webhooks starting on Growth. The useful comparison is workflow depth and token lifecycle—not whether an API exists.",
+    },
+    {
+      headline: "Who should switch from AgencyAccess to AuthHub?",
+      body: "Switch (or dual-run) if expired tokens and reconnect friction are costing you campaigns, if vendor review needs Infisical-style vaulting and audit logs, or if you want AuthHub’s Growth-tier API/webhook packaging with predictable active-client tiers. Stay if you need AgencyAccess’s broader niche integrations, longer trial, or support model.",
+    },
+  ],
 
   faqs: [
     {
-      question: "Can I migrate my existing clients from AgencyAccess to AuthHub?",
-      answer: "Yes. Since both platforms use official OAuth flows, your clients simply need to authorize through AuthHub once. It takes about 5 minutes per client and doesn't affect existing permissions. You can run both platforms simultaneously during migration.",
+      question: "Does AgencyAccess have a public API, or only Zapier?",
+      answer:
+        "AgencyAccess has a public API for clients and access requests (X-Auth API key). Zapier is an additional path on Premium+ per their pricing page (some FAQ copy says Pro and Agency—confirm live). AuthHub offers API + webhooks on Growth and Scale. Zapier-only is outdated—do not use it as a switch reason.",
     },
     {
-      question: "Does AuthHub support the same platforms as AgencyAccess?",
-      answer: "AuthHub supports all major advertising and analytics platforms including Meta Ads, Google Ads, GA4, Google Search Console, LinkedIn Ads, TikTok Ads, and more. AgencyAccess advertises 20+ integrations, including HubSpot and YouTube Studio, which AuthHub does not offer. Check both platforms for your specific needs.",
+      question: "Do both tools include client intake?",
+      answer:
+        "Yes. AgencyAccess markets built-in intake. AuthHub request templates carry custom intake fields in the same flow. Intake is not an AuthHub-only advantage versus AgencyAccess.",
     },
     {
-      question: "How does AuthHub's automatic token refresh work?",
-      answer: "AuthHub monitors token health and automatically refreshes credentials before they expire. This happens in the background with zero client involvement. AgencyAccess requires clients to manually reconnect when access expires, which can interrupt live campaigns and require additional support.",
+      question: "How does AuthHub pricing compare to AgencyAccess?",
+      answer:
+        "AuthHub monthly: $29 / $79 / $149 for 5 / 20 / 50 active clients (annual ~$24 / $66 / $124). AgencyAccess monthly: $44 / $99 / $199 for 5 / 15 / 50 clients/month (annual $33 / $74 / $149). See worked examples above; verify on ship day.",
     },
     {
-      question: "Is AuthHub more expensive than AgencyAccess?",
-      answer: "AuthHub Growth starts at $79/month with up to 20 active clients and API access. AgencyAccess Starter is $33/month (annual) but limits you to 5 invites. For equivalent features (more invites, automation), AgencyAccess Premium costs $74/month. AuthHub delivers better value for automation-focused teams.",
+      question: "How does AuthHub's automatic token refresh differ?",
+      answer:
+        "AuthHub monitors token health and refreshes before expiry where the provider supports it. AgencyAccess uses official platform APIs and does not advertise automatic refresh as a core differentiator. Confirm current behavior for your platforms.",
     },
     {
-      question: "What security certifications does AuthHub have?",
-      answer: "AuthHub stores OAuth tokens in Infisical with bank-grade encryption and provides complete audit logs for compliance documentation. We never store tokens directly in our database. AgencyAccess is GDPR compliant but doesn't advertise Infisical-backed token storage or comprehensive audit logs.",
+      question: "What security can AuthHub claim without SOC 2?",
+      answer:
+        "Infisical-backed token references and audit logs. We do not claim SOC 2 or SOC2-ready. AgencyAccess emphasizes GDPR and secure OAuth. Ask each vendor for the paperwork your clients require.",
     },
     {
-      question: "Do I lose client access if I cancel AuthHub?",
-      answer: "No. Just like AgencyAccess, permissions live in the platforms themselves (Meta, Google, etc.) and remain active until your client revokes them. Canceling either platform doesn't affect your platform-level access.",
+      question: "Does AuthHub support every AgencyAccess platform?",
+      answer: `No. AgencyAccess is broader on niches such as HubSpot and YouTube Studio. AuthHub focuses on ${AGENCYACCESS_COMPARE_AUTHHUB_PLATFORM_BREADTH} core connectors. Match both lists to your book of business.`,
     },
     {
-      question: "Does AuthHub have intake forms like AgencyAccess?",
-      answer: "Yes. AuthHub request templates carry custom intake fields, so the client answers onboarding questions and authorizes platforms in the same flow. AgencyAccess also includes built-in intake forms.",
+      question: "Will switching break client access? Do I lose access if I cancel?",
+      answer:
+        "No to both. Existing permissions live in the platforms until the client or platform revokes them. Canceling either tool does not remove those grants by itself. Clients you move must re-authorize through AuthHub—dual-run if campaigns cannot wait. You may lose vendor-side monitoring, automation, and audit history.",
     },
     {
-      question: "Which platform has better support?",
-      answer: "AgencyAccess offers 24/7 chat support on Premium and Agency plans. AuthHub provides email and documentation support. For teams requiring round-the-clock assistance, AgencyAccess may be the better choice.",
+      question: "Which support model fits better?",
+      answer:
+        "AgencyAccess: 24/7 chat, 30-day trial. AuthHub: US-based support, 14-day trial—no same-day SLA claimed here.",
     },
   ],
 
   keywords: [
     "AgencyAccess alternative",
-    "AgencyAccess.co vs AuthHub",
+    "AuthHub vs AgencyAccess",
+    "AgencyAccess vs AuthHub",
     "AgencyAccess pricing",
     "client access platform alternative",
     "agency onboarding software",
     "AgencyAccess competitor",
-    "AgencyAccess review",
     "automatic token refresh",
-    "Infisical token storage agency tools",
+    "Infisical audit logs",
   ],
 
-  relatedComparisons: ["leadsie-alternative"],
+  relatedComparisons: ["leadsie-alternative", "leadsie-pricing"],
   relatedBlogPosts: [
+    "best-client-onboarding-software-agencies-2026",
+    "oauth-token-management-agencies",
     "how-to-get-meta-ads-access-from-clients",
-    "google-ads-access-agency",
-    "tiktok-ads-access-agency",
   ],
 
   cta: {
-    headline: "Ready to Upgrade Your Client Onboarding?",
-    subheadline: "Join agencies who chose AuthHub for automatic token refresh, Infisical-backed security, and predictable tiered pricing.",
-    primaryButton: "Start Free Trial",
+    headline: "Ready to decide with real numbers?",
+    subheadline:
+      "Start a 14-day free trial (no credit card), or compare AuthHub and AgencyAccess pricing tables live.",
+    primaryButton: "Start 14 Day Free Trial",
     primaryLink: "/signup",
-    secondaryButton: "Schedule Demo",
+    secondaryButton: "AuthHub Pricing",
     secondaryLink: "/pricing",
-    guarantee: "✓ No credit card required ✓ 14-day free trial ✓ Cancel anytime",
+    guarantee: "✓ $29/$79/$149 monthly tiers  ✓ 5/20/50 active clients  ✓ Dual-run + re-authorize migration",
   },
 
   isProgrammatic: true,
   templateId: "comparison-aida-v1",
-  lastVerified: "2026-03-06",
+  lastVerified: "2026-09-24",
 };
 
 /**

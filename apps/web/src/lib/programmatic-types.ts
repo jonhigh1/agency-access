@@ -257,6 +257,20 @@ export interface ComparisonValueCallout {
   body: string;
 }
 
+export interface ComparisonAeoSection {
+  headline: string;
+  body: string;
+}
+
+export interface ComparisonSupplementalProse {
+  sharedJobLead?: string;
+  sharedJobFollow?: string;
+  costMathDetail?: string;
+  pricingSourcesNote?: string;
+  stickWithClosing?: string;
+  switchOptionalNote?: string;
+}
+
 /**
  * Programmatic Comparison Page - Full definition for VS/Alternative pages
  */
@@ -317,6 +331,12 @@ export interface ProgrammaticComparisonPage {
   /** Worked pricing examples for competitor-specific credit/pricing searches */
   pricingScenarios?: ComparisonPricingScenario[];
   pricingScenariosNote?: string;
+
+  /** Answer-engine style paragraphs (e.g. AgencyAccess compare refresh) */
+  aeoSections?: ComparisonAeoSection[];
+
+  /** Extra draft prose not covered by structured tables */
+  supplementalProse?: ComparisonSupplementalProse;
 
   // FAQ
   faqs: BlogFAQ[];

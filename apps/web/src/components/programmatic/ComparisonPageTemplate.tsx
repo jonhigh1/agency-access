@@ -29,20 +29,27 @@ interface ComparisonPageTemplateProps {
 }
 
 function AgencyAccessPricingSection({ page }: ComparisonPageTemplateProps) {
-  const authHubPrice = page.ourProduct.pricing.pro?.price ?? 79;
-  const agencyAccessPrice = typeof page.competitor.pricing.pro?.price === "number"
-    ? page.competitor.pricing.pro.price
-    : page.competitor.pricing.starting;
+  const {
+    competitor,
+    ourProduct,
+    competitorPricingSubtitle,
+    authhubSavingsHighlight,
+    valueCallout,
+    pricingScenarios,
+    pricingScenariosNote,
+    cta,
+  } = page;
 
-  const authHubFeatures = page.ourProduct.pricing.pro?.features ?? page.pricingComparison.authhub.starter.features;
+  const authHubTiers = [
+    { name: "Starter", data: ourProduct.pricing.starter },
+    { name: "Growth", data: ourProduct.pricing.pro },
+    { name: "Scale", data: ourProduct.pricing.enterprise },
+  ];
 
-  const agencyAccessFeatures = [
-    "Unlimited invites",
-    "Complete branding",
-    "Zapier integration",
-    "10 team members",
-    "Priority support",
-    "20+ platform integrations",
+  const agencyTiers = [
+    { name: "Starter", data: competitor.pricing.starter },
+    { name: "Premium", data: competitor.pricing.pro },
+    { name: "Agency", data: competitor.pricing.enterprise },
   ];
 
   return (
@@ -50,115 +57,163 @@ function AgencyAccessPricingSection({ page }: ComparisonPageTemplateProps) {
       id="comparison"
       className="scroll-mt-24 border-y border-black/10 bg-[#F8FAFC] px-4 py-[46px] sm:px-6 lg:px-8 lg:py-[54px]"
     >
-      <div className="mx-auto max-w-[872px]">
+      <div className="mx-auto max-w-[920px]">
         <div className="mb-9 text-center lg:mb-10">
           <div className="mb-5 inline-flex items-center justify-center border-2 border-black bg-white px-[14px] py-[6px] text-[10px] font-black uppercase tracking-[0.22em] text-[#EA7A49] shadow-[3px_3px_0_0_#000]">
-            Pricing
+            Pricing & limits
           </div>
           <h2 className="font-dela text-[2.2rem] leading-[0.96] tracking-[-0.045em] text-[#10162F] sm:text-[2.55rem]">
-            Cost Comparison
+            Cost math (worked examples)
           </h2>
-          <p className="mx-auto mt-5 max-w-[560px] font-mono text-[13px] font-medium leading-[1.45] tracking-[0.02em] text-[#7B8492] sm:text-[14px]">
-            Compare equivalent feature sets and see where you get the most value
-            for your budget.
+          <p className="mx-auto mt-5 max-w-[620px] font-mono text-[13px] font-medium leading-[1.45] tracking-[0.02em] text-[#7B8492] sm:text-[14px]">
+            Monthly list prices primary. AuthHub sells active clients; AgencyAccess sells
+            clients per month. Annual footnotes: AuthHub ~$24 / $66 / $124; AgencyAccess
+            $33 / $74 / $149 on their pricing page.
           </p>
+          {competitorPricingSubtitle && (
+            <p className="mx-auto mt-3 max-w-[620px] font-mono text-xs font-semibold text-[#596276]">
+              AgencyAccess: {competitorPricingSubtitle}
+            </p>
+          )}
         </div>
 
-        <div className="relative mx-auto grid max-w-[872px] gap-5 md:grid-cols-2">
+        <div className="grid gap-5 md:grid-cols-2">
           <article className="relative border-2 border-black bg-[#EDF6F7] px-[24px] pb-[22px] pt-[24px] shadow-[4px_4px_0_0_#000]">
-            <div className="absolute right-[10px] top-[-10px] z-10 border-2 border-black bg-[#E8B43C] px-[14px] py-[5px] text-[10px] font-black uppercase tracking-[0.12em] text-black shadow-[3px_3px_0_0_#000]">
-              Best Value
-            </div>
-
-            <h3 className="font-dela text-[1.32rem] leading-none tracking-[-0.04em] text-[#151E35] sm:text-[1.42rem]">
-              AuthHub Growth
+            <h3 className="font-dela text-[1.32rem] leading-none tracking-[-0.04em] text-[#151E35]">
+              AuthHub (monthly list)
             </h3>
-
-            <div className="mt-5 flex items-end gap-[7px] text-[#45B3A8]">
-              <span className="font-dela text-[2.85rem] leading-none tracking-[-0.06em] sm:text-[3rem]">
-                ${authHubPrice}
-              </span>
-              <span className="pb-[6px] font-mono text-[13px] font-medium text-[#717A89]">
-                per month
-              </span>
-            </div>
-
-            <ul className="mt-4 space-y-[9px]">
-              {authHubFeatures.map((feature) => (
-                <li key={feature} className="flex items-start gap-3">
-                  <Check
-                    size={15}
-                    strokeWidth={3}
-                    className="mt-[1px] shrink-0 text-[#45B3A8]"
-                  />
-                  <span className="font-mono text-[13px] font-medium leading-[1.2] text-[#626A78]">
-                    {feature}
-                  </span>
+            <ul className="mt-5 space-y-4">
+              {authHubTiers.map((tier) => (
+                <li key={tier.name} className="border-b border-black/10 pb-3 last:border-0">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span className="font-sans text-sm font-black uppercase tracking-wide text-[#151E35]">
+                      {tier.name}
+                    </span>
+                    <span className="font-dela text-2xl text-[#45B3A8]">
+                      ${tier.data?.price}
+                      <span className="font-mono text-xs font-medium text-[#717A89]">/mo</span>
+                    </span>
+                  </div>
+                  {tier.data?.features.slice(0, 3).map((feature) => (
+                    <p key={feature} className="mt-1 font-mono text-[11px] text-[#626A78]">
+                      {feature}
+                    </p>
+                  ))}
                 </li>
               ))}
             </ul>
-
+            {authhubSavingsHighlight && (
+              <p className="mt-4 font-mono text-[11px] font-semibold leading-snug text-[#45B3A8]">
+                {authhubSavingsHighlight}
+              </p>
+            )}
             <Button
               variant="primary"
               size="sm"
               asChild
               className="mt-4 w-full font-sans text-[11px] font-black uppercase tracking-[0.06em]"
             >
-              <Link href={"/signup" as Route}>Start Free Trial</Link>
+              <Link href={(cta.primaryLink || "/signup") as Route}>Start Free Trial</Link>
             </Button>
           </article>
 
           <article className="border-2 border-black bg-white px-[24px] pb-[22px] pt-[24px] shadow-[4px_4px_0_0_#000]">
-            <h3 className="font-dela text-[1.32rem] leading-none tracking-[-0.04em] text-[#151E35] sm:text-[1.42rem]">
-              AgencyAccess Premium
+            <h3 className="font-dela text-[1.32rem] leading-none tracking-[-0.04em] text-[#151E35]">
+              AgencyAccess (monthly list)
             </h3>
-
-            <div className="mt-5 flex flex-wrap items-end gap-x-[7px] gap-y-1 text-[#596276]">
-              <span className="font-dela text-[2.85rem] leading-none tracking-[-0.06em] sm:text-[3rem]">
-                ${agencyAccessPrice}
-              </span>
-              <span className="pb-[6px] font-mono text-[13px] font-medium text-[#717A89]">
-                per month (annual)
-              </span>
-            </div>
-
-            <ul className="mt-4 space-y-[9px]">
-              {agencyAccessFeatures.map((feature) => (
-                <li key={feature} className="flex items-start gap-3">
-                  <Check
-                    size={15}
-                    strokeWidth={3}
-                    className="mt-[1px] shrink-0 text-[#BBC4D0]"
-                  />
-                  <span className="font-mono text-[13px] font-medium leading-[1.2] text-[#687180]">
-                    {feature}
-                  </span>
+            <ul className="mt-5 space-y-4">
+              {agencyTiers.map((tier) => (
+                <li key={tier.name} className="border-b border-black/10 pb-3 last:border-0">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span className="font-sans text-sm font-black uppercase tracking-wide text-[#151E35]">
+                      {tier.name}
+                    </span>
+                    <span className="font-dela text-2xl text-[#596276]">
+                      ${tier.data?.price}
+                      <span className="font-mono text-xs font-medium text-[#717A89]">/mo</span>
+                    </span>
+                  </div>
+                  {tier.data?.features.slice(0, 2).map((feature) => (
+                    <p key={feature} className="mt-1 font-mono text-[11px] text-[#687180]">
+                      {feature}
+                    </p>
+                  ))}
                 </li>
               ))}
             </ul>
-
           </article>
         </div>
 
-        <div className="mt-[22px] border-2 border-black bg-[#F8FAFC] px-4 py-[18px] shadow-[4px_4px_0_0_#000] sm:px-[18px]">
-          <div className="flex items-start gap-3">
-            <div className="flex h-[30px] w-[30px] shrink-0 items-center justify-center border-2 border-black bg-[#E97A4A] font-sans text-[18px] font-medium leading-none text-white">
-              $
-            </div>
-            <div>
-              <h3 className="font-sans text-[1rem] font-black tracking-[-0.03em] text-[#1A2238]">
-                Value Summary
-              </h3>
-              <p className="mt-[6px] font-mono text-[11px] font-medium leading-[1.35] tracking-[0.015em] text-[#818898]">
-                For agencies needing 20 clients/month, API access, and automatic token
-                refresh, AuthHub Growth (${authHubPrice}/mo, or $66/mo billed yearly) delivers more automation than
-                AgencyAccess Premium (${agencyAccessPrice}/mo). Predictable tier caps (5/20/50 clients/month) plus
-                Infisical-backed token storage and audit logs. AgencyAccess excels with
-                broader platform coverage and 24/7 chat support on higher tiers.
-              </p>
-            </div>
+        {valueCallout && (
+          <div className="mt-8 border-2 border-black bg-white px-4 py-4 shadow-[4px_4px_0_0_#000] sm:px-5">
+            <h3 className="font-dela text-base text-[#151E35]">{valueCallout.headline}</h3>
+            <p className="mt-2 font-mono text-xs leading-relaxed text-[#626A78]">{valueCallout.body}</p>
           </div>
-        </div>
+        )}
+
+        {pricingScenarios && pricingScenarios.length > 0 && (
+          <div className="mt-8 overflow-x-auto border-2 border-black bg-white shadow-[4px_4px_0_0_#000]">
+            <table className="w-full border-collapse text-sm">
+              <thead className="border-b-2 border-black bg-gray-100">
+                <tr>
+                  <th scope="col" className="px-4 py-3 text-left font-bold">
+                    Volume
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-left font-bold">
+                    AgencyAccess plan
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-left font-bold">
+                    AA monthly
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-left font-bold">
+                    AuthHub plan
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-left font-bold">
+                    AuthHub monthly
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-300 font-mono text-xs">
+                {pricingScenarios.map((scenario) => (
+                  <tr key={scenario.clients}>
+                    <td className="px-4 py-3 font-semibold">{scenario.clients} clients/mo</td>
+                    <td className="px-4 py-3">{scenario.competitorPlan}</td>
+                    <td className="px-4 py-3">{scenario.competitorCost}</td>
+                    <td className="px-4 py-3">{scenario.authHubPlan}</td>
+                    <td className="px-4 py-3 font-semibold">{scenario.authHubCost}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {pricingScenariosNote && (
+              <p className="border-t border-black/10 px-4 py-3 font-mono text-[11px] text-[#7B8492]">
+                {pricingScenariosNote}
+              </p>
+            )}
+          </div>
+        )}
+
+        {page.supplementalProse?.costMathDetail && (
+          <p className="mt-6 font-mono text-[11px] leading-relaxed text-[#626A78]">
+            {page.supplementalProse.costMathDetail}
+          </p>
+        )}
+        {page.supplementalProse?.pricingSourcesNote && (
+          <p className="mt-3 font-mono text-[11px] font-semibold text-[#596276]">
+            {page.supplementalProse.pricingSourcesNote}
+          </p>
+        )}
+
+        <p className="mt-6 text-center font-mono text-xs text-[#7B8492]">
+          Also comparing Leadsie?{" "}
+          <Link href={"/compare/leadsie-alternative" as Route} className="font-semibold text-coral underline-offset-2 hover:underline">
+            AuthHub vs Leadsie
+          </Link>
+          {" · "}
+          <Link href={"/compare/leadsie-pricing" as Route} className="font-semibold text-coral underline-offset-2 hover:underline">
+            Leadsie pricing deep-dive
+          </Link>
+        </p>
       </div>
     </section>
   );
@@ -187,6 +242,8 @@ export function ComparisonPageTemplate({ page }: ComparisonPageTemplateProps) {
     authhubSavingsHighlight,
     pricingScenarios,
     pricingScenariosNote,
+    aeoSections,
+    supplementalProse,
   } = page;
 
   return (
@@ -210,12 +267,18 @@ export function ComparisonPageTemplate({ page }: ComparisonPageTemplateProps) {
               </span>
             </div>
 
-            {/* Headline with colored "vs" */}
-            <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight mb-8">
-              <span className="text-[#1A1A1A]">{ourProduct.name}</span>{" "}
-              <span className="text-[#4ECDC4] font-normal">vs</span>{" "}
-              <span className="text-[#4A4A4A]">{competitor.name}</span>
-            </h1>
+            {/* Headline */}
+            {isAgencyAccessPage ? (
+              <h1 className="text-3xl sm:text-4xl md:text-[2.65rem] font-bold tracking-tight mb-8 leading-tight text-[#1A1A1A]">
+                {page.title}
+              </h1>
+            ) : (
+              <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold tracking-tight mb-8">
+                <span className="text-[#1A1A1A]">{ourProduct.name}</span>{" "}
+                <span className="text-[#4ECDC4] font-normal">vs</span>{" "}
+                <span className="text-[#4A4A4A]">{competitor.name}</span>
+              </h1>
+            )}
 
             {/* Body text */}
             <p className="text-lg md:text-xl text-[#6B7280] mb-10 max-w-2xl mx-auto leading-relaxed">
@@ -231,7 +294,7 @@ export function ComparisonPageTemplate({ page }: ComparisonPageTemplateProps) {
                 className="group px-10"
               >
                 <Link href={(cta.primaryLink || "/signup") as Route}>
-                  Start Free Trial
+                  {cta.primaryButton || "Start Free Trial"}
                   <ArrowRight size={18} className="transition-transform group-hover:translate-x-1" />
                 </Link>
               </Button>
@@ -242,10 +305,23 @@ export function ComparisonPageTemplate({ page }: ComparisonPageTemplateProps) {
                 className="px-10 font-bold uppercase tracking-wider"
               >
                 <Link href={(cta.secondaryLink || "/pricing") as Route}>
-                  Schedule Demo
+                  {cta.secondaryButton || "Schedule Demo"}
                 </Link>
               </Button>
             </div>
+
+            {isAgencyAccessPage && (
+              <p className="mb-8 font-mono text-sm text-[#6B7280]">
+                Also comparing Leadsie?{" "}
+                <Link href={"/compare/leadsie-alternative" as Route} className="font-semibold text-coral underline-offset-2 hover:underline">
+                  AuthHub vs Leadsie
+                </Link>
+                {" · "}
+                <Link href={"/compare/leadsie-pricing" as Route} className="font-semibold text-coral underline-offset-2 hover:underline">
+                  Leadsie pricing deep-dive
+                </Link>
+              </p>
+            )}
 
             {/* Trust badges with orange checkmarks */}
             <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-2 text-sm font-semibold uppercase tracking-wider text-[#6B7280]">
@@ -271,7 +347,9 @@ export function ComparisonPageTemplate({ page }: ComparisonPageTemplateProps) {
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-10">
           <div className="max-w-4xl mx-auto">
             <h2 className="font-dela text-xl md:text-2xl mb-4 text-center">
-              Why Agencies Switch to {ourProduct.name}
+              {isAgencyAccessPage
+                ? "Where AuthHub and AgencyAccess diverge"
+                : `Why Agencies Switch to ${ourProduct.name}`}
             </h2>
             <div className="grid md:grid-cols-3 gap-6 text-center">
               {ourProduct.differentiators.slice(0, 3).map((diff, i) => (
@@ -291,11 +369,21 @@ export function ComparisonPageTemplate({ page }: ComparisonPageTemplateProps) {
       <section className="border-b-2 border-black bg-card">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <h2 className="font-dela text-2xl md:text-3xl text-ink mb-4 text-center">
-            Why Agencies Look for {competitor.name} Alternatives
+            {isAgencyAccessPage
+              ? "Shared job: one-link client access for agencies"
+              : `Why Agencies Look for ${competitor.name} Alternatives`}
           </h2>
-          <p className="font-mono text-muted-foreground text-center mb-12 max-w-2xl mx-auto">
-            Growing agencies hit these walls with {competitor.name}. Sound familiar?
+          <p className="font-mono text-muted-foreground text-center mb-6 max-w-2xl mx-auto">
+            {isAgencyAccessPage
+              ? "Both solve access onboarding with official OAuth behind one client link. Decide on token expiry, vaulting and audit, automation hooks, and how plan caps hit a busy month. Intake is not a monopoly—both include it."
+              : `Growing agencies hit these walls with ${competitor.name}. Sound familiar?`}
           </p>
+          {isAgencyAccessPage && supplementalProse?.sharedJobLead && (
+            <div className="mx-auto mb-12 max-w-2xl space-y-4 font-mono text-sm text-muted-foreground">
+              <p>{supplementalProse.sharedJobLead}</p>
+              {supplementalProse.sharedJobFollow && <p>{supplementalProse.sharedJobFollow}</p>}
+            </div>
+          )}
 
           <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
             {painPoints.map((pain, index) => {
@@ -541,12 +629,27 @@ export function ComparisonPageTemplate({ page }: ComparisonPageTemplateProps) {
         </section>
       )}
 
+      {isAgencyAccessPage && aeoSections && aeoSections.length > 0 && (
+        <section className="border-b-2 border-black bg-paper">
+          <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-10">
+            <div className="mx-auto max-w-3xl space-y-6">
+              {aeoSections.map((section) => (
+                <article key={section.headline} className="border-2 border-black bg-white p-5 shadow-brutalist-sm">
+                  <h3 className="font-dela text-lg text-ink">{section.headline}</h3>
+                  <p className="mt-3 font-mono text-sm text-muted-foreground leading-relaxed">{section.body}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Feature-by-Feature Comparison */}
       {detailedComparison.length > 0 && (
         <section className="border-b-2 border-black bg-card">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
             <h2 className="font-dela text-2xl md:text-3xl text-ink mb-8 text-center">
-              Feature-by-Feature Comparison
+              {isAgencyAccessPage ? "Feature comparison" : "Feature-by-Feature Comparison"}
             </h2>
             <div className="max-w-4xl mx-auto overflow-x-auto">
               {detailedComparison.map((category, catIndex) => (
@@ -603,17 +706,26 @@ export function ComparisonPageTemplate({ page }: ComparisonPageTemplateProps) {
       <section className="border-b-2 border-black bg-card">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <h2 className="font-dela text-2xl md:text-3xl text-ink mb-12 text-center">
-            Who Should Switch (and Who Shouldn&apos;t)
+            {isAgencyAccessPage
+              ? "Who should stay — and who should switch"
+              : "Who Should Switch (and Who Shouldn\u2019t)"}
           </h2>
           <div className="grid md:grid-cols-2 gap-6 max-w-4xl mx-auto">
             {/* Stick with competitor */}
             <div className="border-2 border-black p-6 rounded-none shadow-brutalist-sm">
-              <h3 className="font-dela text-xl text-ink mb-4">Stick with {competitor.name} If</h3>
+              <h3 className="font-dela text-xl text-ink mb-4">
+                {isAgencyAccessPage ? `Stick with ${competitor.name} if…` : `Stick with ${competitor.name} If`}
+              </h3>
               <ul className="space-y-2 font-mono text-sm text-foreground">
                 {recommendations.stickWithCompetitor.map((item, i) => (
                   <li key={i}>• {item}</li>
                 ))}
               </ul>
+              {isAgencyAccessPage && supplementalProse?.stickWithClosing && (
+                <p className="mt-4 font-mono text-sm font-semibold text-ink">
+                  {supplementalProse.stickWithClosing}
+                </p>
+              )}
             </div>
 
             {/* Switch to AuthHub */}
@@ -626,6 +738,11 @@ export function ComparisonPageTemplate({ page }: ComparisonPageTemplateProps) {
                   <li key={i}>• {item}</li>
                 ))}
               </ul>
+              {isAgencyAccessPage && supplementalProse?.switchOptionalNote && (
+                <p className="mt-4 font-mono text-xs text-muted-foreground leading-relaxed">
+                  {supplementalProse.switchOptionalNote}
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -637,10 +754,12 @@ export function ComparisonPageTemplate({ page }: ComparisonPageTemplateProps) {
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-20">
             <div className="max-w-4xl mx-auto text-center">
               <h2 className="font-dela text-3xl md:text-4xl text-ink mb-4">
-                Switch from {competitor.name}
+                {isAgencyAccessPage ? "How migration works" : `Switch from ${competitor.name}`}
               </h2>
               <p className="font-mono text-muted-foreground mb-12">
-                Moving from {competitor.name} is straightforward. Here&apos;s how agencies do it:
+                {isAgencyAccessPage
+                  ? "Neither SaaS moves existing platform permissions. Canceling AgencyAccess does not revoke grants—and AuthHub does not inherit them."
+                  : `Moving from ${competitor.name} is straightforward. Here's how agencies do it:`}
               </p>
 
               <div className="grid md:grid-cols-3 gap-6 md:gap-8 text-left">
@@ -751,6 +870,28 @@ export function ComparisonPageTemplate({ page }: ComparisonPageTemplateProps) {
               </Link>
             )}
           </div>
+          {isAgencyAccessPage && (
+            <nav
+              aria-label="Related compare and guide links"
+              className="mt-8 flex flex-col gap-2 font-mono text-sm text-white/80 sm:flex-row sm:flex-wrap sm:justify-center sm:gap-x-4 sm:gap-y-2"
+            >
+              <Link href={"/compare/leadsie-alternative" as Route} className="hover:text-white hover:underline">
+                AuthHub vs Leadsie
+              </Link>
+              <Link href={"/compare/leadsie-pricing" as Route} className="hover:text-white hover:underline">
+                Leadsie pricing deep-dive
+              </Link>
+              <Link
+                href={"/blog/best-client-onboarding-software-agencies-2026" as Route}
+                className="hover:text-white hover:underline"
+              >
+                Best client onboarding software (2026)
+              </Link>
+              <Link href={"/blog/oauth-token-management-agencies" as Route} className="hover:text-white hover:underline">
+                OAuth token management for agencies
+              </Link>
+            </nav>
+          )}
           {cta.guarantee && (
             <p className="font-mono text-xs text-muted-foreground mt-6">
               {cta.guarantee}
@@ -771,10 +912,15 @@ function getDifferentiatorDescription(differentiator: string): string {
     "Token Health + Infisical Audit": "Token-health monitoring, provider-supported refresh, and audit events.",
     [`${SUPPORTED_PLATFORM_COUNT} Platform Connectors`]:
       "Core ad, analytics, commerce, and email connectors in one flow.",
-    "Infisical-backed Token Storage": "OAuth tokens stored in Infisical with complete audit logs—never in the database.",
+    "Infisical-backed Token Storage":
+      "OAuth token references in Infisical with audit logs—no SOC 2 claim on this page.",
+    "Automatic Token Refresh":
+      "Monitors token health and refreshes before expiry where the provider supports it.",
+    "API + Webhooks on Growth+": "REST API and webhooks on Growth and Scale—not Starter.",
+    "API & Webhooks Built-In": "REST API and webhooks on Growth and Scale—not Starter.",
   };
 
-  return descriptions[differentiator] || "Industry-leading capability that sets us apart.";
+  return descriptions[differentiator] || "Compare token lifecycle, caps, and automation depth.";
 }
 
 export default ComparisonPageTemplate;
