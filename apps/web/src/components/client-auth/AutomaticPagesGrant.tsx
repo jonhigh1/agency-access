@@ -5,6 +5,7 @@ import { Loader2, X, CheckCircle2, AlertCircle } from 'lucide-react';
 import { META_GRANT_ACCESS } from '@/lib/content/meta-grant-access';
 import { getApiBaseUrl } from '@/lib/api/api-env';
 import { parseJsonResponse } from '@/lib/api/parse-json-response';
+import { capturePosthogEvent } from '@/lib/analytics/capture-posthog';
 import { Button } from '@/components/ui/button';
 
 interface Page {
@@ -27,7 +28,7 @@ interface MetaGrantAccessResponse {
       errorMessage?: string;
     }>;
   };
-  error?: { message?: string };
+  error?: { code?: string; message?: string };
 }
 
 interface AutomaticPagesGrantProps {
@@ -63,6 +64,19 @@ export function AutomaticPagesGrant({
       return;
     }
 
+    void capturePosthogEvent('client_meta_grant_started', {
+      access_request_token: accessRequestToken,
+      connection_id: connectionId,
+      page_count: displayPages.length,
+    });
+
+    const captureGrantFailed = (extra: Record<string, unknown>) =>
+      void capturePosthogEvent('client_meta_grant_failed', {
+        access_request_token: accessRequestToken,
+        connection_id: connectionId,
+        ...extra,
+      });
+
     try {
       setIsGranting(true);
       setGrantResults(null); // Clear previous results
@@ -87,6 +101,11 @@ export function AutomaticPagesGrant({
         const errorMessage = json.error.message || 'Failed to grant access';
         setLocalError(errorMessage);
         onError?.(errorMessage);
+        captureGrantFailed({
+          failure_reason: 'api_error',
+          error_code: json.error.code ?? null,
+          error_message: errorMessage,
+        });
         return;
       }
 
@@ -98,7 +117,7 @@ export function AutomaticPagesGrant({
           error: result.status === 'verified' ? undefined : result.errorMessage,
         }));
       setGrantResults(results);
-      
+
       // Check if any pages failed
       const hasFailures = results.some((r) => r.status === 'failed');
       if (hasFailures) {
@@ -109,15 +128,29 @@ export function AutomaticPagesGrant({
           setLocalError(errorMsg);
           onError?.(errorMsg);
         }
+        captureGrantFailed({
+          failure_reason: 'assets_not_verified',
+          granted_count: results.filter((r) => r.status === 'granted').length,
+          failed_count: failedPages.length,
+        });
       } else {
         setLocalError(null); // Clear error on success
+        void capturePosthogEvent('client_meta_grant_completed', {
+          access_request_token: accessRequestToken,
+          connection_id: connectionId,
+          granted_count: results.length,
+        });
       }
-      
+
       onGrantComplete(results);
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Failed to grant access';
       setLocalError(errorMessage);
       onError?.(errorMessage);
+      captureGrantFailed({
+        failure_reason: 'request_exception',
+        error_message: errorMessage,
+      });
     } finally {
       setIsGranting(false);
     }

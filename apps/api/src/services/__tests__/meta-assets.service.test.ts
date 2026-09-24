@@ -221,7 +221,7 @@ describe('MetaAssetsService', () => {
       );
     });
 
-    it('persists a failed partner admin system-user token state without failing the business save', async () => {
+    it('surfaces a provisioning failure loudly while still persisting the business save', async () => {
       vi.mocked(agencyPlatformService.updateConnectionMetadata).mockResolvedValue({
         data: {},
         error: null,
@@ -277,7 +277,20 @@ describe('MetaAssetsService', () => {
         'Agency Business'
       );
 
-      expect(result.error).toBeNull();
+      expect(result.error).toEqual(
+        expect.objectContaining({
+          code: 'META_PARTNER_SYSTEM_USER_PROVISION_FAILED',
+          details: expect.objectContaining({
+            businessId,
+            reason: 'system_user_token_create_failed',
+            errorCode: 'SYSTEM_USER_TOKEN_CREATE_FAILED_200',
+          }),
+        })
+      );
+      // The business ID is still persisted so a retry can re-provision.
+      expect(result.data).toEqual(
+        expect.objectContaining({ id: 'conn-1' })
+      );
       expect(prisma.agencyPlatformConnection.update).toHaveBeenNthCalledWith(2, {
         where: { id: 'conn-1' },
         data: {

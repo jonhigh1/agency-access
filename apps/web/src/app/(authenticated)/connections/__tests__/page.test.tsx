@@ -12,6 +12,11 @@ import ConnectionsPage from '../page';
 
 const mockLaunchMetaBusinessLogin = vi.fn();
 const mockFinalizeMetaBusinessLogin = vi.fn();
+const { captureMock } = vi.hoisted(() => ({ captureMock: vi.fn() }));
+
+vi.mock('@/lib/analytics/capture-posthog', () => ({
+  capturePosthogEvent: (...args: unknown[]) => captureMock(...args),
+}));
 const { clerkState, devAuthState } = vi.hoisted(() => ({
   clerkState: {
     userId: 'user_123',
@@ -330,6 +335,36 @@ describe('ConnectionsPage', () => {
 
     // Should clear URL params
     expect(mockReplace).toHaveBeenCalledWith('/connections');
+  });
+
+  it('captures platform_connected only once for a single OAuth success callback', async () => {
+    mockSearchParams.set('success', 'true');
+    mockSearchParams.set('platform', 'meta_ads');
+
+    (global.fetch as any)
+      .mockResolvedValueOnce(mockJsonResponse({ data: [{ id: 'test-agency-id' }] }))
+      .mockResolvedValue(
+        mockJsonResponse({
+          data: [
+            { platform: 'meta_ads', name: 'Meta Ads', category: 'recommended', connected: false },
+          ],
+        })
+      );
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(mockReplace).toHaveBeenCalledWith('/connections');
+    });
+
+    const connectedCalls = captureMock.mock.calls.filter(
+      (call) => call[0] === 'platform_connected'
+    );
+    expect(connectedCalls).toHaveLength(1);
+    expect(connectedCalls[0][1]).toMatchObject({
+      agency_id: 'test-agency-id',
+      platform: 'meta_ads',
+    });
   });
 
   it('should handle OAuth callback error', async () => {

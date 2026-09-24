@@ -1,5 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { clientAssetsService } from '../client-assets.service.js';
+import {
+  clientAssetsService,
+  META_PAGE_PROOF_FRIENDLY_ERROR,
+} from '../client-assets.service.js';
 
 describe('ClientAssetsService - Meta', () => {
   beforeEach(() => {
@@ -218,6 +221,35 @@ describe('ClientAssetsService - Meta', () => {
     expect(String(vi.mocked(fetch).mock.calls[0]?.[0])).toContain('fields=id%2Cname%2Caccess_token');
     expect(String(vi.mocked(fetch).mock.calls[1]?.[0])).toContain('/page_1/feed');
     expect(String(vi.mocked(fetch).mock.calls[1]?.[0])).toContain('fields=id%2Cmessage%2Ccreated_time');
+  });
+
+  it('throws a friendly error without the raw Graph body when the Page feed is denied', async () => {
+    const graphBody = JSON.stringify({
+      error: {
+        message: '(#10) Requires pages_read_user_content permission',
+        type: 'OAuthException',
+        code: 10,
+      },
+    });
+
+    vi.mocked(fetch)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          id: 'page_1',
+          name: 'Client Page',
+          access_token: 'page-token-secret',
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: false,
+        status: 403,
+        text: async () => graphBody,
+      } as Response);
+
+    await expect(
+      clientAssetsService.fetchPageEngagementProof('user-token', 'page_1')
+    ).rejects.toThrow(META_PAGE_PROOF_FRIENDLY_ERROR);
   });
 });
 

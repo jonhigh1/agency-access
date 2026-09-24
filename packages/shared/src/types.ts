@@ -590,6 +590,8 @@ export const PLATFORM_SCOPES: Record<Platform, string[]> = {
     'business_management',
     // pages_manage_metadata and pages_show_list removed - not valid OAuth scopes
     'pages_read_engagement',
+    // Required to read Page feed posts during Page content verification
+    'pages_read_user_content',
     // Instagram accounts are accessed through Facebook Pages via business_management scope
     // No Instagram-specific OAuth scopes needed
   ],
@@ -599,10 +601,12 @@ export const PLATFORM_SCOPES: Record<Platform, string[]> = {
     'business_management',
     // pages_manage_metadata and pages_show_list removed - not valid OAuth scopes
     'pages_read_engagement',
+    'pages_read_user_content',
   ],
   meta_pages: [
     'business_management',
     'pages_read_engagement',
+    'pages_read_user_content',
   ],
   google_ads: [
     'https://www.googleapis.com/auth/adwords',
@@ -647,6 +651,7 @@ export const PLATFORM_SCOPES: Record<Platform, string[]> = {
     // Use business_management and pages_read_engagement scopes
     'business_management',
     'pages_read_engagement',
+    'pages_read_user_content',
   ],
   kit: [
     // Kit OAuth scopes

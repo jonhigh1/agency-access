@@ -8,7 +8,7 @@
  * Users can connect platforms directly from this page via OAuth.
  */
 
-import { useState, useMemo, useEffect, Suspense } from 'react';
+import { useState, useMemo, useEffect, useRef, Suspense } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth, useUser } from '@clerk/nextjs';
@@ -94,6 +94,11 @@ function ConnectionsPageContent() {
   const [currentEmail, setCurrentEmail] = useState<string>('');
   const perfHarness = useMemo(() => readPerfHarnessContext(), []);
 
+  // Guards the OAuth-callback effect so the callback is captured once. The
+  // effect re-runs while the agency id resolves and before router.replace
+  // strips the params, which otherwise fired the same capture many times.
+  const hasHandledOAuthCallbackRef = useRef(false);
+
   const principalClerkId = (isDevelopmentBypass ? perfHarness?.principalId : null) || orgId || userId;
 
   const getAuthToken = async (): Promise<string | null> => {
@@ -128,8 +133,23 @@ function ConnectionsPageContent() {
     const error = searchParams.get('error');
     const platform = searchParams.get('platform');
 
+    if (success !== 'true' && !error) {
+      return;
+    }
+
+    if (hasHandledOAuthCallbackRef.current) {
+      return;
+    }
+
     if (success === 'true' && platform) {
-      // Track platform connected in PostHog
+      // The agency id resolves asynchronously after the redirect. Wait for it
+      // so the capture keeps its agency_id and the cache invalidation targets
+      // the right query, then process this callback exactly once.
+      if (!agencyId) {
+        return;
+      }
+      hasHandledOAuthCallbackRef.current = true;
+
       void capturePosthogEvent('platform_connected', {
         agency_id: agencyId,
         platform: platform,
@@ -137,9 +157,7 @@ function ConnectionsPageContent() {
       });
 
       showSuccessMessage(`Successfully connected ${platform}!`);
-      if (agencyId) {
-        queryClient.invalidateQueries({ queryKey: ['available-platforms', agencyId] });
-      }
+      queryClient.invalidateQueries({ queryKey: ['available-platforms', agencyId] });
 
       // Clear URL params
       router.replace('/connections');
@@ -148,6 +166,7 @@ function ConnectionsPageContent() {
     }
 
     if (error) {
+      hasHandledOAuthCallbackRef.current = true;
       trackOAuthCallbackFailure({
         platform: platform,
         error_code: error,
