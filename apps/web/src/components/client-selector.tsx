@@ -11,8 +11,10 @@ import { useState, useEffect, useCallback } from 'react';
 import { Search, Loader2, AlertCircle, Check } from 'lucide-react';
 import { useAuth } from '@clerk/nextjs';
 import { Client } from '@agency-platform/shared';
-import { useAuthOrBypass } from '@/lib/dev-auth';
+import { DEV_BYPASS_TOKEN, useAuthOrBypass } from '@/lib/dev-auth';
 import { getApiBaseUrl } from '@/lib/api/api-env';
+import { AuthorizedApiError, authorizedApiFetch } from '@/lib/api/authorized-api-fetch';
+import { capturePosthogEvent } from '@/lib/analytics/capture-posthog';
 import { extractMessageFromBody } from '@/lib/api/extract-error';
 import { Button } from '@/components/ui/button';
 
@@ -55,31 +57,41 @@ export function ClientSelector({ onSelect, value }: ClientSelectorProps) {
     setLoading(true);
     setLoadError(null);
 
+    const params = new URLSearchParams();
+    if (query) params.set('search', query);
+    params.set('limit', '50');
+
+    const fetchClients = (skipCache: boolean) =>
+      authorizedApiFetch(`/api/clients?${params.toString()}`, {
+        getToken: async () =>
+          (await (skipCache ? getToken({ skipCache: true }) : getToken())) ||
+          (auth.isDevelopmentBypass ? DEV_BYPASS_TOKEN : null),
+        signal,
+      });
+
+    let tokenRefreshed = false;
     try {
-      const token = await getToken();
-      if (!token && !auth.isDevelopmentBypass) throw new Error('No auth token');
-      const params = new URLSearchParams();
-      if (query) params.set('search', query);
-      params.set('limit', '50');
-
-      const response = await fetch(
-        `${getApiBaseUrl()}/api/clients?${params.toString()}`,
-        {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-          signal,
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error('Failed to load clients');
+      let json;
+      try {
+        json = await fetchClients(false);
+      } catch (err) {
+        // A token that went stale while the tab sat idle: force a Clerk refresh and retry once.
+        if (signal.aborted || !(err instanceof AuthorizedApiError) || err.status !== 401) throw err;
+        tokenRefreshed = true;
+        json = await fetchClients(true);
+        void capturePosthogEvent('client_list_auth_recovered');
       }
 
-      const json = await response.json();
       if (signal.aborted) return;
       const result = Array.isArray(json?.data) ? json : json?.data ?? json;
       setClients(Array.isArray(result) ? result : (result as PaginatedClientsResponse).data || []);
     } catch (err) {
       if (signal.aborted) return;
+      void capturePosthogEvent('client_list_load_failed', {
+        status: err instanceof AuthorizedApiError ? err.status : null,
+        error_code: err instanceof AuthorizedApiError ? err.code : 'NETWORK_ERROR',
+        token_refreshed: tokenRefreshed,
+      });
       setLoadError(err instanceof Error ? err.message : 'Failed to load clients');
     } finally {
       if (!signal.aborted) setLoading(false);
