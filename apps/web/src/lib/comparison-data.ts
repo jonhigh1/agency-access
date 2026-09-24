@@ -866,13 +866,13 @@ export const agencyAccessAlternativePage: ProgrammaticComparisonPage = {
     },
   ],
   pricingScenariosNote:
-    "Worked examples use monthly list prices (pre-tax), checked September 24, 2026 (PT). AuthHub annual equivalents (~$24 / $66 / $124) are on /pricing. AgencyAccess annual ($33 / $74 / $149) shown as footnote on their pricing page. Verify both vendors live before you buy.",
+    "Worked examples use monthly list prices (pre-tax), checked September 24, 2026 (PT). AuthHub annual equivalents (~$24 / $66 / $124) are on /pricing. AgencyAccess annual ($33 / $74 / $149) shown as footnote on their pricing page. AgencyAccess FAQ copy may list Zapier on “Pro and Agency” while the pricing page shows Zapier on Premium+—this page follows agencyaccess.co/pricing. Verify both vendors live before you buy.",
 
   faqs: [
     {
       question: "Does AgencyAccess have a public API, or only Zapier?",
       answer:
-        "AgencyAccess has a public API for clients and access requests (X-Auth API key). Zapier is an additional path on higher plans. AuthHub offers API + webhooks on Growth and Scale. Zapier-only is outdated—do not use it as a switch reason.",
+        "AgencyAccess has a public API for clients and access requests (X-Auth API key). Zapier is an additional path on Premium+ per their pricing page (some FAQ copy says Pro and Agency—confirm live). AuthHub offers API + webhooks on Growth and Scale. Zapier-only is outdated—do not use it as a switch reason.",
     },
     {
       question: "Do both tools include client intake?",
@@ -924,9 +924,9 @@ export const agencyAccessAlternativePage: ProgrammaticComparisonPage = {
 
   relatedComparisons: ["leadsie-alternative", "leadsie-pricing"],
   relatedBlogPosts: [
+    "best-client-onboarding-software-agencies-2026",
+    "oauth-token-management-agencies",
     "how-to-get-meta-ads-access-from-clients",
-    "google-ads-access-agency",
-    "tiktok-ads-access-agency",
   ],
 
   cta: {

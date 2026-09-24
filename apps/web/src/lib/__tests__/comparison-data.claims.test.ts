@@ -130,6 +130,8 @@ describe("AgencyAccess comparison page claims", () => {
       "Compare AuthHub and AgencyAccess on token auto-refresh, Infisical audit logs, API/webhooks, intake, and plan caps—plus honest reasons to stay on AgencyAccess.",
     );
     expect(agencyAccessAlternativePage.lastVerified).toBe("2026-09-24");
+    expect(agencyAccessAlternativePage.pricingScenariosNote).toMatch(/Premium\+/);
+    expect(agencyAccessAlternativePage.faqs[0]?.answer).toMatch(/Premium\+/);
   });
 
   it("describes dual-run migration with re-authorize (no quick migration CS)", () => {

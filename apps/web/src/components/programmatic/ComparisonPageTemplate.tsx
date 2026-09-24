@@ -826,6 +826,28 @@ export function ComparisonPageTemplate({ page }: ComparisonPageTemplateProps) {
               </Link>
             )}
           </div>
+          {isAgencyAccessPage && (
+            <nav
+              aria-label="Related compare and guide links"
+              className="mt-8 flex flex-col gap-2 font-mono text-sm text-white/80 sm:flex-row sm:flex-wrap sm:justify-center sm:gap-x-4 sm:gap-y-2"
+            >
+              <Link href={"/compare/leadsie-alternative" as Route} className="hover:text-white hover:underline">
+                AuthHub vs Leadsie
+              </Link>
+              <Link href={"/compare/leadsie-pricing" as Route} className="hover:text-white hover:underline">
+                Leadsie pricing deep-dive
+              </Link>
+              <Link
+                href={"/blog/best-client-onboarding-software-agencies-2026" as Route}
+                className="hover:text-white hover:underline"
+              >
+                Best client onboarding software (2026)
+              </Link>
+              <Link href={"/blog/oauth-token-management-agencies" as Route} className="hover:text-white hover:underline">
+                OAuth token management for agencies
+              </Link>
+            </nav>
+          )}
           {cta.guarantee && (
             <p className="font-mono text-xs text-muted-foreground mt-6">
               {cta.guarantee}
