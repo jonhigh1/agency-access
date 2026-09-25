@@ -193,6 +193,44 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
         },
       ],
     },
+    "best-leadsie-alternatives-2026": {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      mainEntity: [
+        {
+          "@type": "Question",
+          name: "What are the best Leadsie alternatives in 2026?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "The main Leadsie alternatives agencies shortlist are ClientInvite, AgencyAccess, AuthHub, ClientFuse, and free or credit-based options such as OnboardClient and Access Pilot. The best pick depends on pricing model, platform breadth, and whether token lifecycle and audit matter.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "Does AgencyAccess have an API?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "Yes. AgencyAccess documents a public REST API and also offers Zapier on higher plans. Do not treat it as Zapier-only.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "Is ClientInvite or AuthHub the better Leadsie alternative?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "Choose ClientInvite for flat-fee unlimited connections at a published $89 Agency plan when Meta, Google, Shopify, and LinkedIn cover your stack. Choose AuthHub if expired-token reconnects, Infisical-style vaulting and audit logs, in-link intake, or Growth-tier API and webhooks on 5/20/50 active-client caps are the bottleneck.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "Should I stay on Leadsie?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "Stay on Leadsie if you rely on broader platform set, prospect-audit workflows, Meta helpers, multi-brand Pro features, or credit pooling on annual plans. Switch when credits and overages, branding depth, intake-in-link, or automatic token refresh become the bottleneck.",
+          },
+        },
+      ],
+    },
   };
   const faqSchema = faqSchemas[post.id] ?? null;
 
