@@ -131,7 +131,7 @@ AuthHub fits when you want the access-and-intake combination (like AgencyAccess)
 
 AuthHub is not the right pick if your CRM is GoHighLevel and you want a native integration — Leadsie has it and we connect through Zapier. It is also not the pick if you are already on either tool and nothing hurts. Switching tools costs a day of setup and re-training; churn that only for a concrete gap.
 
-The full feature-by-feature breakdowns are in our [AgencyAccess alternative comparison](/compare/agencyaccess-alternative) and our [Leadsie alternative comparison](/compare/leadsie-alternative), and the three-way table lives in our [Leadsie vs AgencyAccess vs AuthHub comparison](/blog/leadsie-vs-authhub-comparison).
+The full feature-by-feature breakdowns are in our [AgencyAccess alternative comparison](/compare/agencyaccess-alternative) and our [Leadsie alternative comparison](/compare/leadsie-alternative), and the three-way table lives in our [Leadsie vs AgencyAccess vs AuthHub comparison](/compare/leadsie-vs-agencyaccess-vs-authhub).
 
 ## Leadsie vs AgencyAccess: FAQ
 

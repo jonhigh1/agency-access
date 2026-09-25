@@ -356,6 +356,85 @@ export interface ProgrammaticComparisonPage {
 }
 
 // =============================================================================
+// THREE-WAY COMPARISON PAGE TYPES
+// =============================================================================
+
+export interface ThreeWayComparisonCell {
+  leadsie: string | boolean;
+  agencyAccess: string | boolean;
+  authhub: string | boolean;
+}
+
+export interface ThreeWayComparisonRow {
+  feature: string;
+  leadsie: string | boolean;
+  agencyAccess: string | boolean;
+  authhub: string | boolean;
+}
+
+export interface ThreeWayComparisonCategory {
+  category: string;
+  intro?: string;
+  rows: ThreeWayComparisonRow[];
+}
+
+export interface ThreeWayDecisionAxis {
+  title: string;
+  body: string;
+}
+
+export interface ThreeWayCostRow {
+  vendor: string;
+  plan: string;
+  monthly: string;
+  capFit: string;
+}
+
+export interface ThreeWayCostScenario {
+  headline: string;
+  rows: ThreeWayCostRow[];
+  deltas: string;
+}
+
+export interface ThreeWayPickSection {
+  vendor: "Leadsie" | "AgencyAccess" | "AuthHub";
+  bullets: string[];
+  closing: string;
+}
+
+export interface ThreeWayHeroLink {
+  label: string;
+  href: string;
+}
+
+export interface ProgrammaticThreeWayComparisonPage {
+  id: string;
+  slug: string;
+  title: string;
+  metaTitle: string;
+  metaDescription: string;
+  openGraphDescription?: string;
+  excerpt: string;
+  sharedJobLead: string;
+  sharedJobFollow: string;
+  decisionAxes: ThreeWayDecisionAxis[];
+  tableCategories: ThreeWayComparisonCategory[];
+  costScenarios: ThreeWayCostScenario[];
+  costMathClosing: string;
+  pickSections: ThreeWayPickSection[];
+  migrationSteps: MigrationStep[];
+  aeoSections: ComparisonAeoSection[];
+  faqs: BlogFAQ[];
+  cta: ComparisonCTA;
+  heroLinks: ThreeWayHeroLink[];
+  keywords: string[];
+  relatedComparisons: string[];
+  relatedBlogPosts: string[];
+  lastVerified: string;
+  pricingSourcesNote: string;
+}
+
+// =============================================================================
 // HUB PAGE TYPES
 // =============================================================================
 

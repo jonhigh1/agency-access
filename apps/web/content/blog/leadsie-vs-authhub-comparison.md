@@ -1,3 +1,5 @@
+<!-- Superseded: 301 to /compare/leadsie-vs-agencyaccess-vs-authhub (next.config.ts). Do not restore SOC2-ready or Zapier-only claims here. -->
+
 ---
 id: leadsie-alternatives-comparison
 title: 'Leadsie vs AgencyAccess vs AuthHub: 2026 Comparison'

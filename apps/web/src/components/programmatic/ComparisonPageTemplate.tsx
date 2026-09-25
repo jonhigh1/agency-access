@@ -28,6 +28,19 @@ interface ComparisonPageTemplateProps {
   page: ProgrammaticComparisonPage;
 }
 
+const THREE_WAY_COMPARE_HREF = "/compare/leadsie-vs-agencyaccess-vs-authhub" as Route;
+
+function ComparingAllThreeLink({ className }: { className?: string }) {
+  return (
+    <p className={className}>
+      Comparing all three?{" "}
+      <Link href={THREE_WAY_COMPARE_HREF} className="font-semibold text-coral underline-offset-2 hover:underline">
+        Leadsie vs AgencyAccess vs AuthHub
+      </Link>
+    </p>
+  );
+}
+
 function AgencyAccessPricingSection({ page }: ComparisonPageTemplateProps) {
   const {
     competitor,
@@ -204,16 +217,19 @@ function AgencyAccessPricingSection({ page }: ComparisonPageTemplateProps) {
           </p>
         )}
 
-        <p className="mt-6 text-center font-mono text-xs text-[#7B8492]">
-          Also comparing Leadsie?{" "}
-          <Link href={"/compare/leadsie-alternative" as Route} className="font-semibold text-coral underline-offset-2 hover:underline">
-            AuthHub vs Leadsie
-          </Link>
-          {" · "}
-          <Link href={"/compare/leadsie-pricing" as Route} className="font-semibold text-coral underline-offset-2 hover:underline">
-            Leadsie pricing deep-dive
-          </Link>
-        </p>
+        <div className="mt-6 space-y-3 text-center font-mono text-xs text-[#7B8492]">
+          <p>
+            Also comparing Leadsie?{" "}
+            <Link href={"/compare/leadsie-alternative" as Route} className="font-semibold text-coral underline-offset-2 hover:underline">
+              AuthHub vs Leadsie
+            </Link>
+            {" · "}
+            <Link href={"/compare/leadsie-pricing" as Route} className="font-semibold text-coral underline-offset-2 hover:underline">
+              Leadsie pricing deep-dive
+            </Link>
+          </p>
+          <ComparingAllThreeLink />
+        </div>
       </div>
     </section>
   );
@@ -225,6 +241,8 @@ function AgencyAccessPricingSection({ page }: ComparisonPageTemplateProps) {
  */
 export function ComparisonPageTemplate({ page }: ComparisonPageTemplateProps) {
   const isAgencyAccessPage = page.id === "agencyaccess-alternative";
+  const isLeadsiePage = page.id === "leadsie-alternative";
+  const showThreeWayLink = isAgencyAccessPage || isLeadsiePage;
   const {
     competitor,
     ourProduct,
@@ -311,7 +329,7 @@ export function ComparisonPageTemplate({ page }: ComparisonPageTemplateProps) {
             </div>
 
             {isAgencyAccessPage && (
-              <p className="mb-8 font-mono text-sm text-[#6B7280]">
+              <p className="mb-4 font-mono text-sm text-[#6B7280]">
                 Also comparing Leadsie?{" "}
                 <Link href={"/compare/leadsie-alternative" as Route} className="font-semibold text-coral underline-offset-2 hover:underline">
                   AuthHub vs Leadsie
@@ -321,6 +339,9 @@ export function ComparisonPageTemplate({ page }: ComparisonPageTemplateProps) {
                   Leadsie pricing deep-dive
                 </Link>
               </p>
+            )}
+            {showThreeWayLink && (
+              <ComparingAllThreeLink className="mb-8 font-mono text-sm text-[#6B7280]" />
             )}
 
             {/* Trust badges with orange checkmarks */}

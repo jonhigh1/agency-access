@@ -7,6 +7,7 @@ import type { LeadsiePricingPageData } from "./leadsie-pricing-page";
 import type {
   ProgrammaticBlogPost,
   ProgrammaticComparisonPage,
+  ProgrammaticThreeWayComparisonPage,
   BlogFAQ,
 } from "./programmatic-types";
 
@@ -332,6 +333,114 @@ export function generateComparisonSchema(
         "@type": "SoftwareApplication",
         name: page.ourProduct.name,
       },
+    ],
+  });
+
+  return {
+    "@context": "https://schema.org",
+    "@graph": schemas,
+  };
+}
+
+/**
+ * FAQ + WebPage schema for three-way compare pages
+ */
+export function generateThreeWayComparisonSchema(
+  page: ProgrammaticThreeWayComparisonPage,
+  options: ComparisonSchemaOptions = {},
+): Record<string, unknown> {
+  const opts = { ...defaultOptions, ...options };
+  const pageUrl = `${opts.siteUrl}/compare/${page.slug}`;
+
+  const schemas: Record<string, unknown>[] = [
+    {
+      "@type": "SoftwareApplication",
+      "@id": `${pageUrl}#leadsie`,
+      name: "Leadsie",
+      applicationCategory: "BusinessApplication",
+      operatingSystem: "Web",
+      url: "https://leadsie.com",
+    },
+    {
+      "@type": "SoftwareApplication",
+      "@id": `${pageUrl}#agencyaccess`,
+      name: "AgencyAccess",
+      applicationCategory: "BusinessApplication",
+      operatingSystem: "Web",
+      url: "https://www.agencyaccess.co",
+    },
+    {
+      "@type": "SoftwareApplication",
+      "@id": `${pageUrl}#authhub`,
+      name: "AuthHub",
+      applicationCategory: "BusinessApplication",
+      operatingSystem: "Web",
+      url: opts.siteUrl,
+      offers: {
+        "@type": "Offer",
+        price: 29,
+        priceCurrency: "USD",
+        availability: "https://schema.org/InStock",
+      },
+    },
+  ];
+
+  if (page.faqs.length > 0) {
+    schemas.push({
+      "@type": "FAQPage",
+      "@id": `${pageUrl}#faq`,
+      mainEntity: page.faqs.map((faq) => ({
+        "@type": "Question",
+        name: faq.question,
+        acceptedAnswer: {
+          "@type": "Answer",
+          text: faq.answer,
+        },
+      })),
+    });
+  }
+
+  schemas.push({
+    "@type": "BreadcrumbList",
+    "@id": `${pageUrl}#breadcrumb`,
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "Home",
+        item: opts.siteUrl,
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "Compare",
+        item: `${opts.siteUrl}/compare`,
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: page.metaTitle,
+        item: pageUrl,
+      },
+    ],
+  });
+
+  schemas.push({
+    "@type": "WebPage",
+    "@id": pageUrl,
+    url: pageUrl,
+    name: page.metaTitle,
+    description: page.metaDescription,
+    dateModified: page.lastVerified,
+    isPartOf: {
+      "@type": "WebSite",
+      name: opts.siteName,
+      url: opts.siteUrl,
+    },
+    about: [
+      { "@type": "SoftwareApplication", name: "Leadsie" },
+      { "@type": "SoftwareApplication", name: "AgencyAccess" },
+      { "@type": "SoftwareApplication", name: "AuthHub" },
     ],
   });
 

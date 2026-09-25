@@ -4,6 +4,7 @@
  */
 
 import { LEADSIE_PRICING_SLUG } from "./leadsie-pricing-page";
+import { THREE_WAY_COMPARE_SLUG } from "./three-way-comparison-data";
 import type { ProgrammaticComparisonPage } from "./programmatic-types";
 
 /**
@@ -1001,7 +1002,11 @@ export function getComparisonPageBySlug(slug: string): ProgrammaticComparisonPag
  * Get all comparison page slugs for static generation
  */
 export function getAllComparisonPageSlugs(): string[] {
-  return [...COMPARISON_PAGES.map((page) => page.slug), LEADSIE_PRICING_SLUG];
+  return [
+    ...COMPARISON_PAGES.map((page) => page.slug),
+    THREE_WAY_COMPARE_SLUG,
+    LEADSIE_PRICING_SLUG,
+  ];
 }
 
 /**
