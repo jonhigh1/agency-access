@@ -5,14 +5,23 @@
 
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { ComparisonPageTemplate, LeadsiePricingPageTemplate } from "@/components/programmatic";
-import { generateComparisonSchema, generateLeadsiePricingSchema } from "@/lib/schema-generators";
+import {
+  ComparisonPageTemplate,
+  LeadsiePricingPageTemplate,
+  ThreeWayComparisonPageTemplate,
+} from "@/components/programmatic";
+import {
+  generateComparisonSchema,
+  generateLeadsiePricingSchema,
+  generateThreeWayComparisonSchema,
+} from "@/lib/schema-generators";
 import { Schema } from "@/components/seo";
 import {
   getComparisonPageBySlug,
   getAllComparisonPageSlugs,
 } from "@/lib/comparison-data";
 import { getLeadsiePricingPage, isLeadsiePricingSlug } from "@/lib/leadsie-pricing-page";
+import { getThreeWayComparisonPage, isThreeWayComparisonSlug } from "@/lib/three-way-comparison-data";
 
 interface ComparisonPageProps {
   params: Promise<{ slug: string }>;
@@ -20,6 +29,22 @@ interface ComparisonPageProps {
 
 export async function generateMetadata({ params }: ComparisonPageProps): Promise<Metadata> {
   const { slug } = await params;
+
+  if (isThreeWayComparisonSlug(slug)) {
+    const threeWayPage = getThreeWayComparisonPage();
+    const ogDescription =
+      threeWayPage.openGraphDescription ?? threeWayPage.metaDescription;
+    return {
+      title: threeWayPage.metaTitle,
+      description: threeWayPage.metaDescription,
+      keywords: threeWayPage.keywords,
+      openGraph: {
+        title: threeWayPage.metaTitle,
+        description: ogDescription,
+        type: "article",
+      },
+    };
+  }
 
   if (isLeadsiePricingSlug(slug)) {
     const pricingPage = getLeadsiePricingPage();
@@ -61,6 +86,18 @@ export async function generateMetadata({ params }: ComparisonPageProps): Promise
 
 export default async function ComparisonPage({ params }: ComparisonPageProps) {
   const { slug } = await params;
+
+  if (isThreeWayComparisonSlug(slug)) {
+    const threeWayPage = getThreeWayComparisonPage();
+    const schema = generateThreeWayComparisonSchema(threeWayPage);
+
+    return (
+      <>
+        <Schema schema={schema} />
+        <ThreeWayComparisonPageTemplate page={threeWayPage} />
+      </>
+    );
+  }
 
   if (isLeadsiePricingSlug(slug)) {
     const pricingPage = getLeadsiePricingPage();

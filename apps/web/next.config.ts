@@ -76,6 +76,11 @@ const nextConfig: NextConfig = {
         destination: '/guides/meta-ads-access',
         permanent: true, // 301 redirect
       },
+      {
+        source: '/blog/leadsie-vs-authhub-comparison',
+        destination: '/compare/leadsie-vs-agencyaccess-vs-authhub',
+        permanent: true,
+      },
     ];
   },
 

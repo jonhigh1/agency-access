@@ -7,6 +7,7 @@
 export { BlogPostTemplate } from "./BlogPostTemplate";
 export { ComparisonPageTemplate } from "./ComparisonPageTemplate";
 export { LeadsiePricingPageTemplate } from "./LeadsiePricingPageTemplate";
+export { ThreeWayComparisonPageTemplate } from "./ThreeWayComparisonPageTemplate";
 
 // Types
 export type {
@@ -41,6 +42,7 @@ export {
   generateBlogPostSchema,
   generateBlogListSchema,
   generateComparisonSchema,
+  generateThreeWayComparisonSchema,
   generateLeadsiePricingSchema,
   generateFAQSchema,
   generateHowToSchema,
