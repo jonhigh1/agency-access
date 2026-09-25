@@ -460,6 +460,7 @@ export const leadsieAlternativePage: ProgrammaticComparisonPage = {
 
   relatedComparisons: ["agencyaccess-alternative", "leadsie-pricing"],
   relatedBlogPosts: [
+    "best-leadsie-alternatives-2026",
     "how-to-get-meta-ads-access-from-clients",
     "google-ads-access-agency",
     "ga4-access-agencies",
