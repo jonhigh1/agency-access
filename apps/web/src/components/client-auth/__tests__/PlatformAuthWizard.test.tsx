@@ -364,11 +364,11 @@ describe('PlatformAuthWizard', () => {
         ok: true,
         text: async () =>
           JSON.stringify({
-            data: { authUrl: 'https://www.facebook.com/v21.0/dialog/oauth?client_id=123' },
+            data: { authUrl: 'https://www.facebook.com/v25.0/dialog/oauth?client_id=123' },
             error: null,
           }),
         json: async () => ({
-          data: { authUrl: 'https://www.facebook.com/v21.0/dialog/oauth?client_id=123' },
+          data: { authUrl: 'https://www.facebook.com/v25.0/dialog/oauth?client_id=123' },
           error: null,
         }),
       } as Response);
@@ -407,7 +407,7 @@ describe('PlatformAuthWizard', () => {
     });
 
     await waitFor(() => {
-      expect(location.href).toBe('https://www.facebook.com/v21.0/dialog/oauth?client_id=123');
+      expect(location.href).toBe('https://www.facebook.com/v25.0/dialog/oauth?client_id=123');
     });
   });
 

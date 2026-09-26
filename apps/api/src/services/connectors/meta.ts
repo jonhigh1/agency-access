@@ -54,16 +54,15 @@ export class MetaConnector {
    * These are NOT Facebook Login permissions (email, public_profile).
    * These are Marketing API permissions for ads and business management.
    *
-   * Simplified to only request Business Manager access, not individual pages.
+   * Matches the Meta permissions under App Review.
    *
    * Reference: https://developers.facebook.com/docs/marketing-api/overview
    */
   static readonly DEFAULT_SCOPES = [
     'ads_management',      // Create and manage ads
-    'ads_read',            // Read ads data
     'business_management', // Access Business Manager assets (includes page management)
-    // Note: pages_manage_metadata and pages_show_list are not valid OAuth scopes
-    // They are automatically granted with business_management or configured at app level
+    'pages_read_engagement',
+    'pages_show_list',
   ];
 
   constructor() {

@@ -88,9 +88,9 @@ describe('Client Auth Routes', () => {
         mockState,
         [
           'ads_management',
-          'ads_read',
           'business_management',
           'pages_read_engagement',
+          'pages_show_list',
         ],
         'http://localhost:3000/invite/oauth-callback'
       );

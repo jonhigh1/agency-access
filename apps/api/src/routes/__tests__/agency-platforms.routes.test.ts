@@ -764,7 +764,7 @@ describe('Agency Platforms Routes', () => {
         name: 'Jon High',
       });
       mockMetaConnectorInstance.getTokenMetadata.mockResolvedValue({
-        scopes: ['ads_management', 'ads_read', 'business_management'],
+        scopes: ['ads_management', 'business_management'],
         dataAccessExpiresAt: new Date('2026-07-01T00:00:00.000Z'),
       });
       mockMetaConnectorInstance.getLongLivedToken.mockResolvedValue({
@@ -821,7 +821,7 @@ describe('Agency Platforms Routes', () => {
         accessToken: 'long-lived-token',
         refreshToken: undefined,
         expiresAt: new Date('2026-05-10T00:00:00.000Z'),
-        scope: 'ads_management,ads_read,business_management',
+        scope: 'ads_management,business_management',
         connectedBy: 'jon.highmu@gmail.com',
         metadata: {
           tokenType: 'bearer',
@@ -832,7 +832,7 @@ describe('Agency Platforms Routes', () => {
             expiresIn: 3600,
             dataAccessExpirationTime: 1781044454,
             dataAccessExpiresAt: '2026-07-01T00:00:00.000Z',
-            grantedScopes: ['ads_management', 'ads_read', 'business_management'],
+            grantedScopes: ['ads_management', 'business_management'],
           },
           metaBusinessAccounts: {
             businesses: [

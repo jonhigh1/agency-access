@@ -34,7 +34,7 @@ describe('MetaConnector Asset Discovery', () => {
 
       const authUrl = new URL(connector.getAuthUrl('state-123'));
 
-      expect(`${authUrl.origin}${authUrl.pathname}`).toBe('https://www.facebook.com/v21.0/dialog/oauth');
+      expect(`${authUrl.origin}${authUrl.pathname}`).toBe('https://www.facebook.com/v25.0/dialog/oauth');
       expect(authUrl.searchParams.get('client_id')).toBe('test-app-id');
       expect(authUrl.searchParams.get('redirect_uri')).toBe('http://localhost:3001/agency-platforms/meta/callback');
       expect(authUrl.searchParams.get('state')).toBe('state-123');
@@ -50,16 +50,16 @@ describe('MetaConnector Asset Discovery', () => {
       const authUrl = new URL(
         connector.getAuthUrl('state-123', [
           'ads_management',
-          'ads_read',
           'business_management',
           'pages_read_engagement',
+          'pages_show_list',
         ], 'https://authhub.co/invite/oauth-callback')
       );
 
       expect(authUrl.searchParams.get('redirect_uri')).toBe('https://authhub.co/invite/oauth-callback');
       expect(authUrl.searchParams.get('config_id')).toBeNull();
       expect(authUrl.searchParams.get('scope')).toBe(
-        'ads_management,ads_read,business_management,pages_read_engagement'
+        'ads_management,business_management,pages_read_engagement,pages_show_list'
       );
     });
 
@@ -67,7 +67,7 @@ describe('MetaConnector Asset Discovery', () => {
       const authUrl = new URL(connector.getAuthUrl('state-123'));
 
       expect(authUrl.searchParams.get('config_id')).toBeNull();
-      expect(authUrl.searchParams.get('scope')).toBe('ads_management,ads_read,business_management');
+      expect(authUrl.searchParams.get('scope')).toBe('ads_management,business_management,pages_read_engagement,pages_show_list');
     });
   });
 
@@ -81,7 +81,7 @@ describe('MetaConnector Asset Discovery', () => {
               { id: 'biz_1', name: 'Business One', vertical_name: 'Retail' },
             ],
             paging: {
-              next: 'https://graph.facebook.com/v21.0/me/businesses?after=cursor-2',
+              next: 'https://graph.facebook.com/v25.0/me/businesses?after=cursor-2',
             },
           }),
         } as Response)
@@ -116,12 +116,12 @@ describe('MetaConnector Asset Discovery', () => {
 
       expect(fetch).toHaveBeenNthCalledWith(
         1,
-        expect.stringContaining('graph.facebook.com/v21.0/me/businesses'),
+        expect.stringContaining('graph.facebook.com/v25.0/me/businesses'),
         expect.any(Object)
       );
       expect(fetch).toHaveBeenNthCalledWith(
         2,
-        'https://graph.facebook.com/v21.0/me/businesses?after=cursor-2&access_token=test-access-token',
+        'https://graph.facebook.com/v25.0/me/businesses?after=cursor-2&access_token=test-access-token',
         expect.any(Object)
       );
       expect(result).toEqual({
@@ -182,7 +182,7 @@ describe('MetaConnector Asset Discovery', () => {
 
       const secondCallUrl = new URL(String(vi.mocked(fetch).mock.calls[1]?.[0]));
       expect(`${secondCallUrl.origin}${secondCallUrl.pathname}`).toBe(
-        'https://graph.facebook.com/v21.0/me/business_users'
+        'https://graph.facebook.com/v25.0/me/business_users'
       );
       expect(secondCallUrl.searchParams.get('fields')).toBe('business{id,name,verification_status}');
       expect(secondCallUrl.searchParams.get('access_token')).toBe(accessToken);
@@ -328,7 +328,7 @@ describe('MetaConnector Asset Discovery', () => {
       const result = await connector.getAdAccounts(accessToken, businessId);
 
       expect(fetch).toHaveBeenCalledWith(
-        expect.stringContaining(`graph.facebook.com/v21.0/${businessId}/owned_ad_accounts`),
+        expect.stringContaining(`graph.facebook.com/v25.0/${businessId}/owned_ad_accounts`),
         expect.any(Object)
       );
       expect(result).toHaveLength(1);
@@ -372,7 +372,7 @@ describe('MetaConnector Asset Discovery', () => {
       const result = await connector.getPages(accessToken, businessId);
 
       expect(fetch).toHaveBeenCalledWith(
-        expect.stringContaining(`graph.facebook.com/v21.0/${businessId}/owned_pages`),
+        expect.stringContaining(`graph.facebook.com/v25.0/${businessId}/owned_pages`),
         expect.any(Object)
       );
       expect(result).toHaveLength(1);
@@ -405,7 +405,7 @@ describe('MetaConnector Asset Discovery', () => {
       const result = await connector.getInstagramAccounts(accessToken, businessId);
 
       expect(fetch).toHaveBeenCalledWith(
-        expect.stringContaining(`graph.facebook.com/v21.0/${businessId}/instagram_accounts`),
+        expect.stringContaining(`graph.facebook.com/v25.0/${businessId}/instagram_accounts`),
         expect.any(Object)
       );
       expect(result).toHaveLength(1);
@@ -437,7 +437,7 @@ describe('MetaConnector Asset Discovery', () => {
       const result = await connector.getProductCatalogs(accessToken, businessId);
 
       expect(fetch).toHaveBeenCalledWith(
-        expect.stringContaining(`graph.facebook.com/v21.0/${businessId}/owned_product_catalogs`),
+        expect.stringContaining(`graph.facebook.com/v25.0/${businessId}/owned_product_catalogs`),
         expect.any(Object)
       );
       expect(result).toHaveLength(1);
@@ -454,7 +454,7 @@ describe('MetaConnector Asset Discovery', () => {
       // Mock business info and other endpoints
       vi.mocked(fetch).mockImplementation(async (url) => {
         const urlStr = url.toString();
-        if (urlStr.includes(`v21.0/${businessId}?`)) {
+        if (urlStr.includes(`v25.0/${businessId}?`)) {
           return { ok: true, json: async () => ({ id: businessId, name: 'Test Business' }) } as Response;
         }
         if (urlStr.includes('/owned_ad_accounts')) {
@@ -513,7 +513,7 @@ describe('MetaConnector Business Creation', () => {
         { id: 'page-2', name: 'Acme Deals', category: 'Shopping' },
       ]);
       expect(fetch).toHaveBeenCalledWith(
-        'https://graph.facebook.com/v21.0/me/accounts?fields=id,name,category&access_token=test-access-token',
+        'https://graph.facebook.com/v25.0/me/accounts?fields=id,name,category&access_token=test-access-token',
         { method: 'GET' }
       );
     });
@@ -568,7 +568,7 @@ describe('MetaConnector Business Creation', () => {
       });
 
       expect(fetch).toHaveBeenCalledWith(
-        'https://graph.facebook.com/v21.0/me/businesses',
+        'https://graph.facebook.com/v25.0/me/businesses',
         expect.objectContaining({
           method: 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -576,7 +576,7 @@ describe('MetaConnector Business Creation', () => {
       );
 
       const [url, init] = vi.mocked(fetch).mock.calls[0] as [string, RequestInit];
-      expect(url).toBe('https://graph.facebook.com/v21.0/me/businesses');
+      expect(url).toBe('https://graph.facebook.com/v25.0/me/businesses');
       const body = new URLSearchParams(init.body as string);
       expect(body.get('access_token')).toBe('test-access-token');
       expect(body.get('name')).toBe('Acme Business');

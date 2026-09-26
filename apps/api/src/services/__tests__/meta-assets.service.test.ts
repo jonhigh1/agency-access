@@ -153,7 +153,7 @@ describe('MetaAssetsService', () => {
       vi.mocked(metaSystemUserService.createSystemUserAccessToken).mockResolvedValue({
         data: {
           tokenSecretId: 'meta_partner_admin_system_user_agency-1_biz-1',
-          scopes: ['ads_management', 'ads_read', 'business_management'],
+          scopes: ['ads_management', 'business_management'],
         },
         error: null,
       });
@@ -199,7 +199,6 @@ describe('MetaAssetsService', () => {
               'meta_partner_admin_system_user_agency-1_biz-1',
             partnerAdminSystemUserScopes: [
               'ads_management',
-              'ads_read',
               'business_management',
             ],
             partnerAdminSystemUserProvisionedAt: expect.any(String),

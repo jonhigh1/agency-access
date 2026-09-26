@@ -162,7 +162,7 @@ export const PLATFORM_CONFIGS: Partial<Record<Platform, PlatformOAuthConfig>> = 
     requiresLongLivedExchange: true, // Meta-specific: 2hr → 60 day token
     userInfoUrl: `https://graph.facebook.com/${META_GRAPH_VERSION}/me`,
     supportsRefreshTokens: false, // Meta uses long-lived tokens instead
-    defaultScopes: ['ads_management', 'ads_read', 'business_management', 'pages_read_engagement'],
+    defaultScopes: ['ads_management', 'business_management', 'pages_read_engagement', 'pages_show_list'],
   },
 
   meta_ads: {
@@ -174,7 +174,7 @@ export const PLATFORM_CONFIGS: Partial<Record<Platform, PlatformOAuthConfig>> = 
     requiresLongLivedExchange: true,
     userInfoUrl: `https://graph.facebook.com/${META_GRAPH_VERSION}/me`,
     supportsRefreshTokens: false,
-    defaultScopes: ['ads_management', 'ads_read', 'business_management', 'pages_read_engagement'],
+    defaultScopes: ['ads_management', 'business_management', 'pages_read_engagement', 'pages_show_list'],
   },
 
   meta_pages: {
