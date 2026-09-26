@@ -22,7 +22,7 @@ describe('MetaPartnerService', () => {
     );
 
     expect(fetch).toHaveBeenCalledWith(
-      'https://graph.facebook.com/v21.0/page_123/assigned_users',
+      'https://graph.facebook.com/v25.0/page_123/assigned_users',
       expect.objectContaining({
         method: 'POST',
         headers: {
@@ -56,7 +56,7 @@ describe('MetaPartnerService', () => {
     );
 
     expect(fetch).toHaveBeenCalledWith(
-      'https://graph.facebook.com/v21.0/act_123/assigned_users',
+      'https://graph.facebook.com/v25.0/act_123/assigned_users',
       expect.objectContaining({
         method: 'POST',
         headers: {
@@ -95,7 +95,7 @@ describe('MetaPartnerService', () => {
     );
 
     expect(fetch).toHaveBeenCalledWith(
-      'https://graph.facebook.com/v21.0/page_123/assigned_users?access_token=client-system-user-token',
+      'https://graph.facebook.com/v25.0/page_123/assigned_users?access_token=client-system-user-token',
       expect.objectContaining({
         method: 'GET',
       })

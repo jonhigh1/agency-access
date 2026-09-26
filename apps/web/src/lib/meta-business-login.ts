@@ -5,7 +5,7 @@ import { parseJsonResponse } from '@/lib/api/parse-json-response';
 
 const META_SDK_SCRIPT_ID = 'meta-business-login-sdk';
 const META_SDK_SRC = 'https://connect.facebook.net/en_US/sdk.js';
-const META_GRAPH_VERSION = 'v21.0';
+const META_GRAPH_VERSION = 'v25.0';
 const META_LOGIN_TIMEOUT_MS = 15_000;
 
 type MetaBusinessLoginOptions = {
@@ -177,7 +177,6 @@ export async function launchMetaBusinessLogin({
  */
 const META_CLIENT_SCOPES = [
   'ads_management',
-  'ads_read',
   'business_management',
   'pages_read_engagement',
   'pages_show_list',

@@ -204,7 +204,6 @@ export async function registerOAuthStateRoutes(fastify: FastifyInstance) {
       if (platform === 'meta' || platform === 'meta_ads') {
         scopes = [
           'ads_management',
-          'ads_read',
           'business_management',
           'pages_read_engagement',
           'pages_show_list',

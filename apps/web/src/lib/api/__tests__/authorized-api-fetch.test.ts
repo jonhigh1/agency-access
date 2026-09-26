@@ -84,4 +84,43 @@ describe('authorizedApiFetch', () => {
     await expectation;
     vi.useRealTimers();
   });
+
+  it('fails with a bounded timeout when token resolution never resolves', async () => {
+    vi.useFakeTimers();
+
+    const request = authorizedApiFetch('/api/agencies', {
+      getToken: () => new Promise(() => {}),
+    });
+    const expectation = expect(request).rejects.toMatchObject<Partial<AuthorizedApiError>>({
+      code: 'TIMEOUT',
+      status: 408,
+    });
+
+    await vi.advanceTimersByTimeAsync(15_000);
+
+    await expectation;
+    vi.useRealTimers();
+  });
+
+  it('fails with a bounded timeout when JSON parsing never resolves', async () => {
+    vi.useFakeTimers();
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => new Promise(() => {}),
+    });
+
+    const request = authorizedApiFetch('/api/agencies', {
+      getToken: async () => 'token-123',
+    });
+    const expectation = expect(request).rejects.toMatchObject<Partial<AuthorizedApiError>>({
+      code: 'TIMEOUT',
+      status: 408,
+    });
+
+    await vi.advanceTimersByTimeAsync(15_000);
+
+    await expectation;
+    vi.useRealTimers();
+  });
 });

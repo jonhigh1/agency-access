@@ -22,7 +22,6 @@ const DEFAULT_SYSTEM_USER_NAME = 'Agency Platform System User';
 const DEFAULT_PARTNER_ADMIN_SYSTEM_USER_NAME = 'Agency Platform Admin System User';
 const DEFAULT_PARTNER_ADMIN_SYSTEM_USER_SCOPES = [
   'ads_management',
-  'ads_read',
   'business_management',
 ];
 

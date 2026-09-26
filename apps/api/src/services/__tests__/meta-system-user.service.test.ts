@@ -35,12 +35,12 @@ describe('MetaSystemUserService', () => {
       systemUserId: 'sys-admin-1',
       accessToken: 'agency-admin-user-token',
       secretName: 'meta_partner_admin_system_user_agency-1_biz-1',
-      scopes: ['ads_management', 'ads_read', 'business_management'],
+      scopes: ['ads_management', 'business_management'],
     });
 
     expect(result.error).toBeNull();
     expect(fetch).toHaveBeenCalledWith(
-      'https://graph.facebook.com/v21.0/sys-admin-1/access_tokens',
+      'https://graph.facebook.com/v25.0/sys-admin-1/access_tokens',
       expect.objectContaining({
         method: 'POST',
         headers: {
@@ -53,7 +53,7 @@ describe('MetaSystemUserService', () => {
     const params = new URLSearchParams(request.body as string);
 
     expect(params.get('app_id')).toBe('test-meta-app-id');
-    expect(params.get('scope')).toBe('ads_management,ads_read,business_management');
+    expect(params.get('scope')).toBe('ads_management,business_management');
     expect(params.get('access_token')).toBe('agency-admin-user-token');
     expect(infisical.storeOAuthTokens).toHaveBeenCalledWith(
       'meta_partner_admin_system_user_agency-1_biz-1',
@@ -61,7 +61,7 @@ describe('MetaSystemUserService', () => {
     );
     expect(result.data).toEqual({
       tokenSecretId: 'meta_partner_admin_system_user_agency-1_biz-1',
-      scopes: ['ads_management', 'ads_read', 'business_management'],
+      scopes: ['ads_management', 'business_management'],
     });
   });
 });

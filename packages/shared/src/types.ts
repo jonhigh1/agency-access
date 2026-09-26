@@ -586,19 +586,17 @@ export const PLATFORM_SCOPES: Record<Platform, string[]> = {
   ],
   meta: [
     'ads_management',
-    'ads_read',
     'business_management',
-    // pages_manage_metadata and pages_show_list removed - not valid OAuth scopes
     'pages_read_engagement',
+    'pages_show_list',
     // Instagram accounts are accessed through Facebook Pages via business_management scope
     // No Instagram-specific OAuth scopes needed
   ],
   meta_ads: [
     'ads_management',
-    'ads_read',
     'business_management',
-    // pages_manage_metadata and pages_show_list removed - not valid OAuth scopes
     'pages_read_engagement',
+    'pages_show_list',
   ],
   meta_pages: [
     'business_management',

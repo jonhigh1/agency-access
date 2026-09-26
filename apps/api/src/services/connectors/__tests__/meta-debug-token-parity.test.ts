@@ -48,7 +48,7 @@ describe('MetaConnector debug_token parity', () => {
     expect(global.fetch).toHaveBeenCalledTimes(1);
     const [url, init] = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
     expect(url).toBe(
-      'https://graph.facebook.com/v21.0/debug_token?input_token=user-token&access_token=test-app-id%7Ctest-app-secret'
+      'https://graph.facebook.com/v25.0/debug_token?input_token=user-token&access_token=test-app-id%7Ctest-app-secret'
     );
     expect(init.method).toBe('GET');
 
