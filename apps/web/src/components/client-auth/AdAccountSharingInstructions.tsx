@@ -1,12 +1,37 @@
 'use client';
 
+/**
+ * AdAccountSharingInstructions - Manual Meta partner-grant journey (U9).
+ *
+ * The numbered steps render as a stateful checklist: one checkbox per row,
+ * persisted in sessionStorage keyed by (request token + agency business id),
+ * so a returning client picks up where they stopped. The agency business ID
+ * gets a one-tap copy card with an accessible confirmation, and a single
+ * revocation-reassurance line sits near the steps.
+ *
+ * Verify contract: unchanged — both the start and verify POSTs and the
+ * server-truth rendering behave exactly as before (see tests).
+ */
+
 import { useEffect, useState } from 'react';
-import { ExternalLink, CheckCircle2, Loader2, AlertCircle } from 'lucide-react';
+import {
+  ExternalLink,
+  CheckCircle2,
+  Loader2,
+  AlertCircle,
+  Check,
+  Copy,
+  ShieldCheck,
+} from 'lucide-react';
 import { META_AD_ACCOUNT_INSTRUCTIONS } from '@/lib/content/meta-ad-account-instructions';
 import { getApiBaseUrl } from '@/lib/api/api-env';
 import { parseJsonResponse } from '@/lib/api/parse-json-response';
+import {
+  readManualGrantChecklistRows,
+  writeManualGrantChecklistRow,
+} from '@/lib/invite/manual-grant-checklist-storage';
+import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard';
 import { Button } from '@/components/ui/button';
-import { BusinessIdDisplay } from './BusinessIdDisplay';
 
 interface AdAccount {
   id: string;
@@ -56,6 +81,135 @@ interface ManualMetaShareResponse {
   error?: { message?: string };
 }
 
+/* ------------------------------------------------------------------ */
+/* Checklist storage (U9)                                              */
+/*                                                                     */
+/* Per-row check state lives in sessionStorage under a key scoped to   */
+/* (request token, agency business id, row id). The helpers live in    */
+/* lib/invite/manual-grant-checklist-storage.ts, where the reset       */
+/* registration points (MetaAssetSelector, PlatformAuthWizard) import  */
+/* clearManualGrantChecklistStorage from directly.                     */
+/* ------------------------------------------------------------------ */
+
+/* ------------------------------------------------------------------ */
+/* Checklist row                                                       */
+/* ------------------------------------------------------------------ */
+
+interface ChecklistRowProps {
+  rowId: string;
+  number: string;
+  title: string;
+  description?: string;
+  checked: boolean;
+  onToggle: (checked: boolean) => void;
+  indented?: boolean;
+  hairline?: boolean;
+  children?: React.ReactNode;
+}
+
+function ChecklistRow({
+  rowId,
+  number,
+  title,
+  description,
+  checked,
+  onToggle,
+  indented = false,
+  hairline = true,
+  children,
+}: ChecklistRowProps) {
+  return (
+    <li className={hairline ? 'hairline-b' : undefined}>
+      <label
+        htmlFor={`manual-grant-${rowId}`}
+        className={`flex min-h-[44px] cursor-pointer items-start gap-3 py-3 ${
+          indented ? 'pl-11' : ''
+        }`}
+      >
+        <input
+          id={`manual-grant-${rowId}`}
+          type="checkbox"
+          checked={checked}
+          onChange={(event) => onToggle(event.target.checked)}
+          className="peer sr-only"
+        />
+        {/* Square checkbox box; the two-ring focus style lands via peer. */}
+        <span
+          aria-hidden="true"
+          className={`mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center border-2 bg-card ${
+            checked ? 'border-coral bg-coral' : 'border-border'
+          } peer-focus-visible:outline peer-focus-visible:outline-[3px] peer-focus-visible:outline-[rgb(var(--coral)/0.25)] peer-focus-visible:outline-offset-0 peer-focus-visible:[box-shadow:0_0_0_6px_rgb(var(--primary)/0.08)]`}
+        >
+          {checked && <Check className="h-3.5 w-3.5 text-white" strokeWidth={3} />}
+        </span>
+        <span className="flex flex-1 items-start gap-2">
+          <span className="pt-0.5 font-mono text-xs font-bold text-muted-foreground">
+            {number}
+          </span>
+          <span className="flex-1">
+            <span className="block text-sm font-bold text-ink">{title}</span>
+            {description && (
+              <span className="mt-0.5 block text-sm text-muted-foreground">{description}</span>
+            )}
+          </span>
+        </span>
+      </label>
+      {children}
+    </li>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* One-tap copy card for the agency business ID                        */
+/* ------------------------------------------------------------------ */
+
+interface BusinessIdCopyCardProps {
+  businessId: string;
+  businessName?: string;
+  content: (typeof META_AD_ACCOUNT_INSTRUCTIONS)['en']['copyCard'];
+}
+
+function BusinessIdCopyCard({ businessId, businessName, content }: BusinessIdCopyCardProps) {
+  const { copied, copy } = useCopyToClipboard();
+
+  return (
+    <div className="border border-border bg-muted/20 p-4">
+      <p className="label-micro">{content.label}</p>
+      {businessName && (
+        <p className="mt-1 text-sm text-muted-foreground">{businessName}</p>
+      )}
+      <div className="mt-2 flex flex-wrap items-center gap-3">
+        <span className="break-all font-mono text-sm font-bold text-ink">{businessId}</span>
+        <Button
+          type="button"
+          variant="secondary"
+          size="sm"
+          onClick={() => void copy(businessId)}
+        >
+          {copied ? (
+            <Check className="h-4 w-4 text-success-ink" aria-hidden="true" />
+          ) : (
+            <Copy className="h-4 w-4" aria-hidden="true" />
+          )}
+          {copied ? content.copied : content.copyButton}
+        </Button>
+      </div>
+      {/* Stable live region: the confirmation swaps in on copy, so screen
+          readers announce it — never color-only. */}
+      <p
+        role="status"
+        className={`mt-2 text-sm ${
+          copied ? 'font-semibold text-success-ink' : 'text-muted-foreground'
+        }`}
+      >
+        {copied ? content.copied : content.helper}
+      </p>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+
 export function AdAccountSharingInstructions({
   businessId,
   businessName,
@@ -79,8 +233,20 @@ export function AdAccountSharingInstructions({
       status: 'waiting_for_manual_share',
     }))
   );
+  const [checkedRows, setCheckedRows] = useState<Record<string, boolean>>({});
   const content = META_AD_ACCOUNT_INSTRUCTIONS.en;
   const apiUrl = getApiBaseUrl();
+
+  // Restore the per-row check state for this (token, business) scope. The
+  // effect also re-reads when the scope changes without a remount.
+  useEffect(() => {
+    setCheckedRows(readManualGrantChecklistRows(accessRequestToken, businessId));
+  }, [accessRequestToken, businessId]);
+
+  const toggleRow = (rowId: string, checked: boolean) => {
+    setCheckedRows((prev) => ({ ...prev, [rowId]: checked }));
+    writeManualGrantChecklistRow(accessRequestToken, businessId, rowId, checked);
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -179,6 +345,18 @@ export function AdAccountSharingInstructions({
     verificationResults?.filter((result) => result.status !== 'verified') || [];
   const hasUnresolvedResults = unresolvedResults.length > 0;
 
+  const agencyName = businessName || 'the agency';
+  const introText = content.intro
+    .replace('{agency}', agencyName)
+    .replace('{count}', String(selectedAdAccounts.length));
+  const scopeNoteText = content.scopeNote.replace('{agency}', agencyName);
+
+  const substepRows = content.step2.substeps.map((text, index) => ({
+    id: `step-2-${index + 1}`,
+    number: `2.${index + 1}`,
+    title: text,
+  }));
+
   return (
     <div className="space-y-8">
       <div>
@@ -186,11 +364,17 @@ export function AdAccountSharingInstructions({
         <p className="text-muted-foreground">{content.description}</p>
       </div>
 
+      {/* Plain-language framing: what the client is doing and why. */}
+      <div className="space-y-1">
+        <p className="text-sm text-foreground">{introText}</p>
+        <p className="text-sm text-muted-foreground">{scopeNoteText}</p>
+      </div>
+
       <div
-        className={`rounded-xl border-2 p-4 ${
+        className={`border-2 p-4 ${
           status === 'verified'
-            ? 'border-[var(--teal)] bg-[var(--teal)]/10 text-[var(--teal)]'
-            : 'border-[var(--warning)] bg-[var(--warning)]/10 text-[var(--ink)]'
+            ? 'border-[rgb(var(--teal))] bg-[rgb(var(--teal))]/10 text-success-ink'
+            : 'border-[rgb(var(--warning))] bg-[rgb(var(--warning))]/10 text-ink'
         }`}
       >
         {isStarting ? (
@@ -205,7 +389,7 @@ export function AdAccountSharingInstructions({
           </p>
         ) : (
           <div className="space-y-2">
-            <p className="flex items-center gap-2 font-semibold">
+            <p className="flex items-center gap-2 font-semibold text-[rgb(var(--warning))]">
               <AlertCircle className="h-4 w-4" />
               {content.waiting.replace('{verifiedCount}', String(verifiedCount)).replace(
                 '{selectedCount}',
@@ -225,71 +409,80 @@ export function AdAccountSharingInstructions({
         )}
       </div>
 
-      {/* Steps */}
-      <div className="space-y-6">
-        {/* Step 1: Select Assets */}
-        <div className="flex gap-4">
-          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-coral text-white flex items-center justify-center font-bold">
-            1
-          </div>
-          <div className="flex-1">
-            <h4 className="font-bold text-ink mb-1">{content.step1.title}</h4>
-            <p className="text-muted-foreground text-sm mb-2">{content.step1.description}</p>
-            {selectedAdAccounts.length > 0 && (
-              <div className="mt-2">
-                <p className="text-sm font-semibold text-foreground mb-1">Selected accounts:</p>
-                <ul className="list-disc list-inside text-sm text-muted-foreground">
-                  {selectedAdAccounts.map((account) => (
-                    <li key={account.id}>{account.name}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
+      {/* Stateful checklist: two numbered steps, five numbered sub-steps,
+          one checkbox per row, persisted per (token, business). */}
+      <div>
+        <div className="border border-border">
+          <p className="label-micro hairline-b px-4 py-3">{content.checklistHint}</p>
+          <ol className="px-4">
+            <ChecklistRow
+              rowId="step-1"
+              number="1"
+              title={content.step1.title}
+              description={content.step1.description}
+              checked={Boolean(checkedRows['step-1'])}
+              onToggle={(checked) => toggleRow('step-1', checked)}
+            >
+              {selectedAdAccounts.length > 0 && (
+                <div className="pb-3 pl-8">
+                  <p className="text-sm font-semibold text-foreground mb-1">
+                    Selected accounts:
+                  </p>
+                  <ul className="list-disc list-inside text-sm text-muted-foreground">
+                    {selectedAdAccounts.map((account) => (
+                      <li key={account.id}>{account.name}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </ChecklistRow>
+
+            <ChecklistRow
+              rowId="step-2"
+              number="2"
+              title={content.step2.title}
+              description={content.step2.description}
+              checked={Boolean(checkedRows['step-2'])}
+              onToggle={(checked) => toggleRow('step-2', checked)}
+            >
+              <p
+                role="note"
+                className="mb-3 ml-8 border border-[rgb(var(--warning))] bg-[rgb(var(--warning))]/10 px-3 py-2 text-sm text-[rgb(var(--warning))]"
+              >
+                {content.step2.securityNote}
+              </p>
+            </ChecklistRow>
+
+            {substepRows.map((row, index) => (
+              <ChecklistRow
+                key={row.id}
+                rowId={row.id}
+                number={row.number}
+                title={row.title}
+                indented
+                hairline={index < substepRows.length - 1}
+                checked={Boolean(checkedRows[row.id])}
+                onToggle={(checked) => toggleRow(row.id, checked)}
+              >
+                {row.id === 'step-2-2' && (
+                  <div className="pb-3 pl-11">
+                    <BusinessIdCopyCard
+                      businessId={businessId}
+                      businessName={businessName}
+                      content={content.copyCard}
+                    />
+                  </div>
+                )}
+              </ChecklistRow>
+            ))}
+          </ol>
         </div>
 
-        {/* Step 2: Share Asset (combined navigation + sharing) */}
-        <div className="flex gap-4">
-          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-coral text-white flex items-center justify-center font-bold">
-            2
-          </div>
-          <div className="flex-1">
-            <h4 className="font-bold text-ink mb-1">{content.step2.title}</h4>
-            <p className="text-muted-foreground text-sm mb-3">{content.step2.description}</p>
-            <p role="note" className="mb-3 border border-warning bg-warning/10 px-3 py-2 text-sm text-warning">
-              {content.step2.securityNote}
-            </p>
-            
-            {/* Sub-steps for Step 2 */}
-            <div className="space-y-3 ml-4 border-l-2 border-border pl-4">
-              {/* Sub-step 1: Select account and click Assign Partner */}
-              <div>
-                <p className="text-foreground text-sm">{content.step2.substeps?.[0]}</p>
-              </div>
-              
-              {/* Sub-step 2: Enter Business Manager ID */}
-              <div>
-                <p className="text-foreground text-sm mb-2">{content.step2.substeps?.[1]}</p>
-                <BusinessIdDisplay businessId={businessId} businessName={businessName} />
-              </div>
-              
-              {/* Sub-step 3: Check Manage ad accounts */}
-              <div>
-                <p className="text-foreground text-sm">{content.step2.substeps?.[2]}</p>
-              </div>
-              
-              {/* Sub-step 4: Click Assign */}
-              <div>
-                <p className="text-foreground text-sm">{content.step2.substeps?.[3]}</p>
-              </div>
-              
-              {/* Sub-step 5: Wait for confirmation */}
-              <div>
-                <p className="text-foreground text-sm">{content.step2.substeps?.[4]}</p>
-              </div>
-            </div>
-          </div>
-        </div>
+        {/* Revocation reassurance (R9): rendered once, near the steps. */}
+        <p className="mt-3 flex items-start gap-2 text-sm text-muted-foreground">
+          <ShieldCheck className="mt-0.5 h-4 w-4 flex-shrink-0" aria-hidden="true" />
+          {content.revocationNote}
+        </p>
       </div>
 
       {/* Actions */}

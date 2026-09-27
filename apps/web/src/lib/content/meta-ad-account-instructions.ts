@@ -1,13 +1,25 @@
 /**
  * Meta Ad Account Sharing Instructions Content
- * 
- * Step-by-step instructions for manually sharing ad accounts in Meta Business Manager
+ *
+ * Step-by-step instructions for manually sharing ad accounts in Meta Business Manager.
+ * U9 additions carry the stateful-checklist copy: plain-language framing,
+ * the one-tap copy card, and the revocation reassurance line.
  */
 
 export const META_AD_ACCOUNT_INSTRUCTIONS = {
   en: {
     title: 'Grant access to your Ad Accounts (Manual)',
     description: 'Follow this guide to grant access',
+    intro: 'This gives {agency} access to the {count} ad account(s) you selected, so they can run ads for you.',
+    scopeNote: 'In Meta, "Manage ad accounts" means {agency} can create and run ads in your accounts — nothing else.',
+    checklistHint: 'Check off each step as you finish it',
+    revocationNote: 'You can remove this access anytime in Meta Business Settings → Partners.',
+    copyCard: {
+      label: 'Agency Business ID',
+      helper: 'Tap Copy once, then paste it into Meta Business Settings.',
+      copyButton: 'Copy',
+      copied: 'Copied',
+    },
     step1: {
       title: 'Select Assets',
       description: 'Select the ad accounts you want to grant access to',
@@ -37,6 +49,16 @@ export const META_AD_ACCOUNT_INSTRUCTIONS = {
   es: {
     title: 'Conceder acceso a tus cuentas de anuncios (Manual)',
     description: 'Sigue esta guía para conceder acceso',
+    intro: 'Esto da a {agency} acceso a las {count} cuenta(s) de anuncios que seleccionaste, para que publiquen anuncios por ti.',
+    scopeNote: 'En Meta, "Administrar cuentas de anuncios" significa que {agency} puede crear y publicar anuncios en tus cuentas, nada más.',
+    checklistHint: 'Marca cada paso a medida que lo completes',
+    revocationNote: 'Puedes quitar este acceso en cualquier momento en Meta Business Settings → Partners.',
+    copyCard: {
+      label: 'ID del Business de la agencia',
+      helper: 'Toca Copiar una vez y pégalo en Meta Business Settings.',
+      copyButton: 'Copiar',
+      copied: 'Copiado',
+    },
     step1: {
       title: 'Seleccionar activos',
       description: 'Selecciona las cuentas de anuncios a las que quieres conceder acceso',
@@ -66,6 +88,16 @@ export const META_AD_ACCOUNT_INSTRUCTIONS = {
   nl: {
     title: 'Geef toegang tot je advertentieaccounts (Handmatig)',
     description: 'Volg deze gids om toegang te verlenen',
+    intro: 'Dit geeft {agency} toegang tot de {count} advertentieaccount(s) die je hebt geselecteerd, zodat zij advertenties voor je kunnen plaatsen.',
+    scopeNote: 'In Meta betekent "Advertentieaccounts beheren" dat {agency} advertenties kan maken en plaatsen in je accounts — niets anders.',
+    checklistHint: 'Vink elke stap af zodra je klaar bent',
+    revocationNote: 'Je kunt deze toegang op elk moment intrekken in Meta Business Settings → Partners.',
+    copyCard: {
+      label: 'Business-ID van het agency',
+      helper: 'Tik één keer op Kopiëren en plak het in Meta Business Settings.',
+      copyButton: 'Kopiëren',
+      copied: 'Gekopieerd',
+    },
     step1: {
       title: 'Selecteer activa',
       description: 'Selecteer de advertentieaccounts waaraan je toegang wilt verlenen',

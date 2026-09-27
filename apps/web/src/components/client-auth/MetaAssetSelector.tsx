@@ -25,6 +25,7 @@ import { MetaBusinessCreator } from './MetaBusinessCreator';
 import { MetaBusinessSetupChecklist } from './MetaBusinessSetupChecklist';
 import { GuidedRedirectCard } from './GuidedRedirectModal';
 import { PortfolioSelector, type PortfolioBusiness } from './PortfolioSelector';
+import { clearManualGrantChecklistStorage } from '@/lib/invite/manual-grant-checklist-storage';
 import { Plus } from 'lucide-react';
 import { getApiBaseUrl } from '@/lib/api/api-env';
 import { ApiResponseError, parseJsonResponse } from '@/lib/api/parse-json-response';
@@ -694,6 +695,10 @@ export function MetaAssetSelector({
     setDatasetVerification(null);
     setIsVerifyingDatasets(false);
     setCatalogCreationErrorsFor({});
+    // U9 registration: the manual-grant checklist persists per-row check
+    // state in sessionStorage. It is selection-derived, so a business switch
+    // must uncheck it — clear its storage alongside the in-memory resets.
+    clearManualGrantChecklistStorage(accessRequestToken);
     // Creation-review records persist across switches: they are keyed by the
     // business that owns them and render only when that business is active,
     // so they cannot go stale on another business (keeps a pending creation

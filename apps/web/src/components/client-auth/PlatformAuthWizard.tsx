@@ -29,6 +29,7 @@ import { CatalogAccessGrant } from './CatalogAccessGrant';
 import { InstagramAccessGrant } from './InstagramAccessGrant';
 import { MetaPageEngagementProof } from './MetaPageEngagementProof';
 import { AdAccountSharingInstructions } from './AdAccountSharingInstructions';
+import { clearManualGrantChecklistStorage } from '@/lib/invite/manual-grant-checklist-storage';
 import type { ManualMetaShareCompletionResult } from './AdAccountSharingInstructions';
 import { StepHelpText } from './StepHelpText';
 import { PlatformIcon, Button } from '@/components/ui';
@@ -612,6 +613,10 @@ export function PlatformAuthWizard({
     setCatalogsGranted(false);
     setMetaAdAccountShareStatus('idle');
     setInstagramBusinessAccessVerified(false);
+    // U9 registration: the manual-grant checklist persists per-row check
+    // state in sessionStorage. A post-save change-selection must uncheck it,
+    // so clear its storage alongside the in-memory resets.
+    clearManualGrantChecklistStorage(accessRequestToken);
     // The resume prefill counts as selection-derived state: once the client
     // resets their selections it must not come back on a selector remount,
     // and the resumed saved state must not reapply after the fresh fetch.
@@ -625,7 +630,7 @@ export function PlatformAuthWizard({
       return next;
     });
     setChooseAccountsExpanded(true);
-  }, []);
+  }, [accessRequestToken]);
 
   // Selector fetch failures feed both the in-card banner and the CTA reason.
   const handleSelectorError = useCallback((message: string) => {

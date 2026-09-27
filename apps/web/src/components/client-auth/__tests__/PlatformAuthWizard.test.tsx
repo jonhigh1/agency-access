@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { PlatformAuthWizard } from '../PlatformAuthWizard';
+import { manualGrantChecklistStorageKey } from '@/lib/invite/manual-grant-checklist-storage';
 
 const { pushMock, replaceMock, onCompleteMock, trackOnboardingEventMock } = vi.hoisted(() => ({
   pushMock: vi.fn(),
@@ -981,9 +982,15 @@ describe('PlatformAuthWizard', () => {
     ).toBeInTheDocument();
     expect(screen.queryByRole('heading', { name: /connected/i })).not.toBeInTheDocument();
 
-    // Switch business from the re-opened selection section.
+    // Switch business from the re-opened selection section. The manual-grant
+    // checklist storage is selection-derived: the reset must clear it too.
+    sessionStorage.setItem(manualGrantChecklistStorageKey('token-1', 'partner-bm-1', 'step-1'), '1');
     fireEvent.click(screen.getByRole('button', { name: /choose accounts to share/i }));
     fireEvent.click(screen.getByRole('button', { name: /switch meta business/i }));
+
+    expect(
+      sessionStorage.getItem(manualGrantChecklistStorageKey('token-1', 'partner-bm-1', 'step-1'))
+    ).toBeNull();
 
     // The save CTA returns after reselecting: the wizard was not bricked.
     fireEvent.click(screen.getByRole('button', { name: /select meta pages and instagram assets/i }));
