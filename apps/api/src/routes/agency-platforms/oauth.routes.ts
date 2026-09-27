@@ -13,6 +13,7 @@ import { assertAgencyAccess } from '@/lib/authorization.js';
 import { infisical } from '@/lib/infisical.js';
 import { prisma } from '@/lib/prisma.js';
 import { createAuditLog } from '@/services/audit.service.js';
+import { metaAssetsService } from '@/services/meta-assets.service.js';
 import { sendError, sendValidationError } from '../../lib/response.js';
 
 // Meta business accounts response type
@@ -200,6 +201,16 @@ export async function registerOAuthRoutes(fastify: FastifyInstance) {
 
     if (existingConnectionResult.data) {
       const existingConnection = existingConnectionResult.data as Record<string, any>;
+      const existingMetadata =
+        (existingConnection.metadata as Record<string, unknown> | undefined) || {};
+      const selectedBusinessId =
+        typeof existingMetadata.selectedBusinessId === 'string'
+          ? existingMetadata.selectedBusinessId
+          : null;
+      const selectedBusinessName =
+        typeof existingMetadata.selectedBusinessName === 'string'
+          ? existingMetadata.selectedBusinessName
+          : null;
       const secretId =
         typeof existingConnection.secretId === 'string' && existingConnection.secretId.length > 0
           ? existingConnection.secretId
@@ -229,6 +240,16 @@ export async function registerOAuthRoutes(fastify: FastifyInstance) {
           lastRefreshedAt: null,
         },
       }) as Record<string, any>;
+
+      // Re-authentication replaces the agency user token. Re-run provisioning
+      // for the stored portfolio so OBO grants do not keep using stale setup.
+      if (selectedBusinessId && selectedBusinessName) {
+        await metaAssetsService.saveBusinessPortfolio(
+          agencyId,
+          selectedBusinessId,
+          selectedBusinessName
+        );
+      }
     } else {
       const connectionResult = await agencyPlatformService.createConnection({
         agencyId,
