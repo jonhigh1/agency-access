@@ -9,7 +9,10 @@ import { metaOBOService } from '@/services/meta-obo.service';
 import { metaPartnerService } from '@/services/meta-partner.service';
 import { MetaConnector } from '@/services/connectors/meta';
 import { metaAssetsService } from '@/services/meta-assets.service';
-import { clientAssetsService } from '@/services/client-assets.service';
+import {
+  clientAssetsService,
+  MetaBusinessPortfolioUnavailableError,
+} from '@/services/client-assets.service';
 
 vi.mock('@/services/access-request.service', () => ({
   accessRequestService: {
@@ -502,7 +505,9 @@ describe('Client Auth Asset Routes - Meta', () => {
       },
     });
 
-    expect(response.statusCode).toBe(403);
+    // Review #11: one code, one status — the same mismatch emits 409 from the
+    // grant automation and the shared validator, so the save path matches.
+    expect(response.statusCode).toBe(409);
     expect(response.json().error.code).toBe('META_BUSINESS_SELECTION_MISMATCH');
     expect(prisma.clientConnection.update).not.toHaveBeenCalled();
     expect(prisma.platformAuthorization.update).not.toHaveBeenCalled();
@@ -2461,5 +2466,197 @@ describe('Client Auth Asset Routes - Meta', () => {
     expect(
       results.filter((result) => result.assetType === 'ad_account' && result.recipientType === 'system_user').map((result) => result.assetId)
     ).toEqual(['act_1', 'act_2']);
+  });
+
+  describe('save-assets hardening (review batch A)', () => {
+    function mockSavePrereqs() {
+      vi.mocked(accessRequestService.getAccessRequestByToken).mockResolvedValue({
+        data: {
+          id: 'request-a',
+          agencyId: 'agency-a',
+          metaAccessConfig: {
+            recipients: [{ type: 'human', id: 'person-1' }],
+            pageTasks: ['MANAGE'],
+            adAccountTasks: ['ANALYZE'],
+          },
+        } as any,
+        error: null,
+      });
+      vi.mocked(prisma.platformAuthorization.findUnique).mockResolvedValue({
+        id: 'pa-1',
+        connectionId: 'conn-1',
+        platform: 'meta',
+        secretId: 'secret-1',
+        status: 'active',
+        metadata: {
+          selectedAssets: { meta_ads: {} },
+          meta: { selection: { clientBusinessId: 'biz_client_2', selectedAt: '2026-09-22T00:00:00.000Z' } },
+        },
+      } as any);
+      vi.mocked(prisma.agencyPlatformConnection.findUnique).mockResolvedValue({
+        id: 'agency-meta-1',
+        agencyId: 'agency-a',
+        platform: 'meta',
+        businessId: 'partner-bm-1',
+        metadata: { selectedBusinessName: 'Agency Portfolio' },
+      } as any);
+    }
+
+    it('rejects WithNames ids outside the selected Business Portfolio even when the flat list is in scope', async () => {
+      mockSavePrereqs();
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/client/token-a/save-assets',
+        payload: {
+          connectionId: 'conn-1',
+          platform: 'meta_ads',
+          selectedAssets: {
+            selectedBusinessId: 'biz_client_2',
+            adAccounts: ['act_1'],
+            selectedAdAccountsWithNames: [
+              { id: 'act_1', name: 'In scope' },
+              { id: 'act_smuggled', name: 'Smuggled account' },
+            ],
+          },
+        },
+      });
+
+      // Review #16: extractSelectedMetaAdAccounts prefers the WithNames array,
+      // so ids riding only in the names arrays must pass the same membership
+      // gate as the flat ids before anything persists.
+      expect(response.statusCode).toBe(403);
+      expect(response.json().error.code).toBe('META_ASSET_NOT_IN_SELECTED_BUSINESS');
+      expect(prisma.clientConnection.update).not.toHaveBeenCalled();
+      expect(prisma.platformAuthorization.update).not.toHaveBeenCalled();
+    });
+
+    it('narrows Meta discovery on save to exactly the selected asset kinds', async () => {
+      mockSavePrereqs();
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/client/token-a/save-assets',
+        payload: {
+          connectionId: 'conn-1',
+          platform: 'meta_ads',
+          selectedAssets: {
+            selectedBusinessId: 'biz_client_2',
+            pages: ['page_1'],
+            adAccounts: ['act_1'],
+            catalogs: ['catalog-1'],
+          },
+        },
+      });
+
+      expect(response.statusCode).toBe(200);
+      // Review #12: pin the kinds narrowing so a future edit cannot silently
+      // widen discovery back to full-fan-out Graph pagination per save.
+      expect(clientAssetsService.fetchMetaAssets).toHaveBeenCalledWith('meta-access-token', 'biz_client_2', [
+        'page',
+        'ad_account',
+        'catalog',
+      ]);
+    });
+
+    it('returns 500 AUDIT_LOG_FAILED and never reads the Meta token when the scope audit fails on save', async () => {
+      mockSavePrereqs();
+      vi.mocked(auditService.createAuditLog).mockResolvedValueOnce({ error: 'audit unavailable' } as any);
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/client/token-a/save-assets',
+        payload: {
+          connectionId: 'conn-1',
+          platform: 'meta_ads',
+          selectedAssets: { selectedBusinessId: 'biz_client_2', adAccounts: ['act_1'] },
+        },
+      });
+
+      expect(response.statusCode).toBe(500);
+      expect(response.json().error.code).toBe('AUDIT_LOG_FAILED');
+      expect(infisical.getOAuthTokens).not.toHaveBeenCalled();
+      expect(prisma.clientConnection.update).not.toHaveBeenCalled();
+    });
+
+    it('returns 500 TOKEN_NOT_FOUND when secure storage has no Meta access token on save', async () => {
+      mockSavePrereqs();
+      vi.mocked(infisical.getOAuthTokens).mockResolvedValueOnce({} as any);
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/client/token-a/save-assets',
+        payload: {
+          connectionId: 'conn-1',
+          platform: 'meta_ads',
+          selectedAssets: { selectedBusinessId: 'biz_client_2', adAccounts: ['act_1'] },
+        },
+      });
+
+      expect(response.statusCode).toBe(500);
+      expect(response.json().error.code).toBe('TOKEN_NOT_FOUND');
+      expect(clientAssetsService.fetchMetaAssets).not.toHaveBeenCalled();
+      expect(prisma.clientConnection.update).not.toHaveBeenCalled();
+    });
+
+    it('returns 502 META_ASSET_DISCOVERY_FAILED and skips persistence when discovery fails on save', async () => {
+      mockSavePrereqs();
+      vi.spyOn(clientAssetsService, 'fetchMetaAssets').mockRejectedValueOnce(new Error('graph down'));
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/client/token-a/save-assets',
+        payload: {
+          connectionId: 'conn-1',
+          platform: 'meta_ads',
+          selectedAssets: { selectedBusinessId: 'biz_client_2', adAccounts: ['act_1'] },
+        },
+      });
+
+      expect(response.statusCode).toBe(502);
+      expect(response.json().error.code).toBe('META_ASSET_DISCOVERY_FAILED');
+      expect(prisma.clientConnection.update).not.toHaveBeenCalled();
+      expect(prisma.platformAuthorization.update).not.toHaveBeenCalled();
+    });
+
+    it('surfaces the typed unavailable-portfolio error from the grant path', async () => {
+      vi.mocked(accessRequestService.getAccessRequestByToken).mockResolvedValue({
+        data: {
+          id: 'request-a',
+          agencyId: 'agency-a',
+          metaAccessConfig: { recipients: [{ type: 'system_user', id: 'client-system-user-1' }], pageTasks: ['MANAGE'] },
+        } as any,
+        error: null,
+      });
+      vi.mocked(prisma.platformAuthorization.findUnique).mockResolvedValue({
+        id: 'pa-1', connectionId: 'conn-1', platform: 'meta', secretId: 'secret-1', status: 'active',
+        metadata: {
+          selectedAssets: { meta_pages: { pages: ['page_1'] } },
+          meta: { selection: { clientBusinessId: 'biz_client_2', selectedAt: '2026-09-22T00:00:00.000Z' } },
+        },
+      } as any);
+      vi.mocked(prisma.agencyPlatformConnection.findUnique).mockResolvedValue({
+        id: 'agency-meta-1', agencyId: 'agency-a', platform: 'meta', businessId: 'partner-bm-1', status: 'active', metadata: {},
+      } as any);
+      vi.mocked(metaOBOService.getClientAccessTokenForOBO).mockResolvedValue({
+        data: { accessToken: 'client-admin-user-token' }, error: null,
+      });
+      vi.spyOn(clientAssetsService, 'fetchMetaAssets').mockRejectedValueOnce(
+        new MetaBusinessPortfolioUnavailableError('Selected Meta business portfolio is not available for this client user')
+      );
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/client/token-a/grant-meta-access',
+        payload: { connectionId: 'conn-1', assetTypes: ['page'] },
+      });
+
+      // Review #13: the save and grant paths run the same scope validation,
+      // so the typed 400 surfaces from both instead of the grant path's bare
+      // 502 catch.
+      expect(response.statusCode).toBe(400);
+      expect(response.json().error.code).toBe('INVALID_META_BUSINESS_PORTFOLIO');
+      expect(metaOBOService.ensureManagedBusinessRelationship).not.toHaveBeenCalled();
+    });
   });
 });
