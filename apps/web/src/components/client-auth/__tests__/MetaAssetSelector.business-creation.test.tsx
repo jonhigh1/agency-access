@@ -548,7 +548,6 @@ describe('MetaAssetSelector - catalog creation', () => {
     fireEvent.change(screen.getByLabelText(/product catalog name/i), { target: { value: 'Spring Catalog' } });
     fireEvent.click(screen.getByRole('button', { name: /^create catalog$/i }));
     fireEvent.click(await screen.findByRole('button', { name: /switch business/i }));
-    fireEvent.click(await screen.findByRole('button', { name: /clear selection and switch/i }));
     fireEvent.click(await screen.findByRole('combobox', { name: 'Business Portfolio' }));
     fireEvent.click(await screen.findByRole('option', { name: /Business B/ }));
     fireEvent.click(screen.getByRole('button', { name: /load accounts/i }));
@@ -560,7 +559,6 @@ describe('MetaAssetSelector - catalog creation', () => {
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: /switch business/i }));
-    fireEvent.click(await screen.findByRole('button', { name: /clear selection and switch/i }));
     fireEvent.click(await screen.findByRole('combobox', { name: 'Business Portfolio' }));
     fireEvent.click(await screen.findByRole('option', { name: /Business A/ }));
     fireEvent.click(screen.getByRole('button', { name: /load accounts/i }));
