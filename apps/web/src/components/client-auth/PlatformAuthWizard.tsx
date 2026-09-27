@@ -38,12 +38,17 @@ import { trackOnboardingEvent } from '@/lib/analytics/onboarding';
 import { rememberInviteOAuthReturnToken } from '@/lib/client-invite-oauth';
 import { getClientInviteManualRoute } from '@/lib/client-invite-platforms';
 import { getApiBaseUrl } from '@/lib/api/api-env';
-import { parseJsonResponse } from '@/lib/api/parse-json-response';
+import { ApiResponseError, parseJsonResponse } from '@/lib/api/parse-json-response';
 import {
   resolveCta,
   type CtaProductSelectionState,
+  type RequestAvailability,
   type ZeroSelectionMode,
 } from '@/lib/invite/cta-reason';
+import {
+  isTerminalRequestCode,
+  type InviteSelectionPrefill,
+} from '@/lib/invite/landing-state';
 
 interface PlatformAuthWizardProps {
   platform: Platform;
@@ -57,6 +62,17 @@ interface PlatformAuthWizardProps {
   // Optional initial values from OAuth callback
   initialConnectionId?: string;
   initialStep?: 1 | 2 | 3;
+  // U7 resume: the client's saved Meta selections derived from the invite
+  // payload's fulfillment rows. The selector prunes these against its fresh
+  // asset fetch, so only still-shared assets prefill. Absent for a fresh
+  // connect and for non-Meta platforms.
+  initialMetaSelections?: InviteSelectionPrefill | null;
+  // U7 terminal states: 'available' until the page learns the request expired
+  // or was revoked; a terminal value disables the primary action truthfully.
+  requestAvailability?: RequestAvailability;
+  // U7: fired when a save returns a terminal request code so the page can
+  // replace the flow with the terminal card instead of a generic failure.
+  onRequestUnavailable?: (code: string) => void;
 }
 
 interface TikTokShareResult {
@@ -355,6 +371,9 @@ export function PlatformAuthWizard({
   deferManualRedirect = false,
   initialConnectionId,
   initialStep,
+  initialMetaSelections,
+  requestAvailability = 'available',
+  onRequestUnavailable,
 }: PlatformAuthWizardProps) {
   const router = useRouter();
   const apiBaseUrl = getApiBaseUrl();
@@ -399,6 +418,22 @@ export function PlatformAuthWizard({
   // All platforms use 3 steps: Connect → Choose Accounts & Grant Access → Done
   const metaNeedsGrantStep = platform === 'meta' && primaryMetaAssetProduct !== null;
   const maxSteps = 3;
+  // U7 resume prefill: present only when the payload carried saved Meta
+  // selections. Consumed once — any selection reset (switch business, change
+  // saved selection) clears it so a selector remount cannot resurrect it.
+  const hasInitialMetaSelections =
+    metaNeedsGrantStep &&
+    Boolean(
+      initialMetaSelections &&
+        (initialMetaSelections.adAccounts.length ||
+          initialMetaSelections.pages.length ||
+          initialMetaSelections.instagramAccounts.length ||
+          initialMetaSelections.catalogs.length ||
+          initialMetaSelections.datasets.length)
+    );
+  const [metaSelectionPrefill, setMetaSelectionPrefill] = useState<InviteSelectionPrefill | null>(
+    hasInitialMetaSelections ? (initialMetaSelections as InviteSelectionPrefill) : null
+  );
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(initialStep ? clampStep(initialStep) : 1);
   const [connectionId, setConnectionId] = useState<string | null>(initialConnectionId || null);
   const [groupAssets, setGroupAssets] = useState<Record<string, any>>({});
@@ -418,8 +453,13 @@ export function PlatformAuthWizard({
     'idle' | 'verified' | 'partial'
   >('idle');
   const [assetsSaved, setAssetsSaved] = useState(false);
-  const [chooseAccountsExpanded, setChooseAccountsExpanded] = useState(true);
+  const [chooseAccountsExpanded, setChooseAccountsExpanded] = useState(() => !hasInitialMetaSelections);
   const [grantAccessExpanded, setGrantAccessExpanded] = useState(true);
+  // U7 resume: the server already holds the client's saved selections, so the
+  // share step reads as saved once the fresh asset fetch lands — not before
+  // (until then the resolver must report a neutral loading reason, KTD2).
+  // Consumed once; any selection reset cancels it permanently.
+  const resumeSavedPendingRef = useRef(hasInitialMetaSelections);
   const [sharedAccountsExpanded, setSharedAccountsExpanded] = useState(false);
   const [tiktokShareResult, setTikTokShareResult] = useState<TikTokShareResponse | null>(null);
   const [isTikTokSharing, setIsTikTokSharing] = useState(false);
@@ -572,6 +612,11 @@ export function PlatformAuthWizard({
     setCatalogsGranted(false);
     setMetaAdAccountShareStatus('idle');
     setInstagramBusinessAccessVerified(false);
+    // The resume prefill counts as selection-derived state: once the client
+    // resets their selections it must not come back on a selector remount,
+    // and the resumed saved state must not reapply after the fresh fetch.
+    setMetaSelectionPrefill(null);
+    resumeSavedPendingRef.current = false;
     setGroupAssets((prev) => {
       if (!prev.meta_ads && !prev.meta_pages) return prev;
       const next = { ...prev };
@@ -754,7 +799,13 @@ export function PlatformAuthWizard({
         setCurrentStep(3);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save assets');
+      // U7: an expired or revoked request is terminal (AE6). The page replaces
+      // the whole flow with the terminal card — never a "not found" error.
+      if (err instanceof ApiResponseError && isTerminalRequestCode(err.code)) {
+        onRequestUnavailable?.(err.code);
+      } else {
+        setError(err instanceof Error ? err.message : 'Failed to save assets');
+      }
     } finally {
       setIsProcessing(false);
     }
@@ -764,7 +815,26 @@ export function PlatformAuthWizard({
   // resolver (R4, KTD2) decides whether it is clickable and which single
   // truthful reason applies right now.
   const selectableProducts = products.filter((product) => supportsAssetSelection(product.product));
-  const assetsLoading = selectableProducts.some((product) => groupAssets[product.product] === undefined);
+  // U7 resume: the selector emits an empty selection blob before its asset
+  // fetch resolves. Until the fetched asset lists arrive, grant requirements
+  // are unknowable — the resolver must see a loading state, never an
+  // enableable advance (KTD2: loading is neutral, never a selection demand).
+  const metaSelectionBlob = groupAssets['meta_ads'] || undefined;
+  const metaAssetsLoaded =
+    !metaNeedsGrantStep ||
+    metaSelectionBlob?.allPages !== undefined ||
+    metaSelectionBlob?.allAdAccounts !== undefined;
+  const assetsLoading =
+    selectableProducts.some((product) => groupAssets[product.product] === undefined) ||
+    !metaAssetsLoaded;
+
+  // U7 resume: mark the share step saved once — when the resumed prefill is
+  // pending and the fresh asset fetch has reported its lists.
+  useEffect(() => {
+    if (!resumeSavedPendingRef.current || !metaAssetsLoaded) return;
+    resumeSavedPendingRef.current = false;
+    setAssetsSaved(true);
+  }, [metaAssetsLoaded]);
   const ctaProductStates = selectableProducts.map((product) =>
     getProductCtaState(product.product, groupAssets[product.product] || {})
   );
@@ -796,9 +866,10 @@ export function PlatformAuthWizard({
           grantsPending,
           // The creation reason names the client's selected business.
           businessName: groupAssets['meta_ads']?.selectedBusinessName ?? null,
-          // Terminal states (expired / revoked) arrive with the landing-unit
-          // wiring; until then every reachable request is treated as live.
-          requestAvailability: 'available',
+          // U7: the page passes the live availability from the load, refresh,
+          // and save responses; a terminal value disables the action with the
+          // matching reason instead of allowing a doomed save.
+          requestAvailability,
         })
       : null;
 
@@ -1074,6 +1145,7 @@ export function PlatformAuthWizard({
                             accessRequestToken={accessRequestToken}
                             businessId={businessId || undefined}
                             requestedPageTasks={metaAccessConfig?.pageTasks}
+                            initialSelection={metaSelectionPrefill}
                             allowedAssetTypes={
                               p.product === 'meta_pages' && !requestedMetaAssetProducts.includes('meta_ads')
                                 ? ['page']

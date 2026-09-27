@@ -10,6 +10,7 @@ import { InviteFlowShell } from '@/components/flow/invite-flow-shell';
 import { InviteHeroHeader } from '@/components/flow/invite-hero-header';
 import { InvitePlatformStage } from '@/components/flow/invite-platform-stage';
 import { InviteLoadStateCard } from '@/components/flow/invite-load-state-card';
+import { InviteSupportCard } from '@/components/flow/invite-support-card';
 import { InviteTrustNote } from '@/components/flow/invite-trust-note';
 import { MetaFulfillmentCard } from '@/components/access-request-detail';
 import { Button, SingleSelect } from '@/components/ui';
@@ -17,7 +18,7 @@ import { PlatformIcon } from '@/components/ui/platform-icon';
 import { ACCESS_LEVEL_DESCRIPTIONS, PLATFORM_NAMES, IntakeField } from '@agency-platform/shared';
 import { useInviteRequestLoader } from '@/lib/query/use-invite-request-loader';
 import { resolveApiUrl } from '@/lib/api/api-env';
-import { parseJsonResponse } from '@/lib/api/parse-json-response';
+import { ApiResponseError, parseJsonResponse } from '@/lib/api/parse-json-response';
 import {
   getInviteSecuritySummary,
   isClientInviteManualCallbackPlatform,
@@ -25,6 +26,13 @@ import {
 } from '@/lib/client-invite-platforms';
 import { buildInvitePlatformQueue } from '@/lib/invite-platform-queue';
 import { buildInvitePlatformChecklist } from '@/lib/invite/platform-status';
+import {
+  isTerminalRequestCode,
+  resolveInviteLandingState,
+  terminalKindFromCode,
+  type InviteTerminalKind,
+  type InviteWizardStart,
+} from '@/lib/invite/landing-state';
 import type { AccessLevel, ClientAccessRequestPayload, Platform } from '@agency-platform/shared';
 
 const PlatformAuthWizard = dynamic(
@@ -47,10 +55,53 @@ export type ClientInvitePageProps = {
   token?: string;
   serverInviteResult?:
     | { status: 'ok'; payload: ClientAccessRequestPayload }
-    | { status: 'error'; message: string };
+    | { status: 'error'; message: string; code?: string | null };
 };
 
 type PagePhase = 'intake' | 'platforms' | 'finalizing' | 'complete';
+
+/**
+ * Terminal landing (R3, AE6): an expired or revoked request ends the flow.
+ * Agency contact path only — no retry, no "Check again", no re-entry.
+ */
+const TERMINAL_LANDING_COPY: Record<InviteTerminalKind, { title: string; description: string }> = {
+  expired: {
+    title: 'This link has expired',
+    description:
+      'This access request expired, so access cannot be granted. Contact your agency to get a new link.',
+  },
+  revoked: {
+    title: 'This request was revoked',
+    description:
+      'Your agency withdrew this access request. Contact them if this does not look right.',
+  },
+  unavailable: {
+    title: 'This link is no longer available',
+    description: 'We could not find this access request. Contact your agency for a new link.',
+  },
+};
+
+function InviteTerminalCard({ kind }: { kind: InviteTerminalKind }) {
+  const copy = TERMINAL_LANDING_COPY[kind];
+
+  return (
+    <div className="min-h-screen bg-paper flex items-center justify-center px-4">
+      <div className="w-full max-w-md border-2 border-black bg-card p-8 text-center shadow-brutalist">
+        <h1 className="font-display text-2xl font-semibold text-ink">{copy.title}</h1>
+        <p className="mt-3 text-sm leading-6 text-muted-foreground">{copy.description}</p>
+        <p className="mt-2 text-sm leading-6 text-ink">
+          Nothing has been shared yet. You can safely close this page.
+        </p>
+        <InviteSupportCard
+          className="mt-6 text-left"
+          title="Need a new link?"
+          description="Contact your agency or support and they will send a fresh authorization link."
+          linkLabel="Contact support"
+        />
+      </div>
+    </div>
+  );
+}
 
 const SESSION_STORAGE_PREFIX = 'invite-progress:';
 
@@ -87,6 +138,12 @@ export default function ClientAuthorizationPage({
   const [data, setData] = useState<ClientAccessRequestPayload | null>(() =>
     serverInviteResult?.status === 'ok' ? serverInviteResult.payload : null
   );
+  // U7: set when any response (load, save, refresh) carries a terminal request
+  // code. Once set, the terminal card replaces the whole flow — terminal is
+  // one-way (AE6).
+  const [forcedTerminalCode, setForcedTerminalCode] = useState<string | null>(null);
+  // U7: the share-step resume start state resolved by the landing mapper.
+  const [resumeWizardStart, setResumeWizardStart] = useState<InviteWizardStart | null>(null);
   const [completionError, setCompletionError] = useState<string | null>(null);
   const [completionVerified, setCompletionVerified] = useState(false);
   const [intakeResponses, setIntakeResponses] = useState<Record<string, string>>({});
@@ -115,6 +172,7 @@ export default function ClientAuthorizationPage({
   const {
     data: loadedPayload,
     error: loadError,
+    errorCode: loadErrorCode,
     phase: loadPhase,
     retry: retryLoad,
   } = useInviteRequestLoader<ClientAccessRequestPayload>({
@@ -273,12 +331,43 @@ export default function ClientAuthorizationPage({
       if (isClientInviteManualCallbackPlatform(urlPlatform)) {
         mergedCompleted = new Set<Platform>([...Array.from(mergedCompleted), urlPlatform]);
         setOauthConnectionInfo(null);
+        setResumeWizardStart(null);
+        setCompletedPlatforms(mergedCompleted);
+        setPhase('platforms');
+        return;
+      }
+
+      // U7: the OAuth return or refresh resumes the SAME connection at the
+      // share step, with Meta selections prefilled from server truth. The
+      // mapper owns the phase decision (R7, KTD12).
+      const landing = resolveInviteLandingState({
+        platforms: loadedPayload.platforms || [],
+        completedPlatforms: mergedCompleted,
+        unresolvedProducts: loadedPayload.authorizationProgress?.unresolvedProducts,
+        requestStatus: loadedPayload.status,
+        isComplete: loadedPayload.authorizationProgress?.isComplete,
+        terminalErrorCode: null,
+        resume: { platform: urlPlatform, connectionId: urlConnectionId },
+        metaFulfillment: loadedPayload.metaFulfillment,
+      });
+
+      if (landing.wizardStart) {
+        setOauthConnectionInfo({
+          connectionId: landing.wizardStart.connectionId,
+          platform: landing.wizardStart.platform,
+        });
+        setResumeWizardStart(landing.wizardStart);
       } else {
-        setOauthConnectionInfo({ connectionId: urlConnectionId, platform: urlPlatform });
+        setOauthConnectionInfo(null);
+        setResumeWizardStart(null);
       }
 
       setCompletedPlatforms(mergedCompleted);
-      setPhase('platforms');
+      setPhase(landing.phase === 'complete' ? 'complete' : 'platforms');
+      if (landing.phase === 'complete') {
+        completionConfirmedRef.current = true;
+        setCompletionVerified(true);
+      }
       return;
     }
 
@@ -290,12 +379,24 @@ export default function ClientAuthorizationPage({
 
     if (urlView === 'connect') {
       setOauthConnectionInfo(null);
+      setResumeWizardStart(null);
       setIsReviewingConnectStatus(allRequestedPlatformsComplete || Boolean(loadedPayload.authorizationProgress?.isComplete));
       setPhase('platforms');
       return;
     }
 
-    if (loadedPayload.status === 'completed') {
+    const landing = resolveInviteLandingState({
+      platforms: loadedPayload.platforms || [],
+      completedPlatforms: mergedCompleted,
+      unresolvedProducts: loadedPayload.authorizationProgress?.unresolvedProducts,
+      requestStatus: loadedPayload.status,
+      isComplete: loadedPayload.authorizationProgress?.isComplete,
+      terminalErrorCode: null,
+      resume: null,
+      metaFulfillment: loadedPayload.metaFulfillment,
+    });
+
+    if (landing.phase === 'complete') {
       setIsReviewingConnectStatus(false);
       completionConfirmedRef.current = true;
       setCompletionVerified(true);
@@ -303,15 +404,12 @@ export default function ClientAuthorizationPage({
       return;
     }
 
-    if (allRequestedPlatformsComplete || loadedPayload.authorizationProgress?.isComplete) {
-      setIsReviewingConnectStatus(false);
-      setPhase('platforms');
-      return;
+    if (landing.phase === 'intake') {
+      setOauthConnectionInfo(null);
+      setResumeWizardStart(null);
     }
 
-    const hasStartedConnecting = mergedCompleted.size > 0;
-
-    setPhase(hasStartedConnecting ? 'platforms' : 'intake');
+    setPhase(landing.phase === 'intake' ? 'intake' : 'platforms');
   }, [loadedPayload, storageKey, token, urlConnectionId, urlPlatform, urlStep, urlView]);
 
   useEffect(() => {
@@ -363,6 +461,13 @@ export default function ClientAuthorizationPage({
       sessionStorage.removeItem(storageKey);
       setPhase('complete');
     } catch (error) {
+      // U7: an expired or revoked request is terminal, not a retry loop (AE6).
+      const errorCode = error instanceof ApiResponseError ? error.code : undefined;
+      if (isTerminalRequestCode(errorCode)) {
+        setForcedTerminalCode(errorCode);
+        return;
+      }
+
       setCompletionError(
         isAbortError(error)
           ? 'The final confirmation is taking longer than expected. Retry below.'
@@ -421,7 +526,14 @@ export default function ClientAuthorizationPage({
         }
         return merged;
       });
-    } catch {
+    } catch (error) {
+      // U7: check-again is a refetch (KTD7); a terminal answer from it ends
+      // the flow instead of surfacing a transient failure note.
+      const errorCode = error instanceof ApiResponseError ? error.code : undefined;
+      if (isTerminalRequestCode(errorCode)) {
+        setForcedTerminalCode(errorCode);
+        return;
+      }
       setStatusCheckError("We couldn't check just now. Try again.");
     } finally {
       window.clearTimeout(timeoutTimer);
@@ -467,6 +579,13 @@ export default function ClientAuthorizationPage({
       setIntakeResponses(result.data?.intakeResponses || intakeResponses);
       setPhase('platforms');
     } catch (error) {
+      // U7: an expired request must never read as a save hiccup (AE6).
+      const errorCode = error instanceof ApiResponseError ? error.code : undefined;
+      if (isTerminalRequestCode(errorCode)) {
+        setForcedTerminalCode(errorCode);
+        return;
+      }
+
       setIntakeError(
         isAbortError(error)
           ? 'Saving your responses is taking longer than expected. Please try again.'
@@ -488,6 +607,7 @@ export default function ClientAuthorizationPage({
     setIsReviewingConnectStatus(false);
     if (oauthConnectionInfo?.platform === platform) {
       setOauthConnectionInfo(null);
+      setResumeWizardStart(null);
     }
 
     // Clear OAuth callback params from URL to avoid stale state when switching to next platform
@@ -519,6 +639,12 @@ export default function ClientAuthorizationPage({
   };
 
   if (!data) {
+    // U7 (R3): expired and revoked load failures are terminal. The retry
+    // card would read as "try the same dead link again" — never render it.
+    if (isTerminalRequestCode(loadErrorCode)) {
+      return <InviteTerminalCard kind={terminalKindFromCode(loadErrorCode)} />;
+    }
+
     return (
       <InviteLoadStateCard
         phase={loadPhase === 'ready' ? 'loading' : loadPhase}
@@ -531,6 +657,12 @@ export default function ClientAuthorizationPage({
         onRetry={retryLoad}
       />
     );
+  }
+
+  // U7: a save, verify, or refresh response said expired/revoked mid-flow.
+  // The terminal card replaces everything (AE6).
+  if (isTerminalRequestCode(forcedTerminalCode)) {
+    return <InviteTerminalCard kind={terminalKindFromCode(forcedTerminalCode)} />;
   }
 
   const isConnectStatusReview = phase === 'platforms' && isComplete && isReviewingConnectStatus;
@@ -796,6 +928,19 @@ export default function ClientAuthorizationPage({
                 initialStep={
                   oauthConnectionInfo?.platform === platformQueue.activePlatform.platformGroup ? 2 : undefined
                 }
+                initialMetaSelections={
+                  resumeWizardStart?.platform === platformQueue.activePlatform.platformGroup
+                    ? resumeWizardStart.metaSelectionPrefill
+                    : undefined
+                }
+                requestAvailability={
+                  isTerminalRequestCode(forcedTerminalCode)
+                    ? terminalKindFromCode(forcedTerminalCode) === 'revoked'
+                      ? 'revoked'
+                      : 'expired'
+                    : 'available'
+                }
+                onRequestUnavailable={(code) => setForcedTerminalCode(code)}
               />
             </InvitePlatformStage>
             </div>

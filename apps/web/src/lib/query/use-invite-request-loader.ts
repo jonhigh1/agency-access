@@ -24,12 +24,15 @@ interface UseInviteRequestLoaderOptions<TData> {
    */
   serverInviteResult?:
     | { status: 'ok'; payload: TData }
-    | { status: 'error'; message: string };
+    | { status: 'error'; message: string; code?: string | null };
 }
 
 interface UseInviteRequestLoaderResult<TData> {
   data: TData | null;
   error: string | null;
+  /** The API error code behind `error`, when the API named one. Lets the
+   * caller tell terminal states (expired, revoked) from network failures. */
+  errorCode: string | null;
   phase: InviteLoadPhase;
   retry: () => void;
 }
@@ -48,6 +51,9 @@ export function useInviteRequestLoader<TData>({
   );
   const [error, setError] = useState<string | null>(() =>
     serverInviteResult?.status === 'error' ? serverInviteResult.message : null
+  );
+  const [errorCode, setErrorCode] = useState<string | null>(() =>
+    serverInviteResult?.status === 'error' ? serverInviteResult.code || null : null
   );
   const [phase, setPhase] = useState<InviteLoadPhase>(() => {
     if (!serverInviteResult) return 'loading';
@@ -73,6 +79,7 @@ export function useInviteRequestLoader<TData>({
 
     setPhase('loading');
     setError(null);
+    setErrorCode(null);
     setData(null);
 
     const delayedTimer = window.setTimeout(() => {
@@ -100,7 +107,13 @@ export function useInviteRequestLoader<TData>({
         if (requestIdRef.current !== requestId) return;
 
         if (!response.ok || payload.error || !payload.data) {
-          throw new Error(payload.error?.message || 'Failed to load authorization request.');
+          const apiError = new Error(
+            payload.error?.message || 'Failed to load authorization request.'
+          ) as Error & { apiCode?: string };
+          if (payload.error?.code) {
+            apiError.apiCode = payload.error.code;
+          }
+          throw apiError;
         }
 
         const parsed = parseData ? parseData(payload.data) : payload.data;
@@ -115,6 +128,11 @@ export function useInviteRequestLoader<TData>({
 
         setPhase('error');
         setError(err instanceof Error ? err.message : 'Failed to load authorization request.');
+        setErrorCode(
+          err instanceof Error && typeof (err as Error & { apiCode?: string }).apiCode === 'string'
+            ? (err as Error & { apiCode?: string }).apiCode!
+            : null
+        );
       } finally {
         window.clearTimeout(delayedTimer);
         window.clearTimeout(timeoutTimer);
@@ -133,6 +151,7 @@ export function useInviteRequestLoader<TData>({
   return {
     data,
     error,
+    errorCode,
     phase,
     retry,
   };

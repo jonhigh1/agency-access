@@ -33,9 +33,12 @@ vi.mock('@/components/client-auth/PlatformWizardCard', () => ({
 }));
 
 vi.mock('@/components/client-auth/MetaAssetSelector', () => ({
-  MetaAssetSelector: ({ onSelectionChange, onSelectionDerivedStateReset }: any) => (
+  MetaAssetSelector: ({ onSelectionChange, onSelectionDerivedStateReset, initialSelection }: any) => (
     <div>
       <div>Meta Asset Selector</div>
+      {initialSelection?.adAccounts?.length ? (
+        <p>{`Resume prefill: ${initialSelection.adAccounts.join(', ')}`}</p>
+      ) : null}
       <button
         type="button"
         onClick={() =>
@@ -43,6 +46,12 @@ vi.mock('@/components/client-auth/MetaAssetSelector', () => ({
             adAccounts: ['act_1', 'act_2'],
             pages: [],
             instagramAccounts: [],
+            // Real selector emits carry the fetched asset lists post-fetch;
+            // the wizard treats their absence as still-loading (U7).
+            allAdAccounts: [
+              { id: 'act_1', name: 'DogTimez' },
+              { id: 'act_2', name: 'Still Pending' },
+            ],
             selectedAdAccountsWithNames: [
               { id: 'act_1', name: 'DogTimez' },
               { id: 'act_2', name: 'Still Pending' },
@@ -61,6 +70,7 @@ vi.mock('@/components/client-auth/MetaAssetSelector', () => ({
             adAccounts: [],
             pages: ['page_1'],
             instagramAccounts: ['ig_1'],
+            allPages: [{ id: 'page_1', name: 'Shop Page' }],
             selectedPagesWithNames: [{ id: 'page_1', name: 'Shop Page' }],
             selectedInstagramWithNames: [{ id: 'ig_1', name: 'Shop IG' }],
             selectedBusinessId: 'biz_1',
@@ -77,6 +87,7 @@ vi.mock('@/components/client-auth/MetaAssetSelector', () => ({
             adAccounts: [],
             pages: [],
             instagramAccounts: ['ig_1'],
+            allPages: [],
             selectedInstagramWithNames: [{ id: 'ig_1', name: 'Shop IG' }],
             selectedBusinessId: 'biz_1',
             selectedBusinessName: 'Client One',
@@ -113,6 +124,7 @@ vi.mock('@/components/client-auth/MetaAssetSelector', () => ({
             instagramAccounts: [],
             catalogs: [],
             datasets: [],
+            allAdAccounts: [],
             selectionRequired: true,
             selectedBusinessId: 'biz_2',
             selectedBusinessName: 'Client One',
@@ -1187,6 +1199,138 @@ describe('PlatformAuthWizard', () => {
 
       fireEvent.click(continueButton);
       expect(await screen.findByRole('heading', { name: /connected/i })).toBeInTheDocument();
+    });
+  });
+
+  describe('U7 resume prefill and terminal saves', () => {
+    const resumeProps = {
+      platform: 'meta' as const,
+      platformName: 'Meta',
+      products: [{ product: 'meta_ads', accessLevel: 'admin' }],
+      accessRequestToken: 'token-1',
+      onComplete: onCompleteMock,
+      initialConnectionId: 'conn-meta-1',
+      initialStep: 2 as const,
+    };
+
+    it('lands a resumed Meta share step saved with selections prefilled from the payload rows', async () => {
+      vi.mocked(fetch).mockResolvedValue({
+        ok: true,
+        text: async () => JSON.stringify({ data: { success: true }, error: null }),
+      } as Response);
+
+      render(
+        <PlatformAuthWizard
+          {...resumeProps}
+          initialMetaSelections={{
+            adAccounts: ['act_111'],
+            pages: [],
+            instagramAccounts: [],
+            catalogs: [],
+            datasets: [],
+          }}
+        />
+      );
+
+      // The prefill reaches the selector so the fresh fetch can pre-check it.
+      expect(screen.getByText('Resume prefill: act_111')).toBeInTheDocument();
+
+      // Before the fresh asset fetch reports, the action is neutral-loading,
+      // never an enableable advance (KTD2).
+      expect(screen.getByText('Preparing your accounts')).toBeInTheDocument();
+
+      // The chooser accordion starts collapsed on a resumed share step.
+      fireEvent.click(screen.getByRole('button', { name: /choose accounts to share/i }));
+
+      // The selector reports the fresh fetch with the client's saved
+      // selections (the real selector pre-checks the pruned prefill).
+      fireEvent.click(await screen.findByRole('button', { name: /select meta assets/i }));
+
+      // Saved state without a save click: the action becomes the advance
+      // action, gated on the pending grant steps (AE5).
+      const advanceButton = await screen.findByRole('button', { name: /continue/i });
+      await waitFor(() => expect(advanceButton).toBeDisabled());
+      expect(
+        screen.getByText('Access grants are still in progress. Complete the grant steps above.')
+      ).toBeInTheDocument();
+
+      // The wizard must not hit save-assets again on resume.
+      expect(fetch).not.toHaveBeenCalledWith(
+        'https://api.example.com/api/client/token-1/save-assets',
+        expect.anything()
+      );
+    });
+
+    it('reopens the chooser and never resurrects the prefill after a selection reset', async () => {
+      vi.mocked(fetch).mockResolvedValue({
+        ok: true,
+        text: async () => JSON.stringify({ data: { success: true }, error: null }),
+      } as Response);
+
+      render(
+        <PlatformAuthWizard
+          {...resumeProps}
+          initialMetaSelections={{
+            adAccounts: ['act_111'],
+            pages: [],
+            instagramAccounts: [],
+            catalogs: [],
+            datasets: [],
+          }}
+        />
+      );
+
+      // The resumed share step starts with the chooser accordion collapsed;
+      // opening it is how the client reaches the business switch.
+      fireEvent.click(screen.getByRole('button', { name: /choose accounts to share/i }));
+      fireEvent.click(await screen.findByRole('button', { name: /switch meta business/i }));
+
+      // Post-reset the resolver is back on the selection rules — the resumed
+      // save state and the prefill are gone. The mock business has zero
+      // available accounts, so the creation reason shows.
+      expect(
+        await screen.findByText('Create an ad account in Client One to continue')
+      ).toBeInTheDocument();
+      expect(screen.queryByText('Resume prefill: act_111')).not.toBeInTheDocument();
+    });
+
+    it('reports a terminal request code from a failed save instead of a generic error', async () => {
+      const onRequestUnavailable = vi.fn();
+      vi.mocked(fetch).mockImplementation(async (input: any) => {
+        const url = typeof input === 'string' ? input : String(input?.url ?? input);
+        if (url.includes('/agency-business-id')) {
+          return {
+            ok: true,
+            text: async () =>
+              JSON.stringify({ data: { businessId: 'biz_1', businessName: 'Client One' }, error: null }),
+          } as Response;
+        }
+        return {
+          ok: false,
+          text: async () =>
+            JSON.stringify({
+              data: null,
+              error: { code: 'REQUEST_EXPIRED', message: 'Access request has expired' },
+            }),
+        } as Response;
+      });
+
+      render(
+        <PlatformAuthWizard
+          {...resumeProps}
+          initialMetaSelections={null}
+          onRequestUnavailable={onRequestUnavailable}
+        />
+      );
+
+      // No prefill: the chooser accordion starts expanded.
+      fireEvent.click(await screen.findByRole('button', { name: /select meta assets/i }));
+      const saveButton = await screen.findByRole('button', { name: /share access/i });
+      await waitFor(() => expect(saveButton).toBeEnabled());
+      fireEvent.click(saveButton);
+
+      await waitFor(() => expect(onRequestUnavailable).toHaveBeenCalledWith('REQUEST_EXPIRED'));
+      expect(screen.queryByText(/failed to save/i)).not.toBeInTheDocument();
     });
   });
 });

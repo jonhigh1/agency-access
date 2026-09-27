@@ -10,7 +10,7 @@ async function InviteTokenInner({ token }: { token: string }) {
 
   const serverInviteResult = result.ok
     ? ({ status: 'ok' as const, payload: result.payload })
-    : ({ status: 'error' as const, message: result.message });
+    : ({ status: 'error' as const, message: result.message, code: result.code });
 
   return <ClientInvitePage token={token} serverInviteResult={serverInviteResult} />;
 }

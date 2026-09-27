@@ -5,7 +5,7 @@ import { getApiBaseUrl } from '@/lib/api/api-env';
 
 export type FetchClientInviteResult =
   | { ok: true; payload: ClientAccessRequestPayload }
-  | { ok: false; message: string };
+  | { ok: false; message: string; code?: string };
 
 /**
  * Loads public client invite payload on the server so HTML can ship meaningful content
@@ -31,6 +31,7 @@ export async function fetchClientInvitePayload(token: string): Promise<FetchClie
       return {
         ok: false,
         message: body.error?.message || 'Failed to load authorization request.',
+        code: body.error?.code,
       };
     }
 

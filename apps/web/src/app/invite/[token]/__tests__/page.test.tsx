@@ -38,6 +38,8 @@ vi.mock('@/components/client-auth/PlatformAuthWizard', async () => {
       completionActionLabel,
       initialConnectionId,
       initialStep,
+      initialMetaSelections,
+      requestAvailability,
     }: any) => {
       const [mountedPlatformName] = React.useState(platformName);
 
@@ -47,6 +49,12 @@ vi.mock('@/components/client-auth/PlatformAuthWizard', async () => {
           {completionActionLabel ? <p>{`Completion action: ${completionActionLabel}`}</p> : null}
           {initialConnectionId ? <p>{`Initial connection: ${initialConnectionId}`}</p> : null}
           {initialStep ? <p>{`Initial step: ${initialStep}`}</p> : null}
+          {initialMetaSelections?.adAccounts?.length ? (
+            <p>{`Meta prefill: ${initialMetaSelections.adAccounts.join(', ')}`}</p>
+          ) : null}
+          {requestAvailability && requestAvailability !== 'available' ? (
+            <p>{`Request availability: ${requestAvailability}`}</p>
+          ) : null}
           <button type="button" onClick={onComplete}>
             Complete Platform
           </button>
@@ -1373,6 +1381,312 @@ describe('Invite Flow Page', () => {
         expect(screen.getByRole('img', { name: /demo agency logo/i })).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /continue to connect/i })).toBeInTheDocument();
       });
+    });
+  });
+
+  describe('Mid-flow resume and terminal landing (U7)', () => {
+    const metaFulfillmentRows = [
+      {
+        id: 'row-1',
+        assetKind: 'ad_account',
+        assetId: 'act_111',
+        assetName: 'Acme Ads',
+        recipientType: 'system_user',
+        recipientId: 'recipient-1',
+        recipientName: 'Agency System User',
+        requestedTasks: [],
+        verifiedTasks: [],
+        status: 'selected',
+        updatedAt: '2026-09-26T00:00:00.000Z',
+      },
+      {
+        id: 'row-2',
+        assetKind: 'page',
+        assetId: 'pg_1',
+        assetName: 'Acme Page',
+        recipientType: 'system_user',
+        recipientId: 'recipient-1',
+        recipientName: 'Agency System User',
+        requestedTasks: [],
+        verifiedTasks: [],
+        status: 'sharing_attempted',
+        updatedAt: '2026-09-26T00:00:00.000Z',
+      },
+      {
+        id: 'row-3',
+        assetKind: 'ad_account',
+        assetId: 'act_222',
+        assetName: 'Excluded Ads',
+        recipientType: 'system_user',
+        recipientId: 'recipient-1',
+        recipientName: 'Agency System User',
+        requestedTasks: [],
+        verifiedTasks: [],
+        status: 'excluded',
+        updatedAt: '2026-09-26T00:00:00.000Z',
+      },
+    ];
+
+    const okPayload = (overrides: Record<string, unknown> = {}) => ({
+      ok: true,
+      json: async () => ({
+        data: {
+          id: 'request-1',
+          agencyId: 'agency-1',
+          agencyName: 'Demo Agency',
+          clientName: 'Client',
+          clientEmail: 'client@test.com',
+          status: 'pending',
+          uniqueToken: 'token-123',
+          expiresAt: new Date().toISOString(),
+          intakeFields: [],
+          branding: {},
+          platforms: [{ platformGroup: 'meta', products: [{ product: 'meta_ads', accessLevel: 'admin' }] }],
+          manualInviteTargets: {},
+          authorizationProgress: { completedPlatforms: [], isComplete: false },
+          ...overrides,
+        },
+        error: null,
+      }),
+    });
+
+    const setOauthReturnParams = (platform = 'meta', connectionId = 'conn-meta-1') => {
+      searchParamGetMock.mockImplementation((key: string) => {
+        if (key === 'step') return '2';
+        if (key === 'platform') return platform;
+        if (key === 'connectionId') return connectionId;
+        return null;
+      });
+    };
+
+    it('refreshes post-OAuth pre-save into the share step with the prior connection intact', async () => {
+      setOauthReturnParams();
+
+      vi.stubGlobal('fetch', vi.fn(async () => okPayload({
+        authorizationProgress: {
+          completedPlatforms: [],
+          isComplete: false,
+          unresolvedProducts: [
+            { product: 'meta_ads', platformGroup: 'meta', reason: 'selection_required' },
+          ],
+        },
+      }) as unknown));
+
+      render(<InvitePage />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Active platform: Meta')).toBeInTheDocument();
+        expect(screen.getByText('Initial connection: conn-meta-1')).toBeInTheDocument();
+        expect(screen.getByText('Initial step: 2')).toBeInTheDocument();
+      });
+
+      expect(screen.queryByRole('button', { name: /continue to connect/i })).not.toBeInTheDocument();
+    });
+
+    it('refreshes post-save mid-sharing with Meta selections prefilled from server fulfillment', async () => {
+      setOauthReturnParams();
+
+      vi.stubGlobal('fetch', vi.fn(async () => okPayload({
+        metaFulfillment: metaFulfillmentRows,
+        authorizationProgress: {
+          completedPlatforms: [],
+          isComplete: false,
+          unresolvedProducts: [
+            { product: 'meta_ads', platformGroup: 'meta', reason: 'sharing_required' },
+          ],
+        },
+      }) as unknown));
+
+      render(<InvitePage />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Active platform: Meta')).toBeInTheDocument();
+        expect(screen.getByText('Initial connection: conn-meta-1')).toBeInTheDocument();
+        expect(screen.getByText('Initial step: 2')).toBeInTheDocument();
+        expect(screen.getByText('Meta prefill: act_111')).toBeInTheDocument();
+      });
+
+      expect(screen.queryByText(/act_222/)).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /continue to connect/i })).not.toBeInTheDocument();
+    });
+
+    it('lands a fresh visit with nothing done on the intake phase', async () => {
+      vi.stubGlobal('fetch', vi.fn(async () => okPayload() as unknown));
+
+      render(<InvitePage />);
+
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /continue to connect/i })).toBeInTheDocument();
+      });
+
+      expect(screen.queryByText(/Active platform:/)).not.toBeInTheDocument();
+    });
+
+    it('lands a revisited completed request on the done screen', async () => {
+      vi.stubGlobal('fetch', vi.fn(async () => okPayload({ status: 'completed' }) as unknown));
+
+      render(<InvitePage />);
+
+      await waitFor(() => {
+        expect(screen.getByRole('heading', { name: /all set — you're done/i })).toBeInTheDocument();
+      });
+
+      expect(screen.queryByRole('button', { name: /continue to connect/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /try again/i })).not.toBeInTheDocument();
+    });
+
+    it('resumes a non-Meta asset selection without prefill', async () => {
+      setOauthReturnParams('google', 'conn-google-1');
+
+      vi.stubGlobal('fetch', vi.fn(async () => okPayload({
+        platforms: [{ platformGroup: 'google', products: [{ product: 'google_ads', accessLevel: 'admin' }] }],
+        metaFulfillment: metaFulfillmentRows,
+        authorizationProgress: {
+          completedPlatforms: [],
+          isComplete: false,
+          unresolvedProducts: [
+            { product: 'google_ads', platformGroup: 'google', reason: 'selection_required' },
+          ],
+        },
+      }) as unknown));
+
+      render(<InvitePage />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Active platform: Google')).toBeInTheDocument();
+        expect(screen.getByText('Initial connection: conn-google-1')).toBeInTheDocument();
+        expect(screen.getByText('Initial step: 2')).toBeInTheDocument();
+      });
+
+      expect(screen.queryByText(/Meta prefill:/)).not.toBeInTheDocument();
+    });
+
+    it('renders the terminal card for an expired request with no retry affordance', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => ({
+          ok: false,
+          json: async () => ({ data: null, error: { code: 'REQUEST_EXPIRED', message: 'Access request has expired' } }),
+        }))
+      );
+
+      render(<InvitePage />);
+
+      await waitFor(() => {
+        expect(screen.getByRole('heading', { name: /this link has expired/i })).toBeInTheDocument();
+        expect(screen.getAllByText(/contact your agency/i).length).toBeGreaterThan(0);
+      });
+
+      expect(screen.queryByRole('button', { name: /try again/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /check again/i })).not.toBeInTheDocument();
+    });
+
+    it('renders the terminal card for a revoked request with no retry affordance', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(async () => ({
+          ok: false,
+          json: async () => ({ data: null, error: { code: 'REQUEST_REVOKED', message: 'Access request has been revoked' } }),
+        }))
+      );
+
+      render(<InvitePage />);
+
+      await waitFor(() => {
+        expect(screen.getByRole('heading', { name: /this request was revoked/i })).toBeInTheDocument();
+      });
+
+      expect(screen.queryByRole('button', { name: /try again/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /check again/i })).not.toBeInTheDocument();
+    });
+
+    it('surfaces the terminal card when a mid-flow intake save hits an expired request', async () => {
+      const intakeExpiredMock = vi.fn(async (url: string) => {
+        if (url.includes('/api/client/token-123/intake')) {
+          return {
+            ok: false,
+            json: async () => ({
+              data: null,
+              error: { code: 'REQUEST_EXPIRED', message: 'Access request has expired' },
+            }),
+          } as Response;
+        }
+        return okPayload({
+          intakeFields: [{ id: 'company', label: 'Company name', type: 'text', required: true }],
+        }) as unknown as Response;
+      });
+      stubFetch(intakeExpiredMock);
+
+      render(<InvitePage />);
+
+      const company = await screen.findByRole('textbox');
+      await userEvent.type(company, 'Acme');
+      await userEvent.click(screen.getByRole('button', { name: /^continue$/i }));
+
+      await waitFor(() => {
+        expect(screen.getByRole('heading', { name: /this link has expired/i })).toBeInTheDocument();
+      });
+
+      expect(screen.queryByRole('button', { name: /try again/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /^continue$/i })).not.toBeInTheDocument();
+    });
+
+    it('surfaces the terminal card when finalization hits an expired request', async () => {
+      const fetchMock = vi.fn(async (url: string) => {
+        if (url.includes('/api/client/token-123/complete')) {
+          return {
+            ok: false,
+            json: async () => ({
+              data: null,
+              error: { code: 'REQUEST_EXPIRED', message: 'Access request has expired' },
+            }),
+          } as Response;
+        }
+        return okPayload() as unknown as Response;
+      });
+      stubFetch(fetchMock);
+
+      render(<InvitePage />);
+
+      await userEvent.click(await screen.findByRole('button', { name: /continue to connect/i }));
+      await userEvent.click(await screen.findByRole('button', { name: /complete platform/i }));
+
+      await waitFor(() => {
+        expect(screen.getByRole('heading', { name: /this link has expired/i })).toBeInTheDocument();
+      });
+
+      expect(screen.queryByRole('heading', { name: /access needs follow-up/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: /check again/i })).not.toBeInTheDocument();
+    });
+
+    it('surfaces the terminal card when check-again reports the request expired', async () => {
+      let callCount = 0;
+      const fetchMock = vi.fn(async (url: string) => {
+        callCount += 1;
+        if (callCount > 1) {
+          return {
+            ok: false,
+            json: async () => ({
+              data: null,
+              error: { code: 'REQUEST_EXPIRED', message: 'Access request has expired' },
+            }),
+          } as Response;
+        }
+        return okPayload() as unknown as Response;
+      });
+      stubFetch(fetchMock);
+
+      render(<InvitePage />);
+
+      await screen.findByRole('button', { name: /continue to connect/i });
+      fireEvent.click(screen.getByRole('button', { name: /check again/i }));
+
+      await waitFor(() => {
+        expect(screen.getByRole('heading', { name: /this link has expired/i })).toBeInTheDocument();
+      });
+
+      expect(screen.queryByRole('button', { name: /check again/i })).not.toBeInTheDocument();
+      expect(screen.queryByText("We couldn't check just now. Try again.")).not.toBeInTheDocument();
     });
   });
 });

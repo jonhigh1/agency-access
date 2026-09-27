@@ -29,6 +29,10 @@ import { Plus } from 'lucide-react';
 import { getApiBaseUrl } from '@/lib/api/api-env';
 import { ApiResponseError, parseJsonResponse } from '@/lib/api/parse-json-response';
 import { Button } from '@/components/ui/button';
+import {
+  intersectSelectionPrefill,
+  type InviteSelectionPrefill,
+} from '@/lib/invite/landing-state';
 
 interface MetaAssets {
   businesses?: Array<{
@@ -68,6 +72,13 @@ interface MetaAssetSelectorProps {
   accessRequestToken: string;
   businessId?: string;
   requestedPageTasks?: string[];
+  /**
+   * U7 resume prefill: saved asset ids from the invite payload's fulfillment
+   * rows. Read once — the first successful asset fetch intersects it with the
+   * fresh data, so only still-shared assets are pre-checked. Absent on a
+   * fresh connect.
+   */
+  initialSelection?: InviteSelectionPrefill | null;
   allowedAssetTypes?: Array<'ad_account' | 'page' | 'instagram' | 'catalog' | 'dataset'>;
   onSelectionChange: (selectedAssets: {
     adAccounts: string[];
@@ -106,6 +117,7 @@ export function MetaAssetSelector({
   accessRequestToken,
   businessId,
   requestedPageTasks = [],
+  initialSelection,
   allowedAssetTypes = ['ad_account', 'page', 'instagram'],
   onSelectionChange,
   onSelectionDerivedStateReset,
@@ -120,12 +132,27 @@ export function MetaAssetSelector({
   // hosts the existing guided Page prerequisite and business creator.
   const [businessCreationOpen, setBusinessCreationOpen] = useState(false);
 
-  // Selection state
-  const [selectedAdAccounts, setSelectedAdAccounts] = useState<Set<string>>(new Set());
-  const [selectedPages, setSelectedPages] = useState<Set<string>>(new Set());
-  const [selectedInstagram, setSelectedInstagram] = useState<Set<string>>(new Set());
-  const [selectedCatalogs, setSelectedCatalogs] = useState<Set<string>>(new Set());
-  const [selectedDatasets, setSelectedDatasets] = useState<Set<string>>(new Set());
+  // U7 resume prefill. Held in a ref so it is consumed exactly once, by the
+  // first successful asset fetch; later fetches and resets start from what is
+  // on screen, never from the prefill.
+  const pendingInitialSelection = useRef<InviteSelectionPrefill | null>(initialSelection || null);
+
+  // Selection state, seeded from the resume prefill when present.
+  const [selectedAdAccounts, setSelectedAdAccounts] = useState<Set<string>>(
+    () => new Set(initialSelection?.adAccounts ?? [])
+  );
+  const [selectedPages, setSelectedPages] = useState<Set<string>>(
+    () => new Set(initialSelection?.pages ?? [])
+  );
+  const [selectedInstagram, setSelectedInstagram] = useState<Set<string>>(
+    () => new Set(initialSelection?.instagramAccounts ?? [])
+  );
+  const [selectedCatalogs, setSelectedCatalogs] = useState<Set<string>>(
+    () => new Set(initialSelection?.catalogs ?? [])
+  );
+  const [selectedDatasets, setSelectedDatasets] = useState<Set<string>>(
+    () => new Set(initialSelection?.datasets ?? [])
+  );
   const [datasetVerification, setDatasetVerification] = useState<string | null>(null);
   const [isVerifyingDatasets, setIsVerifyingDatasets] = useState(false);
   const [showCatalogCreator, setShowCatalogCreator] = useState(false);
@@ -379,6 +406,22 @@ export function MetaAssetSelector({
       setAssets(fetchedAssets);
       setSelectedBusinessId(fetchedAssets.selectedBusinessId || requestedBusinessId || null);
       setSelectedBusinessName(fetchedAssets.selectedBusinessName || null);
+
+      // U7 resume prefill: keep only the saved selections the fresh fetch
+      // still shows. One pass — after this the selection is client-owned.
+      const pendingPrefill = pendingInitialSelection.current;
+      if (pendingPrefill) {
+        pendingInitialSelection.current = null;
+        const prunedPrefill = intersectSelectionPrefill(pendingPrefill, fetchedAssets);
+        if (prunedPrefill) {
+          setSelectedAdAccounts(new Set(prunedPrefill.adAccounts));
+          setSelectedPages(new Set(prunedPrefill.pages));
+          setSelectedInstagram(new Set(prunedPrefill.instagramAccounts));
+          setSelectedCatalogs(new Set(prunedPrefill.catalogs));
+          setSelectedDatasets(new Set(prunedPrefill.datasets));
+        }
+      }
+
       return fetchedAssets;
     } catch (err) {
       if (fetchVersion !== assetFetchVersion.current) return null;
