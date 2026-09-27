@@ -19,12 +19,12 @@ import { useState, useEffect, useRef } from 'react';
 import { capturePosthogEvent } from '@/lib/analytics/capture-posthog';
 import { AssetGroup, type Asset } from './AssetGroup';
 import { MultiSelectCombobox } from '@/components/ui/multi-select-combobox';
-import { SingleSelect } from '@/components/ui/single-select';
 import { AssetSelectorLoading, AssetSelectorError } from './AssetSelectorStates';
 import { MetaAssetCreator } from './MetaAssetCreator';
 import { MetaBusinessCreator } from './MetaBusinessCreator';
 import { MetaBusinessSetupChecklist } from './MetaBusinessSetupChecklist';
 import { GuidedRedirectCard } from './GuidedRedirectModal';
+import { PortfolioSelector, type PortfolioBusiness } from './PortfolioSelector';
 import { Plus } from 'lucide-react';
 import { getApiBaseUrl } from '@/lib/api/api-env';
 import { ApiResponseError, parseJsonResponse } from '@/lib/api/parse-json-response';
@@ -35,6 +35,7 @@ interface MetaAssets {
     id: string;
     name: string;
     verificationStatus?: string;
+    verticalName?: string;
   }>;
   selectedBusinessId?: string | null;
   selectedBusinessName?: string | null;
@@ -115,7 +116,9 @@ export function MetaAssetSelector({
   const [error, setError] = useState<string | null>(null);
   const [selectedBusinessId, setSelectedBusinessId] = useState<string | null>(null);
   const [selectedBusinessName, setSelectedBusinessName] = useState<string | null>(null);
-  const [pendingBusinessId, setPendingBusinessId] = useState('');
+  // Opened from PortfolioSelector's zero-business card (onCreateBusiness);
+  // hosts the existing guided Page prerequisite and business creator.
+  const [businessCreationOpen, setBusinessCreationOpen] = useState(false);
 
   // Selection state
   const [selectedAdAccounts, setSelectedAdAccounts] = useState<Set<string>>(new Set());
@@ -146,8 +149,9 @@ export function MetaAssetSelector({
   const [createdBusiness, setCreatedBusiness] = useState<{ id: string; name: string } | null>(null);
   const userPagesFetchedFor = useRef<string | null>(null);
 
-  // Reset confirmation (never destroy a live selection silently)
-  const [pendingResetConfirm, setPendingResetConfirm] = useState<'switch-business' | null>(null);
+  // Reset confirmation (never destroy a live selection silently). Holds the
+  // newly confirmed business until the client accepts the reset.
+  const [pendingResetConfirm, setPendingResetConfirm] = useState<PortfolioBusiness | null>(null);
 
   // Track if we've already captured the event (to avoid duplicates)
   const hasTrackedSelection = useRef(false);
@@ -205,7 +209,10 @@ export function MetaAssetSelector({
 
   const handleBusinessReconcile = async () => {
     const refreshed = await fetchAssets();
-    if (refreshed) setBusinessCreationNeedsReview(true);
+    if (refreshed) {
+      setBusinessCreationNeedsReview(true);
+      if ((refreshed.businesses || []).length > 0) setBusinessCreationOpen(false);
+    }
     return Boolean(refreshed);
   };
 
@@ -372,7 +379,6 @@ export function MetaAssetSelector({
       setAssets(fetchedAssets);
       setSelectedBusinessId(fetchedAssets.selectedBusinessId || requestedBusinessId || null);
       setSelectedBusinessName(fetchedAssets.selectedBusinessName || null);
-      setPendingBusinessId(fetchedAssets.selectedBusinessId || requestedBusinessId || '');
       return fetchedAssets;
     } catch (err) {
       if (fetchVersion !== assetFetchVersion.current) return null;
@@ -422,12 +428,11 @@ export function MetaAssetSelector({
     }
   };
 
-  // Lazy-fetch user pages once when the zero-portfolio branch is entered
+  // Lazy-fetch user pages once when the creation branch is opened from the
+  // portfolio selector's zero-business card.
   useEffect(() => {
     if (isLoading || error || !assets) return;
-    const zeroPortfolio =
-      (assets.businesses || []).length === 0 && !selectedBusinessId && !businessId;
-    if (!zeroPortfolio) return;
+    if (!businessCreationOpen) return;
 
     const fetchKey = `${sessionId}`;
     if (userPagesFetchedFor.current !== fetchKey) {
@@ -435,12 +440,13 @@ export function MetaAssetSelector({
       void fetchUserPages();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [assets, isLoading, error, selectedBusinessId, businessId, sessionId]);
+  }, [assets, isLoading, error, businessCreationOpen, sessionId]);
 
   // Business created → refetch scoped to the new portfolio and open the
   // ad-account creator inline: one pass, no return-and-reselect journey.
   const handleBusinessCreated = (business: { id: string; name: string }) => {
     const creationVersion = ++businessCreationVersion.current;
+    setBusinessCreationOpen(false);
     void fetchAssets(business.id).then((fetchedAssets) => {
       if (!fetchedAssets || businessCreationVersion.current !== creationVersion) return;
       setCreatedBusiness(business);
@@ -603,6 +609,23 @@ export function MetaAssetSelector({
   const hasNoBusinessPortfolio =
     !requiresBusinessSelection && !creationBusinessId && availableBusinesses.length === 0;
 
+  // PortfolioSelector data (R2/KTD11): names only, with the Meta vertical as
+  // the collision tiebreaker. The full list comes from the server's asset
+  // discovery, so the selector's escape fetcher resolves it without a second
+  // Graph round-trip.
+  const portfolioBusinesses: PortfolioBusiness[] = availableBusinesses.map((business) => ({
+    id: business.id,
+    name: business.name,
+    verificationStatus: business.verificationStatus,
+    ...(business.verticalName ? { vertical: business.verticalName } : {}),
+  }));
+  const selectedPortfolioBusiness: PortfolioBusiness | null = selectedBusinessId
+    ? portfolioBusinesses.find((business) => business.id === selectedBusinessId) ||
+      { id: selectedBusinessId, name: selectedBusinessName || '' }
+    : null;
+  const fetchPortfolioBusinessList = (): Promise<PortfolioBusiness[]> =>
+    Promise.resolve(portfolioBusinesses);
+
   const selectedBusinessVerification = availableBusinesses.find(
     (b) => b.id === selectedBusinessId
   )?.verificationStatus;
@@ -638,49 +661,39 @@ export function MetaAssetSelector({
     setShowPageCreator(false);
     setCreatedBusiness(null);
     setBusinessCreationNeedsReview(false);
+    setBusinessCreationOpen(false);
     if (!options.keepBusiness) {
       setSelectedBusinessId(null);
       setSelectedBusinessName(null);
-      setPendingBusinessId('');
     }
   };
 
-  const handleBusinessSelectionLoad = () => {
-    if (!pendingBusinessId) return;
-    activeBusinessIdRef.current = pendingBusinessId;
+  // Apply a business confirmed in PortfolioSelector: full reset (R5/KTD3),
+  // then fetch that business's assets. The fetch response swaps the receipt
+  // and the scoped asset lists in one pass.
+  const applyBusinessSelection = (business: { id: string; name: string }) => {
+    setPendingResetConfirm(null);
+    businessCreationVersion.current += 1;
+    assetFetchVersion.current += 1;
+    activeBusinessIdRef.current = business.id;
     resetSelectionDerivedState({ keepBusiness: true });
     onSelectionDerivedStateReset?.();
-    void fetchAssets(pendingBusinessId);
+    void fetchAssets(business.id);
   };
 
-  const performSwitchBusiness = () => {
-    businessCreationVersion.current += 1;
-    activeBusinessIdRef.current = undefined;
-    assetFetchVersion.current += 1;
-    resetSelectionDerivedState();
-    setAssets((currentAssets) =>
-      currentAssets
-        ? {
-            ...currentAssets,
-            selectedBusinessId: null,
-            selectedBusinessName: null,
-            selectionRequired: true,
-            adAccounts: [],
-            pages: [],
-            instagramAccounts: [],
-          }
-        : currentAssets
-    );
-    onSelectionDerivedStateReset?.();
-  };
-
-  const handleSwitchBusiness = () => {
+  // Confirmation-first (R6): re-confirming the active business is a no-op so
+  // the escape-to-chooser detour never destroys work. A different business
+  // confirms with the selection count first when work exists (R5).
+  const handleBusinessConfirmed = (business: PortfolioBusiness) => {
+    if (business.id === selectedBusinessId) return;
     if (totalSelected > 0) {
-      setPendingResetConfirm('switch-business');
+      setPendingResetConfirm(business);
       return;
     }
-    performSwitchBusiness();
+    applyBusinessSelection(business);
   };
+
+  const openBusinessCreation = () => setBusinessCreationOpen(true);
 
   return (
     <div className="space-y-6">
@@ -702,8 +715,7 @@ export function MetaAssetSelector({
               type="button"
               variant="primary"
               onClick={() => {
-                setPendingResetConfirm(null);
-                performSwitchBusiness();
+                if (pendingResetConfirm) applyBusinessSelection(pendingResetConfirm);
               }}
             >
               Clear selection and switch
@@ -715,18 +727,21 @@ export function MetaAssetSelector({
         </div>
       ) : null}
       {businessCreationNeedsReview ? <p role="status" className="border-2 border-[rgb(var(--warning))] bg-[rgb(var(--warning))]/10 p-4 text-sm text-[rgb(var(--warning))]">Business Portfolio creation is unconfirmed. Select the intended portfolio, then continue with asset selection and verification. Do not repeat creation in this request.</p> : null}
-      {hasNoBusinessPortfolio ? (
-        <div className="border-2 border-black dark:border-white bg-[rgb(var(--warm-gray))]/20 p-6 space-y-4">
-          <div>
-            <h3 className="text-lg font-bold text-[rgb(var(--ink))] font-display">
-              No Business Portfolio yet
-            </h3>
-            <p className="text-sm text-[rgb(var(--muted-foreground))] mt-1">
-              Meta requires a Business Portfolio to hold ad accounts and Pages. Create one
-              here — it takes about a minute.
-            </p>
-          </div>
 
+      {/* Confirmation-first portfolio choice (R6, KTD5): receipt for a
+          confirmed business with an escape, one plain question when ambiguous,
+          and the creation path when the client has zero businesses. */}
+      <PortfolioSelector
+        businesses={portfolioBusinesses}
+        selectedBusiness={selectedPortfolioBusiness}
+        selectionRequired={Boolean(assets?.selectionRequired)}
+        fetchBusinesses={fetchPortfolioBusinessList}
+        onBusinessConfirmed={handleBusinessConfirmed}
+        onCreateBusiness={openBusinessCreation}
+      />
+
+      {businessCreationOpen ? (
+        <div className="border-2 border-black dark:border-white bg-[rgb(var(--warm-gray))]/20 p-6 space-y-4">
           {userPagesError ? (
             <div className="border-2 border-[rgb(var(--warning))] bg-[rgb(var(--warning))]/10 p-4 text-sm text-[rgb(var(--warning))]">
               {userPagesError}
@@ -757,72 +772,6 @@ export function MetaAssetSelector({
               onReconcile={handleBusinessReconcile}
             />
           ) : null}
-        </div>
-      ) : requiresBusinessSelection ? (
-        <div className="border-2 border-black dark:border-white bg-[rgb(var(--warm-gray))]/20 p-6 space-y-4">
-          <div>
-            <h3 className="text-lg font-bold text-[rgb(var(--ink))] font-display">
-              Select Business Portfolio
-            </h3>
-            <p className="text-sm text-[rgb(var(--muted-foreground))] mt-1">
-              Choose the client Business Portfolio that owns the Meta assets you want to share.
-            </p>
-          </div>
-
-          <div className="space-y-3">
-            <label
-              htmlFor="meta-business-portfolio"
-              className="block text-xs font-bold uppercase tracking-[0.18em] text-[rgb(var(--muted-foreground))]"
-            >
-              Business Portfolio
-            </label>
-            <SingleSelect
-              options={availableBusinesses.map((b) => ({
-                value: b.id,
-                label: `${b.name} (${b.id})`,
-              }))}
-              value={pendingBusinessId}
-              onChange={(v) => setPendingBusinessId(v)}
-              placeholder="Select a portfolio..."
-              ariaLabel="Business Portfolio"
-              triggerClassName="border-2 border-black dark:border-white min-h-[48px]"
-            />
-            <Button
-              type="button"
-              variant="primary"
-              onClick={handleBusinessSelectionLoad}
-              disabled={!pendingBusinessId || isLoading}
-            >
-              Load accounts
-            </Button>
-          </div>
-        </div>
-      ) : null}
-
-      {selectedBusinessName ? (
-        <div className="border-2 border-black dark:border-white bg-[rgb(var(--card))] px-4 py-3">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="text-sm font-bold text-[rgb(var(--ink))]">
-                Sharing from {selectedBusinessName}
-              </p>
-              {availableBusinesses.length > 1 ? (
-                <p className="text-xs text-[rgb(var(--muted-foreground))] mt-1">
-                  Switch to another client Business Portfolio before continuing if these assets are not the right ones.
-                </p>
-              ) : null}
-            </div>
-            {availableBusinesses.length > 1 ? (
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                onClick={handleSwitchBusiness}
-              >
-                Switch business
-              </Button>
-            ) : null}
-          </div>
         </div>
       ) : null}
 

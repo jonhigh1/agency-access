@@ -548,6 +548,73 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
         if (requirements.length === 0) {
           return sendError(reply, 'NO_SELECTED_ASSETS', 'Select at least one Meta asset', 400);
         }
+
+        // KTD5: the selection blob is client-controlled input. Before anything
+        // is persisted, validate the claimed business and every asset ID
+        // against what this connection's Meta token can actually see.
+        const claimedBusinessId =
+          typeof resolvedSelectedAssets.selectedBusinessId === 'string'
+            ? resolvedSelectedAssets.selectedBusinessId
+            : null;
+        if (claimedBusinessId && claimedBusinessId !== clientBusinessId) {
+          return sendError(
+            reply,
+            'META_BUSINESS_SELECTION_MISMATCH',
+            'Selected Business Portfolio does not match the client selection saved for this connection',
+            403
+          );
+        }
+
+        const scopeAudit = await auditService.createAuditLog({
+          agencyId: connection.agencyId,
+          action: 'META_TOKEN_READ',
+          userEmail: connection.clientEmail,
+          resourceType: 'client_connection',
+          resourceId: connectionId,
+          metadata: {
+            platform: platformStr,
+            source: 'save_assets_scope_validation',
+            selectedBusinessId: clientBusinessId,
+          },
+          request,
+        });
+        if (scopeAudit?.error) {
+          return sendError(reply, 'AUDIT_LOG_FAILED', 'Could not record Meta access before reading its token', 500);
+        }
+
+        const clientTokens = await infisical.getOAuthTokens(existingAuth.secretId);
+        if (!clientTokens?.accessToken) {
+          return sendError(reply, 'TOKEN_NOT_FOUND', 'OAuth tokens not found in secure storage', 500);
+        }
+
+        let scopedClientAssets;
+        try {
+          scopedClientAssets = await clientAssetsService.fetchMetaAssets(
+            clientTokens.accessToken,
+            clientBusinessId
+          );
+        } catch (error) {
+          if (error instanceof MetaBusinessPortfolioUnavailableError) {
+            return sendError(reply, error.code, error.message, error.statusCode);
+          }
+          return sendError(
+            reply,
+            'META_ASSET_DISCOVERY_FAILED',
+            'Could not confirm selected assets belong to the selected client Business Portfolio.',
+            502
+          );
+        }
+
+        const scopeSelectionError = validateMetaAssetSelection(clientBusinessId, scopedClientAssets, {
+          page: normalizeStringIds(resolvedSelectedAssets.pages),
+          ad_account: normalizeStringIds(resolvedSelectedAssets.adAccounts),
+          instagram_account: normalizeStringIds(resolvedSelectedAssets.instagramAccounts),
+          catalog: normalizeStringIds(resolvedSelectedAssets.catalogs),
+          dataset: normalizeStringIds(resolvedSelectedAssets.datasets),
+        });
+        if (scopeSelectionError) {
+          return sendError(reply, scopeSelectionError.code, scopeSelectionError.message, scopeSelectionError.statusCode);
+        }
         metaRequirementContext = {
           accessRequestId: authContext.accessRequest.id,
           connectionId,

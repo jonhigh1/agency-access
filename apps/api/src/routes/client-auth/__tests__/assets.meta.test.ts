@@ -328,8 +328,9 @@ describe('Client Auth Asset Routes - Meta', () => {
         connectionId: 'conn-1',
         platform: 'meta_ads',
         selectedAssets: {
-          pages: ['page-1'],
-          adAccounts: ['act-1'],
+          selectedBusinessId: 'biz_client_2',
+          pages: ['page_1'],
+          adAccounts: ['act_1'],
           catalogs: ['catalog-1'],
           selectedCatalogsWithNames: [{ id: 'catalog-1', name: 'Spring Catalog' }],
         },
@@ -340,7 +341,7 @@ describe('Client Auth Asset Routes - Meta', () => {
     expect(prisma.metaAssetGrant.upsert).toHaveBeenCalledTimes(9);
     expect(prisma.metaAssetGrant.upsert).toHaveBeenCalledWith(expect.objectContaining({
       create: expect.objectContaining({
-        assetId: 'page-1',
+        assetId: 'page_1',
         recipientType: 'human',
         recipientId: 'person-1',
         requestedTasks: ['MANAGE'],
@@ -350,7 +351,7 @@ describe('Client Auth Asset Routes - Meta', () => {
     }));
     expect(prisma.metaAssetGrant.upsert).toHaveBeenCalledWith(expect.objectContaining({
       create: expect.objectContaining({
-        assetId: 'act-1',
+        assetId: 'act_1',
         recipientType: 'system_user',
         recipientId: 'system-user-1',
         requestedTasks: ['ANALYZE'],
@@ -453,6 +454,167 @@ describe('Client Auth Asset Routes - Meta', () => {
     expect(response.statusCode).toBe(409);
     expect(response.json().error.code).toBe('META_BUSINESS_SELECTION_REQUIRED');
     expect(prisma.clientConnection.update).not.toHaveBeenCalled();
+  });
+
+  it('rejects a save whose selected Business Portfolio is outside the saved client selection', async () => {
+    vi.mocked(accessRequestService.getAccessRequestByToken).mockResolvedValue({
+      data: {
+        id: 'request-a',
+        agencyId: 'agency-a',
+        metaAccessConfig: {
+          recipients: [{ type: 'human', id: 'person-1' }],
+          pageTasks: ['MANAGE'],
+          adAccountTasks: ['ANALYZE'],
+        },
+      } as any,
+      error: null,
+    });
+    vi.mocked(prisma.platformAuthorization.findUnique).mockResolvedValue({
+      id: 'pa-1',
+      connectionId: 'conn-1',
+      platform: 'meta',
+      secretId: 'secret-1',
+      status: 'active',
+      metadata: {
+        selectedAssets: { meta_ads: {} },
+        meta: { selection: { clientBusinessId: 'biz_client_2', selectedAt: '2026-09-22T00:00:00.000Z' } },
+      },
+    } as any);
+    vi.mocked(prisma.agencyPlatformConnection.findUnique).mockResolvedValue({
+      id: 'agency-meta-1',
+      agencyId: 'agency-a',
+      platform: 'meta',
+      businessId: 'partner-bm-1',
+      metadata: { selectedBusinessName: 'Agency Portfolio' },
+    } as any);
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/client/token-a/save-assets',
+      payload: {
+        connectionId: 'conn-1',
+        platform: 'meta_ads',
+        selectedAssets: {
+          selectedBusinessId: 'biz_client_1',
+          pages: ['page-1'],
+          selectedPagesWithNames: [{ id: 'page-1', name: 'Client Page' }],
+        },
+      },
+    });
+
+    expect(response.statusCode).toBe(403);
+    expect(response.json().error.code).toBe('META_BUSINESS_SELECTION_MISMATCH');
+    expect(prisma.clientConnection.update).not.toHaveBeenCalled();
+    expect(prisma.platformAuthorization.update).not.toHaveBeenCalled();
+    expect(prisma.metaAssetGrant.upsert).not.toHaveBeenCalled();
+  });
+
+  it('rejects a save with a Meta asset outside the selected client Business Portfolio', async () => {
+    vi.mocked(accessRequestService.getAccessRequestByToken).mockResolvedValue({
+      data: {
+        id: 'request-a',
+        agencyId: 'agency-a',
+        metaAccessConfig: {
+          recipients: [{ type: 'human', id: 'person-1' }],
+          pageTasks: ['MANAGE'],
+          adAccountTasks: ['ANALYZE'],
+        },
+      } as any,
+      error: null,
+    });
+    vi.mocked(prisma.platformAuthorization.findUnique).mockResolvedValue({
+      id: 'pa-1',
+      connectionId: 'conn-1',
+      platform: 'meta',
+      secretId: 'secret-1',
+      status: 'active',
+      metadata: {
+        selectedAssets: { meta_ads: {} },
+        meta: { selection: { clientBusinessId: 'biz_client_2', selectedAt: '2026-09-22T00:00:00.000Z' } },
+      },
+    } as any);
+    vi.mocked(prisma.agencyPlatformConnection.findUnique).mockResolvedValue({
+      id: 'agency-meta-1',
+      agencyId: 'agency-a',
+      platform: 'meta',
+      businessId: 'partner-bm-1',
+      metadata: { selectedBusinessName: 'Agency Portfolio' },
+    } as any);
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/client/token-a/save-assets',
+      payload: {
+        connectionId: 'conn-1',
+        platform: 'meta_ads',
+        selectedAssets: {
+          selectedBusinessId: 'biz_client_2',
+          adAccounts: ['act_tampered'],
+          selectedAdAccountsWithNames: [{ id: 'act_tampered', name: 'Tampered account' }],
+        },
+      },
+    });
+
+    expect(response.statusCode).toBe(403);
+    expect(response.json().error.code).toBe('META_ASSET_NOT_IN_SELECTED_BUSINESS');
+    expect(prisma.clientConnection.update).not.toHaveBeenCalled();
+    expect(prisma.platformAuthorization.update).not.toHaveBeenCalled();
+    expect(prisma.metaAssetGrant.upsert).not.toHaveBeenCalled();
+  });
+
+  it('rejects a save when the saved client Business Portfolio is no longer visible to the Meta token', async () => {
+    const { MetaBusinessPortfolioUnavailableError } = await import('@/services/client-assets.service');
+    vi.mocked(accessRequestService.getAccessRequestByToken).mockResolvedValue({
+      data: {
+        id: 'request-a',
+        agencyId: 'agency-a',
+        metaAccessConfig: {
+          recipients: [{ type: 'human', id: 'person-1' }],
+          pageTasks: ['MANAGE'],
+          adAccountTasks: ['ANALYZE'],
+        },
+      } as any,
+      error: null,
+    });
+    vi.mocked(prisma.platformAuthorization.findUnique).mockResolvedValue({
+      id: 'pa-1',
+      connectionId: 'conn-1',
+      platform: 'meta',
+      secretId: 'secret-1',
+      status: 'active',
+      metadata: {
+        selectedAssets: { meta_ads: {} },
+        meta: { selection: { clientBusinessId: 'biz_revoked', selectedAt: '2026-09-22T00:00:00.000Z' } },
+      },
+    } as any);
+    vi.mocked(prisma.agencyPlatformConnection.findUnique).mockResolvedValue({
+      id: 'agency-meta-1',
+      agencyId: 'agency-a',
+      platform: 'meta',
+      businessId: 'partner-bm-1',
+      metadata: { selectedBusinessName: 'Agency Portfolio' },
+    } as any);
+    vi.mocked(clientAssetsService.fetchMetaAssets).mockRejectedValueOnce(
+      new MetaBusinessPortfolioUnavailableError()
+    );
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/client/token-a/save-assets',
+      payload: {
+        connectionId: 'conn-1',
+        platform: 'meta_ads',
+        selectedAssets: {
+          selectedBusinessId: 'biz_revoked',
+          pages: ['page-1'],
+        },
+      },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json().error.code).toBe('INVALID_META_BUSINESS_PORTFOLIO');
+    expect(prisma.clientConnection.update).not.toHaveBeenCalled();
+    expect(prisma.metaAssetGrant.upsert).not.toHaveBeenCalled();
   });
 
   it('returns business-scoped Meta assets and persists discovery metadata for the selected client business', async () => {

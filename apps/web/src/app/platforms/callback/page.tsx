@@ -5,17 +5,20 @@
  *
  * Handles OAuth callback success/error states.
  * Shows user-friendly messages and redirects appropriately.
- * For Meta, shows Business Portfolio selector instead of auto-redirect.
+ * For Meta, shows the consolidated portfolio selector (receipt-first) instead
+ * of auto-redirect: agency onboarding and connections both return here.
  */
 
 import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useAuth } from '@clerk/nextjs';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAuth, useUser } from '@clerk/nextjs';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
+import { AlertCircle, Loader2, RefreshCw } from 'lucide-react';
 import { capturePosthogEvent } from '@/lib/analytics/capture-posthog';
-import { MetaBusinessPortfolioSelector } from '@/components/meta-business-portfolio-selector';
+import { PortfolioSelector, type PortfolioBusiness } from '@/components/client-auth/PortfolioSelector';
 import { Button } from '@/components/ui/button';
+import { startAgencyMetaOAuth } from '@/lib/agency-meta-oauth';
 import { resolveApiUrl } from '@/lib/api/api-env';
 import {
   trackOAuthCallbackFailure,
@@ -36,9 +39,14 @@ function CallbackPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { orgId, getToken } = useAuth();
+  const { user } = useUser();
   const queryClient = useQueryClient();
   const [countdown, setCountdown] = useState(5);
   const [showPortfolioSelector, setShowPortfolioSelector] = useState(false);
+  const [confirmedBusiness, setConfirmedBusiness] = useState<PortfolioBusiness | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [reauthError, setReauthError] = useState<string | null>(null);
+  const [isReauthenticating, setIsReauthenticating] = useState(false);
 
   const success = searchParams.get('success') === 'true';
   const platform = searchParams.get('platform');
@@ -46,6 +54,7 @@ function CallbackPageContent() {
   const requireBusinessSelection = searchParams.get('requireBusinessSelection') === 'true';
   const connectionId = searchParams.get('connectionId');
   const agencyIdParam = searchParams.get('agencyId');
+  const targetAgencyId = agencyIdParam || orgId;
 
   const platformName = platform ? PLATFORM_NAMES[platform as Platform] || platform : 'Platform';
   const errorMessage = errorCode
@@ -78,22 +87,95 @@ function CallbackPageContent() {
       return response.json();
     },
     onSuccess: () => {
-      const targetAgencyId = agencyIdParam || orgId;
       queryClient.invalidateQueries({ queryKey: ['platform-connections', targetAgencyId] });
       queryClient.invalidateQueries({ queryKey: ['available-platforms', targetAgencyId] });
       router.push('/connections?success=true&platform=meta');
     },
+    onError: (error: Error) => {
+      setSaveError(error.message || 'Failed to complete connection');
+    },
   });
 
-  const handlePortfolioSelect = (businessId: string, businessName: string) => {
+  // Clerk-authenticated business discovery (KTD5). The endpoint returns
+  // `{ data: { businesses: [{ id, name, verticalName?, verificationStatus? }] } }`.
+  const portfolioQuery = useQuery({
+    queryKey: ['meta-portfolio-businesses', targetAgencyId],
+    enabled: showPortfolioSelector && Boolean(targetAgencyId),
+    staleTime: Infinity,
+    retry: false,
+    queryFn: async (): Promise<PortfolioBusiness[]> => {
+      const token = await getToken();
+      const response = await fetch(
+        resolveApiUrl(`/agency-platforms/meta/business-accounts?agencyId=${targetAgencyId}&refresh=true`),
+        {
+          headers: {
+            ...(token && { Authorization: `Bearer ${token}` }),
+          },
+        }
+      );
+      if (!response.ok) throw new Error('Failed to load your Meta business portfolios.');
+      const result = await response.json();
+      const businesses = (result?.data?.businesses || []) as Array<Record<string, unknown>>;
+      return businesses
+        .filter((business) => business?.id && business?.name)
+        .map((business) => ({
+          id: String(business.id),
+          name: String(business.name),
+          ...(typeof business.verificationStatus === 'string'
+            ? { verificationStatus: business.verificationStatus }
+            : {}),
+          ...(typeof business.verticalName === 'string'
+            ? { vertical: business.verticalName }
+            : {}),
+        }));
+    },
+  });
+
+  const portfolioBusinesses = portfolioQuery.data ?? [];
+  // Receipt-first (R6): a single owner business is confirmed automatically.
+  const selectedBusiness =
+    confirmedBusiness ?? (portfolioBusinesses.length === 1 ? portfolioBusinesses[0] : null);
+
+  const handlePortfolioSelect = (business: PortfolioBusiness) => {
+    if (isSaving) return;
+    setSaveError(null);
+    setConfirmedBusiness(business);
     void capturePosthogEvent('meta_business_portfolio_selected', {
       agency_id: agencyIdParam || orgId,
       connection_id: connectionId,
       platform: 'meta',
-      business_id: businessId,
-      business_name: businessName,
+      business_id: business.id,
+      business_name: business.name,
     });
-    completeMetaOauth({ businessId, businessName });
+    completeMetaOauth({ businessId: business.id, businessName: business.name });
+  };
+
+  // Zero-portfolio agencies recover by re-running the Meta OAuth consent so
+  // the business list refreshes (legacy affordance, preserved).
+  const handleReauthenticate = async () => {
+    const userEmail =
+      user?.primaryEmailAddress?.emailAddress || user?.emailAddresses?.[0]?.emailAddress;
+    if (!userEmail || !targetAgencyId) {
+      setReauthError('Unable to resolve your account email.');
+      return;
+    }
+
+    setReauthError(null);
+    setIsReauthenticating(true);
+
+    try {
+      await startAgencyMetaOAuth({
+        agencyId: targetAgencyId,
+        userEmail,
+        getToken,
+      });
+    } catch (err) {
+      setReauthError(
+        err instanceof Error ? err.message : 'Failed to refresh Meta Business Portfolios.'
+      );
+    } finally {
+      setIsReauthenticating(false);
+    }
   };
 
   // Track OAuth callback results in PostHog
@@ -194,11 +276,60 @@ function CallbackPageContent() {
               <h1 className="text-2xl font-bold text-slate-900 mb-2">Successfully Connected!</h1>
               <p className="text-slate-600">Now select your Meta Business Portfolio</p>
             </div>
-            <MetaBusinessPortfolioSelector 
-              agencyId={(agencyIdParam || orgId) as string} 
-              onSelect={handlePortfolioSelect} 
-              isSaving={isSaving}
-            />
+            {portfolioQuery.isLoading ? (
+              <div className="p-12 text-center">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-slate-400" />
+                <p className="text-slate-600 font-medium">Checking for Meta Business accounts...</p>
+              </div>
+            ) : portfolioQuery.error ? (
+              <div className="p-8 text-center bg-red-50 rounded-lg border border-red-100">
+                <AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-3" />
+                <p className="text-red-900 font-semibold mb-1">Failed to load portfolios</p>
+                <p className="text-red-700 text-sm mb-4">Please try refreshing the page or connecting again.</p>
+                <Button onClick={() => void portfolioQuery.refetch()} variant="ghost" size="sm" className="text-danger-ink">
+                  <RefreshCw className="h-4 w-4" />
+                  Retry
+                </Button>
+              </div>
+            ) : portfolioBusinesses.length === 0 ? (
+              <div className="p-10 text-center bg-slate-50 rounded-lg border border-slate-200 border-dashed">
+                <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <AlertCircle className="h-8 w-8 text-slate-400" />
+                </div>
+                <h3 className="text-slate-900 font-bold mb-2">No Meta Business portfolios found</h3>
+                <p className="text-slate-600 text-sm max-w-xs mx-auto mb-6">
+                  Don&apos;t see your Business Portfolio? To refresh this list{' '}
+                  <button
+                    onClick={() => void handleReauthenticate()}
+                    className="text-indigo-600 font-semibold hover:underline px-1"
+                    disabled={isReauthenticating}
+                  >
+                    {isReauthenticating ? 'logging in again…' : 'log in again'}
+                  </button>
+                </p>
+                {reauthError && <p className="text-sm text-red-700">{reauthError}</p>}
+              </div>
+            ) : isSaving ? (
+              <div className="p-10 text-center" role="status">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-slate-400" />
+                <p className="text-slate-600 font-medium">Connecting your Business Portfolio...</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {saveError ? (
+                  <div role="alert" className="border border-red-200 bg-red-50 text-red-800 rounded-lg p-4 text-sm">
+                    {saveError}
+                  </div>
+                ) : null}
+                <PortfolioSelector
+                  businesses={portfolioBusinesses}
+                  selectedBusiness={selectedBusiness}
+                  selectionRequired={portfolioBusinesses.length > 1}
+                  fetchBusinesses={() => Promise.resolve(portfolioBusinesses)}
+                  onBusinessConfirmed={handlePortfolioSelect}
+                />
+              </div>
+            )}
           </div>
         </div>
       );

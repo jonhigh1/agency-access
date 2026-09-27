@@ -82,6 +82,15 @@ function jsonResponse(body: unknown): Response {
   } as Response;
 }
 
+/**
+ * The receipt renders "Sharing from {name}" across a text node and a span,
+ * so match on the composed paragraph text.
+ */
+const findSharingReceipt = (businessName: string) =>
+  screen.findByText((_, element) =>
+    element?.tagName === 'P' && element.textContent === `Sharing from ${businessName}`
+  );
+
 function assetsResponse(overrides: Record<string, unknown> = {}): Response {
   return jsonResponse({
     data: {
@@ -126,6 +135,10 @@ describe('MetaAssetSelector - zero Business Portfolio branch', () => {
     );
 
     expect(await screen.findByText(/no business portfolio yet/i)).toBeInTheDocument();
+
+    // The zero-business card routes into the creation flow (onCreateBusiness).
+    fireEvent.click(screen.getByRole('button', { name: /create a business portfolio/i }));
+
     expect(await screen.findByText(/Guided Redirect/i)).toBeInTheDocument();
 
     await waitFor(() => {
@@ -156,6 +169,8 @@ describe('MetaAssetSelector - zero Business Portfolio branch', () => {
       />
     );
 
+    fireEvent.click(await screen.findByRole('button', { name: /create a business portfolio/i }));
+
     expect(await screen.findByText(/Meta Business Creator/i)).toBeInTheDocument();
   });
 
@@ -183,6 +198,7 @@ describe('MetaAssetSelector - zero Business Portfolio branch', () => {
       />
     );
 
+    fireEvent.click(await screen.findByRole('button', { name: /create a business portfolio/i }));
     fireEvent.click(await screen.findByText(/Meta Business Creator/i));
 
     await waitFor(() => {
@@ -191,7 +207,7 @@ describe('MetaAssetSelector - zero Business Portfolio branch', () => {
       );
     });
 
-    expect(await screen.findByText(/sharing from new business/i)).toBeInTheDocument();
+    await findSharingReceipt('New Business');
     // One pass: the ad-account creator opens immediately in the new portfolio
     expect(await screen.findByText(/Meta Asset Creator/i)).toBeInTheDocument();
     // The just-created business is unverified: the setup checklist renders
@@ -213,6 +229,7 @@ describe('MetaAssetSelector - zero Business Portfolio branch', () => {
       />
     );
 
+    fireEvent.click(await screen.findByRole('button', { name: /create a business portfolio/i }));
     fireEvent.click(await screen.findByText(/Meta Business Creator/i));
 
     await waitFor(() => {
@@ -242,9 +259,10 @@ describe('MetaAssetSelector - zero Business Portfolio branch', () => {
       />
     );
 
+    fireEvent.click(await screen.findByRole('button', { name: /create a business portfolio/i }));
     fireEvent.click(await screen.findByRole('button', { name: /refresh business portfolios/i }));
 
-    expect(await screen.findByText(/select business portfolio/i)).toBeInTheDocument();
+    expect(await screen.findByText(/which business are we sharing from/i)).toBeInTheDocument();
     expect(screen.getByRole('status')).toHaveTextContent(/creation is unconfirmed/i);
     expect(fetchMock).toHaveBeenNthCalledWith(
       3,
@@ -314,17 +332,18 @@ describe('MetaAssetSelector - zero Business Portfolio branch', () => {
     const staleSuccess = vi.mocked(captureAdAccountSuccess).mock.lastCall?.[0] as
       ((account: { id: string; name: string }) => void) | undefined;
     expect(staleSuccess).toBeTypeOf('function');
-    fireEvent.click(await screen.findByRole('button', { name: /switch business/i }));
-    fireEvent.click(await screen.findByRole('combobox', { name: 'Business Portfolio' }));
+    fireEvent.click(await screen.findByRole('button', { name: /choose a different business/i }));
+    fireEvent.click(await screen.findByRole('combobox', { name: 'Business' }));
     fireEvent.click(await screen.findByRole('option', { name: /Business B/ }));
-    fireEvent.click(screen.getByRole('button', { name: /load accounts/i }));
-    expect(await screen.findByText('Sharing from Business B')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /confirm business/i }));
+    await findSharingReceipt('Business B');
 
     staleSuccess!({ id: 'act_new', name: 'New Account' });
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledTimes(2);
-      expect(screen.getByText('Sharing from Business B')).toBeInTheDocument();
+      expect(screen.getByText((_, element) =>
+        element?.tagName === 'P' && element.textContent === 'Sharing from Business B')).toBeInTheDocument();
     });
     expect(onSelectionChange).not.toHaveBeenCalledWith(expect.objectContaining({ adAccounts: ['act_new'] }));
   });
@@ -375,7 +394,7 @@ describe('MetaAssetSelector - zero Business Portfolio branch', () => {
       />
     );
 
-    expect(await screen.findByText(/sharing from client one/i)).toBeInTheDocument();
+    await findSharingReceipt('Client One');
     expect(screen.queryByText(/no business portfolio yet/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/Meta Business Creator/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/setup checklist/i)).not.toBeInTheDocument();
@@ -547,21 +566,21 @@ describe('MetaAssetSelector - catalog creation', () => {
     fireEvent.click(await screen.findByRole('button', { name: /create catalog/i }));
     fireEvent.change(screen.getByLabelText(/product catalog name/i), { target: { value: 'Spring Catalog' } });
     fireEvent.click(screen.getByRole('button', { name: /^create catalog$/i }));
-    fireEvent.click(await screen.findByRole('button', { name: /switch business/i }));
-    fireEvent.click(await screen.findByRole('combobox', { name: 'Business Portfolio' }));
+    fireEvent.click(await screen.findByRole('button', { name: /choose a different business/i }));
+    fireEvent.click(await screen.findByRole('combobox', { name: 'Business' }));
     fireEvent.click(await screen.findByRole('option', { name: /Business B/ }));
-    fireEvent.click(screen.getByRole('button', { name: /load accounts/i }));
-    expect(await screen.findByText('Sharing from Business B')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /confirm business/i }));
+    await findSharingReceipt('Business B');
 
     resolveCreate(jsonResponse({ data: { id: 'catalog-new', name: 'Spring Catalog' }, error: null }));
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3));
     expect(screen.queryByText(/creation is not fully verified/i)).not.toBeInTheDocument();
     expect(screen.queryByRole('alert')).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('button', { name: /switch business/i }));
-    fireEvent.click(await screen.findByRole('combobox', { name: 'Business Portfolio' }));
+    fireEvent.click(screen.getByRole('button', { name: /choose a different business/i }));
+    fireEvent.click(await screen.findByRole('combobox', { name: 'Business' }));
     fireEvent.click(await screen.findByRole('option', { name: /Business A/ }));
-    fireEvent.click(screen.getByRole('button', { name: /load accounts/i }));
+    fireEvent.click(screen.getByRole('button', { name: /confirm business/i }));
 
     expect(await screen.findByText(/creation is not fully verified/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /refresh catalog list/i })).toBeInTheDocument();
