@@ -22,6 +22,7 @@ import { Loader2, ExternalLink, CheckCircle2, ChevronDown, Lock } from 'lucide-r
 import { PlatformWizardCard } from './PlatformWizardCard';
 import { MetaAssetSelector } from './MetaAssetSelector';
 import { type MetaSelectionBlob } from './meta-selection-blob';
+import { SelectionResetConfirmDialog } from './SelectionResetConfirmDialog';
 import { GoogleAssetSelector } from './GoogleAssetSelector';
 import { LinkedInAssetSelector } from './LinkedInAssetSelector';
 import { TikTokAssetSelector } from './TikTokAssetSelector';
@@ -1322,28 +1323,16 @@ export function PlatformAuthWizard({
                   Change selection
                 </Button>
                 {pendingSelectionReset ? (
-                  <div
-                    role="alertdialog"
-                    aria-labelledby="meta-selection-reset-title"
-                    aria-describedby="meta-selection-reset-description"
-                    className="w-full space-y-3 border-2 border-black bg-card p-4 dark:border-white"
-                  >
-                    <h3 id="meta-selection-reset-title" className="text-lg font-bold text-[var(--ink)] font-display">
-                      Clear this selection and start over?
-                    </h3>
-                    <p id="meta-selection-reset-description" className="text-sm text-muted-foreground">
-                      You have selected {metaSelectionCount}{' '}
-                      {metaSelectionCount === 1 ? 'account' : 'accounts'}. Clearing removes the selection, the saved state, and all grant and verification progress.
-                    </p>
-                    <div className="flex flex-wrap gap-3">
-                      <Button type="button" variant="primary" onClick={performSelectionReset}>
-                        Clear selection and edit
-                      </Button>
-                      <Button type="button" variant="secondary" onClick={() => setPendingSelectionReset(false)}>
-                        Cancel
-                      </Button>
-                    </div>
-                  </div>
+                  <SelectionResetConfirmDialog
+                    titleId="meta-selection-reset-title"
+                    descriptionId="meta-selection-reset-description"
+                    title="Clear this selection and start over?"
+                    selectionCount={metaSelectionCount}
+                    consequence="Clearing removes the selection, the saved state, and all grant and verification progress."
+                    confirmLabel="Clear selection and edit"
+                    onConfirm={performSelectionReset}
+                    onCancel={() => setPendingSelectionReset(false)}
+                  />
                 ) : null}
               </div>
             );

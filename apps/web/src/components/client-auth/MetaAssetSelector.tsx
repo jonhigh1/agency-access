@@ -26,6 +26,7 @@ import { MetaAssetCreator } from './MetaAssetCreator';
 import { MetaBusinessCreator } from './MetaBusinessCreator';
 import { MetaBusinessSetupChecklist } from './MetaBusinessSetupChecklist';
 import { GuidedRedirectCard } from './GuidedRedirectModal';
+import { SelectionResetConfirmDialog } from './SelectionResetConfirmDialog';
 import { PortfolioSelector, type PortfolioBusiness } from './PortfolioSelector';
 import { clearManualGrantChecklistStorage } from '@/lib/invite/manual-grant-checklist-storage';
 import { Briefcase, Camera, FileText, MailX, Plus, ShoppingBag } from 'lucide-react';
@@ -757,33 +758,19 @@ export function MetaAssetSelector({
   return (
     <div className="space-y-6">
       {pendingResetConfirm ? (
-        <div
-          role="alertdialog"
-          aria-labelledby="meta-reset-confirm-title"
-          aria-describedby="meta-reset-confirm-description"
+        <SelectionResetConfirmDialog
+          titleId="meta-reset-confirm-title"
+          descriptionId="meta-reset-confirm-description"
+          title="Switch business and clear this selection?"
+          selectionCount={totalSelected}
+          consequence="Switching clears the selection, the saved state, and all grant and verification progress."
+          confirmLabel="Clear selection and switch"
           className="space-y-4 border-2 border-black bg-[rgb(var(--card))] p-6 dark:border-white"
-        >
-          <h3 id="meta-reset-confirm-title" className="text-lg font-bold text-[rgb(var(--ink))] font-display">
-            Switch business and clear this selection?
-          </h3>
-          <p id="meta-reset-confirm-description" className="text-sm text-[rgb(var(--muted-foreground))]">
-            You have selected {totalSelected} {totalSelected === 1 ? 'account' : 'accounts'}. Switching clears the selection, the saved state, and all grant and verification progress.
-          </p>
-          <div className="flex flex-wrap gap-3">
-            <Button
-              type="button"
-              variant="primary"
-              onClick={() => {
-                if (pendingResetConfirm) applyBusinessSelection(pendingResetConfirm);
-              }}
-            >
-              Clear selection and switch
-            </Button>
-            <Button type="button" variant="secondary" onClick={() => setPendingResetConfirm(null)}>
-              Cancel
-            </Button>
-          </div>
-        </div>
+          onConfirm={() => {
+            if (pendingResetConfirm) applyBusinessSelection(pendingResetConfirm);
+          }}
+          onCancel={() => setPendingResetConfirm(null)}
+        />
       ) : null}
       {businessCreationNeedsReview ? <p role="status" className="border-2 border-[rgb(var(--warning))] bg-[rgb(var(--warning))]/10 p-4 text-sm text-[rgb(var(--warning))]">Business Portfolio creation is unconfirmed. Select the intended portfolio, then continue with asset selection and verification. Do not repeat creation in this request.</p> : null}
 

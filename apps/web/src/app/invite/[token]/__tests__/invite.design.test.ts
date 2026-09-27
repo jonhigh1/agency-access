@@ -364,13 +364,15 @@ describe('Invite surface — Design System v2.0 source contract', () => {
     });
 
     it('carries branding onto the terminal card and the hero header', () => {
-      const page = fs.readFileSync(pagePath, 'utf-8');
-      const terminalCard = page.slice(
-        page.indexOf('function InviteTerminalCard'),
-        page.indexOf('const SESSION_STORAGE_PREFIX')
+      // The terminal card lives in its own module since review #1; the page
+      // wires branding into it.
+      const terminalCard = fs.readFileSync(
+        path.join(FLOW_ROOT, 'invite-terminal-card.tsx'),
+        'utf-8'
       );
       expect(terminalCard).toMatch(/<img/);
       expect(terminalCard).toMatch(/logoUrl/);
+      const page = fs.readFileSync(pagePath, 'utf-8');
       expect(page).toMatch(/logoUrl=\{data\.branding\?\.logoUrl\}/);
     });
 
