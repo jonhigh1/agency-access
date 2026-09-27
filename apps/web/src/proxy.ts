@@ -5,7 +5,7 @@ import { NextResponse } from 'next/server'
  * Clerk Proxy (formerly Middleware)
  *
  * Protects routes and handles authentication redirects.
- * - Public routes: home, pricing, contact, blog, compare, terms, privacy, authorize callback, invite flow, platform OAuth callback
+ * - Public routes: home, pricing, contact, blog, compare, terms, privacy, authorize callback, invite flow, platform OAuth callback, PostHog ingest proxy
  * - Protected routes: dashboard, connections, clients, settings, access requests
  */
 
@@ -32,6 +32,10 @@ const isPublicRoute = createRouteMatcher([
   '/r/(.*)',
   '/sitemap.xml',
   '/robots.txt',
+  // PostHog reverse proxy (see rewrites in next.config.ts). Defense in depth:
+  // the matcher below already excludes these paths so the middleware never runs.
+  '/ingest',
+  '/ingest/(.*)',
 ])
 
 /** Marketing pages that should redirect authenticated users to the dashboard. */
@@ -84,7 +88,9 @@ export default clerkMiddleware(async (auth, request) => {
 
 export const config = {
   matcher: [
-    // Skip Next.js internals, static files, API routes, and crawler files (sitemap.xml, robots.txt)
-    '/((?!_next|api|agency-platforms|sitemap\\.xml|robots\\.txt|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
+    // Skip Next.js internals, static files, API routes, crawler files (sitemap.xml, robots.txt),
+    // and the PostHog ingest proxy (`ingest(?:/|$)` so /ingest-notes stays protected — its rewrite
+    // lives in next.config.ts and must not pass through clerkMiddleware/auth.protect()).
+    '/((?!_next|api|agency-platforms|ingest(?:/|$)|sitemap\\.xml|robots\\.txt|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
   ],
 }
