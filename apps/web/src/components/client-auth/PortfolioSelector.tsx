@@ -91,10 +91,10 @@ export function PortfolioSelector({
   const [pendingBusinessId, setPendingBusinessId] = useState('');
   const [listStatus, setListStatus] = useState<'idle' | 'loading' | 'error'>('idle');
 
-  // Full business list loaded through the escape affordance. Cached for the
-  // component's lifetime so returning to the original business reuses the
-  // loaded list without a second fetch.
-  const fullListRef = useRef<PortfolioBusiness[] | null>(null);
+  // Full business list loaded through the escape affordance. Cached in state
+  // for the component's lifetime so returning to the original business reuses
+  // the loaded list without a second fetch.
+  const [fullList, setFullList] = useState<PortfolioBusiness[] | null>(null);
 
   // Leaving the chooser for a different selected business returns to the receipt.
   const selectedBusinessId = selectedBusiness?.id ?? null;
@@ -107,13 +107,13 @@ export function PortfolioSelector({
     }
   }, [selectedBusinessId]);
 
-  const optionBusinesses = fullListRef.current ?? businesses;
+  const optionBusinesses = fullList ?? businesses;
 
   const loadBusinessList = async () => {
     setListStatus('loading');
     try {
       const list = await fetchBusinesses();
-      fullListRef.current = Array.isArray(list) ? list : [];
+      setFullList(Array.isArray(list) ? list : []);
       setListStatus('idle');
     } catch {
       setListStatus('error');
@@ -123,7 +123,7 @@ export function PortfolioSelector({
   const startChoosing = () => {
     setPendingBusinessId('');
     setChoosing(true);
-    if (fullListRef.current) return; // already loaded — no second fetch
+    if (fullList) return; // already loaded — no second fetch
     void loadBusinessList();
   };
 
