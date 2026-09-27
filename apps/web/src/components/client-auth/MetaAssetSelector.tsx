@@ -1,3 +1,4 @@
+import { type MetaSelectionBlob } from './meta-selection-blob';
 'use client';
 
 /**
@@ -82,31 +83,7 @@ interface MetaAssetSelectorProps {
    */
   initialSelection?: InviteSelectionPrefill | null;
   allowedAssetTypes?: Array<'ad_account' | 'page' | 'instagram' | 'catalog' | 'dataset'>;
-  onSelectionChange: (selectedAssets: {
-    adAccounts: string[];
-    pages: string[];
-    instagramAccounts: string[];
-    catalogs: string[];
-    datasets: string[];
-    selectedBusinessId?: string;
-    selectedBusinessName?: string;
-    businesses?: Array<{ id: string; name: string }>;
-    selectionRequired?: boolean;
-    // Extended properties for grant step
-    selectedPagesWithNames?: Array<{ id: string; name: string }>;
-    selectedAdAccountsWithNames?: Array<{ id: string; name: string }>;
-    selectedInstagramWithNames?: Array<{ id: string; name: string }>;
-    selectedCatalogsWithNames?: Array<{ id: string; name: string }>;
-    selectedDatasetsWithNames?: Array<{ id: string; name: string }>;
-    selectedAssetNames?: string[];
-    allPages?: MetaAssets['pages'];
-    allAdAccounts?: MetaAssets['adAccounts'];
-    allInstagramAccounts?: MetaAssets['instagramAccounts'];
-    allProductCatalogs?: NonNullable<MetaAssets['productCatalogs']>;
-    allDatasets?: MetaAssets['pixels'];
-    /** True only after the asset fetch resolved; empty lists alone are the mount state. */
-    assetsLoaded?: boolean;
-  }) => void;
+  onSelectionChange: (selectedAssets: MetaSelectionBlob) => void;
   onError?: (error: string) => void;
   /**
    * Called after this selector wipes its selection-derived state (switch

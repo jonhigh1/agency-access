@@ -2060,6 +2060,30 @@ export interface ManualInviteTarget {
   collaboratorCode?: string;
 }
 
+/**
+ * Why a requested product is not fulfilled. Owned here (review #38) so the
+ * API service that produces reasons and the web checklist that renders them
+ * share one vocabulary: a new reason added on either side fails typecheck on
+ * the other until it is mapped.
+ */
+export type UnresolvedProductReason =
+  | 'no_assets'
+  | 'selection_required'
+  | 'assignee_selection_required'
+  | 'sharing_required'
+  | 'missing_tasks'
+  | 'stale'
+  | 'pending'
+  | 'granted'
+  | 'failed'
+  | 'unresolved'
+  | 'authorization_required'
+  | 'oauth_only_insufficient'
+  | 'pending_native_grant'
+  | 'follow_up_needed'
+  | 'unsupported_automation_path'
+  | MetaFulfillmentStatus;
+
 // Client-side completion progress for multi-platform authorization.
 export interface ClientFulfilledProduct {
   product: string;
@@ -2069,7 +2093,7 @@ export interface ClientFulfilledProduct {
 export interface ClientUnresolvedProduct {
   product: string;
   platformGroup: string;
-  reason: 'no_assets' | 'selection_required' | string;
+  reason: UnresolvedProductReason;
 }
 
 export interface ClientAuthorizationProgress {

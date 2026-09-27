@@ -27,6 +27,7 @@ import {
   type ClientAccessRequestPlatformGroup,
   type ClientUnresolvedProduct,
   type Platform,
+  type UnresolvedProductReason,
 } from '@agency-platform/shared';
 
 /** The one status vocabulary for the invite progress checklist. */
@@ -38,36 +39,13 @@ export type InvitePlatformStatus =
   | 'attention';
 
 /**
- * Mirrors `UnresolvedProductReason` in
- * apps/api/src/services/access-request.service.ts: the 15 named reasons plus
- * the MetaFulfillmentStatus values the API can emit as an unresolved reason.
- * `UNRESOLVED_REASON_RULES` below is a total record over this union: a new API
- * reason must be added here and mapped, or typecheck fails.
+ * Review #38: the reason vocabulary is owned by @agency-platform/shared and
+ * re-exported under its render-side name. `UNRESOLVED_REASON_RULES` below is
+ * a total Record over the union: a new API reason now genuinely fails web
+ * typecheck until it is mapped — the old hand-mirrored list claimed this but
+ * the API union was private, so nothing enforced it.
  */
-export type InviteUnresolvedProductReason =
-  | 'no_assets'
-  | 'selection_required'
-  | 'assignee_selection_required'
-  | 'sharing_required'
-  | 'missing_tasks'
-  | 'stale'
-  | 'pending'
-  | 'granted'
-  | 'failed'
-  | 'unresolved'
-  | 'authorization_required'
-  | 'oauth_only_insufficient'
-  | 'pending_native_grant'
-  | 'follow_up_needed'
-  | 'unsupported_automation_path'
-  // MetaFulfillmentStatus values the API surfaces as an unresolved reason.
-  | 'selected'
-  | 'sharing_attempted'
-  | 'verified'
-  | 'manual_action_required'
-  | 'blocked'
-  | 'revoked'
-  | 'excluded';
+export type InviteUnresolvedProductReason = UnresolvedProductReason;
 
 export interface InvitePlatformStatusRule {
   status: InvitePlatformStatus;

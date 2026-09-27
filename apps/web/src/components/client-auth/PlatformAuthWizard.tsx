@@ -21,6 +21,7 @@ import { m, AnimatePresence } from 'framer-motion';
 import { Loader2, ExternalLink, CheckCircle2, ChevronDown, Lock } from 'lucide-react';
 import { PlatformWizardCard } from './PlatformWizardCard';
 import { MetaAssetSelector } from './MetaAssetSelector';
+import { type MetaSelectionBlob } from './meta-selection-blob';
 import { GoogleAssetSelector } from './GoogleAssetSelector';
 import { LinkedInAssetSelector } from './LinkedInAssetSelector';
 import { TikTokAssetSelector } from './TikTokAssetSelector';
@@ -175,7 +176,7 @@ function waitForMetaPopup(popup: Window) {
   return { promise, cleanup, cancel: () => fail(new Error('Meta authorization was cancelled.')) };
 }
 
-function hasNoAssetsFollowUp(product: string, assets: any): boolean {
+function hasNoAssetsFollowUp(product: string, assets: MetaSelectionBlob): boolean {
   if (
     (isGoogleProduct(product) || product === 'linkedin_ads' || product === 'linkedin_pages') &&
     assets.availableAssetCount === 0
@@ -194,7 +195,7 @@ function hasNoAssetsFollowUp(product: string, assets: any): boolean {
   return false;
 }
 
-function getMetaFollowUpLines(assets: any): string[] {
+function getMetaFollowUpLines(assets: MetaSelectionBlob): string[] {
   const lines: string[] = [];
   const unresolvedManualResults = Array.isArray(assets.manualAdAccountVerificationResults)
     ? assets.manualAdAccountVerificationResults.filter(
@@ -246,7 +247,7 @@ function getMetaFollowUpLines(assets: any): string[] {
   return lines;
 }
 
-function hasGrantFollowUp(product: string, assets: any): boolean {
+function hasGrantFollowUp(product: string, assets: MetaSelectionBlob): boolean {
   return isMetaAssetProduct(product) && getMetaFollowUpLines(assets).length > 0;
 }
 
@@ -283,7 +284,7 @@ function getSelectedAssetCount(product: string, assets: any): number {
  * blob carries the full available lists, so an all-empty blob means the
  * client's business has nothing to select from.
  */
-function getMetaZeroSelectionMode(assets: any): ZeroSelectionMode {
+function getMetaZeroSelectionMode(assets: MetaSelectionBlob): ZeroSelectionMode {
   const availableCount =
     (assets.allAdAccounts?.length ?? 0) +
     (assets.allPages?.length ?? 0) +
@@ -294,7 +295,7 @@ function getMetaZeroSelectionMode(assets: any): ZeroSelectionMode {
 }
 
 /** Maps one product's selection blob to the resolver's per-product input. */
-function getProductCtaState(product: string, assets: any): CtaProductSelectionState {
+function getProductCtaState(product: string, assets: MetaSelectionBlob): CtaProductSelectionState {
   const zeroSelectionMode: ZeroSelectionMode = isMetaAssetProduct(product)
     ? getMetaZeroSelectionMode(assets)
     : hasNoAssetsFollowUp(product, assets)
