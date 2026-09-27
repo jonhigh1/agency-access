@@ -8,6 +8,50 @@ Record significant technical choices so future sessions (and humans) understand 
 
 ---
 
+### DEC-013: The client selection blob is validated server-side at one choke point
+**Date:** 2026-09-27
+
+**Context:** KTD5 made the client-controlled save blob trusted input for persisted state. Validation existed in the save path and a near-duplicate block in the grant path; `selected*WithNames` arrays (preferred by `extractSelectedMetaAdAccounts`) skipped membership validation entirely.
+
+**Decision:** `scopedMetaAssetSelection()` (assets.routes.ts) owns kind derivation, narrowed Graph discovery, and membership validation for both paths; WithNames ids are unioned into their kind before validation. Claimed-portfolio mismatch returns 409 everywhere (one code, one status).
+
+**Consequences:** positive - one behavior to test; the typed INVALID_META_BUSINESS_PORTFOLIO 400 surfaces from both paths. negative - the manual share/start route consumes persisted (already-validated) metadata rather than re-validating; its verify step remains the Graph check.
+
+---
+
+### DEC-012: Invite tokens are scrubbed at every egress sink, not just PostHog
+**Date:** 2026-09-27
+
+**Context:** KTD13 originally covered PostHog `sanitize_properties` only. Review found the invite bearer token shipping in Sentry error events, breadcrumbs, and session replays, plus OAuth `code`/`state` query params surviving in `$current_url` on `/invite/oauth-callback`.
+
+**Decision:** The deep redaction walk is shared: PostHog's hook and Sentry's `beforeSend` both apply it; replay capture never registers on `/invite` paths; the scrubber also redacts OAuth secret parameters on `/invite` strings only. `no-referrer` moved to a shared `app/invite/layout.tsx` so no nested route can forget it.
+
+**Consequences:** positive - one scrubber, all sinks. negative - deeply nested (>8) property values remain unscrubbed by the depth cap (documented residual).
+
+---
+
+### DEC-011: Landing states read server truth; terminal codes end the flow
+**Date:** 2026-09-27
+
+**Context:** The invite page must never loop a dead link on a retry card, nor show a terminal card for a transient failure.
+
+**Decision:** `TERMINAL_REQUEST_CODES` = REQUEST_EXPIRED, REQUEST_REVOKED, ACCESS_REQUEST_NOT_FOUND, REQUEST_NOT_FOUND (the API's own not-found code). Everything else renders the retryable load card. A failed server fetch (e.g. Render cold start past the 10s server timeout) degrades to the retry card, never terminal.
+
+**Consequences:** positive - dead links end honestly; transient failures recover with one click. negative - the retry card's title ("This link is not working") reads scary for a timeout; copy iteration welcome.
+
+---
+
+### DEC-010: The design contract is enforced by source walkers with ratchets, not review vigilance
+**Date:** 2026-09-27
+
+**Context:** The invite redesign added a source-contract walker (invite.design.test.ts); the button-contract walker's attribute regex could not see handler-first raw buttons, hiding a tree-wide backlog.
+
+**Decision:** The invite walker derives its surface by directory walk (app/invite + app/platforms + components/flow + components/client-auth) with rules for accent-text ink, binary radius, shadow budget, non-token shadows, generic palette (per-file brand exceptions), and emoji. The button walker's regex tries `=>` before `[^>]`; the pre-existing backlog it surfaced (66 violations, 22 files) is frozen under a ratchet that fails on growth.
+
+**Consequences:** positive - new files are covered by default; debt is finite and visible. negative - 22 legacy files still carry tracked debt until migrated.
+
+---
+
 ### DEC-009: Infisical stays off the Prisma transaction; list APIs are bounded summaries
 **Date:** 2026-09-13
 

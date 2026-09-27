@@ -10,6 +10,8 @@
  * 1. Raw accent text — `--coral`/`--teal` are fills and borders only; text
  *    carries the ink tokens (`--danger-ink`/`--success-ink`, AA). A
  *    `hover:`/`group-hover:` shift toward coral is sanctioned v2 behavior.
+ *    Both `text-[var(--coral)]` and the rgb-wrapped `text-[rgb(var(--coral))]`
+ *    idiom are matched (review #7).
  * 2. Binary radius — square (`--radius: 0rem`) or `rounded-full`.
  *    `rounded-sm/md/lg` resolve square through `--radius`, so only
  *    `-xl`/`-2xl`/`-3xl` and arbitrary values are violations here
@@ -17,8 +19,17 @@
  * 3. Shadow budget — one resting card-scale shadow per rendered state-view.
  *    `shadow-brutalist-sm` is input/small-element punctuation (sanctioned by
  *    DESIGN_SYSTEM.md) and `focus:`/`hover:` variants are not resting, so
- *    neither counts toward the budget.
+ *    neither counts toward the budget. Non-token shadows (`shadow-lg` and
+ *    friends) are violations outright (review #6).
  * 4. Emoji tiles — lucide glyphs, never emoji, on the invite surface.
+ * 5. Off-palette fills — the generic Tailwind palette (slate/gray/indigo/…)
+ *    never renders on an invite-reachable surface (review #32's class half).
+ *
+ * The walked surface is derived by directory walk, not a hand-built import
+ * list (review #5): every file under `app/` (invite + platforms incl. the
+ * OAuth callback), `components/flow`, and `components/client-auth` is
+ * covered by default — `__tests__` and the dev-only `FlowRedesignPrototype`
+ * stay excluded.
  *
  * Plus the 390px and branding fixtures: the wizard footer must never sit
  * inside an `overflow-hidden` ancestor, business/option names must not rely
@@ -36,28 +47,9 @@ const INVITE_ROOT = path.join(WEB_SRC, 'app', 'invite');
 const FLOW_ROOT = path.join(WEB_SRC, 'components', 'flow');
 const CLIENT_AUTH_ROOT = path.join(WEB_SRC, 'components', 'client-auth');
 
-/** The client-auth import closure reachable from the invite wizard. */
-const CLIENT_AUTH_FILES = [
-  'PlatformAuthWizard.tsx',
-  'MetaAssetSelector.tsx',
-  'PortfolioSelector.tsx',
-  'AdAccountSharingInstructions.tsx',
-  'MetaBusinessCreator.tsx',
-  'MetaAssetCreator.tsx',
-  'AssetGroup.tsx',
-  'AssetSelectorStates.tsx',
-  'AssetSelectorDisabled.tsx',
-  'GuidedRedirectModal.tsx',
-  'MetaPageEngagementProof.tsx',
-  'AutomaticPagesGrant.tsx',
-  'CatalogAccessGrant.tsx',
-  'GoogleAssetSelector.tsx',
-  'LinkedInAssetSelector.tsx',
-  'TikTokAssetSelector.tsx',
-  'PlatformWizardCard.tsx',
-  'StepHelpText.tsx',
-];
+const PLATFORMS_ROOT = path.join(WEB_SRC, 'app', 'platforms');
 
+/** Dev-only previews and test scaffolding never ship, so they stay out. */
 function walk(dir: string): string[] {
   const out: string[] = [];
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -74,11 +66,12 @@ function walk(dir: string): string[] {
 
 const SOURCE_FILES: string[] = [
   ...walk(INVITE_ROOT),
+  ...walk(PLATFORMS_ROOT),
   ...fs
     .readdirSync(FLOW_ROOT)
     .filter((name) => name.endsWith('.tsx') && name !== 'FlowRedesignPrototype.tsx')
     .map((name) => path.join(FLOW_ROOT, name)),
-  ...CLIENT_AUTH_FILES.map((name) => path.join(CLIENT_AUTH_ROOT, name)),
+  ...walk(CLIENT_AUTH_ROOT),
 ];
 
 // ---------------------------------------------------------------------------
@@ -86,7 +79,7 @@ const SOURCE_FILES: string[] = [
 // `hover:`/`group-hover:` prefixed shift toward coral stays legal.
 // ---------------------------------------------------------------------------
 const RAW_ACCENT_TEXT =
-  /(?<!group-hover:)(?<!hover:)(?<![-\w])text-\[var\(--(?:coral|teal)\)\](?:\/\d+)?/g;
+  /(?<!group-hover:)(?<!hover:)(?<![-\w])text-\[(?:rgb\()?var\(--(?:coral|teal)\)\]?(?:\/\d+)?/g;
 
 function findRawAccentText(source: string): string[] {
   return [...source.matchAll(RAW_ACCENT_TEXT)].map((match) => match[0]);
@@ -127,6 +120,9 @@ const SHADOW_BUDGET_BY_SOURCE_PATH: Record<string, number> = {
   'app/invite/[token]/client-invite-page.tsx': 5,
   // oauth-callback renders two exclusive states: processing, result.
   'app/invite/oauth-callback/page.tsx': 2,
+  // The agency OAuth callback renders loading, portfolio states, and result
+  // cards as mutually exclusive views; two carry one emphasis shadow each.
+  'app/platforms/callback/page.tsx': 2,
 };
 
 // ---------------------------------------------------------------------------
@@ -136,6 +132,35 @@ const EMOJI_GLYPH = /[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}]/gu;
 
 function findEmojiGlyphs(source: string): string[] {
   return [...source.matchAll(EMOJI_GLYPH)].map((match) => match[0]);
+}
+
+// ---------------------------------------------------------------------------
+// Rule 5: non-token shadows and the generic Tailwind palette. The v2 shadow
+// vocabulary is shadow-brutalist(-lg|-sm) only; slate/gray/indigo/… never
+// render on an invite-reachable surface (review #6, #32).
+// ---------------------------------------------------------------------------
+const NON_TOKEN_SHADOW = /(?<![-\w:])shadow-(?:sm|md|lg|xl|2xl|inner|none)(?![-\w])/g;
+const GENERIC_PALETTE =
+  /\b(?:slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-\d{2,3}\b/g;
+
+function findNonTokenShadows(source: string): string[] {
+  return [...source.matchAll(NON_TOKEN_SHADOW)].map((match) => match[0]);
+}
+
+/**
+ * Platform brand colors are identity, not palette drift: the Instagram asset
+ * tile is pink because Instagram is pink. Each exception names its file and
+ * token; anything not listed is a violation.
+ */
+const GENERIC_PALETTE_BRAND_EXCEPTIONS: Record<string, Set<string>> = {
+  'components/client-auth/MetaAssetSelector.tsx': new Set(['pink-500']),
+};
+
+function findGenericPalette(source: string, relativePath: string): string[] {
+  const allowed = GENERIC_PALETTE_BRAND_EXCEPTIONS[relativePath] ?? new Set<string>();
+  return [...source.matchAll(GENERIC_PALETTE)]
+    .map((match) => match[0])
+    .filter((token) => !allowed.has(token));
 }
 
 // ---------------------------------------------------------------------------
@@ -205,6 +230,14 @@ describe('Invite surface — Design System v2.0 source contract', () => {
       it('renders icons with lucide glyphs, not emoji tiles', () => {
         expect(findEmojiGlyphs(source)).toEqual([]);
       });
+
+      it('uses only token shadows, never utility-scale shadows', () => {
+        expect(findNonTokenShadows(source)).toEqual([]);
+      });
+
+      it('stays on the token palette, never the generic Tailwind palette', () => {
+        expect(findGenericPalette(source, relativePath)).toEqual([]);
+      });
     }
   );
 
@@ -244,6 +277,31 @@ describe('Invite surface — Design System v2.0 source contract', () => {
       expect(findEmojiGlyphs('<span>🔐</span>')).toEqual(['🔐']);
       expect(findEmojiGlyphs('<div>🛍️</div>')).toEqual(['🛍']);
       expect(findEmojiGlyphs('<span>Search</span>')).toEqual([]);
+    });
+
+    it('raw accent text fires on the rgb-wrapped idiom too (review #7)', () => {
+      expect(findRawAccentText('<p className="text-[rgb(var(--coral))]">x</p>')).toHaveLength(1);
+      expect(findRawAccentText('<p className="text-[rgb(var(--teal))]">x</p>')).toHaveLength(1);
+      expect(
+        findRawAccentText('<p className="group-hover:text-[rgb(var(--coral))]">x</p>')
+      ).toEqual([]);
+    });
+
+    it('non-token shadows fire, token shadows do not (review #6)', () => {
+      expect(findNonTokenShadows('<div className="shadow-lg">x</div>')).toEqual(['shadow-lg']);
+      expect(findNonTokenShadows('<div className="shadow-md shadow-xl shadow-inner shadow-none">x</div>')).toHaveLength(4);
+      expect(findNonTokenShadows('<div className="shadow-brutalist shadow-brutalist-lg shadow-brutalist-sm">x</div>')).toEqual([]);
+    });
+
+    it('generic palette classes fire, token surfaces do not (review #32)', () => {
+      expect(findGenericPalette('<div className="bg-slate-50 text-indigo-600">x</div>')).toEqual([
+        'slate-50',
+        'indigo-600',
+      ]);
+      expect(findGenericPalette('<div className="border-black bg-paper text-danger-ink dark:border-white">x</div>', 'x.tsx')).toEqual([]);
+      // Brand-identity exception: pink-500 on the Instagram tile file only.
+      expect(findGenericPalette('<div className="bg-pink-500">x</div>', 'components/client-auth/MetaAssetSelector.tsx')).toEqual([]);
+      expect(findGenericPalette('<div className="bg-pink-500">x</div>', 'other.tsx')).toEqual(['pink-500']);
     });
 
     it('the footer-clip rule fires on an overflow-hidden card root', () => {

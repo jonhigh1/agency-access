@@ -259,8 +259,8 @@ function CallbackPageContent() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Processing your connection...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[rgb(var(--coral))] mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Processing your connection...</p>
         </div>
       </div>
     );
@@ -270,12 +270,12 @@ function CallbackPageContent() {
     // Show Business Portfolio selector for Meta
     if (showPortfolioSelector && (orgId || agencyIdParam)) {
       return (
-        <div className="flex items-center justify-center min-h-screen bg-gray-50 p-4">
+        <div className="flex items-center justify-center min-h-screen bg-paper p-4">
           <div className="max-w-lg w-full">
             <div className="mb-6 text-center">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 bg-[rgb(var(--teal))]/15 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg
-                  className="w-8 h-8 text-green-600"
+                  className="w-8 h-8 text-success-ink"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -288,51 +288,53 @@ function CallbackPageContent() {
                   />
                 </svg>
               </div>
-              <h1 className="text-2xl font-bold text-slate-900 mb-2">Successfully Connected!</h1>
-              <p className="text-slate-600">Now select your Meta Business Portfolio</p>
+              <h1 className="text-2xl font-bold text-ink mb-2">Successfully Connected!</h1>
+              <p className="text-muted-foreground">Now select your Meta Business Portfolio</p>
             </div>
             {portfolioQuery.isLoading ? (
               <div className="p-12 text-center">
-                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-slate-400" />
-                <p className="text-slate-600 font-medium">Checking for Meta Business accounts...</p>
+                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-muted-foreground" />
+                <p className="text-muted-foreground font-medium">Checking for Meta Business accounts...</p>
               </div>
             ) : portfolioQuery.error ? (
-              <div className="p-8 text-center bg-red-50 rounded-lg border border-red-100">
-                <AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-3" />
-                <p className="text-red-900 font-semibold mb-1">Failed to load portfolios</p>
-                <p className="text-red-700 text-sm mb-4">Please try refreshing the page or connecting again.</p>
+              <div className="p-8 text-center bg-[rgb(var(--coral))]/10 rounded-none border-2 border-[rgb(var(--coral))]/40">
+                <AlertCircle className="h-8 w-8 text-danger-ink mx-auto mb-3" />
+                <p className="text-danger-ink font-semibold mb-1">Failed to load portfolios</p>
+                <p className="text-danger-ink text-sm mb-4">Please try refreshing the page or connecting again.</p>
                 <Button onClick={() => void portfolioQuery.refetch()} variant="ghost" size="sm" className="text-danger-ink">
                   <RefreshCw className="h-4 w-4" />
                   Retry
                 </Button>
               </div>
             ) : portfolioBusinesses.length === 0 ? (
-              <div className="p-10 text-center bg-slate-50 rounded-lg border border-slate-200 border-dashed">
-                <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <AlertCircle className="h-8 w-8 text-slate-400" />
+              <div className="p-10 text-center bg-[rgb(var(--warm-gray))]/20 rounded-none border-2 border-black dark:border-white border-dashed">
+                <div className="w-16 h-16 bg-[rgb(var(--warm-gray))]/40 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <AlertCircle className="h-8 w-8 text-muted-foreground" />
                 </div>
-                <h3 className="text-slate-900 font-bold mb-2">No Meta Business portfolios found</h3>
-                <p className="text-slate-600 text-sm max-w-xs mx-auto mb-6">
+                <h3 className="text-ink font-bold mb-2">No Meta Business portfolios found</h3>
+                <p className="text-muted-foreground text-sm max-w-xs mx-auto mb-6">
                   Don&apos;t see your Business Portfolio? To refresh this list{' '}
-                  <button
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-auto px-1 text-ink underline-offset-2"
                     onClick={() => void handleReauthenticate()}
-                    className="text-indigo-600 font-semibold hover:underline px-1"
                     disabled={isReauthenticating}
                   >
                     {isReauthenticating ? 'logging in again…' : 'log in again'}
-                  </button>
+                  </Button>
                 </p>
-                {reauthError && <p className="text-sm text-red-700">{reauthError}</p>}
+                {reauthError && <p className="text-sm text-danger-ink">{reauthError}</p>}
               </div>
             ) : isSaving ? (
               <div className="p-10 text-center" role="status">
-                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-slate-400" />
-                <p className="text-slate-600 font-medium">Connecting your Business Portfolio...</p>
+                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-muted-foreground" />
+                <p className="text-muted-foreground font-medium">Connecting your Business Portfolio...</p>
               </div>
             ) : (
               <div className="space-y-4">
                 {saveError ? (
-                  <div role="alert" className="border border-red-200 bg-red-50 text-red-800 rounded-lg p-4 text-sm">
+                  <div role="alert" className="border-2 border-[rgb(var(--coral))]/40 bg-[rgb(var(--coral))]/10 text-danger-ink rounded-none p-4 text-sm">
                     {saveError}
                   </div>
                 ) : null}
@@ -352,16 +354,16 @@ function CallbackPageContent() {
 
     // Standard success message for other platforms
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <div className="max-w-md w-full bg-card rounded-lg shadow-lg p-8">
+      <div className="flex items-center justify-center min-h-screen bg-paper">
+        <div className="max-w-md w-full bg-card rounded-none border-2 border-black dark:border-white shadow-brutalist p-8">
           {/* Success Icon */}
           <div className="flex justify-center mb-6">
             <div
               data-testid="success-icon"
-              className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center"
+              className="w-16 h-16 bg-[rgb(var(--teal))]/15 rounded-full flex items-center justify-center"
             >
               <svg
-                className="w-8 h-8 text-green-600"
+                className="w-8 h-8 text-success-ink"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -377,13 +379,13 @@ function CallbackPageContent() {
           </div>
 
           {/* Success Message */}
-          <h1 className="text-2xl font-bold text-center mb-2">Successfully Connected!</h1>
-          <p className="text-center text-gray-600 mb-8">
+          <h1 className="text-2xl font-bold text-center mb-2 text-ink">Successfully Connected!</h1>
+          <p className="text-center text-muted-foreground mb-8">
             You've successfully connected {platformName} to your agency account.
           </p>
 
           {/* Auto-redirect notice */}
-          <p className="text-sm text-center text-gray-500 mb-6">
+          <p className="text-sm text-center text-muted-foreground mb-6">
             Redirecting to connections in {countdown} seconds...
           </p>
 
@@ -411,16 +413,16 @@ function CallbackPageContent() {
 
   // Error state
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-50">
-      <div className="max-w-md w-full bg-card rounded-lg shadow-lg p-8">
+    <div className="flex items-center justify-center min-h-screen bg-paper">
+      <div className="max-w-md w-full bg-card rounded-none border-2 border-black dark:border-white shadow-brutalist p-8">
         {/* Error Icon */}
         <div className="flex justify-center mb-6">
           <div
             data-testid="error-icon"
-            className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center"
+            className="w-16 h-16 bg-[rgb(var(--coral))]/15 rounded-full flex items-center justify-center"
           >
             <svg
-              className="w-8 h-8 text-red-600"
+              className="w-8 h-8 text-danger-ink"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -436,12 +438,12 @@ function CallbackPageContent() {
         </div>
 
         {/* Error Message */}
-        <h1 className="text-2xl font-bold text-center mb-2 text-red-900">Connection Failed</h1>
-        <p className="text-center text-gray-600 mb-2">{errorMessage}</p>
+        <h1 className="text-2xl font-bold text-center mb-2 text-danger-ink">Connection Failed</h1>
+        <p className="text-center text-muted-foreground mb-2">{errorMessage}</p>
 
         {/* Error code */}
         {errorCode && (
-          <p className="text-center text-sm text-gray-500 mb-8">Error code: {errorCode}</p>
+          <p className="text-center text-sm text-muted-foreground mb-8">Error code: {errorCode}</p>
         )}
 
         {/* Action buttons */}
@@ -463,8 +465,8 @@ export default function CallbackPage() {
     <Suspense fallback={
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[rgb(var(--coral))] mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
         </div>
       </div>
     }>

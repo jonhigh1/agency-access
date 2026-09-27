@@ -42,8 +42,8 @@ export function AssetCheckbox({
         transition-all duration-200
         ${
           checked
-            ? 'bg-coral/10 border-coral shadow-sm'
-            : 'bg-card border-border hover:border-border hover:shadow-sm'
+            ? 'bg-coral/10 border-coral'
+            : 'bg-card border-border hover:border-coral/50'
         }
         ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
       `}
@@ -95,7 +95,7 @@ export function AssetCheckbox({
               text-xs
               ${
                 metadata.status.toUpperCase() === 'ACTIVE'
-                  ? 'text-emerald-600'
+                  ? 'text-success-ink'
                   : 'text-muted-foreground'
               }
             `}

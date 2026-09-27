@@ -141,7 +141,7 @@ export function AssetGroup({
             onClick={() => setIsExpanded(!isExpanded)}
             aria-expanded={isExpanded}
             aria-label={isExpanded ? `Collapse ${title}` : `Expand ${title}`}
-            className="min-h-[44px] min-w-[44px] border border-black bg-card p-2 hover:bg-paper transition-colors"
+            className="min-h-[44px] min-w-[44px] rounded-none border border-black bg-transparent p-2 hover:bg-paper transition-colors"
           >
             <m.div
               animate={{ rotate: isExpanded ? 0 : -90 }}

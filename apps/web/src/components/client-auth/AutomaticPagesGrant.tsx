@@ -188,7 +188,7 @@ export function AutomaticPagesGrant({
                     key={page.id}
                     className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border-2 ${
                       isGranted
-                        ? 'bg-emerald-50 border-emerald-200'
+                        ? 'bg-[rgb(var(--teal))]/10 border-[rgb(var(--teal))]/40'
                         : isFailed
                         ? 'bg-coral/10 border-coral/30'
                         : 'bg-muted/20 border-border'
@@ -198,7 +198,7 @@ export function AutomaticPagesGrant({
                       {page.name} ({page.id.slice(0, 6)}...)
                     </span>
                     {isGranted && (
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      <CheckCircle2 className="w-4 h-4 text-success-ink" />
                     )}
                     {isFailed && (
                       <AlertCircle className="w-4 h-4 text-danger-ink" />
