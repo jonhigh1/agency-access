@@ -531,6 +531,39 @@ export function PlatformAuthWizard({
     }
   }, [platform]);
 
+  /**
+   * Single ownership point for clearing wizard state derived from Meta asset
+   * selections. Every reset path (selector switch-business reset, the post-save
+   * change-selection affordance) goes through it. When new selection-derived
+   * wizard state is added, register its storage here so every reset path
+   * clears it together.
+   */
+  const resetSelectionDerivedState = useCallback(() => {
+    setAssetsSaved(false);
+    setPagesGranted(false);
+    setCatalogsGranted(false);
+    setMetaAdAccountShareStatus('idle');
+    setInstagramBusinessAccessVerified(false);
+    setGroupAssets((prev) => {
+      if (!prev.meta_ads && !prev.meta_pages) return prev;
+      const next = { ...prev };
+      delete next.meta_ads;
+      delete next.meta_pages;
+      return next;
+    });
+    setChooseAccountsExpanded(true);
+  }, []);
+
+  // Post-save change-selection: re-open selection editing with a clean slate.
+  const [pendingSelectionReset, setPendingSelectionReset] = useState(false);
+  const [metaSelectorResetKey, setMetaSelectorResetKey] = useState(0);
+
+  const performSelectionReset = useCallback(() => {
+    setPendingSelectionReset(false);
+    resetSelectionDerivedState();
+    setMetaSelectorResetKey((key) => key + 1);
+  }, [resetSelectionDerivedState]);
+
   // Fetch Business Manager ID for Meta
   useEffect(() => {
     if (platform === 'meta' && currentStep >= 2 && !businessId && !businessIdLoading) {
@@ -963,6 +996,7 @@ export function PlatformAuthWizard({
                             </div>
                           ) : null}
                           <MetaAssetSelector
+                            key={`meta-asset-selector-${metaSelectorResetKey}`}
                             sessionId={connectionId!}
                             accessRequestToken={accessRequestToken}
                             businessId={businessId || undefined}
@@ -977,6 +1011,7 @@ export function PlatformAuthWizard({
                               // selectedAssets now includes selectedPagesWithNames, etc. from MetaAssetSelector
                               handleProductSelectionChange(p.product, selectedAssets);
                             }}
+                            onSelectionDerivedStateReset={resetSelectionDerivedState}
                             onError={setError}
                           />
                         </div>
@@ -1047,6 +1082,53 @@ export function PlatformAuthWizard({
                     </m.div>
                 </AnimatePresence>
           </div>
+
+          {/* Post-save change-selection: the only way back after assets are saved. */}
+          {(() => {
+            const metaSelectionCount = getSelectedAssetCount('meta_ads', groupAssets['meta_ads'] || {});
+            if (!(platform === 'meta' && metaNeedsGrantStep && connectionId && assetsSaved)) return null;
+            return (
+              <div className="flex flex-col items-start gap-3">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => {
+                    if (metaSelectionCount > 0) {
+                      setPendingSelectionReset(true);
+                      return;
+                    }
+                    performSelectionReset();
+                  }}
+                >
+                  Change selection
+                </Button>
+                {pendingSelectionReset ? (
+                  <div
+                    role="alertdialog"
+                    aria-labelledby="meta-selection-reset-title"
+                    aria-describedby="meta-selection-reset-description"
+                    className="w-full space-y-3 border-2 border-black bg-card p-4 dark:border-white"
+                  >
+                    <h3 id="meta-selection-reset-title" className="text-lg font-bold text-[var(--ink)] font-display">
+                      Clear this selection and start over?
+                    </h3>
+                    <p id="meta-selection-reset-description" className="text-sm text-muted-foreground">
+                      You have selected {metaSelectionCount}{' '}
+                      {metaSelectionCount === 1 ? 'account' : 'accounts'}. Clearing removes the selection, the saved state, and all grant and verification progress.
+                    </p>
+                    <div className="flex flex-wrap gap-3">
+                      <Button type="button" variant="brutalist" onClick={performSelectionReset}>
+                        Clear selection and edit
+                      </Button>
+                      <Button type="button" variant="secondary" onClick={() => setPendingSelectionReset(false)}>
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ) : null}
+              </div>
+            );
+          })()}
 
           {/* Section Divider for Meta Grant Access */}
           {platform === 'meta' && metaNeedsGrantStep && connectionId && assetsSaved && (() => {

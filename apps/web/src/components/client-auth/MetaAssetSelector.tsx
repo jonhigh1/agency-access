@@ -92,6 +92,12 @@ interface MetaAssetSelectorProps {
     allDatasets?: MetaAssets['pixels'];
   }) => void;
   onError?: (error: string) => void;
+  /**
+   * Called after this selector wipes its selection-derived state (switch
+   * business, business re-load) so the parent can clear its own derived
+   * state (saved flag, grant flags, verification results) in the same pass.
+   */
+  onSelectionDerivedStateReset?: () => void;
 }
 
 export function MetaAssetSelector({
@@ -101,6 +107,7 @@ export function MetaAssetSelector({
   requestedPageTasks = [],
   allowedAssetTypes = ['ad_account', 'page', 'instagram'],
   onSelectionChange,
+  onSelectionDerivedStateReset,
   onError,
 }: MetaAssetSelectorProps) {
   const [isLoading, setIsLoading] = useState(true);
@@ -138,6 +145,9 @@ export function MetaAssetSelector({
   const [businessCreationNeedsReview, setBusinessCreationNeedsReview] = useState(false);
   const [createdBusiness, setCreatedBusiness] = useState<{ id: string; name: string } | null>(null);
   const userPagesFetchedFor = useRef<string | null>(null);
+
+  // Reset confirmation (never destroy a live selection silently)
+  const [pendingResetConfirm, setPendingResetConfirm] = useState<'switch-business' | null>(null);
 
   // Track if we've already captured the event (to avoid duplicates)
   const hasTrackedSelection = useRef(false);
@@ -602,35 +612,50 @@ export function MetaAssetSelector({
         (selectedBusinessVerification && selectedBusinessVerification !== 'verified'))
   );
 
-  const handleBusinessSelectionLoad = () => {
-    if (!pendingBusinessId) return;
-    activeBusinessIdRef.current = pendingBusinessId;
+  /**
+   * Single ownership point for "reset everything selection-derived" in this
+   * selector. Every reset path (switch business, business re-load) goes
+   * through it. When new selection-derived state is added (for example a
+   * manual-grant checklist), register its storage here so every reset path
+   * clears it together.
+   */
+  const resetSelectionDerivedState = (options: { keepBusiness?: boolean } = {}) => {
     setSelectedAdAccounts(new Set());
     setSelectedPages(new Set());
     setSelectedInstagram(new Set());
     setSelectedCatalogs(new Set());
     setSelectedDatasets(new Set());
-    setCatalogCreated(null);
-    void fetchAssets(pendingBusinessId);
-  };
-
-  const handleSwitchBusiness = () => {
-    businessCreationVersion.current += 1;
-    activeBusinessIdRef.current = undefined;
-    assetFetchVersion.current += 1;
-    setSelectedBusinessId(null);
-    setSelectedBusinessName(null);
-    setPendingBusinessId('');
-    setSelectedAdAccounts(new Set());
-    setSelectedPages(new Set());
-    setSelectedInstagram(new Set());
-    setSelectedCatalogs(new Set());
-    setSelectedDatasets(new Set());
+    setDatasetVerification(null);
+    setIsVerifyingDatasets(false);
+    setCatalogCreationErrorsFor({});
+    setCatalogCreationNeedsReviewFor(new Set());
+    setAdAccountCreationNeedsReviewFor(new Set());
     setCatalogCreated(null);
     setShowCatalogCreator(false);
     setShowAdAccountCreator(false);
     setShowPageCreator(false);
     setCreatedBusiness(null);
+    setBusinessCreationNeedsReview(false);
+    if (!options.keepBusiness) {
+      setSelectedBusinessId(null);
+      setSelectedBusinessName(null);
+      setPendingBusinessId('');
+    }
+  };
+
+  const handleBusinessSelectionLoad = () => {
+    if (!pendingBusinessId) return;
+    activeBusinessIdRef.current = pendingBusinessId;
+    resetSelectionDerivedState({ keepBusiness: true });
+    onSelectionDerivedStateReset?.();
+    void fetchAssets(pendingBusinessId);
+  };
+
+  const performSwitchBusiness = () => {
+    businessCreationVersion.current += 1;
+    activeBusinessIdRef.current = undefined;
+    assetFetchVersion.current += 1;
+    resetSelectionDerivedState();
     setAssets((currentAssets) =>
       currentAssets
         ? {
@@ -644,10 +669,49 @@ export function MetaAssetSelector({
           }
         : currentAssets
     );
+    onSelectionDerivedStateReset?.();
+  };
+
+  const handleSwitchBusiness = () => {
+    if (totalSelected > 0) {
+      setPendingResetConfirm('switch-business');
+      return;
+    }
+    performSwitchBusiness();
   };
 
   return (
     <div className="space-y-6">
+      {pendingResetConfirm ? (
+        <div
+          role="alertdialog"
+          aria-labelledby="meta-reset-confirm-title"
+          aria-describedby="meta-reset-confirm-description"
+          className="space-y-4 border-2 border-black bg-[rgb(var(--card))] p-6 dark:border-white"
+        >
+          <h3 id="meta-reset-confirm-title" className="text-lg font-bold text-[rgb(var(--ink))] font-display">
+            Switch business and clear this selection?
+          </h3>
+          <p id="meta-reset-confirm-description" className="text-sm text-[rgb(var(--muted-foreground))]">
+            You have selected {totalSelected} {totalSelected === 1 ? 'account' : 'accounts'}. Switching clears the selection, the saved state, and all grant and verification progress.
+          </p>
+          <div className="flex flex-wrap gap-3">
+            <Button
+              type="button"
+              variant="primary"
+              onClick={() => {
+                setPendingResetConfirm(null);
+                performSwitchBusiness();
+              }}
+            >
+              Clear selection and switch
+            </Button>
+            <Button type="button" variant="secondary" onClick={() => setPendingResetConfirm(null)}>
+              Cancel
+            </Button>
+          </div>
+        </div>
+      ) : null}
       {businessCreationNeedsReview ? <p role="status" className="border-2 border-[rgb(var(--warning))] bg-[rgb(var(--warning))]/10 p-4 text-sm text-[rgb(var(--warning))]">Business Portfolio creation is unconfirmed. Select the intended portfolio, then continue with asset selection and verification. Do not repeat creation in this request.</p> : null}
       {hasNoBusinessPortfolio ? (
         <div className="border-2 border-black dark:border-white bg-[rgb(var(--warm-gray))]/20 p-6 space-y-4">

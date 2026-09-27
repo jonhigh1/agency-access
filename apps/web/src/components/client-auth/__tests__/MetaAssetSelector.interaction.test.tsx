@@ -286,4 +286,237 @@ describe('MetaAssetSelector interactions', () => {
     expect(screen.getByText('leads_retrieval')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Open Meta Business Settings for Leads Access' })).toBeInTheDocument();
   });
+
+  it('confirms with the selection count before a switch and declines without changing anything', async () => {
+    const user = userEvent.setup();
+    const onSelectionChange = vi.fn();
+    const onSelectionDerivedStateReset = vi.fn();
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      text: async () => JSON.stringify({ data: {
+        businesses: [
+          { id: 'biz-1', name: 'Business One' },
+          { id: 'biz-2', name: 'Business Two' },
+        ],
+        selectedBusinessId: 'biz-1', selectedBusinessName: 'Business One', selectionRequired: false,
+        adAccounts: [], pages: [
+          { id: 'page-1', name: 'Page One' },
+          { id: 'page-2', name: 'Page Two' },
+          { id: 'page-3', name: 'Page Three' },
+        ], instagramAccounts: [], productCatalogs: [],
+      }, error: null }),
+    } as Response);
+
+    render(<MetaAssetSelector
+      sessionId="conn-1"
+      accessRequestToken="token-1"
+      allowedAssetTypes={['page']}
+      onSelectionChange={onSelectionChange}
+      onSelectionDerivedStateReset={onSelectionDerivedStateReset}
+    />);
+
+    await screen.findByText('Sharing from Business One');
+    await user.click(screen.getByText('Select pages...', { exact: false }));
+    await user.click(await screen.findByText('Page One'));
+    await user.click(await screen.findByText('Page Two'));
+    await user.click(await screen.findByText('Page Three'));
+
+    await user.click(screen.getByRole('button', { name: 'Switch business' }));
+
+    const dialog = screen.getByRole('alertdialog');
+    expect(dialog).toHaveTextContent('3');
+    expect(screen.getByRole('button', { name: 'Clear selection and switch' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(onSelectionDerivedStateReset).not.toHaveBeenCalled();
+    expect(onSelectionChange).toHaveBeenLastCalledWith(expect.objectContaining({
+      pages: ['page-1', 'page-2', 'page-3'],
+      selectedBusinessId: 'biz-1',
+    }));
+    expect(screen.getByText('Sharing from Business One')).toBeInTheDocument();
+  });
+
+  it('clears selection-derived state on a confirmed switch and reports the reset', async () => {
+    const user = userEvent.setup();
+    const onSelectionChange = vi.fn();
+    const onSelectionDerivedStateReset = vi.fn();
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      text: async () => JSON.stringify({ data: {
+        businesses: [
+          { id: 'biz-1', name: 'Business One' },
+          { id: 'biz-2', name: 'Business Two' },
+        ],
+        selectedBusinessId: 'biz-1', selectedBusinessName: 'Business One', selectionRequired: false,
+        adAccounts: [], pages: [{ id: 'page-1', name: 'Page One' }], instagramAccounts: [], productCatalogs: [],
+      }, error: null }),
+    } as Response);
+
+    render(<MetaAssetSelector
+      sessionId="conn-1"
+      accessRequestToken="token-1"
+      allowedAssetTypes={['page']}
+      onSelectionChange={onSelectionChange}
+      onSelectionDerivedStateReset={onSelectionDerivedStateReset}
+    />);
+
+    await screen.findByText('Sharing from Business One');
+    await user.click(screen.getByText('Select pages...', { exact: false }));
+    await user.click(await screen.findByText('Page One'));
+    await waitFor(() => expect(onSelectionChange).toHaveBeenCalledWith(expect.objectContaining({ pages: ['page-1'] })));
+
+    await user.click(screen.getByRole('button', { name: 'Switch business' }));
+    await user.click(screen.getByRole('button', { name: 'Clear selection and switch' }));
+
+    expect(onSelectionDerivedStateReset).toHaveBeenCalledTimes(1);
+    await waitFor(() => {
+      expect(onSelectionChange).toHaveBeenLastCalledWith(expect.objectContaining({
+        pages: [],
+        selectedBusinessId: undefined,
+        selectionRequired: true,
+      }));
+    });
+    expect(screen.queryByText('Sharing from Business One')).not.toBeInTheDocument();
+    expect(await screen.findByText('Select Business Portfolio')).toBeInTheDocument();
+  });
+
+  it('switches with zero selections without a confirm and still resets', async () => {
+    const user = userEvent.setup();
+    const onSelectionChange = vi.fn();
+    const onSelectionDerivedStateReset = vi.fn();
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      text: async () => JSON.stringify({ data: {
+        businesses: [
+          { id: 'biz-1', name: 'Business One' },
+          { id: 'biz-2', name: 'Business Two' },
+        ],
+        selectedBusinessId: 'biz-1', selectedBusinessName: 'Business One', selectionRequired: false,
+        adAccounts: [], pages: [{ id: 'page-1', name: 'Page One' }], instagramAccounts: [], productCatalogs: [],
+      }, error: null }),
+    } as Response);
+
+    render(<MetaAssetSelector
+      sessionId="conn-1"
+      accessRequestToken="token-1"
+      allowedAssetTypes={['page']}
+      onSelectionChange={onSelectionChange}
+      onSelectionDerivedStateReset={onSelectionDerivedStateReset}
+    />);
+
+    await screen.findByText('Sharing from Business One');
+    await user.click(screen.getByRole('button', { name: 'Switch business' }));
+
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(onSelectionDerivedStateReset).toHaveBeenCalledTimes(1);
+    expect(await screen.findByText('Select Business Portfolio')).toBeInTheDocument();
+  });
+
+  it('clears Pixel verification results on a confirmed switch after partial verification', async () => {
+    const user = userEvent.setup();
+    const onSelectionDerivedStateReset = vi.fn();
+    const assetsResponse = {
+      ok: true,
+      text: async () => JSON.stringify({ data: {
+        businesses: [
+          { id: 'biz-1', name: 'Business One' },
+          { id: 'biz-2', name: 'Business Two' },
+        ],
+        selectedBusinessId: 'biz-1', selectedBusinessName: 'Business One', selectionRequired: false,
+        adAccounts: [], pages: [], instagramAccounts: [], productCatalogs: [],
+        pixels: [{ id: 'pixel-1', name: 'Website Pixel' }],
+      }, error: null }),
+    } as Response;
+    vi.mocked(fetch).mockResolvedValueOnce(assetsResponse).mockResolvedValueOnce({
+      ok: true,
+      text: async () => JSON.stringify({ data: { status: 'verified' }, error: null }),
+    } as Response);
+
+    render(<MetaAssetSelector
+      sessionId="conn-1"
+      accessRequestToken="token-1"
+      allowedAssetTypes={['dataset']}
+      onSelectionChange={vi.fn()}
+      onSelectionDerivedStateReset={onSelectionDerivedStateReset}
+    />);
+
+    await screen.findByRole('heading', { name: 'Pixels and Datasets' });
+    await user.click(screen.getByText('Select Pixels and Datasets...', { exact: false }));
+    await user.click(await screen.findByText('Website Pixel'));
+    await user.click(screen.getByLabelText('Verify access'));
+    await user.click(screen.getByRole('button', { name: 'Verify access' }));
+    expect(await screen.findByRole('status')).toHaveTextContent(/Meta confirmed access for every selected recipient/);
+
+    await user.click(screen.getByRole('button', { name: 'Switch business' }));
+    expect(screen.getByRole('alertdialog')).toHaveTextContent('1');
+    await user.click(screen.getByRole('button', { name: 'Clear selection and switch' }));
+
+    expect(onSelectionDerivedStateReset).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText(/Meta confirmed access for every selected recipient/)).not.toBeInTheDocument();
+    expect(await screen.findByText('Select Business Portfolio')).toBeInTheDocument();
+  });
+
+  it('reports the reset when a new business is loaded from the portfolio picker', async () => {
+    const user = userEvent.setup();
+    const onSelectionDerivedStateReset = vi.fn();
+    vi.mocked(fetch)
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () =>
+          JSON.stringify({
+            data: {
+              businesses: [
+                { id: 'biz_client_1', name: 'DogTimez Holdings' },
+                { id: 'biz_client_2', name: 'DogTimez Retail' },
+              ],
+              selectedBusinessId: null,
+              selectedBusinessName: null,
+              selectionRequired: true,
+              adAccounts: [],
+              pages: [],
+              instagramAccounts: [],
+              productCatalogs: [],
+            },
+            error: null,
+          }),
+      } as Response)
+      .mockResolvedValue({
+        ok: true,
+        text: async () =>
+          JSON.stringify({
+            data: {
+              businesses: [
+                { id: 'biz_client_1', name: 'DogTimez Holdings' },
+                { id: 'biz_client_2', name: 'DogTimez Retail' },
+              ],
+              selectedBusinessId: 'biz_client_2',
+              selectedBusinessName: 'DogTimez Retail',
+              selectionRequired: false,
+              adAccounts: [],
+              pages: [{ id: 'page_1001', name: 'DogTimez Facebook' }],
+              instagramAccounts: [],
+              productCatalogs: [],
+            },
+            error: null,
+          }),
+      } as Response);
+
+    render(<MetaAssetSelector
+      sessionId="conn-1"
+      accessRequestToken="token-1"
+      allowedAssetTypes={['page']}
+      onSelectionChange={vi.fn()}
+      onSelectionDerivedStateReset={onSelectionDerivedStateReset}
+    />);
+
+    await screen.findByText('Select Business Portfolio');
+    await user.click(screen.getByRole('combobox', { name: 'Business Portfolio' }));
+    await user.click(screen.getByRole('option', { name: /DogTimez Retail/ }));
+    await user.click(screen.getByRole('button', { name: 'Load accounts' }));
+
+    expect(onSelectionDerivedStateReset).toHaveBeenCalledTimes(1);
+    await screen.findByText('Sharing from DogTimez Retail');
+  });
 });

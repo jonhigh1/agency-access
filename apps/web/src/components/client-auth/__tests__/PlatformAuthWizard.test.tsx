@@ -28,7 +28,7 @@ vi.mock('@/components/client-auth/PlatformWizardCard', () => ({
 }));
 
 vi.mock('@/components/client-auth/MetaAssetSelector', () => ({
-  MetaAssetSelector: ({ onSelectionChange }: any) => (
+  MetaAssetSelector: ({ onSelectionChange, onSelectionDerivedStateReset }: any) => (
     <div>
       <div>Meta Asset Selector</div>
       <button
@@ -54,6 +54,22 @@ vi.mock('@/components/client-auth/MetaAssetSelector', () => ({
         onClick={() =>
           onSelectionChange({
             adAccounts: [],
+            pages: ['page_1'],
+            instagramAccounts: ['ig_1'],
+            selectedPagesWithNames: [{ id: 'page_1', name: 'Shop Page' }],
+            selectedInstagramWithNames: [{ id: 'ig_1', name: 'Shop IG' }],
+            selectedBusinessId: 'biz_1',
+            selectedBusinessName: 'Client One',
+          })
+        }
+      >
+        Select Meta Pages And Instagram Assets
+      </button>
+      <button
+        type="button"
+        onClick={() =>
+          onSelectionChange({
+            adAccounts: [],
             pages: [],
             instagramAccounts: ['ig_1'],
             selectedInstagramWithNames: [{ id: 'ig_1', name: 'Shop IG' }],
@@ -63,6 +79,24 @@ vi.mock('@/components/client-auth/MetaAssetSelector', () => ({
         }
       >
         Select Meta Instagram Assets
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          // Mirror the real selector: it wipes selection-derived state locally,
+          // then re-emits an empty selection blob for the new business.
+          onSelectionDerivedStateReset?.();
+          onSelectionChange({
+            adAccounts: [],
+            pages: [],
+            instagramAccounts: [],
+            catalogs: [],
+            datasets: [],
+            selectionRequired: true,
+          });
+        }}
+      >
+        Switch Meta Business
       </button>
     </div>
   ),
@@ -752,5 +786,158 @@ describe('PlatformAuthWizard', () => {
     expect(screen.getByText('Meta Asset Selector')).toBeInTheDocument();
     expect(screen.getByRole('heading', { name: /choose accounts to share/i })).toBeInTheDocument();
     expect(screen.getByText('Meta Asset Selector')).toBeInTheDocument();
+  });
+
+  it('returns the save CTA after a post-save change-selection and completes a second save', async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () =>
+          JSON.stringify({
+            data: {
+              businessId: 'partner-bm-1',
+              businessName: 'Agency Access',
+            },
+            error: null,
+          }),
+      } as Response)
+      .mockResolvedValue({
+        ok: true,
+        text: async () => JSON.stringify({ data: { success: true }, error: null }),
+      } as Response);
+
+    render(
+      <PlatformAuthWizard
+        platform="meta"
+        platformName="Meta"
+        products={[{ product: 'meta_ads', accessLevel: 'admin' }]}
+        accessRequestToken="token-1"
+        onComplete={onCompleteMock}
+        initialConnectionId="conn-1"
+        initialStep={2}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /select meta assets/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /share access/i }));
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith(
+        'https://api.example.com/api/client/token-1/save-assets',
+        expect.objectContaining({ method: 'POST' })
+      );
+    });
+
+    // Post-save: the grant section renders and the save CTA is gone.
+    expect(await screen.findByText('Ad Account Sharing Instructions')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /share access/i })).not.toBeInTheDocument();
+
+    // Post-save the client can still go back: a change-selection affordance
+    // confirms with the selection count before clearing saved state.
+    fireEvent.click(screen.getByRole('button', { name: /change selection/i }));
+    const dialog = await screen.findByRole('alertdialog');
+    expect(dialog).toHaveTextContent('2');
+
+    fireEvent.click(screen.getByRole('button', { name: /clear selection and edit/i }));
+
+    // Stale grant state clears and the wizard is not bricked.
+    await waitFor(() => {
+      expect(screen.queryByText('Ad Account Sharing Instructions')).not.toBeInTheDocument();
+    });
+
+    // The save CTA returns once the client selects assets again.
+    fireEvent.click(screen.getByRole('button', { name: /select meta assets/i }));
+    expect(await screen.findByRole('button', { name: /share access/i })).toBeInTheDocument();
+
+    // The full pipeline completes: a second save reaches the server.
+    fireEvent.click(screen.getByRole('button', { name: /share access/i }));
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledTimes(3); // agency-business-id + 2 saves
+    });
+    expect(fetch).toHaveBeenLastCalledWith(
+      'https://api.example.com/api/client/token-1/save-assets',
+      expect.objectContaining({ method: 'POST' })
+    );
+  });
+
+  it('clears saved and Instagram verification state when the selector resets after a switch', async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () =>
+          JSON.stringify({
+            data: {
+              businessId: 'partner-bm-1',
+              businessName: 'Agency Access',
+            },
+            error: null,
+          }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () => JSON.stringify({ data: { success: true }, error: null }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () =>
+          JSON.stringify({
+            data: {
+              assetGrantResults: [
+                {
+                  assetId: 'ig_1',
+                  assetType: 'instagram_account',
+                  recipientType: 'business',
+                  recipientId: 'partner-bm-1',
+                  status: 'verified',
+                },
+              ],
+            },
+            error: null,
+          }),
+      } as Response)
+      .mockResolvedValue({
+        ok: true,
+        text: async () => JSON.stringify({ data: { success: true }, error: null }),
+      } as Response);
+
+    render(
+      <PlatformAuthWizard
+        platform="meta"
+        platformName="Meta"
+        products={[{ product: 'meta_ads', accessLevel: 'admin' }]}
+        accessRequestToken="token-1"
+        onComplete={onCompleteMock}
+        initialConnectionId="conn-1"
+        initialStep={2}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /select meta pages and instagram assets/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /share access/i }));
+
+    // Verify Instagram while Pages are still pending: the wizard stays on step 2.
+    fireEvent.click(await screen.findByRole('button', { name: /verify agency instagram access/i }));
+    expect(
+      await screen.findByText(/Meta confirmed agency Business Portfolio access/i)
+    ).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /connected/i })).not.toBeInTheDocument();
+
+    // Switch business from the re-opened selection section.
+    fireEvent.click(screen.getByRole('button', { name: /choose accounts to share/i }));
+    fireEvent.click(screen.getByRole('button', { name: /switch meta business/i }));
+
+    // The save CTA returns after reselecting: the wizard was not bricked.
+    fireEvent.click(screen.getByRole('button', { name: /select meta pages and instagram assets/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /share access/i }));
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledTimes(4); // agency-business-id + IG verify + 2 saves
+    });
+
+    // Instagram verification was cleared by the reset: completing Pages alone
+    // must not advance past the Instagram grant step.
+    fireEvent.click(screen.getByRole('button', { name: /automatic pages grant/i }));
+    expect(screen.queryByRole('heading', { name: /connected/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /verify agency instagram access/i })).toBeInTheDocument();
   });
 });
