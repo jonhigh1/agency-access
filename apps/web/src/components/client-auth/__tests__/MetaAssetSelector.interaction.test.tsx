@@ -187,7 +187,12 @@ describe('MetaAssetSelector interactions', () => {
       );
     });
 
-    expect(captureMock).not.toHaveBeenCalled();
+    // U11: load/shown funnel events may already have fired, but the
+    // selection event must still wait for a real selection.
+    expect(captureMock).not.toHaveBeenCalledWith(
+      'meta_assets_selected',
+      expect.anything()
+    );
   });
 
   it('returns selected product catalogs with their names', async () => {

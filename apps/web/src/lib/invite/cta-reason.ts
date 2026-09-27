@@ -66,12 +66,29 @@ export interface CtaReasonInput {
 /** What the primary action is right now. */
 export type CtaKind = 'ready' | 'disabled' | 'advance';
 
+/**
+ * U11: machine-readable reason kinds for the blocked state. Analytics carries
+ * these — never the free-text `reason` strings, which are UI copy.
+ */
+export type CtaReasonKind =
+  | 'expired'
+  | 'revoked'
+  | 'saving'
+  | 'grant_pending'
+  | 'loading'
+  | 'fetch_error'
+  | 'business_lookup_error'
+  | 'create_required'
+  | 'select_required';
+
 export interface CtaResolution {
   kind: CtaKind;
   /** True when the action must not be clickable. Always true for `disabled`. */
   disabled: boolean;
   /** The single live reason for the current state, when one exists. */
   reason?: string;
+  /** The kind-level form of `reason`, present only while the action is blocked. */
+  reasonKind?: CtaReasonKind;
 }
 
 export const CTA_REASONS = {
@@ -90,27 +107,37 @@ export function createAccountReason(businessName?: string | null): string {
   return `Create an ad account in ${businessName?.trim() || 'your business'} to continue`;
 }
 
-const disabledWithReason = (reason: string): CtaResolution => ({ kind: 'disabled', disabled: true, reason });
+const disabledWithReason = (reasonKind: CtaReasonKind, reason: string): CtaResolution => ({
+  kind: 'disabled',
+  disabled: true,
+  reason,
+  reasonKind,
+});
 const enabled = (kind: Exclude<CtaKind, 'disabled'>): CtaResolution => ({ kind, disabled: false });
 
 export function resolveCta(input: CtaReasonInput): CtaResolution {
   // 1. Terminal invite states outrank everything.
   if (input.requestAvailability === 'expired') {
-    return disabledWithReason(CTA_REASONS.expired);
+    return disabledWithReason('expired', CTA_REASONS.expired);
   }
   if (input.requestAvailability === 'revoked') {
-    return disabledWithReason(CTA_REASONS.revoked);
+    return disabledWithReason('revoked', CTA_REASONS.revoked);
   }
 
   // 2. A save in flight always wins: a second click must do nothing.
   if (input.saveInFlight) {
-    return disabledWithReason(CTA_REASONS.saving);
+    return disabledWithReason('saving', CTA_REASONS.saving);
   }
 
   // 3. Post-save: the action becomes the advance action, gated on grants.
   if (input.saved) {
     if (input.grantsRequired && input.grantsPending) {
-      return { kind: 'advance', disabled: true, reason: CTA_REASONS.grantPending };
+      return {
+        kind: 'advance',
+        disabled: true,
+        reason: CTA_REASONS.grantPending,
+        reasonKind: 'grant_pending',
+      };
     }
     return enabled('advance');
   }
@@ -118,15 +145,15 @@ export function resolveCta(input: CtaReasonInput): CtaResolution {
   // 4. Loading is neutral. Never a selection demand: the client has not yet
   //    seen the accounts they are being asked to select from.
   if (input.assetsLoading || input.businessLookupPending) {
-    return disabledWithReason(CTA_REASONS.preparing);
+    return disabledWithReason('loading', CTA_REASONS.preparing);
   }
 
   // 5. Failure states name the failure and the retry affordance.
   if (input.assetsFetchError) {
-    return disabledWithReason(CTA_REASONS.assetsFetchFailed);
+    return disabledWithReason('fetch_error', CTA_REASONS.assetsFetchFailed);
   }
   if (input.businessLookupError) {
-    return disabledWithReason(CTA_REASONS.businessLookupFailed);
+    return disabledWithReason('business_lookup_error', CTA_REASONS.businessLookupFailed);
   }
 
   // 6. Per-product selection rules. Creation comes first: the client cannot
@@ -134,13 +161,13 @@ export function resolveCta(input: CtaReasonInput): CtaResolution {
   for (const product of input.products) {
     if (product.selectedCount > 0) continue;
     if (product.zeroSelectionMode === 'create-required') {
-      return disabledWithReason(createAccountReason(input.businessName));
+      return disabledWithReason('create_required', createAccountReason(input.businessName));
     }
   }
   for (const product of input.products) {
     if (product.selectedCount > 0) continue;
     if (product.zeroSelectionMode === 'selection-required') {
-      return disabledWithReason(CTA_REASONS.selectAtLeastOne);
+      return disabledWithReason('select_required', CTA_REASONS.selectAtLeastOne);
     }
   }
 

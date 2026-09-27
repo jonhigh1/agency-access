@@ -2,6 +2,16 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { AdAccountSharingInstructions } from '../AdAccountSharingInstructions';
 
+const { trackInviteGrantChecklistToggledMock, trackInviteVerifyResultMock } = vi.hoisted(() => ({
+  trackInviteGrantChecklistToggledMock: vi.fn(),
+  trackInviteVerifyResultMock: vi.fn(),
+}));
+
+vi.mock('@/lib/analytics/invite-events', () => ({
+  trackInviteGrantChecklistToggled: trackInviteGrantChecklistToggledMock,
+  trackInviteVerifyResult: trackInviteVerifyResultMock,
+}));
+
 describe('AdAccountSharingInstructions', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -334,5 +344,90 @@ describe('AdAccountSharingInstructions - stateful manual-grant checklist (U9)', 
     expect(
       screen.getAllByText(/remove this access anytime in meta business settings/i)
     ).toHaveLength(1);
+  });
+
+  it('reports invite_grant_checklist_toggled once per row check and uncheck (U11)', async () => {
+    renderInstructions();
+
+    const row = await screen.findByRole('checkbox', { name: /select assets/i });
+    fireEvent.click(row);
+    fireEvent.click(row);
+
+    expect(trackInviteGrantChecklistToggledMock).toHaveBeenCalledTimes(2);
+    expect(trackInviteGrantChecklistToggledMock).toHaveBeenNthCalledWith(1, {
+      row_id: 'step-1',
+      checked: true,
+    });
+    expect(trackInviteGrantChecklistToggledMock).toHaveBeenNthCalledWith(2, {
+      row_id: 'step-1',
+      checked: false,
+    });
+  });
+
+  it('reports invite_verify_result with the server-truth kind and counts (U11)', async () => {
+    const onComplete = vi.fn();
+
+    vi.mocked(fetch)
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () =>
+          JSON.stringify({
+            data: { success: true, status: 'waiting_for_manual_share' },
+            error: null,
+          }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () =>
+          JSON.stringify({
+            data: {
+              success: true,
+              partial: true,
+              status: 'partial',
+              partnerBusinessId: 'partner-bm-1',
+              verificationResults: [
+                {
+                  assetId: 'act_1',
+                  assetName: 'DogTimez',
+                  status: 'verified',
+                  verifiedAt: '2026-03-11T12:02:00.000Z',
+                },
+                {
+                  assetId: 'act_2',
+                  assetName: 'CatTimez',
+                  status: 'unresolved',
+                  errorMessage: 'Still pending',
+                },
+              ],
+            },
+            error: null,
+          }),
+      } as Response);
+
+    render(
+      <AdAccountSharingInstructions
+        businessId="partner-bm-1"
+        businessName="Outdoor DIY"
+        selectedAdAccounts={[
+          { id: 'act_1', name: 'DogTimez' },
+          { id: 'act_2', name: 'CatTimez' },
+        ]}
+        accessRequestToken="token-1"
+        connectionId="conn-1"
+        onComplete={onComplete}
+      />
+    );
+
+    fireEvent.click(await screen.findByRole('button', { name: /check access/i }));
+
+    await waitFor(() => {
+      expect(onComplete).toHaveBeenCalledTimes(1);
+    });
+    expect(trackInviteVerifyResultMock).toHaveBeenCalledTimes(1);
+    expect(trackInviteVerifyResultMock).toHaveBeenCalledWith({
+      result_kind: 'partial',
+      verified_count: 1,
+      unresolved_count: 1,
+    });
   });
 });

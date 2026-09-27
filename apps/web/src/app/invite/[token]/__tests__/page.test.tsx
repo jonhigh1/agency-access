@@ -23,6 +23,9 @@ vi.mock('@/lib/analytics/capture-posthog', () => ({
 
 vi.mock('@/lib/analytics/invite-events', () => ({
   trackInviteOpenedOncePerSession: vi.fn(),
+  // U11: the flow shell raises this on "Check again"; stubbed here so the
+  // click handler reaches the page's refetch.
+  trackInviteProgressCheckRequested: vi.fn(),
 }));
 
 import * as inviteEvents from '@/lib/analytics/invite-events';

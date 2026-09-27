@@ -31,6 +31,11 @@ import {
   readManualGrantChecklistRows,
   writeManualGrantChecklistRow,
 } from '@/lib/invite/manual-grant-checklist-storage';
+import {
+  trackInviteGrantChecklistToggled,
+  trackInviteVerifyResult,
+  type InviteVerifyResultKind,
+} from '@/lib/analytics/invite-events';
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard';
 import { Button } from '@/components/ui/button';
 
@@ -247,6 +252,9 @@ export function AdAccountSharingInstructions({
   const toggleRow = (rowId: string, checked: boolean) => {
     setCheckedRows((prev) => ({ ...prev, [rowId]: checked }));
     writeManualGrantChecklistRow(accessRequestToken, businessId, rowId, checked);
+    // U11: one event per toggle, from the change handler. Row ids are the
+    // static checklist ids — never asset or business names.
+    trackInviteGrantChecklistToggled({ row_id: rowId, checked });
   };
 
   useEffect(() => {
@@ -325,6 +333,16 @@ export function AdAccountSharingInstructions({
       const nextResults = json.data?.verificationResults || [];
       setStatus(nextStatus);
       setVerificationResults(nextResults);
+
+      // U11: the server-truth verify outcome, once per verify response. Kind
+      // and counts only — no asset names.
+      const resultKind: InviteVerifyResultKind =
+        nextStatus === 'waiting_for_manual_share' ? 'waiting' : nextStatus;
+      trackInviteVerifyResult({
+        result_kind: resultKind,
+        verified_count: nextResults.filter((result) => result.status === 'verified').length,
+        unresolved_count: nextResults.filter((result) => result.status !== 'verified').length,
+      });
 
       if (nextStatus === 'verified' || nextStatus === 'partial') {
         onComplete({

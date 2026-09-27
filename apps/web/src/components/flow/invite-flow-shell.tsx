@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui';
+import { trackInviteProgressCheckRequested } from '@/lib/analytics/invite-events';
 import {
   INVITE_CHIP_STATUS_BY_PLATFORM_STATUS,
   type InvitePlatformChecklistEntry,
@@ -68,7 +69,12 @@ export function InviteFlowShell({
                   <Button
                     variant="ghost"
                     size="sm"
-                    onClick={onRefresh}
+                    onClick={() => {
+                      // U11: the shell raises the request; the page owns the
+                      // fetch. One event per click, from the handler.
+                      trackInviteProgressCheckRequested();
+                      onRefresh();
+                    }}
                     disabled={isRefreshing}
                     leftIcon={<RefreshCw className="h-3.5 w-3.5" aria-hidden />}
                   >

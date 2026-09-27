@@ -36,6 +36,7 @@ import { PlatformIcon, Button } from '@/components/ui';
 import { PLATFORM_NAMES } from '@agency-platform/shared';
 import type { MetaAccessConfig, Platform } from '@agency-platform/shared';
 import { trackOnboardingEvent } from '@/lib/analytics/onboarding';
+import { trackInviteCtaBlocked, trackInviteSelectionSaved } from '@/lib/analytics/invite-events';
 import { rememberInviteOAuthReturnToken } from '@/lib/client-invite-oauth';
 import { getClientInviteManualRoute } from '@/lib/client-invite-platforms';
 import { getApiBaseUrl } from '@/lib/api/api-env';
@@ -712,6 +713,20 @@ export function PlatformAuthWizard({
       // Mark assets as saved
       setAssetsSaved(true);
 
+      // U11: one event per successful save. Counts only — never asset names.
+      {
+        const selectable = products.filter((product) => supportsAssetSelection(product.product));
+        trackInviteSelectionSaved({
+          platform,
+          total_selected: selectable.reduce(
+            (sum, product) =>
+              sum + getSelectedAssetCount(product.product, groupAssets[product.product] || {}),
+            0
+          ),
+          product_count: selectable.length,
+        });
+      }
+
       if (platform === 'tiktok') {
         const tiktokAssets = groupAssets['tiktok_ads'] || groupAssets['tiktok'] || {};
         const hasTikTokNoAssets = hasNoAssetsFollowUp('tiktok_ads', tiktokAssets);
@@ -877,6 +892,21 @@ export function PlatformAuthWizard({
           requestAvailability,
         })
       : null;
+
+  // U11 funnel: report each blocked state once per occurrence. The effect runs
+  // on the reason-kind transition only — re-renders with an unchanged kind are
+  // silent, and leaving the blocked state (or the share step) re-arms it.
+  const ctaBlockedReasonKind = ctaResolution?.reasonKind;
+  const lastReportedBlockedKindRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!ctaBlockedReasonKind) {
+      lastReportedBlockedKindRef.current = null;
+      return;
+    }
+    if (lastReportedBlockedKindRef.current === ctaBlockedReasonKind) return;
+    lastReportedBlockedKindRef.current = ctaBlockedReasonKind;
+    trackInviteCtaBlocked({ platform, reason_kind: ctaBlockedReasonKind });
+  }, [ctaBlockedReasonKind, platform]);
 
   const handlePrimaryAction = () => {
     if (!ctaResolution || ctaResolution.disabled) return;

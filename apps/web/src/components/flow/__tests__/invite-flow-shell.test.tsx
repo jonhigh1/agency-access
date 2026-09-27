@@ -4,6 +4,14 @@ import userEvent from '@testing-library/user-event';
 import { InviteFlowShell } from '../invite-flow-shell';
 import type { InvitePlatformChecklistEntry } from '@/lib/invite/platform-status';
 
+const { trackInviteProgressCheckRequestedMock } = vi.hoisted(() => ({
+  trackInviteProgressCheckRequestedMock: vi.fn(),
+}));
+
+vi.mock('@/lib/analytics/invite-events', () => ({
+  trackInviteProgressCheckRequested: trackInviteProgressCheckRequestedMock,
+}));
+
 const entry = (overrides: Partial<InvitePlatformChecklistEntry>): InvitePlatformChecklistEntry => ({
   platform: 'meta' as InvitePlatformChecklistEntry['platform'],
   platformName: 'Meta',
@@ -97,6 +105,8 @@ describe('InviteFlowShell', () => {
 
     await userEvent.click(screen.getByRole('button', { name: /check again/i }));
     expect(onRefresh).toHaveBeenCalledTimes(1);
+    expect(trackInviteProgressCheckRequestedMock).toHaveBeenCalledTimes(1);
+    expect(trackInviteProgressCheckRequestedMock).toHaveBeenCalledWith();
 
     rerender(
       <InviteFlowShell

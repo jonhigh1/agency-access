@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import posthog from 'posthog-js';
 import { MetaAssetSelector } from '../MetaAssetSelector';
 
 vi.mock('posthog-js', () => ({
@@ -229,6 +230,26 @@ describe('MetaAssetSelector', () => {
       );
     });
 
+    // U11: the refresh is the SAME business — assets_loaded must not re-fire.
+    const assetsLoadedCalls = () =>
+      vi
+        .mocked(posthog.capture)
+        .mock.calls.filter(([event]) => event === 'invite_assets_loaded');
+    await waitFor(() => expect(assetsLoadedCalls()).toHaveLength(1));
+    expect(assetsLoadedCalls()[0]).toEqual([
+      'invite_assets_loaded',
+      {
+        available_ad_accounts: 0,
+        available_pages: 0,
+        available_instagram: 0,
+        available_catalogs: 0,
+        available_datasets: 0,
+        business_count: 2,
+        selection_required: false,
+        has_load_warnings: false,
+      },
+    ]);
+
     // Escape to the chooser, pick the other portfolio, and confirm the reset;
     // the reload stays scoped to the newly picked business.
     fireEvent.click(screen.getByRole('button', { name: /choose a different business/i }));
@@ -244,6 +265,23 @@ describe('MetaAssetSelector', () => {
       );
     });
     await findSharingReceipt('Client One');
+
+    // U11: the switched business is a new occurrence — exactly one more event,
+    // carrying only counts (no business names or ids).
+    await waitFor(() => expect(assetsLoadedCalls()).toHaveLength(2));
+    const [, secondPayload] = assetsLoadedCalls()[1] as [string, Record<string, unknown>];
+    expect(secondPayload).toEqual({
+      available_ad_accounts: 0,
+      available_pages: 0,
+      available_instagram: 0,
+      available_catalogs: 0,
+      available_datasets: 0,
+      business_count: 2,
+      selection_required: false,
+      has_load_warnings: false,
+    });
+    expect(JSON.stringify(secondPayload)).not.toContain('Client One');
+    expect(JSON.stringify(secondPayload)).not.toContain('biz_1');
   });
 
   it('does not refresh or restore a catalog business after the user switches portfolios', async () => {

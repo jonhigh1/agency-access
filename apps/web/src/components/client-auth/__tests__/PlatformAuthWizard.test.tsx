@@ -3,11 +3,13 @@ import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { PlatformAuthWizard } from '../PlatformAuthWizard';
 import { manualGrantChecklistStorageKey } from '@/lib/invite/manual-grant-checklist-storage';
 
-const { pushMock, replaceMock, onCompleteMock, trackOnboardingEventMock } = vi.hoisted(() => ({
+const { pushMock, replaceMock, onCompleteMock, trackOnboardingEventMock, trackInviteCtaBlockedMock, trackInviteSelectionSavedMock } = vi.hoisted(() => ({
   pushMock: vi.fn(),
   replaceMock: vi.fn(),
   onCompleteMock: vi.fn(),
   trackOnboardingEventMock: vi.fn(),
+  trackInviteCtaBlockedMock: vi.fn(),
+  trackInviteSelectionSavedMock: vi.fn(),
 }));
 
 vi.mock('next/navigation', () => ({
@@ -285,6 +287,11 @@ vi.mock('@/components/ui', () => ({
 
 vi.mock('@/lib/analytics/onboarding', () => ({
   trackOnboardingEvent: trackOnboardingEventMock,
+}));
+
+vi.mock('@/lib/analytics/invite-events', () => ({
+  trackInviteCtaBlocked: trackInviteCtaBlockedMock,
+  trackInviteSelectionSaved: trackInviteSelectionSavedMock,
 }));
 
 describe('PlatformAuthWizard', () => {
@@ -1036,6 +1043,78 @@ describe('PlatformAuthWizard', () => {
       expect(shareButton).toBeDisabled();
       expect(screen.getByText('Preparing your accounts')).toBeInTheDocument();
       expect(screen.queryByText(/select at least one/i)).not.toBeInTheDocument();
+    });
+
+    it('fires invite_cta_blocked once per reason kind — not per render (U11)', async () => {
+      vi.mocked(fetch).mockResolvedValue({
+        ok: true,
+        text: async () => JSON.stringify({ data: { success: true }, error: null }),
+      } as Response);
+
+      renderShareScreen({
+        platform: 'meta',
+        platformName: 'Meta',
+        products: [{ product: 'meta_ads', accessLevel: 'admin' }],
+      });
+
+      // Blocked while loading.
+      await waitFor(() => {
+        expect(trackInviteCtaBlockedMock).toHaveBeenCalledTimes(1);
+      });
+      expect(trackInviteCtaBlockedMock).toHaveBeenNthCalledWith(1, {
+        platform: 'meta',
+        reason_kind: 'loading',
+      });
+
+      // Blocked with the selection demand once assets are loaded.
+      fireEvent.click(
+        screen.getByRole('button', { name: /emit empty meta selection with available assets/i })
+      );
+      await screen.findByText('Select at least one ad account to continue');
+      await waitFor(() => {
+        expect(trackInviteCtaBlockedMock).toHaveBeenCalledTimes(2);
+      });
+      expect(trackInviteCtaBlockedMock).toHaveBeenNthCalledWith(2, {
+        platform: 'meta',
+        reason_kind: 'select_required',
+      });
+
+      // The action becomes enabled — no further blocked events.
+      fireEvent.click(screen.getByRole('button', { name: /select meta assets/i }));
+      await waitFor(() => {
+        expect(screen.getByRole('button', { name: /share access/i })).toBeEnabled();
+      });
+      expect(trackInviteCtaBlockedMock).toHaveBeenCalledTimes(2);
+      expect(trackInviteCtaBlockedMock.mock.calls.every(([properties]) =>
+        ['loading', 'select_required'].includes(properties.reason_kind)
+      )).toBe(true);
+    });
+
+    it('fires invite_selection_saved once per successful save (U11)', async () => {
+      vi.mocked(fetch).mockResolvedValue({
+        ok: true,
+        text: async () => JSON.stringify({ data: { success: true }, error: null }),
+      } as Response);
+
+      renderShareScreen({
+        platform: 'meta',
+        platformName: 'Meta',
+        products: [{ product: 'meta_ads', accessLevel: 'admin' }],
+      });
+
+      fireEvent.click(screen.getByRole('button', { name: /select meta assets/i }));
+      const shareButton = await screen.findByRole('button', { name: /share access/i });
+      await waitFor(() => expect(shareButton).toBeEnabled());
+      fireEvent.click(shareButton);
+
+      await waitFor(() => {
+        expect(trackInviteSelectionSavedMock).toHaveBeenCalledTimes(1);
+      });
+      expect(trackInviteSelectionSavedMock).toHaveBeenCalledWith({
+        platform: 'meta',
+        total_selected: 2,
+        product_count: 1,
+      });
     });
 
     it('renders the footer with the selection reason once assets are loaded and nothing is selected', async () => {

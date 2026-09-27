@@ -340,3 +340,79 @@ describe('resolveCta', () => {
     expect(resolution).toEqual({ kind: 'ready', disabled: false });
   });
 });
+
+/**
+ * U11: the analytics event needs a machine-readable reason kind so no
+ * free-text reason string ever lands in a payload.
+ */
+describe('resolveCta reasonKind (U11)', () => {
+  it('labels the loading state', () => {
+    expect(resolveCta(buildInput({ assetsLoading: true })).reasonKind).toBe('loading');
+  });
+
+  it('labels the selection demand', () => {
+    expect(resolveCta(buildInput()).reasonKind).toBe('select_required');
+  });
+
+  it('labels the create demand', () => {
+    expect(
+      resolveCta(
+        buildInput({
+          products: [{ product: 'meta_ads', selectedCount: 0, zeroSelectionMode: 'create-required' }],
+        })
+      ).reasonKind
+    ).toBe('create_required');
+  });
+
+  it('labels the fetch and lookup failures', () => {
+    expect(resolveCta(buildInput({ assetsFetchError: 'Failed to load accounts' })).reasonKind).toBe(
+      'fetch_error'
+    );
+    expect(
+      resolveCta(buildInput({ businessLookupError: 'Business Manager lookup failed' })).reasonKind
+    ).toBe('business_lookup_error');
+  });
+
+  it('labels the in-flight save and the pending grants', () => {
+    expect(
+      resolveCta(
+        buildInput({
+          products: [{ product: 'meta_ads', selectedCount: 2, zeroSelectionMode: 'selection-required' }],
+          saveInFlight: true,
+        })
+      ).reasonKind
+    ).toBe('saving');
+    expect(
+      resolveCta(
+        buildInput({
+          products: [{ product: 'meta_ads', selectedCount: 2, zeroSelectionMode: 'selection-required' }],
+          saved: true,
+          grantsRequired: true,
+          grantsPending: true,
+        })
+      ).reasonKind
+    ).toBe('grant_pending');
+  });
+
+  it('labels the terminal states', () => {
+    expect(resolveCta(buildInput({ requestAvailability: 'expired' })).reasonKind).toBe('expired');
+    expect(resolveCta(buildInput({ requestAvailability: 'revoked' })).reasonKind).toBe('revoked');
+  });
+
+  it('omits the reason kind when the action is enabled', () => {
+    const ready = resolveCta(
+      buildInput({
+        products: [{ product: 'meta_ads', selectedCount: 2, zeroSelectionMode: 'selection-required' }],
+      })
+    );
+    const advance = resolveCta(
+      buildInput({
+        products: [{ product: 'meta_ads', selectedCount: 2, zeroSelectionMode: 'selection-required' }],
+        saved: true,
+      })
+    );
+
+    expect(ready.reasonKind).toBeUndefined();
+    expect(advance.reasonKind).toBeUndefined();
+  });
+});

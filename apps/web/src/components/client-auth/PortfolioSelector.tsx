@@ -24,6 +24,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { SingleSelect } from '@/components/ui/single-select';
 import { Button } from '@/components/ui/button';
+import {
+  trackInviteBusinessChosen,
+  trackInviteQuestionShown,
+  trackInviteReceiptShown,
+} from '@/lib/analytics/invite-events';
 
 export interface PortfolioBusiness {
   id: string;
@@ -109,6 +114,36 @@ export function PortfolioSelector({
 
   const optionBusinesses = fullList ?? businesses;
 
+  // U11 funnel: receipt and question are shown states. Fire on the view-mode
+  // transition only (never per render), and re-arm while any other view is up
+  // so a return to the receipt or question is a new, single occurrence.
+  const shownView: 'receipt' | 'question' | 'creation' | 'loading' | 'error' = error
+    ? 'error'
+    : listStatus === 'error'
+      ? 'error'
+      : listStatus === 'loading'
+        ? 'loading'
+        : !(choosing || (selectionRequired && !selectedBusiness)) && selectedBusiness
+          ? 'receipt'
+          : optionBusinesses.length === 0
+            ? 'creation'
+            : 'question';
+  const lastShownViewRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (shownView !== 'receipt' && shownView !== 'question') {
+      lastShownViewRef.current = null;
+      return;
+    }
+    if (lastShownViewRef.current === shownView) return;
+    lastShownViewRef.current = shownView;
+    const properties = { business_count: optionBusinesses.length };
+    if (shownView === 'receipt') {
+      trackInviteReceiptShown(properties);
+    } else {
+      trackInviteQuestionShown(properties);
+    }
+  }, [shownView, optionBusinesses.length]);
+
   const loadBusinessList = async () => {
     setListStatus('loading');
     try {
@@ -130,6 +165,8 @@ export function PortfolioSelector({
   const confirmBusiness = () => {
     const chosen = optionBusinesses.find((business) => business.id === pendingBusinessId);
     if (!chosen) return;
+    // U11: fire from the confirm handler — counts only, never names or ids.
+    trackInviteBusinessChosen({ business_count: optionBusinesses.length });
     onBusinessConfirmed(chosen);
     setChoosing(false);
     setPendingBusinessId('');

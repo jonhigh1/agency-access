@@ -3,6 +3,22 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { PortfolioSelector, type PortfolioBusiness } from '../PortfolioSelector';
 
+const {
+  trackInviteReceiptShownMock,
+  trackInviteQuestionShownMock,
+  trackInviteBusinessChosenMock,
+} = vi.hoisted(() => ({
+  trackInviteReceiptShownMock: vi.fn(),
+  trackInviteQuestionShownMock: vi.fn(),
+  trackInviteBusinessChosenMock: vi.fn(),
+}));
+
+vi.mock('@/lib/analytics/invite-events', () => ({
+  trackInviteReceiptShown: trackInviteReceiptShownMock,
+  trackInviteQuestionShown: trackInviteQuestionShownMock,
+  trackInviteBusinessChosen: trackInviteBusinessChosenMock,
+}));
+
 const ACME_ID = '1029384756102938';
 const BLOOM_ID = '5647382910475638';
 const NORTH_ID = '9081726354938271';
@@ -231,5 +247,109 @@ describe('PortfolioSelector — question keyboard path', () => {
 
     await user.click(screen.getByRole('button', { name: /confirm business/i }));
     expect(onBusinessConfirmed).toHaveBeenCalledWith(bloom);
+  });
+});
+
+/**
+ * U11 funnel events: shown events fire once per view-mode occurrence from the
+ * state transition, never per render; the confirm handler reports the choice.
+ * Payloads carry counts only — never business names or ids.
+ */
+describe('PortfolioSelector — funnel events (U11)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('fires invite_receipt_shown once and never again on rerender', () => {
+    const { rerender } = renderSelector();
+
+    expect(trackInviteReceiptShownMock).toHaveBeenCalledTimes(1);
+    expect(trackInviteReceiptShownMock).toHaveBeenCalledWith({ business_count: 1 });
+    expect(trackInviteQuestionShownMock).not.toHaveBeenCalled();
+
+    rerender(
+      <PortfolioSelector
+        businesses={[acme]}
+        selectedBusiness={acme}
+        fetchBusinesses={vi.fn().mockResolvedValue([acme, bloom])}
+        onBusinessConfirmed={vi.fn()}
+      />
+    );
+
+    expect(trackInviteReceiptShownMock).toHaveBeenCalledTimes(1);
+  });
+
+  it('fires invite_question_shown once after the escape fetch and reports the choice on confirm', async () => {
+    const user = userEvent.setup();
+    const onBusinessConfirmed = vi.fn();
+    renderSelector({
+      businesses: [acme, bloom],
+      selectedBusiness: null,
+      selectionRequired: true,
+      onBusinessConfirmed,
+    });
+
+    expect(trackInviteQuestionShownMock).toHaveBeenCalledTimes(1);
+    expect(trackInviteQuestionShownMock).toHaveBeenCalledWith({ business_count: 2 });
+
+    await user.click(screen.getByRole('combobox'));
+    await user.click(screen.getByRole('option', { name: /Bloom Media/ }));
+    await user.click(screen.getByRole('button', { name: /confirm business/i }));
+
+    expect(trackInviteBusinessChosenMock).toHaveBeenCalledTimes(1);
+    expect(trackInviteBusinessChosenMock).toHaveBeenCalledWith({ business_count: 2 });
+    expect(onBusinessConfirmed).toHaveBeenCalledTimes(1);
+  });
+
+  it('re-arms the shown events when the view mode changes again', async () => {
+    const user = userEvent.setup();
+    const fetchBusinesses = vi.fn().mockResolvedValue([acme, bloom]);
+    renderSelector({ fetchBusinesses });
+
+    expect(trackInviteReceiptShownMock).toHaveBeenCalledTimes(1);
+
+    // Receipt → question.
+    await user.click(screen.getByRole('button', { name: /choose a different business/i }));
+    await waitFor(() => expect(screen.getByRole('combobox')).toBeInTheDocument());
+    expect(trackInviteQuestionShownMock).toHaveBeenCalledTimes(1);
+    expect(trackInviteQuestionShownMock).toHaveBeenCalledWith({ business_count: 2 });
+
+    // Question → receipt (original business confirmed).
+    await user.click(screen.getByRole('combobox'));
+    await user.click(screen.getByRole('option', { name: /Acme Studio/ }));
+    await user.click(screen.getByRole('button', { name: /confirm business/i }));
+    expect(await screen.findByText(/sharing from/i)).toBeInTheDocument();
+    expect(trackInviteReceiptShownMock).toHaveBeenCalledTimes(2);
+
+    // Receipt → question again: a new occurrence fires once more.
+    await user.click(screen.getByRole('button', { name: /choose a different business/i }));
+    expect(screen.getByRole('combobox')).toBeInTheDocument();
+    expect(trackInviteQuestionShownMock).toHaveBeenCalledTimes(2);
+  });
+
+  it('never puts business names or ids in a shown or chosen payload', async () => {
+    const user = userEvent.setup();
+    renderSelector({
+      businesses: [acme, bloom],
+      selectedBusiness: null,
+      selectionRequired: true,
+    });
+
+    await user.click(screen.getByRole('combobox'));
+    await user.click(screen.getByRole('option', { name: /Bloom Media/ }));
+    await user.click(screen.getByRole('button', { name: /confirm business/i }));
+
+    for (const mock of [
+      trackInviteReceiptShownMock,
+      trackInviteQuestionShownMock,
+      trackInviteBusinessChosenMock,
+    ]) {
+      for (const [properties] of mock.mock.calls) {
+        expect(JSON.stringify(properties)).not.toContain('Acme Studio');
+        expect(JSON.stringify(properties)).not.toContain('Bloom Media');
+        expect(JSON.stringify(properties)).not.toContain(ACME_ID);
+        expect(JSON.stringify(properties)).not.toContain(BLOOM_ID);
+      }
+    }
   });
 });

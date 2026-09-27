@@ -17,6 +17,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { capturePosthogEvent } from '@/lib/analytics/capture-posthog';
+import { trackInviteAssetsLoaded } from '@/lib/analytics/invite-events';
 import { AssetGroup, type Asset } from './AssetGroup';
 import { MultiSelectCombobox } from '@/components/ui/multi-select-combobox';
 import { AssetSelectorLoading, AssetSelectorError } from './AssetSelectorStates';
@@ -183,6 +184,9 @@ export function MetaAssetSelector({
 
   // Track if we've already captured the event (to avoid duplicates)
   const hasTrackedSelection = useRef(false);
+  // U11: report invite_assets_loaded once per business per component life, so
+  // re-fetches of the same portfolio (creation refresh, retry) never re-fire.
+  const assetsLoadedReportedForRef = useRef<Set<string>>(new Set());
   const activeBusinessId = selectedBusinessId || (assets?.selectionRequired ? undefined : businessId || undefined);
   const activeBusinessIdRef = useRef(activeBusinessId);
   const assetFetchVersion = useRef(0);
@@ -407,6 +411,24 @@ export function MetaAssetSelector({
       setAssets(fetchedAssets);
       setSelectedBusinessId(fetchedAssets.selectedBusinessId || requestedBusinessId || null);
       setSelectedBusinessName(fetchedAssets.selectedBusinessName || null);
+
+      // U11: funnel step — this business's assets are loaded. Counts and flags
+      // only; availability numbers reuse the same shapes as meta_assets_selected.
+      const loadedForBusiness =
+        fetchedAssets.selectedBusinessId || requestedBusinessId || 'unscoped';
+      if (!assetsLoadedReportedForRef.current.has(loadedForBusiness)) {
+        assetsLoadedReportedForRef.current.add(loadedForBusiness);
+        trackInviteAssetsLoaded({
+          available_ad_accounts: fetchedAssets.adAccounts?.length || 0,
+          available_pages: fetchedAssets.pages?.length || 0,
+          available_instagram: fetchedAssets.instagramAccounts?.length || 0,
+          available_catalogs: fetchedAssets.productCatalogs?.length || 0,
+          available_datasets: fetchedAssets.pixels?.length || 0,
+          business_count: fetchedAssets.businesses?.length || 0,
+          selection_required: Boolean(fetchedAssets.selectionRequired),
+          has_load_warnings: Boolean(fetchedAssets.assetLoadWarnings?.length),
+        });
+      }
 
       // U7 resume prefill: keep only the saved selections the fresh fetch
       // still shows. One pass — after this the selection is client-owned.
