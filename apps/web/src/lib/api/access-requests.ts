@@ -6,7 +6,8 @@
  */
 
 import { PlatformGroupConfig } from '@/lib/transform-platforms';
-import type { IntakeField } from '@agency-platform/shared';
+import type { IntakeField, MetaAccessConfig, MetaFulfillmentResult } from '@agency-platform/shared';
+export type { MetaFulfillmentResult } from '@agency-platform/shared';
 import { buildInviteUrl } from '@/lib/app-url';
 import { AuthorizedApiError, authorizedApiFetch } from './authorized-api-fetch';
 
@@ -27,6 +28,7 @@ export interface CreateAccessRequestPayload {
     primaryColor: string;
     subdomain?: string;
   };
+  metaAccessConfig?: MetaAccessConfig;
 }
 
 export interface AccessRequest {
@@ -43,6 +45,7 @@ export interface AccessRequest {
   createdAt: string;
   updatedAt: string;
   intakeFields?: IntakeField[];
+  metaAccessConfig?: MetaAccessConfig;
   branding?: {
     logoUrl?: string;
     primaryColor: string;
@@ -68,6 +71,7 @@ export interface AccessRequest {
       reason: 'no_assets' | 'selection_required' | string;
     }>;
   };
+  metaFulfillment?: MetaFulfillmentResult[];
   authorizationLinkChanged?: boolean;
 }
 
@@ -80,6 +84,7 @@ export interface UpdateAccessRequestPayload {
     primaryColor?: string;
     subdomain?: string;
   };
+  metaAccessConfig?: MetaAccessConfig;
 }
 
 export interface ApiError {
@@ -230,6 +235,35 @@ export async function updateAccessRequest(
       };
     }
 
+    return {
+      error: {
+        code: 'NETWORK_ERROR',
+        message: err instanceof Error ? err.message : 'Network error. Please try again.',
+      },
+    };
+  }
+}
+
+export async function excludeMetaGrant(
+  accessRequestId: string,
+  grantId: string,
+  reason: string,
+  getToken?: TokenProvider
+): Promise<{ data?: MetaFulfillmentResult; error?: ApiError }> {
+  try {
+    const response = await authorizedApiFetch<{ data: MetaFulfillmentResult; error: null }>(
+      `/api/access-requests/${accessRequestId}/meta-grants/${grantId}/exclude`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ reason, confirmed: true }),
+        getToken: getToken ?? (async () => null),
+      }
+    );
+    return { data: response.data };
+  } catch (err) {
+    if (err instanceof AuthorizedApiError) {
+      return { error: { code: err.code, message: err.message, details: err.details } };
+    }
     return {
       error: {
         code: 'NETWORK_ERROR',

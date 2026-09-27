@@ -40,6 +40,7 @@ vi.mock('../../services/meta-assets.service.js', () => ({
     saveBusinessPortfolio: vi.fn(),
     saveAssetSettings: vi.fn(),
     getAssetSettings: vi.fn(),
+    getAssignableRecipients: vi.fn(),
   },
 }));
 vi.mock('../../services/google-assets.service.js', () => ({
@@ -95,7 +96,7 @@ vi.mock('../../services/agency-resolution.service.js', () => ({
 vi.mock('../../lib/authorization.js');
 vi.mock('../../middleware/auth.js', () => ({
   authenticate: () => async (request: any) => {
-    request.user = { sub: 'user_123' };
+    request.user = { sub: 'user_123', email: 'admin@agency.com' };
   },
 }));
 
@@ -165,10 +166,12 @@ describe('Agency Platforms Routes', () => {
     app = Fastify();
     await app.register(agencyPlatformsRoutes);
     vi.clearAllMocks();
+    vi.mocked(agencyPlatformService.getConnection).mockResolvedValue({ data: null, error: null });
     vi.mocked(authorization.resolvePrincipalAgency).mockResolvedValue({
       data: { agencyId: 'agency-1', principalId: 'user_123' },
       error: null,
     });
+    vi.mocked(authorization.resolveUserEmail).mockReturnValue('admin@agency.com');
     vi.mocked(authorization.assertAgencyAccess).mockImplementation((requested, principal) => {
       if (requested !== principal) {
         return {
@@ -624,29 +627,7 @@ describe('Agency Platforms Routes', () => {
   });
 
   describe('POST /agency-platforms/:platform/initiate', () => {
-    it('rejects Meta legacy OAuth initiation unless an explicit fallback flag is provided', async () => {
-      const response = await app.inject({
-        method: 'POST',
-        url: '/agency-platforms/meta/initiate',
-        payload: {
-          agencyId: 'agency-1',
-          userEmail: 'admin@agency.com',
-          redirectUrl: 'https://app.example.com/settings/platforms',
-        },
-      });
-
-      expect(response.statusCode).toBe(410);
-      expect(response.json()).toEqual({
-        data: null,
-        error: {
-          code: 'LEGACY_META_OAUTH_DISABLED',
-          message: 'Meta now uses Business Login via the JS SDK. Reconnect from the app UI or pass useLegacyFallback=true only for rollback.',
-        },
-      });
-      expect(oauthStateService.createState).not.toHaveBeenCalled();
-    });
-
-    it('should initiate OAuth flow and return auth URL when Meta legacy fallback is explicitly enabled', async () => {
+    it('initiates Meta server-side OAuth without a browser-token fallback flag', async () => {
       const mockStateToken = 'state-token-123';
       const mockAuthUrl = 'https://facebook.com/oauth?state=state-token-123';
 
@@ -664,7 +645,6 @@ describe('Agency Platforms Routes', () => {
           agencyId: 'agency-1',
           userEmail: 'admin@agency.com',
           redirectUrl: 'https://app.example.com/settings/platforms',
-          useLegacyFallback: true,
         },
       });
 
@@ -683,7 +663,6 @@ describe('Agency Platforms Routes', () => {
         platform: 'meta',
         userEmail: 'admin@agency.com',
         redirectUrl: 'https://app.example.com/settings/platforms',
-        useLegacyFallback: true,
         timestamp: expect.any(Number),
       });
     });
@@ -729,7 +708,6 @@ describe('Agency Platforms Routes', () => {
         payload: {
           agencyId: 'agency-1',
           userEmail: 'admin@agency.com',
-          useLegacyFallback: true,
         },
       });
 
@@ -738,191 +716,59 @@ describe('Agency Platforms Routes', () => {
   });
 
   describe('POST /agency-platforms/meta/business-login/finalize', () => {
-    it('returns 400 when required Meta Business Login payload is missing', async () => {
+    it('does not accept browser-submitted Meta access tokens', async () => {
       const response = await app.inject({
         method: 'POST',
         url: '/agency-platforms/meta/business-login/finalize',
-        payload: {
-          agencyId: 'agency-1',
-        },
+        payload: { agencyId: 'agency-1', userEmail: 'client@example.com', accessToken: 'browser-token' },
       });
 
-      expect(response.statusCode).toBe(400);
-      expect(response.json()).toEqual({
-        data: null,
-        error: {
-          code: 'VALIDATION_ERROR',
-          message: 'agencyId, accessToken, and userEmail are required',
-        },
-      });
+      expect(response.statusCode).toBe(404);
     });
 
-    it('stores a Meta connection from Business Login payload without exposing secretId in the response', async () => {
-      mockMetaConnectorInstance.verifyToken.mockResolvedValue(true);
-      mockMetaConnectorInstance.getUserInfo.mockResolvedValue({
-        id: 'meta-user-1',
-        name: 'Jon High',
-      });
-      mockMetaConnectorInstance.getTokenMetadata.mockResolvedValue({
-        scopes: ['ads_management', 'business_management'],
-        dataAccessExpiresAt: new Date('2026-07-01T00:00:00.000Z'),
-      });
-      mockMetaConnectorInstance.getLongLivedToken.mockResolvedValue({
-        accessToken: 'long-lived-token',
-        tokenType: 'bearer',
-        expiresAt: new Date('2026-05-10T00:00:00.000Z'),
-      });
-      mockMetaConnectorInstance.getBusinessAccounts.mockResolvedValue({
-        businesses: [
-          { id: 'biz-1', name: 'Jon High', verificationStatus: 'not_verified' },
-          { id: 'biz-2', name: 'Outdoor DIY', verificationStatus: 'verified' },
-        ],
-        hasAccess: true,
-      });
-
-      vi.mocked(agencyPlatformService.getConnection).mockResolvedValue({
-        data: null,
-        error: null,
-      });
-      vi.mocked(agencyPlatformService.createConnection).mockResolvedValue({
+  });
+  describe('GET /agency-platforms/meta/callback', () => {
+    it('reprovisions the selected portfolio after server-side Meta reauthorization', async () => {
+      vi.mocked(oauthStateService.validateState).mockResolvedValue({
         data: {
-          id: 'conn-meta-1',
-          agencyId: 'agency-1',
-          platform: 'meta',
-          status: 'active',
-          secretId: 'meta_agency_agency-1',
-          metadata: {},
-          connectedBy: 'jon.highmu@gmail.com',
-        } as any,
-        error: null,
-      });
-      vi.mocked(createAuditLog).mockResolvedValue({
-        data: {} as any,
-        error: null,
-      });
-
-      const response = await app.inject({
-        method: 'POST',
-        url: '/agency-platforms/meta/business-login/finalize',
-        payload: {
-          agencyId: 'agency-1',
-          userEmail: 'jon.highmu@gmail.com',
-          accessToken: 'short-lived-token',
-          userId: 'meta-user-1',
-          expiresIn: 3600,
-          dataAccessExpirationTime: 1781044454,
-        },
-      });
-
-      expect(response.statusCode).toBe(200);
-      expect(agencyPlatformService.createConnection).toHaveBeenCalledWith({
-        agencyId: 'agency-1',
-        platform: 'meta',
-        accessToken: 'long-lived-token',
-        refreshToken: undefined,
-        expiresAt: new Date('2026-05-10T00:00:00.000Z'),
-        scope: 'ads_management,business_management',
-        connectedBy: 'jon.highmu@gmail.com',
-        metadata: {
-          tokenType: 'bearer',
-          metaBusinessLogin: {
-            authSource: 'js_sdk',
-            userId: 'meta-user-1',
-            userName: 'Jon High',
-            expiresIn: 3600,
-            dataAccessExpirationTime: 1781044454,
-            dataAccessExpiresAt: '2026-07-01T00:00:00.000Z',
-            grantedScopes: ['ads_management', 'business_management'],
-          },
-          metaBusinessAccounts: {
-            businesses: [
-              { id: 'biz-1', name: 'Jon High', verificationStatus: 'not_verified' },
-              { id: 'biz-2', name: 'Outdoor DIY', verificationStatus: 'verified' },
-            ],
-            hasAccess: true,
-          },
-        },
-      });
-      expect(createAuditLog).toHaveBeenCalledWith(
-        expect.objectContaining({
-          agencyId: 'agency-1',
-          userEmail: 'jon.highmu@gmail.com',
-          action: 'META_BUSINESS_LOGIN_FINALIZED',
-        })
-      );
-      expect(response.json().data.secretId).toBeUndefined();
-    });
-
-    it('reprovisions the selected portfolio after refreshing an existing Meta connection', async () => {
-      mockMetaConnectorInstance.verifyToken.mockResolvedValue(true);
-      mockMetaConnectorInstance.getUserInfo.mockResolvedValue({
-        id: 'meta-user-1',
-        name: 'Jon High',
-      });
-      mockMetaConnectorInstance.getTokenMetadata.mockResolvedValue({
-        scopes: ['ads_management', 'business_management'],
-        dataAccessExpiresAt: new Date('2026-07-01T00:00:00.000Z'),
-      });
-      mockMetaConnectorInstance.getLongLivedToken.mockResolvedValue({
-        accessToken: 'long-lived-token',
-        tokenType: 'bearer',
-        expiresAt: new Date('2026-05-10T00:00:00.000Z'),
-      });
-      mockMetaConnectorInstance.getBusinessAccounts.mockResolvedValue({
-        businesses: [{ id: 'biz-1', name: 'Jon High' }],
-        hasAccess: true,
-      });
-
-      vi.mocked(agencyPlatformService.getConnection).mockResolvedValue({
-        data: {
-          id: 'conn-meta-1',
-          agencyId: 'agency-1',
-          platform: 'meta',
-          metadata: {
-            selectedBusinessId: 'biz-1',
-            selectedBusinessName: 'Jon High',
-          },
+          agencyId: 'agency-1', platform: 'meta', userEmail: 'admin@agency.com',
+          redirectUrl: 'http://localhost:3000/platforms/callback', timestamp: Date.now(),
         },
         error: null,
       } as any);
-      vi.mocked(infisical.storeOAuthTokens).mockResolvedValue('meta_agency_agency-1');
-      vi.mocked(prisma.agencyPlatformConnection.update).mockResolvedValue({
-        id: 'conn-meta-1',
-        agencyId: 'agency-1',
-        platform: 'meta',
-        status: 'active',
-        metadata: {
-          selectedBusinessId: 'biz-1',
-          selectedBusinessName: 'Jon High',
+      mockMetaConnectorInstance.exchangeCode.mockResolvedValue({ accessToken: 'short-lived-token' } as any);
+      mockMetaConnectorInstance.getLongLivedToken.mockResolvedValue({
+        accessToken: 'long-lived-token', expiresAt: new Date('2026-05-10T00:00:00.000Z'),
+      } as any);
+      vi.mocked(agencyPlatformService.getConnection).mockResolvedValue({
+        data: {
+          id: 'conn-meta-1', status: 'active',
+          metadata: { selectedBusinessId: 'biz-1', selectedBusinessName: 'Jon High' },
         },
+        error: null,
+      } as any);
+      vi.mocked(agencyPlatformService.refreshConnection).mockResolvedValue({
+        data: { id: 'conn-meta-1', status: 'active' }, error: null,
       } as any);
       vi.mocked(metaAssetsService.saveBusinessPortfolio).mockResolvedValue({
-        data: { id: 'conn-meta-1' },
-        error: null,
+        data: { id: 'conn-meta-1' }, error: null,
       } as any);
-      vi.mocked(createAuditLog).mockResolvedValue({ data: {} as any, error: null });
 
       const response = await app.inject({
-        method: 'POST',
-        url: '/agency-platforms/meta/business-login/finalize',
-        payload: {
-          agencyId: 'agency-1',
-          userEmail: 'jon.highmu@gmail.com',
-          accessToken: 'short-lived-token',
-          userId: 'meta-user-1',
-        },
+        method: 'GET',
+        url: '/agency-platforms/meta/callback?code=auth-code&state=state-token',
       });
 
-      expect(response.statusCode).toBe(200);
-      expect(metaAssetsService.saveBusinessPortfolio).toHaveBeenCalledWith(
-        'agency-1',
-        'biz-1',
-        'Jon High'
+      expect(response.statusCode).toBe(302);
+      expect(agencyPlatformService.refreshConnection).toHaveBeenCalledWith(
+        'agency-1', 'meta', expect.objectContaining({ accessToken: 'long-lived-token' })
       );
+      expect(metaAssetsService.saveBusinessPortfolio).toHaveBeenCalledWith(
+        'agency-1', 'biz-1', 'Jon High'
+      );
+      expect(agencyPlatformService.createConnection).not.toHaveBeenCalled();
     });
-  });
 
-  describe('GET /agency-platforms/:platform/callback', () => {
     it('should handle OAuth callback and create connection', async () => {
       const mockStateData = {
         agencyId: 'agency-1',
@@ -1397,7 +1243,7 @@ describe('Agency Platforms Routes', () => {
         url: '/agency-platforms/meta',
         payload: {
           agencyId: 'agency-1',
-          revokedBy: 'admin@agency.com',
+          revokedBy: 'spoofed@example.com',
         },
       });
 
@@ -1410,7 +1256,8 @@ describe('Agency Platforms Routes', () => {
       expect(agencyPlatformService.revokeConnection).toHaveBeenCalledWith(
         'agency-1',
         'meta',
-        'admin@agency.com'
+        'admin@agency.com',
+        { ipAddress: expect.any(String) }
       );
     });
 
@@ -1433,6 +1280,18 @@ describe('Agency Platforms Routes', () => {
       });
 
       expect(response.statusCode).toBe(404);
+    });
+
+    it('rejects disconnect when verified actor email is unavailable', async () => {
+      vi.mocked(authorization.resolveUserEmail).mockReturnValue(undefined);
+      const response = await app.inject({
+        method: 'DELETE',
+        url: '/agency-platforms/meta',
+        payload: { agencyId: 'agency-1', revokedBy: 'spoofed@example.com' },
+      });
+
+      expect(response.statusCode).toBe(401);
+      expect(agencyPlatformService.revokeConnection).not.toHaveBeenCalled();
     });
   });
 
@@ -1585,6 +1444,26 @@ describe('Agency Platforms Routes', () => {
     });
   });
 
+  describe('GET /agency-platforms/meta/assignees', () => {
+    it('returns assignees for the authenticated agency', async () => {
+      vi.mocked(metaAssetsService.getAssignableRecipients).mockResolvedValue({
+        data: [{ type: 'human', id: 'person-1', name: 'Jon High' }],
+        error: null,
+      });
+
+      const response = await app.inject({
+        method: 'GET',
+        url: '/agency-platforms/meta/assignees?agencyId=agency-1',
+      });
+
+      expect(response.statusCode).toBe(200);
+      expect(response.json().data).toEqual([
+        { type: 'human', id: 'person-1', name: 'Jon High' },
+      ]);
+      expect(metaAssetsService.getAssignableRecipients).toHaveBeenCalledWith('agency-1', expect.anything());
+    });
+  });
+
   describe('PATCH /agency-platforms/meta/asset-settings', () => {
     it('should save asset settings', async () => {
       const settings = {
@@ -1640,7 +1519,7 @@ describe('Agency Platforms Routes', () => {
       const mockSettings = {
         googleAdsManagement: {
           preferredGrantMode: 'user_invite',
-          inviteEmail: 'jon.highmu@gmail.com',
+          inviteEmail: 'client@example.com',
         },
         googleAds: { enabled: true, requestManageUsers: false },
         googleAnalytics: { enabled: true, requestManageUsers: false },

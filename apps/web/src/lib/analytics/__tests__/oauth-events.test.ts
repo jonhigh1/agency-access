@@ -46,7 +46,6 @@ describe('oauth-events', () => {
     expect(captureMock).toHaveBeenCalledWith('oauth_callback_failure', {
       platform: 'unknown',
       error_code: 'TOKEN_EXCHANGE_FAILED',
-      error_message: 'Exchange failed',
       auth_source: 'agency_redirect',
       agency_id: 'agency-1',
     });
@@ -55,9 +54,7 @@ describe('oauth-events', () => {
       agency_id: 'agency-1',
       platform: 'unknown',
       error_code: 'TOKEN_EXCHANGE_FAILED',
-      error_message: 'Exchange failed',
       auth_source: 'agency_redirect',
-      access_request_token: undefined,
     });
   });
 
@@ -72,41 +69,38 @@ describe('oauth-events', () => {
     expect(captureMock).toHaveBeenCalledWith('oauth_callback_success', {
       platform: 'meta',
       auth_source: 'client_meta_popup',
-      access_request_token: 'token-abc',
       connection_id: 'conn-1',
     });
 
     expect(captureMock).toHaveBeenCalledWith('client_oauth_exchange_success', {
       platform: 'meta',
-      access_request_token: 'token-abc',
       connection_id: 'conn-1',
       auth_source: 'client_meta_popup',
     });
+    expect(JSON.stringify(captureMock.mock.calls)).not.toContain('token-abc');
   });
 
   it('tracks client oauth exchange failure with client and shared events', () => {
     trackClientOAuthExchangeFailure({
       platform: 'meta',
-      error_code: 'META_POPUP_FAILED',
-      error_message: 'Popup blocked',
-      auth_source: 'client_meta_popup',
       access_request_token: 'token-abc',
+      error_code: 'META_POPUP_FAILED',
+      error_message: 'Authorization failed for invite-secret',
+      auth_source: 'client_meta_popup',
     });
 
     expect(captureMock).toHaveBeenCalledWith('oauth_callback_failure', {
       platform: 'meta',
       error_code: 'META_POPUP_FAILED',
-      error_message: 'Popup blocked',
       auth_source: 'client_meta_popup',
-      access_request_token: 'token-abc',
     });
 
     expect(captureMock).toHaveBeenCalledWith('client_oauth_exchange_failure', {
       platform: 'meta',
-      access_request_token: 'token-abc',
       error_code: 'META_POPUP_FAILED',
-      error_message: 'Popup blocked',
       auth_source: 'client_meta_popup',
     });
+    expect(JSON.stringify(captureMock.mock.calls)).not.toContain('token-abc');
+    expect(JSON.stringify(captureMock.mock.calls)).not.toContain('invite-secret');
   });
 });

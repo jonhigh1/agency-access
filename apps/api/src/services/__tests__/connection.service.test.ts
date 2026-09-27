@@ -10,10 +10,15 @@ import * as connectionService from '@/services/connection.service';
 import { infisical } from '@/lib/infisical';
 import { auditService } from '@/services/audit.service';
 
-const { refreshClientPlatformAuthorizationMock, getConnectorMock, verifyTokenMock } = vi.hoisted(() => ({
+const { refreshClientPlatformAuthorizationMock, getConnectorMock, verifyTokenMock, metaRevokeTokenMock, metaRevokeAssignedMock, metaRevokeAgencyMock, metaRevokeCatalogAgencyMock, markRequestAuthorizedMock } = vi.hoisted(() => ({
   refreshClientPlatformAuthorizationMock: vi.fn(),
   getConnectorMock: vi.fn(),
   verifyTokenMock: vi.fn(),
+  metaRevokeTokenMock: vi.fn(),
+  metaRevokeAssignedMock: vi.fn(),
+  metaRevokeAgencyMock: vi.fn(),
+  metaRevokeCatalogAgencyMock: vi.fn(),
+  markRequestAuthorizedMock: vi.fn(),
 }));
 
 // Mock Prisma
@@ -33,7 +38,12 @@ vi.mock('@/lib/prisma', () => ({
       update: vi.fn(),
       updateMany: vi.fn(),
     },
+    metaAssetGrant: {
+      findMany: vi.fn(),
+      updateMany: vi.fn(),
+    },
     auditLog: {
+      create: vi.fn(),
       createMany: vi.fn(),
     },
     accessRequest: {
@@ -50,8 +60,20 @@ vi.mock('@/services/token-lifecycle.service', () => ({
   refreshClientPlatformAuthorization: refreshClientPlatformAuthorizationMock,
 }));
 
+vi.mock('@/services/access-request.service', () => ({
+  markRequestAuthorized: markRequestAuthorizedMock,
+}));
+
 vi.mock('@/services/connectors/factory', () => ({
   getConnector: getConnectorMock,
+}));
+
+vi.mock('@/services/meta-partner.service', () => ({
+  metaPartnerService: {
+    revokeAssignedUserAccess: metaRevokeAssignedMock,
+    revokeAgencyAccess: metaRevokeAgencyMock,
+    revokeCatalogAgencyAccess: metaRevokeCatalogAgencyMock,
+  },
 }));
 
 // Mock Infisical
@@ -60,6 +82,7 @@ vi.mock('@/lib/infisical', () => ({
     generateSecretName: vi.fn((platform, connectionId) => `oauth_${platform}_${connectionId}`),
     storeOAuthTokens: vi.fn(),
     retrieveOAuthTokens: vi.fn(),
+    getOAuthTokens: vi.fn(),
     updateOAuthTokens: vi.fn(),
     deleteSecret: vi.fn(),
   },
@@ -71,6 +94,7 @@ vi.mock('@/services/audit.service', async (importOriginal) => {
     ...actual,
     auditService: {
       ...actual.auditService,
+      logTokenAccess: vi.fn().mockResolvedValue({ data: {}, error: null }),
       createAuditLog: vi.fn().mockResolvedValue({ data: null, error: null }),
       createAuditLogs: vi.fn((...args: Parameters<typeof actual.auditService.createAuditLogs>) =>
         actual.auditService.createAuditLogs(...args)
@@ -84,9 +108,18 @@ describe('ConnectionService', () => {
     vi.clearAllMocks();
     getConnectorMock.mockReturnValue({
       verifyToken: verifyTokenMock,
+      revokeToken: metaRevokeTokenMock,
     });
     verifyTokenMock.mockResolvedValue(true);
     vi.mocked(infisical.storeOAuthTokens).mockResolvedValue(undefined as any);
+    vi.mocked(infisical.getOAuthTokens).mockResolvedValue({ accessToken: 'meta-access-token' });
+    vi.mocked(prisma.metaAssetGrant.findMany).mockResolvedValue([] as any);
+    vi.mocked(prisma.metaAssetGrant.updateMany).mockResolvedValue({ count: 0 } as any);
+    metaRevokeAssignedMock.mockResolvedValue(undefined);
+    metaRevokeAgencyMock.mockResolvedValue(undefined);
+    metaRevokeCatalogAgencyMock.mockResolvedValue(undefined);
+    metaRevokeTokenMock.mockResolvedValue(undefined);
+    markRequestAuthorizedMock.mockResolvedValue({ data: null, error: null });
   });
 
   describe('createClientConnection', () => {
@@ -664,6 +697,7 @@ describe('ConnectionService', () => {
         id: 'auth-1',
         platform: 'meta_ads',
         secretId: 'oauth_meta_ads_connection-1',
+        status: 'active',
         expiresAt: new Date(Date.now() + 3600000 * 24 * 60),
       };
 
@@ -697,6 +731,7 @@ describe('ConnectionService', () => {
     it('should return error if tokens not found in Infisical', async () => {
       vi.mocked(prisma.platformAuthorization.findFirst).mockResolvedValue({
         secretId: 'missing-secret',
+        status: 'active',
       } as any);
       vi.mocked(infisical.retrieveOAuthTokens).mockResolvedValue(null);
 
@@ -705,6 +740,17 @@ describe('ConnectionService', () => {
       expect(result.data).toBeNull();
       expect(result.error?.code).toBe('TOKENS_NOT_FOUND');
     });
+
+    it('does not read an inactive Meta authorization token', async () => {
+      vi.mocked(prisma.platformAuthorization.findFirst).mockResolvedValue({
+        id: 'auth-1', secretId: 'meta-token-1', status: 'invalid',
+      } as any);
+
+      const result = await connectionService.getPlatformTokens('connection-1', 'meta_ads');
+
+      expect(result.error?.code).toBe('REAUTHORIZATION_REQUIRED');
+      expect(infisical.retrieveOAuthTokens).not.toHaveBeenCalled();
+    });
   });
 
   describe('updatePlatformTokens', () => {
@@ -712,6 +758,7 @@ describe('ConnectionService', () => {
       const mockAuth = {
         id: 'auth-1',
         secretId: 'oauth_meta_ads_connection-1',
+        status: 'active',
       };
 
       vi.mocked(prisma.platformAuthorization.findFirst).mockResolvedValue(mockAuth as any);
@@ -738,17 +785,64 @@ describe('ConnectionService', () => {
         })
       );
     });
+
+    it('does not overwrite an inactive authorization token', async () => {
+      vi.mocked(prisma.platformAuthorization.findFirst).mockResolvedValue({
+        id: 'auth-1', secretId: 'meta-token-1', status: 'invalid',
+      } as any);
+
+      const result = await connectionService.updatePlatformTokens('connection-1', 'meta_ads', {
+        accessToken: 'new-access-token', expiresAt: new Date(),
+      });
+
+      expect(result.error?.code).toBe('REAUTHORIZATION_REQUIRED');
+      expect(infisical.updateOAuthTokens).not.toHaveBeenCalled();
+    });
   });
 
   describe('revokeConnection', () => {
+    it('audits Meta token access before reading the token and fails closed if audit fails', async () => {
+      vi.mocked(prisma.clientConnection.findUnique).mockResolvedValue({
+        id: 'connection-meta', accessRequestId: 'request-1', agencyId: 'agency-1', clientEmail: 'client@example.com',
+      } as any);
+      vi.mocked(prisma.platformAuthorization.findMany).mockResolvedValue([{
+        id: 'auth-meta', platform: 'meta', secretId: 'meta-secret', metadata: {},
+      }] as any);
+      vi.mocked(prisma.metaAssetGrant.findMany).mockResolvedValue([] as any);
+      const auditContext = { userEmail: 'owner@example.com', ipAddress: '127.0.0.1' };
+
+      const success = await connectionService.revokeConnection('connection-meta', undefined, auditContext);
+      expect(success.error).toBeNull();
+      expect(auditService.logTokenAccess).toHaveBeenCalledWith(expect.objectContaining({
+        connectionId: 'connection-meta', userEmail: auditContext.userEmail, ipAddress: auditContext.ipAddress,
+        details: expect.objectContaining({ operation: 'meta_provider_revocation', authorizationId: 'auth-meta' }),
+      }));
+      expect(auditService.logTokenAccess.mock.invocationCallOrder[0]).toBeLessThan(infisical.getOAuthTokens.mock.invocationCallOrder[0]);
+
+      vi.clearAllMocks();
+      vi.mocked(prisma.clientConnection.findUnique).mockResolvedValue({
+        id: 'connection-meta', agencyId: 'agency-1', clientEmail: 'client@example.com',
+      } as any);
+      vi.mocked(prisma.platformAuthorization.findMany).mockResolvedValue([{
+        id: 'auth-meta', platform: 'meta', secretId: 'meta-secret', metadata: {},
+      }] as any);
+      vi.mocked(prisma.metaAssetGrant.findMany).mockResolvedValue([] as any);
+      vi.mocked(auditService.logTokenAccess).mockResolvedValueOnce({ data: null, error: { code: 'INTERNAL_ERROR', message: 'audit unavailable' } } as any);
+
+      const failed = await connectionService.revokeConnection('connection-meta', undefined, auditContext);
+      expect(failed.error).not.toBeNull();
+      expect(infisical.getOAuthTokens).not.toHaveBeenCalled();
+      expect(metaRevokeTokenMock).not.toHaveBeenCalled();
+    });
+
     it('should revoke connection and delete all tokens from Infisical', async () => {
       const mockConnection = {
         id: 'connection-1',
       };
 
       const mockAuthorizations = [
-        { secretId: 'oauth_meta_ads_connection-1' },
-        { secretId: 'oauth_google_ads_connection-1' },
+        { id: 'auth-meta', platform: 'meta_ads', secretId: 'oauth_meta_ads_connection-1' },
+        { id: 'auth-google', platform: 'google_ads', secretId: 'oauth_google_ads_connection-1' },
       ];
 
       vi.mocked(prisma.clientConnection.findUnique).mockResolvedValue(mockConnection as any);
@@ -757,7 +851,9 @@ describe('ConnectionService', () => {
       vi.mocked(prisma.platformAuthorization.updateMany).mockResolvedValue({});
       vi.mocked(infisical.deleteSecret).mockResolvedValue(undefined);
 
-      const result = await connectionService.revokeConnection('connection-1');
+      const result = await connectionService.revokeConnection('connection-1', undefined, {
+        userEmail: 'owner@example.com', ipAddress: '127.0.0.1',
+      });
 
       expect(result.error).toBeNull();
       expect(infisical.deleteSecret).toHaveBeenCalledTimes(2);
@@ -765,15 +861,222 @@ describe('ConnectionService', () => {
       expect(infisical.deleteSecret).toHaveBeenCalledWith('oauth_google_ads_connection-1');
     });
 
-    it('should continue revocation when one secret deletion fails', async () => {
+    it('preserves the provider revoke marker when clearing pending secret deletions', async () => {
+      vi.mocked(prisma.clientConnection.findUnique).mockResolvedValue({
+        id: 'connection-meta', agencyId: 'agency-1', clientEmail: 'client@example.com',
+      } as any);
+      vi.mocked(prisma.clientConnection.update).mockResolvedValue({ id: 'connection-meta' } as any);
+      vi.mocked(prisma.platformAuthorization.findMany).mockResolvedValue([{
+        id: 'auth-meta', platform: 'meta', secretId: 'meta-secret',
+        metadata: { pendingSecretDeletion: ['old-secret'] },
+      }] as any);
+      vi.mocked(prisma.platformAuthorization.update).mockResolvedValue({ id: 'auth-meta', status: 'revoked' } as any);
+      vi.mocked(infisical.deleteSecret).mockResolvedValue(undefined);
+
+      const result = await connectionService.revokeConnection('connection-meta', undefined, {
+        userEmail: 'owner@example.com', ipAddress: '127.0.0.1',
+      });
+
+      expect(result.error).toBeNull();
+      expect(prisma.platformAuthorization.update).toHaveBeenLastCalledWith({
+        where: { id: 'auth-meta' },
+        data: { status: 'revoked', metadata: expect.objectContaining({
+          pendingSecretDeletion: [], providerRevokedAt: expect.any(String),
+        }) },
+      });
+    });
+
+    it('recomputes request fulfillment after revoking a completed connection', async () => {
+      vi.mocked(prisma.clientConnection.findUnique).mockResolvedValue({
+        id: 'connection-1', accessRequestId: 'request-1',
+      } as any);
+      vi.mocked(prisma.clientConnection.update).mockResolvedValue({ id: 'connection-1' } as any);
+      vi.mocked(prisma.platformAuthorization.findMany).mockResolvedValue([] as any);
+
+      const result = await connectionService.revokeConnection('connection-1');
+
+      expect(result.error).toBeNull();
+      expect(markRequestAuthorizedMock).toHaveBeenCalledWith('request-1');
+    });
+
+    it('removes and verifies recorded Meta assignees before revoking the app permission and deleting the secret', async () => {
+      vi.mocked(prisma.clientConnection.findUnique).mockResolvedValue({
+        id: 'connection-meta', accessRequestId: 'request-1', agencyId: 'agency-1', clientEmail: 'client@example.com',
+      } as any);
+      vi.mocked(prisma.clientConnection.update).mockResolvedValue({ id: 'connection-meta' } as any);
+      vi.mocked(prisma.platformAuthorization.findMany).mockResolvedValue([{
+        id: 'auth-meta', platform: 'meta', secretId: 'meta-secret', metadata: { selection: { clientBusinessId: 'biz-1' } },
+      }] as any);
+      vi.mocked(prisma.metaAssetGrant.findMany).mockResolvedValue([
+        { id: 'grant-1', assetKind: 'page', assetId: 'page-1', recipientType: 'human', recipientId: '42', grantMethod: 'assigned_users' },
+        { id: 'grant-2', assetKind: 'ad_account', assetId: 'act-1', recipientType: 'business', recipientId: 'biz-agency', grantMethod: 'manual_business_share' },
+        { id: 'grant-3', assetKind: 'catalog', assetId: 'catalog-1', recipientType: 'business', recipientId: 'biz-agency', grantMethod: 'catalog_agencies' },
+        { id: 'grant-4', assetKind: 'dataset', assetId: 'pixel-1', recipientType: 'human', recipientId: '42', grantMethod: 'manual_assigned_users' },
+        { id: 'grant-5', assetKind: 'dataset', assetId: 'pixel-1', recipientType: 'business', recipientId: 'biz-agency', grantMethod: 'manual_agency' },
+      ] as any);
+      vi.mocked(prisma.platformAuthorization.update).mockResolvedValue({ id: 'auth-meta', status: 'revoked' } as any);
+      vi.mocked(infisical.deleteSecret).mockResolvedValue(undefined);
+
+      const result = await connectionService.revokeConnection('connection-meta', undefined, { userEmail: 'owner@example.com', ipAddress: '127.0.0.1' });
+
+      expect(result.error).toBeNull();
+      expect(metaRevokeAssignedMock).toHaveBeenCalledWith('meta-access-token', 'page-1', '42');
+      expect(metaRevokeAssignedMock).toHaveBeenCalledWith('meta-access-token', 'pixel-1', '42');
+      expect(metaRevokeAgencyMock).toHaveBeenCalledWith('meta-access-token', 'act-1', 'biz-agency');
+      expect(metaRevokeAgencyMock).toHaveBeenCalledWith('meta-access-token', 'pixel-1', 'biz-agency');
+      expect(prisma.metaAssetGrant.findMany).toHaveBeenCalledWith(expect.objectContaining({
+        where: expect.objectContaining({
+          grantMethod: { in: expect.arrayContaining(['manual_assigned_users', 'manual_agency']) },
+          assetKind: { in: expect.arrayContaining(['dataset']) },
+        }),
+      }));
+      expect(metaRevokeCatalogAgencyMock).toHaveBeenCalledWith('meta-access-token', 'catalog-1', 'biz-agency');
+      expect(metaRevokeTokenMock).toHaveBeenCalledWith('meta-access-token');
+      expect(prisma.metaAssetGrant.updateMany).toHaveBeenCalledWith(expect.objectContaining({
+        where: expect.objectContaining({ authorizationId: 'auth-meta', assetId: 'page-1', recipientId: '42' }),
+        data: expect.objectContaining({ status: 'revoked' }),
+      }));
+      expect(metaRevokeAssignedMock.mock.invocationCallOrder[0]).toBeLessThan(metaRevokeTokenMock.mock.invocationCallOrder[0]);
+      expect(metaRevokeAgencyMock.mock.invocationCallOrder[0]).toBeLessThan(metaRevokeTokenMock.mock.invocationCallOrder[0]);
+      expect(metaRevokeTokenMock.mock.invocationCallOrder[0]).toBeLessThan(infisical.deleteSecret.mock.invocationCallOrder[0]);
+    });
+
+    it('revokes independent Meta grants in batches of five and records only successful removals', async () => {
+      const grants = Array.from({ length: 6 }, (_, index) => ({
+        id: `grant-${index + 1}`,
+        assetKind: 'page',
+        assetId: `page-${index + 1}`,
+        recipientType: 'human',
+        recipientId: '42',
+        grantMethod: 'assigned_users',
+      }));
+      const removedAssets = new Set<string>();
+      let inFlight = 0;
+      let peakInFlight = 0;
+      vi.mocked(prisma.clientConnection.findUnique).mockResolvedValue({
+        id: 'connection-meta', accessRequestId: 'request-1', agencyId: 'agency-1', clientEmail: 'client@example.com',
+      } as any);
+      vi.mocked(prisma.clientConnection.update).mockResolvedValue({ id: 'connection-meta' } as any);
+      vi.mocked(prisma.platformAuthorization.findMany).mockResolvedValue([{
+        id: 'auth-meta', platform: 'meta', secretId: 'meta-secret', metadata: {},
+      }] as any);
+      vi.mocked(prisma.metaAssetGrant.findMany).mockResolvedValue(grants as any);
+      vi.mocked(prisma.platformAuthorization.update).mockResolvedValue({ id: 'auth-meta', status: 'revoked' } as any);
+      vi.mocked(infisical.deleteSecret).mockResolvedValue(undefined);
+      metaRevokeAssignedMock.mockImplementation(async (_token: string, assetId: string) => {
+        inFlight += 1;
+        peakInFlight = Math.max(peakInFlight, inFlight);
+        await new Promise((resolve) => setTimeout(resolve, 0));
+        removedAssets.add(assetId);
+        inFlight -= 1;
+      });
+      vi.mocked(prisma.metaAssetGrant.updateMany).mockImplementation(async ({ where }: any) => {
+        expect(removedAssets.has(where.assetId)).toBe(true);
+        return { count: 1 } as any;
+      });
+
+      const result = await connectionService.revokeConnection('connection-meta', undefined, {
+        userEmail: 'owner@example.com', ipAddress: '127.0.0.1',
+      });
+
+      expect(result.error).toBeNull();
+      expect(peakInFlight).toBe(5);
+      expect(metaRevokeAssignedMock).toHaveBeenCalledTimes(6);
+      expect(prisma.metaAssetGrant.updateMany).toHaveBeenCalledTimes(6);
+      expect(Math.max(...metaRevokeAssignedMock.mock.invocationCallOrder)).toBeLessThan(metaRevokeTokenMock.mock.invocationCallOrder[0]);
+      expect(metaRevokeTokenMock).toHaveBeenCalledTimes(1);
+      expect(infisical.deleteSecret).toHaveBeenCalledWith('meta-secret');
+    });
+
+    it('can retry cleanup after Meta revokes the token but the provider marker write fails', async () => {
+      vi.mocked(prisma.clientConnection.findUnique).mockResolvedValue({
+        id: 'connection-meta', accessRequestId: 'request-1', agencyId: 'agency-1', clientEmail: 'client@example.com',
+      } as any);
+      vi.mocked(prisma.clientConnection.update).mockResolvedValue({ id: 'connection-meta' } as any);
+      vi.mocked(prisma.platformAuthorization.findMany).mockResolvedValue([{
+        id: 'auth-meta', platform: 'meta', secretId: 'meta-secret', metadata: {},
+      }] as any);
+      vi.mocked(prisma.platformAuthorization.update)
+        .mockRejectedValueOnce(new Error('Database unavailable'))
+        .mockResolvedValue({ id: 'auth-meta', status: 'revoked' } as any);
+      vi.mocked(infisical.deleteSecret).mockResolvedValue(undefined);
+
+      const auditContext = { userEmail: 'owner@example.com', ipAddress: '127.0.0.1' };
+      const firstAttempt = await connectionService.revokeConnection('connection-meta', undefined, auditContext);
+      expect(firstAttempt.error?.code).toBe('META_ACCESS_REVOCATION_FAILED');
+      expect(infisical.deleteSecret).not.toHaveBeenCalled();
+
+      const retry = await connectionService.revokeConnection('connection-meta', undefined, auditContext);
+
+      expect(retry.error).toBeNull();
+      expect(metaRevokeTokenMock).toHaveBeenCalledTimes(2);
+      expect(infisical.deleteSecret).toHaveBeenCalledWith('meta-secret');
+      expect(prisma.platformAuthorization.update).toHaveBeenLastCalledWith({
+        where: { id: 'auth-meta' }, data: { status: 'revoked' },
+      });
+    });
+
+    it.each(['excluded', 'manual_action_required'] as const)(
+      'removes a previously granted Meta assignment after its local status becomes %s',
+      async (status) => {
+        vi.mocked(prisma.clientConnection.findUnique).mockResolvedValue({
+          id: 'connection-meta', accessRequestId: 'request-1', agencyId: 'agency-1', clientEmail: 'client@example.com',
+        } as any);
+        vi.mocked(prisma.clientConnection.update).mockResolvedValue({ id: 'connection-meta' } as any);
+        vi.mocked(prisma.platformAuthorization.findMany).mockResolvedValue([{
+          id: 'auth-meta', platform: 'meta', secretId: 'meta-secret', metadata: {},
+        }] as any);
+        vi.mocked(prisma.metaAssetGrant.findMany).mockResolvedValue([{
+          id: 'grant-1', assetKind: 'page', assetId: 'page-1', recipientType: 'human',
+          recipientId: '42', grantMethod: 'assigned_users', status,
+        }] as any);
+        vi.mocked(prisma.platformAuthorization.update).mockResolvedValue({ id: 'auth-meta', status: 'revoked' } as any);
+        vi.mocked(infisical.deleteSecret).mockResolvedValue(undefined);
+
+        const result = await connectionService.revokeConnection('connection-meta', undefined, { userEmail: 'owner@example.com', ipAddress: '127.0.0.1' });
+
+        expect(result.error).toBeNull();
+        expect(metaRevokeAssignedMock).toHaveBeenCalledWith('meta-access-token', 'page-1', '42');
+        expect(prisma.metaAssetGrant.updateMany).toHaveBeenCalledWith(expect.objectContaining({
+          where: expect.objectContaining({ assetId: 'page-1', recipientId: '42', status: { notIn: ['selected', 'revoked'] } }),
+          data: expect.objectContaining({ status: 'revoked' }),
+        }));
+      }
+    );
+
+    it('keeps the Meta secret when an assigned user cannot be verified as removed', async () => {
+      vi.mocked(prisma.clientConnection.findUnique).mockResolvedValue({
+        id: 'connection-meta', accessRequestId: 'request-1', agencyId: 'agency-1', clientEmail: 'client@example.com',
+      } as any);
+      vi.mocked(prisma.clientConnection.update).mockResolvedValue({ id: 'connection-meta' } as any);
+      vi.mocked(prisma.platformAuthorization.findMany).mockResolvedValue([{
+        id: 'auth-meta', platform: 'meta', secretId: 'meta-secret',
+      }] as any);
+      vi.mocked(prisma.metaAssetGrant.findMany).mockResolvedValue([{
+        id: 'grant-1', assetId: 'page-1', recipientId: '42',
+      }] as any);
+      metaRevokeAssignedMock.mockRejectedValueOnce(new Error('Meta still lists assignee'));
+
+      const result = await connectionService.revokeConnection('connection-meta', undefined, { userEmail: 'owner@example.com', ipAddress: '127.0.0.1' });
+
+      expect(result.error?.code).toBe('META_ACCESS_REVOCATION_FAILED');
+      expect(infisical.deleteSecret).not.toHaveBeenCalled();
+      expect(metaRevokeTokenMock).not.toHaveBeenCalled();
+      expect(prisma.platformAuthorization.update).toHaveBeenCalledWith({
+        where: { id: 'auth-meta' }, data: { status: 'invalid' },
+      });
+      expect(markRequestAuthorizedMock).toHaveBeenCalledWith('request-1');
+    });
+
+    it('keeps failed token cleanup retryable and does not report revocation complete', async () => {
       const mockConnection = {
         id: 'connection-partial',
         agencyId: 'agency-1',
         clientEmail: 'client@example.com',
       };
       const mockAuthorizations = [
-        { platform: 'meta_ads', secretId: 'secret-ok' },
-        { platform: 'google_ads', secretId: 'secret-failed' },
+        { id: 'auth-meta', platform: 'meta_ads', secretId: 'secret-ok' },
+        { id: 'auth-google', platform: 'google_ads', secretId: 'secret-failed' },
       ];
 
       vi.mocked(prisma.clientConnection.findUnique).mockResolvedValue(mockConnection as any);
@@ -784,14 +1087,59 @@ describe('ConnectionService', () => {
         if (secretId === 'secret-failed') throw new Error('Infisical unavailable');
       });
 
-      const result = await connectionService.revokeConnection('connection-partial');
+      const result = await connectionService.revokeConnection('connection-partial', undefined, { userEmail: 'owner@example.com', ipAddress: '127.0.0.1' });
 
-      expect(result.error).toBeNull();
+      expect(result.error?.code).toBe('TOKEN_DELETION_FAILED');
       expect(result.partialFailure).toBe(true);
-      expect(prisma.clientConnection.update).toHaveBeenCalled();
+      expect(prisma.clientConnection.update).toHaveBeenCalledWith({
+        where: { id: 'connection-partial' },
+        data: { status: 'partial' },
+      });
+      expect(prisma.platformAuthorization.update).toHaveBeenCalledWith({
+        where: { id: 'auth-google' },
+        data: { status: 'invalid' },
+      });
       expect(auditService.createAuditLog).toHaveBeenCalledWith(expect.objectContaining({
         action: 'TOKEN_DELETION_FAILED',
         metadata: expect.objectContaining({ secretId: 'secret-failed', platform: 'google_ads' }),
+      }));
+    });
+  });
+
+  describe('revokePlatformAuthorization', () => {
+    it('recomputes request fulfillment after revoking one authorization', async () => {
+      vi.mocked(prisma.platformAuthorization.findFirst).mockResolvedValue({
+        id: 'auth-meta-1', connectionId: 'connection-1', platform: 'meta', secretId: 'meta-token-1',
+      } as any);
+      vi.mocked(prisma.platformAuthorization.update).mockResolvedValue({ id: 'auth-meta-1', status: 'revoked' } as any);
+      vi.mocked(prisma.clientConnection.findUnique).mockResolvedValue({ accessRequestId: 'request-1' } as any);
+      vi.mocked(infisical.deleteSecret).mockResolvedValue(undefined);
+
+      const result = await connectionService.revokePlatformAuthorization('connection-1', 'meta', { userEmail: 'owner@example.com', ipAddress: '127.0.0.1' });
+
+      expect(result.error).toBeNull();
+      expect(markRequestAuthorizedMock).toHaveBeenCalledWith('request-1');
+    });
+
+    it('keeps one authorization retryable and audits failed secret cleanup', async () => {
+      vi.mocked(prisma.platformAuthorization.findFirst).mockResolvedValue({
+        id: 'auth-meta-1', connectionId: 'connection-1', platform: 'meta', secretId: 'meta-token-1',
+      } as any);
+      vi.mocked(prisma.clientConnection.findUnique).mockResolvedValue({
+        agencyId: 'agency-1', clientEmail: 'client@example.com', accessRequestId: 'request-1',
+      } as any);
+      vi.mocked(infisical.deleteSecret).mockRejectedValue(new Error('Infisical unavailable'));
+
+      const result = await connectionService.revokePlatformAuthorization('connection-1', 'meta', { userEmail: 'owner@example.com', ipAddress: '127.0.0.1' });
+
+      expect(result.error?.code).toBe('TOKEN_DELETION_FAILED');
+      expect(prisma.platformAuthorization.update).toHaveBeenCalledWith({
+        where: { id: 'auth-meta-1' }, data: { status: 'invalid' },
+      });
+      expect(markRequestAuthorizedMock).toHaveBeenCalledWith('request-1');
+      expect(auditService.createAuditLog).toHaveBeenCalledWith(expect.objectContaining({
+        action: 'TOKEN_DELETION_FAILED',
+        metadata: expect.objectContaining({ platform: 'meta', authorizationId: 'auth-meta-1' }),
       }));
     });
   });

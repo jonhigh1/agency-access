@@ -38,6 +38,7 @@ import { clientOffboardingRoutes } from './routes/client-offboarding.routes.js';
 import { mcpRoutes } from './routes/mcp.js';
 import { performanceOnRequest, performanceOnSend } from './middleware/performance.js';
 import { prisma } from './lib/prisma.js';
+import { redactSensitiveString } from './lib/sentry-redaction.js';
 
 const trustProxy = env.TRUST_PROXY_IPS.length > 0 ? env.TRUST_PROXY_IPS : false;
 
@@ -51,6 +52,19 @@ const fastify = Fastify({
   trustProxy,
   logger: {
     level: env.LOG_LEVEL || 'info',
+    serializers: {
+      req(request) {
+        const version = request.headers['accept-version'];
+        return {
+          method: request.method,
+          url: redactSensitiveString(request.url),
+          version: Array.isArray(version) ? version[0] : version,
+          host: request.host,
+          remoteAddress: request.ip,
+          remotePort: request.socket?.remotePort,
+        };
+      },
+    },
     transport: env.NODE_ENV === 'development' ? {
       target: 'pino-pretty',
       options: {

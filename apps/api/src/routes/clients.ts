@@ -22,7 +22,8 @@ import type { ClientLanguage } from '@agency-platform/shared';
 import { prisma } from '@/lib/prisma';
 import { quotaEnforcementMiddleware } from '@/middleware/quota-enforcement.js';
 import { authenticate } from '@/middleware/auth.js';
-import { resolvePrincipalAgency } from '@/lib/authorization.js';
+import { resolvePrincipalAgency, resolveUserEmail } from '@/lib/authorization.js';
+import { extractClientIp } from '@/lib/ip.js';
 
 // Validation schemas
 const createClientSchema = z.object({
@@ -259,8 +260,13 @@ export async function clientRoutes(fastify: FastifyInstance) {
   fastify.delete('/clients/:id', async (request, reply) => {
     const agencyId = (request as any).agencyId;
     const { id } = request.params as { id: string };
+    const userEmail = resolveUserEmail((request as any).user);
+    if (!userEmail) return reply.code(401).send({ data: null, error: { code: 'USER_EMAIL_REQUIRED', message: 'Verified user email is required to delete a client and revoke Meta access' } });
 
-    const deleted = await deleteClient(id, agencyId);
+    const deleted = await deleteClient(id, agencyId, {
+      userEmail,
+      ipAddress: extractClientIp(request),
+    });
 
     if (!deleted) {
       return reply.code(404).send({

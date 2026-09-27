@@ -6,7 +6,7 @@ import { useAuth, useUser } from '@clerk/nextjs';
 import { Loader2, ChevronRight, AlertCircle, RefreshCw } from 'lucide-react';
 import { SingleSelect } from '@/components/ui/single-select';
 import { Button } from '@/components/ui/button';
-import { finalizeMetaBusinessLogin, launchMetaBusinessLogin } from '@/lib/meta-business-login';
+import { startAgencyMetaOAuth } from '@/lib/agency-meta-oauth';
 import { resolveApiUrl } from '@/lib/api/api-env';
 
 interface Business {
@@ -79,19 +79,11 @@ export function MetaBusinessPortfolioSelector({
     setIsReauthenticating(true);
 
     try {
-      const authPayload = await launchMetaBusinessLogin({
-        appId: process.env.NEXT_PUBLIC_META_APP_ID || '',
-        configId: process.env.NEXT_PUBLIC_META_LOGIN_FOR_BUSINESS_CONFIG_ID || '',
-      });
-
-      await finalizeMetaBusinessLogin({
+      await startAgencyMetaOAuth({
         agencyId,
         userEmail,
         getToken,
-        authPayload,
       });
-
-      await refetch();
     } catch (err) {
       setReauthError(
         err instanceof Error ? err.message : 'Failed to refresh Meta Business Portfolios.'

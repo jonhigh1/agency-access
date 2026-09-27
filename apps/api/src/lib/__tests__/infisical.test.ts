@@ -79,4 +79,13 @@ describe('Infisical deleteOAuthTokens', () => {
     );
     expect(consoleWarnSpy).not.toHaveBeenCalled();
   });
+
+  it('reports secret deletion failure but treats an absent secret as deleted', async () => {
+    const { infisical } = await import('../infisical.js');
+    deleteSecretMock.mockRejectedValueOnce(new Error('Infisical unavailable'));
+    await expect(infisical.deleteSecret('meta_token_connection-1')).rejects.toThrow('Infisical unavailable');
+
+    deleteSecretMock.mockRejectedValueOnce(Object.assign(new Error('Secret not found'), { statusCode: 404 }));
+    await expect(infisical.deleteSecret('meta_token_connection-1')).resolves.toBeUndefined();
+  });
 });

@@ -593,17 +593,52 @@ describe('Invite Flow Page', () => {
     await userEvent.click(await screen.findByRole('button', { name: /complete platform/i }));
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /almost done — one step failed/i })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /access needs follow-up/i })).toBeInTheDocument();
       expect(screen.getByText(/finalization service unavailable/i)).toBeInTheDocument();
     });
     expect(screen.queryByRole('heading', { name: /all set/i })).not.toBeInTheDocument();
+    expect(screen.getByText(/step 2 of 3 · follow-up/i)).toBeInTheDocument();
+    expect(screen.getByRole('alert')).toHaveFocus();
 
-    await userEvent.click(screen.getByRole('button', { name: /retry finalization/i }));
+    expect(screen.queryByText(/you can safely close this window/i)).not.toBeInTheDocument();
+
+    await userEvent.click(screen.getByRole('button', { name: /check again/i }));
 
     await waitFor(() => {
       expect(completionAttempts).toBe(2);
       expect(screen.getByRole('heading', { name: /all set — you're done/i })).toBeInTheDocument();
     });
+  });
+
+  it('does not show verified access while completion is still pending', async () => {
+    let resolveCompletion!: (response: Response) => void;
+    const fetchMock = vi.fn((url: string) => {
+      if (url.includes('/api/client/token-123/complete')) {
+        return new Promise<Response>((resolve) => { resolveCompletion = resolve; });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({ data: {
+          id: 'request-1', agencyId: 'agency-1', agencyName: 'Demo Agency', clientName: 'Client',
+          clientEmail: 'client@test.com', status: 'pending', uniqueToken: 'token-123',
+          expiresAt: new Date().toISOString(), intakeFields: [], branding: {},
+          platforms: [{ platformGroup: 'google', products: [{ product: 'google_ads', accessLevel: 'admin' }] }],
+          manualInviteTargets: { google: {} }, authorizationProgress: { completedPlatforms: [], isComplete: false },
+        }, error: null }),
+      } as Response);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<InvitePage />);
+    await userEvent.click(await screen.findByRole('button', { name: /continue to connect/i }));
+    await userEvent.click(await screen.findByRole('button', { name: /complete platform/i }));
+
+    expect(await screen.findByRole('heading', { name: /confirming your authorization/i })).toBeInTheDocument();
+    expect(screen.queryByText(/you can safely close this window/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /all set — you're done/i })).not.toBeInTheDocument();
+
+    resolveCompletion({ ok: true, text: async () => JSON.stringify({ data: { success: true }, error: null }) } as Response);
+    expect(await screen.findByRole('heading', { name: /all set — you're done/i })).toBeInTheDocument();
   });
 
   it('renders the finalize fallback error when the completion body is not JSON', async () => {
@@ -654,7 +689,7 @@ describe('Invite Flow Page', () => {
     await userEvent.click(await screen.findByRole('button', { name: /complete platform/i }));
 
     await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /almost done — one step failed/i })).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: /access needs follow-up/i })).toBeInTheDocument();
       expect(screen.getByText('Failed to finalize authorization')).toBeInTheDocument();
     });
     expect(screen.queryByRole('heading', { name: /all set/i })).not.toBeInTheDocument();

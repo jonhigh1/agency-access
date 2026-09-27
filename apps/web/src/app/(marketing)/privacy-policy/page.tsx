@@ -107,9 +107,13 @@ export default function PrivacyPolicyPage() {
           <section>
             <h2 className="text-2xl font-semibold">6. Data Retention</h2>
             <p className="mt-4 text-muted-foreground leading-7">
-              We retain your information for as long as your account is active or as needed
-              to provide services. OAuth tokens are retained until revoked by the client or
-              agency. You may request deletion of your data at any time by contacting us.
+              We keep information while your account is active or while we need it to provide
+              the Service, meet legal duties, and protect the Service. We store OAuth tokens in
+              Infisical. When you disconnect a Meta authorization, AuthHub tries to remove the
+              recorded Meta asset access and revoke the app permission before it deletes the
+              tokens. If Meta or Infisical does not confirm cleanup, AuthHub blocks the
+              authorization and keeps the required token so an administrator can retry. We
+              record cleanup failures. You may request deletion by contacting us.
             </p>
           </section>
 

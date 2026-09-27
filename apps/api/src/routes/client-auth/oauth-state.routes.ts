@@ -3,42 +3,18 @@ import { accessRequestService } from '../../services/access-request.service.js';
 import { oauthStateService } from '../../services/oauth-state.service.js';
 import { getConnector } from '../../services/connectors/factory.js';
 import { env } from '../../lib/env.js';
-import { resolveGoogleOAuthScopes, platformGroupOf, type Platform } from '@agency-platform/shared';
+import {
+  getMetaOAuthPermissionSet,
+  isMetaPermissionTrackValid,
+  resolveGoogleOAuthScopes,
+  platformGroupOf,
+  type Platform,
+  type MetaPermissionTrack,
+} from '@agency-platform/shared';
 import { createOAuthStateSchema } from './schemas.js';
 import { resolveClientInviteCallbackUrl } from './redirect-uri.js';
 import { sendError } from '../../lib/response.js';
-
-/**
- * True when the access request actually requested this platform.
- *
- * The service returns platforms in the hierarchical shape
- * ([{ platformGroup, products }]); raw flat rows ([{ platform, accessLevel }])
- * are also accepted so the gate cannot reject a platform the agency did
- * request. The exchange endpoint applies the same rule.
- */
-function isPlatformRequested(accessRequestPlatforms: unknown, platform: string): boolean {
-  if (!Array.isArray(accessRequestPlatforms)) {
-    return false;
-  }
-
-  return accessRequestPlatforms.some((entry: any) => {
-    const group = entry?.platformGroup;
-    if (group === platform) {
-      return true;
-    }
-
-    const rawPlatform = entry?.platform;
-    if (rawPlatform === platform || (typeof rawPlatform === 'string' && platformGroupOf(rawPlatform) === platform)) {
-      return true;
-    }
-
-    return Array.isArray(entry?.products)
-      ? entry.products.some((product: any) =>
-          (typeof product === 'string' ? product : product?.product) === platform
-        )
-      : false;
-  });
-}
+import { isPlatformRequested } from './platform-request.js';
 
 export async function registerOAuthStateRoutes(fastify: FastifyInstance) {
   function getRequestedGroupProductIds(
@@ -49,11 +25,16 @@ export async function registerOAuthStateRoutes(fastify: FastifyInstance) {
       return [];
     }
 
-    return accessRequestPlatforms
-      .filter((entry: any) => entry?.platformGroup === platformGroup)
-      .flatMap((entry: any) => entry?.products || [])
-      .map((product: any) => (typeof product === 'string' ? product : product?.product))
-      .filter((productId: unknown): productId is string => typeof productId === 'string');
+    const productIds = accessRequestPlatforms.flatMap((entry: any) => {
+      const group = entry?.platformGroup ||
+        (typeof entry?.platform === 'string' ? platformGroupOf(entry.platform) : undefined);
+      if (group !== platformGroup) return [];
+      const products = Array.isArray(entry?.products) ? entry.products : [entry?.platform];
+      return products
+        .map((product: any) => (typeof product === 'string' ? product : product?.product))
+        .filter((productId: unknown): productId is string => typeof productId === 'string');
+    });
+    return [...new Set(productIds)];
   }
 
   // Create OAuth state token for CSRF protection
@@ -133,7 +114,11 @@ export async function registerOAuthStateRoutes(fastify: FastifyInstance) {
       return sendError(reply, 'VALIDATION_ERROR', 'Invalid platform', 400, validated.error.errors,);
     }
 
-    const { platform } = validated.data;
+    const { platform, presentation } = validated.data;
+
+    if (presentation === 'popup' && platform !== 'meta') {
+      return sendError(reply, 'INVALID_OAUTH_PRESENTATION', 'Popup authorization is only supported for Meta.', 400);
+    }
 
     if (!isPlatformRequested(accessRequest.data.platforms, platform)) {
       return sendError(
@@ -145,6 +130,9 @@ export async function registerOAuthStateRoutes(fastify: FastifyInstance) {
     }
 
     const redirectUri = resolveClientInviteCallbackUrl(request.headers);
+    const callbackUrl = new URL(redirectUri);
+    if (presentation === 'popup') callbackUrl.searchParams.set('presentation', 'popup');
+    const oauthRedirectUri = callbackUrl.toString();
 
     // Create OAuth state token (include token for redirect after OAuth)
     const stateResult = await oauthStateService.createState({
@@ -154,7 +142,7 @@ export async function registerOAuthStateRoutes(fastify: FastifyInstance) {
       accessRequestId: accessRequest.data.id,
       accessRequestToken: token,
       clientEmail: accessRequest.data.clientEmail,
-      redirectUrl: redirectUri,
+      redirectUrl: oauthRedirectUri,
       timestamp: Date.now(),
     });
 
@@ -184,6 +172,7 @@ export async function registerOAuthStateRoutes(fastify: FastifyInstance) {
 
       // For Google platform group, determine scopes based on requested products
       let scopes: string[] | undefined;
+      let metaPermissionTrack: MetaPermissionTrack | undefined;
       if (platform === 'google') {
         const productIds = getRequestedGroupProductIds(accessRequest.data.platforms, 'google');
         scopes = resolveGoogleOAuthScopes(productIds);
@@ -201,16 +190,23 @@ export async function registerOAuthStateRoutes(fastify: FastifyInstance) {
         }
       }
 
-      if (platform === 'meta' || platform === 'meta_ads') {
-        scopes = [
-          'ads_management',
-          'business_management',
-          'pages_read_engagement',
-          'pages_show_list',
-        ];
+      if (platform === 'meta' || platform === 'meta_ads' || platform === 'meta_pages' || platform === 'instagram') {
+        const requestedMetaProducts = getRequestedGroupProductIds(accessRequest.data.platforms, 'meta');
+        const permissionSet = getMetaOAuthPermissionSet(platform, requestedMetaProducts);
+        if (!permissionSet) {
+          return sendError(reply, 'INVALID_META_PERMISSION_CONTRACT', 'Meta OAuth permissions do not match an approved review track.', 500);
+        }
+        scopes = [...permissionSet.permissions];
+        metaPermissionTrack = permissionSet.track;
       }
 
-      const authUrl = connector.getAuthUrl(state, scopes, redirectUri);
+      if (scopes && metaPermissionTrack) {
+        if (!isMetaPermissionTrackValid(metaPermissionTrack, scopes)) {
+          return sendError(reply, 'INVALID_META_PERMISSION_CONTRACT', 'Meta OAuth permissions do not match the approved review track.', 500);
+        }
+      }
+
+      const authUrl = connector.getAuthUrl(state, scopes, oauthRedirectUri);
 
       return reply.send({
         data: { authUrl, state },

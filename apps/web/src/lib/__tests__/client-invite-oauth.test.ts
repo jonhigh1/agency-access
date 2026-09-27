@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it } from 'vitest';
 
 import {
   clearInviteOAuthReturnToken,
@@ -20,5 +20,11 @@ describe('client-invite-oauth', () => {
     rememberInviteOAuthReturnToken('token-abc');
     clearInviteOAuthReturnToken();
     expect(readInviteOAuthReturnToken()).toBeNull();
+  });
+
+  it('does not expose a client Meta popup login helper', async () => {
+    expect(await import('../agency-meta-oauth')).not.toHaveProperty(
+      'launchMetaClientPopupLogin'
+    );
   });
 });

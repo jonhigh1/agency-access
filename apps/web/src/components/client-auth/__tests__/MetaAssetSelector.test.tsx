@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MetaAssetSelector } from '../MetaAssetSelector';
 
 vi.mock('posthog-js', () => ({
@@ -9,7 +9,25 @@ vi.mock('posthog-js', () => ({
 }));
 
 vi.mock('@/components/ui/multi-select-combobox', () => ({
-  MultiSelectCombobox: ({ placeholder }: { placeholder: string }) => <div>{placeholder}</div>,
+  MultiSelectCombobox: ({
+    placeholder,
+    selectedIds,
+    onSelectionChange,
+  }: {
+    placeholder: string;
+    selectedIds?: Set<string>;
+    onSelectionChange?: (ids: Set<string>) => void;
+  }) => (
+    <div data-testid={placeholder} data-selected={[...(selectedIds || [])].join(',')}>
+      {placeholder}
+      {placeholder.includes('Pixels') ? (
+        <>
+          <button type="button" onClick={() => onSelectionChange?.(new Set(['pixel_old']))}>Select pixel</button>
+          <button type="button" onClick={() => onSelectionChange?.(new Set())}>Clear pixels</button>
+        </>
+      ) : null}
+    </div>
+  ),
 }));
 
 vi.mock('../AssetGroup', () => ({
@@ -36,7 +54,12 @@ vi.mock('../MetaAssetCreator', () => ({
 }));
 
 vi.mock('../GuidedRedirectModal', () => ({
-  GuidedRedirectCard: () => <div>Guided Redirect</div>,
+  GuidedRedirectCard: ({ onRefresh }: { onRefresh?: () => void }) => (
+    <div>
+      <div>Guided Redirect</div>
+      {onRefresh ? <button type="button" onClick={onRefresh}>Verify access</button> : null}
+    </div>
+  ),
 }));
 
 describe('MetaAssetSelector', () => {
@@ -157,13 +180,14 @@ describe('MetaAssetSelector', () => {
       } as Response);
 
     vi.stubGlobal('fetch', fetchMock);
+    const onSelectionChange = vi.fn();
 
     render(
       <MetaAssetSelector
         sessionId="conn-1"
         accessRequestToken="token-1"
         businessId="biz_2"
-        onSelectionChange={() => {}}
+        onSelectionChange={onSelectionChange}
       />
     );
 
@@ -182,5 +206,96 @@ describe('MetaAssetSelector', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /switch business/i }));
     expect(await screen.findByText(/select business portfolio/i)).toBeInTheDocument();
+  });
+
+  it('does not refresh or restore a catalog business after the user switches portfolios', async () => {
+    const makeResponse = (data: unknown) => ({
+      ok: true,
+      text: async () => JSON.stringify({ data, error: null }),
+    } as Response);
+    let resolveCatalogCreation!: (response: Response) => void;
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(makeResponse({
+        businesses: [{ id: 'biz_1', name: 'Client One' }, { id: 'biz_2', name: 'Client Two' }],
+        selectionRequired: false,
+        selectedBusinessId: 'biz_2',
+        selectedBusinessName: 'Client Two',
+        adAccounts: [], pages: [], instagramAccounts: [], productCatalogs: [], pixels: [{ id: 'pixel_old', name: 'Old Pixel' }],
+      }))
+      .mockReturnValueOnce(new Promise<Response>((resolve) => { resolveCatalogCreation = resolve; }))
+      .mockResolvedValueOnce(makeResponse({
+        businesses: [{ id: 'biz_1', name: 'Client One' }, { id: 'biz_2', name: 'Client Two' }],
+        selectionRequired: false,
+        selectedBusinessId: 'biz_1',
+        selectedBusinessName: 'Client One',
+        adAccounts: [], pages: [], instagramAccounts: [], productCatalogs: [], pixels: [],
+      }));
+    vi.stubGlobal('fetch', fetchMock);
+    const onSelectionChange = vi.fn();
+
+    render(
+      <MetaAssetSelector
+        sessionId="conn-1"
+        accessRequestToken="token-1"
+        allowedAssetTypes={['catalog', 'dataset']}
+        onSelectionChange={onSelectionChange}
+      />
+    );
+
+    await screen.findByText(/sharing from client two/i);
+    fireEvent.click(screen.getByRole('button', { name: 'Select pixel' }));
+    expect(screen.getByTestId('Select Pixels and Datasets...')).toHaveAttribute('data-selected', 'pixel_old');
+    fireEvent.click(screen.getByRole('button', { name: /^create catalog$/i }));
+    fireEvent.change(screen.getByLabelText(/product catalog name/i), { target: { value: 'Client Catalog' } });
+    fireEvent.click(screen.getByRole('button', { name: /^create catalog$/i }));
+    fireEvent.click(screen.getByRole('button', { name: /switch business/i }));
+    fireEvent.click(screen.getByRole('combobox', { name: /business portfolio/i }));
+    fireEvent.click(screen.getByRole('option', { name: /client one/i }));
+    fireEvent.click(screen.getByRole('button', { name: /load accounts/i }));
+    await screen.findByText(/sharing from client one/i);
+    expect(onSelectionChange.mock.lastCall?.[0].datasets).toEqual([]);
+
+    resolveCatalogCreation(makeResponse({ id: 'catalog_new', name: 'Client Catalog' }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3));
+    expect(screen.getByText(/sharing from client one/i)).toBeInTheDocument();
+  });
+
+  it('ignores dataset verification that returns after the selection changes', async () => {
+    const makeResponse = (data: unknown) => ({
+      ok: true,
+      text: async () => JSON.stringify({ data, error: null }),
+    } as Response);
+    let resolveVerification!: (response: Response) => void;
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce(makeResponse({
+        businesses: [{ id: 'biz_1', name: 'Client One' }],
+        selectionRequired: false,
+        selectedBusinessId: 'biz_1',
+        selectedBusinessName: 'Client One',
+        adAccounts: [], pages: [], instagramAccounts: [], productCatalogs: [],
+        pixels: [{ id: 'pixel_old', name: 'Old Pixel' }],
+      }))
+      .mockReturnValueOnce(new Promise<Response>((resolve) => { resolveVerification = resolve; }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(
+      <MetaAssetSelector
+        sessionId="conn-1"
+        accessRequestToken="token-1"
+        allowedAssetTypes={['dataset']}
+        onSelectionChange={vi.fn()}
+      />
+    );
+
+    await screen.findByText(/sharing from client one/i);
+    fireEvent.click(screen.getByRole('button', { name: 'Select pixel' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Verify access' }));
+    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
+
+    fireEvent.click(screen.getByRole('button', { name: 'Clear pixels' }));
+    await act(async () => resolveVerification(makeResponse({ status: 'verified' })));
+
+    expect(screen.queryByText(/Meta confirmed access for every selected recipient/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('status')).not.toBeInTheDocument();
   });
 });

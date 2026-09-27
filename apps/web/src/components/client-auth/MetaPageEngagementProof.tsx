@@ -54,10 +54,10 @@ export function MetaPageEngagementProof({
     <section className="border-2 border-black bg-card p-4 dark:border-white" aria-labelledby={`meta-page-proof-title-${selectedPage.id}`}>
       <div className="mb-3">
         <h4 id={`meta-page-proof-title-${selectedPage.id}`} className="text-lg font-bold text-[var(--ink)] font-display">
-          Verify Page content access
+          Validate Page access
         </h4>
         <p className="text-sm text-muted-foreground">
-          AuthHub will read recent public Page posts for the selected Page.
+          AuthHub will validate this Page, its management tasks, connected Instagram account, and recent public post dates.
         </p>
       </div>
 
@@ -74,7 +74,7 @@ export function MetaPageEngagementProof({
         size="sm"
       >
         {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-        {isLoading ? 'Reading Page content…' : 'Read Page content'}
+        {isLoading ? 'Validating Page…' : 'Validate Page access'}
       </Button>
 
       {error ? (
@@ -88,16 +88,35 @@ export function MetaPageEngagementProof({
         <div className="mt-3 border-2 border-[var(--teal)] bg-[var(--teal)]/10 p-3" role="status" aria-live="polite">
           <div className="mb-2 flex items-center gap-2 font-semibold text-[var(--ink)]">
             <CheckCircle2 className="h-4 w-4 text-[var(--teal)]" aria-hidden="true" />
-            Page content returned for {proof.page.name}
+            Page access validated for {proof.page.name}
           </div>
+          <dl className="mb-3 grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">
+            {proof.page.category ? (
+              <div><dt className="label-nano">Category</dt><dd>{proof.page.category}</dd></div>
+            ) : null}
+            {typeof proof.page.followerCount === 'number' ? (
+              <div><dt className="label-nano">Followers</dt><dd>{proof.page.followerCount.toLocaleString()}</dd></div>
+            ) : null}
+            <div>
+              <dt className="label-nano">Managed tasks</dt>
+              <dd>{proof.page.managedTasks.length > 0 ? proof.page.managedTasks.join(', ') : 'No tasks returned'}</dd>
+            </div>
+            {proof.connectedInstagram ? (
+              <div><dt className="label-nano">Connected Instagram</dt><dd>@{proof.connectedInstagram.username}</dd></div>
+            ) : null}
+          </dl>
           {proof.posts.length === 0 ? (
             <p className="text-sm text-muted-foreground">No recent public posts were returned.</p>
           ) : (
             <ul className="space-y-2 text-sm text-[var(--ink)]">
               {proof.posts.map((post) => (
                 <li key={post.id} className="border-t border-black/20 pt-2 dark:border-white/20">
-                  <span className="font-mono text-xs text-muted-foreground">{post.id}</span>
-                  <p>{post.message || 'Post returned without text.'}</p>
+                  <span className="font-mono text-xs text-muted-foreground">Recent Page post</span>
+                  <p>
+                    <time dateTime={post.createdTime}>
+                      {post.createdTime ? new Date(post.createdTime).toLocaleDateString() : 'Date unavailable'}
+                    </time>
+                  </p>
                 </li>
               ))}
             </ul>

@@ -1,5 +1,8 @@
-import type { Platform } from '@agency-platform/shared';
-import { META_GRAPH_VERSION } from '../../lib/meta-constants.js';
+import {
+  META_GRAPH_VERSION,
+  META_PERMISSION_CONTRACT,
+  type Platform,
+} from '@agency-platform/shared';
 
 /**
  * Platform OAuth Registry Configuration
@@ -162,7 +165,7 @@ export const PLATFORM_CONFIGS: Partial<Record<Platform, PlatformOAuthConfig>> = 
     requiresLongLivedExchange: true, // Meta-specific: 2hr → 60 day token
     userInfoUrl: `https://graph.facebook.com/${META_GRAPH_VERSION}/me`,
     supportsRefreshTokens: false, // Meta uses long-lived tokens instead
-    defaultScopes: ['ads_management', 'business_management', 'pages_read_engagement', 'pages_show_list'],
+    defaultScopes: [...META_PERMISSION_CONTRACT.core.permissions],
   },
 
   meta_ads: {
@@ -174,7 +177,7 @@ export const PLATFORM_CONFIGS: Partial<Record<Platform, PlatformOAuthConfig>> = 
     requiresLongLivedExchange: true,
     userInfoUrl: `https://graph.facebook.com/${META_GRAPH_VERSION}/me`,
     supportsRefreshTokens: false,
-    defaultScopes: ['ads_management', 'business_management', 'pages_read_engagement', 'pages_show_list'],
+    defaultScopes: [...META_PERMISSION_CONTRACT.core.permissions],
   },
 
   meta_pages: {
@@ -186,7 +189,7 @@ export const PLATFORM_CONFIGS: Partial<Record<Platform, PlatformOAuthConfig>> = 
     requiresLongLivedExchange: true,
     userInfoUrl: `https://graph.facebook.com/${META_GRAPH_VERSION}/me`,
     supportsRefreshTokens: false,
-    defaultScopes: ['business_management', 'pages_read_engagement'],
+    defaultScopes: [...META_PERMISSION_CONTRACT.tracks.meta_pages],
   },
 
   instagram: {
@@ -198,7 +201,7 @@ export const PLATFORM_CONFIGS: Partial<Record<Platform, PlatformOAuthConfig>> = 
     requiresLongLivedExchange: true,
     userInfoUrl: `https://graph.facebook.com/${META_GRAPH_VERSION}/me`,
     supportsRefreshTokens: false,
-    defaultScopes: ['business_management', 'pages_read_engagement'],
+    defaultScopes: [...META_PERMISSION_CONTRACT.tracks.instagram],
   },
 
   // ========================================================================

@@ -47,13 +47,13 @@ export function AgencyProfileCard() {
   }, [agency]);
 
   useEffect(() => {
-    if (!isError) {
+    if (!isError || agency) {
       return;
     }
 
     setFeedbackMessage(error instanceof Error ? error.message : 'Failed to load agency profile');
     setFeedbackError(true);
-  }, [error, isError]);
+  }, [agency, error, isError]);
 
   const handleSave = useCallback(async () => {
     if (!agencyId || isSaving) {

@@ -6,9 +6,12 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { render, screen, waitFor, within } from '@testing-library/react';
+import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ClientSelector } from '../client-selector';
+
+const { mockUseAuth } = vi.hoisted(() => ({ mockUseAuth: vi.fn() }));
+vi.mock('@clerk/nextjs', () => ({ useAuth: () => mockUseAuth() }));
 
 // Mock fetch
 global.fetch = vi.fn();
@@ -22,6 +25,12 @@ describe('Phase 5: ClientSelector - TDD Tests', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockUseAuth.mockReturnValue({
+      userId: 'user-1',
+      orgId: 'org-1',
+      isLoaded: true,
+      getToken: vi.fn().mockResolvedValue('mock-token'),
+    });
     // @ts-ignore
     global.fetch.mockResolvedValue({
       ok: true,
@@ -30,6 +39,20 @@ describe('Phase 5: ClientSelector - TDD Tests', () => {
   });
 
   describe('Initial Rendering', () => {
+    it('waits for Clerk to load before requesting clients', async () => {
+      const getToken = vi.fn().mockResolvedValue('mock-token');
+      mockUseAuth.mockReturnValue({ userId: null, orgId: null, isLoaded: false, getToken });
+      const { rerender } = render(<ClientSelector agencyId="agency-1" onSelect={vi.fn()} />);
+
+      await act(async () => new Promise((resolve) => setTimeout(resolve, 300)));
+      expect(fetch).not.toHaveBeenCalled();
+
+      mockUseAuth.mockReturnValue({ userId: 'user-1', orgId: 'org-1', isLoaded: true, getToken });
+      rerender(<ClientSelector agencyId="agency-1" onSelect={vi.fn()} />);
+
+      await waitFor(() => expect(fetch).toHaveBeenCalledTimes(1));
+    });
+
     it('should render search input', () => {
       render(<ClientSelector agencyId="agency-1" onSelect={vi.fn()} />);
 
@@ -114,6 +137,27 @@ describe('Phase 5: ClientSelector - TDD Tests', () => {
         expect(screen.getByText(/failed to load clients/i)).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument();
       });
+    });
+
+    it('shows a retry state when Clerk token acquisition hangs', async () => {
+      const getToken = vi.fn(() => new Promise<string | null>(() => {}));
+      mockUseAuth.mockReturnValue({ userId: 'user-1', orgId: 'org-1', isLoaded: true, getToken });
+      vi.useFakeTimers();
+      let rendered: ReturnType<typeof render> | undefined;
+
+      try {
+        rendered = render(<ClientSelector agencyId="agency-1" onSelect={vi.fn()} />);
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(15_250);
+        });
+
+        expect(screen.getByText(/failed to load clients/i)).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument();
+        expect(screen.queryByRole('status')).not.toBeInTheDocument();
+      } finally {
+        rendered?.unmount();
+        vi.useRealTimers();
+      }
     });
   });
 
@@ -206,7 +250,7 @@ describe('Phase 5: ClientSelector - TDD Tests', () => {
       // @ts-ignore
       global.fetch.mockResolvedValue({
         ok: true,
-        json: async () => ({ id: 'new-client', name: 'New Client', company: 'New Co', email: 'new@test.com', language: 'en' }),
+        json: async () => ({ data: { id: 'new-client', name: 'New Client', company: 'New Co', email: 'new@test.com', language: 'en' } }),
       });
 
       render(<ClientSelector agencyId="agency-1" onSelect={onSelect} />);

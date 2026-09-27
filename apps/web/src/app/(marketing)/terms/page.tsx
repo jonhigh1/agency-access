@@ -94,7 +94,12 @@ export default function TermsOfServicePage() {
               <p>
                 <strong className="text-foreground">Token Revocation:</strong> Clients may revoke
                 access at any time through the Service or directly through the respective
-                platform. Upon revocation, we will delete the associated tokens.
+                platform. AuthHub tries to remove recorded Meta asset access and revoke the
+                Meta app permission before it deletes the related tokens. If a provider or
+                secret-store request fails, AuthHub blocks the authorization and keeps the
+                required token so an administrator can retry cleanup. Other platform tokens
+                are also deleted when their authorization is revoked; if deletion fails,
+                AuthHub blocks that authorization and records a retryable cleanup failure.
               </p>
             </div>
           </section>
@@ -191,7 +196,11 @@ export default function TermsOfServicePage() {
               </p>
               <ul className="list-disc pl-6 space-y-2">
                 <li>Your right to use the Service will immediately cease</li>
-                <li>We will delete your stored OAuth tokens within 30 days</li>
+                <li>
+                  We will remove stored OAuth tokens during termination cleanup. If Meta cleanup
+                  fails, we block the authorization and keep the required token until an
+                  administrator can retry.
+                </li>
                 <li>You remain responsible for any fees incurred prior to termination</li>
               </ul>
             </div>

@@ -19,6 +19,9 @@ vi.mock('@/lib/prisma', () => ({
       findFirst: vi.fn(),
       update: vi.fn(),
     },
+    metaAssetGrant: {
+      updateMany: vi.fn(),
+    },
     clientConnection: {
       findUnique: vi.fn(),
     },
@@ -86,6 +89,19 @@ describe('tokenLifecycleService', () => {
     );
   });
 
+  it('does not refresh an invalid agency connection', async () => {
+    vi.mocked(prisma.agencyPlatformConnection.findFirst).mockResolvedValue({
+      id: 'agency-conn-1', agencyId: 'agency-1', platform: 'google',
+      secretId: 'google_agency_agency-1', status: 'invalid',
+    } as any);
+
+    const result = await refreshAgencyPlatformConnection('agency-1', 'google');
+
+    expect(result.error?.code).toBe('REAUTHORIZATION_REQUIRED');
+    expect(infisical.getOAuthTokens).not.toHaveBeenCalled();
+    expect(prisma.agencyPlatformConnection.update).not.toHaveBeenCalled();
+  });
+
   it('returns reconnect_required for expired non-refreshable OAuth platforms', async () => {
     vi.mocked(prisma.agencyPlatformConnection.findFirst).mockResolvedValue({
       id: 'agency-conn-2',
@@ -108,6 +124,29 @@ describe('tokenLifecycleService', () => {
       code: 'RECONNECT_REQUIRED',
     });
     expect(getConnector).not.toHaveBeenCalled();
+  });
+
+  it('marks verified grants for an expired Meta authorization stale', async () => {
+    vi.mocked(prisma.platformAuthorization.findFirst).mockResolvedValue({
+      id: 'auth-meta-expired', connectionId: 'connection-1', platform: 'meta',
+      secretId: 'meta-secret', status: 'active', expiresAt: new Date(Date.now() - 60_000),
+    } as any);
+    vi.mocked(infisical.retrieveOAuthTokens).mockResolvedValue({
+      accessToken: 'expired-token', expiresAt: new Date(Date.now() - 60_000),
+    });
+    vi.mocked(prisma.platformAuthorization.update).mockResolvedValue({ id: 'auth-meta-expired' } as any);
+    vi.mocked(prisma.metaAssetGrant.updateMany).mockResolvedValue({ count: 1 } as any);
+
+    const result = await refreshClientPlatformAuthorization('connection-1', 'meta');
+
+    expect(result.error).toMatchObject({ code: 'RECONNECT_REQUIRED' });
+    expect(prisma.metaAssetGrant.updateMany).toHaveBeenCalledWith({
+      where: { authorizationId: 'auth-meta-expired', status: 'verified' },
+      data: expect.objectContaining({ status: 'stale', nextActor: 'client_admin' }),
+    });
+    const staleGrantWrite = vi.mocked(prisma.metaAssetGrant.updateMany).mock.calls[0]?.[0];
+    expect(staleGrantWrite?.data).not.toHaveProperty('verifiedAt');
+    expect(staleGrantWrite?.data).not.toHaveProperty('verifiedAuthorizationEpoch');
   });
 
   it('does not attempt refresh for manual-only connectors', async () => {
@@ -189,6 +228,19 @@ describe('tokenLifecycleService — refresh token rotation invariant', () => {
     });
   });
 
+  it('does not refresh or reactivate an invalid authorization', async () => {
+    vi.mocked(prisma.platformAuthorization.findFirst).mockResolvedValue({
+      id: AUTH_ID, connectionId: CONNECTION_ID, platform: 'snapchat',
+      secretId: SECRET_ID, status: 'invalid',
+    } as any);
+
+    const result = await refreshClientPlatformAuthorization(CONNECTION_ID, 'snapchat');
+
+    expect(result.error?.code).toBe('REAUTHORIZATION_REQUIRED');
+    expect(infisical.retrieveOAuthTokens).not.toHaveBeenCalled();
+    expect(prisma.platformAuthorization.update).not.toHaveBeenCalled();
+  });
+
   it('persists the stored refresh token unchanged when the refresh response omits one', async () => {
     vi.mocked(getConnector).mockReturnValue({
       refreshToken: vi.fn().mockResolvedValue({
@@ -250,5 +302,7 @@ describe('tokenLifecycleService — refresh token rotation invariant', () => {
       where: { id: AUTH_ID },
       data: { status: 'invalid' },
     });
+    expect(prisma.metaAssetGrant.updateMany).not.toHaveBeenCalled();
   });
+
 });

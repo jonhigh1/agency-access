@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { auditService } from '../../services/audit.service.js';
 import { oauthStateService } from '../../services/oauth-state.service.js';
@@ -5,10 +6,14 @@ import { getConnector, type PlatformConnector } from '../../services/connectors/
 import { infisical } from '../../lib/infisical.js';
 import { prisma } from '../../lib/prisma.js';
 import { env } from '../../lib/env.js';
-import { platformGroupOf, type Platform } from '@agency-platform/shared';
+import { type Platform } from '@agency-platform/shared';
 import { oauthExchangeSchema } from './schemas.js';
 import { sanitizeOAuthError } from '../../lib/errors.js';
 import { sendError } from '../../lib/response.js';
+import { readPendingSecretDeletionIds } from '../../lib/meta-authorization-metadata.js';
+import { accessRequestService } from '../../services/access-request.service.js';
+import { Prisma } from '@prisma/client';
+import { isPlatformRequested } from './platform-request.js';
 
 interface OAuthExchangeOptions {
   /**
@@ -47,36 +52,51 @@ async function getUserInfoForExchange(
   }
 }
 
-/**
- * True when the access request actually requested this platform.
- *
- * Access requests are stored as flat rows ([{ platform, accessLevel }]) but
- * older rows and the service payload use the hierarchical shape
- * ([{ platformGroup, products }]). Both are accepted so the gate cannot
- * reject a platform the agency did request.
- */
-function isPlatformRequested(accessRequestPlatforms: unknown, platform: string): boolean {
-  if (!Array.isArray(accessRequestPlatforms)) {
-    return false;
+function mergeAuthorizationMetadata(existing: unknown, current: unknown, platform: string) {
+  const existingRecord = existing && typeof existing === 'object' && !Array.isArray(existing)
+    ? existing as Record<string, unknown>
+    : {};
+  const currentRecord = current && typeof current === 'object' && !Array.isArray(current)
+    ? current as Record<string, unknown>
+    : {};
+  const merged = { ...existingRecord, ...currentRecord };
+  if (platform === 'meta' || platform === 'meta_ads' || platform === 'meta_pages' || platform === 'instagram') {
+    delete merged.providerRevokedAt;
+  }
+  return merged;
+}
+
+function isMetaPlatform(platform: string): boolean {
+  return platform === 'meta' || platform === 'meta_ads' || platform === 'meta_pages' || platform === 'instagram';
+}
+
+async function getAuthorizationMetadata(
+  platform: string,
+  connector: PlatformConnector,
+  accessToken: string,
+): Promise<Prisma.InputJsonObject> {
+  const userInfo = await getUserInfoForExchange(platform, connector, accessToken);
+  if (!isMetaPlatform(platform)) return userInfo as Prisma.InputJsonObject;
+
+  if (!connector.getTokenMetadata) {
+    throw new Error('Meta token inspection is not configured.');
+  }
+  const debug = await connector.getTokenMetadata(accessToken);
+  if (!debug.isValid) {
+    throw new Error('Meta token inspection reported an invalid token.');
   }
 
-  return accessRequestPlatforms.some((entry: any) => {
-    const group = entry?.platformGroup;
-    if (group === platform) {
-      return true;
-    }
-
-    const rawPlatform = entry?.platform;
-    if (rawPlatform === platform || (typeof rawPlatform === 'string' && platformGroupOf(rawPlatform) === platform)) {
-      return true;
-    }
-
-    return Array.isArray(entry?.products)
-      ? entry.products.some((product: any) =>
-          (typeof product === 'string' ? product : product?.product) === platform
-        )
-      : false;
-  });
+  return {
+    ...(userInfo as Prisma.InputJsonObject),
+    grantedScopes: [...new Set(debug.scopes)].sort(),
+    tokenDebug: {
+      checkedAt: new Date().toISOString(),
+      isValid: debug.isValid,
+      ...(debug.userId ? { userId: debug.userId } : {}),
+      ...(debug.expiresAt ? { expiresAt: debug.expiresAt.toISOString() } : {}),
+      ...(debug.dataAccessExpiresAt ? { dataAccessExpiresAt: debug.dataAccessExpiresAt.toISOString() } : {}),
+    },
+  };
 }
 
 function buildOAuthExchangeHandler(fastify: FastifyInstance, options: OAuthExchangeOptions) {
@@ -105,31 +125,22 @@ function buildOAuthExchangeHandler(fastify: FastifyInstance, options: OAuthExcha
     }
 
     try {
-      const connector = getConnector(platform as Platform);
       const redirectUri = stateData.redirectUrl || `${env.FRONTEND_URL}/invite/oauth-callback`;
 
-      // Token exchange and the Prisma lookups are independent — run them in parallel.
-      const [exchanged, accessRequest, existingConnection] = await Promise.all([
-        (async () => {
-          let tokens = await connector.exchangeCode(code, redirectUri);
-
-          if ((platform === 'meta' || platform === 'meta_ads') && connector.getLongLivedToken) {
-            tokens = await connector.getLongLivedToken(tokens.accessToken);
-          }
-
-          const userInfo = await getUserInfoForExchange(platform, connector, tokens.accessToken);
-          return { tokens, userInfo };
-        })(),
-        prisma.accessRequest.findUnique({
-          where: { id: stateData.accessRequestId! },
-        }),
-        prisma.clientConnection.findFirst({
-          where: { accessRequestId: stateData.accessRequestId! },
-        }),
-      ]);
+      const accessRequest = await prisma.accessRequest.findUnique({
+        where: { id: stateData.accessRequestId! },
+      });
 
       if (!accessRequest) {
         return sendError(reply, 'ACCESS_REQUEST_NOT_FOUND', 'Access request not found', 404);
+      }
+
+      if (accessRequest.status === 'revoked') {
+        return sendError(reply, 'REQUEST_REVOKED', 'Access request has been revoked', 404);
+      }
+
+      if (accessRequest.status === 'expired' || accessRequest.expiresAt < new Date()) {
+        return sendError(reply, 'REQUEST_EXPIRED', 'Access request has expired', 404);
       }
 
       if (!isPlatformRequested(accessRequest.platforms, platform)) {
@@ -140,6 +151,23 @@ function buildOAuthExchangeHandler(fastify: FastifyInstance, options: OAuthExcha
           400
         );
       }
+
+      const connector = getConnector(platform as Platform);
+      const [exchanged, existingConnection] = await Promise.all([
+        (async () => {
+          let tokens = await connector.exchangeCode(code, redirectUri);
+
+          if (isMetaPlatform(platform) && connector.getLongLivedToken) {
+            tokens = await connector.getLongLivedToken(tokens.accessToken);
+          }
+
+          const userInfo = await getAuthorizationMetadata(platform, connector, tokens.accessToken);
+          return { tokens, userInfo };
+        })(),
+        prisma.clientConnection.findFirst({
+          where: { accessRequestId: stateData.accessRequestId! },
+        }),
+      ]);
 
       let clientConnection = existingConnection;
 
@@ -154,10 +182,20 @@ function buildOAuthExchangeHandler(fastify: FastifyInstance, options: OAuthExcha
         });
       }
 
-      const secretName = infisical.generateSecretName(
-        platform as Platform,
-        clientConnection.id
-      );
+      const existingAuthorization = await prisma.platformAuthorization.findUnique({
+        where: {
+          connectionId_platform: {
+            connectionId: clientConnection.id,
+            platform: platform as Platform,
+          },
+        },
+      });
+      const isMetaAuthorization = isMetaPlatform(platform);
+      const secretBase = infisical.generateSecretName(platform as Platform, clientConnection.id);
+      const nextEpoch = (existingAuthorization?.authorizationEpoch ?? 1) + 1;
+      const secretName = isMetaAuthorization && existingAuthorization
+        ? `${secretBase}_epoch_${nextEpoch}_${randomUUID()}`
+        : secretBase;
 
       await infisical.storeOAuthTokens(secretName, {
         accessToken: exchanged.tokens.accessToken,
@@ -165,7 +203,7 @@ function buildOAuthExchangeHandler(fastify: FastifyInstance, options: OAuthExcha
         expiresAt: exchanged.tokens.expiresAt,
       });
 
-      const platformAuth = await prisma.platformAuthorization.upsert({
+      const authorizationWrite = {
         where: {
           connectionId_platform: {
             connectionId: clientConnection.id,
@@ -176,7 +214,20 @@ function buildOAuthExchangeHandler(fastify: FastifyInstance, options: OAuthExcha
           secretId: secretName,
           expiresAt: exchanged.tokens.expiresAt,
           status: 'active',
-          metadata: exchanged.userInfo,
+          authorizationEpoch: { increment: 1 },
+          metadata: (isMetaAuthorization
+            ? {
+                ...mergeAuthorizationMetadata(existingAuthorization?.metadata, exchanged.userInfo, platform),
+                pendingSecretDeletion: [
+                  ...new Set([
+                    ...readPendingSecretDeletionIds(existingAuthorization?.metadata),
+                    ...(existingAuthorization?.secretId && existingAuthorization.secretId !== secretName
+                      ? [existingAuthorization.secretId]
+                      : []),
+                  ]),
+                ],
+              }
+            : mergeAuthorizationMetadata(existingAuthorization?.metadata, exchanged.userInfo, platform)) as Prisma.InputJsonValue,
         },
         create: {
           connectionId: clientConnection.id,
@@ -186,7 +237,120 @@ function buildOAuthExchangeHandler(fastify: FastifyInstance, options: OAuthExcha
           status: 'active',
           metadata: exchanged.userInfo,
         },
-      });
+      } satisfies Prisma.PlatformAuthorizationUpsertArgs;
+      let platformAuth;
+      let reauthorizationMetadata = authorizationWrite.update.metadata;
+      try {
+        platformAuth = isMetaAuthorization && existingAuthorization
+          ? await prisma.$transaction(async (tx) => {
+              await tx.$queryRaw(Prisma.sql`
+                SELECT id
+                FROM "platform_authorizations"
+                WHERE id = ${existingAuthorization.id}
+                FOR UPDATE
+              `);
+              const currentAuthorization = await tx.platformAuthorization.findUnique({
+                where: { id: existingAuthorization.id },
+              });
+              if (!currentAuthorization) throw new Error('Meta authorization disappeared during reauthorization');
+
+              reauthorizationMetadata = {
+                ...mergeAuthorizationMetadata(currentAuthorization.metadata, exchanged.userInfo, platform),
+                pendingSecretDeletion: [...new Set([
+                  ...readPendingSecretDeletionIds(currentAuthorization.metadata),
+                  ...(currentAuthorization.secretId !== secretName ? [currentAuthorization.secretId] : []),
+                ])],
+              } as Prisma.InputJsonValue;
+              const authorization = await tx.platformAuthorization.upsert({
+                ...authorizationWrite,
+                update: {
+                  ...authorizationWrite.update,
+                  metadata: reauthorizationMetadata,
+                },
+              });
+              await tx.metaAssetGrant.updateMany({
+                where: { authorizationId: currentAuthorization.id, status: 'verified' },
+                data: {
+                  status: 'stale',
+                  nextActor: 'client_admin',
+                  lastErrorCode: 'AUTHORIZATION_REPLACED',
+                  lastErrorMessage: 'Client Meta authorization was replaced and must be verified again',
+                },
+              });
+              return authorization;
+            })
+          : await prisma.platformAuthorization.upsert(authorizationWrite);
+      } catch (error) {
+        if (isMetaAuthorization && existingAuthorization) {
+          try {
+            await infisical.deleteSecret(secretName);
+          } catch (cleanupError) {
+            // The authorization epoch did not advance. A retry uses this same
+            // deterministic secret name and overwrites any orphaned value.
+            console.warn(`[Meta OAuth] Failed to remove uncommitted token secret ${secretName}:`, cleanupError);
+          }
+        }
+        throw error;
+      }
+
+      if (isMetaAuthorization && existingAuthorization && existingAuthorization.secretId !== secretName) {
+        const pending = readPendingSecretDeletionIds(reauthorizationMetadata);
+        const remaining: string[] = [];
+        for (const secretId of pending) {
+          try {
+            await infisical.deleteSecret(secretId);
+          } catch (error) {
+            console.warn(`[Meta OAuth] Old token secret cleanup will retry for ${secretId}:`, error);
+            remaining.push(secretId);
+          }
+        }
+        const deletedSecretIds = new Set(pending.filter((secretId) => !remaining.includes(secretId)));
+        if (deletedSecretIds.size > 0) {
+          await prisma.$transaction(async (tx) => {
+            await tx.$queryRaw(Prisma.sql`
+              SELECT id
+              FROM "platform_authorizations"
+              WHERE id = ${platformAuth.id}
+              FOR UPDATE
+            `);
+            const currentAuthorization = await tx.platformAuthorization.findUnique({
+              where: { id: platformAuth.id },
+            });
+            if (!currentAuthorization) return;
+
+            const currentMetadata = (currentAuthorization.metadata || {}) as Record<string, unknown>;
+            const currentPending = readPendingSecretDeletionIds(currentMetadata);
+            await tx.platformAuthorization.update({
+              where: { id: platformAuth.id },
+              data: {
+                metadata: {
+                  ...currentMetadata,
+                  pendingSecretDeletion: currentPending.filter((secretId) => !deletedSecretIds.has(secretId)),
+                } as Prisma.InputJsonValue,
+              },
+            });
+          });
+        }
+      }
+
+      if (isMetaAuthorization && existingAuthorization) {
+        const lifecycle = await accessRequestService.markRequestAuthorized(accessRequest.id);
+        if (lifecycle.error) {
+          fastify.log.error(
+            { accessRequestId: accessRequest.id, errorCode: lifecycle.error.code },
+            'Failed to recalculate access request status after Meta reauthorization'
+          );
+          if (lifecycle.error.code === 'INTERNAL_ERROR') {
+            const partial = await accessRequestService.setAccessRequestLifecycleStatus(accessRequest.id, 'partial');
+            if (partial.error) {
+              fastify.log.error(
+                { accessRequestId: accessRequest.id, errorCode: partial.error.code },
+                'Failed to reopen completed access request after Meta reauthorization'
+              );
+            }
+          }
+        }
+      }
 
       await auditService.createAuditLog({
         agencyId: accessRequest.agencyId,
@@ -228,7 +392,13 @@ function buildOAuthExchangeHandler(fastify: FastifyInstance, options: OAuthExcha
       });
     } catch (error) {
       const sanitized = sanitizeOAuthError(error);
-      fastify.log.error({ error, sanitized }, 'OAuth exchange failed');
+      fastify.log.error(
+        {
+          errorName: error instanceof Error ? error.name : 'UnknownError',
+          errorCode: sanitized.code,
+        },
+        'OAuth exchange failed'
+      );
       return reply.code(500).send({
         data: null,
         error: sanitized,

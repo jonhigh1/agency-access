@@ -1,9 +1,8 @@
 /**
- * Integration tests: revoke flow succeeds when Infisical delete fails
+ * Integration test: failed Infisical deletion blocks completed revocation
  *
- * Verifies the full chain: route -> service -> infisical.deleteOAuthTokens.
- * When the Infisical SDK rejects, our wrapper swallows the error so revoke
- * still completes at the DB level.
+ * Verifies the service calls the strict Infisical delete and keeps the
+ * connection inactive and retryable when the SDK rejects.
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
@@ -57,12 +56,12 @@ vi.mock('@/services/token-lifecycle.service', () => ({
   ensureAgencyAccessToken: vi.fn(),
 }));
 
-describe('revokeConnection integration (Infisical best-effort delete)', () => {
+describe('revokeConnection integration (Infisical delete failure)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('revokes connection and updates DB when Infisical deleteSecret rejects', async () => {
+  it('does not report revocation complete when Infisical deleteSecret rejects', async () => {
     deleteSecretMock.mockRejectedValue(new Error('Infisical service unavailable'));
 
     const mockConnection = {
@@ -71,17 +70,11 @@ describe('revokeConnection integration (Infisical best-effort delete)', () => {
       platform: 'meta',
       secretId: 'meta_agency_agency-1',
       status: 'active',
-    };
-
-    const updatedConnection = {
-      ...mockConnection,
-      status: 'revoked',
-      revokedAt: new Date(),
-      revokedBy: 'admin@agency.com',
+      metadata: { providerRevokedAt: '2026-09-22T00:00:00.000Z' },
     };
 
     vi.mocked(prisma.agencyPlatformConnection.findFirst).mockResolvedValue(mockConnection as never);
-    vi.mocked(prisma.agencyPlatformConnection.update).mockResolvedValue(updatedConnection as never);
+    vi.mocked(prisma.agencyPlatformConnection.update).mockResolvedValue({ ...mockConnection, status: 'invalid' } as never);
     vi.mocked(prisma.auditLog.create).mockResolvedValue({} as never);
 
     const result = await agencyPlatformService.revokeConnection(
@@ -90,15 +83,14 @@ describe('revokeConnection integration (Infisical best-effort delete)', () => {
       'admin@agency.com'
     );
 
-    expect(result.error).toBeNull();
-    expect(result.data).toEqual(updatedConnection);
+    expect(result.error?.code).toBe('TOKEN_DELETION_FAILED');
+    expect(result.data).toBeNull();
     expect(prisma.agencyPlatformConnection.update).toHaveBeenCalledWith({
       where: { id: 'conn-1' },
-      data: {
-        status: 'revoked',
-        revokedAt: expect.any(Date),
-        revokedBy: 'admin@agency.com',
-      },
+      data: { status: 'invalid' },
     });
+    expect(prisma.auditLog.create).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ action: 'TOKEN_DELETION_FAILED' }),
+    }));
   });
 });

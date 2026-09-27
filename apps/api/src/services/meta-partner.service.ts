@@ -1,42 +1,15 @@
 /**
  * Meta Partner Access Service
  *
- * Grants agency access to client's Meta assets (Ad Accounts, Pages, Instagram).
- * Uses client's temporary OAuth token to add agency's Business Manager as a partner.
+ * Assigns agency people and system users to supported client Meta assets.
  *
  * Documentation:
  * - Ad Account Access: https://developers.facebook.com/docs/marketing-api/reference/ad-account/assigned_users
  * - Page Access: https://developers.facebook.com/docs/graph-api/reference/page/assigned_users
  *
- * Flow:
- * 1. Client selects assets in frontend
- * 2. Backend uses client's token to call Meta API
- * 3. Add agency Business ID as partner with ADMIN/ADVERTISER role
- * 4. Client's token is discarded after grant completes
  */
 
 import { META_GRAPH_VERSION } from '@/lib/meta-constants';
-
-export interface GrantAccessRequest {
-  clientToken: string;
-  agencyBusinessId: string; // Meta Business Manager ID
-  assets: {
-    adAccounts: string[]; // Array of ad account IDs (e.g., ['act_123', 'act_456'])
-    pages: string[]; // Array of page IDs
-    instagramAccounts: string[]; // Array of Instagram account IDs
-  };
-  accessLevel?: 'ADMIN' | 'ADVERTISER'; // Default: ADMIN
-}
-
-export interface GrantAccessResult {
-  success: boolean;
-  grantedAssets: {
-    adAccounts: Array<{ id: string; status: 'granted' | 'failed'; error?: string }>;
-    pages: Array<{ id: string; status: 'granted' | 'failed'; error?: string }>;
-    instagramAccounts: Array<{ id: string; status: 'granted' | 'failed'; error?: string }>;
-  };
-  errors?: string[];
-}
 
 export interface MetaAssignedUserVerificationResult {
   verified: boolean;
@@ -48,6 +21,13 @@ const DEFAULT_AD_ACCOUNT_TASKS = ['MANAGE', 'ADVERTISE', 'ANALYZE'];
 
 class MetaPartnerService {
   private readonly META_GRAPH_URL = `https://graph.facebook.com/${META_GRAPH_VERSION}`;
+  private readonly REQUEST_TIMEOUT_MS = 15_000;
+
+  private request(accessToken: string, init: RequestInit): RequestInit {
+    const headers = new Headers(init.headers);
+    headers.set('Authorization', `Bearer ${accessToken}`);
+    return { ...init, headers, signal: AbortSignal.timeout(this.REQUEST_TIMEOUT_MS) };
+  }
 
   private normalizeTasks(tasks: unknown): string[] {
     if (!Array.isArray(tasks)) {
@@ -67,15 +47,13 @@ class MetaPartnerService {
     const formData = new URLSearchParams();
     formData.append('user', input.systemUserId);
     formData.append('tasks', JSON.stringify(input.tasks));
-    formData.append('access_token', input.accessToken);
-
-    const response = await fetch(url, {
+    const response = await fetch(url, this.request(input.accessToken, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: formData.toString(),
-    });
+    }));
 
     if (!response.ok) {
       let errorMessage = 'Unknown error';
@@ -104,30 +82,15 @@ class MetaPartnerService {
     accessToken: string,
     assetId: string,
     systemUserId: string,
-    expectedTasks: string[]
+    expectedTasks: string[],
+    businessId?: string
   ): Promise<MetaAssignedUserVerificationResult> {
-    const response = await fetch(
-      `${this.META_GRAPH_URL}/${assetId}/assigned_users?access_token=${accessToken}`,
-      {
-        method: 'GET',
-      }
-    );
+    const assignedUsers = await this.getAssignedUsers(accessToken, assetId, businessId);
 
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`Failed to verify assigned user access: ${error}`);
-    }
-
-    const payload = (await response.json()) as {
-      data?: Array<{
-        id?: string;
-        tasks?: unknown;
-      }>;
-    };
-
-    const assignedUser = (payload.data || []).find((item) => item.id === systemUserId);
+    const assignedUser = assignedUsers.find((item) => item.id === systemUserId);
     const assignedTasks = this.normalizeTasks(assignedUser?.tasks);
-    const verified = expectedTasks.every((task) => assignedTasks.includes(task));
+    const verified = assignedTasks.length === expectedTasks.length &&
+      expectedTasks.every((task) => assignedTasks.includes(task));
 
     return {
       verified,
@@ -135,76 +98,122 @@ class MetaPartnerService {
     };
   }
 
-  /**
-   * Grant agency access to selected Meta assets
-   *
-   * @param request - Grant access request with client token and asset IDs
-   * @returns Result with success status and details per asset
-   */
-  async grantPartnerAccess(request: GrantAccessRequest): Promise<GrantAccessResult> {
-    const { clientToken, agencyBusinessId, assets, accessLevel = 'ADMIN' } = request;
+  private async getAssignedUsers(
+    accessToken: string,
+    assetId: string,
+    businessId?: string
+  ): Promise<Array<{ id?: string; tasks?: unknown }>> {
+    const query = businessId ? `?${new URLSearchParams({ business: businessId })}` : '';
+    const url = `${this.META_GRAPH_URL}/${assetId}/assigned_users${query}`;
+    const assignedUsers: Array<{ id?: string; tasks?: unknown }> = [];
+    let nextUrl: string | null = url;
+    const visitedUrls = new Set<string>();
+    while (nextUrl) {
+      if (visitedUrls.has(nextUrl)) throw new Error('Meta returned a repeated pagination URL');
+      visitedUrls.add(nextUrl);
+      const response = await fetch(nextUrl, this.request(accessToken, { method: 'GET' }));
+      if (!response.ok) {
+        throw new Error(`Failed to verify assigned user access: ${await response.text()}`);
+      }
+      const payload = await response.json() as {
+        data?: Array<{ id?: string; tasks?: unknown }>;
+        paging?: { next?: string };
+      };
+      assignedUsers.push(...(payload.data || []));
+      const next = payload.paging?.next;
+      if (next && new URL(next).origin !== new URL(this.META_GRAPH_URL).origin) {
+        throw new Error('Meta returned an invalid pagination URL');
+      }
+      nextUrl = next || null;
+    }
+    return assignedUsers;
+  }
 
-    const result: GrantAccessResult = {
-      success: true,
-      grantedAssets: {
-        adAccounts: [],
-        pages: [],
-        instagramAccounts: [],
-      },
-      errors: [],
+  private async getAgencyPages<T>(accessToken: string, url: string, failure: string): Promise<T[]> {
+    const agencies: T[] = [];
+    let nextUrl: string | null = url;
+    const visitedUrls = new Set<string>();
+    while (nextUrl) {
+      if (visitedUrls.has(nextUrl)) throw new Error('Meta returned a repeated pagination URL');
+      visitedUrls.add(nextUrl);
+      const response = await fetch(nextUrl, this.request(accessToken, { method: 'GET' }));
+      if (!response.ok) throw new Error(`${failure}: ${await response.text()}`);
+      const payload = await response.json() as { data?: T[]; paging?: { next?: string } };
+      agencies.push(...(payload.data || []));
+      const next = payload.paging?.next;
+      if (next && new URL(next).origin !== new URL(this.META_GRAPH_URL).origin) {
+        throw new Error('Meta returned an invalid pagination URL');
+      }
+      nextUrl = next || null;
+    }
+    return agencies;
+  }
+
+  private getAgencies(accessToken: string, assetId: string): Promise<Array<{ id?: string }>> {
+    return this.getAgencyPages(accessToken, `${this.META_GRAPH_URL}/${assetId}/agencies`, 'Failed to read Meta asset agencies');
+  }
+
+  private async getAgenciesWithTasks(
+    accessToken: string,
+    assetId: string
+  ): Promise<Array<{ id?: string; permitted_tasks?: unknown }>> {
+    return this.getAgencyPages(
+      accessToken,
+      `${this.META_GRAPH_URL}/${assetId}/agencies?fields=id,permitted_tasks`,
+      'Failed to verify Meta agency permissions',
+    );
+  }
+
+  private async getAgencyAccess(
+    accessToken: string,
+    assetId: string,
+    agencyBusinessId: string,
+    requiredTasks: string[]
+  ): Promise<MetaAssignedUserVerificationResult> {
+    const agencies = await this.getAgenciesWithTasks(accessToken, assetId);
+    const agency = agencies.find((item) => item.id === agencyBusinessId);
+    const assignedTasks = this.normalizeTasks(agency?.permitted_tasks);
+    return {
+      verified: Boolean(agency) && requiredTasks.every((task) => assignedTasks.includes(task)),
+      assignedTasks,
     };
+  }
 
-    // Grant access to ad accounts
-    for (const adAccountId of assets.adAccounts) {
-      try {
-        const tasks =
-          accessLevel === 'ADMIN' ? DEFAULT_AD_ACCOUNT_TASKS : ['ADVERTISE'];
-        await this.grantAdAccountAccess(clientToken, adAccountId, agencyBusinessId, tasks);
-        result.grantedAssets.adAccounts.push({ id: adAccountId, status: 'granted' });
-      } catch (error) {
-        result.success = false;
-        result.grantedAssets.adAccounts.push({
-          id: adAccountId,
-          status: 'failed',
-          error: String(error),
-        });
-        result.errors?.push(`Ad Account ${adAccountId}: ${error}`);
-      }
-    }
+  async grantCatalogAgencyAccess(
+    clientToken: string,
+    catalogId: string,
+    agencyBusinessId: string,
+    tasks: string[]
+  ): Promise<void> {
+    const formData = new URLSearchParams({
+      business: agencyBusinessId,
+      permitted_tasks: JSON.stringify(tasks),
+    });
+    const response = await fetch(`${this.META_GRAPH_URL}/${catalogId}/agencies`, this.request(clientToken, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: formData.toString(),
+    }));
+    if (!response.ok) throw new Error(`Failed to share Meta catalog with agency: ${await response.text()}`);
+  }
 
-    // Grant access to pages
-    for (const pageId of assets.pages) {
-      try {
-        await this.grantPageAccess(clientToken, pageId, agencyBusinessId);
-        result.grantedAssets.pages.push({ id: pageId, status: 'granted' });
-      } catch (error) {
-        result.success = false;
-        result.grantedAssets.pages.push({
-          id: pageId,
-          status: 'failed',
-          error: String(error),
-        });
-        result.errors?.push(`Page ${pageId}: ${error}`);
-      }
-    }
+  async verifyCatalogAgencyAccess(
+    clientToken: string,
+    catalogId: string,
+    agencyBusinessId: string,
+    requiredTasks: string[] = []
+  ): Promise<boolean> {
+    const result = await this.getAgencyAccess(clientToken, catalogId, agencyBusinessId, requiredTasks);
+    return result.verified;
+  }
 
-    // Grant access to Instagram accounts
-    for (const instagramId of assets.instagramAccounts) {
-      try {
-        await this.grantInstagramAccess(clientToken, instagramId, agencyBusinessId);
-        result.grantedAssets.instagramAccounts.push({ id: instagramId, status: 'granted' });
-      } catch (error) {
-        result.success = false;
-        result.grantedAssets.instagramAccounts.push({
-          id: instagramId,
-          status: 'failed',
-          error: String(error),
-        });
-        result.errors?.push(`Instagram ${instagramId}: ${error}`);
-      }
-    }
-
-    return result;
+  async verifyAdAccountAgencyAccess(
+    clientToken: string,
+    adAccountId: string,
+    agencyBusinessId: string,
+    requiredTasks: string[]
+  ): Promise<MetaAssignedUserVerificationResult> {
+    return this.getAgencyAccess(clientToken, adAccountId, agencyBusinessId, requiredTasks);
   }
 
   /**
@@ -229,13 +238,48 @@ class MetaPartnerService {
     });
   }
 
-  /**
-   * Grant agency access to a specific page
-   *
-   * @param clientToken - Client's OAuth access token
-   * @param pageId - Page ID
-   * @param businessId - Agency's Business Manager ID
-   */
+  async grantCatalogAccess(
+    clientToken: string,
+    catalogId: string,
+    recipientId: string,
+    tasks: string[]
+  ): Promise<void> {
+    await this.postAssignedUserAccess({
+      assetId: catalogId,
+      accessToken: clientToken,
+      systemUserId: recipientId,
+      tasks,
+    });
+  }
+
+  async verifyCatalogAccess(
+    clientToken: string,
+    catalogId: string,
+    recipientId: string,
+    requiredTasks: string[]
+  ): Promise<MetaAssignedUserVerificationResult> {
+    return this.getAssignedUserAccess(clientToken, catalogId, recipientId, requiredTasks);
+  }
+
+  async verifyDatasetAccess(
+    clientToken: string,
+    datasetId: string,
+    recipientId: string,
+    requiredTasks: string[],
+    businessId: string
+  ): Promise<MetaAssignedUserVerificationResult> {
+    return this.getAssignedUserAccess(clientToken, datasetId, recipientId, requiredTasks, businessId);
+  }
+
+  async verifyDatasetAgencyAccess(
+    clientToken: string,
+    datasetId: string,
+    agencyBusinessId: string,
+    requiredTasks: string[]
+  ): Promise<MetaAssignedUserVerificationResult> {
+    return this.getAgencyAccess(clientToken, datasetId, agencyBusinessId, requiredTasks);
+  }
+
   /**
    * Grant agency access to a specific page
    *
@@ -276,74 +320,65 @@ class MetaPartnerService {
     return this.getAssignedUserAccess(clientToken, adAccountId, systemUserId, expectedTasks);
   }
 
-  /**
-   * Grant agency access to Instagram account
-   *
-   * Note: Instagram access is typically granted via the parent Page or Business Manager.
-   * This method attempts to grant direct access if supported by Meta's API.
-   *
-   * @param clientToken - Client's OAuth access token
-   * @param instagramId - Instagram account ID
-   * @param businessId - Agency's Business Manager ID
-   */
-  private async grantInstagramAccess(
+  /** Revoke a user's assignment to a Meta asset. */
+  async revokeAssignedUserAccess(
     clientToken: string,
-    instagramId: string,
-    businessId: string
+    assetId: string,
+    userId: string
   ): Promise<void> {
-    // Instagram access is typically inherited from Page access
-    // For now, we attempt direct assignment similar to Pages
-    const url = `${this.META_GRAPH_URL}/${instagramId}/assigned_users`;
+    if (!/^\d+$/.test(userId)) throw new Error('Meta assignee ID must be numeric');
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        business: businessId,
-        tasks: ['MANAGE', 'CREATE_CONTENT', 'MODERATE'],
-        access_token: clientToken,
-      }),
-    });
+    const existing = await this.getAssignedUsers(clientToken, assetId);
+    if (!existing.some((user) => user.id === userId)) return;
+
+    const formData = new URLSearchParams({ user: userId });
+    const response = await fetch(`${this.META_GRAPH_URL}/${assetId}/assigned_users`, this.request(clientToken, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: formData.toString(),
+    }));
 
     if (!response.ok) {
-      const error = await response.text();
-      // Instagram may not support direct assignment, log but don't fail hard
-      console.warn(`Instagram access grant warning for ${instagramId}:`, error);
-      // Depending on requirements, you may want to throw or silently succeed
-      // For now, we'll log the warning but consider it successful
+      throw new Error(`Failed to revoke Meta assigned user: ${await response.text()}`);
+    }
+
+    const remaining = await this.getAssignedUsers(clientToken, assetId);
+    if (remaining.some((user) => user.id === userId)) {
+      throw new Error(`Meta still reports user ${userId} assigned to asset ${assetId}`);
     }
   }
 
-  /**
-   * Revoke agency access to Meta assets (future use case)
-   *
-   * @param clientToken - Client's OAuth access token (or agency's token)
-   * @param assetId - Asset ID (ad account, page, etc.)
-   * @param businessId - Agency's Business Manager ID
-   */
-  async revokePartnerAccess(
+  private async revokeAgencyFromAsset(
     clientToken: string,
     assetId: string,
-    businessId: string
+    agencyBusinessId: string,
+    readAgencies: (token: string, id: string) => Promise<Array<{ id?: string }>>,
+    assetType: 'asset' | 'catalog',
   ): Promise<void> {
-    const url = `${this.META_GRAPH_URL}/${assetId}/assigned_users/${businessId}`;
+    const existing = await readAgencies(clientToken, assetId);
+    if (!existing.some((agency) => agency.id === agencyBusinessId)) return;
 
-    const response = await fetch(url, {
+    const formData = new URLSearchParams({ business: agencyBusinessId });
+    const response = await fetch(`${this.META_GRAPH_URL}/${assetId}/agencies`, this.request(clientToken, {
       method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        access_token: clientToken,
-      }),
-    });
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: formData.toString(),
+    }));
+    const accessType = assetType === 'catalog' ? 'catalog agency' : 'agency';
+    if (!response.ok) throw new Error(`Failed to revoke Meta ${accessType} access: ${await response.text()}`);
 
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`Failed to revoke access: ${error}`);
+    const remaining = await readAgencies(clientToken, assetId);
+    if (remaining.some((agency) => agency.id === agencyBusinessId)) {
+      throw new Error(`Meta still reports agency ${agencyBusinessId} assigned to ${assetType} ${assetId}`);
     }
+  }
+
+  async revokeAgencyAccess(clientToken: string, assetId: string, agencyBusinessId: string): Promise<void> {
+    await this.revokeAgencyFromAsset(clientToken, assetId, agencyBusinessId, this.getAgencies.bind(this), 'asset');
+  }
+
+  async revokeCatalogAgencyAccess(clientToken: string, catalogId: string, agencyBusinessId: string): Promise<void> {
+    await this.revokeAgencyFromAsset(clientToken, catalogId, agencyBusinessId, this.getAgenciesWithTasks.bind(this), 'catalog');
   }
 }
 

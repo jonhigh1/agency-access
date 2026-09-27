@@ -7,6 +7,7 @@
 
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
+import type { FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { randomBytes } from 'crypto';
 import {
@@ -22,6 +23,9 @@ import {
   type GoogleProductFulfillmentMode,
   type GoogleProductGrantLifecycle,
   type WebhookAccessRequestLifecycleEventType,
+  MetaAccessConfigSchema,
+  getDefaultMetaAccessTasks,
+  type MetaFulfillmentStatus,
 } from '@agency-platform/shared';
 import { invalidateDashboardCache } from '@/lib/cache.js';
 import { env } from '@/lib/env.js';
@@ -29,6 +33,7 @@ import { logger } from '@/lib/logger.js';
 import { webhookEventService } from '@/services/webhook-event.service.js';
 import { normalizeCustomerId } from '@/services/connectors/google.js';
 import { resolveListLimit, resolveListOffset } from '@/lib/list-pagination.js';
+import { metaAssetsService } from '@/services/meta-assets.service.js';
 
 const LegacyPlatformSchema = z.enum([
   'whatsapp_business',
@@ -71,6 +76,7 @@ const createAccessRequestSchema = z.object({
     primaryColor: z.string().regex(/^#[0-9A-F]{6}$/i, 'Invalid hex color').optional(),
     subdomain: z.string().min(3).max(63).regex(/^[a-z0-9-]+$/, 'Invalid subdomain').optional(),
   }).optional(),
+  metaAccessConfig: MetaAccessConfigSchema.optional(),
 });
 
 const updateAccessRequestSchema = z.object({
@@ -96,6 +102,7 @@ const updateAccessRequestSchema = z.object({
     primaryColor: z.string().regex(/^#[0-9A-F]{6}$/i, 'Invalid hex color').optional(),
     subdomain: z.string().min(3).max(63).regex(/^[a-z0-9-]+$/, 'Invalid subdomain').optional(),
   }).optional(),
+  metaAccessConfig: MetaAccessConfigSchema.optional(),
   status: z.enum(['pending', 'partial', 'completed', 'expired', 'revoked']).optional(),
 }).refine((value) => Object.keys(value).length > 0, {
   message: 'At least one field is required to update an access request',
@@ -129,7 +136,7 @@ function isUniqueConstraintError(error: unknown): boolean {
 /**
  * Create a new access request
  */
-export async function createAccessRequest(input: CreateAccessRequestInput) {
+export async function createAccessRequest(input: CreateAccessRequestInput, request?: FastifyRequest) {
   try {
     const validated = createAccessRequestSchema.parse(input);
 
@@ -146,6 +153,54 @@ export async function createAccessRequest(input: CreateAccessRequestInput) {
           message: 'Agency not found',
         },
       };
+    }
+
+    const requestsMeta = validated.platforms.some(
+      (platform) => normalizePlatformGroup(platform.platform) === 'meta'
+    );
+    if (requestsMeta && !validated.metaAccessConfig) {
+      return {
+        data: null,
+        error: {
+          code: 'META_ASSIGNEE_SELECTION_REQUIRED',
+          message: 'Choose the Meta people and optional system users for this request',
+        },
+      };
+    }
+    if (
+      requestsMeta &&
+      !validated.metaAccessConfig?.recipients.some((recipient) => recipient.type === 'human')
+    ) {
+      return {
+        data: null,
+        error: {
+          code: 'META_HUMAN_ASSIGNEE_REQUIRED',
+          message: 'Choose at least one Meta person who will use the client assets',
+        },
+      };
+    }
+
+    if (validated.metaAccessConfig) {
+      const assignees = await metaAssetsService.getAssignableRecipients(validated.agencyId, request);
+      if (assignees.error || !assignees.data) {
+        return { data: null, error: assignees.error || {
+          code: 'META_ASSIGNEE_DISCOVERY_ERROR',
+          message: 'Failed to validate Meta assignees',
+        } };
+      }
+      const allowed = new Set(assignees.data.map((recipient) => `${recipient.type}:${recipient.id}`));
+      const invalidRecipient = validated.metaAccessConfig.recipients.find(
+        (recipient) => !allowed.has(`${recipient.type}:${recipient.id}`)
+      );
+      if (invalidRecipient) {
+        return {
+          data: null,
+          error: {
+            code: 'INVALID_META_ASSIGNEE',
+            message: 'A selected Meta assignee does not belong to the agency Business Portfolio',
+          },
+        };
+      }
     }
 
     // Check if subdomain is already taken (if provided)
@@ -178,6 +233,22 @@ export async function createAccessRequest(input: CreateAccessRequestInput) {
       order: field.order ?? index,
     }));
 
+    const defaultMetaTasks = getDefaultMetaAccessTasks(validated.platforms.map((item) => item.platform));
+    const metaAccessConfig = validated.metaAccessConfig
+      ? {
+          ...validated.metaAccessConfig,
+          pageTasks: validated.metaAccessConfig.pageTasks.length > 0
+            ? validated.metaAccessConfig.pageTasks
+            : defaultMetaTasks.pageTasks,
+          adAccountTasks: validated.metaAccessConfig.adAccountTasks.length > 0
+            ? validated.metaAccessConfig.adAccountTasks
+            : defaultMetaTasks.adAccountTasks,
+          datasetTasks: validated.metaAccessConfig.datasetTasks?.length
+            ? validated.metaAccessConfig.datasetTasks
+            : defaultMetaTasks.datasetTasks,
+        }
+      : undefined;
+
     let accessRequest;
     for (let attempt = 0; attempt < 5; attempt++) {
       try {
@@ -192,6 +263,7 @@ export async function createAccessRequest(input: CreateAccessRequestInput) {
             platforms: validated.platforms as any,
             intakeFields: normalizedIntakeFields as any,
             branding: validated.branding as any,
+            metaAccessConfig: metaAccessConfig as any,
             status: 'pending',
             expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000), // 7 days from now
           },
@@ -327,6 +399,7 @@ const ASSET_SELECTING_PRODUCTS = new Set([
   'google_merchant_center',
   'meta_ads',
   'meta_pages',
+  'instagram',
   'linkedin_ads',
   'linkedin_pages',
   'tiktok',
@@ -338,8 +411,26 @@ type RequestedProduct = {
   platformGroup: string;
 };
 
+type UnresolvedProductReason =
+  | 'no_assets'
+  | 'selection_required'
+  | 'assignee_selection_required'
+  | 'sharing_required'
+  | 'missing_tasks'
+  | 'stale'
+  | 'pending'
+  | 'granted'
+  | 'failed'
+  | 'unresolved'
+  | 'authorization_required'
+  | 'oauth_only_insufficient'
+  | 'pending_native_grant'
+  | 'follow_up_needed'
+  | 'unsupported_automation_path'
+  | MetaFulfillmentStatus;
+
 type UnresolvedProduct = RequestedProduct & {
-  reason: 'no_assets' | 'selection_required';
+  reason: UnresolvedProductReason;
 };
 
 type AuthorizationProgressConnection = {
@@ -347,12 +438,43 @@ type AuthorizationProgressConnection = {
   authorizations?: Array<{
     platform: string;
     status: string;
+    authorizationEpoch?: number;
+  }>;
+  metaAssetGrants?: Array<{
+    assetKind: string;
+    assetId: string;
+    status: MetaFulfillmentStatus | 'pending' | 'granted' | 'failed' | 'unresolved';
+    recipientType: string;
+    recipientId: string;
+    requestedTasks?: unknown;
+    verifiedTasks?: unknown;
+    nextActor?: string | null;
+    verifiedAuthorizationEpoch?: number | null;
+    authorization?: { authorizationEpoch: number; status: string; expiresAt?: Date | null } | null;
+    destination?: { businessId?: string; agencyConnection?: { businessId?: string; status: string } | null } | null;
   }>;
 };
 
 type AgencyPlatformConnectionSummary = {
   platform: string;
   metadata?: unknown;
+};
+
+type MetaFulfillmentGrant = NonNullable<AuthorizationProgressConnection['metaAssetGrants']>[number] & {
+  id: string;
+  assetName?: string | null;
+  requestedTasks: unknown;
+  verifiedTasks?: unknown;
+  lastErrorCode?: string | null;
+  lastErrorMessage?: string | null;
+  metadata?: unknown;
+  verifiedAt?: Date | null;
+  updatedAt: Date;
+  destination?: {
+    businessId: string;
+    name?: string | null;
+    agencyConnection?: { status: string } | null;
+  } | null;
 };
 
 const GOOGLE_PRODUCT_ID_SET = new Set<string>(GOOGLE_PLATFORM_PRODUCT_IDS);
@@ -422,12 +544,15 @@ function getSelectedAssetCount(product: string, assets: Record<string, any>): nu
   switch (product) {
     case 'google_ads':
     case 'meta_ads':
+    case 'instagram':
     case 'linkedin_ads':
     case 'linkedin_pages':
       return (
         (assets.adAccounts?.length ?? 0) +
         (assets.pages?.length ?? 0) +
-        (assets.instagramAccounts?.length ?? 0)
+        (assets.instagramAccounts?.length ?? 0) +
+        (assets.catalogs?.length ?? 0) +
+        (assets.datasets?.length ?? 0)
       );
     case 'meta_pages':
       return assets.pages?.length ?? 0;
@@ -452,6 +577,212 @@ function getSelectedAssetCount(product: string, assets: Record<string, any>): nu
     default:
       return 0;
   }
+}
+
+function getSelectedMetaAssets(product: string, assets: Record<string, any>) {
+  const pairs: Array<{ assetKind: string; assetId: string }> = [];
+  const add = (assetKind: string, ids: unknown) => {
+    if (!Array.isArray(ids)) return;
+    for (const id of ids) {
+      if (typeof id === 'string' && id) pairs.push({ assetKind, assetId: id });
+    }
+  };
+
+  if (product === 'meta_ads') {
+    add('ad_account', assets.adAccounts);
+    add('page', assets.pages);
+    add('instagram_account', assets.instagramAccounts);
+    add('catalog', assets.catalogs);
+    add('dataset', assets.datasets);
+  } else if (product === 'instagram') {
+    add('instagram_account', assets.instagramAccounts);
+  } else if (product === 'meta_pages') {
+    add('page', assets.pages);
+  }
+
+  return pairs;
+}
+
+export function evaluateMetaProductFulfillment(
+  requestedProduct: RequestedProduct,
+  selectedAssets: Record<string, any>,
+  connections: AuthorizationProgressConnection[],
+  metaAccessConfig: unknown
+): { fulfilled: boolean; reason?: UnresolvedProductReason } {
+  const config = MetaAccessConfigSchema.safeParse(metaAccessConfig);
+  if (!config.success || !config.data.recipients.some((recipient) => recipient.type === 'human')) {
+    return { fulfilled: false, reason: 'assignee_selection_required' };
+  }
+  const selected = getSelectedMetaAssets(requestedProduct.product, selectedAssets);
+  const grants = connections.flatMap((connection) => connection.metaAssetGrants || []);
+  type Grant = (typeof grants)[number];
+  const grantsByAsset = new Map<string, Map<string, Grant[]>>();
+
+  for (const grant of grants) {
+    let grantsById = grantsByAsset.get(grant.assetKind);
+    if (!grantsById) {
+      grantsById = new Map();
+      grantsByAsset.set(grant.assetKind, grantsById);
+    }
+
+    const assetGrants = grantsById.get(grant.assetId) || [];
+    assetGrants.push(grant);
+    grantsById.set(grant.assetId, assetGrants);
+  }
+
+  for (const asset of selected) {
+    const assetGrants = grantsByAsset.get(asset.assetKind)?.get(asset.assetId) || [];
+    const currentDestinationIds = new Set(assetGrants.flatMap((grant) => {
+      const destination = grant.destination;
+      const agencyConnection = destination?.agencyConnection;
+      return destination?.businessId && agencyConnection?.status === 'active' &&
+        agencyConnection.businessId === destination.businessId
+        ? [destination.businessId]
+        : [];
+    }));
+    const grantsForCurrentDestinations = currentDestinationIds.size > 0
+      ? assetGrants.filter((grant) => currentDestinationIds.has(grant.destination?.businessId || ''))
+      : assetGrants;
+    const businessGrants: Grant[] = [];
+    const grantsByRecipient = new Map<string, Map<string, Grant[]>>();
+    for (const grant of grantsForCurrentDestinations) {
+      if (grant.recipientType === 'business') {
+        businessGrants.push(grant);
+        continue;
+      }
+
+      let grantsById = grantsByRecipient.get(grant.recipientType);
+      if (!grantsById) {
+        grantsById = new Map();
+        grantsByRecipient.set(grant.recipientType, grantsById);
+      }
+
+      const recipientGrants = grantsById.get(grant.recipientId) || [];
+      recipientGrants.push(grant);
+      grantsById.set(grant.recipientId, recipientGrants);
+    }
+    if (businessGrants.length === 0) return { fulfilled: false, reason: 'sharing_required' };
+    const requiredGrants = [...businessGrants];
+    for (const recipient of config.data.recipients) {
+      const matches = grantsByRecipient.get(recipient.type)?.get(recipient.id) || [];
+      if (matches.length === 0) return { fulfilled: false, reason: 'sharing_required' };
+      requiredGrants.push(...matches);
+    }
+
+    for (const grant of requiredGrants) {
+      if (grant.status === 'excluded') continue;
+      if (grant.status !== 'verified') return { fulfilled: false, reason: grant.status };
+      const problem = getVerifiedMetaGrantProblem(grant);
+      if (problem) return { fulfilled: false, reason: problem };
+    }
+  }
+
+  return { fulfilled: selected.length > 0 };
+}
+
+function getVerifiedMetaGrantProblem(
+  grant: NonNullable<AuthorizationProgressConnection['metaAssetGrants']>[number]
+): 'missing_tasks' | 'stale' | null {
+  if (!Array.isArray(grant.requestedTasks)) return 'missing_tasks';
+  if (
+    grant.requestedTasks.length > 0 &&
+    (!Array.isArray(grant.verifiedTasks) || !grant.requestedTasks.every((task) =>
+      typeof task === 'string' && (grant.verifiedTasks as string[]).includes(task)
+    ))
+  ) return 'missing_tasks';
+
+  if (
+    !grant.authorization ||
+    grant.authorization.status !== 'active' ||
+    (grant.authorization.expiresAt !== null && grant.authorization.expiresAt !== undefined &&
+      grant.authorization.expiresAt.getTime() <= Date.now()) ||
+    grant.verifiedAuthorizationEpoch !== grant.authorization.authorizationEpoch
+  ) return 'stale';
+
+  if (grant.destination?.agencyConnection && (
+    grant.destination.agencyConnection.status !== 'active' ||
+    (grant.destination.businessId &&
+      grant.destination.businessId !== grant.destination.agencyConnection.businessId)
+  )) {
+    return 'stale';
+  }
+
+  return null;
+}
+
+function buildMetaFulfillment(accessRequest: { metaAccessConfig?: unknown }, connections: AuthorizationProgressConnection[]) {
+  const parsedConfig = MetaAccessConfigSchema.safeParse(accessRequest.metaAccessConfig);
+  const recipientNames = new Map(
+    (parsedConfig.success ? parsedConfig.data.recipients : []).map((recipient) => [
+      `${recipient.type}:${recipient.id}`,
+      recipient.name,
+    ])
+  );
+
+  return connections.flatMap((connection) =>
+    ((connection.metaAssetGrants || []) as MetaFulfillmentGrant[]).map((grant) => {
+      const problem = grant.status === 'verified' ? getVerifiedMetaGrantProblem(grant) : null;
+      const status: MetaFulfillmentStatus = problem === 'stale'
+        ? 'stale'
+        : problem === 'missing_tasks'
+          ? 'blocked'
+          : grant.status as MetaFulfillmentStatus;
+      const exclusion = grant.metadata && typeof grant.metadata === 'object' && !Array.isArray(grant.metadata)
+        ? (grant.metadata as any).exclusion
+        : null;
+      let nextAction: string | undefined;
+      switch (status) {
+        case 'selected':
+          nextAction = 'Finish sharing this asset in Meta.';
+          break;
+        case 'sharing_attempted':
+          nextAction = 'Wait while AuthHub verifies the requested access.';
+          break;
+        case 'manual_action_required':
+        case 'blocked':
+          nextAction = problem === 'missing_tasks'
+            ? 'Grant the missing Meta tasks, then retry verification.'
+            : grant.lastErrorMessage || 'Complete the required Meta step, then retry verification.';
+          break;
+        case 'stale':
+          nextAction = 'Ask the client to reconnect Meta, then retry verification.';
+          break;
+        case 'revoked':
+          nextAction = 'Send a new access request if access is still required.';
+          break;
+      }
+
+      return {
+        id: grant.id,
+        assetKind: grant.assetKind,
+        assetId: grant.assetId,
+        assetName: grant.assetName || grant.assetId,
+        recipientType: grant.recipientType,
+        recipientId: grant.recipientId,
+        recipientName: recipientNames.get(`${grant.recipientType}:${grant.recipientId}`) ||
+          (grant.recipientType === 'business' ? grant.destination?.name : undefined) ||
+          grant.recipientId,
+        requestedTasks: Array.isArray(grant.requestedTasks) ? grant.requestedTasks : [],
+        verifiedTasks: Array.isArray(grant.verifiedTasks) ? grant.verifiedTasks : [],
+        status,
+        nextActor: problem === 'stale' ? 'client_admin' : problem === 'missing_tasks' ? 'client_admin' : grant.nextActor || undefined,
+        nextAction,
+        errorCode: problem === 'missing_tasks' ? 'MISSING_TASKS' : grant.lastErrorCode || undefined,
+        errorMessage: problem === 'missing_tasks' ? 'Meta did not grant every requested task.' : grant.lastErrorMessage || undefined,
+        verifiedAt: status === 'verified' ? grant.verifiedAt?.toISOString() : undefined,
+        updatedAt: grant.updatedAt.toISOString(),
+        ...(status === 'excluded' && exclusion && typeof exclusion === 'object'
+          ? {
+              exclusion: {
+                reason: typeof exclusion.reason === 'string' ? exclusion.reason : 'Excluded by agency owner',
+                actor: 'Agency owner',
+                excludedAt: typeof exclusion.excludedAt === 'string' ? exclusion.excludedAt : grant.updatedAt.toISOString(),
+              },
+            }
+          : {}),
+      };
+    })
+  );
 }
 
 function hasNoAssetsSignal(product: string, assets: Record<string, any>): boolean {
@@ -510,11 +841,12 @@ function extractSelectedAssets(
   const grantedAssets =
     (connection.grantedAssets as Record<string, unknown> | null) || null;
 
-  if (!grantedAssets || !(requestedProduct.product in grantedAssets)) {
+  if (!grantedAssets) {
     return null;
   }
 
-  const selectedAssets = grantedAssets[requestedProduct.product];
+  const assetProduct = requestedProduct.product === 'instagram' ? 'meta_ads' : requestedProduct.product;
+  const selectedAssets = grantedAssets[assetProduct];
   return selectedAssets && typeof selectedAssets === 'object'
     ? (selectedAssets as Record<string, any>)
     : null;
@@ -606,7 +938,8 @@ function buildGoogleGrantLifecycle(
 function evaluateAuthorizationProgress(
   requestedProducts: RequestedProduct[],
   connections: AuthorizationProgressConnection[],
-  agencyPlatformConnections: AgencyPlatformConnectionSummary[] = []
+  agencyPlatformConnections: AgencyPlatformConnectionSummary[] = [],
+  metaAccessConfig?: unknown
 ) {
   const fulfilledProducts: RequestedProduct[] = [];
   const unresolvedProducts: UnresolvedProduct[] = [];
@@ -687,6 +1020,32 @@ function evaluateAuthorizationProgress(
       unresolvedProducts.push({
         ...requestedProduct,
         reason: lifecycle.state as UnresolvedProduct['reason'],
+      });
+      continue;
+    }
+
+    if (requestedProduct.platformGroup === 'meta') {
+      if (hasNoAssets) {
+        unresolvedProducts.push({ ...requestedProduct, reason: 'no_assets' });
+        continue;
+      }
+      if (!hasSelectedAssets || !resolvedSelectedAssets) {
+        if (hasAuthorization) {
+          unresolvedProducts.push({ ...requestedProduct, reason: 'selection_required' });
+        }
+        continue;
+      }
+
+      const fulfillment = evaluateMetaProductFulfillment(
+        requestedProduct,
+        resolvedSelectedAssets,
+        connections,
+        metaAccessConfig
+      );
+      if (fulfillment.fulfilled) fulfilledProducts.push(requestedProduct);
+      else unresolvedProducts.push({
+        ...requestedProduct,
+        reason: fulfillment.reason || 'sharing_required',
       });
       continue;
     }
@@ -815,6 +1174,7 @@ export async function emitAccessRequestLifecycleWebhook(input: {
         clientEmail: true,
         externalReference: true,
         platforms: true,
+        metaAccessConfig: true,
         status: true,
         uniqueToken: true,
         createdAt: true,
@@ -859,6 +1219,35 @@ export async function emitAccessRequestLifecycleWebhook(input: {
           select: {
             platform: true,
             status: true,
+            authorizationEpoch: true,
+          },
+        },
+        metaAssetGrants: {
+          select: {
+            id: true,
+            assetKind: true,
+            assetId: true,
+            assetName: true,
+            status: true,
+            recipientType: true,
+            recipientId: true,
+            requestedTasks: true,
+            verifiedTasks: true,
+            nextActor: true,
+            lastErrorCode: true,
+            lastErrorMessage: true,
+            metadata: true,
+            verifiedAt: true,
+            updatedAt: true,
+            verifiedAuthorizationEpoch: true,
+            authorization: { select: { authorizationEpoch: true, status: true, expiresAt: true } },
+            destination: {
+              select: {
+                businessId: true,
+                name: true,
+                agencyConnection: { select: { status: true, businessId: true } },
+              },
+            },
           },
         },
       },
@@ -866,7 +1255,7 @@ export async function emitAccessRequestLifecycleWebhook(input: {
 
     const requestedPlatforms = extractDashboardPlatformGroups(accessRequest.platforms);
     const requestedProducts = extractRequestedProducts(accessRequest.platforms);
-    const progress = evaluateAuthorizationProgress(requestedProducts, clientConnections as any);
+    const progress = evaluateAuthorizationProgress(requestedProducts, clientConnections as any, [], accessRequest.metaAccessConfig);
     const connections = buildConnectionSummaries(clientConnections as any);
 
     const apiVersion = (endpoint.preferredApiVersion as string) || '2026-03-08';
@@ -1122,20 +1511,53 @@ export async function getAccessRequestById(id: string, agencyId?: string) {
           select: {
             platform: true,
             status: true,
+            authorizationEpoch: true,
+          },
+        },
+        metaAssetGrants: {
+          select: {
+            id: true,
+            assetKind: true,
+            assetId: true,
+            assetName: true,
+            status: true,
+            recipientType: true,
+            recipientId: true,
+            requestedTasks: true,
+            verifiedTasks: true,
+            nextActor: true,
+            lastErrorCode: true,
+            lastErrorMessage: true,
+            metadata: true,
+            verifiedAt: true,
+            updatedAt: true,
+            verifiedAuthorizationEpoch: true,
+            authorization: { select: { authorizationEpoch: true, status: true, expiresAt: true } },
+            destination: {
+              select: {
+                businessId: true,
+                name: true,
+                agencyConnection: { select: { status: true, businessId: true } },
+              },
+            },
           },
         },
       },
     });
     const authorizationProgress = evaluateAuthorizationProgress(
       requestedProducts,
-      clientConnections as any
+      clientConnections as any,
+      [],
+      accessRequest.metaAccessConfig
     );
+    const metaFulfillment = buildMetaFulfillment(accessRequest, clientConnections as any);
 
     return {
       data: {
         ...accessRequest,
         platforms: hierarchicalPlatforms,
         authorizationProgress,
+        metaFulfillment,
         ...(shopifySubmission ? { shopifySubmission } : {}),
       },
       error: null,
@@ -1217,6 +1639,13 @@ export async function getAccessRequestByToken(token: string) {
       };
     }
 
+    if (accessRequest.status === 'revoked') {
+      return { data: null, error: { code: 'REQUEST_REVOKED', message: 'Access request has been revoked' } };
+    }
+    if (accessRequest.status === 'expired') {
+      return { data: null, error: { code: 'REQUEST_EXPIRED', message: 'Access request has expired' } };
+    }
+
     // Check if expired
     if (accessRequest.expiresAt < new Date()) {
       return {
@@ -1270,6 +1699,35 @@ export async function getAccessRequestByToken(token: string) {
             select: {
               platform: true,
               status: true,
+              authorizationEpoch: true,
+            },
+          },
+          metaAssetGrants: {
+            select: {
+              id: true,
+              assetKind: true,
+              assetId: true,
+              assetName: true,
+              status: true,
+              recipientType: true,
+              recipientId: true,
+              requestedTasks: true,
+              verifiedTasks: true,
+              nextActor: true,
+              lastErrorCode: true,
+              lastErrorMessage: true,
+              metadata: true,
+              verifiedAt: true,
+              updatedAt: true,
+              verifiedAuthorizationEpoch: true,
+              authorization: { select: { authorizationEpoch: true, status: true, expiresAt: true } },
+              destination: {
+                select: {
+                  businessId: true,
+                  name: true,
+                  agencyConnection: { select: { status: true, businessId: true } },
+                },
+              },
             },
           },
         },
@@ -1293,8 +1751,10 @@ export async function getAccessRequestByToken(token: string) {
     const authorizationProgress = evaluateAuthorizationProgress(
       requestedProducts,
       clientConnections as any,
-      platformConnections as any
+      platformConnections as any,
+      accessRequest.metaAccessConfig
     );
+    const metaFulfillment = buildMetaFulfillment(accessRequest, clientConnections as any);
 
     return {
       data: {
@@ -1303,6 +1763,7 @@ export async function getAccessRequestByToken(token: string) {
         platforms: hierarchicalPlatforms,
         manualInviteTargets,
         authorizationProgress,
+        metaFulfillment,
       },
       error: null,
     };
@@ -1450,7 +1911,8 @@ export async function getDashboardAccessRequestSummaries(
  */
 export async function updateAccessRequest(
   id: string,
-  input: UpdateAccessRequestInput
+  input: UpdateAccessRequestInput,
+  request?: FastifyRequest
 ) {
   try {
     const existing = await prisma.accessRequest.findUnique({
@@ -1459,6 +1921,8 @@ export async function updateAccessRequest(
         id: true,
         status: true,
         agencyId: true,
+        platforms: true,
+        metaAccessConfig: true,
       },
     });
 
@@ -1484,6 +1948,65 @@ export async function updateAccessRequest(
 
     const validated = updateAccessRequestSchema.parse(input);
     const updateData: Record<string, unknown> = { ...validated };
+
+    const rawPlatforms = validated.platforms ?? existing.platforms;
+    const platforms = Array.isArray(rawPlatforms) ? rawPlatforms as Array<Record<string, any>> : [];
+    const products = platforms.flatMap((platform) =>
+      Array.isArray(platform.products)
+        ? platform.products.map((product: { product?: string }) => product.product)
+            .filter((product): product is string => typeof product === 'string')
+        : typeof platform.platform === 'string' ? [platform.platform] : []
+    );
+    const requestsMeta = products.some((product) => normalizePlatformGroup(product) === 'meta');
+    const metaConfig = MetaAccessConfigSchema.safeParse(validated.metaAccessConfig ?? existing.metaAccessConfig);
+    const metaConfigData = metaConfig.success ? metaConfig.data : undefined;
+
+    if (requestsMeta && !metaConfigData) {
+      return {
+        data: null,
+        error: {
+          code: 'META_ASSIGNEE_SELECTION_REQUIRED',
+          message: 'Choose the Meta people and optional system users for this request',
+        },
+      };
+    }
+    if (requestsMeta && !metaConfigData?.recipients.some((recipient) => recipient.type === 'human')) {
+      return {
+        data: null,
+        error: {
+          code: 'META_HUMAN_ASSIGNEE_REQUIRED',
+          message: 'Choose at least one Meta person who will use the client assets',
+        },
+      };
+    }
+    if (validated.metaAccessConfig && metaConfigData) {
+      const assignees = await metaAssetsService.getAssignableRecipients(existing.agencyId, request);
+      if (assignees.error || !assignees.data) {
+        return { data: null, error: assignees.error || {
+          code: 'META_ASSIGNEE_DISCOVERY_ERROR',
+          message: 'Failed to validate Meta assignees',
+        } };
+      }
+      const allowed = new Set(assignees.data.map((recipient) => `${recipient.type}:${recipient.id}`));
+      if (metaConfigData.recipients.some((recipient) => !allowed.has(`${recipient.type}:${recipient.id}`))) {
+        return {
+          data: null,
+          error: {
+            code: 'INVALID_META_ASSIGNEE',
+            message: 'A selected Meta assignee does not belong to the agency Business Portfolio',
+          },
+        };
+      }
+    }
+    if (validated.metaAccessConfig && requestsMeta && metaConfigData) {
+      const defaults = getDefaultMetaAccessTasks(products);
+      updateData.metaAccessConfig = {
+        ...metaConfigData,
+        pageTasks: metaConfigData.pageTasks.length ? metaConfigData.pageTasks : defaults.pageTasks,
+        adAccountTasks: metaConfigData.adAccountTasks.length ? metaConfigData.adAccountTasks : defaults.adAccountTasks,
+        datasetTasks: metaConfigData.datasetTasks?.length ? metaConfigData.datasetTasks : defaults.datasetTasks,
+      };
+    }
     if (validated.status === 'completed') {
       updateData.authorizedAt = new Date();
     }
@@ -1548,7 +2071,10 @@ export async function markRequestAuthorized(requestId: string) {
       where: { id: requestId },
       select: {
         id: true,
+        status: true,
+        expiresAt: true,
         platforms: true,
+        metaAccessConfig: true,
       },
     });
 
@@ -1562,6 +2088,13 @@ export async function markRequestAuthorized(requestId: string) {
       };
     }
 
+    if (accessRequest.status === 'revoked') {
+      return { data: null, error: { code: 'REQUEST_REVOKED', message: 'Access request has been revoked' } };
+    }
+    if (accessRequest.status === 'expired' || accessRequest.expiresAt < new Date()) {
+      return { data: null, error: { code: 'REQUEST_EXPIRED', message: 'Access request has expired' } };
+    }
+
     const clientConnections = await prisma.clientConnection.findMany({
       where: { accessRequestId: requestId },
       select: {
@@ -1570,6 +2103,22 @@ export async function markRequestAuthorized(requestId: string) {
           select: {
             platform: true,
             status: true,
+            authorizationEpoch: true,
+          },
+        },
+        metaAssetGrants: {
+          select: {
+            assetKind: true,
+            assetId: true,
+            status: true,
+            recipientType: true,
+            recipientId: true,
+            requestedTasks: true,
+            verifiedTasks: true,
+            nextActor: true,
+            verifiedAuthorizationEpoch: true,
+            authorization: { select: { authorizationEpoch: true, status: true, expiresAt: true } },
+            destination: { select: { businessId: true, agencyConnection: { select: { status: true, businessId: true } } } },
           },
         },
       },
@@ -1578,7 +2127,9 @@ export async function markRequestAuthorized(requestId: string) {
     const requestedProducts = extractRequestedProducts(accessRequest.platforms);
     const authorizationProgress = evaluateAuthorizationProgress(
       requestedProducts,
-      clientConnections as any
+      clientConnections as any,
+      [],
+      accessRequest.metaAccessConfig
     );
 
     return await setAccessRequestLifecycleStatus(
@@ -1606,30 +2157,199 @@ export async function markRequestAuthorized(requestId: string) {
   }
 }
 
+export async function excludeMetaGrant(input: {
+  accessRequestId: string;
+  grantId: string;
+  agencyId: string;
+  ownerSubject: string;
+  actorEmail: string;
+  reason: string;
+}) {
+  try {
+    const [accessRequest, agency, grant] = await Promise.all([
+      prisma.accessRequest.findUnique({
+        where: { id: input.accessRequestId },
+        select: { agencyId: true, platforms: true, metaAccessConfig: true, status: true, expiresAt: true },
+      }),
+      prisma.agency.findUnique({
+        where: { id: input.agencyId },
+        select: { clerkUserId: true },
+      }),
+      prisma.metaAssetGrant.findFirst({
+        where: { id: input.grantId, accessRequestId: input.accessRequestId },
+      }),
+    ]);
+
+    if (!accessRequest || !grant) {
+      return { data: null, error: { code: 'NOT_FOUND', message: 'Meta grant not found' } };
+    }
+    if (accessRequest.agencyId !== input.agencyId) {
+      return { data: null, error: { code: 'FORBIDDEN', message: 'You do not have access to this agency resource' } };
+    }
+    if (!agency?.clerkUserId || agency.clerkUserId !== input.ownerSubject) {
+      return { data: null, error: { code: 'OWNER_REQUIRED', message: 'Only the agency owner can exclude a Meta access requirement' } };
+    }
+    if (accessRequest.status === 'revoked') {
+      return { data: null, error: { code: 'REQUEST_REVOKED', message: 'Access request has been revoked' } };
+    }
+    if (accessRequest.status === 'expired' || accessRequest.expiresAt < new Date()) {
+      return { data: null, error: { code: 'REQUEST_EXPIRED', message: 'Access request has expired' } };
+    }
+    if (grant.status === 'verified') {
+      return {
+        data: null,
+        error: { code: 'META_GRANT_MUST_BE_REVOKED', message: 'Revoke verified Meta access before excluding this requirement' },
+      };
+    }
+
+    const excludedAt = new Date();
+    const metadata = grant.metadata && typeof grant.metadata === 'object' && !Array.isArray(grant.metadata)
+      ? grant.metadata
+      : {};
+    const transactionResult = await prisma.$transaction(async (tx) => {
+      const nextGrant = await tx.metaAssetGrant.update({
+        where: { id: grant.id },
+        data: {
+          status: 'excluded',
+          verifiedAt: null,
+          verifiedAuthorizationEpoch: null,
+          nextActor: null,
+          metadata: {
+            ...metadata,
+            exclusion: {
+              reason: input.reason,
+              excludedBy: input.ownerSubject,
+              excludedAt: excludedAt.toISOString(),
+            },
+          },
+        },
+      });
+      await tx.auditLog.create({
+        data: {
+          agencyId: input.agencyId,
+          userEmail: input.actorEmail,
+          action: 'META_GRANT_EXCLUDED',
+          resourceType: 'meta_asset_grant',
+          resourceId: grant.id,
+          actorType: 'agency_owner',
+          actorId: input.ownerSubject,
+          metadata: {
+            accessRequestId: input.accessRequestId,
+            reason: input.reason,
+            assetKind: grant.assetKind,
+            assetId: grant.assetId,
+            recipientType: grant.recipientType,
+            recipientId: grant.recipientId,
+          },
+        },
+      });
+      const clientConnections = await tx.clientConnection.findMany({
+        where: { accessRequestId: input.accessRequestId },
+        select: {
+          grantedAssets: true,
+          authorizations: {
+            select: { platform: true, status: true, authorizationEpoch: true },
+          },
+          metaAssetGrants: {
+            select: {
+              assetKind: true,
+              assetId: true,
+              status: true,
+              recipientType: true,
+              recipientId: true,
+              requestedTasks: true,
+              verifiedTasks: true,
+              nextActor: true,
+              verifiedAuthorizationEpoch: true,
+              authorization: { select: { authorizationEpoch: true, status: true, expiresAt: true } },
+              destination: { select: { businessId: true, agencyConnection: { select: { status: true, businessId: true } } } },
+            },
+          },
+        },
+      });
+      const progress = evaluateAuthorizationProgress(
+        extractRequestedProducts(accessRequest.platforms),
+        clientConnections as any,
+        [],
+        accessRequest.metaAccessConfig
+      );
+      const nextStatus = progress.isComplete ? 'completed' : 'partial';
+      if (accessRequest.status !== nextStatus) {
+        await tx.accessRequest.update({
+          where: { id: input.accessRequestId },
+          data: {
+            status: nextStatus,
+            authorizedAt: nextStatus === 'completed' ? excludedAt : null,
+          },
+        });
+      }
+      return { grant: nextGrant, nextStatus };
+    });
+
+    if (accessRequest.status !== transactionResult.nextStatus) {
+      void emitAccessRequestLifecycleWebhook({
+        accessRequestId: input.accessRequestId,
+        previousStatus: accessRequest.status,
+        nextStatus: transactionResult.nextStatus,
+      });
+    }
+    void invalidateDashboardCache(input.agencyId);
+    return { data: transactionResult.grant, error: null };
+  } catch {
+    return { data: null, error: { code: 'INTERNAL_ERROR', message: 'Failed to exclude Meta access requirement' } };
+  }
+}
+
 /**
  * Cancel an access request
  */
-export async function cancelAccessRequest(id: string) {
+export async function cancelAccessRequest(
+  id: string,
+  audit?: { userEmail: string; ipAddress: string; userAgent: string }
+) {
   try {
-    const existing = await prisma.accessRequest.findUnique({
-      where: { id },
-      select: { agencyId: true, status: true },
-    });
+    const cancellation = await prisma.$transaction(async (transaction) => {
+      const existing = await transaction.accessRequest.findUnique({
+        where: { id },
+        select: { agencyId: true, status: true, clientName: true, clientEmail: true },
+      });
+      if (!existing) return null;
 
-    await prisma.accessRequest.update({
-      where: { id },
-      data: { status: 'revoked' },
+      const updated = await transaction.accessRequest.updateMany({
+        where: { id, status: { not: 'revoked' } },
+        data: { status: 'revoked' },
+      });
+      if (updated.count === 1 && audit && existing.agencyId) {
+        await transaction.auditLog.create({
+          data: {
+            agencyId: existing.agencyId,
+            userEmail: audit.userEmail,
+            action: 'ACCESS_REQUEST_REVOKED',
+            resourceType: 'access_request',
+            resourceId: id,
+            metadata: { clientName: existing.clientName, clientEmail: existing.clientEmail },
+            ipAddress: audit.ipAddress,
+            userAgent: audit.userAgent,
+          },
+        });
+      }
+      return { ...existing, changed: updated.count === 1 };
     });
+    if (!cancellation) {
+      return { data: null, error: { code: 'NOT_FOUND', message: 'Access request not found' } };
+    }
 
     void Promise.all([
-      existing && existing.status !== 'revoked'
+      cancellation.changed
         ? emitAccessRequestLifecycleWebhook({
             accessRequestId: id,
-            previousStatus: existing.status,
+            previousStatus: cancellation.status,
             nextStatus: 'revoked',
           })
         : Promise.resolve(),
-      existing?.agencyId ? invalidateDashboardCache(existing.agencyId) : Promise.resolve(),
+      cancellation.agencyId && cancellation.changed
+        ? invalidateDashboardCache(cancellation.agencyId)
+        : Promise.resolve(),
     ]).catch((error) => {
       logger.warn('Failed to complete access request cancellation side effects', {
         accessRequestId: id,
@@ -1704,6 +2424,8 @@ export const accessRequestService = {
   getDashboardAccessRequestSummaries,
   updateAccessRequest,
   markRequestAuthorized,
+  setAccessRequestLifecycleStatus,
+  excludeMetaGrant,
   cancelAccessRequest,
   deleteExpiredRequests,
   generateUniqueToken,

@@ -1,4 +1,4 @@
-import { render, waitFor } from '@testing-library/react';
+import { act, render, screen, waitFor } from '@testing-library/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useUserAgency } from '../use-user-agency';
@@ -11,8 +11,14 @@ vi.mock('@clerk/nextjs', () => ({
 }));
 
 function Probe({ options = {} }: { options?: Parameters<typeof useUserAgency>[0] }) {
-  const { data } = useUserAgency(options);
-  return <div data-testid="agency-id">{data?.id ?? 'none'}</div>;
+  const { data, isLoading, error } = useUserAgency(options);
+  return (
+    <>
+      <div data-testid="agency-id">{data?.id ?? 'none'}</div>
+      {isLoading ? <div role="status">Loading agency</div> : null}
+      {error ? <div role="alert">{error.message}</div> : null}
+    </>
+  );
 }
 
 function renderWithClient(ui: React.ReactElement) {
@@ -52,12 +58,9 @@ describe('useUserAgency', () => {
       expect(document.querySelector('[data-testid="agency-id"]')?.textContent).toBe('agency_1');
     });
 
-    expect(global.fetch).toHaveBeenCalledWith(
-      expect.stringContaining('/api/agencies?clerkUserId=org_1'),
-      expect.objectContaining({
-        headers: expect.objectContaining({ Authorization: 'Bearer clerk-token' }),
-      })
-    );
+    const [url, init] = (global.fetch as any).mock.calls[0];
+    expect(url).toContain('/api/agencies?clerkUserId=org_1');
+    expect(new Headers(init.headers).get('Authorization')).toBe('Bearer clerk-token');
     // Cache-dedupe contract: the shared key holds the payload.
     expect(queryClient.getQueryData(['user-agency', 'org_1'])).toEqual({ id: 'agency_1', name: 'Acme' });
   });
@@ -88,6 +91,56 @@ describe('useUserAgency', () => {
     expect(global.fetch).toHaveBeenCalledTimes(1);
   });
 
+  it('waits for Clerk to finish loading before requesting the agency', async () => {
+    useAuthMock.mockReturnValue({
+      getToken: getTokenMock,
+      userId: 'user_1',
+      orgId: null,
+      isLoaded: false,
+    });
+    (global.fetch as any).mockResolvedValue({
+      ok: true,
+      json: async () => ({ data: [{ id: 'agency_1' }] }),
+    });
+
+    const { queryClient, rerender } = renderWithClient(<Probe />);
+    expect(global.fetch).not.toHaveBeenCalled();
+
+    useAuthMock.mockReturnValue({
+      getToken: getTokenMock,
+      userId: 'user_1',
+      orgId: null,
+      isLoaded: true,
+    });
+    rerender(
+      <QueryClientProvider client={queryClient}>
+        <Probe />
+      </QueryClientProvider>
+    );
+
+    await waitFor(() => expect(global.fetch).toHaveBeenCalledTimes(1));
+  });
+
+  it('turns a hanging Clerk token lookup into a recoverable query error', async () => {
+    getTokenMock.mockImplementation(() => new Promise(() => {}));
+    vi.useFakeTimers();
+    let rendered: ReturnType<typeof render> | undefined;
+
+    try {
+      rendered = renderWithClient(<Probe />);
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(15_250);
+      });
+
+      expect(screen.getByRole('alert')).toHaveTextContent('Request timed out. Please try again.');
+      expect(screen.queryByRole('status')).not.toBeInTheDocument();
+      expect(global.fetch).not.toHaveBeenCalled();
+    } finally {
+      rendered?.unmount();
+      vi.useRealTimers();
+    }
+  });
+
   it('prefers an explicit principal and token resolver', async () => {
     (global.fetch as any).mockResolvedValue({
       ok: true,
@@ -107,16 +160,13 @@ describe('useUserAgency', () => {
       expect(document.querySelector('[data-testid="agency-id"]')?.textContent).toBe('agency_2');
     });
 
-    expect(global.fetch).toHaveBeenCalledWith(
-      expect.stringContaining('/api/agencies?clerkUserId=user_42'),
-      expect.objectContaining({
-        headers: expect.objectContaining({ Authorization: 'Bearer explicit-token' }),
-      })
-    );
+    const [url, init] = (global.fetch as any).mock.calls[0];
+    expect(url).toContain('/api/agencies?clerkUserId=user_42');
+    expect(new Headers(init.headers).get('Authorization')).toBe('Bearer explicit-token');
     expect(queryClient.getQueryData(['user-agency', 'user_42'])).toEqual({ id: 'agency_2' });
   });
 
-  it('sends no Authorization header when no token resolves (degradation, not error)', async () => {
+  it('rejects a missing token before calling the agency endpoint', async () => {
     getTokenMock.mockResolvedValue(null);
     (global.fetch as any).mockResolvedValue({
       ok: true,
@@ -125,12 +175,8 @@ describe('useUserAgency', () => {
 
     renderWithClient(<Probe />);
 
-    await waitFor(() => {
-      expect(document.querySelector('[data-testid="agency-id"]')?.textContent).toBe('agency_3');
-    });
-
-    const [, init] = (global.fetch as any).mock.calls[0];
-    expect(init.headers).toEqual({});
+    await waitFor(() => expect(document.querySelector('[role="alert"]')?.textContent).toBe('Missing authentication token'));
+    expect(global.fetch).not.toHaveBeenCalled();
     expect(getTokenMock).toHaveBeenCalled();
   });
 

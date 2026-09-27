@@ -16,7 +16,6 @@
     "evidence:internal-admin": "node ./scripts/capture-internal-admin-evidence.mjs",
     "evidence:affiliate-program": "node ./scripts/capture-affiliate-program-evidence.mjs",
     "evidence:meta-invite": "node ./scripts/capture-meta-invite-evidence.mjs",
-    "evidence:meta-business-login": "node ./scripts/capture-meta-business-login-evidence.mjs",
     "evidence:agent-native": "node ./scripts/capture-agent-native-flow-evidence.mjs"
   },
   "dependencies": {

@@ -6,6 +6,7 @@ const clientOAuthPlatform = z.enum([
   'google',
   'meta',
   'meta_ads',
+  'meta_pages',
   'google_ads',
   'ga4',
   'linkedin',
@@ -26,6 +27,7 @@ export const submitIntakeSchema = z.object({
 
 export const createOAuthStateSchema = z.object({
   platform: clientOAuthPlatform,
+  presentation: z.enum(['redirect', 'popup']).optional(),
 });
 
 export const oauthExchangeSchema = z.object({
@@ -42,6 +44,13 @@ export const saveAssetsSchema = z.object({
     advertisers: z.array(z.string()).optional(),
     pages: z.array(z.string()).optional(),
     instagramAccounts: z.array(z.string()).optional(),
+    catalogs: z.array(z.string()).optional(),
+    datasets: z.array(z.string()).optional(),
+    selectedPagesWithNames: z.array(z.object({ id: z.string(), name: z.string() })).optional(),
+    selectedAdAccountsWithNames: z.array(z.object({ id: z.string(), name: z.string() })).optional(),
+    selectedInstagramWithNames: z.array(z.object({ id: z.string(), name: z.string() })).optional(),
+    selectedCatalogsWithNames: z.array(z.object({ id: z.string(), name: z.string() })).optional(),
+    selectedDatasetsWithNames: z.array(z.object({ id: z.string(), name: z.string() })).optional(),
     properties: z.array(z.string()).optional(),
     businessAccounts: z.array(z.string()).optional(),
     containers: z.array(z.string()).optional(),
@@ -55,16 +64,11 @@ export const saveAssetsSchema = z.object({
   }),
 });
 
-export const grantPagesAccessSchema = z.object({
-  connectionId: z.string(),
-  pageIds: z.array(z.string()),
-});
-
 export const grantMetaAccessSchema = z.object({
   connectionId: z.string(),
   businessId: z.string().optional(),
   assetTypes: z
-    .array(z.enum(['page', 'ad_account', 'instagram_account']))
+    .array(z.enum(['page', 'ad_account', 'instagram_account', 'catalog', 'dataset']))
     .optional(),
 });
 
@@ -77,9 +81,9 @@ export const manualMetaAdAccountShareSchema = z.object({
   connectionId: z.string(),
 });
 
-export const adAccountsSharedSchema = z.object({
-  connectionId: z.string(),
-  sharedAdAccountIds: z.array(z.string()).optional(),
+export const manualMetaDatasetVerifySchema = z.object({
+  connectionId: z.string().min(1),
+  datasetIds: z.array(z.string().min(1)),
 });
 
 export const tiktokPartnerShareSchema = z.object({
@@ -91,18 +95,4 @@ export const tiktokPartnerShareSchema = z.object({
 export const tiktokPartnerVerifySchema = z.object({
   connectionId: z.string(),
   advertiserIds: z.array(z.string()).optional(),
-});
-
-/**
- * Client Meta popup finalize schema.
- * Used when the client completes Meta JS SDK popup login (no config_id).
- * State must be created via POST /client/:token/oauth-state { platform: 'meta' } first.
- */
-export const metaClientFinalizeSchema = z.object({
-  state: z.string(),
-  accessToken: z.string(),
-  userId: z.string(),
-  expiresIn: z.number().optional(),
-  signedRequest: z.string().optional(),
-  dataAccessExpirationTime: z.number().optional(),
 });

@@ -77,7 +77,7 @@ describe('Client Auth Asset Creation Routes - Business', () => {
       });
       expect(metaAssetCreationService.createBusiness).toHaveBeenCalledWith(
         'conn-1',
-        { name: 'Acme Business', vertical: 'OTHER', primaryPageId: 'page-1', timezoneId: '25' },
+        { accessRequestId: 'request-a', name: 'Acme Business', vertical: 'OTHER', primaryPageId: 'page-1', timezoneId: '25' },
         'client@example.com',
         'agency-a'
       );
@@ -103,7 +103,7 @@ describe('Client Auth Asset Creation Routes - Business', () => {
 
       expect(metaAssetCreationService.createBusiness).toHaveBeenCalledWith(
         'conn-1',
-        expect.objectContaining({ vertical: 'ECOMMERCE' }),
+        expect.objectContaining({ accessRequestId: 'request-a', vertical: 'ECOMMERCE' }),
         'client@example.com',
         'agency-a'
       );
@@ -171,6 +171,9 @@ describe('Client Auth Asset Creation Routes - Business', () => {
     it.each([
       ['AUTHORIZATION_INACTIVE', 400],
       ['TOKEN_EXPIRED', 400],
+      ['CREATION_IN_PROGRESS', 409],
+      ['CREATION_OUTCOME_UNKNOWN', 409],
+      ['IDEMPOTENCY_KEY_REUSED', 409],
       ['LIMIT_EXCEEDED', 500],
       ['INVALID_PRIMARY_PAGE', 500],
       ['INSUFFICIENT_PERMISSIONS', 500],

@@ -4,8 +4,7 @@ import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MetaUnifiedSettings } from '../meta-unified-settings';
 
-const mockLaunchMetaBusinessLogin = vi.fn();
-const mockFinalizeMetaBusinessLogin = vi.fn();
+const mockStartAgencyMetaOAuth = vi.fn();
 
 vi.mock('@clerk/nextjs', () => ({
   useAuth: () => ({
@@ -19,9 +18,8 @@ vi.mock('@clerk/nextjs', () => ({
   }),
 }));
 
-vi.mock('@/lib/meta-business-login', () => ({
-  launchMetaBusinessLogin: (...args: any[]) => mockLaunchMetaBusinessLogin(...args),
-  finalizeMetaBusinessLogin: (...args: any[]) => mockFinalizeMetaBusinessLogin(...args),
+vi.mock('@/lib/agency-meta-oauth', () => ({
+  startAgencyMetaOAuth: (...args: any[]) => mockStartAgencyMetaOAuth(...args),
 }));
 
 function renderWithQueryClient(ui: React.ReactElement) {
@@ -84,13 +82,7 @@ describe('MetaUnifiedSettings', () => {
 
   beforeEach(() => {
     process.env.NEXT_PUBLIC_API_URL = 'http://localhost:3001';
-    process.env.NEXT_PUBLIC_META_APP_ID = 'meta-app-123';
-    process.env.NEXT_PUBLIC_META_LOGIN_FOR_BUSINESS_CONFIG_ID = 'meta-config-123';
-    mockLaunchMetaBusinessLogin.mockResolvedValue({
-      accessToken: 'meta-token',
-      userId: 'meta-user-1',
-    });
-    mockFinalizeMetaBusinessLogin.mockResolvedValue({ id: 'conn-meta-1' });
+    mockStartAgencyMetaOAuth.mockResolvedValue(undefined);
   });
 
   afterEach(() => {
@@ -322,21 +314,11 @@ describe('MetaUnifiedSettings', () => {
     await user.click(screen.getByRole('button', { name: /log in again/i }));
 
     await waitFor(() => {
-      expect(mockLaunchMetaBusinessLogin).toHaveBeenCalledWith({
-        appId: 'meta-app-123',
-        configId: 'meta-config-123',
-      });
-      expect(mockFinalizeMetaBusinessLogin).toHaveBeenCalledWith({
+      expect(mockStartAgencyMetaOAuth).toHaveBeenCalledWith({
         agencyId: 'agency-1',
         userEmail: 'owner@agency.com',
         getToken: expect.any(Function),
-        authPayload: expect.objectContaining({
-          accessToken: 'meta-token',
-          userId: 'meta-user-1',
-        }),
       });
     });
-
-    expect(await screen.findByText(/Meta login refreshed/i)).toBeInTheDocument();
   });
 });

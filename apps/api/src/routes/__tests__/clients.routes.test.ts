@@ -33,6 +33,7 @@ vi.mock('@/lib/authorization', () => ({
     data: { agencyId: 'agency-1', principalId: 'test-user', agency: { id: 'agency-1', name: 'Agency', email: 'test@example.com' } },
     error: null,
   })),
+  resolveUserEmail: vi.fn(() => 'test@example.com'),
 }));
 
 describe('Phase 5: Clients Routes - TDD Tests', () => {
@@ -405,7 +406,10 @@ describe('Phase 5: Clients Routes - TDD Tests', () => {
       });
 
       expect(response.statusCode).toBe(204);
-      expect(clientService.deleteClient).toHaveBeenCalledWith('client-1', 'agency-1');
+      expect(clientService.deleteClient).toHaveBeenCalledWith('client-1', 'agency-1', {
+        userEmail: 'test@example.com',
+        ipAddress: expect.any(String),
+      });
     });
 
     it('should return 404 for non-existent client', async () => {

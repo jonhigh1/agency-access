@@ -1,5 +1,12 @@
 import { extractMessageFromBody } from './extract-error';
 
+export class ApiResponseError extends Error {
+  constructor(message: string, readonly code?: string) {
+    super(message);
+    this.name = 'ApiResponseError';
+  }
+}
+
 interface ParseJsonResponseOptions {
   fallbackErrorMessage?: string;
   fallbackParseMessage?: string;
@@ -36,7 +43,14 @@ export async function parseJsonResponse<T>(
   }
 
   if (!response.ok) {
-    throw new Error(extractMessageFromBody(payload, response.statusText || fallbackErrorMessage));
+    const body = payload && typeof payload === 'object' ? payload as Record<string, unknown> : {};
+    const error = body.error && typeof body.error === 'object'
+      ? body.error as Record<string, unknown>
+      : {};
+    throw new ApiResponseError(
+      extractMessageFromBody(payload, response.statusText || fallbackErrorMessage),
+      typeof error.code === 'string' ? error.code : undefined
+    );
   }
 
   return payload as T;

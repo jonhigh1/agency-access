@@ -47,7 +47,9 @@ describe('trackOnboardingEvent', () => {
     });
   });
 
-  it('omits custom token prop from first_access_link_generated before capture', () => {
+  it('omits bearer values from onboarding analytics before capture', () => {
+    const legacyTrack = vi.fn();
+    (window as any).analytics = { track: legacyTrack };
     trackOnboardingEvent('first_access_link_generated', {
       accessRequestId: 'req_123',
       access_request_token: 'unique-access-token',
@@ -57,9 +59,11 @@ describe('trackOnboardingEvent', () => {
 
     expect(captureMock).toHaveBeenCalledWith('first_access_link_generated', {
       accessRequestId: 'req_123',
-      access_request_token: 'unique-access-token',
       timeToValueMs: 1234,
     });
-    expect(captureMock.mock.calls[0]?.[1]).not.toHaveProperty('token');
+    expect(legacyTrack).toHaveBeenCalledWith('first_access_link_generated', {
+      accessRequestId: 'req_123',
+      timeToValueMs: 1234,
+    });
   });
 });

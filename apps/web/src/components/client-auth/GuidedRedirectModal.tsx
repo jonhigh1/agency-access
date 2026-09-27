@@ -178,6 +178,8 @@ interface GuidedRedirectCardProps {
   }>;
   onRefresh: () => void | Promise<void>;
   isRefreshing?: boolean;
+  completionLabel?: string;
+  actionLabel?: string;
 }
 
 export function GuidedRedirectCard({
@@ -187,6 +189,8 @@ export function GuidedRedirectCard({
   instructions,
   onRefresh,
   isRefreshing = false,
+  completionLabel = "I've created it",
+  actionLabel = 'Refresh List',
 }: GuidedRedirectCardProps) {
   const [confirmedCreated, setConfirmedCreated] = useState(false);
   const [isRefreshingLocal, setIsRefreshingLocal] = useState(false);
@@ -265,7 +269,7 @@ export function GuidedRedirectCard({
           htmlFor="confirmed-created-card"
           className="text-sm text-[var(--ink)] cursor-pointer"
         >
-          I've created it
+          {completionLabel}
         </label>
       </div>
 
@@ -279,7 +283,7 @@ export function GuidedRedirectCard({
         leftIcon={<RefreshCw className="w-4 h-4" />}
         className="w-full"
       >
-        Refresh List
+        {actionLabel}
       </Button>
     </div>
   );

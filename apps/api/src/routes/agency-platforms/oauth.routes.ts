@@ -10,9 +10,6 @@ import { ConnectorError } from '@/services/connectors/base.connector.js';
 import { env } from '@/lib/env';
 import { PLATFORM_CONNECTORS, SUPPORTED_PLATFORMS, MANUAL_PLATFORMS } from './constants.js';
 import { assertAgencyAccess } from '@/lib/authorization.js';
-import { infisical } from '@/lib/infisical.js';
-import { prisma } from '@/lib/prisma.js';
-import { createAuditLog } from '@/services/audit.service.js';
 import { metaAssetsService } from '@/services/meta-assets.service.js';
 import { sendError, sendValidationError } from '../../lib/response.js';
 
@@ -32,11 +29,6 @@ type SnapchatOrganizationsMetadata = Pick<
   SnapchatUserInfo,
   'organizations' | 'adAccountCount' | 'role' | 'discoveryFailed' | 'orgStatus'
 >;
-
-function sanitizeConnection(connection: Record<string, any>) {
-  const { secretId, ...safeConnection } = connection;
-  return safeConnection;
-}
 
 export async function registerOAuthRoutes(fastify: FastifyInstance) {
   /**
@@ -65,10 +57,6 @@ export async function registerOAuthRoutes(fastify: FastifyInstance) {
     const accessError = assertAgencyAccess(agencyId, principalAgencyId);
     if (accessError) {
       return reply.code(403).send({ data: null, error: accessError });
-    }
-
-    if (platform === 'meta' && extraParams.useLegacyFallback !== true) {
-      return sendError(reply, 'LEGACY_META_OAUTH_DISABLED', 'Meta now uses Business Login via the JS SDK. Reconnect from the app UI or pass useLegacyFallback=true only for rollback.', 410);
     }
 
     const stateResult = await oauthStateService.createState({
@@ -133,165 +121,6 @@ export async function registerOAuthRoutes(fastify: FastifyInstance) {
       }
       throw err;
     }
-  });
-
-  fastify.post('/agency-platforms/meta/business-login/finalize', async (request, reply) => {
-    const {
-      agencyId,
-      userEmail,
-      accessToken,
-      userId,
-      expiresIn,
-      dataAccessExpirationTime,
-      signedRequest,
-    } = request.body as {
-      agencyId?: string;
-      userEmail?: string;
-      accessToken?: string;
-      userId?: string;
-      expiresIn?: number;
-      dataAccessExpirationTime?: number;
-      signedRequest?: string;
-    };
-
-    if (!agencyId || !accessToken || !userEmail) {
-      return sendValidationError(reply, 'agencyId, accessToken, and userEmail are required');
-    }
-
-    const principalAgencyId = (request as any).principalAgencyId as string;
-    const accessError = assertAgencyAccess(agencyId, principalAgencyId);
-    if (accessError) {
-      return reply.code(403).send({ data: null, error: accessError });
-    }
-
-    const connector = new MetaConnector();
-
-    const isValidToken = await connector.verifyToken(accessToken);
-    if (!isValidToken) {
-      return sendError(reply, 'INVALID_TOKEN', 'Meta Business Login token is invalid. Please try logging in again.', 401);
-    }
-
-    const [userInfo, tokenMetadata, longLivedTokens] = await Promise.all([
-      connector.getUserInfo(accessToken),
-      connector.getTokenMetadata(accessToken),
-      connector.getLongLivedToken(accessToken),
-    ]);
-    const businessAccounts = await connector.getBusinessAccounts(longLivedTokens.accessToken);
-
-    const connectionMetadata = {
-      tokenType: longLivedTokens.tokenType,
-      metaBusinessLogin: {
-        authSource: 'js_sdk',
-        userId: userId || tokenMetadata.userId || userInfo.id,
-        userName: userInfo.name,
-        expiresIn,
-        dataAccessExpirationTime,
-        dataAccessExpiresAt: tokenMetadata.dataAccessExpiresAt?.toISOString(),
-        grantedScopes: tokenMetadata.scopes,
-        signedRequest,
-      },
-      metaBusinessAccounts: {
-        businesses: businessAccounts.businesses,
-        hasAccess: businessAccounts.hasAccess,
-      },
-    };
-
-    const existingConnectionResult = await agencyPlatformService.getConnection(agencyId, 'meta');
-    let persistedConnection: Record<string, any> | null = null;
-
-    if (existingConnectionResult.data) {
-      const existingConnection = existingConnectionResult.data as Record<string, any>;
-      const existingMetadata =
-        (existingConnection.metadata as Record<string, unknown> | undefined) || {};
-      const selectedBusinessId =
-        typeof existingMetadata.selectedBusinessId === 'string'
-          ? existingMetadata.selectedBusinessId
-          : null;
-      const selectedBusinessName =
-        typeof existingMetadata.selectedBusinessName === 'string'
-          ? existingMetadata.selectedBusinessName
-          : null;
-      const secretId =
-        typeof existingConnection.secretId === 'string' && existingConnection.secretId.length > 0
-          ? existingConnection.secretId
-          : `meta_agency_${agencyId}`;
-
-      await infisical.storeOAuthTokens(secretId, {
-        accessToken: longLivedTokens.accessToken,
-        expiresAt: longLivedTokens.expiresAt,
-        scope: tokenMetadata.scopes.join(','),
-      });
-
-      persistedConnection = await prisma.agencyPlatformConnection.update({
-        where: { id: existingConnection.id as string },
-        data: {
-          secretId,
-          status: 'active',
-          expiresAt: longLivedTokens.expiresAt,
-          scope: tokenMetadata.scopes.join(','),
-          metadata: {
-            ...((existingConnection.metadata as Record<string, any> | undefined) || {}),
-            ...connectionMetadata,
-          },
-          connectedBy: userEmail,
-          connectedAt: new Date(),
-          revokedAt: null,
-          revokedBy: null,
-          lastRefreshedAt: null,
-        },
-      }) as Record<string, any>;
-
-      // Re-authentication replaces the agency user token. Re-run provisioning
-      // for the stored portfolio so OBO grants do not keep using stale setup.
-      if (selectedBusinessId && selectedBusinessName) {
-        await metaAssetsService.saveBusinessPortfolio(
-          agencyId,
-          selectedBusinessId,
-          selectedBusinessName
-        );
-      }
-    } else {
-      const connectionResult = await agencyPlatformService.createConnection({
-        agencyId,
-        platform: 'meta',
-        accessToken: longLivedTokens.accessToken,
-        refreshToken: undefined,
-        expiresAt: longLivedTokens.expiresAt,
-        scope: tokenMetadata.scopes.join(','),
-        connectedBy: userEmail,
-        metadata: connectionMetadata,
-      });
-
-      if (connectionResult.error || !connectionResult.data) {
-        return reply.code(500).send({
-          data: null,
-          error: connectionResult.error || {
-            code: 'INTERNAL_ERROR',
-            message: 'Failed to finalize Meta Business Login',
-          },
-        });
-      }
-
-      persistedConnection = connectionResult.data as Record<string, any>;
-    }
-
-    await createAuditLog({
-      agencyId,
-      userEmail,
-      action: 'META_BUSINESS_LOGIN_FINALIZED',
-      agencyConnectionId: persistedConnection.id as string,
-      metadata: {
-        userId: connectionMetadata.metaBusinessLogin.userId,
-        grantedScopes: tokenMetadata.scopes,
-        businessCount: businessAccounts.businesses.length,
-      },
-      request,
-    });
-
-    return reply.send({
-      data: sanitizeConnection(persistedConnection),
-      error: null,
-    });
   });
 
   /**
@@ -427,39 +256,60 @@ export async function registerOAuthRoutes(fastify: FastifyInstance) {
         }
       }
 
-      const connectionResult = await agencyPlatformService.createConnection({
-        agencyId: actualAgencyId,
-        platform: stateData.platform,
-        accessToken: tokens.accessToken,
-        refreshToken: tokens.refreshToken,
-        expiresAt: tokens.expiresAt,
-        connectedBy: stateData.userEmail,
-        metadata: {
-          tokenType: tokens.tokenType,
-          ...(googleAccounts && {
-            googleAccounts: {
-              adsAccounts: googleAccounts.adsAccounts,
-              analyticsProperties: googleAccounts.analyticsProperties,
-              businessAccounts: googleAccounts.businessAccounts,
-              tagManagerContainers: googleAccounts.tagManagerContainers,
-              searchConsoleSites: googleAccounts.searchConsoleSites,
-              merchantCenterAccounts: googleAccounts.merchantCenterAccounts,
-              hasAccess: googleAccounts.hasAccess,
+      const existingMetaConnection = platform === 'meta'
+        ? (await agencyPlatformService.getConnection(actualAgencyId, 'meta'))?.data
+        : null;
+      const connectionResult = existingMetaConnection?.status === 'active'
+        ? await agencyPlatformService.refreshConnection(actualAgencyId, 'meta', {
+            accessToken: tokens.accessToken,
+            refreshToken: tokens.refreshToken,
+            expiresAt: tokens.expiresAt,
+          })
+        : await agencyPlatformService.createConnection({
+            agencyId: actualAgencyId,
+            platform: stateData.platform,
+            accessToken: tokens.accessToken,
+            refreshToken: tokens.refreshToken,
+            expiresAt: tokens.expiresAt,
+            connectedBy: stateData.userEmail,
+            metadata: {
+              tokenType: tokens.tokenType,
+              ...(googleAccounts && {
+                googleAccounts: {
+                  adsAccounts: googleAccounts.adsAccounts,
+                  analyticsProperties: googleAccounts.analyticsProperties,
+                  businessAccounts: googleAccounts.businessAccounts,
+                  tagManagerContainers: googleAccounts.tagManagerContainers,
+                  searchConsoleSites: googleAccounts.searchConsoleSites,
+                  merchantCenterAccounts: googleAccounts.merchantCenterAccounts,
+                  hasAccess: googleAccounts.hasAccess,
+                },
+              }),
+              ...(metaBusinessAccounts && {
+                metaBusinessAccounts: {
+                  businesses: metaBusinessAccounts.businesses,
+                  hasAccess: metaBusinessAccounts.hasAccess,
+                },
+              }),
+              ...(snapchatOrganizations && { snapchatOrganizations }),
             },
-          }),
-          ...(metaBusinessAccounts && {
-            metaBusinessAccounts: {
-              businesses: metaBusinessAccounts.businesses,
-              hasAccess: metaBusinessAccounts.hasAccess,
-            },
-          }),
-          ...(snapchatOrganizations && { snapchatOrganizations }),
-        },
-      });
+          });
 
       if (connectionResult.error) {
         const redirectUrl = stateData.redirectUrl || `${env.FRONTEND_URL}/platforms/callback`;
         return redirectOAuthError(redirectUrl, connectionResult.error.code);
+      }
+
+      if (platform === 'meta' && connectionResult.data && existingMetaConnection) {
+        const metadata = (existingMetaConnection.metadata as Record<string, unknown> | null) || {};
+        if (typeof metadata.selectedBusinessId === 'string' &&
+            typeof metadata.selectedBusinessName === 'string') {
+          await metaAssetsService.saveBusinessPortfolio(
+            actualAgencyId,
+            metadata.selectedBusinessId,
+            metadata.selectedBusinessName
+          );
+        }
       }
 
       if (platform === 'meta' && connectionResult.data) {

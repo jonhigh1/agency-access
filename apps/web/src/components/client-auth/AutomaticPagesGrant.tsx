@@ -90,13 +90,24 @@ export function AutomaticPagesGrant({
         return;
       }
 
-      const results: GrantResult[] = (json.data?.assetGrantResults || [])
+      const results = Array.from((json.data?.assetGrantResults || [])
         .filter((result) => result.assetType === 'page')
-        .map((result) => ({
-          id: result.assetId,
-          status: result.status === 'verified' ? 'granted' : 'failed',
-          error: result.status === 'verified' ? undefined : result.errorMessage,
-        }));
+        .reduce<Map<string, GrantResult>>((byPage, result) => {
+          const existing = byPage.get(result.assetId);
+          if (existing) {
+            if (result.status !== 'verified') {
+              existing.status = 'failed';
+              existing.error = result.errorMessage || existing.error;
+            }
+          } else {
+            byPage.set(result.assetId, {
+              id: result.assetId,
+              status: result.status === 'verified' ? 'granted' : 'failed',
+              error: result.status === 'verified' ? undefined : result.errorMessage,
+            });
+          }
+          return byPage;
+        }, new Map()).values());
       setGrantResults(results);
       
       // Check if any pages failed

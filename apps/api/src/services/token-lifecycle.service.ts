@@ -72,6 +72,18 @@ async function updateTargetStatus(target: LifecycleTarget, status: 'active' | 'e
       status,
     },
   });
+
+  if (['meta', 'meta_ads', 'meta_pages'].includes(target.platform) && status !== 'active') {
+    await prisma.metaAssetGrant.updateMany({
+      where: { authorizationId: target.id, status: 'verified' },
+      data: {
+        status: 'stale',
+        nextActor: 'client_admin',
+        lastErrorCode: 'META_AUTHORIZATION_INACTIVE',
+        lastErrorMessage: 'Meta authorization is inactive. Reconnect and verify access again.',
+      },
+    });
+  }
 }
 
 async function persistRefreshedTokens(
@@ -284,6 +296,13 @@ export async function refreshAgencyPlatformConnection(
     };
   }
 
+  if (targetResult.data.status !== 'active' && targetResult.data.status !== 'expired') {
+    return {
+      data: null,
+      error: { code: 'REAUTHORIZATION_REQUIRED', message: 'Platform connection is inactive. Reconnect before refresh.' },
+    };
+  }
+
   const tokens = await infisical.getOAuthTokens(targetResult.data.secretId);
 
   if (!tokens?.accessToken) {
@@ -308,6 +327,13 @@ export async function refreshClientPlatformAuthorization(
     return {
       data: null,
       error: targetResult.error,
+    };
+  }
+
+  if (targetResult.data.status !== 'active' && targetResult.data.status !== 'expired') {
+    return {
+      data: null,
+      error: { code: 'REAUTHORIZATION_REQUIRED', message: 'Platform authorization is inactive. Reconnect before refresh.' },
     };
   }
 

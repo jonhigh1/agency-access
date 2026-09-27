@@ -50,17 +50,25 @@ vi.mock('@/components/access-level-selector', () => ({
 
 vi.mock('@/components/hierarchical-platform-selector', () => ({
   HierarchicalPlatformSelector: ({ onSelectionChange }: any) => (
-    <button
-      type="button"
-      onClick={() =>
-        onSelectionChange({
-          google: ['google_ads'],
-        })
-      }
-    >
-      Pick Platforms
-    </button>
+    <>
+      <button
+        type="button"
+        onClick={() => onSelectionChange({ google: ['google_ads'] })}
+      >
+        Pick Platforms
+      </button>
+      <button
+        type="button"
+        onClick={() => onSelectionChange({ meta: ['meta_ads'] })}
+      >
+        Pick Meta Platform
+      </button>
+    </>
   ),
+}));
+
+vi.mock('@/components/access-request/MetaAssigneeSelector', () => ({
+  MetaAssigneeSelector: () => <div>Meta assignees</div>,
 }));
 
 vi.mock('@/components/save-as-template-modal', () => ({
@@ -98,6 +106,7 @@ describe('Access Request Wizard', () => {
       userId: 'user-123',
       orgId: null,
       getToken: vi.fn().mockResolvedValue('token-123'),
+      isLoaded: true,
     } as any);
 
     vi.stubGlobal(
@@ -156,6 +165,32 @@ describe('Access Request Wizard', () => {
     await waitFor(() => {
       expect(continueButton).not.toBeDisabled();
     });
+  });
+
+  it('shows agency lookup failure and retries before showing Meta assignees', async () => {
+    let agencyLookups = 0;
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (url: string) => {
+        if (url.includes('/api/agencies')) {
+          agencyLookups += 1;
+          return agencyLookups === 1
+            ? ({ ok: false, json: async () => ({}) } as Response)
+            : ({ ok: true, json: async () => ({ data: [{ id: 'agency-123' }] }) } as Response);
+        }
+        return { ok: true, json: async () => ({ data: [] }) } as Response;
+      })
+    );
+
+    renderWithProviders(<AccessRequestPage />);
+    await userEvent.click(await screen.findByRole('button', { name: /pick client/i }));
+    await userEvent.click(screen.getByRole('button', { name: /continue to platforms/i }));
+    await userEvent.click(screen.getByRole('button', { name: /pick meta platform/i }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/could not load your agency/i);
+    await userEvent.click(screen.getByRole('button', { name: /retry/i }));
+
+    expect(await screen.findByText('Meta assignees')).toBeInTheDocument();
   });
 
   it('keeps focus on an invalid custom field instead of advancing to review', async () => {

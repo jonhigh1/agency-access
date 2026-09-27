@@ -6,8 +6,9 @@
  */
 
 import { invalidateDashboardCache } from '@/lib/cache';
-import { infisical } from '@/lib/infisical';
 import { prisma } from '@/lib/prisma';
+import { connectionService } from '@/services/connection.service';
+import { evaluateMetaProductFulfillment } from '@/services/access-request.service';
 import {
   GOOGLE_PLATFORM_PRODUCT_IDS,
   evaluateGoogleProductFulfillment,
@@ -242,7 +243,8 @@ export async function findClientByEmail(
  */
 export async function deleteClient(
   id: string,
-  agencyId: string
+  agencyId: string,
+  auditContext?: { userEmail: string; ipAddress: string }
 ): Promise<boolean> {
   const existing = await prisma.client.findUnique({
     where: { id },
@@ -261,17 +263,13 @@ export async function deleteClient(
     return false;
   }
 
-  // Delete all Infisical secrets before the cascade. Fail closed if any delete
-  // fails so the client row is not removed while secrets remain.
-  const authorizations = (existing.accessRequests ?? []).flatMap((req) =>
-    req.connection?.authorizations ?? [],
-  );
-  const deletionResults = await Promise.allSettled(
-    authorizations.map((auth) => infisical.deleteSecret(auth.secretId)),
-  );
-  const deletionFailure = deletionResults.find((result) => result.status === 'rejected');
-  if (deletionFailure) {
-    throw deletionFailure.reason;
+  // Revoke provider access and credentials before cascading away grant history.
+  const connectionIds = new Set((existing.accessRequests ?? [])
+    .map((request) => request.connection?.id)
+    .filter((connectionId): connectionId is string => Boolean(connectionId)));
+  for (const connectionId of connectionIds) {
+    const result = await connectionService.revokeConnection(connectionId, undefined, auditContext);
+    if (result.error) throw new Error(result.error.message);
   }
 
   await prisma.client.delete({
@@ -437,6 +435,7 @@ const ASSET_SELECTING_PRODUCTS = new Set([
   'google_merchant_center',
   'meta_ads',
   'meta_pages',
+  'instagram',
   'linkedin_ads',
   'linkedin_pages',
   'tiktok',
@@ -455,6 +454,7 @@ type ClientDetailAccessRequestRecord = {
   createdAt: Date;
   authorizedAt?: Date | null;
   platforms: unknown;
+  metaAccessConfig?: unknown;
   connection?: {
     id?: string;
     status?: string | null;
@@ -465,7 +465,10 @@ type ClientDetailAccessRequestRecord = {
       platform: string;
       status: string;
       metadata?: unknown;
+      authorizationEpoch?: number;
+      expiresAt?: Date | null;
     }>;
+    metaAssetGrants?: Array<Record<string, any>>;
   } | null;
 };
 
@@ -566,8 +569,12 @@ function getSelectedAssetCount(product: string, assets: Record<string, any>): nu
       return (
         (assets.adAccounts?.length ?? 0) +
         (assets.pages?.length ?? 0) +
-        (assets.instagramAccounts?.length ?? 0)
+        (assets.instagramAccounts?.length ?? 0) +
+        (assets.catalogs?.length ?? 0) +
+        (assets.datasets?.length ?? 0)
       );
+    case 'instagram':
+      return assets.instagramAccounts?.length ?? 0;
     case 'meta_pages':
       return assets.pages?.length ?? 0;
     case 'ga4':
@@ -672,6 +679,7 @@ function resolveProductSummary(
   requestedProduct: ClientDetailRequestedProduct
 ): {
   status: ClientDetailProductStatus;
+  note?: string;
   googleGrantLifecycle?: GoogleProductGrantLifecycle;
 } {
   const connectionStatus = request.connection?.status;
@@ -723,6 +731,27 @@ function resolveProductSummary(
     }
 
     return { status: 'pending' };
+  }
+
+  if (requestedProduct.platformGroup === 'meta') {
+    const assets = (request.connection?.grantedAssets as Record<string, unknown> | null)?.[requestedProduct.product];
+    const fulfillment = evaluateMetaProductFulfillment(
+      requestedProduct,
+      assets && typeof assets === 'object' ? assets as Record<string, any> : {},
+      request.connection ? [request.connection as any] : [],
+      request.metaAccessConfig
+    );
+    if (fulfillment.fulfilled) return { status: 'connected' };
+    if (!matchingAuthorization) return { status: 'pending' };
+    if (!isActiveAuthorizationStatus(matchingAuthorization.status) || fulfillment.reason === 'stale' || fulfillment.reason === 'revoked') {
+      return { status: 'needs_reconnect', note: 'Reconnect Meta to verify access again' };
+    }
+    const note = fulfillment.reason === 'assignee_selection_required'
+      ? 'Select at least one Meta person'
+      : fulfillment.reason === 'manual_action_required'
+        ? 'Finish the manual Meta access step'
+        : 'Finish sharing and verify Meta access';
+    return { status: 'selection_required', note };
   }
 
   const selectedAssets =
@@ -817,6 +846,7 @@ function buildClientDetailPlatformGroups(
         string,
         {
           status: ClientDetailProductStatus;
+          note?: string;
           latestRequestId?: string;
           googleGrantLifecycle?: GoogleProductGrantLifecycle;
         }
@@ -839,6 +869,7 @@ function buildClientDetailPlatformGroups(
             string,
             {
               status: ClientDetailProductStatus;
+              note?: string;
               latestRequestId?: string;
               googleGrantLifecycle?: GoogleProductGrantLifecycle;
             }
@@ -859,6 +890,7 @@ function buildClientDetailPlatformGroups(
       ) {
         currentGroup.products.set(requestedProduct.product, {
           status: nextProductSummary.status,
+          note: nextProductSummary.note,
           latestRequestId: request.id,
           ...(nextProductSummary.googleGrantLifecycle
             ? { googleGrantLifecycle: nextProductSummary.googleGrantLifecycle }
@@ -873,7 +905,7 @@ function buildClientDetailPlatformGroups(
       .map(([product, productSummary]) => ({
         product,
         status: productSummary.status,
-        note: getProductStatusNote(productSummary.status),
+        note: productSummary.note || getProductStatusNote(productSummary.status),
         latestRequestId: productSummary.latestRequestId,
         ...(productSummary.googleGrantLifecycle
           ? { googleGrantLifecycle: productSummary.googleGrantLifecycle }
@@ -950,6 +982,7 @@ export async function getClientDetail(
           createdAt: true,
           authorizedAt: true,
           platforms: true,
+          metaAccessConfig: true,
           connection: {
             select: {
               id: true,
@@ -957,11 +990,32 @@ export async function getClientDetail(
               createdAt: true,
               revokedAt: true,
               grantedAssets: true,
+              metaAssetGrants: {
+                select: {
+                  assetKind: true,
+                  assetId: true,
+                  status: true,
+                  recipientType: true,
+                  recipientId: true,
+                  requestedTasks: true,
+                  verifiedTasks: true,
+                  verifiedAuthorizationEpoch: true,
+                  authorization: { select: { authorizationEpoch: true, status: true, expiresAt: true } },
+                  destination: {
+                    select: {
+                      businessId: true,
+                      agencyConnection: { select: { status: true, businessId: true } },
+                    },
+                  },
+                },
+              },
               authorizations: {
                 select: {
                   platform: true,
                   status: true,
                   metadata: true,
+                  authorizationEpoch: true,
+                  expiresAt: true,
                 },
               },
             },

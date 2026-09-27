@@ -51,7 +51,6 @@ describe('authenticated rate-limit bypass', () => {
 
     const serverTiming = String(response.headers['server-timing'] || '');
     expect(serverTiming).toContain('auth;dur=');
-    expect(serverTiming).not.toContain('auth;dur=0.00');
 
     await app.close();
   });

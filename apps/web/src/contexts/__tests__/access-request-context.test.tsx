@@ -47,6 +47,12 @@ describe('AccessRequestContext', () => {
       selectedPlatforms: {},
       globalAccessLevel: 'standard',
       platformAccessLevels: {},
+      metaAccessConfig: {
+        recipients: [],
+        pageTasks: [],
+        adAccountTasks: [],
+        catalogTasks: ['MANAGE'],
+      },
       intakeFields: [
         {
           id: '1',
@@ -447,6 +453,38 @@ describe('AccessRequestContext', () => {
       expect(result.current.validateStep(2)).toEqual({ valid: true });
     });
 
+    it('requires a human Meta recipient even when a system user is selected', () => {
+      const { result } = renderHook(() => useAccessRequest(), { wrapper });
+
+      act(() => {
+        result.current.updatePlatforms({ meta: ['meta_ads'] });
+      });
+      expect(result.current.validateStep(2)).toEqual({
+        valid: false,
+        error: 'Choose one Meta person who will use the client assets',
+      });
+
+      act(() => {
+        result.current.updateMetaAccessConfig({
+          recipients: [{ type: 'system_user', id: 'system-1', name: 'Automation' }],
+          pageTasks: [],
+          adAccountTasks: [],
+          catalogTasks: [],
+        });
+      });
+      expect(result.current.validateStep(2)).toMatchObject({ valid: false });
+
+      act(() => {
+        result.current.updateMetaAccessConfig({
+          recipients: [{ type: 'human', id: 'person-1', name: 'Agency user' }],
+          pageTasks: [],
+          adAccountTasks: [],
+          catalogTasks: [],
+        });
+      });
+      expect(result.current.validateStep(2)).toEqual({ valid: true });
+    });
+
     it('should validate Step 3 - always valid (optional)', () => {
       const { result } = renderHook(() => useAccessRequest(), { wrapper });
 
@@ -829,6 +867,12 @@ describe('AccessRequestContext', () => {
         selectedPlatforms: {},
         globalAccessLevel: 'standard',
         platformAccessLevels: {},
+        metaAccessConfig: {
+          recipients: [],
+          pageTasks: [],
+          adAccountTasks: [],
+          catalogTasks: ['MANAGE'],
+        },
         intakeFields: [
           {
             id: '1',

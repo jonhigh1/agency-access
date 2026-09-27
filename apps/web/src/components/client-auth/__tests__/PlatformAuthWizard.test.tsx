@@ -2,8 +2,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { PlatformAuthWizard } from '../PlatformAuthWizard';
 
-const { pushMock, onCompleteMock, trackOnboardingEventMock } = vi.hoisted(() => ({
+const { pushMock, replaceMock, onCompleteMock, trackOnboardingEventMock } = vi.hoisted(() => ({
   pushMock: vi.fn(),
+  replaceMock: vi.fn(),
   onCompleteMock: vi.fn(),
   trackOnboardingEventMock: vi.fn(),
 }));
@@ -11,6 +12,7 @@ const { pushMock, onCompleteMock, trackOnboardingEventMock } = vi.hoisted(() => 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({
     push: pushMock,
+    replace: replaceMock,
   }),
 }));
 
@@ -200,16 +202,11 @@ vi.mock('@/lib/analytics/onboarding', () => ({
   trackOnboardingEvent: trackOnboardingEventMock,
 }));
 
-const launchMetaClientPopupLoginMock = vi.fn();
-vi.mock('@/lib/meta-business-login', () => ({
-  launchMetaClientPopupLogin: (...args: any[]) => launchMetaClientPopupLoginMock(...args),
-}));
-
 describe('PlatformAuthWizard', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     global.fetch = vi.fn();
-    vi.stubGlobal('location', { href: '' });
+    vi.stubGlobal('location', { href: '', origin: 'https://app.example.com' });
     process.env.NEXT_PUBLIC_API_URL = 'https://api.example.com/';
     process.env.NEXT_PUBLIC_META_APP_ID = 'meta-app-123';
   });
@@ -267,148 +264,50 @@ describe('PlatformAuthWizard', () => {
     });
   });
 
-  it('uses popup flow for Meta: oauth-state, popup login, meta/finalize, then advances to step 2', async () => {
-    vi.mocked(fetch)
-      .mockResolvedValueOnce({
-        ok: true,
-        text: async () =>
-          JSON.stringify({
-            data: { state: 'stateless.meta.state.sig' },
-            error: null,
-          }),
-        json: async () => ({
-          data: { state: 'stateless.meta.state.sig' },
-          error: null,
-        }),
-      } as Response)
-      .mockResolvedValueOnce({
-        ok: true,
-        text: async () =>
-          JSON.stringify({
-            data: { connectionId: 'conn-123', platform: 'meta', token: 'token-1' },
-            error: null,
-          }),
-        json: async () => ({
-          data: { connectionId: 'conn-123', platform: 'meta', token: 'token-1' },
-          error: null,
-        }),
-      } as Response);
-
-    launchMetaClientPopupLoginMock.mockResolvedValue({
-      accessToken: 'fb-access-token',
-      userId: 'fb-user-123',
-      expiresIn: 3600,
-    });
+  it('opens Meta OAuth in a popup and resumes after the popup confirms connection', async () => {
+    const popup = { closed: false, location: { href: '' }, close: vi.fn() };
+    vi.spyOn(window, 'open').mockReturnValue(popup as unknown as Window);
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      text: async () => JSON.stringify({ data: { authUrl: 'https://www.facebook.com/dialog/oauth' }, error: null }),
+    } as Response);
 
     render(
-      <PlatformAuthWizard
-        platform="meta"
-        platformName="Meta"
+      <PlatformAuthWizard platform="meta" platformName="Meta"
         products={[{ product: 'meta_ads', accessLevel: 'standard' }]}
-        accessRequestToken="token-1"
-        onComplete={onCompleteMock}
-      />
+        accessRequestToken="token-1" onComplete={onCompleteMock} />
     );
-
-    fireEvent.click(screen.getByRole('button', { name: /connect meta/i }));
-
-    await waitFor(() => {
-      expect(fetch).toHaveBeenCalledWith(
-        'https://api.example.com/api/client/token-1/oauth-state',
-        expect.objectContaining({
-          method: 'POST',
-          body: JSON.stringify({ platform: 'meta' }),
-        })
-      );
+    fireEvent.click(screen.getByRole('button', { name: /open meta in a pop-up/i }));
+    await waitFor(() => expect(popup.location.href).toBe('https://www.facebook.com/dialog/oauth'));
+    expect(fetch).toHaveBeenCalledWith(
+      'https://api.example.com/api/client/token-1/oauth-url',
+      expect.objectContaining({ body: JSON.stringify({ platform: 'meta', presentation: 'popup' }) })
+    );
+    const message = new MessageEvent('message', {
+      origin: window.location.origin,
+      data: { type: 'authhub:oauth-result', success: true, connectionId: 'conn-123', platform: 'meta' },
     });
-
-    await waitFor(() => {
-      expect(launchMetaClientPopupLoginMock).toHaveBeenCalledWith('meta-app-123');
-    });
-
-    await waitFor(() => {
-      expect(fetch).toHaveBeenCalledWith(
-        'https://api.example.com/api/client/token-1/meta/finalize',
-        expect.objectContaining({
-          method: 'POST',
-          body: JSON.stringify({
-            state: 'stateless.meta.state.sig',
-            accessToken: 'fb-access-token',
-            userId: 'fb-user-123',
-            expiresIn: 3600,
-          }),
-        })
-      );
-    });
-
-    await waitFor(() => {
-      expect(screen.getByText(/choose accounts to share/i)).toBeInTheDocument();
-    });
+    Object.defineProperty(message, 'source', { value: popup });
+    window.dispatchEvent(message);
+    await waitFor(() => expect(replaceMock).toHaveBeenCalledWith('/invite/token-1?connectionId=conn-123&platform=meta&step=2'));
   });
 
-  it('falls back to redirect flow when Meta popup fails (e.g. Firefox tracking protection)', async () => {
-    vi.mocked(fetch)
-      .mockResolvedValueOnce({
-        ok: true,
-        text: async () =>
-          JSON.stringify({
-            data: { state: 'stateless.meta.state.sig' },
-            error: null,
-          }),
-        json: async () => ({
-          data: { state: 'stateless.meta.state.sig' },
-          error: null,
-        }),
-      } as Response)
-      .mockResolvedValueOnce({
-        ok: true,
-        text: async () =>
-          JSON.stringify({
-            data: { authUrl: 'https://www.facebook.com/v25.0/dialog/oauth?client_id=123' },
-            error: null,
-          }),
-        json: async () => ({
-          data: { authUrl: 'https://www.facebook.com/v25.0/dialog/oauth?client_id=123' },
-          error: null,
-        }),
-      } as Response);
-
-    launchMetaClientPopupLoginMock.mockRejectedValue(
-      new Error('Failed to load Meta Business Login. Please try again.')
-    );
-
-    const location = global.location as { href: string };
-    location.href = '';
-
+  it('redirects to Meta OAuth when Connect Meta is selected', async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      text: async () => JSON.stringify({ data: { authUrl: 'https://www.facebook.com/dialog/oauth' }, error: null }),
+    } as Response);
     render(
-      <PlatformAuthWizard
-        platform="meta"
-        platformName="Meta"
+      <PlatformAuthWizard platform="meta" platformName="Meta"
         products={[{ product: 'meta_ads', accessLevel: 'standard' }]}
-        accessRequestToken="token-1"
-        onComplete={onCompleteMock}
-      />
+        accessRequestToken="token-1" onComplete={onCompleteMock} />
     );
-
     fireEvent.click(screen.getByRole('button', { name: /connect meta/i }));
-
-    await waitFor(() => {
-      expect(launchMetaClientPopupLoginMock).toHaveBeenCalledWith('meta-app-123');
-    });
-
-    await waitFor(() => {
-      expect(fetch).toHaveBeenCalledWith(
-        'https://api.example.com/api/client/token-1/oauth-url',
-        expect.objectContaining({
-          method: 'POST',
-          body: JSON.stringify({ platform: 'meta' }),
-        })
-      );
-    });
-
-    await waitFor(() => {
-      expect(location.href).toBe('https://www.facebook.com/v25.0/dialog/oauth?client_id=123');
-    });
+    await waitFor(() => expect(global.location.href).toBe('https://www.facebook.com/dialog/oauth'));
+    expect(fetch).toHaveBeenCalledWith(
+      'https://api.example.com/api/client/token-1/oauth-url',
+      expect.objectContaining({ body: JSON.stringify({ platform: 'meta' }) })
+    );
   });
 
   it('shows a friendly error when the authorization service returns non-JSON', async () => {
@@ -794,7 +693,7 @@ describe('PlatformAuthWizard', () => {
     expect(screen.getByRole('button', { name: /finish request/i })).toBeInTheDocument();
   });
 
-  it('shows Instagram selections as unresolved Meta follow-up work in confirmation', async () => {
+  it('keeps Instagram access pending for direct Meta verification', async () => {
     vi.mocked(fetch)
       .mockResolvedValueOnce({
         ok: true,
@@ -832,18 +731,9 @@ describe('PlatformAuthWizard', () => {
     fireEvent.click(screen.getByRole('button', { name: /select meta instagram assets/i }));
     fireEvent.click(await screen.findByRole('button', { name: /share access/i }));
 
-    await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /connected/i })).toBeInTheDocument();
-    });
-
-    expect(
-      screen.getByText(/some meta accounts still need follow-up/i)
-    ).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /see which accounts you shared/i }));
-    expect(
-      screen.getByText(/shop ig requires manual follow-up because instagram automation is not supported yet/i)
-    ).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /finish request/i })).toBeInTheDocument();
+    expect(await screen.findByText(/share direct instagram access/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /verify agency instagram access/i })).toBeInTheDocument();
+    expect(screen.queryByRole('heading', { name: /connected/i })).not.toBeInTheDocument();
   });
 
   it('keeps the current Meta selection flow for the same invite', () => {

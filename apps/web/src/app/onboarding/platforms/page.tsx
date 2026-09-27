@@ -19,12 +19,7 @@ import { ManualInvitationModal } from '@/components/manual-invitation-modal';
 import { Button } from '@/components/ui/button';
 import { authorizedApiFetch } from '@/lib/api/authorized-api-fetch';
 import { getGoogleAdsAccountLabel } from '@/lib/google-ads-account-label';
-import { finalizeMetaBusinessLogin, launchMetaBusinessLogin } from '@/lib/meta-business-login';
 import { isManualInvitePlatform } from '@/lib/client-invite-platforms';
-import {
-  trackOAuthCallbackFailure,
-  trackOAuthCallbackSuccess,
-} from '@/lib/analytics/oauth-events';
 
 // Google account types
 interface GoogleAdsAccount {
@@ -231,7 +226,6 @@ export default function PlatformsPage() {
   const [error, setError] = useState<string | null>(null);
   const [showGoogleAccounts, setShowGoogleAccounts] = useState(false);
   const [showMetaBusinesses, setShowMetaBusinesses] = useState(false);
-  const [isMetaConnecting, setIsMetaConnecting] = useState(false);
 
   // Manual invitation modal state
   const [manualInvitationPlatform, setManualInvitationPlatform] = useState<string | null>(null);
@@ -321,59 +315,6 @@ export default function PlatformsPage() {
     },
   });
 
-  const handleMetaConnect = async () => {
-    if (!orgId) {
-      setError('Agency not found. Please refresh and try again.');
-      return;
-    }
-
-    const userEmail = user?.primaryEmailAddress?.emailAddress || user?.emailAddresses?.[0]?.emailAddress;
-    if (!userEmail) {
-      setError('Unable to resolve your account email.');
-      return;
-    }
-
-    setIsMetaConnecting(true);
-
-    try {
-      const authPayload = await launchMetaBusinessLogin({
-        appId: process.env.NEXT_PUBLIC_META_APP_ID || '',
-        configId: process.env.NEXT_PUBLIC_META_LOGIN_FOR_BUSINESS_CONFIG_ID || '',
-      });
-
-      await finalizeMetaBusinessLogin({
-        agencyId: orgId,
-        userEmail,
-        getToken,
-        authPayload,
-      });
-
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['agency-platforms', orgId] }),
-        queryClient.invalidateQueries({ queryKey: ['meta-business-accounts', orgId] }),
-      ]);
-      trackOAuthCallbackSuccess({
-        platform: 'meta',
-        auth_source: 'agency_meta_popup',
-        agency_id: orgId,
-      });
-      setShowMetaBusinesses(true);
-    } catch (err) {
-      trackOAuthCallbackFailure({
-        platform: 'meta',
-        error_code: 'META_POPUP_FAILED',
-        error_message: err instanceof Error ? err.message : 'Failed to connect Meta',
-        auth_source: 'agency_meta_popup',
-        agency_id: orgId,
-      });
-      const message =
-        err instanceof Error ? err.message : 'Failed to connect Meta. Please try again.';
-      setError(message);
-    } finally {
-      setIsMetaConnecting(false);
-    }
-  };
-
   const handleConnect = (platform: string, platformType?: string) => {
     setError(null);
 
@@ -382,8 +323,6 @@ export default function PlatformsPage() {
       // Open manual invitation modal
       setManualInvitationPlatform(platform);
       setIsManualModalOpen(true);
-    } else if (platform === 'meta') {
-      void handleMetaConnect();
     } else {
       // Use OAuth flow
       initiatePlatform(platform);
@@ -487,9 +426,9 @@ export default function PlatformsPage() {
                 <Button
                   size="sm"
                   onClick={() => handleConnect(platform.id)}
-                  disabled={isPending || isMetaConnecting}
+                  disabled={isPending}
                 >
-                  {isPending || (platform.id === 'meta' && isMetaConnecting) ? 'Connecting...' : 'Connect'}
+                  {isPending ? 'Connecting...' : 'Connect'}
                 </Button>
               )}
             </div>

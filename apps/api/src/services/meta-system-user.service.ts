@@ -1,6 +1,8 @@
 import { env } from '@/lib/env';
 import { infisical } from '@/lib/infisical';
 import { META_GRAPH_VERSION } from '@/lib/meta-constants';
+import { metaGraphGet } from '@/lib/meta-graph-request.js';
+import { META_PERMISSION_CONTRACT } from '@agency-platform/shared';
 
 interface CreateSystemUserResponse {
   id: string; // App-scoped System User ID
@@ -20,13 +22,10 @@ type SystemUserRole = 'EMPLOYEE' | 'ADMIN';
 
 const DEFAULT_SYSTEM_USER_NAME = 'Agency Platform System User';
 const DEFAULT_PARTNER_ADMIN_SYSTEM_USER_NAME = 'Agency Platform Admin System User';
-const DEFAULT_PARTNER_ADMIN_SYSTEM_USER_SCOPES = [
-  'ads_management',
-  'business_management',
-];
 
 class MetaSystemUserService {
   private readonly META_GRAPH_URL = `https://graph.facebook.com/${META_GRAPH_VERSION}`;
+  private readonly REQUEST_TIMEOUT_MS = 15_000;
 
   private async readGraphError(
     response: Response,
@@ -121,23 +120,34 @@ class MetaSystemUserService {
     accessToken: string
   ): Promise<{ data: SystemUser[] | null; error: { code: string; message: string } | null }> {
     try {
-      const url = `${this.META_GRAPH_URL}/${businessId}/system_users?access_token=${accessToken}`;
+      let nextUrl: string | null = `${this.META_GRAPH_URL}/${businessId}/system_users`;
+      const users: SystemUser[] = [];
+      const visitedUrls = new Set<string>();
 
-      const response = await fetch(url);
+      while (nextUrl) {
+        if (visitedUrls.has(nextUrl)) throw new Error('Meta returned a repeated pagination URL');
+        visitedUrls.add(nextUrl);
+        const response = await metaGraphGet(nextUrl, accessToken);
+        if (!response.ok) {
+          const errorData: any = await response.json();
+          return {
+            data: null,
+            error: {
+              code: 'SYSTEM_USER_LIST_FAILED',
+              message: errorData.error?.message || 'Failed to list system users',
+            },
+          };
+        }
 
-      if (!response.ok) {
-        const errorData: any = await response.json();
-        return {
-          data: null,
-          error: {
-            code: 'SYSTEM_USER_LIST_FAILED',
-            message: errorData.error?.message || 'Failed to list system users',
-          },
+        const payload = await response.json() as {
+          data?: SystemUser[];
+          paging?: { next?: string };
         };
+        users.push(...(payload.data || []));
+        nextUrl = payload.paging?.next || null;
       }
 
-      const data: any = await response.json();
-      return { data: data.data || [], error: null };
+      return { data: users, error: null };
     } catch (error) {
       return {
         data: null,
@@ -185,7 +195,6 @@ class MetaSystemUserService {
     systemUserId: string;
     accessToken: string;
     secretName?: string;
-    scopes?: string[];
   }): Promise<{
     data: {
       tokenSecretId: string;
@@ -194,7 +203,7 @@ class MetaSystemUserService {
     error: { code: string; message: string } | null;
   }> {
     try {
-      const scopes = input.scopes ?? DEFAULT_PARTNER_ADMIN_SYSTEM_USER_SCOPES;
+      const scopes = [...META_PERMISSION_CONTRACT.systemUser.permissions];
       const secretName =
         input.secretName ??
         `meta_partner_admin_system_user_${input.businessId}_${input.systemUserId}`;
@@ -255,6 +264,38 @@ class MetaSystemUserService {
           code: 'SYSTEM_USER_TOKEN_CREATE_ERROR',
           message:
             error instanceof Error ? error.message : 'Unknown error creating system user token',
+        },
+      };
+    }
+  }
+
+  async revokeSystemUserAccessTokens(input: {
+    systemUserId: string;
+    accessToken: string;
+  }): Promise<{ error: { code: string; message: string } | null }> {
+    if (!/^\d+$/.test(input.systemUserId)) {
+      return { error: { code: 'SYSTEM_USER_ID_INVALID', message: 'Meta system user ID must be numeric' } };
+    }
+
+    try {
+      const response = await fetch(`${this.META_GRAPH_URL}/${input.systemUserId}/access_tokens`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ access_token: input.accessToken }).toString(),
+        signal: AbortSignal.timeout(this.REQUEST_TIMEOUT_MS),
+      });
+      if (!response.ok) {
+        return { error: await this.readGraphError(response, 'SYSTEM_USER_TOKEN_REVOKE_FAILED', 'Failed to revoke Meta system user tokens') };
+      }
+      if (await response.json() !== true) {
+        return { error: { code: 'SYSTEM_USER_TOKEN_REVOKE_FAILED', message: 'Meta did not confirm system user token revocation' } };
+      }
+      return { error: null };
+    } catch (error) {
+      return {
+        error: {
+          code: 'SYSTEM_USER_TOKEN_REVOKE_ERROR',
+          message: error instanceof Error ? error.message : 'Unknown error revoking Meta system user tokens',
         },
       };
     }

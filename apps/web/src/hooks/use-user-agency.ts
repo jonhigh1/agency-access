@@ -7,17 +7,14 @@
  * pages) and of the `/agency-platforms?status=active` fetch that both the
  * access-request wizard and its edit page normalize differently.
  *
- * Deliberately NOT using `authorizedApiFetch` here: the agency lookup keeps an
- * optional Authorization header so dev-bypass/perf-harness sessions can
- * bootstrap an agency with the dev token, and callers pin plain-object headers
- * (see connections page tests). Degradation is intentional, not a bug.
+ * Both requests use the bounded API helper. The agency query keeps an optional
+ * token resolver for dev-bypass and performance-harness sessions.
  */
 
 import { useAuth } from '@clerk/nextjs';
 import { useQuery } from '@tanstack/react-query';
-import { resolveApiUrl } from '@/lib/api/api-env';
 import { authorizedApiFetch } from '@/lib/api/authorized-api-fetch';
-import { useAuthOrBypass } from '@/lib/dev-auth';
+import { DEV_BYPASS_TOKEN, useAuthOrBypass } from '@/lib/dev-auth';
 
 export const USER_AGENCY_QUERY_KEY = 'user-agency' as const;
 
@@ -43,7 +40,8 @@ export interface UseUserAgencyOptions {
 
 export function useUserAgency(options: UseUserAgencyOptions = {}) {
   const clerkAuth = useAuth();
-  const { userId, orgId } = useAuthOrBypass(clerkAuth);
+  const auth = useAuthOrBypass(clerkAuth);
+  const { userId, orgId } = auth;
   const principalClerkId = options.principalClerkId ?? (orgId || userId);
 
   return useQuery({
@@ -51,23 +49,16 @@ export function useUserAgency(options: UseUserAgencyOptions = {}) {
     queryFn: async () => {
       if (!principalClerkId) return null;
 
-      const token = options.getAuthToken
-        ? await options.getAuthToken()
-        : await clerkAuth.getToken();
-
-      const response = await fetch(
-        resolveApiUrl(`/api/agencies?clerkUserId=${encodeURIComponent(principalClerkId)}`),
+      const payload = await authorizedApiFetch<{ data?: UserAgency[] | null }>(
+        `/api/agencies?clerkUserId=${encodeURIComponent(principalClerkId)}`,
         {
-          headers: {
-            ...(token && { Authorization: `Bearer ${token}` }),
-          },
+          getToken: async () => (await (options.getAuthToken || clerkAuth.getToken)()) ??
+            (auth.isDevelopmentBypass ? DEV_BYPASS_TOKEN : null),
         }
       );
-      if (!response.ok) throw new Error('Failed to fetch agency');
-      const result = await response.json();
-      return (result.data?.[0] as UserAgency | undefined) ?? null;
+      return payload.data?.[0] ?? null;
     },
-    enabled: options.enabled ?? !!principalClerkId,
+    enabled: auth.isLoaded && !!principalClerkId && options.enabled !== false,
     staleTime: 30 * 60 * 1000, // agency data rarely changes
     gcTime: 60 * 60 * 1000,
   });

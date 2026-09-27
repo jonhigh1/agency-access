@@ -1,5 +1,9 @@
 import { describe, it, expect } from 'vitest';
-import type { Platform } from '@agency-platform/shared';
+import {
+  META_GRAPH_VERSION,
+  META_PERMISSION_CONTRACT,
+  type Platform,
+} from '@agency-platform/shared';
 import {
   PLATFORM_CONFIGS,
   getPlatformConfig,
@@ -58,6 +62,21 @@ describe('connector registry', () => {
       const config = getPlatformConfig(platform);
       expect(config.authUrl, `${platform} authUrl`).toMatch(/^https:/);
       expect(config.tokenUrl, `${platform} tokenUrl`).toMatch(/^https:/);
+    }
+  });
+
+  it('requests Page listing and engagement for Meta Ads', () => {
+    expect(getPlatformConfig('meta').defaultScopes).toEqual(META_PERMISSION_CONTRACT.core.permissions);
+    expect(getPlatformConfig('meta_ads').defaultScopes).toEqual(META_PERMISSION_CONTRACT.core.permissions);
+  });
+
+  it('uses Graph v25.0 for every Meta registry entry', () => {
+    for (const platform of ['meta', 'meta_ads', 'meta_pages', 'instagram'] as Platform[]) {
+      const config = getPlatformConfig(platform);
+      expect(config.version).toBe(META_GRAPH_VERSION);
+      expect(config.authUrl).toContain(`/${META_GRAPH_VERSION}/`);
+      expect(config.tokenUrl).toContain(`/${META_GRAPH_VERSION}/`);
+      expect(config.userInfoUrl).toContain(`/${META_GRAPH_VERSION}/`);
     }
   });
 

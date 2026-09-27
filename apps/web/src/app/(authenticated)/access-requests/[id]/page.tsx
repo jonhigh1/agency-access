@@ -11,11 +11,12 @@ import {
   trackInviteLinkCopyAndSent,
   trackInviteSent,
 } from '@/lib/analytics/invite-events';
+import { excludeMetaGrant, getAccessRequest, getAuthorizationUrl } from '@/lib/api/access-requests';
 import { executeSendInviteReminder } from '@/lib/invite-reminder';
-import { getAccessRequest, getAuthorizationUrl } from '@/lib/api/access-requests';
 import type { AccessRequest } from '@/lib/api/access-requests';
 import {
   RequestActionsBar,
+  MetaFulfillmentCard,
   RequestOverviewCard,
   RequestPlatformsCard,
 } from '@/components/access-request-detail';
@@ -203,6 +204,17 @@ export default function AccessRequestDetailPage({ params }: AccessRequestDetailP
     window.open(authorizationUrl, '_blank', 'noopener,noreferrer');
   };
 
+  const handleExcludeMetaGrant = async (grantId: string, reason: string) => {
+    if (!accessRequest) return 'Could not load access request.';
+    const result = await excludeMetaGrant(accessRequest.id, grantId, reason, resolveApiToken);
+    if (result.error) return result.error.message;
+
+    const refreshed = await getAccessRequest(accessRequest.id, resolveApiToken);
+    if (!refreshed.data) return refreshed.error?.message || 'Could not refresh access results.';
+    setAccessRequest(refreshed.data);
+    return null;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-paper flex items-center justify-center">
@@ -289,6 +301,11 @@ export default function AccessRequestDetailPage({ params }: AccessRequestDetailP
         />
 
         <RequestPlatformsCard request={accessRequest} />
+
+        <MetaFulfillmentCard
+          results={accessRequest.metaFulfillment || []}
+          onExclude={handleExcludeMetaGrant}
+        />
       </div>
     </div>
   );

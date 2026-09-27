@@ -3,7 +3,7 @@
 import dynamic from 'next/dynamic';
 import { useState, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
-import { Check, Lock, RefreshCw } from 'lucide-react';
+import { Check, Loader2, Lock, RefreshCw } from 'lucide-react';
 import { capturePosthogEvent } from '@/lib/analytics/capture-posthog';
 import { trackInviteOpenedOncePerSession } from '@/lib/analytics/invite-events';
 import { InviteFlowShell } from '@/components/flow/invite-flow-shell';
@@ -12,6 +12,7 @@ import { InvitePlatformQueueItem } from '@/components/flow/invite-platform-queue
 import { InvitePlatformStage } from '@/components/flow/invite-platform-stage';
 import { InviteLoadStateCard } from '@/components/flow/invite-load-state-card';
 import { InviteTrustNote } from '@/components/flow/invite-trust-note';
+import { MetaFulfillmentCard } from '@/components/access-request-detail';
 import { Button, SingleSelect } from '@/components/ui';
 import { PlatformIcon } from '@/components/ui/platform-icon';
 import { ACCESS_LEVEL_DESCRIPTIONS, PLATFORM_NAMES, IntakeField } from '@agency-platform/shared';
@@ -87,6 +88,7 @@ export default function ClientAuthorizationPage({
     serverInviteResult?.status === 'ok' ? serverInviteResult.payload : null
   );
   const [completionError, setCompletionError] = useState<string | null>(null);
+  const [completionVerified, setCompletionVerified] = useState(false);
   const [intakeResponses, setIntakeResponses] = useState<Record<string, string>>({});
   const [intakeError, setIntakeError] = useState<string | null>(null);
   const [isSavingIntake, setIsSavingIntake] = useState(false);
@@ -100,6 +102,7 @@ export default function ClientAuthorizationPage({
   const finalizationInFlightRef = useRef(false);
   const completionConfirmedRef = useRef(false);
   const intakeHydratedForTokenRef = useRef<string | null>(null);
+  const completionErrorRef = useRef<HTMLDivElement | null>(null);
   const startedTrackedRef = useRef(false);
   const platformStageRef = useRef<HTMLDivElement | null>(null);
 
@@ -276,6 +279,7 @@ export default function ClientAuthorizationPage({
     if (loadedPayload.status === 'completed') {
       setIsReviewingConnectStatus(false);
       completionConfirmedRef.current = true;
+      setCompletionVerified(true);
       setPhase('complete');
       return;
     }
@@ -328,6 +332,7 @@ export default function ClientAuthorizationPage({
       await parseJsonResponse(response, { fallbackErrorMessage: 'Failed to finalize authorization' });
 
       completionConfirmedRef.current = true;
+      setCompletionVerified(true);
       void capturePosthogEvent('client_authorization_completed', {
         access_request_token: token,
         agency_name: data?.agencyName,
@@ -365,6 +370,10 @@ export default function ClientAuthorizationPage({
     setIsReviewingConnectStatus(false);
     await finalizeCompletion();
   };
+
+  useEffect(() => {
+    if (completionError) completionErrorRef.current?.focus();
+  }, [completionError]);
 
   const handleIntakeSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -466,9 +475,9 @@ export default function ClientAuthorizationPage({
     );
   }
 
-  const flowSteps = ['Setup', 'Connect', 'Done'];
+  const flowSteps = completionError ? ['Setup', 'Follow-up', 'Done'] : ['Setup', 'Connect', 'Done'];
   const flowTotalSteps = 3;
-  const currentStep = phase === 'intake' ? 1 : phase === 'platforms' ? 2 : 3;
+  const currentStep = phase === 'intake' ? 1 : phase === 'platforms' || completionError ? 2 : 3;
   const isConnectStatusReview = phase === 'platforms' && isComplete && isReviewingConnectStatus;
 
   // Per-phase copy.
@@ -497,10 +506,16 @@ export default function ClientAuthorizationPage({
       description: 'Your connected platforms are being confirmed with the agency.',
     },
     complete: {
-      title: completionError ? 'Final confirmation needs attention' : 'Authorization complete',
+      title: completionError
+        ? 'Access needs follow-up'
+        : completionVerified
+        ? `${data.agencyName} now has verified access`
+        : 'Verifying access',
       description: completionError
-        ? 'Your connected platforms are safe. Retry the final confirmation below.'
-        : `${data.agencyName} can now access the accounts you approved.`,
+        ? 'Finish the unresolved access item, then check again.'
+        : completionVerified
+        ? 'The selected accounts and assignees are verified.'
+        : 'Checking that the selected accounts and assignees have access.',
     },
   };
   const phaseCopy = phaseCopyByPhase[phase];
@@ -706,6 +721,7 @@ export default function ClientAuthorizationPage({
                 platformName={PLATFORM_NAMES[platformQueue.activePlatform.platformGroup as Platform]}
                 products={platformQueue.activePlatform.products}
                 accessRequestToken={token}
+                metaAccessConfig={data.metaAccessConfig}
                 deferManualRedirect={urlView === 'connect'}
                 onComplete={() =>
                   handlePlatformComplete(platformQueue.activePlatform!.platformGroup as Platform)
@@ -772,19 +788,21 @@ export default function ClientAuthorizationPage({
       {phase === 'complete' && (
         <div className="border-2 border-black bg-card p-8 shadow-brutalist text-center">
           {completionError ? (
-            <>
+            <div ref={completionErrorRef} role="alert" tabIndex={-1}>
               <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full border-2 border-black">
                 <RefreshCw className="h-8 w-8 text-danger-ink" />
               </div>
-              <h2 className="text-2xl font-semibold text-ink font-display">
-                Almost done — one step failed
-              </h2>
+              <p className="text-2xl font-semibold text-ink font-display">
+                Access needs follow-up
+              </p>
               <p className="mt-2 text-sm text-muted-foreground">
-                All platforms are connected, but we couldn&apos;t confirm completion with your
-                agency.
+                One or more selected assets or assignees are not verified yet. Complete the action below, then check again.
               </p>
               <div className="mt-4 border border-black bg-paper p-4 text-left">
                 <p className="text-sm text-danger-ink">{completionError}</p>
+              </div>
+              <div className="mt-4 text-left">
+                <MetaFulfillmentCard results={data.metaFulfillment || []} />
               </div>
               <Button
                 className="mt-3"
@@ -792,9 +810,14 @@ export default function ClientAuthorizationPage({
                 leftIcon={<RefreshCw className="h-4 w-4" />}
                 onClick={handleRetryComplete}
               >
-                Retry Finalization
+                Check again
               </Button>
-            </>
+            </div>
+          ) : !completionVerified ? (
+            <div role="status" aria-live="polite">
+              <Loader2 className="mx-auto mb-5 h-8 w-8 animate-spin" aria-hidden="true" />
+              <p className="text-sm text-muted-foreground">Checking access. Keep this window open.</p>
+            </div>
           ) : (
             <>
               <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-full border-2 border-black">
@@ -819,9 +842,11 @@ export default function ClientAuthorizationPage({
               </div>
             </>
           )}
-          <p className="mt-6 text-sm text-muted-foreground">
-            You can safely close this window.
-          </p>
+          {completionVerified && !completionError ? (
+            <p className="mt-6 text-sm text-muted-foreground">
+              You can safely close this window.
+            </p>
+          ) : null}
         </div>
       )}
     </InviteFlowShell>

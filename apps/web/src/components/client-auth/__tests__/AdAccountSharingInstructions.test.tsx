@@ -50,6 +50,7 @@ describe('AdAccountSharingInstructions', () => {
     );
 
     expect(await screen.findByText('Waiting for access to be granted... 0/1')).toBeInTheDocument();
+    expect(screen.getByRole('note')).toHaveTextContent(/if meta blocks the assignment and asks for two-factor authentication/i);
     expect(screen.getByText('DogTimez: Still pending verification')).toBeInTheDocument();
     expect(onComplete).not.toHaveBeenCalled();
   });

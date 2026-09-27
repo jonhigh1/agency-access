@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo, useId } from 'react';
 import { createPortal } from 'react-dom';
 import { X, ChevronDown, Check, Search } from 'lucide-react';
 
@@ -43,6 +43,7 @@ export function MultiSelectCombobox({
   const inputRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const listboxId = useId();
 
   // Calculate dropdown position when opening or on scroll/resize
   // Using getBoundingClientRect() which gives viewport-relative coordinates
@@ -179,6 +180,7 @@ export function MultiSelectCombobox({
         e.preventDefault();
         if (!isOpen) {
           setIsOpen(true);
+          setFocusedIndex(filteredOptions.length > 0 ? 0 : -1);
         } else {
           setFocusedIndex(prev =>
             prev < filteredOptions.length - 1 ? prev + 1 : prev
@@ -191,7 +193,20 @@ export function MultiSelectCombobox({
         break;
       case 'Enter':
         e.preventDefault();
-        if (isOpen && focusedIndex >= 0 && filteredOptions[focusedIndex]) {
+        if (!isOpen) {
+          setIsOpen(true);
+          setFocusedIndex(filteredOptions.length > 0 ? 0 : -1);
+        } else if (focusedIndex >= 0 && filteredOptions[focusedIndex]) {
+          toggleSelection(filteredOptions[focusedIndex].id);
+        }
+        break;
+      case ' ':
+        if (e.target instanceof HTMLInputElement) return;
+        e.preventDefault();
+        if (!isOpen) {
+          setIsOpen(true);
+          setFocusedIndex(filteredOptions.length > 0 ? 0 : -1);
+        } else if (focusedIndex >= 0 && filteredOptions[focusedIndex]) {
           toggleSelection(filteredOptions[focusedIndex].id);
         }
         break;
@@ -265,6 +280,9 @@ export function MultiSelectCombobox({
         role="combobox"
         aria-expanded={isOpen}
         aria-haspopup="listbox"
+        aria-label={label || placeholder}
+        aria-controls={isOpen ? listboxId : undefined}
+        aria-activedescendant={isOpen && focusedIndex >= 0 ? `${listboxId}-option-${focusedIndex}` : undefined}
       >
         <div className="flex flex-wrap gap-2 items-center pr-5">
           {selectedOptions.length === 0 ? (
@@ -330,6 +348,7 @@ export function MultiSelectCombobox({
       {isOpen && typeof window !== 'undefined' && createPortal(
         <div
           ref={dropdownRef}
+          id={listboxId}
           className="fixed z-[9999] bg-white border-2 border-[rgb(var(--border))] dark:border-white rounded-lg shadow-brutalist overflow-auto"
           style={{
             top: `${dropdownPosition.top}px`,
@@ -338,6 +357,7 @@ export function MultiSelectCombobox({
             maxHeight: `${dropdownPosition.maxHeight}px`,
           }}
           role="listbox"
+          aria-multiselectable="true"
         >
           {/* Search Input */}
           <div className="sticky top-0 bg-white border-b border-[rgb(var(--border))] dark:border-white p-2">
@@ -354,7 +374,6 @@ export function MultiSelectCombobox({
                 placeholder="Search..."
                 className="w-full pl-9 pr-3 py-2 border-2 border-[rgb(var(--border))] dark:border-white rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-[rgb(var(--coral))] focus:border-[rgb(var(--coral))] bg-white"
                 onClick={(e) => e.stopPropagation()}
-                autoFocus
               />
             </div>
           </div>
@@ -388,6 +407,7 @@ export function MultiSelectCombobox({
                 return (
                   <div
                     key={option.id}
+                    id={`${listboxId}-option-${index}`}
                     onClick={() => toggleSelection(option.id)}
                     onMouseEnter={() => setFocusedIndex(index)}
                     className={`

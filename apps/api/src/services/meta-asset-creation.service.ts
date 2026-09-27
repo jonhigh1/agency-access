@@ -7,24 +7,29 @@
  */
 
 import { logger } from '../lib/logger.js';
+import { createHash } from 'node:crypto';
 import { infisical } from '../lib/infisical.js';
+import { readMetaAuthorizationMetadata } from '../lib/meta-authorization-metadata.js';
 import { prisma } from '../lib/prisma.js';
 import { auditService } from './audit.service.js';
-import { metaConnector } from './connectors/meta.js';
-import { MetaClientAuthorizationMetadataSchema } from '@agency-platform/shared';
-import type { MetaClientAuthorizationMetadata } from '@agency-platform/shared';
+import { MetaGraphMutationError, metaConnector } from './connectors/meta.js';
+
+const CREATION_CLAIM_TIMEOUT_MS = 5 * 60 * 1000;
 
 export interface CreateAdAccountParams {
+  accessRequestId: string;
   name: string;
   currency: string;
   timezoneId: string;
 }
 
 export interface CreateProductCatalogParams {
+  accessRequestId: string;
   name: string;
 }
 
 export interface CreateBusinessParams {
+  accessRequestId: string;
   name: string;
   vertical: string;
   primaryPageId: string;
@@ -62,7 +67,122 @@ type MetaPlatformAuthorization = NonNullable<
   Awaited<ReturnType<typeof prisma.platformAuthorization.findUnique>>
 >;
 
+function isDefiniteMetaRejection(error: unknown): error is MetaGraphMutationError {
+  return error instanceof MetaGraphMutationError &&
+    error.status >= 400 && error.status < 500 &&
+    typeof error.metaCode === 'number';
+}
+
 class MetaAssetCreationService {
+  private async claimCreation<T>(input: {
+    accessRequestId: string;
+    connectionId: string;
+    authorizationId: string;
+    assetType: 'ad_account' | 'catalog' | 'business';
+    parentAssetId: string;
+    intent: unknown;
+  }): Promise<{ id: string; replay?: T } | { error: { code: string; message: string } }> {
+    const intentHash = createHash('sha256')
+      .update(JSON.stringify({
+        assetType: input.assetType,
+        parentAssetId: input.parentAssetId,
+        intent: input.intent,
+      }))
+      .digest('hex');
+    const idempotencyKey = intentHash;
+    const where = {
+      accessRequestId_idempotencyKey: {
+        accessRequestId: input.accessRequestId,
+        idempotencyKey,
+      },
+    };
+
+    let existing = await prisma.metaAssetCreation.findUnique({ where });
+    if (!existing) {
+      try {
+        const claimed = await prisma.metaAssetCreation.create({
+          data: {
+            accessRequestId: input.accessRequestId,
+            connectionId: input.connectionId,
+            authorizationId: input.authorizationId,
+            assetType: input.assetType,
+            parentAssetId: input.parentAssetId,
+            idempotencyKey,
+            intentHash,
+            status: 'in_progress',
+          },
+        });
+        return { id: claimed.id };
+      } catch (error) {
+        if ((error as { code?: string })?.code !== 'P2002') throw error;
+        existing = await prisma.metaAssetCreation.findUnique({ where });
+      }
+    }
+
+    if (!existing) throw new Error('Meta asset creation claim was not stored');
+    if (
+      existing.connectionId !== input.connectionId ||
+      existing.authorizationId !== input.authorizationId ||
+      existing.assetType !== input.assetType ||
+      existing.parentAssetId !== input.parentAssetId ||
+      existing.intentHash !== intentHash
+    ) {
+      return { error: { code: 'IDEMPOTENCY_KEY_REUSED', message: 'This creation key is already bound to a different Meta asset request.' } };
+    }
+    if (existing.status === 'created' && existing.result) {
+      return { id: existing.id, replay: existing.result as T };
+    }
+    if (existing.status === 'outcome_unknown') {
+      return { error: { code: 'CREATION_OUTCOME_UNKNOWN', message: 'Meta may have created this asset. Refresh asset discovery and select it before starting another creation.' } };
+    }
+    if (existing.status === 'failed') {
+      const retried = await prisma.metaAssetCreation.updateMany({
+        where: { id: existing.id, status: 'failed' },
+        data: { status: 'in_progress', lastErrorCode: null },
+      });
+      if (retried.count === 1) return { id: existing.id };
+      existing = await prisma.metaAssetCreation.findUnique({ where });
+      if (existing?.status === 'in_progress') {
+        return { error: { code: 'CREATION_IN_PROGRESS', message: 'This Meta creation is already running or needs reconciliation. Do not submit it again.' } };
+      }
+    }
+    if (existing?.status === 'in_progress' && existing.updatedAt.getTime() <= Date.now() - CREATION_CLAIM_TIMEOUT_MS) {
+      const markedUnknown = await prisma.metaAssetCreation.updateMany({
+        where: { id: existing.id, status: 'in_progress', updatedAt: { lte: existing.updatedAt } },
+        data: { status: 'outcome_unknown', lastErrorCode: 'CREATION_WORKER_ABANDONED' },
+      });
+      if (markedUnknown.count === 1) {
+        return { error: { code: 'CREATION_OUTCOME_UNKNOWN', message: 'This Meta creation may have completed before its worker stopped. Refresh asset discovery and select it before starting another creation.' } };
+      }
+      existing = await prisma.metaAssetCreation.findUnique({ where });
+    }
+    if (existing?.status === 'in_progress') {
+      return { error: { code: 'CREATION_IN_PROGRESS', message: 'This Meta creation is already running or needs reconciliation. Do not submit it again.' } };
+    }
+    return { error: { code: 'CREATION_RESULT_UNAVAILABLE', message: 'Stored Meta creation result is unavailable. Refresh asset discovery before creating again.' } };
+  }
+
+  private async finishCreation(id: string, result: unknown) {
+    await prisma.metaAssetCreation.update({
+      where: { id },
+      data: { status: 'created', result: result as any, lastErrorCode: null },
+    });
+  }
+
+  private async markCreationUnknown(id: string) {
+    await prisma.metaAssetCreation.updateMany({
+      where: { id, status: 'in_progress' },
+      data: { status: 'outcome_unknown', lastErrorCode: 'PROVIDER_OUTCOME_UNKNOWN' },
+    });
+  }
+
+  private async markCreationRejected(id: string, errorCode: string) {
+    await prisma.metaAssetCreation.updateMany({
+      where: { id, status: 'in_progress' },
+      data: { status: 'failed', lastErrorCode: errorCode },
+    });
+  }
+
   /**
    * Resolve the active client Meta OAuth access token for a connection.
    * Shared guard for every creation path: authorization exists, is active,
@@ -153,6 +273,7 @@ class MetaAssetCreationService {
     userEmail: string,
     agencyId: string
   ): Promise<{ data: CreatedAdAccount | null; error: { code: string; message: string; details?: any } | null }> {
+    let creationId: string | undefined;
     try {
       logger.info('Creating Meta ad account', {
         connectionId,
@@ -167,11 +288,23 @@ class MetaAssetCreationService {
       }
       const { platformAuth, accessToken } = token;
 
+      const claim = await this.claimCreation<CreatedAdAccount>({
+        accessRequestId: params.accessRequestId,
+        connectionId,
+        authorizationId: platformAuth.id,
+        assetType: 'ad_account',
+        parentAssetId: businessId,
+        intent: { name: params.name, currency: params.currency, timezoneId: params.timezoneId },
+      });
+      if ('error' in claim) return { data: null, error: claim.error };
+      creationId = claim.id;
+      if (claim.replay) return { data: claim.replay, error: null };
+
       // Step 5: Create ad account via Meta API
       const createdAccount = await metaConnector.createAdAccount(
         accessToken,
         businessId,
-        params
+        { name: params.name, currency: params.currency, timezoneId: params.timezoneId }
       );
 
       logger.info('Meta ad account created successfully', {
@@ -230,6 +363,8 @@ class MetaAssetCreationService {
         },
       });
 
+      await this.finishCreation(creationId, createdAccount);
+
       return { data: createdAccount, error: null };
     } catch (error) {
       logger.error('Failed to create Meta ad account', {
@@ -240,6 +375,18 @@ class MetaAssetCreationService {
 
       // Check for specific Meta API errors
       const errorMessage = error instanceof Error ? error.message : String(error);
+      if (creationId && isDefiniteMetaRejection(error)) {
+        await this.markCreationRejected(creationId, 'META_REJECTED_CREATION');
+      } else if (creationId) {
+        await this.markCreationUnknown(creationId);
+        return {
+          data: null,
+          error: {
+            code: 'CREATION_OUTCOME_UNKNOWN',
+            message: 'Meta did not confirm whether it created this ad account. Refresh asset discovery and select it before starting another creation.',
+          },
+        };
+      }
 
       if (errorMessage.includes('permission') || errorMessage.includes('scope')) {
         return {
@@ -288,6 +435,7 @@ class MetaAssetCreationService {
     userEmail: string,
     agencyId: string
   ): Promise<{ data: CreatedProductCatalog | null; error: { code: string; message: string; details?: any } | null }> {
+    let creationId: string | undefined;
     try {
       logger.info('Creating Meta product catalog', {
         connectionId,
@@ -300,6 +448,18 @@ class MetaAssetCreationService {
         return { data: null, error: token.error };
       }
       const { platformAuth, accessToken } = token;
+
+      const claim = await this.claimCreation<CreatedProductCatalog>({
+        accessRequestId: params.accessRequestId,
+        connectionId,
+        authorizationId: platformAuth.id,
+        assetType: 'catalog',
+        parentAssetId: businessId,
+        intent: { name: params.name },
+      });
+      if ('error' in claim) return { data: null, error: claim.error };
+      creationId = claim.id;
+      if (claim.replay) return { data: claim.replay, error: null };
 
       // Step 5: Create product catalog via Meta API
       const createdCatalog = await metaConnector.createProductCatalog(
@@ -361,6 +521,8 @@ class MetaAssetCreationService {
         },
       });
 
+      await this.finishCreation(creationId, createdCatalog);
+
       return { data: createdCatalog, error: null };
     } catch (error) {
       logger.error('Failed to create Meta product catalog', {
@@ -371,6 +533,18 @@ class MetaAssetCreationService {
 
       // Check for specific Meta API errors
       const errorMessage = error instanceof Error ? error.message : String(error);
+      if (creationId && isDefiniteMetaRejection(error)) {
+        await this.markCreationRejected(creationId, 'META_REJECTED_CREATION');
+      } else if (creationId) {
+        await this.markCreationUnknown(creationId);
+        return {
+          data: null,
+          error: {
+            code: 'CREATION_OUTCOME_UNKNOWN',
+            message: 'Meta did not confirm whether it created this catalog. Refresh asset discovery and select it before starting another creation.',
+          },
+        };
+      }
 
       if (errorMessage.includes('permission') || errorMessage.includes('scope')) {
         return {
@@ -461,6 +635,7 @@ class MetaAssetCreationService {
     userEmail: string,
     agencyId: string
   ): Promise<{ data: CreatedBusiness | null; error: { code: string; message: string; details?: any } | null }> {
+    let creationId: string | undefined;
     try {
       logger.info('Creating Meta business', {
         connectionId,
@@ -475,7 +650,29 @@ class MetaAssetCreationService {
       }
       const { platformAuth, accessToken } = token;
 
-      const createdBusiness = await metaConnector.createBusiness(accessToken, params);
+      const claim = await this.claimCreation<CreatedBusiness>({
+        accessRequestId: params.accessRequestId,
+        connectionId,
+        authorizationId: platformAuth.id,
+        assetType: 'business',
+        parentAssetId: params.primaryPageId,
+        intent: {
+          name: params.name,
+          vertical: params.vertical,
+          primaryPageId: params.primaryPageId,
+          timezoneId: params.timezoneId,
+        },
+      });
+      if ('error' in claim) return { data: null, error: claim.error };
+      creationId = claim.id;
+      if (claim.replay) return { data: claim.replay, error: null };
+
+      const createdBusiness = await metaConnector.createBusiness(accessToken, {
+        name: params.name,
+        vertical: params.vertical,
+        primaryPageId: params.primaryPageId,
+        timezoneId: params.timezoneId,
+      });
 
       logger.info('Meta business created successfully', {
         connectionId,
@@ -485,15 +682,9 @@ class MetaAssetCreationService {
 
       // Persist selection + discovery into PlatformAuthorization.metadata.meta so
       // grant-meta-access can run against the new business without a re-selection.
-      const rootMetadata =
-        platformAuth.metadata && typeof platformAuth.metadata === 'object' &&
-        !Array.isArray(platformAuth.metadata)
-          ? { ...(platformAuth.metadata as Record<string, unknown>) }
-          : {};
-      const parsedMeta = MetaClientAuthorizationMetadataSchema.safeParse(rootMetadata.meta);
-      const currentMeta: MetaClientAuthorizationMetadata = parsedMeta.success
-        ? parsedMeta.data
-        : {};
+      const { rootMetadata, metaMetadata: currentMeta } = readMetaAuthorizationMetadata(
+        platformAuth.metadata
+      );
 
       const existingBusinesses = currentMeta.discovery?.availableBusinesses ?? [];
       const alreadyListed = existingBusinesses.some((b) => b.id === createdBusiness.id);
@@ -575,6 +766,8 @@ class MetaAssetCreationService {
         },
       });
 
+      await this.finishCreation(creationId, createdBusiness);
+
       return { data: createdBusiness, error: null };
     } catch (error) {
       logger.error('Failed to create Meta business', {
@@ -583,6 +776,18 @@ class MetaAssetCreationService {
       });
 
       const errorMessage = error instanceof Error ? error.message : String(error);
+      if (creationId && isDefiniteMetaRejection(error)) {
+        await this.markCreationRejected(creationId, 'META_REJECTED_CREATION');
+      } else if (creationId) {
+        await this.markCreationUnknown(creationId);
+        return {
+          data: null,
+          error: {
+            code: 'CREATION_OUTCOME_UNKNOWN',
+            message: 'Meta did not confirm whether it created this Business Portfolio. Refresh asset discovery and select it before starting another creation.',
+          },
+        };
+      }
       const normalizedError = errorMessage.toLowerCase();
 
       if (normalizedError.includes('permission') || normalizedError.includes('scope')) {

@@ -150,7 +150,8 @@ describe('Access Requests Routes - Platform Connection Validation', () => {
             { platform: 'ga4', accessLevel: 'manage' },
             { platform: 'meta_ads', accessLevel: 'manage' },
           ]),
-        })
+        }),
+        expect.anything()
       );
     });
 
@@ -181,7 +182,8 @@ describe('Access Requests Routes - Platform Connection Validation', () => {
             { platform: 'google_ads', accessLevel: 'manage' },
             { platform: 'meta_ads', accessLevel: 'view_only' },
           ]),
-        })
+        }),
+        expect.anything()
       );
     });
 
@@ -234,7 +236,8 @@ describe('Access Requests Routes - Platform Connection Validation', () => {
       expect(accessRequestService.createAccessRequest).toHaveBeenCalledWith(
         expect.objectContaining({
           platforms: [{ platform: 'google_ads', accessLevel: 'manage' }],
-        })
+        }),
+        expect.anything()
       );
     });
 
@@ -389,7 +392,16 @@ describe('Access Requests Routes - Platform Connection Validation', () => {
                 { product: 'ga4', accessLevel: 'read_only' },
               ],
             },
+            {
+              platformGroup: 'meta',
+              products: [{ product: 'meta_ads', accessLevel: 'manage' }],
+            },
           ],
+          metaAccessConfig: {
+            recipients: [{ type: 'human', id: 'person-1', name: 'Jon High' }],
+            pageTasks: ['MANAGE'],
+            adAccountTasks: ['ANALYZE'],
+          },
           branding: { primaryColor: '#FF6B35' },
         },
       });
@@ -401,9 +413,16 @@ describe('Access Requests Routes - Platform Connection Validation', () => {
           platforms: [
             { platform: 'google_ads', accessLevel: 'manage' },
             { platform: 'ga4', accessLevel: 'view_only' },
+            { platform: 'meta_ads', accessLevel: 'manage' },
           ],
+          metaAccessConfig: {
+            recipients: [{ type: 'human', id: 'person-1', name: 'Jon High' }],
+            pageTasks: ['MANAGE'],
+            adAccountTasks: ['ANALYZE'],
+          },
           branding: { primaryColor: '#FF6B35' },
-        })
+        }),
+        expect.objectContaining({ method: 'PATCH' })
       );
     });
 
@@ -453,8 +472,8 @@ describe('Access Requests Routes - Platform Connection Validation', () => {
   });
 
   describe('POST /access-requests/:id/cancel', () => {
-    it('returns after revoke without waiting for audit logging', async () => {
-      vi.mocked(accessRequestService.getAccessRequestOwnershipById).mockResolvedValue({
+    it('passes audit data into the atomic revoke service', async () => {
+      vi.mocked(accessRequestService.getAccessRequestById).mockResolvedValue({
         data: {
           id: 'req-1',
           agencyId: 'agency-1',
@@ -467,10 +486,6 @@ describe('Access Requests Routes - Platform Connection Validation', () => {
         data: { success: true },
         error: null,
       });
-      vi.mocked(auditService.auditService.createAuditLog).mockReturnValue(
-        new Promise(() => {}) as any
-      );
-
       const response = await app.inject({
         method: 'POST',
         url: '/access-requests/req-1/cancel',
@@ -478,18 +493,19 @@ describe('Access Requests Routes - Platform Connection Validation', () => {
 
       expect(response.statusCode).toBe(200);
       expect(response.json()).toEqual({ data: { success: true }, error: null });
-      expect(accessRequestService.getAccessRequestOwnershipById).toHaveBeenCalledWith('req-1');
-      expect(accessRequestService.getAccessRequestById).not.toHaveBeenCalled();
-      expect(auditService.auditService.createAuditLog).toHaveBeenCalledWith(
+      expect(accessRequestService.cancelAccessRequest).toHaveBeenCalledWith(
+        'req-1',
         expect.objectContaining({
-          action: 'ACCESS_REQUEST_REVOKED',
-          resourceId: 'req-1',
+          userEmail: expect.any(String),
+          ipAddress: expect.any(String),
+          userAgent: expect.any(String),
         })
       );
+      expect(auditService.auditService.createAuditLog).not.toHaveBeenCalled();
     });
 
     it('surfaces database errors from the authorization lookup', async () => {
-      vi.mocked(accessRequestService.getAccessRequestOwnershipById).mockResolvedValue({
+      vi.mocked(accessRequestService.getAccessRequestById).mockResolvedValue({
         data: null,
         error: {
           code: 'INTERNAL_ERROR',
@@ -508,6 +524,41 @@ describe('Access Requests Routes - Platform Connection Validation', () => {
         message: 'Failed to retrieve access request',
       });
       expect(accessRequestService.cancelAccessRequest).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('POST /access-requests/:id/meta-grants/:grantId/exclude', () => {
+    it('passes the authenticated owner identity and confirmed reason to the service', async () => {
+      vi.mocked(accessRequestService.excludeMetaGrant).mockResolvedValue({
+        data: { id: 'grant-1', status: 'excluded' } as any,
+        error: null,
+      });
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/access-requests/request-1/meta-grants/grant-1/exclude',
+        payload: { reason: 'Client does not use this ad account.', confirmed: true },
+      });
+
+      expect(response.statusCode).toBe(200);
+      expect(accessRequestService.excludeMetaGrant).toHaveBeenCalledWith(expect.objectContaining({
+        accessRequestId: 'request-1',
+        grantId: 'grant-1',
+        agencyId: 'agency-1',
+        ownerSubject: 'user_123',
+        reason: 'Client does not use this ad account.',
+      }));
+    });
+
+    it('rejects an unconfirmed exclusion before the service runs', async () => {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/access-requests/request-1/meta-grants/grant-1/exclude',
+        payload: { reason: 'Client does not use this ad account.', confirmed: false },
+      });
+
+      expect(response.statusCode).toBe(400);
+      expect(accessRequestService.excludeMetaGrant).not.toHaveBeenCalled();
     });
   });
 
@@ -584,6 +635,24 @@ describe('Access Requests Routes - Platform Connection Validation', () => {
 
       expect(response.statusCode).toBe(404);
       expect(response.json().error.code).toBe('REQUEST_EXPIRED');
+    });
+
+    it('should return 404 when request token has been revoked', async () => {
+      vi.mocked(accessRequestService.getAccessRequestByToken).mockResolvedValue({
+        data: null as any,
+        error: {
+          code: 'REQUEST_REVOKED',
+          message: 'Access request has been revoked',
+        } as any,
+      });
+
+      const response = await app.inject({
+        method: 'GET',
+        url: '/client/revoked-token',
+      });
+
+      expect(response.statusCode).toBe(404);
+      expect(response.json().error.code).toBe('REQUEST_REVOKED');
     });
   });
 

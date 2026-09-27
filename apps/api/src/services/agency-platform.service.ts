@@ -11,7 +11,11 @@ import { infisical } from '@/lib/infisical';
 import { logger } from '@/lib/logger.js';
 import { CacheKeys, deleteCache, invalidateDashboardCache } from '@/lib/cache';
 import { ensureAgencyAccessToken } from '@/services/token-lifecycle.service';
+import { getConnector } from '@/services/connectors/factory';
+import { metaSystemUserService } from '@/services/meta-system-user.service';
+import { auditService } from '@/services/audit.service';
 import type { Platform } from '@agency-platform/shared';
+import type { Prisma } from '@prisma/client';
 import { z } from 'zod';
 
 // Validation schemas
@@ -231,7 +235,8 @@ export async function createConnection(input: CreateConnectionInput) {
 export async function revokeConnection(
   agencyId: string,
   platform: string,
-  revokedBy: string
+  revokedBy: string,
+  auditContext?: { ipAddress: string }
 ) {
   try {
     // Find the connection
@@ -249,10 +254,114 @@ export async function revokeConnection(
       };
     }
 
-    // Delete tokens from Infisical
-    if (connection.secretId) {
-      await infisical.deleteOAuthTokens(connection.secretId);
+    if (connection.status === 'revoked') {
+      return { data: connection, error: null };
     }
+
+    let metadata = connection.metadata && typeof connection.metadata === 'object' && !Array.isArray(connection.metadata)
+      ? connection.metadata as Record<string, unknown>
+      : {};
+    const derivedSecretId = platform === 'meta' && typeof metadata.partnerAdminSystemUserTokenSecretId === 'string'
+      ? metadata.partnerAdminSystemUserTokenSecretId
+      : null;
+    const secretIds = [...new Set([derivedSecretId, connection.secretId].filter((id): id is string => Boolean(id)))];
+
+    if (platform === 'meta' && !metadata.providerRevokedAt) {
+      try {
+        if (derivedSecretId && !connection.secretId) throw new Error('Meta user authorization is missing');
+        if (connection.secretId) {
+          if (!revokedBy || !auditContext?.ipAddress) throw new Error('Meta token access audit context is required');
+          const audit = await auditService.logTokenAccess({
+            connectionId: connection.id,
+            platform: 'meta',
+            userEmail: revokedBy,
+            ipAddress: auditContext.ipAddress,
+            details: { operation: 'meta_provider_revocation', agencyConnectionId: connection.id },
+          });
+          if (audit.error) throw new Error('Failed to audit Meta token access');
+          const { accessToken } = await infisical.getOAuthTokens(connection.secretId);
+          if (derivedSecretId && !metadata.partnerAdminSystemUserRevokedAt) {
+            if (typeof metadata.systemUserId !== 'string') throw new Error('Meta system user ID is missing');
+            const result = await metaSystemUserService.revokeSystemUserAccessTokens({
+              systemUserId: metadata.systemUserId,
+              accessToken,
+            });
+            if (result.error) throw new Error(result.error.code);
+            metadata = { ...metadata, partnerAdminSystemUserRevokedAt: new Date().toISOString() };
+            await prisma.agencyPlatformConnection.update({
+              where: { id: connection.id },
+              data: { metadata: metadata as Prisma.InputJsonValue },
+            });
+          }
+          const connector = getConnector('meta');
+          if (!connector.revokeToken) throw new Error('Meta connector cannot revoke its app permission');
+          await connector.revokeToken(accessToken);
+          metadata = { ...metadata, providerRevokedAt: new Date().toISOString() };
+          await prisma.agencyPlatformConnection.update({
+            where: { id: connection.id },
+            data: { metadata: metadata as Prisma.InputJsonValue },
+          });
+        } else {
+          await prisma.agencyPlatformConnection.update({
+            where: { id: connection.id },
+            data: { metadata: { ...metadata, providerRevokedAt: new Date().toISOString() } as Prisma.InputJsonValue },
+          });
+        }
+      } catch (error) {
+        await prisma.agencyPlatformConnection.update({
+          where: { id: connection.id },
+          data: { status: 'invalid' },
+        });
+        await prisma.auditLog.create({
+          data: {
+            agencyId,
+            action: 'META_ACCESS_REVOCATION_FAILED',
+            userEmail: revokedBy,
+            agencyConnectionId: connection.id,
+            metadata: { platform, error: 'Provider-side Meta revocation failed' },
+            ipAddress: '0.0.0.0',
+            userAgent: 'unknown',
+          },
+        });
+        return {
+          data: null,
+          error: { code: 'META_ACCESS_REVOCATION_FAILED', message: 'Meta access cleanup failed. Retry connection revocation.' },
+        };
+      }
+    }
+
+    // Delete local secrets only after Meta revokes the derived and primary credentials.
+    for (const secretId of secretIds) {
+      try {
+        await infisical.deleteSecret(secretId);
+      } catch (error) {
+        await prisma.agencyPlatformConnection.update({
+          where: { id: connection.id },
+          data: { status: 'invalid' },
+        });
+        await prisma.auditLog.create({
+          data: {
+            agencyId,
+            action: 'TOKEN_DELETION_FAILED',
+            userEmail: revokedBy,
+            agencyConnectionId: connection.id,
+            metadata: {
+              platform,
+              secretId,
+              error: error instanceof Error ? error.message : String(error),
+            },
+            ipAddress: '0.0.0.0',
+            userAgent: 'unknown',
+          },
+        });
+        return {
+          data: null,
+          error: { code: 'TOKEN_DELETION_FAILED', message: 'Token cleanup failed. Retry connection revocation.' },
+        };
+      }
+    }
+
+    const { partnerAdminSystemUserTokenSecretId, partnerAdminSystemUserScopes, partnerAdminSystemUserProvisionedAt, ...retainedMetadata } = metadata;
 
     // Update database record
     const updatedConnection = await prisma.agencyPlatformConnection.update({
@@ -261,6 +370,7 @@ export async function revokeConnection(
         status: 'revoked',
         revokedAt: new Date(),
         revokedBy,
+        ...(platform === 'meta' ? { metadata: { ...retainedMetadata, partnerAdminSystemUserStatus: 'revoked' } } : {}),
       },
     });
 

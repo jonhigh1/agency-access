@@ -16,6 +16,7 @@ export const META_AD_ACCOUNT_INSTRUCTIONS = {
     step2: {
       title: 'Share Asset',
       description: 'Navigate to Meta Ads in Meta Business Suite (Settings → Ad accounts), then:',
+      securityNote: 'If Meta blocks the assignment and asks for two-factor authentication, enable it for your Facebook account in security settings. Then repeat the partner assignment and check access again.',
       substeps: [
         'Select the ad account from the sidebar and click the "Assign Partner" button',
         'In the "Partner business ID" textbox, enter:',
@@ -44,6 +45,7 @@ export const META_AD_ACCOUNT_INSTRUCTIONS = {
     step2: {
       title: 'Compartir activo',
       description: 'Navega a Meta Ads en Meta Business Suite (Configuración → Cuentas de anuncios), luego:',
+      securityNote: 'Si Meta bloquea la asignación y solicita autenticación en dos pasos, actívala para tu cuenta de Facebook en la configuración de seguridad. Después, vuelve a asignar el socio y comprueba el acceso.',
       substeps: [
         'Selecciona la cuenta de anuncios desde la barra lateral y haz clic en el botón "Asignar socio"',
         'En el cuadro de texto "ID del Business Manager del socio", ingresa:',
@@ -72,6 +74,7 @@ export const META_AD_ACCOUNT_INSTRUCTIONS = {
     step2: {
       title: 'Deel activum',
       description: 'Navigeer naar Meta Ads in Meta Business Suite (Instellingen → Advertentieaccounts), dan:',
+      securityNote: 'Als Meta de toewijzing blokkeert en tweestapsverificatie vraagt, schakel dit dan in voor je Facebook-account bij de beveiligingsinstellingen. Wijs de partner daarna opnieuw toe en controleer de toegang.',
       substeps: [
         'Selecteer het advertentieaccount vanuit de zijbalk en klik op de knop "Partner toewijzen"',
         'Voer in het tekstvak "Partner Business Manager ID" in:',

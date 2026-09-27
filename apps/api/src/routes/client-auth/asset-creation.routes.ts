@@ -36,6 +36,13 @@ const getLinksSchema = z.object({
   businessId: z.string().min(1, 'Business ID is required'),
 });
 
+function creationErrorStatus(code: string) {
+  if (code === 'AUTHORIZATION_NOT_FOUND' || code === 'TOKEN_NOT_FOUND') return 404;
+  if (code === 'TOKEN_EXPIRED' || code === 'AUTHORIZATION_INACTIVE') return 400;
+  if (code.startsWith('CREATION_') || code.startsWith('IDEMPOTENCY_')) return 409;
+  return 500;
+}
+
 /**
  * Resolve and validate an authorized connection for an access request token
  */
@@ -119,20 +126,13 @@ export async function registerAssetCreationRoutes(fastify: FastifyInstance) {
     const result = await metaAssetCreationService.createAdAccount(
       connectionId,
       businessId,
-      { name, currency, timezoneId },
+      { accessRequestId: authContext.accessRequest.id, name, currency, timezoneId },
       authContext.connection.clientEmail,
       authContext.accessRequest.agencyId
     );
 
     if (result.error) {
-      const statusCode =
-        result.error.code === 'AUTHORIZATION_NOT_FOUND' ||
-        result.error.code === 'TOKEN_NOT_FOUND'
-          ? 404
-          : result.error.code === 'TOKEN_EXPIRED' ||
-            result.error.code === 'AUTHORIZATION_INACTIVE'
-          ? 400
-          : 500;
+      const statusCode = creationErrorStatus(result.error.code);
       return reply.code(statusCode).send({
         data: null,
         error: result.error,
@@ -174,20 +174,13 @@ export async function registerAssetCreationRoutes(fastify: FastifyInstance) {
     const result = await metaAssetCreationService.createProductCatalog(
       connectionId,
       businessId,
-      { name },
+      { accessRequestId: authContext.accessRequest.id, name },
       authContext.connection.clientEmail,
       authContext.accessRequest.agencyId
     );
 
     if (result.error) {
-      const statusCode =
-        result.error.code === 'AUTHORIZATION_NOT_FOUND' ||
-        result.error.code === 'TOKEN_NOT_FOUND'
-          ? 404
-          : result.error.code === 'TOKEN_EXPIRED' ||
-            result.error.code === 'AUTHORIZATION_INACTIVE'
-          ? 400
-          : 500;
+      const statusCode = creationErrorStatus(result.error.code);
       return reply.code(statusCode).send({
         data: null,
         error: result.error,
@@ -228,20 +221,13 @@ export async function registerAssetCreationRoutes(fastify: FastifyInstance) {
     // Create business
     const result = await metaAssetCreationService.createBusiness(
       connectionId,
-      { name, vertical, primaryPageId, timezoneId },
+      { accessRequestId: authContext.accessRequest.id, name, vertical, primaryPageId, timezoneId },
       authContext.connection.clientEmail,
       authContext.accessRequest.agencyId
     );
 
     if (result.error) {
-      const statusCode =
-        result.error.code === 'AUTHORIZATION_NOT_FOUND' ||
-        result.error.code === 'TOKEN_NOT_FOUND'
-          ? 404
-          : result.error.code === 'TOKEN_EXPIRED' ||
-            result.error.code === 'AUTHORIZATION_INACTIVE'
-          ? 400
-          : 500;
+      const statusCode = creationErrorStatus(result.error.code);
       return reply.code(statusCode).send({
         data: null,
         error: result.error,

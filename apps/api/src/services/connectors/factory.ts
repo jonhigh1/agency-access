@@ -85,6 +85,15 @@ export interface PlatformConnector {
    */
   getLongLivedToken?(shortToken: string): Promise<any>;
 
+  /** Optional provider-side token inspection; never return or persist token values. */
+  getTokenMetadata?(accessToken: string): Promise<{
+    scopes: string[];
+    expiresAt?: Date;
+    dataAccessExpiresAt?: Date;
+    userId?: string;
+    isValid: boolean;
+  }>;
+
   /**
    * Verify token is still valid
    */
@@ -120,6 +129,7 @@ const connectors: Partial<Record<Platform, PlatformConnector>> = {
   meta: metaConnector,
   meta_ads: metaConnector,
   meta_pages: metaConnector,
+  instagram: metaConnector,
   google: googleConnector,
   google_ads: googleAdsConnector,
   ga4: ga4Connector,
