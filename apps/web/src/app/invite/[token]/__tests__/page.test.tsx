@@ -597,7 +597,9 @@ describe('Invite Flow Page', () => {
       expect(screen.getByText(/finalization service unavailable/i)).toBeInTheDocument();
     });
     expect(screen.queryByRole('heading', { name: /all set/i })).not.toBeInTheDocument();
-    expect(screen.getByText(/step 2 of 3 · follow-up/i)).toBeInTheDocument();
+    expect(screen.getByText('Your progress')).toBeInTheDocument();
+    expect(screen.getByText('Access confirmed.')).toBeInTheDocument();
+    expect(screen.queryByText(/step 2 of 3/i)).not.toBeInTheDocument();
     expect(screen.getByRole('alert')).toHaveFocus();
 
     expect(screen.queryByText(/you can safely close this window/i)).not.toBeInTheDocument();
@@ -740,9 +742,11 @@ describe('Invite Flow Page', () => {
     await userEvent.click(continueButton);
 
     await waitFor(() => {
-      expect(screen.getByText(/Step 2 of 3/i)).toBeInTheDocument();
+      expect(screen.getByText('Your progress')).toBeInTheDocument();
+      expect(screen.getByText('Connect Google to continue.')).toBeInTheDocument();
     });
 
+    expect(screen.queryByText(/step \d+ of \d+/i)).not.toBeInTheDocument();
     expect(
       fetchMock.mock.calls.some(([url]) => String(url).includes('/api/client/token-123/complete'))
     ).toBe(false);
@@ -1288,8 +1292,8 @@ describe('Invite Flow Page', () => {
     expect(screen.queryByText('Active platform: Mailchimp')).not.toBeInTheDocument();
   });
 
-  describe('Dynamic step indicator', () => {
-    it('shows the current step in the progress line for a fresh request', async () => {
+  describe('Named-platform progress checklist', () => {
+    it('shows the truthful checklist as the only progress surface for a fresh request', async () => {
       const fetchMock = vi.fn(async () => ({
         ok: true,
         json: async () => ({
@@ -1322,11 +1326,14 @@ describe('Invite Flow Page', () => {
       render(<InvitePage />);
 
       await waitFor(() => {
-        expect(screen.getByText(/Step 1 of 3 · Setup/i)).toBeInTheDocument();
+        expect(screen.getByText('Your progress')).toBeInTheDocument();
+        expect(screen.getByText('Connect Google to continue.')).toBeInTheDocument();
+        expect(screen.queryByText(/step \d+ of \d+/i)).not.toBeInTheDocument();
+        expect(screen.queryByText(/%/)).not.toBeInTheDocument();
       });
     });
 
-    it('should show step 1 of 3 for a fresh request and list the requested platforms', async () => {
+    it('lists the requested platform on the checklist and in the request summary', async () => {
       const fetchMock = vi.fn(async () => ({
         ok: true,
         json: async () => ({
@@ -1356,7 +1363,9 @@ describe('Invite Flow Page', () => {
       render(<InvitePage />);
 
       await waitFor(() => {
-        expect(screen.getByText(/step 1 of 3/i)).toBeInTheDocument();
+        expect(screen.getByText('Your progress')).toBeInTheDocument();
+        expect(screen.getByText('Connect Google to continue.')).toBeInTheDocument();
+        expect(screen.queryByText(/step \d+ of \d+/i)).not.toBeInTheDocument();
         expect(screen.getByText(/confirm which accounts to share below/i)).toBeInTheDocument();
         expect(screen.getByText(/needs access to finish setup/i)).toBeInTheDocument();
         expect(screen.getAllByText('Google').length).toBeGreaterThan(0);

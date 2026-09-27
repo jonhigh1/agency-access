@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { ClientAccessRequestPlatformGroup, Platform } from '@agency-platform/shared';
 import { buildInvitePlatformQueue } from '../invite-platform-queue';
+import { buildInvitePlatformChecklist } from '../invite/platform-status';
 
 const REQUESTED_PLATFORMS: ClientAccessRequestPlatformGroup[] = [
   {
@@ -55,5 +56,22 @@ describe('buildInvitePlatformQueue', () => {
     expect(queue.activePlatform).toBeNull();
     expect(queue.remainingPlatforms).toEqual([]);
     expect(queue.nextPlatform).toBeNull();
+  });
+
+  it('keeps the active platform aligned with the first non-done checklist entry', () => {
+    // One progress surface (R3): the stage shows the platform the checklist
+    // lists as not done first — the queue and the checklist can never disagree.
+    const completedPlatforms = new Set<Platform>(['google']);
+    const queue = buildInvitePlatformQueue({
+      platforms: REQUESTED_PLATFORMS,
+      completedPlatforms,
+    });
+    const checklist = buildInvitePlatformChecklist({
+      platforms: REQUESTED_PLATFORMS,
+      completedPlatforms,
+    });
+
+    const firstOpenEntry = checklist.find((entry) => entry.status !== 'done');
+    expect(queue.activePlatform?.platformGroup).toBe(firstOpenEntry?.platform);
   });
 });

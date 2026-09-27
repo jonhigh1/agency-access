@@ -8,18 +8,17 @@ interface InvitePlatformQueueItemProps {
   platformName: string;
   description: string;
   status: InviteStatus;
-  sequence: number;
 }
 
 /**
  * Numbered truth row. One list, not three sections. Row, not a card.
+ * Position comes from list order only: no ordinals, no step counters (R3).
  */
 export function InvitePlatformQueueItem({
   platform,
   platformName,
   description,
   status,
-  sequence,
 }: InvitePlatformQueueItemProps) {
   return (
     <m.div
@@ -30,11 +29,8 @@ export function InvitePlatformQueueItem({
     >
       <PlatformIcon platform={platform} size="sm" />
       <div className="min-w-0 flex-1">
-        <p className="text-sm font-semibold text-ink">
-          <span className="label-micro mr-2">{String(sequence).padStart(2, '0')}</span>
-          {platformName}
-        </p>
-        <p className="label-nano mt-0.5 truncate">{description}</p>
+        <p className="text-sm font-semibold text-ink">{platformName}</p>
+        <p className="label-nano mt-0.5">{description}</p>
       </div>
       <InviteStatusChip status={status} />
     </m.div>

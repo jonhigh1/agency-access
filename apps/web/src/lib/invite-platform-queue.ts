@@ -2,7 +2,7 @@ import type { ClientAccessRequestPlatformGroup, Platform } from '@agency-platfor
 
 interface BuildInvitePlatformQueueOptions {
   platforms: ClientAccessRequestPlatformGroup[];
-  completedPlatforms: Set<Platform>;
+  completedPlatforms: ReadonlySet<Platform>;
   returningPlatform?: Platform | null;
 }
 

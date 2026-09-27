@@ -8,7 +8,6 @@ import { capturePosthogEvent } from '@/lib/analytics/capture-posthog';
 import { trackInviteOpenedOncePerSession } from '@/lib/analytics/invite-events';
 import { InviteFlowShell } from '@/components/flow/invite-flow-shell';
 import { InviteHeroHeader } from '@/components/flow/invite-hero-header';
-import { InvitePlatformQueueItem } from '@/components/flow/invite-platform-queue-item';
 import { InvitePlatformStage } from '@/components/flow/invite-platform-stage';
 import { InviteLoadStateCard } from '@/components/flow/invite-load-state-card';
 import { InviteTrustNote } from '@/components/flow/invite-trust-note';
@@ -25,6 +24,7 @@ import {
   isClientInviteManualPlatform,
 } from '@/lib/client-invite-platforms';
 import { buildInvitePlatformQueue } from '@/lib/invite-platform-queue';
+import { buildInvitePlatformChecklist } from '@/lib/invite/platform-status';
 import type { AccessLevel, ClientAccessRequestPayload, Platform } from '@agency-platform/shared';
 
 const PlatformAuthWizard = dynamic(
@@ -98,6 +98,8 @@ export default function ClientAuthorizationPage({
     platform: Platform;
   } | null>(null);
   const [isReviewingConnectStatus, setIsReviewingConnectStatus] = useState(false);
+  const [isCheckingStatus, setIsCheckingStatus] = useState(false);
+  const [statusCheckError, setStatusCheckError] = useState<string | null>(null);
 
   const finalizationInFlightRef = useRef(false);
   const completionConfirmedRef = useRef(false);
@@ -145,6 +147,23 @@ export default function ClientAuthorizationPage({
   const activePlatformName = platformQueue.activePlatform
     ? PLATFORM_NAMES[platformQueue.activePlatform.platformGroup as Platform]
     : null;
+
+  // R3: one progress surface. Derived per platform from server truth plus the
+  // locally completed set the page already maintains.
+  const progressChecklist = useMemo(
+    () =>
+      buildInvitePlatformChecklist({
+        platforms: data?.platforms || [],
+        completedPlatforms,
+        unresolvedProducts: data?.authorizationProgress?.unresolvedProducts,
+      }),
+    [completedPlatforms, data]
+  );
+  const activePlatformStatus = platformQueue.activePlatform
+    ? progressChecklist.find(
+        (entry) => entry.platform === platformQueue.activePlatform!.platformGroup
+      )?.status
+    : undefined;
 
   const railIdentities = useMemo(() => {
     if (!data) return [];
@@ -371,6 +390,45 @@ export default function ClientAuthorizationPage({
     await finalizeCompletion();
   };
 
+  // Check again (KTD7): refetch GET /client/:token BEFORE any result renders.
+  // The checklist state changes only after the fresh payload resolves, so the
+  // pre-fetch status is never presented as a fresh result. On failure the
+  // prior entries stay on screen behind an explicit failure note.
+  const refreshAuthorizationProgress = async () => {
+    if (isCheckingStatus) return;
+    setIsCheckingStatus(true);
+    setStatusCheckError(null);
+
+    const abortController = new AbortController();
+    const timeoutTimer = window.setTimeout(() => abortController.abort(), REQUEST_TIMEOUT_MS);
+
+    try {
+      const response = await fetch(resolveApiUrl(`/api/client/${token}`), {
+        cache: 'no-store',
+        signal: abortController.signal,
+      });
+      const result = await parseJsonResponse<{ data?: ClientAccessRequestPayload }>(response, {
+        fallbackErrorMessage: 'Could not check your progress. Please try again.',
+      });
+      const fresh = result.data;
+      if (!fresh) return;
+
+      setData(fresh);
+      setCompletedPlatforms((prev) => {
+        const merged = new Set<Platform>(prev);
+        for (const platform of fresh.authorizationProgress?.completedPlatforms || []) {
+          merged.add(platform as Platform);
+        }
+        return merged;
+      });
+    } catch {
+      setStatusCheckError("We couldn't check just now. Try again.");
+    } finally {
+      window.clearTimeout(timeoutTimer);
+      setIsCheckingStatus(false);
+    }
+  };
+
   useEffect(() => {
     if (completionError) completionErrorRef.current?.focus();
   }, [completionError]);
@@ -475,9 +533,6 @@ export default function ClientAuthorizationPage({
     );
   }
 
-  const flowSteps = completionError ? ['Setup', 'Follow-up', 'Done'] : ['Setup', 'Connect', 'Done'];
-  const flowTotalSteps = 3;
-  const currentStep = phase === 'intake' ? 1 : phase === 'platforms' || completionError ? 2 : 3;
   const isConnectStatusReview = phase === 'platforms' && isComplete && isReviewingConnectStatus;
 
   // Per-phase copy.
@@ -533,9 +588,12 @@ export default function ClientAuthorizationPage({
           logoAlt={`${data.agencyName} logo`}
         />
       }
-      step={currentStep}
-      totalSteps={flowTotalSteps}
-      steps={flowSteps}
+      checklist={progressChecklist}
+      onRefresh={
+        phase === 'intake' || phase === 'platforms' ? refreshAuthorizationProgress : undefined
+      }
+      isRefreshing={isCheckingStatus}
+      refreshError={statusCheckError}
     >
       {phase === 'intake' &&
         (intakeFields.length > 0 ? (
@@ -701,8 +759,7 @@ export default function ClientAuthorizationPage({
             <InvitePlatformStage
               platform={platformQueue.activePlatform.platformGroup as Platform}
               platformName={PLATFORM_NAMES[platformQueue.activePlatform.platformGroup as Platform]}
-              stepNumber={Math.min(completedPlatforms.size + 1, requestedPlatforms.length || 1)}
-              totalCount={requestedPlatforms.length}
+              status={activePlatformStatus}
               description={
                 platformQueue.nextPlatform
                   ? `Complete this step, then continue to ${PLATFORM_NAMES[platformQueue.nextPlatform.platformGroup as Platform]}.`
@@ -741,35 +798,6 @@ export default function ClientAuthorizationPage({
                 }
               />
             </InvitePlatformStage>
-            </div>
-          ) : null}
-
-          {requestedPlatforms.length > 1 ? (
-            <div>
-              <p className="label-micro mb-1">The full request</p>
-              <div>
-                {data.platforms.map((groupConfig, index) => {
-                  const platform = groupConfig.platformGroup as Platform;
-                  const isDone = completedPlatforms.has(platform);
-                  const isActive = platformQueue.activePlatform?.platformGroup === platform;
-                  return (
-                    <InvitePlatformQueueItem
-                      key={platform}
-                      platform={platform}
-                      platformName={PLATFORM_NAMES[platform]}
-                      description={
-                        isDone
-                          ? 'Access confirmed.'
-                          : isActive
-                          ? 'Current step.'
-                          : 'Waiting until earlier steps are done.'
-                      }
-                      status={isDone ? 'complete' : isActive ? 'active' : 'waiting'}
-                      sequence={index + 1}
-                    />
-                  );
-                })}
-              </div>
             </div>
           ) : null}
         </div>
