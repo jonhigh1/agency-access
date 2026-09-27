@@ -15,9 +15,15 @@
  *   https://authhub.co/invite/abc123/kit/manual
  *     -> https://authhub.co/invite/[removed]/kit/manual
  *
+ * OAuth secrets ride as query parameters on the invite OAuth return URL
+ * (`/invite/oauth-callback?code=...&state=...`), so those parameters are
+ * redacted on invite URLs too. Only `/invite` strings are touched; OAuth
+ * callbacks outside the invite tree keep their query strings.
+ *
  * The scrub is generic: ANY string property whose value contains an
- * `/invite/<segment>` path is scrubbed, at any nesting depth, so newly added
- * URL-shaped PostHog properties are covered without per-field allowlists.
+ * `/invite/` path is scrubbed, at any nesting depth, so newly added
+ * URL-shaped analytics properties (PostHog and Sentry both) are covered
+ * without per-field allowlists.
  */
 
 export const INVITE_TOKEN_REDACTED_MARKER = '[removed]';
@@ -25,15 +31,38 @@ export const INVITE_TOKEN_REDACTED_MARKER = '[removed]';
 /**
  * Matches `/invite/` plus the token segment — everything up to the next path
  * separator, query, fragment, or whitespace. A bare `/invite/` with no segment
- * does not match, so there is nothing to leak.
+ * does not match, so there is nothing to leak. The fixed `oauth-callback`
+ * route segment is exempt: it is a route name, not a secret, and keeping it
+ * lets funnel analysis tell the OAuth return apart from tokened pages.
  */
-const INVITE_TOKEN_SEGMENT_PATTERN = /\/invite\/[^/?#\s]+/g;
+const INVITE_TOKEN_SEGMENT_PATTERN =
+  /\/invite\/(?!oauth-callback(?:[/?#\s]|$))[^/?#\s]+/g;
+
+/**
+ * Matches the OAuth secret query parameters the callback URL carries, keeping
+ * the parameter name and any following query or fragment intact. A plain
+ * `state=` field on a form string would only be touched inside an `/invite`
+ * URL, which never carries a form value by that name.
+ */
+const OAUTH_SECRET_PARAMS_PATTERN = /([?&])(code|auth_code|state)=([^&#\s]*)/g;
 
 export function redactInviteTokenFromString(value: string): string {
-  return value.replace(
-    INVITE_TOKEN_SEGMENT_PATTERN,
-    `/invite/${INVITE_TOKEN_REDACTED_MARKER}`
-  );
+  if (!value.includes('/invite/')) return value;
+  return value
+    .replace(INVITE_TOKEN_SEGMENT_PATTERN, `/invite/${INVITE_TOKEN_REDACTED_MARKER}`)
+    .replace(
+      OAUTH_SECRET_PARAMS_PATTERN,
+      `$1$2=${INVITE_TOKEN_REDACTED_MARKER}`
+    );
+}
+
+/**
+ * True only when replay capture may run for this path. Session replays record
+ * the URL bar verbatim, so the whole `/invite` tree — the tokened pages and
+ * the oauth-callback sibling alike — stays out of replay capture.
+ */
+export function shouldRecordInviteReplay(pathname: string): boolean {
+  return !(pathname === '/invite' || pathname.startsWith('/invite/'));
 }
 
 /** Property bags are shallow JSON shapes; the cap bounds pathological input. */
@@ -89,5 +118,14 @@ function redactInviteTokensInValue(value: unknown, depth: number, seen: WeakSet<
 export function sanitizeInviteTokenProperties(
   properties: Record<string, unknown>
 ): Record<string, unknown> {
-  return redactInviteTokensInValue(properties, 0, new WeakSet()) as Record<string, unknown>;
+  return redactInviteTokensDeep(properties);
+}
+
+/**
+ * Deep redaction for any analytics payload — the Sentry `beforeSend` hook
+ * uses the same walk for error events, breadcrumbs, and extras. Same-reference
+ * return when nothing invite-shaped was present.
+ */
+export function redactInviteTokensDeep<T>(value: T): T {
+  return redactInviteTokensInValue(value, 0, new WeakSet()) as T;
 }

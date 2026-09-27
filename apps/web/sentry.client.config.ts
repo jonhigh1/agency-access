@@ -1,4 +1,8 @@
 import * as Sentry from "@sentry/nextjs";
+import {
+  redactInviteTokensDeep,
+  shouldRecordInviteReplay,
+} from "./src/lib/analytics/sanitize-invite-token-properties";
 
 Sentry.init({
   dsn:
@@ -19,7 +23,9 @@ Sentry.init({
     ) {
       return null;
     }
-    return event;
+    // KTD13: the invite request token is a bearer credential in the URL path;
+    // error events, breadcrumbs, and extras are scrubbed before they leave.
+    return redactInviteTokensDeep(event);
   },
 
   environment: process.env.NODE_ENV || "development",
@@ -36,8 +42,15 @@ function registerReplayIntegration() {
     });
 }
 
-if (typeof requestIdleCallback === 'function') {
-  requestIdleCallback(() => registerReplayIntegration(), { timeout: 4000 });
-} else {
-  setTimeout(registerReplayIntegration, 1);
+// KTD13: replays record the URL bar verbatim, so capture never registers on
+// the /invite tree (tokened pages and the oauth-callback sibling).
+if (
+  typeof window !== "undefined" &&
+  shouldRecordInviteReplay(window.location?.pathname ?? "/")
+) {
+  if (typeof requestIdleCallback === 'function') {
+    requestIdleCallback(() => registerReplayIntegration(), { timeout: 4000 });
+  } else {
+    setTimeout(registerReplayIntegration, 1);
+  }
 }
