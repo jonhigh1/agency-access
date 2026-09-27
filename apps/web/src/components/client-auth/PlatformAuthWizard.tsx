@@ -39,6 +39,11 @@ import { rememberInviteOAuthReturnToken } from '@/lib/client-invite-oauth';
 import { getClientInviteManualRoute } from '@/lib/client-invite-platforms';
 import { getApiBaseUrl } from '@/lib/api/api-env';
 import { parseJsonResponse } from '@/lib/api/parse-json-response';
+import {
+  resolveCta,
+  type CtaProductSelectionState,
+  type ZeroSelectionMode,
+} from '@/lib/invite/cta-reason';
 
 interface PlatformAuthWizardProps {
   platform: Platform;
@@ -246,17 +251,35 @@ function getSelectedAssetCount(product: string, assets: any): number {
   }
 }
 
-function isProductReadyForSave(product: string, assets: any): boolean {
-  const selectedCount = getSelectedAssetCount(product, assets);
-  if (selectedCount > 0) {
-    return true;
-  }
+/**
+ * Zero available Meta assets cannot be saved (the save API rejects zero
+ * assets), so the client must create an asset first (KTD10). The selection
+ * blob carries the full available lists, so an all-empty blob means the
+ * client's business has nothing to select from.
+ */
+function getMetaZeroSelectionMode(assets: any): ZeroSelectionMode {
+  const availableCount =
+    (assets.allAdAccounts?.length ?? 0) +
+    (assets.allPages?.length ?? 0) +
+    (assets.allInstagramAccounts?.length ?? 0) +
+    (assets.allProductCatalogs?.length ?? 0) +
+    (assets.allDatasets?.length ?? 0);
+  return availableCount === 0 ? 'create-required' : 'selection-required';
+}
 
-  if (hasNoAssetsFollowUp(product, assets)) {
-    return true;
-  }
+/** Maps one product's selection blob to the resolver's per-product input. */
+function getProductCtaState(product: string, assets: any): CtaProductSelectionState {
+  const zeroSelectionMode: ZeroSelectionMode = isMetaAssetProduct(product)
+    ? getMetaZeroSelectionMode(assets)
+    : hasNoAssetsFollowUp(product, assets)
+      ? 'follow-up-save'
+      : 'selection-required';
 
-  return false;
+  return {
+    product,
+    selectedCount: getSelectedAssetCount(product, assets),
+    zeroSelectionMode,
+  };
 }
 
 function getProductSummaryLines(product: string, assets: any): string[] {
@@ -381,6 +404,9 @@ export function PlatformAuthWizard({
   const [groupAssets, setGroupAssets] = useState<Record<string, any>>({});
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Selector-scoped fetch failure. Kept separate from `error` so the CTA
+  // reason reports a load failure, not a save or grant failure.
+  const [assetsFetchError, setAssetsFetchError] = useState<string | null>(null);
   const [businessId, setBusinessId] = useState<string | null>(null);
   const [businessName, setBusinessName] = useState<string | null>(null);
   const [businessIdLoading, setBusinessIdLoading] = useState(false);
@@ -493,6 +519,8 @@ export function PlatformAuthWizard({
 
   // Update selection for a specific product in the group
   const handleProductSelectionChange = useCallback((product: string, selectedAssets: any) => {
+    // A fresh selection blob means the selector loaded fresh data.
+    setAssetsFetchError(null);
     setGroupAssets((prev) => {
       if (isMetaAssetProduct(product)) {
         return {
@@ -552,6 +580,12 @@ export function PlatformAuthWizard({
       return next;
     });
     setChooseAccountsExpanded(true);
+  }, []);
+
+  // Selector fetch failures feed both the in-card banner and the CTA reason.
+  const handleSelectorError = useCallback((message: string) => {
+    setAssetsFetchError(message);
+    setError(message);
   }, []);
 
   // Post-save change-selection: re-open selection editing with a clean slate.
@@ -726,16 +760,55 @@ export function PlatformAuthWizard({
     }
   };
 
-  // Check if any assets are selected in the group
-  const canContinueFromAssetSelection = () => {
-    const selectableProducts = products.filter((product) => supportsAssetSelection(product.product));
-    if (selectableProducts.length === 0) {
-      return false;
-    }
+  // The primary action is always rendered on the share screen. The pure
+  // resolver (R4, KTD2) decides whether it is clickable and which single
+  // truthful reason applies right now.
+  const selectableProducts = products.filter((product) => supportsAssetSelection(product.product));
+  const assetsLoading = selectableProducts.some((product) => groupAssets[product.product] === undefined);
+  const ctaProductStates = selectableProducts.map((product) =>
+    getProductCtaState(product.product, groupAssets[product.product] || {})
+  );
 
-    return selectableProducts.every((product) =>
-      isProductReadyForSave(product.product, groupAssets[product.product] || {})
-    );
+  const grantsRequired = Boolean(
+    platform === 'meta' &&
+      metaNeedsGrantStep &&
+      (hasMetaPages || hasMetaAdAccounts || hasMetaCatalogs || hasMetaInstagramAccounts)
+  );
+  const grantsPending = Boolean(
+    grantsRequired &&
+      ((hasMetaPages && !pagesGranted) ||
+        (hasMetaCatalogs && !catalogsGranted) ||
+        (hasMetaAdAccounts && metaAdAccountShareStatus === 'idle') ||
+        (hasMetaInstagramAccounts && !instagramBusinessAccessVerified))
+  );
+
+  const ctaResolution =
+    currentStep === 2 && connectionId && requiresAssetSelection
+      ? resolveCta({
+          assetsLoading,
+          businessLookupPending: businessIdLoading,
+          businessLookupError: businessIdError,
+          assetsFetchError,
+          products: ctaProductStates,
+          saved: assetsSaved,
+          saveInFlight: isProcessing || isTikTokSharing,
+          grantsRequired,
+          grantsPending,
+          // The creation reason names the client's selected business.
+          businessName: groupAssets['meta_ads']?.selectedBusinessName ?? null,
+          // Terminal states (expired / revoked) arrive with the landing-unit
+          // wiring; until then every reachable request is treated as live.
+          requestAvailability: 'available',
+        })
+      : null;
+
+  const handlePrimaryAction = () => {
+    if (!ctaResolution || ctaResolution.disabled) return;
+    if (ctaResolution.kind === 'advance') {
+      setCurrentStep(3);
+      return;
+    }
+    void handleBatchSave();
   };
 
   const hasZeroAssetFollowUp = Object.entries(groupAssets).some(
@@ -1012,7 +1085,7 @@ export function PlatformAuthWizard({
                               handleProductSelectionChange(p.product, selectedAssets);
                             }}
                             onSelectionDerivedStateReset={resetSelectionDerivedState}
-                            onError={setError}
+                            onError={handleSelectorError}
                           />
                         </div>
                       )}
@@ -1031,7 +1104,7 @@ export function PlatformAuthWizard({
                             accessRequestToken={accessRequestToken}
                             product={p.product}
                             onSelectionChange={(assets) => handleProductSelectionChange(p.product, assets)}
-                            onError={setError}
+                            onError={handleSelectorError}
                           />
                         </div>
                       )}
@@ -1042,7 +1115,7 @@ export function PlatformAuthWizard({
                             sessionId={connectionId!}
                             accessRequestToken={accessRequestToken}
                             onSelectionChange={(assets) => handleProductSelectionChange(p.product, assets)}
-                            onError={setError}
+                            onError={handleSelectorError}
                           />
                         </div>
                       )}
@@ -1054,7 +1127,7 @@ export function PlatformAuthWizard({
                             accessRequestToken={accessRequestToken}
                             product={p.product}
                             onSelectionChange={(assets) => handleProductSelectionChange(p.product, assets)}
-                            onError={setError}
+                            onError={handleSelectorError}
                           />
                         </div>
                       )}
@@ -1063,21 +1136,6 @@ export function PlatformAuthWizard({
                 })}
             </div>
 
-                        {/* Unified Batch Save Button - only show if assets haven't been saved yet */}
-                        {!assetsSaved && !isProcessing && canContinueFromAssetSelection() && (
-            <div className="sticky bottom-0 bg-card border-t-2 border-black dark:border-white p-3 -mx-3 -mb-3 mt-4 flex justify-center">
-              <Button
-                onClick={handleBatchSave}
-                disabled={!canContinueFromAssetSelection()}
-                isLoading={isProcessing}
-                size="xl"
-                variant="brutalist"
-                rightIcon={!isProcessing ? <CheckCircle2 className="w-6 h-6" /> : undefined}
-              >
-                {hasZeroAssetFollowUp ? 'Share access' : 'Share Access'}
-              </Button>
-            </div>
-                        )}
                       </div>
                     </m.div>
                 </AnimatePresence>
@@ -1351,25 +1409,6 @@ export function PlatformAuthWizard({
                       )}
                     </div>
                   )}
-
-                          {/* Continue button when both are complete */}
-                          {(pagesGranted || !hasPages) &&
-                          (!hasAdAccounts ||
-                            metaAdAccountShareStatus === 'verified' ||
-                            metaAdAccountShareStatus === 'partial') &&
-                          (!hasMetaCatalogs || catalogsGranted) &&
-                          (!hasInstagramAccounts || instagramBusinessAccessVerified) && (
-                            <div className="mt-5 flex justify-center">
-                              <Button
-                                onClick={() => setCurrentStep(3)}
-                                size="xl"
-                                variant="brutalist"
-                                rightIcon={<CheckCircle2 className="w-6 h-6" />}
-                              >
-                                Review access confirmation
-                              </Button>
-                </div>
-              )}
                         </div>
                       </m.div>
                     )}
@@ -1685,6 +1724,45 @@ export function PlatformAuthWizard({
 
   const stepContent = renderStepContent();
 
+  // The share screen's primary action renders at the card boundary, outside
+  // every collapsible stage card's overflow-hidden container, so it stays
+  // visible and reachable at narrow viewports (R4, R13 enabler).
+  const shareFooter = ctaResolution ? (
+    <div className="border-t-2 border-black bg-card p-4 dark:border-white">
+      <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+        <Button
+          onClick={handlePrimaryAction}
+          disabled={ctaResolution.disabled}
+          isLoading={isProcessing || isTikTokSharing}
+          size="xl"
+          variant="brutalist"
+          className="w-full sm:w-auto"
+          aria-describedby={ctaResolution.reason ? 'wizard-primary-action-reason' : undefined}
+          rightIcon={
+            !ctaResolution.disabled && !(isProcessing || isTikTokSharing) ? (
+              <CheckCircle2 className="w-6 h-6" />
+            ) : undefined
+          }
+        >
+          {ctaResolution.kind === 'advance'
+            ? 'Continue'
+            : hasZeroAssetFollowUp
+              ? 'Share access'
+              : 'Share Access'}
+        </Button>
+        {ctaResolution.reason ? (
+          <p
+            id="wizard-primary-action-reason"
+            aria-live="polite"
+            className="text-sm text-muted-foreground sm:max-w-[16rem] sm:text-right"
+          >
+            {ctaResolution.reason}
+          </p>
+        ) : null}
+      </div>
+    </div>
+  ) : undefined;
+
   return (
     <PlatformWizardCard
       platform={platform}
@@ -1692,6 +1770,7 @@ export function PlatformAuthWizard({
       currentStep={currentStep}
       totalSteps={maxSteps}
       chrome="minimal"
+      footer={shareFooter}
     >
       {stepContent}
     </PlatformWizardCard>
