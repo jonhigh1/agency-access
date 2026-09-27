@@ -276,27 +276,19 @@ describe('Dashboard Routes', () => {
     expect(body.data.meta.connections.total).toBe(88);
   });
 
-  it('returns 304 when if-none-match matches current etag', async () => {
-    const first = await app.inject({
-      method: 'GET',
-      url: '/dashboard',
-      headers: { authorization: 'Bearer token' },
-    });
-
-    expect(first.statusCode).toBe(200);
-    const etag = first.headers.etag as string;
-    expect(etag).toBeTruthy();
-
+  it('prevents browser caching of dashboard data after request status changes', async () => {
     const second = await app.inject({
       method: 'GET',
       url: '/dashboard',
       headers: {
         authorization: 'Bearer token',
-        'if-none-match': etag,
+        'if-none-match': '"cached-dashboard"',
       },
     });
 
-    expect(second.statusCode).toBe(304);
+    expect(second.statusCode).toBe(200);
+    expect(second.headers['cache-control']).toContain('no-store');
+    expect(second.headers.etag).toBeUndefined();
   });
 
   it('adds response-time and server-timing headers for dashboard requests', async () => {
