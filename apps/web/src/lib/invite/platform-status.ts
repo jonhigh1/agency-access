@@ -144,7 +144,7 @@ export const UNRESOLVED_REASON_RULES: Record<
 };
 
 const isDocumentedReason = (reason: string): reason is InviteUnresolvedProductReason =>
-  Object.prototype.hasOwnProperty.call(UNRESOLVED_REASON_RULES, reason);
+  Object.hasOwn(UNRESOLVED_REASON_RULES, reason);
 
 /** Documented reasons resolve to their rule; anything else falls back to attention. */
 export function resolveUnresolvedReasonRule(reason: string): InvitePlatformStatusRule {

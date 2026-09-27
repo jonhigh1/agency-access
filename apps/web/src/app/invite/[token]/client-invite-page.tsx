@@ -16,7 +16,7 @@ import { MetaFulfillmentCard } from '@/components/access-request-detail';
 import { Button, SingleSelect } from '@/components/ui';
 import { PlatformIcon } from '@/components/ui/platform-icon';
 import { ACCESS_LEVEL_DESCRIPTIONS, PLATFORM_NAMES, IntakeField } from '@agency-platform/shared';
-import { useInviteRequestLoader } from '@/lib/query/use-invite-request-loader';
+import { INVITE_REQUEST_TIMEOUT_MS, useInviteRequestLoader } from '@/lib/query/use-invite-request-loader';
 import { resolveApiUrl } from '@/lib/api/api-env';
 import { ApiResponseError, parseJsonResponse } from '@/lib/api/parse-json-response';
 import {
@@ -123,11 +123,33 @@ function InviteTerminalCard({
 
 const SESSION_STORAGE_PREFIX = 'invite-progress:';
 
-// Mirrors the 20s deadline in useInviteRequestLoader so a stalled request
-// cannot wedge the client on a spinner with no exit.
-const REQUEST_TIMEOUT_MS = 20000;
+// One shared request deadline (the loader's own timeout): aborts a stalled
+// request so the client never wedges on a spinner with no exit.
+const beginRequestDeadline = () => {
+  const abortController = new AbortController();
+  const timeoutTimer = window.setTimeout(() => abortController.abort(), INVITE_REQUEST_TIMEOUT_MS);
+  return {
+    signal: abortController.signal,
+    settle: () => window.clearTimeout(timeoutTimer),
+  };
+};
 
 const isAbortError = (error: unknown) => error instanceof Error && error.name === 'AbortError';
+
+// Shared mapper inputs for both landing resolutions (OAuth-return and plain
+// hydrate); only `resume` differs between the two call sites.
+const landingBaseInputs = (
+  payload: ClientAccessRequestPayload,
+  mergedCompleted: ReadonlySet<Platform>
+): Omit<Parameters<typeof resolveInviteLandingState>[0], 'resume'> => ({
+  platforms: payload.platforms || [],
+  completedPlatforms: mergedCompleted,
+  unresolvedProducts: payload.authorizationProgress?.unresolvedProducts,
+  requestStatus: payload.status,
+  isComplete: payload.authorizationProgress?.isComplete,
+  terminalErrorCode: null,
+  metaFulfillment: payload.metaFulfillment,
+});
 
 function buildPlatformSummary(platforms: Platform[]): string {
   const uniqueNames = Array.from(new Set(platforms.map((platform) => PLATFORM_NAMES[platform])));
@@ -359,14 +381,8 @@ export default function ClientAuthorizationPage({
       // share step, with Meta selections prefilled from server truth. The
       // mapper owns the phase decision (R7, KTD12).
       const landing = resolveInviteLandingState({
-        platforms: loadedPayload.platforms || [],
-        completedPlatforms: mergedCompleted,
-        unresolvedProducts: loadedPayload.authorizationProgress?.unresolvedProducts,
-        requestStatus: loadedPayload.status,
-        isComplete: loadedPayload.authorizationProgress?.isComplete,
-        terminalErrorCode: null,
+        ...landingBaseInputs(loadedPayload, mergedCompleted),
         resume: { platform: urlPlatform, connectionId: urlConnectionId },
-        metaFulfillment: loadedPayload.metaFulfillment,
       });
 
       if (landing.wizardStart) {
@@ -404,12 +420,7 @@ export default function ClientAuthorizationPage({
     }
 
     const landing = resolveInviteLandingState({
-      platforms: loadedPayload.platforms || [],
-      completedPlatforms: mergedCompleted,
-      unresolvedProducts: loadedPayload.authorizationProgress?.unresolvedProducts,
-      requestStatus: loadedPayload.status,
-      isComplete: loadedPayload.authorizationProgress?.isComplete,
-      terminalErrorCode: null,
+      ...landingBaseInputs(loadedPayload, mergedCompleted),
       resume: null,
       metaFulfillment: loadedPayload.metaFulfillment,
     });
@@ -455,13 +466,12 @@ export default function ClientAuthorizationPage({
     setCompletionError(null);
     setPhase('finalizing');
 
-    const abortController = new AbortController();
-    const timeoutTimer = window.setTimeout(() => abortController.abort(), REQUEST_TIMEOUT_MS);
+    const deadline = beginRequestDeadline();
 
     try {
       const response = await fetch(resolveApiUrl(`/api/client/${token}/complete`), {
         method: 'POST',
-        signal: abortController.signal,
+        signal: deadline.signal,
       });
 
       await parseJsonResponse(response, { fallbackErrorMessage: 'Failed to finalize authorization' });
@@ -495,7 +505,7 @@ export default function ClientAuthorizationPage({
       );
       setPhase('complete');
     } finally {
-      window.clearTimeout(timeoutTimer);
+      deadline.settle();
       finalizationInFlightRef.current = false;
     }
   };
@@ -522,13 +532,12 @@ export default function ClientAuthorizationPage({
     setIsCheckingStatus(true);
     setStatusCheckError(null);
 
-    const abortController = new AbortController();
-    const timeoutTimer = window.setTimeout(() => abortController.abort(), REQUEST_TIMEOUT_MS);
+    const deadline = beginRequestDeadline();
 
     try {
       const response = await fetch(resolveApiUrl(`/api/client/${token}`), {
         cache: 'no-store',
-        signal: abortController.signal,
+        signal: deadline.signal,
       });
       const result = await parseJsonResponse<{ data?: ClientAccessRequestPayload }>(response, {
         fallbackErrorMessage: 'Could not check your progress. Please try again.',
@@ -554,7 +563,7 @@ export default function ClientAuthorizationPage({
       }
       setStatusCheckError("We couldn't check just now. Try again.");
     } finally {
-      window.clearTimeout(timeoutTimer);
+      deadline.settle();
       setIsCheckingStatus(false);
     }
   };
@@ -579,15 +588,14 @@ export default function ClientAuthorizationPage({
     setIntakeError(null);
     setIsReviewingConnectStatus(false);
 
-    const abortController = new AbortController();
-    const timeoutTimer = window.setTimeout(() => abortController.abort(), REQUEST_TIMEOUT_MS);
+    const deadline = beginRequestDeadline();
 
     try {
       const response = await fetch(resolveApiUrl(`/api/client/${token}/intake`), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ intakeResponses }),
-        signal: abortController.signal,
+        signal: deadline.signal,
       });
       const result = await parseJsonResponse<{ data?: { intakeResponses?: Record<string, string> } }>(
         response,
@@ -612,7 +620,7 @@ export default function ClientAuthorizationPage({
           : 'Could not save your responses. Please try again.'
       );
     } finally {
-      window.clearTimeout(timeoutTimer);
+      deadline.settle();
       setIsSavingIntake(false);
     }
   };

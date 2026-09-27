@@ -347,11 +347,11 @@ export function ManualInviteFlow<TData extends ManualInviteFlowData>({
 
   return (
     <InviteFlowShell
-      title={toDisplayName(data.agencyName) || data.agencyName}
+      title={toDisplayName(data.agencyName, data.agencyName)}
       description={config.shellDescription}
       header={
         <ManualInviteHeader
-          agencyName={toDisplayName(data.agencyName) || data.agencyName}
+          agencyName={toDisplayName(data.agencyName, data.agencyName)}
           platformName={config.platformName}
           logoUrl={data.branding?.logoUrl}
           securityNote={config.headerSecurityNote}

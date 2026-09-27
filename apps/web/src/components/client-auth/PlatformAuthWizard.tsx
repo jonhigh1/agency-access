@@ -48,6 +48,7 @@ import {
   type ZeroSelectionMode,
 } from '@/lib/invite/cta-reason';
 import {
+  hasSelectableAssets,
   isTerminalRequestCode,
   type InviteSelectionPrefill,
 } from '@/lib/invite/landing-state';
@@ -424,15 +425,7 @@ export function PlatformAuthWizard({
   // selections. Consumed once — any selection reset (switch business, change
   // saved selection) clears it so a selector remount cannot resurrect it.
   const hasInitialMetaSelections =
-    metaNeedsGrantStep &&
-    Boolean(
-      initialMetaSelections &&
-        (initialMetaSelections.adAccounts.length ||
-          initialMetaSelections.pages.length ||
-          initialMetaSelections.instagramAccounts.length ||
-          initialMetaSelections.catalogs.length ||
-          initialMetaSelections.datasets.length)
-    );
+    metaNeedsGrantStep && hasSelectableAssets(initialMetaSelections);
   const [metaSelectionPrefill, setMetaSelectionPrefill] = useState<InviteSelectionPrefill | null>(
     hasInitialMetaSelections ? (initialMetaSelections as InviteSelectionPrefill) : null
   );
@@ -1853,9 +1846,7 @@ export function PlatformAuthWizard({
         >
           {ctaResolution.kind === 'advance'
             ? 'Continue'
-            : hasZeroAssetFollowUp
-              ? 'Share access'
-              : 'Share Access'}
+            : 'Share Access'}
         </Button>
         {ctaResolution.reason ? (
           <p

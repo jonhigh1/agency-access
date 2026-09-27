@@ -114,11 +114,11 @@ export function trackInviteOpenedOncePerSession(properties: InviteOpenedProps): 
  */
 export type InviteBusinessChoiceMode = 'single_owner' | 'chooser';
 
-type InviteBusinessShownProps = { business_count: number };
+type InviteBusinessCountProps = { business_count: number };
 
-type InviteBusinessChosenProps = {
-  business_count: number;
-};
+type InviteBusinessShownProps = InviteBusinessCountProps;
+
+type InviteBusinessChosenProps = InviteBusinessCountProps;
 
 type InviteAssetsLoadedProps = {
   available_ad_accounts: number;

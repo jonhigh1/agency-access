@@ -589,9 +589,19 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
 
         let scopedClientAssets;
         try {
+          // Discover only the asset kinds the client actually selected —
+          // membership is checked per kind with a non-empty selection, so
+          // fetching the rest is wasted Graph pagination on every save.
+          const scopeAssetKinds: MetaAssetKind[] = [];
+          if (resolvedSelectedAssets.pages?.length) scopeAssetKinds.push('page');
+          if (resolvedSelectedAssets.adAccounts?.length) scopeAssetKinds.push('ad_account');
+          if (resolvedSelectedAssets.instagramAccounts?.length) scopeAssetKinds.push('instagram_account');
+          if (resolvedSelectedAssets.catalogs?.length) scopeAssetKinds.push('catalog');
+          if (resolvedSelectedAssets.datasets?.length) scopeAssetKinds.push('dataset');
           scopedClientAssets = await clientAssetsService.fetchMetaAssets(
             clientTokens.accessToken,
-            clientBusinessId
+            clientBusinessId,
+            scopeAssetKinds.length ? scopeAssetKinds : undefined
           );
         } catch (error) {
           if (error instanceof MetaBusinessPortfolioUnavailableError) {

@@ -18,9 +18,14 @@
 
 const ENTITY_TOKENS = new Set(['llc', 'ltd', 'inc', 'gmb', 'plc', 'b2b', 'b2c', 'sa', 'bv', 'pty']);
 
-export function toDisplayName(raw: string): string {
+/**
+ * `fallback` replaces the empty result, so callers stop repeating
+ * `toDisplayName(x) || x` — the raw value or a generic noun stays the
+ * caller's choice.
+ */
+export function toDisplayName(raw: string, fallback = ''): string {
   const collapsed = raw.trim().replace(/ {2,}/g, ' ');
-  if (!collapsed) return '';
+  if (!collapsed) return fallback;
 
   return collapsed
     .split(' ')

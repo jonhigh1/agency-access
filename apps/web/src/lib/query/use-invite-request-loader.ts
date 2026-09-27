@@ -37,11 +37,14 @@ interface UseInviteRequestLoaderResult<TData> {
   retry: () => void;
 }
 
+/** Single source of truth for the invite payload/request deadline. */
+export const INVITE_REQUEST_TIMEOUT_MS = 20000;
+
 export function useInviteRequestLoader<TData>({
   endpoint,
   source,
   delayedMs = 8000,
-  timeoutMs = 20000,
+  timeoutMs = INVITE_REQUEST_TIMEOUT_MS,
   parseData,
   serverInviteResult,
 }: UseInviteRequestLoaderOptions<TData>): UseInviteRequestLoaderResult<TData> {

@@ -9,7 +9,7 @@
  * of auto-redirect: agency onboarding and connections both return here.
  */
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useRef, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth, useUser } from '@clerk/nextjs';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -149,6 +149,21 @@ function CallbackPageContent() {
     });
     completeMetaOauth({ businessId: business.id, businessName: business.name });
   };
+
+  // The receipt view has no confirm button, so the auto-selected single owner
+  // must fire the save itself — once. A failed save still allows the manual
+  // escape → chooser path to retry through handlePortfolioSelect.
+  const autoConfirmedRef = useRef(false);
+  useEffect(() => {
+    if (
+      !confirmedBusiness &&
+      portfolioBusinesses.length === 1 &&
+      !autoConfirmedRef.current
+    ) {
+      autoConfirmedRef.current = true;
+      handlePortfolioSelect(portfolioBusinesses[0]);
+    }
+  }, [confirmedBusiness, portfolioBusinesses, handlePortfolioSelect]);
 
   // Zero-portfolio agencies recover by re-running the Meta OAuth consent so
   // the business list refreshes (legacy affordance, preserved).

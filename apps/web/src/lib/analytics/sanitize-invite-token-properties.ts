@@ -39,6 +39,11 @@ export function redactInviteTokenFromString(value: string): string {
 /** Property bags are shallow JSON shapes; the cap bounds pathological input. */
 const MAX_SANITIZE_DEPTH = 8;
 
+/**
+ * Returns the input reference unchanged when nothing redacted (the common
+ * case on every non-invite event) so the analytics hot path allocates nothing;
+ * a new container only when a string actually changed.
+ */
 function redactInviteTokensInValue(value: unknown, depth: number, seen: WeakSet<object>): unknown {
   if (typeof value === 'string') {
     return value.includes('/invite/')
@@ -54,19 +59,30 @@ function redactInviteTokensInValue(value: unknown, depth: number, seen: WeakSet<
   seen.add(value);
 
   if (Array.isArray(value)) {
-    return value.map((item) => redactInviteTokensInValue(item, depth + 1, seen));
+    let changed = false;
+    const output: unknown[] = new Array(value.length);
+    for (let index = 0; index < value.length; index += 1) {
+      output[index] = redactInviteTokensInValue(value[index], depth + 1, seen);
+      if (output[index] !== value[index]) changed = true;
+    }
+    return changed ? output : value;
   }
 
   const source = value as Record<string, unknown>;
+  const keys = Object.keys(source);
+  let changed = false;
   const output: Record<string, unknown> = {};
-  for (const key of Object.keys(source)) {
+  for (const key of keys) {
     output[key] = redactInviteTokensInValue(source[key], depth + 1, seen);
+    if (output[key] !== source[key]) changed = true;
   }
-  return output;
+  return changed ? output : source;
 }
 
 /**
- * PostHog `sanitize_properties` hook. Returns a scrubbed copy; the caller's
+ * PostHog `sanitize_properties` hook. Returns a scrubbed copy when any invite
+ * token was found; otherwise the original reference (PostHog only reads the
+ * returned object, so same-reference is the no-change signal). The caller's
  * object is never mutated. Applied to every captured event (pageviews,
  * autocapture, and explicit captures) via posthog.init.
  */

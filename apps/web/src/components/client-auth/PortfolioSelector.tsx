@@ -21,7 +21,7 @@
  * assets.
  */
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { SingleSelect } from '@/components/ui/single-select';
 import { Button } from '@/components/ui/button';
 import {
@@ -117,13 +117,17 @@ export function PortfolioSelector({
   // U11 funnel: receipt and question are shown states. Fire on the view-mode
   // transition only (never per render), and re-arm while any other view is up
   // so a return to the receipt or question is a new, single occurrence.
+  // Chooser mode: escaped from the receipt, the API flagged the request as
+  // selection-required, or no business has been confirmed yet.
+  const shouldAsk = choosing || (selectionRequired && !selectedBusiness);
+
   const shownView: 'receipt' | 'question' | 'creation' | 'loading' | 'error' = error
     ? 'error'
     : listStatus === 'error'
       ? 'error'
       : listStatus === 'loading'
         ? 'loading'
-        : !(choosing || (selectionRequired && !selectedBusiness)) && selectedBusiness
+        : !shouldAsk && selectedBusiness
           ? 'receipt'
           : optionBusinesses.length === 0
             ? 'creation'
@@ -173,11 +177,14 @@ export function PortfolioSelector({
   };
 
   // Names only (R2): a secondary attribute renders on colliding names only (KTD11).
-  const nameCounts = new Map<string, number>();
-  for (const business of optionBusinesses) {
-    const key = business.name.trim().toLowerCase();
-    nameCounts.set(key, (nameCounts.get(key) ?? 0) + 1);
-  }
+  const nameCounts = useMemo(() => {
+    const counts = new Map<string, number>();
+    for (const business of optionBusinesses) {
+      const key = business.name.trim().toLowerCase();
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+    }
+    return counts;
+  }, [optionBusinesses]);
   const tiebreakerLabel = (business: PortfolioBusiness): string | undefined => {
     const isColliding = (nameCounts.get(business.name.trim().toLowerCase()) ?? 0) > 1;
     if (!isColliding) return undefined;
@@ -278,10 +285,6 @@ export function PortfolioSelector({
       </p>
     );
   }
-
-  // Chooser mode: escaped from the receipt, the API flagged the request as
-  // selection-required, or no business has been confirmed yet.
-  const shouldAsk = choosing || (selectionRequired && !selectedBusiness);
 
   if (!shouldAsk && selectedBusiness) {
     return (

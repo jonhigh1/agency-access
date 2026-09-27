@@ -86,6 +86,19 @@ const EMPTY_PREFILL: InviteSelectionPrefill = {
   datasets: [],
 };
 
+/** True when the prefill carries at least one selectable asset id. Owns the
+ * prefill shape so a new key cannot silently skip emptiness checks. */
+export function hasSelectableAssets(prefill: InviteSelectionPrefill | null | undefined): boolean {
+  if (!prefill) return false;
+  return (
+    prefill.adAccounts.length > 0 ||
+    prefill.pages.length > 0 ||
+    prefill.instagramAccounts.length > 0 ||
+    prefill.catalogs.length > 0 ||
+    prefill.datasets.length > 0
+  );
+}
+
 const KIND_TO_PREFILL_KEY: Record<Exclude<MetaAssetKind, 'unknown'>, keyof InviteSelectionPrefill> = {
   ad_account: 'adAccounts',
   page: 'pages',

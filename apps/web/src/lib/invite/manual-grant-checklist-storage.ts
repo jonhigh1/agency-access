@@ -14,15 +14,15 @@
 
 const MANUAL_GRANT_CHECKLIST_STORAGE_PREFIX = 'authhub:meta-manual-grant-checklist';
 
-export const MANUAL_GRANT_CHECKLIST_ROW_IDS = [
-  'step-1',
-  'step-2',
-  'step-2-1',
-  'step-2-2',
-  'step-2-3',
-  'step-2-4',
-  'step-2-5',
-] as const;
+/**
+ * Single source of row-id truth: the component builds its rows with this
+ * builder (from the content module's substep list), and reads back exactly
+ * the ids it renders — a new substep persists and restores with no change
+ * here.
+ */
+export function manualGrantChecklistRowId(step: 1 | 2, substep?: number): string {
+  return substep === undefined ? `step-${step}` : `step-${step}-${substep}`;
+}
 
 export function manualGrantChecklistStorageKey(
   accessRequestToken: string,
@@ -50,12 +50,13 @@ export function clearManualGrantChecklistStorage(accessRequestToken: string): vo
 
 export function readManualGrantChecklistRows(
   accessRequestToken: string,
-  businessId: string
+  businessId: string,
+  rowIds: readonly string[]
 ): Record<string, boolean> {
   if (typeof window === 'undefined') return {};
   const checked: Record<string, boolean> = {};
   try {
-    MANUAL_GRANT_CHECKLIST_ROW_IDS.forEach((rowId) => {
+    rowIds.forEach((rowId) => {
       checked[rowId] =
         window.sessionStorage.getItem(
           manualGrantChecklistStorageKey(accessRequestToken, businessId, rowId)

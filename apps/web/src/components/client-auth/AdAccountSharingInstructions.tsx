@@ -28,6 +28,7 @@ import { toDisplayName } from '@/lib/display-name';
 import { getApiBaseUrl } from '@/lib/api/api-env';
 import { parseJsonResponse } from '@/lib/api/parse-json-response';
 import {
+  manualGrantChecklistRowId,
   readManualGrantChecklistRows,
   writeManualGrantChecklistRow,
 } from '@/lib/invite/manual-grant-checklist-storage';
@@ -243,11 +244,19 @@ export function AdAccountSharingInstructions({
   const content = META_AD_ACCOUNT_INSTRUCTIONS.en;
   const apiUrl = getApiBaseUrl();
 
+  // Row ids derive from the content module (single id truth, shared with the
+  // storage reader); the intro row is step 1, the grant journey is step 2.
+  const checklistRowIds = [
+    manualGrantChecklistRowId(1),
+    manualGrantChecklistRowId(2),
+    ...content.step2.substeps.map((_, index) => manualGrantChecklistRowId(2, index + 1)),
+  ];
+
   // Restore the per-row check state for this (token, business) scope. The
   // effect also re-reads when the scope changes without a remount.
   useEffect(() => {
-    setCheckedRows(readManualGrantChecklistRows(accessRequestToken, businessId));
-  }, [accessRequestToken, businessId]);
+    setCheckedRows(readManualGrantChecklistRows(accessRequestToken, businessId, checklistRowIds));
+  }, [accessRequestToken, businessId, checklistRowIds.join('|')]);
 
   const toggleRow = (rowId: string, checked: boolean) => {
     setCheckedRows((prev) => ({ ...prev, [rowId]: checked }));
@@ -364,14 +373,14 @@ export function AdAccountSharingInstructions({
     verificationResults?.filter((result) => result.status !== 'verified') || [];
   const hasUnresolvedResults = unresolvedResults.length > 0;
 
-  const agencyName = toDisplayName(businessName || '') || 'the agency';
+  const agencyName = toDisplayName(businessName || '', 'the agency');
   const introText = content.intro
     .replace('{agency}', agencyName)
     .replace('{count}', String(selectedAdAccounts.length));
   const scopeNoteText = content.scopeNote.replace('{agency}', agencyName);
 
   const substepRows = content.step2.substeps.map((text, index) => ({
-    id: `step-2-${index + 1}`,
+    id: manualGrantChecklistRowId(2, index + 1),
     number: `2.${index + 1}`,
     title: text,
   }));

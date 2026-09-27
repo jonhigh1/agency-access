@@ -317,8 +317,10 @@ describe('Invite surface — Design System v2.0 source contract', () => {
     });
 
     it('renders the agency name through toDisplayName on every payload render site', () => {
-      expect(fs.readFileSync(pagePath, 'utf-8')).toMatch(/toDisplayName\(data\.agencyName\)/);
-      expect(fs.readFileSync(manualFlowPath, 'utf-8')).toMatch(/toDisplayName\(data\.agencyName\)/);
+      // Either the bare call or the fallback-parameter form counts; a raw
+      // unformatted render site does not.
+      expect(fs.readFileSync(pagePath, 'utf-8')).toMatch(/toDisplayName\(data\.agencyName[,)]/);
+      expect(fs.readFileSync(manualFlowPath, 'utf-8')).toMatch(/toDisplayName\(data\.agencyName[,)]/);
     });
   });
 });

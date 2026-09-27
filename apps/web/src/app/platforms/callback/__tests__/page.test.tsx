@@ -233,6 +233,41 @@ describe('OAuth Callback Page', () => {
     });
   });
 
+  it('auto-confirms and saves the single-owner receipt without any interaction', async () => {
+    mockMetaCallbackParams();
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(businessAccountsResponse([
+        { id: 'biz-solo', name: 'Solo Studio' },
+      ]) as Response)
+      .mockResolvedValueOnce(completeOauthResponse() as Response);
+
+    renderWithQueryClient(<CallbackPage />);
+
+    // Receipt-first: the single owner business saves itself — the receipt has
+    // no confirm button, so waiting for the client to click one would hang.
+    await waitFor(() => {
+      expect(global.fetch).toHaveBeenCalledWith(
+        expect.stringContaining('/agency-platforms/meta/complete-oauth'),
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({
+            agencyId: 'agency-1',
+            connectionId: 'conn-1',
+            businessId: 'biz-solo',
+            businessName: 'Solo Studio',
+          }),
+        })
+      );
+    });
+    await waitFor(() => {
+      expect(mockPush).toHaveBeenCalledWith('/connections?success=true&platform=meta');
+    });
+    // Exactly once — re-renders must not double-fire the save.
+    expect(
+      vi.mocked(fetch).mock.calls.filter(([url]) => String(url).includes('complete-oauth'))
+    ).toHaveLength(1);
+  });
+
   it('offers the log-in-again recovery when the agency has zero business portfolios', async () => {
     mockMetaCallbackParams();
     vi.mocked(fetch).mockResolvedValueOnce(businessAccountsResponse([]) as Response);
