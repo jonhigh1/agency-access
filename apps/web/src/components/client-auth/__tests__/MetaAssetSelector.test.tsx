@@ -205,6 +205,7 @@ describe('MetaAssetSelector', () => {
     });
 
     fireEvent.click(screen.getByRole('button', { name: /switch business/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /clear selection and switch/i }));
     expect(await screen.findByText(/select business portfolio/i)).toBeInTheDocument();
   });
 
@@ -249,6 +250,7 @@ describe('MetaAssetSelector', () => {
     fireEvent.change(screen.getByLabelText(/product catalog name/i), { target: { value: 'Client Catalog' } });
     fireEvent.click(screen.getByRole('button', { name: /^create catalog$/i }));
     fireEvent.click(screen.getByRole('button', { name: /switch business/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /clear selection and switch/i }));
     fireEvent.click(screen.getByRole('combobox', { name: /business portfolio/i }));
     fireEvent.click(screen.getByRole('option', { name: /client one/i }));
     fireEvent.click(screen.getByRole('button', { name: /load accounts/i }));
