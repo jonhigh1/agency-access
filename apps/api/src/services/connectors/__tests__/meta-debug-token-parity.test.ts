@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { MetaConnector } from '../meta.js';
+import { META_GRAPH_VERSION } from '@agency-platform/shared';
 
 const { mockEnv } = vi.hoisted(() => ({
   mockEnv: {
@@ -47,10 +48,10 @@ describe('MetaConnector debug_token parity', () => {
 
     expect(global.fetch).toHaveBeenCalledTimes(1);
     const [url, init] = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
-    expect(url).toBe(
-      'https://graph.facebook.com/v25.0/debug_token?input_token=user-token&access_token=test-app-id%7Ctest-app-secret'
-    );
+    expect(url).toBe(`https://graph.facebook.com/${META_GRAPH_VERSION}/debug_token?input_token=user-token`);
     expect(init.method).toBe('GET');
+    expect(init.headers).toEqual({ Authorization: 'Bearer test-app-id|test-app-secret' });
+    expect(init.signal).toBeInstanceOf(AbortSignal);
 
     expect(metadata).toEqual({
       scopes: ['ads_management', 'business_management'],

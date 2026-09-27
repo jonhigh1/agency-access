@@ -83,7 +83,7 @@ describe('Meta Assets Routes', () => {
 
       expect(response.statusCode).toBe(200);
       expect(response.json()).toEqual({ data: mockAssets, error: null });
-      expect(metaAssetsService.getAssetsForBusiness).toHaveBeenCalledWith('agency-1', 'biz-1');
+      expect(metaAssetsService.getAssetsForBusiness).toHaveBeenCalledWith('agency-1', 'biz-1', expect.anything());
     });
 
     it('should return 400 if agencyId is missing', async () => {

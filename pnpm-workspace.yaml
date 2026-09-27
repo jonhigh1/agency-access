@@ -1,0 +1,3 @@
+allowBuilds:
+  '@googleworkspace/cli': set this to true or false
+  '@sentry/cli': set this to true or false

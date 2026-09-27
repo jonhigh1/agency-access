@@ -107,6 +107,27 @@ describe('Client Auth Manual Routes', () => {
     expect(body?.data?.collaboratorCode).toBeUndefined();
   });
 
+  it('does not include the invite bearer in manual connection error logs', async () => {
+    const rawInviteToken = 'invite-bearer-secret';
+    vi.mocked(accessRequestService.getAccessRequestByToken).mockResolvedValue({
+      data: { id: 'request-1', agencyId: 'agency-1', clientEmail: 'client@example.com' } as any,
+      error: null,
+    });
+    vi.mocked(prisma.clientConnection.findUnique).mockResolvedValue(null);
+    vi.mocked(prisma.clientConnection.create).mockRejectedValue(new Error('database write failed'));
+    const errorLog = vi.spyOn(app.log, 'error');
+
+    const response = await app.inject({
+      method: 'POST',
+      url: `/client/${rawInviteToken}/beehiiv/manual-connect`,
+      payload: { platform: 'beehiiv', agencyEmail: 'ops@example.com' },
+    });
+
+    expect(response.statusCode).toBe(500);
+    expect(errorLog).toHaveBeenCalled();
+    expect(JSON.stringify(errorLog.mock.calls)).not.toContain(rawInviteToken);
+  });
+
   it('updates an existing Shopify submission for the same access request instead of creating a new connection', async () => {
     vi.mocked(accessRequestService.getAccessRequestByToken).mockResolvedValue({
       data: {

@@ -63,4 +63,38 @@ describe('AutomaticPagesGrant', () => {
       ]);
     });
   });
+
+  it('requires every recipient grant for a Page before reporting success', async () => {
+    const onGrantComplete = vi.fn();
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      text: async () => JSON.stringify({
+        data: { assetGrantResults: [
+          { assetId: 'page_1', assetType: 'page', status: 'verified' },
+          { assetId: 'page_1', assetType: 'page', status: 'unresolved', errorMessage: 'Recipient is not assigned' },
+        ] },
+        error: null,
+      }),
+    } as Response);
+
+    render(
+      <AutomaticPagesGrant
+        selectedPages={[{ id: 'page_1', name: 'Main Page' }]}
+        connectionId="conn-1"
+        accessRequestToken="token-1"
+        onGrantComplete={onGrantComplete}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /grant access/i }));
+
+    await waitFor(() => {
+      expect(onGrantComplete).toHaveBeenCalledWith([{
+        id: 'page_1',
+        status: 'failed',
+        error: 'Recipient is not assigned',
+      }]);
+    });
+    expect(screen.getByRole('button', { name: /grant access/i })).toBeEnabled();
+  });
 });

@@ -30,19 +30,30 @@ export async function registerCompletionRoutes(fastify: FastifyInstance) {
       });
     }
 
-    // Completion is idempotent: revisiting an already-completed request must
-    // not re-notify the agency.
+    if (result.data?.status !== 'completed') {
+      return reply.code(409).send({
+        data: {
+          success: false,
+          status: result.data?.status || 'partial',
+        },
+        error: {
+          code: 'FULFILLMENT_INCOMPLETE',
+          message: 'Access is not complete. Finish or explicitly exclude every unresolved asset and assignee, then check again.',
+        },
+      });
+    }
+
     if (result.previousStatus !== 'completed') {
       await notificationService.queueNotification({
-        agencyId: accessRequest.agencyId,
-        accessRequestId: accessRequest.id,
-        clientEmail: accessRequest.clientEmail,
-        clientName: accessRequest.clientEmail.split('@')[0],
-        platforms:
-          accessRequest.authorizationProgress?.fulfilledProducts?.map((item) => item.product) ||
-          accessRequest.authorizationProgress?.completedPlatforms ||
-          [],
-        completedAt: new Date(),
+      agencyId: accessRequest.agencyId,
+      accessRequestId: accessRequest.id,
+      clientEmail: accessRequest.clientEmail,
+      clientName: accessRequest.clientEmail.split('@')[0],
+      platforms:
+        accessRequest.authorizationProgress?.fulfilledProducts?.map((item) => item.product) ||
+        accessRequest.authorizationProgress?.completedPlatforms ||
+        [],
+      completedAt: new Date(),
       });
     }
 

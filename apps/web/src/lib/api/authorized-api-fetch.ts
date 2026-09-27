@@ -47,12 +47,17 @@ export async function authorizedApiFetch<TResponse = any>(
       controller.abort();
     }, AUTHORIZED_API_TIMEOUT_MS);
   });
-  const abortFromCaller = () => controller.abort();
+  let rejectCallerAbort!: (reason: DOMException) => void;
+  const callerAbort = new Promise<never>((_, reject) => { rejectCallerAbort = reject; });
+  const abortFromCaller = () => {
+    controller.abort();
+    rejectCallerAbort(new DOMException('Aborted', 'AbortError'));
+  };
   callerSignal?.addEventListener('abort', abortFromCaller, { once: true });
-  if (callerSignal?.aborted) controller.abort();
+  if (callerSignal?.aborted) abortFromCaller();
 
   try {
-    const token = await Promise.race([getToken(), timeout]);
+    const token = await Promise.race([getToken(), timeout, callerAbort]);
     if (!token && !allowMissingToken) {
       throw new AuthorizedApiError({
         code: 'UNAUTHORIZED',
@@ -72,13 +77,13 @@ export async function authorizedApiFetch<TResponse = any>(
       method,
       headers: requestHeaders,
       signal: controller.signal,
-    }), timeout]);
+    }), timeout, callerAbort]);
 
     let payload: any = null;
     try {
-      payload = await Promise.race([response.json(), timeout]);
+      payload = await Promise.race([response.json(), timeout, callerAbort]);
     } catch (error) {
-      if (error === timeoutError) throw error;
+      if (error === timeoutError || callerSignal?.aborted) throw error;
       payload = null;
     }
 

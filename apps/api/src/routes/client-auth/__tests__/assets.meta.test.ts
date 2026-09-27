@@ -8,6 +8,8 @@ import { auditService } from '@/services/audit.service';
 import { metaOBOService } from '@/services/meta-obo.service';
 import { metaPartnerService } from '@/services/meta-partner.service';
 import { MetaConnector } from '@/services/connectors/meta';
+import { metaAssetsService } from '@/services/meta-assets.service';
+import { clientAssetsService } from '@/services/client-assets.service';
 
 vi.mock('@/services/access-request.service', () => ({
   accessRequestService: {
@@ -31,7 +33,6 @@ vi.mock('@/services/meta-obo.service', () => ({
   metaOBOService: {
     getClientAccessTokenForOBO: vi.fn(),
     ensureManagedBusinessRelationship: vi.fn(),
-    provisionClientBusinessSystemUserToken: vi.fn(),
   },
 }));
 
@@ -41,6 +42,21 @@ vi.mock('@/services/meta-partner.service', () => ({
     verifyPageAccess: vi.fn(),
     grantAdAccountAccess: vi.fn(),
     verifyAdAccountAccess: vi.fn(),
+    verifyAdAccountAgencyAccess: vi.fn(),
+    grantCatalogAccess: vi.fn(),
+    verifyCatalogAccess: vi.fn(),
+    grantCatalogAgencyAccess: vi.fn(),
+    verifyCatalogAgencyAccess: vi.fn(),
+    verifyDatasetAccess: vi.fn(),
+    verifyDatasetAgencyAccess: vi.fn(),
+  },
+}));
+
+vi.mock('@/services/meta-assets.service', () => ({
+  metaAssetsService: {
+    getAssignableRecipients: vi.fn(),
+    getAssetsForBusiness: vi.fn(),
+    getClientInstagramAssetsForBusiness: vi.fn(),
   },
 }));
 
@@ -68,6 +84,15 @@ vi.mock('@/lib/prisma', () => ({
     agencyPlatformConnection: {
       findUnique: vi.fn(),
     },
+    metaAgencyDestination: {
+      upsert: vi.fn(),
+    },
+    metaAssetGrant: {
+      upsert: vi.fn(),
+      updateMany: vi.fn(),
+      findUnique: vi.fn(),
+      findMany: vi.fn(),
+    },
   },
 }));
 
@@ -78,11 +103,32 @@ describe('Client Auth Asset Routes - Meta', () => {
     app = Fastify();
     await registerAssetRoutes(app);
     vi.clearAllMocks();
+    vi.spyOn(clientAssetsService, 'fetchMetaAssets').mockResolvedValue({
+      businesses: [{ id: 'biz_client_2', name: 'Client Two' }],
+      selectedBusinessId: 'biz_client_2',
+      selectedBusinessName: 'Client Two',
+      adAccounts: ['act_1', 'act_2', 'act_2a', 'act_missing', 'act_failed'].map((id) => ({ id, name: id, account_status: 1 })),
+      pages: ['page_1', 'page_2', 'page_2a', 'page_3'].map((id) => ({
+        id,
+        name: id,
+        ...(id === 'page_2a' ? { connectedInstagram: { id: 'ig_2', username: 'clienttwo' } } : {}),
+      })),
+      instagramAccounts: [{ id: 'ig_2', username: 'clienttwo' }],
+      productCatalogs: [{ id: 'catalog-1', name: 'Catalog', catalogType: 'commerce', ownershipType: 'owned' }],
+      pixels: [{ id: 'pixel-1', name: 'Pixel' }],
+    });
+    vi.mocked(prisma.metaAssetGrant.findUnique).mockResolvedValue(null);
+    vi.mocked(prisma.metaAssetGrant.findMany).mockResolvedValue([] as any);
 
     vi.mocked(accessRequestService.getAccessRequestByToken).mockResolvedValue({
       data: {
         id: 'request-a',
         agencyId: 'agency-a',
+        metaAccessConfig: {
+          recipients: [{ type: 'system_user', id: 'client-system-user-1' }],
+          pageTasks: ['MANAGE', 'CREATE_CONTENT', 'MODERATE', 'ADVERTISE'],
+          adAccountTasks: ['MANAGE', 'ADVERTISE', 'ANALYZE'],
+        },
       } as any,
       error: null,
     });
@@ -111,6 +157,25 @@ describe('Client Auth Asset Routes - Meta', () => {
     vi.mocked(prisma.platformAuthorization.update).mockResolvedValue({
       id: 'pa-1',
     } as any);
+    vi.mocked(prisma.metaAgencyDestination.upsert).mockResolvedValue({ id: 'destination-1' } as any);
+    vi.mocked(prisma.metaAssetGrant.upsert).mockResolvedValue({ id: 'grant-1', attemptVersion: 1 } as any);
+    vi.mocked(prisma.metaAssetGrant.updateMany).mockResolvedValue({ count: 1 } as any);
+    vi.mocked(metaAssetsService.getAssignableRecipients).mockResolvedValue({
+      data: [{ type: 'system_user', id: 'client-system-user-1', name: 'Automation' }],
+      error: null,
+    });
+    vi.mocked(metaAssetsService.getAssetsForBusiness).mockResolvedValue({
+      data: {
+        businessId: 'partner-bm-1',
+        businessName: 'Agency Portfolio',
+        pages: [{ id: 'page_2a', name: 'Page' }],
+        adAccounts: [{ id: 'act_2a', name: 'Ad Account' }],
+        instagramAccounts: [],
+        productCatalogs: [],
+      },
+      error: null,
+    } as any);
+    vi.mocked(metaAssetsService.getClientInstagramAssetsForBusiness).mockResolvedValue({ data: [], error: null });
 
     vi.mocked(infisical.getOAuthTokens).mockResolvedValue({
       accessToken: 'meta-access-token',
@@ -167,7 +232,10 @@ describe('Client Auth Asset Routes - Meta', () => {
         return {
           ok: true,
           json: async () => ({
-            data: [{ id: 'page_2a', name: 'Owned Page', category: 'Retail' }],
+            data: [{
+              id: 'page_2a', name: 'Owned Page', category: 'Retail',
+              instagram_business_account: { id: 'ig_2', username: 'clienttwo' },
+            }],
           }),
         } as any;
       }
@@ -190,6 +258,14 @@ describe('Client Auth Asset Routes - Meta', () => {
         } as any;
       }
 
+      if (url.includes('/biz_client_2/owned_product_catalogs') || url.includes('/biz_client_2/client_product_catalogs')) {
+        return { ok: true, json: async () => ({ data: [] }) } as any;
+      }
+
+      if (url.includes('/biz_client_2/client_pixels')) {
+        return { ok: true, json: async () => ({ data: [] }) } as any;
+      }
+
       return {
         ok: false,
         status: 404,
@@ -201,9 +277,186 @@ describe('Client Auth Asset Routes - Meta', () => {
 
   afterEach(async () => {
     await app.close();
+    vi.restoreAllMocks();
+  });
+
+  it('creates one durable requirement for each selected Meta asset and recipient', async () => {
+    vi.mocked(accessRequestService.getAccessRequestByToken).mockResolvedValue({
+      data: {
+        id: 'request-a',
+        agencyId: 'agency-a',
+        metaAccessConfig: {
+          recipients: [
+            { type: 'human', id: 'person-1' },
+            { type: 'system_user', id: 'system-user-1' },
+          ],
+          pageTasks: ['MANAGE'],
+          adAccountTasks: ['ANALYZE'],
+          catalogTasks: ['ADVERTISE', 'AA_ANALYZE'],
+        },
+      } as any,
+      error: null,
+    });
+    vi.mocked(prisma.platformAuthorization.findUnique).mockResolvedValue({
+      id: 'pa-1',
+      connectionId: 'conn-1',
+      platform: 'meta',
+      secretId: 'secret-1',
+      status: 'active',
+      authorizationEpoch: 2,
+      metadata: {
+        meta: {
+          selection: {
+            clientBusinessId: 'biz_client_2',
+            selectedAt: '2026-09-22T00:00:00.000Z',
+          },
+        },
+      },
+    } as any);
+    vi.mocked(prisma.agencyPlatformConnection.findUnique).mockResolvedValue({
+      id: 'agency-meta-1',
+      agencyId: 'agency-a',
+      platform: 'meta',
+      businessId: 'partner-bm-1',
+      metadata: { selectedBusinessName: 'Agency Portfolio' },
+    } as any);
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/client/token-a/save-assets',
+      payload: {
+        connectionId: 'conn-1',
+        platform: 'meta_ads',
+        selectedAssets: {
+          pages: ['page-1'],
+          adAccounts: ['act-1'],
+          catalogs: ['catalog-1'],
+          selectedCatalogsWithNames: [{ id: 'catalog-1', name: 'Spring Catalog' }],
+        },
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(prisma.metaAssetGrant.upsert).toHaveBeenCalledTimes(9);
+    expect(prisma.metaAssetGrant.upsert).toHaveBeenCalledWith(expect.objectContaining({
+      create: expect.objectContaining({
+        assetId: 'page-1',
+        recipientType: 'human',
+        recipientId: 'person-1',
+        requestedTasks: ['MANAGE'],
+        status: 'selected',
+      }),
+      update: expect.not.objectContaining({ status: expect.anything() }),
+    }));
+    expect(prisma.metaAssetGrant.upsert).toHaveBeenCalledWith(expect.objectContaining({
+      create: expect.objectContaining({
+        assetId: 'act-1',
+        recipientType: 'system_user',
+        recipientId: 'system-user-1',
+        requestedTasks: ['ANALYZE'],
+      }),
+    }));
+    expect(prisma.metaAssetGrant.upsert).toHaveBeenCalledWith(expect.objectContaining({
+      create: expect.objectContaining({
+        assetKind: 'catalog',
+        assetId: 'catalog-1',
+        assetName: 'Spring Catalog',
+        recipientType: 'system_user',
+        recipientId: 'system-user-1',
+        requestedTasks: ['ADVERTISE', 'AA_ANALYZE'],
+      }),
+    }));
+  });
+
+  it('records selected Pixel access as manual action required, never verified', async () => {
+    vi.mocked(accessRequestService.getAccessRequestByToken).mockResolvedValue({
+      data: {
+        id: 'request-a',
+        agencyId: 'agency-a',
+        metaAccessConfig: {
+          recipients: [{ type: 'human', id: 'person-1' }],
+          pageTasks: [],
+          adAccountTasks: [],
+          catalogTasks: [],
+          datasetTasks: ['ADVERTISE', 'AA_ANALYZE'],
+        },
+      } as any,
+      error: null,
+    });
+    vi.mocked(prisma.platformAuthorization.findUnique).mockResolvedValue({
+      id: 'pa-1',
+      connectionId: 'conn-1',
+      platform: 'meta',
+      secretId: 'secret-1',
+      status: 'active',
+      authorizationEpoch: 2,
+      metadata: { meta: { selection: { clientBusinessId: 'biz_client_2', selectedAt: '2026-09-22T00:00:00.000Z' } } },
+    } as any);
+    vi.mocked(prisma.agencyPlatformConnection.findUnique).mockResolvedValue({
+      id: 'agency-meta-1',
+      agencyId: 'agency-a',
+      platform: 'meta',
+      businessId: 'partner-bm-1',
+      metadata: { selectedBusinessName: 'Agency Portfolio' },
+    } as any);
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/client/token-a/save-assets',
+      payload: {
+        connectionId: 'conn-1',
+        platform: 'meta_ads',
+        selectedAssets: {
+          datasets: ['pixel-1'],
+          selectedDatasetsWithNames: [{ id: 'pixel-1', name: 'Website Pixel' }],
+        },
+      },
+    });
+
+    expect(response.statusCode, response.body).toBe(200);
+    expect(prisma.metaAssetGrant.upsert).toHaveBeenCalledWith(expect.objectContaining({
+      create: expect.objectContaining({
+        assetKind: 'dataset',
+        assetId: 'pixel-1',
+        assetName: 'Website Pixel',
+        recipientType: 'business',
+        recipientId: 'partner-bm-1',
+        requestedTasks: ['ADVERTISE'],
+        status: 'manual_action_required',
+        nextActor: 'client_admin',
+      }),
+    }));
+    expect(prisma.metaAssetGrant.upsert).toHaveBeenCalledWith(expect.objectContaining({
+      create: expect.objectContaining({
+        assetKind: 'dataset',
+        assetId: 'pixel-1',
+        recipientType: 'human',
+        recipientId: 'person-1',
+        requestedTasks: ['ADVERTISE', 'AA_ANALYZE'],
+        status: 'manual_action_required',
+        nextActor: 'client_admin',
+      }),
+    }));
+  });
+
+  it('rejects Meta asset selection before a client Business Portfolio is selected', async () => {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/client/token-a/save-assets',
+      payload: {
+        connectionId: 'conn-1',
+        platform: 'meta_ads',
+        selectedAssets: { pages: ['page-1'] },
+      },
+    });
+
+    expect(response.statusCode).toBe(409);
+    expect(response.json().error.code).toBe('META_BUSINESS_SELECTION_REQUIRED');
+    expect(prisma.clientConnection.update).not.toHaveBeenCalled();
   });
 
   it('returns business-scoped Meta assets and persists discovery metadata for the selected client business', async () => {
+    vi.mocked(clientAssetsService.fetchMetaAssets).mockRestore();
     const response = await app.inject({
       method: 'GET',
       url: '/client/token-a/assets/meta_ads?connectionId=conn-1&businessId=biz_client_2',
@@ -235,10 +488,15 @@ describe('Client Auth Asset Routes - Meta', () => {
         },
       ],
       pages: [
-        { id: 'page_2a', name: 'Owned Page', category: 'Retail', ownershipType: 'owned' },
+        {
+          id: 'page_2a', name: 'Owned Page', category: 'Retail',
+          connectedInstagram: { id: 'ig_2', username: 'clienttwo' }, ownershipType: 'owned',
+        },
         { id: 'page_2b', name: 'Shared Page', category: 'Agency', ownershipType: 'client' },
       ],
       instagramAccounts: [{ id: 'ig_2', username: 'clienttwo' }],
+      productCatalogs: [],
+      pixels: [],
     });
 
     expect(prisma.platformAuthorization.update).toHaveBeenCalledWith({
@@ -283,6 +541,7 @@ describe('Client Auth Asset Routes - Meta', () => {
   });
 
   it('returns 400 when the requested Meta business portfolio is unavailable', async () => {
+    vi.mocked(clientAssetsService.fetchMetaAssets).mockRestore();
     const response = await app.inject({
       method: 'GET',
       url: '/client/token-a/assets/meta_ads?connectionId=conn-1&businessId=biz_missing',
@@ -320,13 +579,15 @@ describe('Client Auth Asset Routes - Meta', () => {
         json: async () => ({
           id: 'page_1',
           name: 'Client Page',
+          category: 'Local business',
+          tasks: ['MANAGE'],
           access_token: 'page-token-secret',
         }),
       } as any)
       .mockResolvedValueOnce({
         ok: true,
         json: async () => ({
-          data: [{ id: 'post_1', message: 'Page post' }],
+          data: [{ id: 'post_1', created_time: '2026-09-21T00:00:00+0000' }],
         }),
       } as any);
 
@@ -338,8 +599,13 @@ describe('Client Auth Asset Routes - Meta', () => {
     expect(response.statusCode).toBe(200);
     expect(response.json()).toEqual({
       data: {
-        page: { id: 'page_1', name: 'Client Page' },
-        posts: [{ id: 'post_1', message: 'Page post' }],
+        page: {
+          id: 'page_1',
+          name: 'Client Page',
+          category: 'Local business',
+          managedTasks: ['MANAGE'],
+        },
+        posts: [{ id: 'post_1', createdTime: '2026-09-21T00:00:00+0000' }],
       },
       error: null,
     });
@@ -352,7 +618,324 @@ describe('Client Auth Asset Routes - Meta', () => {
     );
   });
 
-  it('verifies Meta page and ad-account grants through the OBO flow before marking success', async () => {
+  it('asks the client to reconnect when Meta rejects the user or Page token', async () => {
+    vi.mocked(prisma.platformAuthorization.findUnique).mockResolvedValue({
+      id: 'pa-1',
+      connectionId: 'conn-1',
+      platform: 'meta',
+      secretId: 'secret-1',
+      status: 'active',
+      metadata: { selectedAssets: { meta_ads: { pages: ['page_1'] } } },
+    } as any);
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      text: async () => JSON.stringify({ error: { code: 190, type: 'OAuthException' } }),
+    } as Response);
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/client/token-a/meta-page-proof?connectionId=conn-1&pageId=page_1',
+    });
+
+    expect(response.statusCode).toBe(403);
+    expect(response.json().error).toEqual({
+      code: 'REAUTHORIZATION_REQUIRED',
+      message: 'Meta access expired or the Page token is invalid. Reconnect Meta and try again.',
+    });
+  });
+
+  it('does not read the Meta token when Page proof audit logging fails', async () => {
+    vi.mocked(prisma.platformAuthorization.findUnique).mockResolvedValue({
+      id: 'pa-1',
+      connectionId: 'conn-1',
+      platform: 'meta',
+      secretId: 'secret-1',
+      status: 'active',
+      metadata: { selectedAssets: { meta_ads: { pages: ['page_1'] } } },
+    } as any);
+    vi.mocked(auditService.createAuditLog).mockResolvedValueOnce({
+      data: null,
+      error: { code: 'INTERNAL_ERROR', message: 'Failed to create audit log' },
+    } as any);
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/client/token-a/meta-page-proof?connectionId=conn-1&pageId=page_1',
+    });
+
+    expect(response.statusCode).toBe(500);
+    expect(response.json().error.code).toBe('AUDIT_LOG_FAILED');
+    expect(infisical.getOAuthTokens).not.toHaveBeenCalled();
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it('does not read the Meta token when asset-discovery audit logging fails', async () => {
+    vi.mocked(prisma.platformAuthorization.findUnique).mockResolvedValue({
+      id: 'pa-1',
+      connectionId: 'conn-1',
+      platform: 'meta',
+      secretId: 'secret-1',
+      status: 'active',
+      metadata: {},
+    } as any);
+    vi.mocked(auditService.createAuditLog).mockResolvedValueOnce({
+      data: null,
+      error: { code: 'INTERNAL_ERROR', message: 'Failed to create audit log' },
+    } as any);
+
+    const response = await app.inject({
+      method: 'GET',
+      url: '/client/token-a/assets/meta_ads?connectionId=conn-1&businessId=biz_client_2',
+    });
+
+    expect(response.statusCode).toBe(500);
+    expect(response.json().error.code).toBe('AUDIT_LOG_FAILED');
+    expect(infisical.getOAuthTokens).not.toHaveBeenCalled();
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    ['GET', '/client/token-a/meta-page-proof?connectionId=conn-1&pageId=page_1'],
+    ['POST', '/client/token-a/grant-meta-access'],
+    ['POST', '/client/token-a/meta/manual-ad-account-share/start'],
+    ['POST', '/client/token-a/meta/manual-ad-account-share/verify'],
+  ] as const)('blocks %s %s while Meta reauthorization is incomplete', async (method, url) => {
+    vi.mocked(prisma.platformAuthorization.findUnique).mockResolvedValue({
+      id: 'pa-1', connectionId: 'conn-1', platform: 'meta', secretId: 'secret-1', status: 'invalid',
+      metadata: { selectedAssets: { meta_pages: { pages: ['page_1'] } } },
+    } as any);
+
+    const response = await app.inject({
+      method, url,
+      ...(method === 'POST' ? { payload: { connectionId: 'conn-1' } } : {}),
+    });
+
+    expect(response.statusCode).toBe(403);
+    expect(response.json().error.code).toBe('REAUTHORIZATION_REQUIRED');
+    expect(infisical.getOAuthTokens).not.toHaveBeenCalled();
+    expect(metaPartnerService.grantPageAccess).not.toHaveBeenCalled();
+  });
+
+  it('blocks manual Meta sharing when the agency connection is inactive', async () => {
+    vi.mocked(prisma.agencyPlatformConnection.findUnique).mockResolvedValue({
+      id: 'agency-meta-1', agencyId: 'agency-a', platform: 'meta',
+      businessId: 'partner-bm-1', status: 'invalid',
+    } as any);
+
+    const response = await app.inject({
+      method: 'POST', url: '/client/token-a/meta/manual-ad-account-share/start',
+      payload: { connectionId: 'conn-1' },
+    });
+
+    expect(response.statusCode).toBe(409);
+    expect(response.json().error.code).toBe('AGENCY_META_RECONNECT_REQUIRED');
+    expect(prisma.metaAssetGrant.upsert).not.toHaveBeenCalled();
+  });
+
+  it('rejects a grant request for a Business Portfolio other than the saved client selection', async () => {
+    vi.mocked(prisma.platformAuthorization.findUnique).mockResolvedValue({
+      id: 'pa-1', connectionId: 'conn-1', platform: 'meta', secretId: 'secret-1', status: 'active',
+      metadata: {
+        selectedAssets: { meta_pages: { pages: ['page-2'] } },
+        meta: { selection: { clientBusinessId: 'biz_client_2', selectedAt: '2026-09-22T00:00:00.000Z' } },
+      },
+    } as any);
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/client/token-a/grant-meta-access',
+      payload: { connectionId: 'conn-1', businessId: 'biz_other', assetTypes: ['page'] },
+    });
+
+    expect(response.statusCode).toBe(409);
+    expect(response.json().error.code).toBe('META_BUSINESS_SELECTION_MISMATCH');
+    expect(metaOBOService.getClientAccessTokenForOBO).not.toHaveBeenCalled();
+    expect(infisical.getOAuthTokens).not.toHaveBeenCalled();
+  });
+
+  it('rejects selected Meta assets that are not in the selected client Business Portfolio', async () => {
+    vi.mocked(accessRequestService.getAccessRequestByToken).mockResolvedValue({
+      data: {
+        id: 'request-a', agencyId: 'agency-a',
+        metaAccessConfig: { recipients: [{ type: 'system_user', id: 'client-system-user-1' }], pageTasks: ['MANAGE'] },
+      } as any,
+      error: null,
+    });
+    vi.mocked(prisma.platformAuthorization.findUnique).mockResolvedValue({
+      id: 'pa-1', connectionId: 'conn-1', platform: 'meta', secretId: 'secret-1', status: 'active',
+      metadata: {
+        selectedAssets: { meta_pages: { pages: ['page-outside'] } },
+        meta: { selection: { clientBusinessId: 'biz_client_2', selectedAt: '2026-09-22T00:00:00.000Z' } },
+      },
+    } as any);
+    vi.mocked(prisma.agencyPlatformConnection.findUnique).mockResolvedValue({
+      id: 'agency-meta-1', agencyId: 'agency-a', platform: 'meta', businessId: 'partner-bm-1', status: 'active', metadata: {},
+    } as any);
+    vi.mocked(metaOBOService.getClientAccessTokenForOBO).mockResolvedValue({
+      data: { accessToken: 'client-admin-user-token' }, error: null,
+    });
+    vi.mocked(clientAssetsService.fetchMetaAssets).mockResolvedValue({
+      businesses: [{ id: 'biz_client_2', name: 'Client Two' }],
+      selectedBusinessId: 'biz_client_2',
+      selectedBusinessName: 'Client Two',
+      adAccounts: [], pages: [], instagramAccounts: [], productCatalogs: [], pixels: [],
+    });
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/client/token-a/grant-meta-access',
+      payload: { connectionId: 'conn-1', assetTypes: ['page'] },
+    });
+
+    expect(response.statusCode).toBe(403);
+    expect(response.json().error.code).toBe('META_ASSET_NOT_IN_SELECTED_BUSINESS');
+    expect(metaOBOService.ensureManagedBusinessRelationship).not.toHaveBeenCalled();
+    expect(metaPartnerService.grantPageAccess).not.toHaveBeenCalled();
+  });
+
+  it('stops Meta fulfillment and returns a gateway error when agency recipient discovery fails', async () => {
+    vi.mocked(accessRequestService.getAccessRequestByToken).mockResolvedValue({
+      data: {
+        id: 'request-a',
+        agencyId: 'agency-a',
+        platforms: [{ platform: 'meta_ads' }],
+        metaAccessConfig: {
+          recipients: [{ type: 'system_user', id: 'client-system-user-1' }],
+          pageTasks: ['MANAGE'],
+          adAccountTasks: ['ANALYZE'],
+        },
+      } as any,
+      error: null,
+    });
+    vi.mocked(prisma.platformAuthorization.findUnique).mockResolvedValue({
+      id: 'pa-1',
+      connectionId: 'conn-1',
+      platform: 'meta',
+      secretId: 'secret-1',
+      status: 'active',
+      metadata: {
+        selectedAssets: { meta_ads: { pages: ['page-2'] } },
+        meta: { selection: {
+          clientBusinessId: 'biz_client_2',
+          selectedAt: '2026-09-22T00:00:00.000Z',
+        } },
+      },
+    } as any);
+    vi.mocked(prisma.agencyPlatformConnection.findUnique).mockResolvedValue({
+      id: 'agency-meta-1',
+      agencyId: 'agency-a',
+      platform: 'meta',
+      businessId: 'partner-bm-1',
+      status: 'active',
+      metadata: {},
+    } as any);
+    vi.mocked(metaAssetsService.getAssignableRecipients).mockResolvedValue({
+      data: null,
+      error: { code: 'META_BUSINESS_USERS_FAILED', message: 'Meta recipient lookup failed' },
+    });
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/client/token-a/grant-meta-access',
+      payload: { connectionId: 'conn-1', assetTypes: ['page'] },
+    });
+
+    expect(response.statusCode).toBe(502);
+    expect(response.json().error).toMatchObject({
+      code: 'META_BUSINESS_USERS_FAILED',
+      message: 'Meta recipient lookup failed',
+    });
+    expect(metaOBOService.getClientAccessTokenForOBO).not.toHaveBeenCalled();
+    expect(metaPartnerService.grantPageAccess).not.toHaveBeenCalled();
+  });
+
+  it('continues independent asset assignment when partner-business sharing needs a manual step', async () => {
+    vi.mocked(prisma.platformAuthorization.findUnique).mockResolvedValue({
+      id: 'pa-1',
+      connectionId: 'conn-1',
+      platform: 'meta',
+      secretId: 'secret-1',
+      status: 'active',
+      metadata: {
+        selectedAssets: { meta_ads: { adAccounts: ['act_2a'] } },
+        meta: {
+          selection: {
+            clientBusinessId: 'biz_client_2',
+            clientBusinessName: 'Client Two',
+            selectedAt: '2026-03-11T10:00:00.000Z',
+          },
+        },
+      },
+    } as any);
+    vi.mocked(prisma.agencyPlatformConnection.findUnique).mockResolvedValue({
+      id: 'agency-meta-1',
+      agencyId: 'agency-a',
+      platform: 'meta',
+      businessId: 'partner-bm-1',
+      status: 'active',
+      metadata: { partnerAdminSystemUserTokenSecretId: 'agency-partner-secret' },
+    } as any);
+    vi.mocked(metaOBOService.getClientAccessTokenForOBO).mockResolvedValue({
+      data: { accessToken: 'client-admin-user-token' },
+      error: null,
+    });
+    vi.mocked(metaOBOService.ensureManagedBusinessRelationship).mockResolvedValue({
+      data: {
+        status: 'manual_action_required',
+        partnerBusinessId: 'partner-bm-1',
+        clientBusinessId: 'biz_client_2',
+        nextAction: 'Add partner business portfolio partner-bm-1 in Meta Business Settings.',
+      },
+      error: null,
+    });
+    vi.mocked(metaPartnerService.grantAdAccountAccess).mockResolvedValue();
+    vi.mocked(metaPartnerService.verifyAdAccountAccess).mockResolvedValue({
+      verified: true,
+      assignedTasks: ['MANAGE', 'ADVERTISE', 'ANALYZE'],
+    });
+    vi.mocked(metaAssetsService.getAssetsForBusiness).mockResolvedValue({
+      data: { businessId: 'partner-bm-1', businessName: 'Agency', pages: [], adAccounts: [], instagramAccounts: [], productCatalogs: [] },
+      error: null,
+    } as any);
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/client/token-a/grant-meta-access',
+      payload: { connectionId: 'conn-1' },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().data).toMatchObject({
+      success: false,
+      partial: true,
+      managedBusinessLinkStatus: 'manual_action_required',
+      assetGrantResults: expect.arrayContaining([
+        expect.objectContaining({ recipientType: 'system_user', status: 'verified' }),
+        expect.objectContaining({
+          recipientType: 'business',
+          status: 'unresolved',
+          errorMessage: 'Add partner business portfolio partner-bm-1 in Meta Business Settings.',
+        }),
+      ]),
+    });
+    expect(metaPartnerService.grantAdAccountAccess).toHaveBeenCalledWith(
+      'client-admin-user-token', 'act_2a', 'client-system-user-1', ['MANAGE', 'ADVERTISE', 'ANALYZE']
+    );
+  });
+
+  it('verifies configured Page tasks, including Leads Access, through the OBO flow', async () => {
+    vi.mocked(accessRequestService.getAccessRequestByToken).mockResolvedValue({
+      data: {
+        id: 'request-a',
+        agencyId: 'agency-a',
+        metaAccessConfig: {
+          recipients: [{ type: 'system_user', id: 'client-system-user-1' }],
+          pageTasks: ['MANAGE_LEADS'],
+          adAccountTasks: ['MANAGE', 'ADVERTISE', 'ANALYZE'],
+        },
+      } as any,
+      error: null,
+    });
     vi.mocked(prisma.platformAuthorization.findUnique).mockResolvedValue({
       id: 'pa-1',
       connectionId: 'conn-1',
@@ -381,6 +964,7 @@ describe('Client Auth Asset Routes - Meta', () => {
       agencyId: 'agency-a',
       platform: 'meta',
       businessId: 'partner-bm-1',
+      status: 'active',
       metadata: {
         partnerAdminSystemUserTokenSecretId: 'agency-partner-secret',
       },
@@ -402,42 +986,27 @@ describe('Client Auth Asset Routes - Meta', () => {
       },
       error: null,
     } as any);
-    vi.mocked(metaOBOService.provisionClientBusinessSystemUserToken).mockResolvedValue({
-      data: {
-        status: 'ready',
-        clientBusinessId: 'biz_client_2',
-        appId: 'test-meta-app-id',
-        scopes: ['ads_management', 'business_management'],
-        systemUserId: 'client-system-user-1',
-        tokenSecretId: 'client-system-user-secret',
-        provisionedAt: '2026-03-11T10:02:00.000Z',
-        lastAttemptAt: '2026-03-11T10:02:00.000Z',
-      },
-      error: null,
-    } as any);
-
-    vi.mocked(infisical.getOAuthTokens).mockImplementation(async (secretId: string) => {
-      if (secretId === 'agency-partner-secret') {
-        return { accessToken: 'partner-admin-system-user-token' } as any;
-      }
-
-      if (secretId === 'client-system-user-secret') {
-        return { accessToken: 'client-system-user-token' } as any;
-      }
-
-      return { accessToken: 'meta-access-token' } as any;
-    });
-
     vi.mocked(metaPartnerService.grantPageAccess).mockResolvedValue();
     vi.mocked(metaPartnerService.verifyPageAccess).mockResolvedValue({
       verified: true,
-      assignedTasks: ['MANAGE', 'CREATE_CONTENT', 'MODERATE', 'ADVERTISE'],
+      assignedTasks: ['MANAGE_LEADS'],
     });
     vi.mocked(metaPartnerService.grantAdAccountAccess).mockResolvedValue();
     vi.mocked(metaPartnerService.verifyAdAccountAccess).mockResolvedValue({
       verified: true,
       assignedTasks: ['MANAGE', 'ADVERTISE', 'ANALYZE'],
     });
+    vi.mocked(metaAssetsService.getAssetsForBusiness).mockResolvedValue({
+      data: {
+        businessId: 'partner-bm-1',
+        businessName: 'Agency Portfolio',
+        pages: [{ id: 'page_2a', name: 'Page 2A' }],
+        adAccounts: [{ id: 'act_2a', name: 'Account 2A', sharedWithBusiness: true }],
+        instagramAccounts: [],
+        productCatalogs: [],
+      },
+      error: null,
+    } as any);
 
     const response = await app.inject({
       method: 'POST',
@@ -454,13 +1023,12 @@ describe('Client Auth Asset Routes - Meta', () => {
       selectedBusinessId: 'biz_client_2',
       selectedBusinessName: 'Client Two',
       managedBusinessLinkStatus: 'linked',
-      clientSystemUserStatus: 'ready',
-      assetGrantResults: [
+      assetGrantResults: expect.arrayContaining([
         expect.objectContaining({
           assetId: 'page_2a',
           assetType: 'page',
           status: 'verified',
-          requestedTasks: ['MANAGE', 'CREATE_CONTENT', 'MODERATE', 'ADVERTISE'],
+          requestedTasks: ['MANAGE_LEADS'],
           grantedAt: expect.any(String),
           verifiedAt: expect.any(String),
         }),
@@ -472,8 +1040,25 @@ describe('Client Auth Asset Routes - Meta', () => {
           grantedAt: expect.any(String),
           verifiedAt: expect.any(String),
         }),
-      ],
+        expect.objectContaining({
+          assetId: 'page_2a',
+          recipientType: 'business',
+          recipientId: 'partner-bm-1',
+          requestedTasks: [],
+          status: 'verified',
+        }),
+        expect.objectContaining({
+          assetId: 'act_2a',
+          recipientType: 'business',
+          recipientId: 'partner-bm-1',
+          requestedTasks: [],
+          status: 'verified',
+        }),
+      ]),
     });
+    expect(response.json().data.assetGrantResults.find((result: any) =>
+      result.assetType === 'ad_account' && result.recipientType === 'business'
+    )).not.toHaveProperty('verifiedTasks');
 
     expect(metaOBOService.ensureManagedBusinessRelationship).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -484,13 +1069,16 @@ describe('Client Auth Asset Routes - Meta', () => {
       })
     );
     expect(metaPartnerService.grantPageAccess).toHaveBeenCalledWith(
-      'client-system-user-token',
+      'client-admin-user-token',
       'page_2a',
       'client-system-user-1',
-      ['MANAGE', 'CREATE_CONTENT', 'MODERATE', 'ADVERTISE']
+      ['MANAGE_LEADS']
+    );
+    expect(metaPartnerService.verifyPageAccess).toHaveBeenCalledWith(
+      'client-admin-user-token', 'page_2a', 'client-system-user-1', ['MANAGE_LEADS']
     );
     expect(metaPartnerService.grantAdAccountAccess).toHaveBeenCalledWith(
-      'client-system-user-token',
+      'client-admin-user-token',
       'act_2a',
       'client-system-user-1',
       ['MANAGE', 'ADVERTISE', 'ANALYZE']
@@ -501,7 +1089,7 @@ describe('Client Auth Asset Routes - Meta', () => {
         metadata: expect.objectContaining({
           meta: expect.objectContaining({
             obo: expect.objectContaining({
-              assetGrantResults: [
+              assetGrantResults: expect.arrayContaining([
                 expect.objectContaining({
                   assetId: 'page_2a',
                   status: 'verified',
@@ -510,7 +1098,7 @@ describe('Client Auth Asset Routes - Meta', () => {
                   assetId: 'act_2a',
                   status: 'verified',
                 }),
-              ],
+              ]),
               lastVerifiedAt: expect.any(String),
             }),
           }),
@@ -530,6 +1118,434 @@ describe('Client Auth Asset Routes - Meta', () => {
         }),
       },
     });
+
+  });
+
+  it('shares selected catalogs with the agency and verifies each recipient and the business grant', async () => {
+    vi.mocked(prisma.platformAuthorization.findUnique).mockResolvedValue({
+      id: 'pa-1',
+      connectionId: 'conn-1',
+      platform: 'meta',
+      secretId: 'secret-1',
+      status: 'active',
+      authorizationEpoch: 2,
+      metadata: {
+        selectedAssets: { meta_ads: { catalogs: ['catalog-1'] } },
+        meta: { selection: {
+          clientBusinessId: 'biz_client_2',
+          clientBusinessName: 'Client Two',
+          selectedAt: '2026-09-22T00:00:00.000Z',
+        } },
+      },
+    } as any);
+    vi.mocked(prisma.agencyPlatformConnection.findUnique).mockResolvedValue({
+      id: 'agency-meta-1', agencyId: 'agency-a', platform: 'meta', businessId: 'partner-bm-1',
+      status: 'active', metadata: {},
+    } as any);
+    vi.mocked(metaOBOService.getClientAccessTokenForOBO).mockResolvedValue({
+      data: { accessToken: 'client-admin-user-token' }, error: null,
+    });
+    vi.mocked(metaOBOService.ensureManagedBusinessRelationship).mockResolvedValue({
+      data: { status: 'linked', partnerBusinessId: 'partner-bm-1', clientBusinessId: 'biz_client_2' },
+      error: null,
+    } as any);
+    vi.mocked(metaPartnerService.grantCatalogAccess).mockResolvedValue();
+    vi.mocked(metaPartnerService.verifyCatalogAccess).mockResolvedValue({
+      verified: true, assignedTasks: ['MANAGE'],
+    });
+    vi.mocked(metaPartnerService.grantCatalogAgencyAccess).mockResolvedValue();
+    vi.mocked(metaPartnerService.verifyCatalogAgencyAccess).mockResolvedValue(true);
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/client/token-a/grant-meta-access',
+      payload: { connectionId: 'conn-1', assetTypes: ['catalog'] },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().data.success).toBe(true);
+    expect(metaPartnerService.grantCatalogAccess).toHaveBeenCalledWith(
+      'client-admin-user-token', 'catalog-1', 'client-system-user-1', ['MANAGE'],
+    );
+    expect(metaPartnerService.verifyCatalogAccess).toHaveBeenCalledWith(
+      'client-admin-user-token', 'catalog-1', 'client-system-user-1', ['MANAGE'],
+    );
+    expect(metaPartnerService.grantCatalogAgencyAccess).toHaveBeenCalledWith(
+      'client-admin-user-token', 'catalog-1', 'partner-bm-1', ['MANAGE'],
+    );
+    expect(metaPartnerService.verifyCatalogAgencyAccess).toHaveBeenCalledWith(
+      'client-admin-user-token', 'catalog-1', 'partner-bm-1', ['MANAGE'],
+    );
+    expect(metaAssetsService.getAssetsForBusiness).not.toHaveBeenCalled();
+    expect(response.json().data.assetGrantResults).toEqual(expect.arrayContaining([
+      expect.objectContaining({ assetId: 'catalog-1', recipientType: 'system_user', status: 'verified' }),
+      expect.objectContaining({ assetId: 'catalog-1', recipientType: 'business', status: 'verified' }),
+    ]));
+    expect(prisma.metaAssetGrant.upsert).toHaveBeenCalledWith(expect.objectContaining({
+      create: expect.objectContaining({ assetKind: 'catalog', grantMethod: 'catalog_agencies' }),
+    }));
+
+    let catalogAttempt = 0;
+    vi.mocked(prisma.metaAssetGrant.upsert).mockImplementation(async (args: any) => ({
+      attemptVersion: args.create.grantMethod === 'catalog_agencies' ? ++catalogAttempt + 1 : 1,
+    } as any));
+    const retryResponse = await app.inject({
+      method: 'POST',
+      url: '/client/token-a/grant-meta-access',
+      payload: { connectionId: 'conn-1', assetTypes: ['catalog'] },
+    });
+
+    expect(retryResponse.statusCode).toBe(200);
+    expect(metaPartnerService.grantCatalogAgencyAccess).toHaveBeenCalledTimes(1);
+    expect(metaPartnerService.verifyCatalogAgencyAccess).toHaveBeenCalledTimes(2);
+    expect(retryResponse.json().data.assetGrantResults).toEqual(expect.arrayContaining([
+      expect.objectContaining({ assetId: 'catalog-1', recipientType: 'business', status: 'verified' }),
+    ]));
+  });
+
+  it('keeps a Pixel-only request in manual pending state instead of treating it as no selection', async () => {
+    vi.mocked(prisma.platformAuthorization.findUnique).mockResolvedValue({
+      id: 'pa-1', connectionId: 'conn-1', platform: 'meta', secretId: 'secret-1', status: 'active',
+      metadata: {
+        selectedAssets: { meta_ads: { datasets: ['pixel-1'] } },
+        meta: { selection: { clientBusinessId: 'biz_client_2', selectedAt: '2026-09-22T00:00:00.000Z' } },
+      },
+    } as any);
+    vi.mocked(prisma.agencyPlatformConnection.findUnique).mockResolvedValue({
+      id: 'agency-meta-1', agencyId: 'agency-a', platform: 'meta', businessId: 'partner-bm-1',
+      status: 'active', metadata: {},
+    } as any);
+    vi.mocked(metaOBOService.getClientAccessTokenForOBO).mockResolvedValue({
+      data: { accessToken: 'client-admin-user-token' }, error: null,
+    });
+    vi.mocked(metaOBOService.ensureManagedBusinessRelationship).mockResolvedValue({
+      data: { status: 'linked', partnerBusinessId: 'partner-bm-1', clientBusinessId: 'biz_client_2' }, error: null,
+    } as any);
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/client/token-a/grant-meta-access',
+      payload: { connectionId: 'conn-1', assetTypes: ['dataset'] },
+    });
+
+    expect(response.statusCode, response.body).toBe(200);
+    expect(response.json().data).toMatchObject({ success: false, partial: false });
+    expect(response.json().data.assetGrantResults).toEqual(expect.arrayContaining([
+      expect.objectContaining({ assetId: 'pixel-1', assetType: 'dataset', recipientType: 'system_user', status: 'unresolved' }),
+      expect.objectContaining({ assetId: 'pixel-1', assetType: 'dataset', recipientType: 'business', status: 'unresolved' }),
+    ]));
+    expect(metaPartnerService.grantPageAccess).not.toHaveBeenCalled();
+    expect(metaPartnerService.grantAdAccountAccess).not.toHaveBeenCalled();
+    expect(prisma.metaAssetGrant.updateMany).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ status: 'manual_action_required', nextActor: 'client_admin' }),
+    }));
+  });
+
+  it('verifies manually shared Pixel access for each agency recipient and the partner business', async () => {
+    const recipients = Array.from({ length: 6 }, (_, index) => ({
+      type: 'system_user' as const,
+      id: `client-system-user-${index + 1}`,
+    }));
+    vi.mocked(accessRequestService.getAccessRequestByToken).mockResolvedValue({
+      data: {
+        id: 'request-a', agencyId: 'agency-a',
+        metaAccessConfig: {
+          recipients,
+          pageTasks: [], adAccountTasks: [], datasetTasks: ['ADVERTISE', 'ANALYZE'],
+        },
+      } as any,
+      error: null,
+    });
+    vi.mocked(prisma.platformAuthorization.findUnique).mockResolvedValue({
+      id: 'pa-1', connectionId: 'conn-1', platform: 'meta', secretId: 'secret-1', status: 'active', authorizationEpoch: 2,
+      metadata: {
+        selectedAssets: { meta_ads: { datasets: [] } },
+        meta: { selection: { clientBusinessId: 'biz_client_2', selectedAt: '2026-09-22T00:00:00.000Z' } },
+      },
+    } as any);
+    vi.mocked(prisma.agencyPlatformConnection.findUnique).mockResolvedValue({
+      id: 'agency-meta-1', agencyId: 'agency-a', platform: 'meta', businessId: 'partner-bm-1', status: 'active', metadata: {},
+    } as any);
+    vi.mocked(metaAssetsService.getAssignableRecipients).mockResolvedValue({
+      data: recipients.map((recipient) => ({ ...recipient, name: recipient.id })), error: null,
+    });
+    vi.mocked(metaOBOService.getClientAccessTokenForOBO).mockResolvedValue({
+      data: { accessToken: 'client-admin-user-token' }, error: null,
+    });
+    let inFlight = 0;
+    let peakInFlight = 0;
+    const verifyWithDelay = async (verified: boolean, assignedTasks: string[]) => {
+      inFlight += 1;
+      peakInFlight = Math.max(peakInFlight, inFlight);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+      inFlight -= 1;
+      return { verified, assignedTasks };
+    };
+    vi.mocked(metaPartnerService.verifyDatasetAccess).mockImplementation(() =>
+      verifyWithDelay(true, ['ADVERTISE', 'ANALYZE'])
+    );
+    vi.mocked(metaPartnerService.verifyDatasetAgencyAccess).mockImplementation(() =>
+      verifyWithDelay(false, ['ADVERTISE'])
+    );
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/client/token-a/meta/datasets/verify',
+      payload: { connectionId: 'conn-1', datasetIds: ['pixel-1'] },
+    });
+
+    expect(response.statusCode, response.body).toBe(200);
+    expect(response.json().data).toMatchObject({ success: false, partial: true, status: 'partial' });
+    expect(peakInFlight).toBe(5);
+    expect(metaPartnerService.verifyDatasetAccess).toHaveBeenCalledTimes(6);
+    expect(response.json().data.results).toEqual(expect.arrayContaining([
+      expect.objectContaining({ assetId: 'pixel-1', recipientType: 'system_user', status: 'verified', verifiedTasks: ['ADVERTISE', 'ANALYZE'] }),
+      expect.objectContaining({ assetId: 'pixel-1', recipientType: 'business', status: 'unresolved', verifiedTasks: ['ADVERTISE'] }),
+    ]));
+    expect(metaPartnerService.verifyDatasetAccess).toHaveBeenCalledWith(
+      'client-admin-user-token', 'pixel-1', 'client-system-user-1', ['ADVERTISE', 'ANALYZE'], 'biz_client_2'
+    );
+    expect(metaPartnerService.verifyDatasetAgencyAccess).toHaveBeenCalledWith(
+      'client-admin-user-token', 'pixel-1', 'partner-bm-1', ['ADVERTISE', 'ANALYZE']
+    );
+    expect(metaPartnerService.grantPageAccess).not.toHaveBeenCalled();
+    expect(prisma.metaAssetGrant.updateMany).toHaveBeenCalledWith(expect.objectContaining({
+      data: expect.objectContaining({ status: 'manual_action_required', nextActor: 'client_admin' }),
+    }));
+  });
+
+  it('rejects manual Dataset verification when selected Pixel is outside the client Business Portfolio', async () => {
+    vi.mocked(accessRequestService.getAccessRequestByToken).mockResolvedValue({
+      data: {
+        id: 'request-a', agencyId: 'agency-a',
+        metaAccessConfig: { recipients: [{ type: 'human', id: 'person-1' }], datasetTasks: ['ADVERTISE'] },
+      } as any,
+      error: null,
+    });
+    vi.mocked(prisma.platformAuthorization.findUnique).mockResolvedValue({
+      id: 'pa-1', connectionId: 'conn-1', platform: 'meta', secretId: 'secret-1', status: 'active',
+      metadata: {
+        selectedAssets: { meta_ads: { datasets: ['pixel-outside'] } },
+        meta: { selection: { clientBusinessId: 'biz_client_2', selectedAt: '2026-09-22T00:00:00.000Z' } },
+      },
+    } as any);
+    vi.mocked(prisma.agencyPlatformConnection.findUnique).mockResolvedValue({
+      id: 'agency-meta-1', agencyId: 'agency-a', platform: 'meta', businessId: 'partner-bm-1', status: 'active', metadata: {},
+    } as any);
+    vi.mocked(metaAssetsService.getAssignableRecipients).mockResolvedValue({
+      data: [{ type: 'human', id: 'person-1', name: 'Client admin' }], error: null,
+    });
+    vi.mocked(metaOBOService.getClientAccessTokenForOBO).mockResolvedValue({
+      data: { accessToken: 'client-admin-user-token' }, error: null,
+    });
+    vi.mocked(clientAssetsService.fetchMetaAssets).mockResolvedValue({
+      businesses: [{ id: 'biz_client_2', name: 'Client Two' }], selectedBusinessId: 'biz_client_2',
+      adAccounts: [], pages: [], instagramAccounts: [], productCatalogs: [], pixels: [],
+    });
+
+    const response = await app.inject({
+      method: 'POST', url: '/client/token-a/meta/datasets/verify', payload: { connectionId: 'conn-1', datasetIds: ['pixel-outside'] },
+    });
+
+    expect(response.statusCode).toBe(403);
+    expect(response.json().error.code).toBe('META_ASSET_NOT_IN_SELECTED_BUSINESS');
+    expect(metaPartnerService.verifyDatasetAccess).not.toHaveBeenCalled();
+    expect(metaPartnerService.verifyDatasetAgencyAccess).not.toHaveBeenCalled();
+  });
+
+  it('keeps fulfillment partial when system-user tasks verify but the selected human does not', async () => {
+    vi.mocked(accessRequestService.getAccessRequestByToken).mockResolvedValue({
+      data: {
+        id: 'request-a',
+        agencyId: 'agency-a',
+        metaAccessConfig: {
+          recipients: [
+            { type: 'human', id: 'person-1', name: 'Jon High' },
+            { type: 'system_user', id: 'system-user-1', name: 'Automation' },
+          ],
+          pageTasks: ['MANAGE', 'ADVERTISE'],
+          adAccountTasks: ['ANALYZE'],
+        },
+      } as any,
+      error: null,
+    });
+    vi.mocked(metaAssetsService.getAssignableRecipients).mockResolvedValue({
+      data: [
+        { type: 'human', id: 'person-1', name: 'Jon High' },
+        { type: 'system_user', id: 'system-user-1', name: 'Automation' },
+      ],
+      error: null,
+    });
+    vi.mocked(prisma.platformAuthorization.findUnique).mockResolvedValue({
+      id: 'pa-1',
+      authorizationEpoch: 3,
+      status: 'active',
+      metadata: {
+        selectedAssets: { meta_pages: { pages: ['page_2a'] } },
+        meta: {
+          selection: {
+            clientBusinessId: 'biz_client_2',
+            selectedAt: '2026-09-22T00:00:00.000Z',
+          },
+        },
+      },
+    } as any);
+    vi.mocked(prisma.agencyPlatformConnection.findUnique).mockResolvedValue({
+      id: 'agency-meta-1',
+      agencyId: 'agency-a',
+      businessId: 'partner-bm-1',
+      status: 'active',
+      metadata: {},
+    } as any);
+    vi.mocked(metaOBOService.getClientAccessTokenForOBO).mockResolvedValue({
+      data: { accessToken: 'client-admin-user-token' },
+      error: null,
+    });
+    vi.mocked(metaOBOService.ensureManagedBusinessRelationship).mockResolvedValue({
+      data: { status: 'linked', partnerBusinessId: 'partner-bm-1', clientBusinessId: 'biz_client_2' },
+      error: null,
+    } as any);
+    vi.mocked(metaPartnerService.grantPageAccess).mockResolvedValue();
+    vi.mocked(metaPartnerService.verifyPageAccess).mockImplementation(async (_token, _page, recipientId) =>
+      recipientId === 'system-user-1'
+        ? { verified: true, assignedTasks: ['MANAGE', 'ADVERTISE'] }
+        : { verified: false, assignedTasks: ['ADVERTISE'] }
+    );
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/client/token-a/grant-meta-access',
+      payload: { connectionId: 'conn-1', assetTypes: ['page'] },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().data).toMatchObject({ success: false, partial: true });
+    expect(response.json().data.assetGrantResults).toEqual(expect.arrayContaining([
+      expect.objectContaining({ recipientType: 'human', recipientId: 'person-1', status: 'failed' }),
+      expect.objectContaining({ recipientType: 'system_user', recipientId: 'system-user-1', status: 'verified' }),
+    ]));
+    expect(prisma.metaAssetGrant.updateMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ recipientType: 'human', recipientId: 'person-1' }),
+      data: expect.objectContaining({ status: 'blocked' }),
+    }));
+    expect(prisma.metaAssetGrant.updateMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ recipientType: 'system_user', recipientId: 'system-user-1' }),
+      data: expect.objectContaining({ status: 'verified', verifiedAuthorizationEpoch: 3 }),
+    }));
+  });
+
+  it('verifies a retry before repeating a Meta assignment after read-back timed out', async () => {
+    vi.mocked(accessRequestService.getAccessRequestByToken).mockResolvedValue({
+      data: {
+        id: 'request-a', agencyId: 'agency-a',
+        metaAccessConfig: { recipients: [{ type: 'system_user', id: 'system-user-1' }], pageTasks: ['MANAGE'] },
+      } as any,
+      error: null,
+    });
+    vi.mocked(prisma.platformAuthorization.findUnique).mockResolvedValue({
+      id: 'pa-1', connectionId: 'conn-1', platform: 'meta', secretId: 'secret-1', status: 'active', authorizationEpoch: 1,
+      metadata: {
+        selectedAssets: { meta_pages: { pages: ['page_2a'] } },
+        meta: { selection: { clientBusinessId: 'biz_client_2', selectedAt: '2026-09-22T00:00:00.000Z' } },
+      },
+    } as any);
+    vi.mocked(prisma.agencyPlatformConnection.findUnique).mockResolvedValue({
+      id: 'agency-meta-1', agencyId: 'agency-a', platform: 'meta', businessId: 'partner-bm-1', status: 'active', metadata: {},
+    } as any);
+    vi.mocked(metaAssetsService.getAssignableRecipients).mockResolvedValue({
+      data: [{ type: 'system_user', id: 'system-user-1', name: 'Automation' }], error: null,
+    });
+    vi.mocked(metaOBOService.getClientAccessTokenForOBO).mockResolvedValue({
+      data: { accessToken: 'client-admin-user-token' }, error: null,
+    });
+    vi.mocked(metaOBOService.ensureManagedBusinessRelationship).mockResolvedValue({
+      data: { status: 'linked', partnerBusinessId: 'partner-bm-1', clientBusinessId: 'biz_client_2' }, error: null,
+    } as any);
+    vi.mocked(prisma.metaAssetGrant.upsert)
+      .mockResolvedValueOnce({ id: 'recipient-grant', attemptVersion: 1 } as any)
+      .mockResolvedValueOnce({ id: 'business-grant', attemptVersion: 1 } as any)
+      .mockResolvedValueOnce({ id: 'recipient-grant', attemptVersion: 2 } as any)
+      .mockResolvedValueOnce({ id: 'business-grant', attemptVersion: 2 } as any)
+      .mockResolvedValueOnce({ id: 'recipient-grant', attemptVersion: 3 } as any)
+      .mockResolvedValueOnce({ id: 'business-grant', attemptVersion: 3 } as any);
+    vi.mocked(metaPartnerService.grantPageAccess).mockResolvedValue();
+    vi.mocked(metaPartnerService.verifyPageAccess)
+      .mockRejectedValueOnce(new Error('Meta read-back timeout'))
+      .mockRejectedValueOnce(new Error('Meta read-back still unavailable'))
+      .mockResolvedValue({ verified: true, assignedTasks: ['MANAGE'] });
+
+    const request = () => app.inject({
+      method: 'POST',
+      url: '/client/token-a/grant-meta-access',
+      payload: { connectionId: 'conn-1', assetTypes: ['page'] },
+    });
+
+    const firstAttempt = await request();
+    expect(firstAttempt.statusCode, firstAttempt.body).toBe(200);
+    expect(firstAttempt.json().data).toMatchObject({ success: false, partial: true });
+
+    const unverifiableRetry = await request();
+    expect(unverifiableRetry.statusCode).toBe(200);
+    expect(unverifiableRetry.json().data.assetGrantResults).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        recipientType: 'system_user',
+        recipientId: 'system-user-1',
+        errorCode: 'META_PREVIOUS_ASSIGNMENT_UNVERIFIED',
+      }),
+    ]));
+    expect(metaPartnerService.grantPageAccess).toHaveBeenCalledTimes(1);
+
+    const retry = await request();
+    expect(retry.statusCode).toBe(200);
+    expect(retry.json().data).toMatchObject({ success: true, partial: false });
+    expect(metaPartnerService.grantPageAccess).toHaveBeenCalledTimes(1);
+    expect(metaPartnerService.verifyPageAccess).toHaveBeenCalledTimes(3);
+    expect(prisma.metaAssetGrant.updateMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ recipientType: 'system_user', recipientId: 'system-user-1', attemptVersion: 3 }),
+      data: expect.objectContaining({ status: 'verified' }),
+    }));
+  });
+
+  it('does not publish results when a newer grant attempt supersedes this request', async () => {
+    vi.mocked(accessRequestService.getAccessRequestByToken).mockResolvedValue({
+      data: {
+        id: 'request-a', agencyId: 'agency-a',
+        metaAccessConfig: { recipients: [{ type: 'system_user', id: 'system-user-1' }], pageTasks: ['MANAGE'] },
+      } as any,
+      error: null,
+    });
+    vi.mocked(prisma.platformAuthorization.findUnique).mockResolvedValue({
+      id: 'pa-1', connectionId: 'conn-1', platform: 'meta', secretId: 'secret-1', status: 'active', authorizationEpoch: 1,
+      metadata: {
+        selectedAssets: { meta_pages: { pages: ['page_2a'] } },
+        meta: { selection: { clientBusinessId: 'biz_client_2', selectedAt: '2026-09-22T00:00:00.000Z' } },
+      },
+    } as any);
+    vi.mocked(prisma.agencyPlatformConnection.findUnique).mockResolvedValue({
+      id: 'agency-meta-1', agencyId: 'agency-a', platform: 'meta', businessId: 'partner-bm-1', status: 'active', metadata: {},
+    } as any);
+    vi.mocked(metaAssetsService.getAssignableRecipients).mockResolvedValue({
+      data: [{ type: 'system_user', id: 'system-user-1', name: 'Automation' }], error: null,
+    });
+    vi.mocked(metaOBOService.getClientAccessTokenForOBO).mockResolvedValue({
+      data: { accessToken: 'client-admin-user-token' }, error: null,
+    });
+    vi.mocked(metaOBOService.ensureManagedBusinessRelationship).mockResolvedValue({
+      data: { status: 'linked', partnerBusinessId: 'partner-bm-1', clientBusinessId: 'biz_client_2' }, error: null,
+    } as any);
+    vi.mocked(metaPartnerService.grantPageAccess).mockResolvedValue();
+    vi.mocked(metaPartnerService.verifyPageAccess).mockResolvedValue({ verified: true, assignedTasks: ['MANAGE'] });
+    vi.mocked(prisma.metaAssetGrant.updateMany).mockResolvedValue({ count: 0 } as any);
+
+    const response = await app.inject({
+      method: 'POST', url: '/client/token-a/grant-meta-access',
+      payload: { connectionId: 'conn-1', assetTypes: ['page'] },
+    });
+
+    expect(response.statusCode).toBe(409);
+    expect(response.json().error.code).toBe('META_GRANT_ATTEMPT_SUPERSEDED');
+    expect(prisma.platformAuthorization.update).not.toHaveBeenCalled();
+    expect(prisma.clientConnection.update).not.toHaveBeenCalled();
   });
 
   it('supports verified Meta page-only grants without attempting ad-account assignment', async () => {
@@ -573,6 +1589,7 @@ describe('Client Auth Asset Routes - Meta', () => {
       agencyId: 'agency-a',
       platform: 'meta',
       businessId: 'partner-bm-1',
+      status: 'active',
       metadata: {
         partnerAdminSystemUserTokenSecretId: 'agency-partner-secret',
       },
@@ -594,32 +1611,6 @@ describe('Client Auth Asset Routes - Meta', () => {
       },
       error: null,
     } as any);
-    vi.mocked(metaOBOService.provisionClientBusinessSystemUserToken).mockResolvedValue({
-      data: {
-        status: 'ready',
-        clientBusinessId: 'biz_client_2',
-        appId: 'test-meta-app-id',
-        scopes: ['ads_management', 'business_management'],
-        systemUserId: 'client-system-user-1',
-        tokenSecretId: 'client-system-user-secret',
-        provisionedAt: '2026-03-11T10:02:00.000Z',
-        lastAttemptAt: '2026-03-11T10:02:00.000Z',
-      },
-      error: null,
-    } as any);
-
-    vi.mocked(infisical.getOAuthTokens).mockImplementation(async (secretId: string) => {
-      if (secretId === 'agency-partner-secret') {
-        return { accessToken: 'partner-admin-system-user-token' } as any;
-      }
-
-      if (secretId === 'client-system-user-secret') {
-        return { accessToken: 'client-system-user-token' } as any;
-      }
-
-      return { accessToken: 'meta-access-token' } as any;
-    });
-
     vi.mocked(metaPartnerService.grantPageAccess).mockResolvedValue();
     vi.mocked(metaPartnerService.verifyPageAccess).mockResolvedValue({
       verified: true,
@@ -642,8 +1633,7 @@ describe('Client Auth Asset Routes - Meta', () => {
       selectedBusinessId: 'biz_client_2',
       selectedBusinessName: 'Client Two',
       managedBusinessLinkStatus: 'linked',
-      clientSystemUserStatus: 'ready',
-      assetGrantResults: [
+      assetGrantResults: expect.arrayContaining([
         expect.objectContaining({
           assetId: 'page_2a',
           assetType: 'page',
@@ -654,7 +1644,7 @@ describe('Client Auth Asset Routes - Meta', () => {
           assetType: 'ad_account',
           status: 'verified',
         }),
-      ],
+      ]),
     });
     expect(metaPartnerService.grantAdAccountAccess).not.toHaveBeenCalled();
     expect(metaPartnerService.verifyAdAccountAccess).not.toHaveBeenCalled();
@@ -670,9 +1660,23 @@ describe('Client Auth Asset Routes - Meta', () => {
         }),
       },
     });
+
+    vi.mocked(prisma.metaAssetGrant.findMany).mockImplementation(async (query: any) =>
+      query.where.recipientType === 'system_user'
+        ? [{ assetKind: 'page', assetId: 'page_2a', status: 'excluded' }] as any
+        : [] as any
+    );
+    const retry = await app.inject({
+      method: 'POST',
+      url: '/client/token-a/grant-meta-access',
+      payload: { connectionId: 'conn-1', assetTypes: ['page'] },
+    });
+    expect(retry.statusCode).toBe(200);
+    expect(retry.json().data).toMatchObject({ success: false, partial: true });
+    expect(metaPartnerService.grantPageAccess).toHaveBeenCalledTimes(1);
   });
 
-  it('returns partial Meta grant results when unsupported assets remain unresolved', async () => {
+  it('verifies direct Instagram partner sharing without requiring a selected Page link', async () => {
     vi.mocked(prisma.platformAuthorization.findUnique).mockResolvedValue({
       id: 'pa-1',
       connectionId: 'conn-1',
@@ -701,6 +1705,7 @@ describe('Client Auth Asset Routes - Meta', () => {
       agencyId: 'agency-a',
       platform: 'meta',
       businessId: 'partner-bm-1',
+      status: 'active',
       metadata: {
         partnerAdminSystemUserTokenSecretId: 'agency-partner-secret',
       },
@@ -722,36 +1727,14 @@ describe('Client Auth Asset Routes - Meta', () => {
       },
       error: null,
     } as any);
-    vi.mocked(metaOBOService.provisionClientBusinessSystemUserToken).mockResolvedValue({
-      data: {
-        status: 'ready',
-        clientBusinessId: 'biz_client_2',
-        appId: 'test-meta-app-id',
-        scopes: ['ads_management', 'business_management'],
-        systemUserId: 'client-system-user-1',
-        tokenSecretId: 'client-system-user-secret',
-        provisionedAt: '2026-03-11T10:02:00.000Z',
-        lastAttemptAt: '2026-03-11T10:02:00.000Z',
-      },
-      error: null,
-    } as any);
-
-    vi.mocked(infisical.getOAuthTokens).mockImplementation(async (secretId: string) => {
-      if (secretId === 'agency-partner-secret') {
-        return { accessToken: 'partner-admin-system-user-token' } as any;
-      }
-
-      if (secretId === 'client-system-user-secret') {
-        return { accessToken: 'client-system-user-token' } as any;
-      }
-
-      return { accessToken: 'meta-access-token' } as any;
-    });
-
     vi.mocked(metaPartnerService.grantPageAccess).mockResolvedValue();
     vi.mocked(metaPartnerService.verifyPageAccess).mockResolvedValue({
       verified: true,
       assignedTasks: ['MANAGE', 'CREATE_CONTENT', 'MODERATE', 'ADVERTISE'],
+    });
+    vi.mocked(metaAssetsService.getClientInstagramAssetsForBusiness).mockResolvedValue({
+      data: [{ id: 'ig_2', username: 'clienttwo' }],
+      error: null,
     });
 
     const response = await app.inject({
@@ -769,8 +1752,7 @@ describe('Client Auth Asset Routes - Meta', () => {
       selectedBusinessId: 'biz_client_2',
       selectedBusinessName: 'Client Two',
       managedBusinessLinkStatus: 'linked',
-      clientSystemUserStatus: 'ready',
-      assetGrantResults: [
+      assetGrantResults: expect.arrayContaining([
         expect.objectContaining({
           assetId: 'page_2a',
           assetType: 'page',
@@ -779,12 +1761,21 @@ describe('Client Auth Asset Routes - Meta', () => {
         {
           assetId: 'ig_2',
           assetType: 'instagram_account',
+          recipientType: 'system_user',
+          recipientId: 'client-system-user-1',
           requestedTasks: [],
           status: 'unresolved',
           errorCode: 'UNSUPPORTED_META_ASSET_TYPE',
           errorMessage: 'Instagram account automated grants are not yet supported',
         },
-      ],
+        expect.objectContaining({
+          assetId: 'ig_2',
+          assetType: 'instagram_account',
+          recipientType: 'business',
+          recipientId: 'partner-bm-1',
+          status: 'verified',
+        }),
+      ]),
     });
 
     expect(prisma.clientConnection.update).toHaveBeenCalledWith({
@@ -799,6 +1790,48 @@ describe('Client Auth Asset Routes - Meta', () => {
         }),
       },
     });
+
+    vi.mocked(prisma.platformAuthorization.findUnique).mockResolvedValue({
+      id: 'pa-1',
+      connectionId: 'conn-1',
+      platform: 'meta',
+      secretId: 'secret-1',
+      status: 'active',
+      metadata: {
+        selectedAssets: { meta_ads: { pages: ['page_2b'], instagramAccounts: ['ig_2'] } },
+        meta: { selection: {
+          clientBusinessId: 'biz_client_2',
+          clientBusinessName: 'Client Two',
+          selectedAt: '2026-09-23T00:00:00.000Z',
+        } },
+      },
+    } as any);
+    vi.mocked(clientAssetsService.fetchMetaAssets).mockResolvedValueOnce({
+      businesses: [{ id: 'biz_client_2', name: 'Client Two' }],
+      selectedBusinessId: 'biz_client_2',
+      selectedBusinessName: 'Client Two',
+      adAccounts: [],
+      pages: [{ id: 'page_2b', name: 'Shared Page' }],
+      instagramAccounts: [{ id: 'ig_2', username: 'clienttwo' }],
+      productCatalogs: [],
+      pixels: [],
+    });
+
+    const directInstagramResponse = await app.inject({
+      method: 'POST',
+      url: '/client/token-a/grant-meta-access',
+      payload: { connectionId: 'conn-1', assetTypes: ['instagram_account'] },
+    });
+    expect(directInstagramResponse.statusCode, directInstagramResponse.body).toBe(200);
+    expect(directInstagramResponse.json().data.assetGrantResults).toContainEqual(
+      expect.objectContaining({
+        assetId: 'ig_2',
+        assetType: 'instagram_account',
+        recipientType: 'business',
+        recipientId: 'partner-bm-1',
+        status: 'verified',
+      })
+    );
   });
 
   it('starts manual Meta ad-account sharing with the agency partner business id and waiting state', async () => {
@@ -823,6 +1856,7 @@ describe('Client Auth Asset Routes - Meta', () => {
       agencyId: 'agency-a',
       platform: 'meta',
       businessId: 'partner-bm-1',
+      status: 'active',
       metadata: {
         selectedBusinessName: 'Outdoor DIY',
       },
@@ -870,9 +1904,10 @@ describe('Client Auth Asset Routes - Meta', () => {
         }),
       },
     });
+
   });
 
-  it('verifies manually shared Meta ad accounts by checking agency business visibility', async () => {
+  it('keeps per-account verification results when one Meta read fails', async () => {
     vi.mocked(prisma.platformAuthorization.findUnique).mockResolvedValue({
       id: 'pa-1',
       connectionId: 'conn-1',
@@ -882,14 +1917,20 @@ describe('Client Auth Asset Routes - Meta', () => {
       metadata: {
         selectedAssets: {
           meta_ads: {
-            adAccounts: ['act_2a', 'act_missing'],
+            adAccounts: ['act_2a', 'act_missing', 'act_failed'],
             selectedAdAccountsWithNames: [
               { id: 'act_2a', name: 'DogTimez' },
               { id: 'act_missing', name: 'Still Pending' },
+              { id: 'act_failed', name: 'Read Failed' },
             ],
           },
         },
         meta: {
+          selection: {
+            clientBusinessId: 'biz_client_2',
+            clientBusinessName: 'Client Two',
+            selectedAt: '2026-03-11T09:00:00.000Z',
+          },
           obo: {
             assetGrantResults: [
               {
@@ -917,10 +1958,11 @@ describe('Client Auth Asset Routes - Meta', () => {
             status: 'waiting_for_manual_share',
             partnerBusinessId: 'partner-bm-1',
             partnerBusinessName: 'Outdoor DIY',
-            selectedAdAccountIds: ['act_2a', 'act_missing'],
+            selectedAdAccountIds: ['act_2a', 'act_missing', 'act_failed'],
             selectedAdAccounts: [
               { id: 'act_2a', name: 'DogTimez' },
               { id: 'act_missing', name: 'Still Pending' },
+              { id: 'act_failed', name: 'Read Failed' },
             ],
             startedAt: '2026-03-11T11:00:00.000Z',
           },
@@ -934,6 +1976,7 @@ describe('Client Auth Asset Routes - Meta', () => {
       platform: 'meta',
       businessId: 'partner-bm-1',
       secretId: 'agency-meta-secret',
+      status: 'active',
       metadata: {
         selectedBusinessName: 'Outdoor DIY',
       },
@@ -947,23 +1990,10 @@ describe('Client Auth Asset Routes - Meta', () => {
       return { accessToken: 'meta-access-token' } as any;
     });
 
-    const getAllAssetsSpy = vi
-      .spyOn(MetaConnector.prototype, 'getAllAssets')
-      .mockResolvedValue({
-        businessId: 'partner-bm-1',
-        businessName: 'Outdoor DIY',
-        adAccounts: [
-          {
-            id: 'act_2a',
-            name: 'DogTimez',
-            account_status: 1,
-            currency: 'USD',
-          },
-        ],
-        pages: [],
-        instagramAccounts: [],
-        productCatalogs: [],
-      } as any);
+    vi.mocked(metaPartnerService.verifyAdAccountAgencyAccess)
+      .mockResolvedValueOnce({ verified: true, assignedTasks: ['MANAGE', 'ADVERTISE', 'ANALYZE'] })
+      .mockResolvedValueOnce({ verified: false, assignedTasks: ['ADVERTISE'] })
+      .mockRejectedValueOnce(new Error('Meta read timeout'));
 
     const response = await app.inject({
       method: 'POST',
@@ -986,19 +2016,31 @@ describe('Client Auth Asset Routes - Meta', () => {
           assetName: 'DogTimez',
           status: 'verified',
           verifiedAt: expect.any(String),
+          assignedTasks: ['MANAGE', 'ADVERTISE', 'ANALYZE'],
         },
         {
           assetId: 'act_missing',
           assetName: 'Still Pending',
           status: 'unresolved',
-          errorCode: 'MANUAL_SHARE_PENDING',
+          errorCode: 'MANUAL_SHARE_OR_TASKS_PENDING',
           errorMessage:
-            'Ad account has not been shared to the agency business portfolio yet',
+            'Ad account has not been shared to the agency business portfolio yet; Meta must report these tasks: MANAGE, ADVERTISE, ANALYZE.',
+          assignedTasks: ['ADVERTISE'],
+        },
+        {
+          assetId: 'act_failed',
+          assetName: 'Read Failed',
+          status: 'failed',
+          errorCode: 'META_ACCESS_CHECK_FAILED',
+          errorMessage: 'Meta access could not be verified. Retry this check.',
         },
       ],
     });
 
-    expect(getAllAssetsSpy).toHaveBeenCalledWith('agency-meta-access-token', 'partner-bm-1');
+    expect(metaPartnerService.verifyAdAccountAgencyAccess).toHaveBeenNthCalledWith(
+      1, 'meta-access-token', 'act_2a', 'partner-bm-1', ['MANAGE', 'ADVERTISE', 'ANALYZE']
+    );
+    expect(metaPartnerService.verifyAdAccountAgencyAccess).toHaveBeenCalledTimes(3);
     expect(prisma.platformAuthorization.update).toHaveBeenCalledWith({
       where: { id: 'pa-1' },
       data: {
@@ -1014,12 +2056,21 @@ describe('Client Auth Asset Routes - Meta', () => {
                 expect.objectContaining({
                   assetId: 'act_2a',
                   assetType: 'ad_account',
+                  recipientType: 'business',
+                  recipientId: 'partner-bm-1',
+                  requestedTasks: ['MANAGE', 'ADVERTISE', 'ANALYZE'],
+                  verifiedTasks: ['MANAGE', 'ADVERTISE', 'ANALYZE'],
                   status: 'verified',
                 }),
                 expect.objectContaining({
                   assetId: 'act_missing',
                   assetType: 'ad_account',
                   status: 'unresolved',
+                }),
+                expect.objectContaining({
+                  assetId: 'act_failed',
+                  assetType: 'ad_account',
+                  status: 'failed',
                 }),
               ],
               lastVerifiedAt: expect.any(String),
@@ -1048,6 +2099,10 @@ describe('Client Auth Asset Routes - Meta', () => {
                   assetId: 'act_missing',
                   status: 'unresolved',
                 }),
+                expect.objectContaining({
+                  assetId: 'act_failed',
+                  status: 'failed',
+                }),
               ],
             }),
           }),
@@ -1056,7 +2111,37 @@ describe('Client Auth Asset Routes - Meta', () => {
     });
   });
 
-  it('rejects the legacy Meta page grant endpoint so callers must use the verified OBO route', async () => {
+  it('rejects manual verification for an ad account outside the selected client business', async () => {
+    vi.mocked(accessRequestService.getAccessRequestByToken).mockResolvedValue({
+      data: { id: 'request-a', agencyId: 'agency-a', platforms: [{ platform: 'meta_ads' }], metaAccessConfig: { adAccountTasks: ['ANALYZE'], recipients: [] } } as any,
+      error: null,
+    });
+    vi.mocked(prisma.agencyPlatformConnection.findUnique).mockResolvedValue({
+      id: 'agency-meta-1', agencyId: 'agency-a', platform: 'meta', businessId: 'partner-bm-1',
+      status: 'active', metadata: { selectedBusinessName: 'Agency Portfolio' },
+    } as any);
+    vi.mocked(prisma.platformAuthorization.findUnique).mockResolvedValue({
+      id: 'pa-1', connectionId: 'conn-1', platform: 'meta', secretId: 'secret-1', status: 'active',
+      metadata: {
+        selectedAssets: { meta_ads: { adAccounts: ['act_foreign'], selectedAdAccountsWithNames: [{ id: 'act_foreign', name: 'Foreign account' }] } },
+        meta: { selection: { clientBusinessId: 'biz_client_2', selectedAt: '2026-09-23T18:00:00.000Z' } },
+      },
+    } as any);
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/client/token-a/meta/manual-ad-account-share/verify',
+      payload: { connectionId: 'conn-1' },
+    });
+
+    expect(response.statusCode).toBe(403);
+    expect(response.json().error.code).toBe('META_ASSET_NOT_IN_SELECTED_BUSINESS');
+    expect(metaPartnerService.verifyAdAccountAgencyAccess).not.toHaveBeenCalled();
+    expect(prisma.metaAssetGrant.upsert).not.toHaveBeenCalled();
+    expect(prisma.metaAssetGrant.updateMany).not.toHaveBeenCalled();
+  });
+
+  it('does not expose the obsolete Meta page grant endpoint', async () => {
     const response = await app.inject({
       method: 'POST',
       url: '/client/token-a/grant-pages-access',
@@ -1066,21 +2151,13 @@ describe('Client Auth Asset Routes - Meta', () => {
       },
     });
 
-    expect(response.statusCode).toBe(410);
-    expect(response.json()).toEqual({
-      data: null,
-      error: {
-        code: 'LEGACY_META_ROUTE_DISABLED',
-        message:
-          'Legacy Meta page grants are disabled. Use /grant-meta-access with page-only verification instead.',
-      },
-    });
+    expect(response.statusCode).toBe(404);
     expect(prisma.clientConnection.update).not.toHaveBeenCalled();
     expect(prisma.platformAuthorization.update).not.toHaveBeenCalled();
     expect(auditService.createAuditLog).not.toHaveBeenCalled();
   });
 
-  it('rejects the legacy Meta ad-account self-attestation endpoint so callers must use manual verification', async () => {
+  it('does not expose the obsolete Meta ad-account self-attestation endpoint', async () => {
     const response = await app.inject({
       method: 'POST',
       url: '/client/token-a/ad-accounts-shared',
@@ -1090,15 +2167,7 @@ describe('Client Auth Asset Routes - Meta', () => {
       },
     });
 
-    expect(response.statusCode).toBe(410);
-    expect(response.json()).toEqual({
-      data: null,
-      error: {
-        code: 'LEGACY_META_ROUTE_DISABLED',
-        message:
-          'Legacy Meta ad-account completion is disabled. Use the manual share verification flow instead.',
-      },
-    });
+    expect(response.statusCode).toBe(404);
     expect(prisma.clientConnection.update).not.toHaveBeenCalled();
     expect(auditService.createAuditLog).not.toHaveBeenCalled();
   });
@@ -1161,6 +2230,7 @@ describe('Client Auth Asset Routes - Meta', () => {
       agencyId: 'agency-a',
       platform: 'meta',
       businessId: 'partner-bm-1',
+      status: 'active',
       metadata: {
         partnerAdminSystemUserTokenSecretId: 'agency-partner-secret',
       },
@@ -1182,32 +2252,6 @@ describe('Client Auth Asset Routes - Meta', () => {
       },
       error: null,
     } as any);
-    vi.mocked(metaOBOService.provisionClientBusinessSystemUserToken).mockResolvedValue({
-      data: {
-        status: 'ready',
-        clientBusinessId: 'biz_client_2',
-        appId: 'test-meta-app-id',
-        scopes: ['ads_management', 'business_management'],
-        systemUserId: 'client-system-user-1',
-        tokenSecretId: 'client-system-user-secret',
-        provisionedAt: '2026-03-11T10:02:00.000Z',
-        lastAttemptAt: '2026-03-11T10:02:00.000Z',
-      },
-      error: null,
-    } as any);
-
-    vi.mocked(infisical.getOAuthTokens).mockImplementation(async (secretId: string) => {
-      if (secretId === 'agency-partner-secret') {
-        return { accessToken: 'partner-admin-system-user-token' } as any;
-      }
-
-      if (secretId === 'client-system-user-secret') {
-        return { accessToken: 'client-system-user-token' } as any;
-      }
-
-      return { accessToken: 'meta-access-token' } as any;
-    });
-
     vi.mocked(metaPartnerService.grantPageAccess).mockResolvedValue();
     vi.mocked(metaPartnerService.verifyPageAccess).mockResolvedValue({
       verified: true,
@@ -1218,6 +2262,17 @@ describe('Client Auth Asset Routes - Meta', () => {
       verified: true,
       assignedTasks: ['MANAGE', 'ADVERTISE', 'ANALYZE'],
     });
+    vi.mocked(metaAssetsService.getAssetsForBusiness).mockResolvedValue({
+      data: {
+        businessId: 'partner-bm-1',
+        businessName: 'Agency Portfolio',
+        pages: ['page_1', 'page_2', 'page_3'].map((id) => ({ id, name: id })),
+        adAccounts: ['act_1', 'act_2'].map((id) => ({ id, name: id, sharedWithBusiness: true })),
+        instagramAccounts: [],
+        productCatalogs: [],
+      },
+      error: null,
+    } as any);
 
     const response = await app.inject({
       method: 'POST',
@@ -1233,16 +2288,16 @@ describe('Client Auth Asset Routes - Meta', () => {
     expect(metaPartnerService.grantAdAccountAccess).toHaveBeenCalledTimes(2);
     expect(metaPartnerService.verifyAdAccountAccess).toHaveBeenCalledTimes(2);
 
-    const results = response.json().data.assetGrantResults as Array<{ assetId: string; assetType: string; status: string }>;
-    expect(results).toHaveLength(5);
+    const results = response.json().data.assetGrantResults as Array<{ assetId: string; assetType: string; recipientType: string; status: string }>;
+    expect(results).toHaveLength(10);
     expect(results.every((result) => result.status === 'verified')).toBe(true);
-    expect(results.filter((result) => result.assetType === 'page').map((result) => result.assetId)).toEqual([
+    expect(results.filter((result) => result.assetType === 'page' && result.recipientType === 'system_user').map((result) => result.assetId)).toEqual([
       'page_1',
       'page_2',
       'page_3',
     ]);
     expect(
-      results.filter((result) => result.assetType === 'ad_account').map((result) => result.assetId)
+      results.filter((result) => result.assetType === 'ad_account' && result.recipientType === 'system_user').map((result) => result.assetId)
     ).toEqual(['act_1', 'act_2']);
   });
 });

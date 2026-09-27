@@ -38,6 +38,19 @@ describe('capture-posthog', () => {
     expect(captureMock).toHaveBeenCalledWith('invite_link_copied', { surface: 'detail' });
   });
 
+  it('strips invite and custom bearer values at the PostHog boundary', async () => {
+    const { capturePosthogEvent } = await import('../capture-posthog');
+    const pending = capturePosthogEvent('oauth_callback_failure', {
+      access_request_token: 'invite-secret',
+      token: 'provider-secret',
+      error_code: 'OAUTH_FAILED',
+    });
+    resolveImport!({ default: { capture: captureMock } });
+    await pending;
+
+    expect(captureMock).toHaveBeenCalledWith('oauth_callback_failure', { error_code: 'OAUTH_FAILED' });
+  });
+
   it('serializes concurrent captures so both events are recorded', async () => {
     const { capturePosthogEvent } = await import('../capture-posthog');
 
@@ -81,7 +94,9 @@ describe('capture-posthog', () => {
     await pending;
 
     expect(captureMock).toHaveBeenCalledTimes(2);
-    expect(captureMock.mock.calls[0]?.[0]).toBe('invite_link_copied');
-    expect(captureMock.mock.calls[1]?.[0]).toBe('invite_sent');
+    expect(captureMock.mock.calls).toEqual([
+      ['invite_link_copied', { access_request_id: 'req-1', surface: 'detail' }],
+      ['invite_sent', { access_request_id: 'req-1', channel: 'copy', surface: 'detail' }],
+    ]);
   });
 });

@@ -256,11 +256,21 @@ class InfisicalService {
     }
   }
 
-  /**
-   * Alias for deleteOAuthTokens for backward compatibility
-   */
+  /** Delete a secret, reporting failures so callers can retain retryable state. */
   async deleteSecret(secretName: string): Promise<void> {
-    return this.deleteOAuthTokens(secretName);
+    await this.initialize();
+    if (!this.client) throw new Error('Infisical client not initialized');
+
+    try {
+      await this.client.secrets().deleteSecret(secretName, {
+        projectId: env.INFISICAL_PROJECT_ID,
+        environment: env.INFISICAL_ENVIRONMENT,
+        type: SecretType.Shared,
+      });
+    } catch (error) {
+      if ((error as { statusCode?: number })?.statusCode === 404) return;
+      throw error;
+    }
   }
 
   /**

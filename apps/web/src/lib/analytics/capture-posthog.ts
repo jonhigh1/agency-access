@@ -4,6 +4,7 @@
  * during the first dynamic import (e.g. invite_link_copied + invite_sent on Copy Link).
  */
 import type posthog from 'posthog-js';
+import { omitSensitiveTokenProperties } from './omit-sensitive-token-properties';
 
 type PosthogClient = typeof posthog;
 
@@ -39,14 +40,14 @@ export async function capturePosthogEvent(
   properties?: Record<string, unknown>
 ): Promise<void> {
   await enqueueCapture((posthog) => {
-    posthog.capture(event, properties);
+    posthog.capture(event, properties ? omitSensitiveTokenProperties(properties) : undefined);
   });
 }
 
 export async function capturePosthogEvents(events: PosthogCapture[]): Promise<void> {
   await enqueueCapture((posthog) => {
     for (const { event, properties } of events) {
-      posthog.capture(event, properties);
+      posthog.capture(event, properties ? omitSensitiveTokenProperties(properties) : undefined);
     }
   });
 }

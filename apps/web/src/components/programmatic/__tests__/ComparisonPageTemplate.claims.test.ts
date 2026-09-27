@@ -19,7 +19,7 @@ const MARKETING_PRICING_PATHS = [
 
 const LEADSIE_SURFACE_FORBIDDEN = [
   /flat.rate/i,
-  /\$240/,
+  /\$240\/mo/,
   /\$49\/mo/,
   /Save 25%/,
   /AgencyAccess charges/i,

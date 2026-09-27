@@ -30,17 +30,44 @@ function ClientOAuthCallbackContent() {
 
   const code = searchParams.get('code') || searchParams.get('auth_code');
   const state = searchParams.get('state');
+  const providerError = searchParams.get('error');
+  const providerErrorReason = searchParams.get('error_reason');
+  const presentation = searchParams.get('presentation');
 
   useEffect(() => {
     async function handleCallback() {
+      const authSource = presentation === 'popup' ? 'client_meta_popup' : 'client_redirect';
+      const finishPopup = (result: { success: boolean; connectionId?: string; platform?: string; errorCode?: string }) => {
+        if (presentation !== 'popup') return false;
+        window.opener?.postMessage({ type: 'authhub:oauth-result', ...result }, window.location.origin);
+        window.close();
+        return true;
+      };
+
+      if (providerError || providerErrorReason) {
+        const denied = providerError === 'access_denied' || providerErrorReason === 'user_denied';
+        const message = denied
+          ? 'You declined or cancelled access. Return to the request to try again.'
+          : 'The provider could not complete authorization. Return to the request and try again.';
+        trackClientOAuthExchangeFailure({
+          platform: searchParams.get('platform'),
+          error_code: denied ? 'OAUTH_DENIED' : 'OAUTH_PROVIDER_ERROR',
+          error_message: message,
+          auth_source: authSource,
+        });
+        if (finishPopup({ success: false, errorCode: denied ? 'OAUTH_DENIED' : 'OAUTH_PROVIDER_ERROR' })) return;
+        setError(message);
+        setIsProcessing(false);
+        return;
+      }
+
       if (!code || !state) {
-        const returnToken = readInviteOAuthReturnToken();
         trackClientOAuthExchangeFailure({
           error_code: 'MISSING_OAUTH_PARAMS',
           error_message: 'Missing OAuth parameters. Restart authorization from the invite link.',
-          auth_source: 'client_redirect',
-          access_request_token: returnToken,
+          auth_source: authSource,
         });
+        if (finishPopup({ success: false, errorCode: 'MISSING_OAUTH_PARAMS' })) return;
         setError('Missing OAuth parameters. Restart authorization from the invite link.');
         setIsProcessing(false);
         return;
@@ -70,30 +97,30 @@ function ClientOAuthCallbackContent() {
 
         trackClientOAuthExchangeSuccess({
           platform: platformFromState,
-          access_request_token: token,
           connection_id: connectionId,
-          auth_source: 'client_redirect',
+          auth_source: authSource,
         });
 
         clearInviteOAuthReturnToken();
 
-        router.push(`/invite/${token}?connectionId=${connectionId}&platform=${platformFromState}&step=2`);
+        if (finishPopup({ success: true, connectionId, platform: platformFromState })) return;
+
+        router.replace(`/invite/${token}?connectionId=${connectionId}&platform=${platformFromState}&step=2`);
       } catch (err) {
-        const returnToken = readInviteOAuthReturnToken();
         trackClientOAuthExchangeFailure({
           platform: searchParams.get('platform'),
           error_code: 'OAUTH_EXCHANGE_FAILED',
           error_message: err instanceof Error ? err.message : 'Authorization failed',
-          auth_source: 'client_redirect',
-          access_request_token: returnToken,
+          auth_source: authSource,
         });
+        if (finishPopup({ success: false, errorCode: 'OAUTH_EXCHANGE_FAILED' })) return;
         setError(err instanceof Error ? err.message : 'Authorization failed');
         setIsProcessing(false);
       }
     }
 
     handleCallback();
-  }, [apiBaseUrl, code, router, searchParams, state]);
+  }, [apiBaseUrl, code, presentation, providerError, providerErrorReason, router, searchParams, state]);
 
   if (error) {
     return (

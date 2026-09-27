@@ -14,8 +14,15 @@ describe('MetaPageEngagementProof', () => {
       text: async () =>
         JSON.stringify({
           data: {
-            page: { id: 'page_1', name: 'Main Page' },
-            posts: [{ id: 'post_1', message: 'Hello from the Page' }],
+            page: {
+              id: 'page_1',
+              name: 'Main Page',
+              category: 'Local business',
+              managedTasks: ['MANAGE', 'ADVERTISE'],
+              followerCount: 150,
+            },
+            connectedInstagram: { id: 'ig_1', username: 'mainpage' },
+            posts: [{ id: 'post_1', createdTime: '2026-09-21T00:00:00+0000' }],
           },
           error: null,
         }),
@@ -30,7 +37,7 @@ describe('MetaPageEngagementProof', () => {
       />
     );
 
-    fireEvent.click(screen.getByRole('button', { name: /read page content/i }));
+    fireEvent.click(screen.getByRole('button', { name: /validate page access/i }));
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenCalledWith(
@@ -39,8 +46,11 @@ describe('MetaPageEngagementProof', () => {
       );
     });
 
-    expect(await screen.findByText(/page content returned for main page/i)).toBeInTheDocument();
-    expect(screen.getByText('Hello from the Page')).toBeInTheDocument();
+    expect(await screen.findByText(/page access validated for main page/i)).toBeInTheDocument();
+    expect(screen.getByText('MANAGE, ADVERTISE')).toBeInTheDocument();
+    expect(screen.getByText('@mainpage')).toBeInTheDocument();
+    expect(screen.getByText('Recent Page post')).toBeInTheDocument();
+    expect(document.querySelector('time')?.getAttribute('datetime')).toBe('2026-09-21T00:00:00+0000');
   });
 
   it('shows the Meta permission error instead of claiming success', async () => {
@@ -64,9 +74,68 @@ describe('MetaPageEngagementProof', () => {
       />
     );
 
-    fireEvent.click(screen.getByRole('button', { name: /read page content/i }));
+    fireEvent.click(screen.getByRole('button', { name: /validate page access/i }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/requires pages_read_engagement/i);
-    expect(screen.queryByText(/page content returned/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/page access validated/i)).not.toBeInTheDocument();
+  });
+
+  it('shows successful validation when Meta returns no recent public posts', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        text: async () => JSON.stringify({
+          data: {
+            page: { id: 'page_1', name: 'Main Page', managedTasks: [] },
+            posts: [],
+          },
+          error: null,
+        }),
+      } as Response)
+    );
+
+    render(
+      <MetaPageEngagementProof
+        selectedPage={{ id: 'page_1', name: 'Main Page' }}
+        connectionId="conn-1"
+        accessRequestToken="token-1"
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /validate page access/i }));
+
+    expect(await screen.findByText(/page access validated for main page/i)).toBeInTheDocument();
+    expect(screen.getByText('No recent public posts were returned.')).toBeInTheDocument();
+    expect(screen.queryByText('Recent Page post')).not.toBeInTheDocument();
+  });
+
+  it('shows a reconnect instruction when Meta rejects the user or Page token', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: false,
+        text: async () => JSON.stringify({
+          data: null,
+          error: {
+            code: 'REAUTHORIZATION_REQUIRED',
+            message: 'Meta access expired or the Page token is invalid. Reconnect Meta and try again.',
+          },
+        }),
+      } as Response)
+    );
+
+    render(
+      <MetaPageEngagementProof
+        selectedPage={{ id: 'page_1', name: 'Main Page' }}
+        connectionId="conn-1"
+        accessRequestToken="token-1"
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /validate page access/i }));
+
+    expect(await screen.findByRole('alert')).toHaveTextContent(/reconnect meta and try again/i);
+    expect(screen.queryByText(/page access validated/i)).not.toBeInTheDocument();
   });
 });

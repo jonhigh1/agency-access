@@ -1,6 +1,16 @@
 import { env } from '../../lib/env.js';
 import { META_GRAPH_VERSION } from '../../lib/meta-constants.js';
-import type { AccessLevel, MetaAdAccount, MetaPage, MetaInstagramAccount, MetaProductCatalog, MetaAllAssets } from '@agency-platform/shared';
+import { metaGraphGet, META_GRAPH_TIMEOUT_MS } from '../../lib/meta-graph-request.js';
+import { logger } from '../../lib/logger.js';
+import {
+  META_PERMISSION_CONTRACT,
+  type AccessLevel,
+  type MetaAdAccount,
+  type MetaAllAssets,
+  type MetaInstagramAccount,
+  type MetaPage,
+  type MetaProductCatalog,
+} from '@agency-platform/shared';
 
 /**
  * Meta (Facebook) OAuth Connector
@@ -42,28 +52,41 @@ interface MetaDebugTokenResponse {
   };
 }
 
+export class MetaGraphMutationError extends Error {
+  constructor(
+    message: string,
+    readonly status: number,
+    readonly metaCode?: number,
+    readonly metaSubcode?: number,
+  ) {
+    super(message);
+    this.name = 'MetaGraphMutationError';
+  }
+}
+
+async function throwMetaMutationError(response: Response, operation: string): Promise<never> {
+  const body = await response.text();
+  let payload: { error?: { message?: string; code?: number; error_subcode?: number } } = {};
+  try {
+    payload = JSON.parse(body);
+  } catch {
+    // Preserve HTTP status even when Meta returns a non-JSON error body.
+  }
+  throw new MetaGraphMutationError(
+    `Meta ${operation} failed: ${payload.error?.message || body}`,
+    response.status,
+    payload.error?.code,
+    payload.error?.error_subcode,
+  );
+}
+
 export class MetaConnector {
   private readonly appId: string;
   private readonly appSecret: string;
   private readonly loginForBusinessConfigId?: string;
   private readonly redirectUri: string;
 
-  /**
-   * Default Marketing API permissions for agency access
-   *
-   * These are NOT Facebook Login permissions (email, public_profile).
-   * These are Marketing API permissions for ads and business management.
-   *
-   * Matches the Meta permissions under App Review.
-   *
-   * Reference: https://developers.facebook.com/docs/marketing-api/overview
-   */
-  static readonly DEFAULT_SCOPES = [
-    'ads_management',      // Create and manage ads
-    'business_management', // Access Business Manager assets (includes page management)
-    'pages_read_engagement',
-    'pages_show_list',
-  ];
+  static readonly DEFAULT_SCOPES = [...META_PERMISSION_CONTRACT.core.permissions];
 
   constructor() {
     this.appId = env.META_APP_ID;
@@ -74,11 +97,35 @@ export class MetaConnector {
     this.redirectUri = `${env.API_URL}/agency-platforms/meta/callback`;
   }
 
+  private async getGraphCollection<T>(url: string, accessToken: string, failure: string): Promise<T[]> {
+    const items: T[] = [];
+    let nextUrl: string | null = url;
+    const visitedUrls = new Set<string>();
+
+    while (nextUrl) {
+      if (visitedUrls.has(nextUrl)) throw new Error('Meta returned a repeated pagination URL');
+      visitedUrls.add(nextUrl);
+      const response = await metaGraphGet(nextUrl, accessToken);
+      if (!response.ok) {
+        const body = typeof response.text === 'function' ? await response.text().catch(() => '') : '';
+        throw new Error(`${failure} ${response.status}: ${body}`);
+      }
+      const payload = await response.json() as { data?: T[]; paging?: { next?: string } };
+      items.push(...(payload.data || []));
+      const next = payload.paging?.next;
+      if (next && new URL(next).origin !== 'https://graph.facebook.com') {
+        throw new Error('Meta returned an invalid pagination URL');
+      }
+      nextUrl = next || null;
+    }
+    return items;
+  }
+
   /**
    * Generate OAuth authorization URL
    *
    * Uses Meta Marketing API permissions (NOT Facebook Login permissions).
-   * Default scopes are for ads management, business management, and page access.
+   * Default scopes are for ads management, business management, and Page selection.
    *
    * @param state - CSRF protection token (should be stored in session/database)
    * @param scopes - Marketing API permissions to request
@@ -123,7 +170,7 @@ export class MetaConnector {
 
     const response = await fetch(
       `https://graph.facebook.com/${META_GRAPH_VERSION}/oauth/access_token?${params.toString()}`,
-      { method: 'GET' }
+      { method: 'GET', signal: AbortSignal.timeout(META_GRAPH_TIMEOUT_MS), redirect: 'error' }
     );
 
     if (!response.ok) {
@@ -161,7 +208,7 @@ export class MetaConnector {
 
     const response = await fetch(
       `https://graph.facebook.com/${META_GRAPH_VERSION}/oauth/access_token?${params.toString()}`,
-      { method: 'GET' }
+      { method: 'GET', signal: AbortSignal.timeout(META_GRAPH_TIMEOUT_MS), redirect: 'error' }
     );
 
     if (!response.ok) {
@@ -217,9 +264,8 @@ export class MetaConnector {
     id: string;
     name: string;
   }> {
-    const response = await fetch(
-      `https://graph.facebook.com/${META_GRAPH_VERSION}/me?fields=id,name&access_token=${accessToken}`,
-      { method: 'GET' }
+    const response = await metaGraphGet(
+      `https://graph.facebook.com/${META_GRAPH_VERSION}/me?fields=id,name`, accessToken
     );
 
     if (!response.ok) {
@@ -238,12 +284,11 @@ export class MetaConnector {
   private async fetchDebugToken(accessToken: string): Promise<MetaDebugTokenResponse> {
     const params = new URLSearchParams({
       input_token: accessToken,
-      access_token: `${this.appId}|${this.appSecret}`,
     });
 
-    const response = await fetch(
+    const response = await metaGraphGet(
       `https://graph.facebook.com/${META_GRAPH_VERSION}/debug_token?${params.toString()}`,
-      { method: 'GET' }
+      `${this.appId}|${this.appSecret}`
     );
 
     if (!response.ok) {
@@ -296,15 +341,20 @@ export class MetaConnector {
    * @param accessToken - Token to revoke
    */
   async revokeToken(accessToken: string): Promise<void> {
-    const response = await fetch(
-      `https://graph.facebook.com/${META_GRAPH_VERSION}/me/permissions?access_token=${accessToken}`,
-      { method: 'DELETE' }
-    );
+    const response = await fetch(`https://graph.facebook.com/${META_GRAPH_VERSION}/me/permissions`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ access_token: accessToken }).toString(),
+      signal: AbortSignal.timeout(META_GRAPH_TIMEOUT_MS),
+    });
 
     if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`Meta token revocation failed: ${error}`);
+      const payload = await response.json().catch(() => null) as { error?: { code?: number } } | null;
+      if (payload?.error?.code === 190) return;
+      throw new Error('Meta app permission revocation failed');
     }
+
+    if (await response.json() !== true) throw new Error('Meta did not confirm app permission revocation');
   }
 
   /**
@@ -353,14 +403,6 @@ export class MetaConnector {
       return true;
     };
 
-    const withAccessToken = (url: string): string => {
-      const parsedUrl = new URL(url);
-      if (!parsedUrl.searchParams.has('access_token')) {
-        parsedUrl.searchParams.set('access_token', accessToken);
-      }
-      return parsedUrl.toString();
-    };
-
     const fetchBusinessCollection = async (
       url: string,
       extractBusinesses: (payload: any) => Array<{
@@ -370,11 +412,17 @@ export class MetaConnector {
         verification_status?: string;
       }>
     ): Promise<string[]> => {
-      let nextUrl: string | null = withAccessToken(url);
+      let nextUrl: string | null = url;
       const discoveredBusinessIds: string[] = [];
+      const visitedUrls = new Set<string>();
 
       while (nextUrl) {
-        const response = await fetch(nextUrl, { method: 'GET' });
+        if (visitedUrls.has(nextUrl)) throw new Error('Meta returned a repeated pagination URL');
+        visitedUrls.add(nextUrl);
+        if (new URL(nextUrl).origin !== 'https://graph.facebook.com') {
+          throw new Error('Meta returned an invalid pagination URL');
+        }
+        const response = await metaGraphGet(nextUrl, accessToken);
 
         if (!response.ok) {
           const error = await response.text();
@@ -394,13 +442,13 @@ export class MetaConnector {
           }
         }
 
-        nextUrl = data.paging?.next ? withAccessToken(data.paging.next) : null;
+        nextUrl = data.paging?.next || null;
       }
 
       return discoveredBusinessIds;
     };
 
-    const queuedBusinessIds = await fetchBusinessCollection(
+    await fetchBusinessCollection(
       `https://graph.facebook.com/${META_GRAPH_VERSION}/me/businesses?fields=id,name,vertical_name,verification_status`,
       (payload) => (payload.data || []) as Array<{
         id: string;
@@ -411,7 +459,7 @@ export class MetaConnector {
     );
 
     try {
-      const businessUserBusinessIds = await fetchBusinessCollection(
+      await fetchBusinessCollection(
         `https://graph.facebook.com/${META_GRAPH_VERSION}/me/business_users?fields=business{id,name,verification_status}`,
         (payload) =>
           ((payload.data || []) as Array<{
@@ -430,42 +478,8 @@ export class MetaConnector {
               verification_status?: string;
             } => Boolean(business))
       );
-
-      queuedBusinessIds.push(...businessUserBusinessIds);
     } catch (error) {
       console.warn('Failed to fetch supplemental Meta business_users data; continuing with primary businesses list.', error);
-    }
-
-    // OBO and partner setups can expose additional client portfolios under managed_businesses.
-    const pendingBusinessIds = [...queuedBusinessIds];
-    const traversedBusinessIds = new Set<string>();
-
-    while (pendingBusinessIds.length > 0) {
-      const currentBusinessId = pendingBusinessIds.shift();
-      if (!currentBusinessId || traversedBusinessIds.has(currentBusinessId)) {
-        continue;
-      }
-
-      traversedBusinessIds.add(currentBusinessId);
-
-      try {
-        const managedBusinessIds = await fetchBusinessCollection(
-          `https://graph.facebook.com/${META_GRAPH_VERSION}/${currentBusinessId}/managed_businesses?fields=id,name,vertical_name,verification_status`,
-          (payload) => (payload.data || []) as Array<{
-            id: string;
-            name: string;
-            vertical_name?: string;
-            verification_status?: string;
-          }>
-        );
-
-        pendingBusinessIds.push(...managedBusinessIds);
-      } catch (error) {
-        console.warn(
-          `Failed to fetch managed businesses for ${currentBusinessId}; continuing with directly accessible businesses only.`,
-          error
-        );
-      }
     }
 
     return {
@@ -478,30 +492,39 @@ export class MetaConnector {
    * Get ad accounts for a business
    */
   async getAdAccounts(accessToken: string, businessId: string): Promise<MetaAdAccount[]> {
-    const response = await fetch(
-      `https://graph.facebook.com/${META_GRAPH_VERSION}/${businessId}/owned_ad_accounts?fields=id,name,account_status,currency&access_token=${accessToken}`,
-      { method: 'GET' }
-    );
+    const fetchAccounts = async (edge: 'owned_ad_accounts' | 'client_ad_accounts') => {
+      return this.getGraphCollection<{
+          id: string;
+          name: string;
+          account_status: number;
+          currency: string;
+        }>(`https://graph.facebook.com/${META_GRAPH_VERSION}/${businessId}/${edge}?fields=id,name,account_status,currency`, accessToken, 'Failed to fetch ad accounts');
+    };
+    const [owned, shared] = await Promise.all([
+      fetchAccounts('owned_ad_accounts'),
+      fetchAccounts('client_ad_accounts'),
+    ]);
+    const accounts = new Map<string, {
+      id: string;
+      name: string;
+      account_status: number;
+      currency: string;
+      sharedWithBusiness?: true;
+    }>();
 
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`Failed to fetch ad accounts: ${error}`);
+    for (const account of owned) {
+      accounts.set(account.id, account);
+    }
+    for (const account of shared) {
+      accounts.set(account.id, { ...accounts.get(account.id), ...account, sharedWithBusiness: true });
     }
 
-    const data = (await response.json()) as {
-      data?: Array<{
-        id: string;
-        name: string;
-        account_status: number;
-        currency: string;
-      }>;
-    };
-
-    return (data.data || []).map((account) => ({
+    return Array.from(accounts.values()).map((account) => ({
       id: account.id,
       name: account.name,
       accountStatus: account.account_status === 1 ? 'ACTIVE' : 'INACTIVE',
       currency: account.currency,
+      ...(account.sharedWithBusiness ? { sharedWithBusiness: true as const } : {}),
     }));
   }
 
@@ -509,89 +532,92 @@ export class MetaConnector {
    * Get pages for a business
    */
   async getPages(accessToken: string, businessId: string): Promise<MetaPage[]> {
-    const response = await fetch(
-      `https://graph.facebook.com/${META_GRAPH_VERSION}/${businessId}/owned_pages?fields=id,name,category,tasks&access_token=${accessToken}`,
-      { method: 'GET' }
-    );
-
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`Failed to fetch pages: ${error}`);
-    }
-
-    const data = (await response.json()) as {
-      data?: Array<{
+    const fetchPages = async (edge: 'owned_pages' | 'client_pages') => {
+      return this.getGraphCollection<{
         id: string;
         name: string;
         category: string;
         tasks: string[];
-      }>;
+      }>(`https://graph.facebook.com/${META_GRAPH_VERSION}/${businessId}/${edge}?fields=id,name,category,tasks`, accessToken, `Failed to fetch ${edge}`);
     };
 
-    return (data.data || []).map((page) => ({
-      id: page.id,
-      name: page.name,
-      category: page.category,
-      tasks: page.tasks,
-    }));
+    const [ownedPages, clientPages] = await Promise.all([
+      fetchPages('owned_pages'),
+      fetchPages('client_pages'),
+    ]);
+    const pages = new Map<string, MetaPage>();
+
+    for (const page of [...ownedPages, ...clientPages]) {
+      const existing = pages.get(page.id);
+      pages.set(page.id, {
+        id: page.id,
+        name: page.name,
+        category: page.category,
+        tasks: page.tasks?.length ? page.tasks : existing?.tasks || [],
+      });
+    }
+
+    return Array.from(pages.values());
   }
 
   /**
    * Get Instagram accounts for a business
    */
   async getInstagramAccounts(accessToken: string, businessId: string): Promise<MetaInstagramAccount[]> {
-    const response = await fetch(
-      `https://graph.facebook.com/${META_GRAPH_VERSION}/${businessId}/instagram_accounts?fields=id,username,profile_picture_url&access_token=${accessToken}`,
-      { method: 'GET' }
-    );
-
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`Failed to fetch Instagram accounts: ${error}`);
-    }
-
-    const data = (await response.json()) as {
-      data?: Array<{
+    const data = await this.getGraphCollection<{
         id: string;
         username: string;
         profile_picture_url?: string;
-      }>;
-    };
+      }>(`https://graph.facebook.com/${META_GRAPH_VERSION}/${businessId}/instagram_accounts?fields=id,username,profile_picture_url`, accessToken, 'Failed to fetch Instagram accounts');
 
-    return (data.data || []).map((account) => ({
+    return data.map((account) => ({
       id: account.id,
       username: account.username,
       profilePictureUrl: account.profile_picture_url,
     }));
   }
 
+  async getClientInstagramAccounts(accessToken: string, businessId: string): Promise<MetaInstagramAccount[]> {
+    const response = await metaGraphGet(
+      `https://graph.facebook.com/${META_GRAPH_VERSION}/${businessId}/client_instagram_assets?fields=id,ig_user_id,ig_username`, accessToken
+    );
+    if (!response.ok) {
+      throw new Error(`Failed to fetch client Instagram assets: ${await response.text()}`);
+    }
+
+    const data = (await response.json()) as {
+      data?: Array<{ id?: string; ig_user_id?: string; ig_username?: string }>;
+    };
+    return (data.data || [])
+      .filter((asset): asset is { id: string; ig_user_id: string; ig_username: string } =>
+        Boolean(asset.ig_user_id && asset.ig_username)
+      )
+      .map((asset) => ({ id: asset.ig_user_id, username: asset.ig_username }));
+  }
+
   /**
    * Get product catalogs for a business
    */
   async getProductCatalogs(accessToken: string, businessId: string): Promise<MetaProductCatalog[]> {
-    const response = await fetch(
-      `https://graph.facebook.com/${META_GRAPH_VERSION}/${businessId}/owned_product_catalogs?fields=id,name,catalog_type&access_token=${accessToken}`,
-      { method: 'GET' }
-    );
-
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(`Failed to fetch product catalogs: ${error}`);
-    }
-
-    const data = (await response.json()) as {
-      data?: Array<{
-        id: string;
-        name: string;
-        catalog_type: string;
-      }>;
+    const fetchCatalogs = async (edge: 'owned_product_catalogs' | 'client_product_catalogs') => {
+      try {
+        return await this.getGraphCollection<{ id: string; name: string; catalog_type: string }>(
+          `https://graph.facebook.com/${META_GRAPH_VERSION}/${businessId}/${edge}?fields=id,name,catalog_type`, accessToken, `Failed to fetch Meta product catalogs: ${edge} returned`);
+      } catch (error) {
+        logger.warn('Failed to fetch Meta product catalogs', { businessId, edge });
+        throw error;
+      }
     };
 
-    return (data.data || []).map((catalog) => ({
+    const [owned, client] = await Promise.all([
+      fetchCatalogs('owned_product_catalogs'),
+      fetchCatalogs('client_product_catalogs'),
+    ]);
+    return Array.from(new Map([...owned, ...client].map((catalog) => [catalog.id, {
       id: catalog.id,
       name: catalog.name,
       catalogType: catalog.catalog_type,
-    }));
+    }])).values());
   }
 
   /**
@@ -599,9 +625,8 @@ export class MetaConnector {
    */
   async getAllAssets(accessToken: string, businessId: string): Promise<MetaAllAssets> {
     // Fetch business name first
-    const businessResponse = await fetch(
-      `https://graph.facebook.com/${META_GRAPH_VERSION}/${businessId}?fields=name&access_token=${accessToken}`,
-      { method: 'GET' }
+    const businessResponse = await metaGraphGet(
+      `https://graph.facebook.com/${META_GRAPH_VERSION}/${businessId}?fields=name`, accessToken
     );
 
     if (!businessResponse.ok) {
@@ -630,21 +655,14 @@ export class MetaConnector {
   }
 
   /**
-   * Verify agency has access to client's Meta assets
-   *
-   * Uses agency's OAuth token to query Meta Business Manager API for granted partnerships.
-   *
-   * @param agencyAccessToken - Agency's OAuth access token
-   * @param businessId - Agency's Business Manager ID
-   * @param clientEmail - Client's email (for validation)
-   * @param requiredAccessLevel - Minimum access level required
-   * @returns Verification result with granted access details
+   * Legacy generic verification has no selected asset or recipient to read back.
+   * Fail closed; Meta access must use the per-asset fulfillment verifier.
    */
   async verifyClientAccess(
-    agencyAccessToken: string,
-    businessId: string,
-    clientEmail: string,
-    requiredAccessLevel: AccessLevel
+    _agencyAccessToken: string,
+    _businessId: string,
+    _clientEmail: string,
+    _requiredAccessLevel: AccessLevel
   ): Promise<{
     hasAccess: boolean;
     accessLevel: AccessLevel;
@@ -657,61 +675,13 @@ export class MetaConnector {
     }>;
     error?: string;
   }> {
-    try {
-      // Query the agency's Business Manager to check partnerships
-      // This returns all businesses the agency manages
-      const businessResponse = await fetch(
-        `https://graph.facebook.com/${META_GRAPH_VERSION}/${businessId}?fields=name,id&access_token=${agencyAccessToken}`,
-        { method: 'GET' }
-      );
+    return {
+      hasAccess: false,
+      accessLevel: 'read_only',
+      assets: [],
+      error: 'Meta verification requires asset-specific assignment read-back; Business Portfolio identity alone is not proof of access.',
+    };
 
-      if (!businessResponse.ok) {
-        return {
-          hasAccess: false,
-          accessLevel: 'read_only',
-          assets: [],
-          error: 'Failed to verify Business Manager access',
-        };
-      }
-
-      const businessData = await businessResponse.json() as {
-        name?: string;
-        id?: string;
-      };
-
-      // For MVP, we consider access granted if the Business Manager exists and token is valid
-      // In production, you would query specific client relationships
-      // This could be done via:
-      // 1. Querying client's business settings for partner relationships
-      // 2. Checking granted ad accounts and permissions
-      // 3. Verifying specific access levels match requirements
-
-      // Map access levels to Meta permissions
-      const accessLevelMapping: Record<AccessLevel, string[]> = {
-        admin: ['ADVERTISE', 'MANAGE', 'ANALYZE'],
-        standard: ['ADVERTISE', 'ANALYZE'],
-        read_only: ['ANALYZE'],
-        email_only: [],
-      };
-
-      // For MVP, return basic verification
-      // In production, query the client's business to find this agency as a partner
-      const hasAccess = businessData.id === businessId;
-
-      return {
-        hasAccess,
-        accessLevel: hasAccess ? requiredAccessLevel : 'read_only',
-        businessName: businessData.name,
-        assets: [],
-      };
-    } catch (error) {
-      return {
-        hasAccess: false,
-        accessLevel: 'read_only',
-        assets: [],
-        error: error instanceof Error ? error.message : 'Unknown error',
-      };
-    }
   }
 
   /**
@@ -756,16 +726,7 @@ export class MetaConnector {
     );
 
     if (!response.ok) {
-      const error = await response.text();
-      let parsedError;
-      try {
-        parsedError = JSON.parse(error);
-      } catch {
-        throw new Error(`Meta ad account creation failed: ${error}`);
-      }
-      throw new Error(
-        `Meta ad account creation failed: ${parsedError.error?.message || error}`
-      );
+      await throwMetaMutationError(response, 'ad account creation');
     }
 
     const data = (await response.json()) as {
@@ -819,16 +780,7 @@ export class MetaConnector {
     );
 
     if (!response.ok) {
-      const error = await response.text();
-      let parsedError;
-      try {
-        parsedError = JSON.parse(error);
-      } catch {
-        throw new Error(`Meta product catalog creation failed: ${error}`);
-      }
-      throw new Error(
-        `Meta product catalog creation failed: ${parsedError.error?.message || error}`
-      );
+      await throwMetaMutationError(response, 'product catalog creation');
     }
 
     const data = (await response.json()) as {
@@ -854,9 +806,8 @@ export class MetaConnector {
   async getUserPages(
     accessToken: string
   ): Promise<Array<{ id: string; name: string; category?: string }>> {
-    const response = await fetch(
-      `https://graph.facebook.com/${META_GRAPH_VERSION}/me/accounts?fields=id,name,category&access_token=${accessToken}`,
-      { method: 'GET' }
+    const response = await metaGraphGet(
+      `https://graph.facebook.com/${META_GRAPH_VERSION}/me/accounts?fields=id,name,category`, accessToken
     );
 
     if (!response.ok) {
@@ -923,16 +874,7 @@ export class MetaConnector {
     );
 
     if (!response.ok) {
-      const error = await response.text();
-      let parsedError;
-      try {
-        parsedError = JSON.parse(error);
-      } catch {
-        throw new Error(`Meta business creation failed: ${error}`);
-      }
-      throw new Error(
-        `Meta business creation failed: ${parsedError.error?.message || error}`
-      );
+      await throwMetaMutationError(response, 'business creation');
     }
 
     const data = (await response.json()) as {

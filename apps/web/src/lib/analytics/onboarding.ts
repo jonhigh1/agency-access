@@ -1,17 +1,17 @@
 import { capturePosthogEvent } from '@/lib/analytics/capture-posthog';
-import { omitCustomTokenProperty } from '@/lib/analytics/omit-custom-token-property';
+import { omitSensitiveTokenProperties } from '@/lib/analytics/omit-sensitive-token-properties';
 
 type OnboardingEventProperties = Record<string, unknown>;
 
 /**
  * PostHog adds `properties.token` (phc_ project key) on every event for ingestion.
- * Never pass a custom `token` prop — use `access_request_token` / `accessRequestId`.
+ * Never send bearer values in analytics. Use stable IDs for event correlation.
  */
 export function trackOnboardingEvent(
   eventName: string,
   properties: OnboardingEventProperties
 ) {
-  const captureProperties = omitCustomTokenProperty(properties);
+  const captureProperties = omitSensitiveTokenProperties(properties);
   void capturePosthogEvent(eventName, captureProperties);
 
   if (typeof window === 'undefined') {

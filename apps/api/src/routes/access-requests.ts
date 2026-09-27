@@ -24,6 +24,11 @@ const listAccessRequestsQuerySchema = z.object({
   offset: z.coerce.number().int().min(0).default(0),
 });
 
+const excludeMetaGrantSchema = z.object({
+  reason: z.string().trim().min(10).max(500),
+  confirmed: z.literal(true),
+});
+
 const ACCESS_LEVEL_MAP: Record<string, 'manage' | 'view_only'> = {
   admin: 'manage',
   standard: 'manage',
@@ -127,7 +132,7 @@ export async function accessRequestRoutes(fastify: FastifyInstance) {
     };
 
     // Proceed with access request creation
-    const result = await accessRequestService.createAccessRequest(transformedRequestBody);
+    const result = await accessRequestService.createAccessRequest(transformedRequestBody, request);
 
     if (result.error) {
       const statusCode = result.error.code === 'SUBDOMAIN_TAKEN' ? 409 : 400;
@@ -152,7 +157,8 @@ export async function accessRequestRoutes(fastify: FastifyInstance) {
         result.error.code === 'NOT_FOUND' ||
         result.error.code === 'EXPIRED' ||
         result.error.code === 'REQUEST_NOT_FOUND' ||
-        result.error.code === 'REQUEST_EXPIRED'
+        result.error.code === 'REQUEST_EXPIRED' ||
+        result.error.code === 'REQUEST_REVOKED'
       ) ? 404 : 400;
       return reply.code(statusCode).send({
         data: null,
@@ -287,7 +293,7 @@ export async function accessRequestRoutes(fastify: FastifyInstance) {
         : {}),
     };
 
-    const result = await accessRequestService.updateAccessRequest(id, transformedRequestBody as any);
+    const result = await accessRequestService.updateAccessRequest(id, transformedRequestBody as any, request);
 
     if (result.error) {
       const statusCode = result.error.code === 'NOT_FOUND' ? 404 : 400;
@@ -338,6 +344,10 @@ export async function accessRequestRoutes(fastify: FastifyInstance) {
     const principalAgencyId = (request as any).principalAgencyId as string;
 
     const existing = await accessRequestService.getAccessRequestById(id);
+    if (existing.error) {
+      const statusCode = existing.error.code === 'NOT_FOUND' ? 404 : 500;
+      return reply.code(statusCode).send({ data: null, error: existing.error });
+    }
     if (!existing.error && existing.data) {
       const accessError = assertAgencyAccess((existing.data as any).agencyId, principalAgencyId);
       if (accessError) {
@@ -346,11 +356,6 @@ export async function accessRequestRoutes(fastify: FastifyInstance) {
           error: accessError,
         });
       }
-    } else if (existing.error) {
-      return reply.code(404).send({
-        data: null,
-        error: existing.error,
-      });
     }
 
     const result = await accessRequestReminderService.sendInviteReminder(id);
@@ -394,6 +399,34 @@ export async function accessRequestRoutes(fastify: FastifyInstance) {
     return reply.send(result);
   });
 
+  // Exclude one Meta grant
+  fastify.post('/access-requests/:id/meta-grants/:grantId/exclude', {
+    onRequest: [authenticate(), requirePrincipalAgency],
+  }, async (request, reply) => {
+    const { id, grantId } = request.params as { id: string; grantId: string };
+    const body = excludeMetaGrantSchema.safeParse(request.body);
+    if (!body.success) {
+      return sendError(reply, 'VALIDATION_ERROR', 'A confirmed exclusion reason is required', 400);
+    }
+
+    const result = await accessRequestService.excludeMetaGrant({
+      accessRequestId: id,
+      grantId,
+      agencyId: (request as any).principalAgencyId as string,
+      ownerSubject: (request as any).user.sub as string,
+      actorEmail:
+        ((request as any).user?.email as string | undefined) ||
+        ((request as any).user?.sub as string | undefined) ||
+        'agency-owner',
+      reason: body.data.reason,
+    });
+    if (result.error) {
+      const statusCode = result.error.code === 'NOT_FOUND' ? 404 : result.error.code === 'INTERNAL_ERROR' ? 500 : 403;
+      return reply.code(statusCode).send(result);
+    }
+    return reply.send(result);
+  });
+
   // Cancel access request
   fastify.post('/access-requests/:id/cancel', {
     onRequest: [authenticate(), requirePrincipalAgency],
@@ -401,7 +434,7 @@ export async function accessRequestRoutes(fastify: FastifyInstance) {
     const { id } = request.params as { id: string };
     const principalAgencyId = (request as any).principalAgencyId as string;
 
-    const existing = await accessRequestService.getAccessRequestOwnershipById(id);
+    const existing = await accessRequestService.getAccessRequestById(id);
     if (existing.error) {
       const statusCode = existing.error.code === 'NOT_FOUND' ? 404 : 500;
       return reply.code(statusCode).send({
@@ -420,36 +453,20 @@ export async function accessRequestRoutes(fastify: FastifyInstance) {
       }
     }
 
-    const result = await accessRequestService.cancelAccessRequest(id);
+    const result = await accessRequestService.cancelAccessRequest(id, {
+      userEmail:
+        ((request as any).user?.email as string | undefined) ||
+        ((request as any).user?.sub as string | undefined) ||
+        'agency',
+      ipAddress: request.ip || '0.0.0.0',
+      userAgent: (request.headers['user-agent'] as string) || 'unknown',
+    });
 
     if (result.error) {
       const statusCode = result.error.code === 'NOT_FOUND' ? 404 : 500;
       return reply.code(statusCode).send({
         data: null,
         error: result.error,
-      });
-    }
-
-    if (existing.data) {
-      void auditService.createAuditLog({
-        agencyId: (existing.data as any).agencyId,
-        userEmail:
-          ((request as any).user?.email as string | undefined) ||
-          ((request as any).user?.sub as string | undefined) ||
-          'agency',
-        action: 'ACCESS_REQUEST_REVOKED',
-        resourceType: 'access_request',
-        resourceId: id,
-        metadata: {
-          clientName: (existing.data as any).clientName,
-          clientEmail: (existing.data as any).clientEmail,
-        },
-        request,
-      }).catch((error) => {
-        fastify.log.warn({
-          accessRequestId: id,
-          error: error instanceof Error ? error.message : String(error),
-        }, 'Failed to audit access request cancellation');
       });
     }
 

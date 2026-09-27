@@ -8,6 +8,7 @@
 import * as Sentry from "@sentry/node";
 import type { ErrorEvent, EventHint } from "@sentry/node";
 import { nodeProfilingIntegration } from "@sentry/profiling-node";
+import { redactSentryEvent } from "./lib/sentry-redaction.js";
 
 // Get DSN from environment
 const dsn = process.env.SENTRY_DSN || "https://336d2646d3970e13ba997b0f41a0c8dd@o4511018218946560.ingest.us.sentry.io/4511018267574272";
@@ -49,17 +50,8 @@ if (!dsn || dsn === "") {
       release: process.env.APP_VERSION || undefined,
 
       // Filter out sensitive data
-      beforeSend(event: ErrorEvent, hint: EventHint) {
-        // Filter sensitive headers
-        if (event.request?.headers) {
-          const {
-            authorization,
-            cookie,
-            "x-api-key": xApiKey,
-            ...safeHeaders
-          } = event.request.headers;
-          event.request.headers = safeHeaders;
-        }
+      beforeSend(event: ErrorEvent, _hint: EventHint) {
+        event = redactSentryEvent(event);
 
         // Filter user data
         if (event.user) {
@@ -68,6 +60,12 @@ if (!dsn || dsn === "") {
         }
 
         return event;
+      },
+      beforeSendTransaction(event) {
+        return redactSentryEvent(event);
+      },
+      beforeSendLog(log) {
+        return redactSentryEvent(log);
       },
     });
 

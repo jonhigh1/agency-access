@@ -90,7 +90,8 @@ describe('Access Requests Routes - Security', () => {
 
     expect(response.statusCode).toBe(201);
     expect(accessRequestService.createAccessRequest).toHaveBeenCalledWith(
-      expect.objectContaining({ agencyId: 'agency-owner' })
+      expect.objectContaining({ agencyId: 'agency-owner' }),
+      expect.anything()
     );
   });
 });

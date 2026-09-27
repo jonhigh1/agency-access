@@ -23,7 +23,7 @@ import { CheckCircle2, AlertCircle, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SingleSelect } from '@/components/ui/single-select';
 import { resolveApiUrl } from '@/lib/api/api-env';
-import { parseJsonResponse } from '@/lib/api/parse-json-response';
+import { ApiResponseError, parseJsonResponse } from '@/lib/api/parse-json-response';
 
 // Currency options with symbols
 const CURRENCIES = [
@@ -88,6 +88,7 @@ interface MetaAssetCreatorProps {
   accessRequestToken: string;
   onSuccess?: (account: CreateAdAccountResponse) => void;
   onError?: (error: string) => void;
+  onReconcile?: () => Promise<boolean>;
 }
 
 type CreationState = 'idle' | 'loading' | 'success' | 'error';
@@ -98,10 +99,14 @@ export function MetaAssetCreator({
   accessRequestToken,
   onSuccess,
   onError,
+  onReconcile,
 }: MetaAssetCreatorProps) {
   const [state, setState] = useState<CreationState>('idle');
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [creationError, setCreationError] = useState<Error | null>(null);
+  const [isRefreshingAssets, setIsRefreshingAssets] = useState(false);
   const [createdAccount, setCreatedAccount] = useState<CreateAdAccountResponse | null>(null);
+  const requiresReconciliation = creationError instanceof ApiResponseError
+    && ['CREATION_OUTCOME_UNKNOWN', 'CREATION_IN_PROGRESS'].includes(creationError.code || '');
 
   // Form state
   const [accountName, setAccountName] = useState('');
@@ -113,7 +118,7 @@ export function MetaAssetCreator({
 
     // Validation
     if (!accountName.trim()) {
-      setErrorMessage('Please enter an account name');
+      setCreationError(new Error('Please enter an account name'));
       setState('error');
       onError?.('Account name is required');
       return;
@@ -121,7 +126,7 @@ export function MetaAssetCreator({
 
     try {
       setState('loading');
-      setErrorMessage(null);
+      setCreationError(null);
 
       const response = await fetch(
         resolveApiUrl(`/api/client/${accessRequestToken}/create/meta/ad-account`),
@@ -140,11 +145,11 @@ export function MetaAssetCreator({
 
       const json = await parseJsonResponse<{
         data?: CreateAdAccountResponse;
-        error?: { message?: string };
+        error?: { code?: string; message?: string };
       }>(response, { fallbackErrorMessage: 'Failed to create ad account' });
 
       if (json.error) {
-        throw new Error(json.error.message || 'Failed to create ad account');
+        throw new ApiResponseError(json.error.message || 'Failed to create ad account', json.error.code);
       }
 
       // Success
@@ -153,17 +158,10 @@ export function MetaAssetCreator({
       setState('success');
       onSuccess?.(account);
 
-      // Reset form after delay
-      setTimeout(() => {
-        setState('idle');
-        setAccountName('');
-        setCurrency('USD');
-        setTimezoneId('4');
-      }, 3000);
-
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to create ad account';
-      setErrorMessage(message);
+      const error = err instanceof Error ? err : new Error('Failed to create ad account');
+      const message = error.message;
+      setCreationError(error);
       setState('error');
       onError?.(message);
     }
@@ -171,7 +169,7 @@ export function MetaAssetCreator({
 
   const handleReset = () => {
     setState('idle');
-    setErrorMessage(null);
+    setCreationError(null);
     setCreatedAccount(null);
   };
 
@@ -215,16 +213,24 @@ export function MetaAssetCreator({
 
           <div className="flex-1">
             <h3 className="font-bold text-[var(--coral)] mb-1 font-display">Creation Failed</h3>
-            <p className="text-sm text-[var(--coral)] mb-3">{errorMessage}</p>
+            <p className="text-sm text-[var(--coral)] mb-3">{creationError?.message}</p>
+            {requiresReconciliation ? <p className="text-sm text-[rgb(var(--warning))] mb-3">Do not create another account until you refresh the Meta asset list and check for this account.</p> : null}
 
             <div className="flex gap-2">
-              <Button
-                variant="brutalist"
-                size="sm"
-                onClick={handleReset}
-              >
-                Try Again
-              </Button>
+              {requiresReconciliation && onReconcile ? (
+                <Button type="button" variant="secondary" size="sm" className="min-h-[44px]" disabled={isRefreshingAssets} onClick={async () => {
+                  setIsRefreshingAssets(true);
+                  try {
+                    await onReconcile();
+                  } finally {
+                    setIsRefreshingAssets(false);
+                  }
+                }}>{isRefreshingAssets ? 'Refreshing…' : 'Refresh asset list'}</Button>
+              ) : requiresReconciliation ? (
+                <p role="status" className="text-sm text-[rgb(var(--warning))]">Return to asset selection to refresh Meta assets. Do not repeat creation yet.</p>
+              ) : (
+                <Button variant="brutalist" size="sm" onClick={handleReset}>Try Again</Button>
+              )}
             </div>
           </div>
         </div>

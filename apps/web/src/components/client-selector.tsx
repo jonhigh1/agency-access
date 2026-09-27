@@ -11,10 +11,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { Search, Loader2, AlertCircle, Check } from 'lucide-react';
 import { useAuth } from '@clerk/nextjs';
 import { Client } from '@agency-platform/shared';
-import { useAuthOrBypass } from '@/lib/dev-auth';
-import { authorizedApiFetch } from '@/lib/api/authorized-api-fetch';
-import { getApiBaseUrl } from '@/lib/api/api-env';
-import { extractMessageFromBody } from '@/lib/api/extract-error';
+import { DEV_BYPASS_TOKEN, useAuthOrBypass } from '@/lib/dev-auth';
+import { AuthorizedApiError, authorizedApiFetch } from '@/lib/api/authorized-api-fetch';
 import { Button } from '@/components/ui/button';
 
 interface ClientSelectorProps {
@@ -61,11 +59,13 @@ export function ClientSelector({ onSelect, value }: ClientSelectorProps) {
       if (query) params.set('search', query);
       params.set('limit', '50');
 
-      const json = await authorizedApiFetch(`/api/clients?${params.toString()}`, {
-        getToken,
-        signal,
-        allowMissingToken: auth.isDevelopmentBypass,
-      });
+      const json = await authorizedApiFetch<PaginatedClientsResponse | { data: PaginatedClientsResponse }>(
+        `/api/clients?${params.toString()}`,
+        {
+          getToken: async () => (await getToken()) ?? (auth.isDevelopmentBypass ? DEV_BYPASS_TOKEN : null),
+          signal,
+        }
+      );
       if (signal.aborted) return;
       const result = Array.isArray(json?.data) ? json : json?.data ?? json;
       setClients(Array.isArray(result) ? result : (result as PaginatedClientsResponse).data || []);
@@ -78,6 +78,8 @@ export function ClientSelector({ onSelect, value }: ClientSelectorProps) {
   }, [auth.isDevelopmentBypass, getToken]);
 
   useEffect(() => {
+    if (!auth.isLoaded) return;
+
     const controller = new AbortController();
     const timeout = window.setTimeout(() => {
       void loadClients(searchQuery, controller.signal);
@@ -87,7 +89,7 @@ export function ClientSelector({ onSelect, value }: ClientSelectorProps) {
       window.clearTimeout(timeout);
       controller.abort();
     };
-  }, [loadClients, searchQuery]);
+  }, [auth.isLoaded, loadClients, searchQuery]);
 
   const refreshClients = () => {
     const controller = new AbortController();
@@ -118,37 +120,26 @@ export function ClientSelector({ onSelect, value }: ClientSelectorProps) {
     setCreating(true);
 
     try {
-      const token = await getToken();
-      if (!token && !auth.isDevelopmentBypass) throw new Error('No auth token');
-      const response = await fetch(`${getApiBaseUrl()}/api/clients`, {
+      const json = await authorizedApiFetch<{ data: Client }>('/api/clients', {
         method: 'POST',
-        headers: {
-          ...(token && { Authorization: `Bearer ${token}` }),
-          'Content-Type': 'application/json',
-        },
+        getToken: async () => (await getToken()) ?? (auth.isDevelopmentBypass ? DEV_BYPASS_TOKEN : null),
         body: JSON.stringify({ ...newClient, language: 'en' }),
       });
 
-      if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
-        const errorCode = data.errorCode || data.error?.code;
-        if (errorCode === 'CLIENT_EMAIL_EXISTS' || errorCode === 'EMAIL_EXISTS') {
-          errors.email = 'A client with this email already exists';
-          setFormErrors(errors);
-          return;
-        }
-        const msg = extractMessageFromBody(data, response.statusText || 'Failed to create client');
-        throw new Error(msg);
-      }
-
-      const json = await response.json();
-      // Handle both formats: { data: client } and direct client object
-      const createdClient: Client = 'data' in json ? json.data : json;
+      const createdClient = json.data;
       setActiveTab('existing'); // Switch back to existing tab
       setNewClient({ name: '', company: '', email: '' });
       onSelect(createdClient);
       refreshClients(); // Refresh client list
     } catch (err) {
+      if (
+        err instanceof AuthorizedApiError &&
+        (err.code === 'CLIENT_EMAIL_EXISTS' || err.code === 'EMAIL_EXISTS')
+      ) {
+        errors.email = 'A client with this email already exists';
+        setFormErrors(errors);
+        return;
+      }
       setCreateError(err instanceof Error ? err.message : 'Failed to create client');
     } finally {
       setCreating(false);

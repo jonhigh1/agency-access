@@ -25,9 +25,7 @@ describe('MetaPartnerService', () => {
       'https://graph.facebook.com/v25.0/page_123/assigned_users',
       expect.objectContaining({
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
+        signal: expect.any(AbortSignal),
       })
     );
 
@@ -39,7 +37,9 @@ describe('MetaPartnerService', () => {
       JSON.stringify(['MANAGE', 'CREATE_CONTENT', 'MODERATE', 'ADVERTISE'])
     );
     expect(params.get('business')).toBeNull();
-    expect(params.get('access_token')).toBe('client-system-user-token');
+    expect(params.get('access_token')).toBeNull();
+    expect(new Headers(request.headers).get('Authorization')).toBe('Bearer client-system-user-token');
+    expect(request.signal).toBeInstanceOf(AbortSignal);
   });
 
   it('grants ad account access with the documented user plus tasks mutation shape', async () => {
@@ -59,9 +59,7 @@ describe('MetaPartnerService', () => {
       'https://graph.facebook.com/v25.0/act_123/assigned_users',
       expect.objectContaining({
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
+        signal: expect.any(AbortSignal),
       })
     );
 
@@ -71,7 +69,9 @@ describe('MetaPartnerService', () => {
     expect(params.get('user')).toBe('system-user-42');
     expect(params.get('tasks')).toBe(JSON.stringify(['MANAGE', 'ADVERTISE', 'ANALYZE']));
     expect(params.get('business')).toBeNull();
-    expect(params.get('access_token')).toBe('client-system-user-token');
+    expect(params.get('access_token')).toBeNull();
+    expect(new Headers(request.headers).get('Authorization')).toBe('Bearer client-system-user-token');
+    expect(request.signal).toBeInstanceOf(AbortSignal);
   });
 
   it('verifies page access by checking the assigned users list for the expected system user and tasks', async () => {
@@ -95,15 +95,148 @@ describe('MetaPartnerService', () => {
     );
 
     expect(fetch).toHaveBeenCalledWith(
-      'https://graph.facebook.com/v25.0/page_123/assigned_users?access_token=client-system-user-token',
+      'https://graph.facebook.com/v25.0/page_123/assigned_users',
       expect.objectContaining({
         method: 'GET',
+        signal: expect.any(AbortSignal),
       })
     );
     expect(result).toEqual({
       verified: true,
       assignedTasks: ['MANAGE', 'CREATE_CONTENT', 'MODERATE', 'ADVERTISE'],
     });
+  });
+
+  it('follows assigned-user pagination before verifying a recipient', async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: [{ id: 'other-user', tasks: ['MANAGE'] }],
+          paging: { next: 'https://graph.facebook.com/v25.0/page_123/assigned_users?after=cursor-2' },
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ data: [{ id: 'system-user-42', tasks: ['MANAGE', 'ADVERTISE'] }] }),
+      } as Response);
+
+    await expect(metaPartnerService.verifyPageAccess(
+      'client-token', 'page_123', 'system-user-42', ['MANAGE', 'ADVERTISE']
+    )).resolves.toEqual({ verified: true, assignedTasks: ['MANAGE', 'ADVERTISE'] });
+    expect(fetch).toHaveBeenNthCalledWith(
+      2,
+      'https://graph.facebook.com/v25.0/page_123/assigned_users?after=cursor-2',
+      expect.objectContaining({ method: 'GET', signal: expect.any(AbortSignal) }),
+    );
+  });
+
+  it('does not send the access token to a non-Meta pagination host', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ data: [], paging: { next: 'https://attacker.example/collect' } }),
+    } as Response);
+
+    await expect(metaPartnerService.verifyPageAccess(
+      'client-token', 'page_123', 'system-user-42', ['MANAGE']
+    )).rejects.toThrow('Meta returned an invalid pagination URL');
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('stops when Meta repeats an assigned-user pagination URL', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        data: [],
+        paging: { next: 'https://graph.facebook.com/v25.0/page_123/assigned_users' },
+      }),
+    } as Response);
+
+    await expect(metaPartnerService.verifyPageAccess(
+      'client-token', 'page_123', 'system-user-42', ['MANAGE']
+    )).rejects.toThrow('Meta returned a repeated pagination URL');
+    expect(fetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('assigns and verifies Leads Access as a separate Page task', async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ success: true }) } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ data: [{ id: 'person-42', tasks: ['MANAGE_LEADS'] }] }),
+      } as Response);
+
+    await metaPartnerService.grantPageAccess('client-token', 'page_123', 'person-42', ['MANAGE_LEADS']);
+    const result = await metaPartnerService.verifyPageAccess(
+      'client-token', 'page_123', 'person-42', ['MANAGE_LEADS']
+    );
+
+    const mutation = vi.mocked(fetch).mock.calls[0]?.[1] as RequestInit;
+    expect(new URLSearchParams(mutation.body as string).get('tasks')).toBe(JSON.stringify(['MANAGE_LEADS']));
+    expect(vi.mocked(fetch).mock.calls[1]?.[0]).toBe(
+      'https://graph.facebook.com/v25.0/page_123/assigned_users'
+    );
+    expect(result).toEqual({ verified: true, assignedTasks: ['MANAGE_LEADS'] });
+  });
+
+  it('keeps Leads Access unverified when Meta read-back omits MANAGE_LEADS', async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({ data: [{ id: 'person-42', tasks: ['ADVERTISE'] }] }),
+    } as Response);
+
+    const result = await metaPartnerService.verifyPageAccess(
+      'client-token', 'page_123', 'person-42', ['MANAGE_LEADS']
+    );
+
+    expect(result).toEqual({ verified: false, assignedTasks: ['ADVERTISE'] });
+  });
+
+  it('verifies a Pixel recipient against Meta assigned-user task read-back', async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({ data: [{ id: 'person-42', tasks: ['ADVERTISE', 'ANALYZE'] }] }),
+    } as Response);
+
+    const result = await metaPartnerService.verifyDatasetAccess(
+      'client-token', 'pixel-1', 'person-42', ['ADVERTISE', 'ANALYZE'], 'client-business-1'
+    );
+
+    expect(fetch).toHaveBeenCalledWith(
+      'https://graph.facebook.com/v25.0/pixel-1/assigned_users?business=client-business-1',
+      expect.objectContaining({ method: 'GET', signal: expect.any(AbortSignal) })
+    );
+    expect(result).toEqual({ verified: true, assignedTasks: ['ADVERTISE', 'ANALYZE'] });
+  });
+
+  it('keeps a Pixel recipient unverified when Meta reports extra tasks', async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({ data: [{ id: 'person-42', tasks: ['ADVERTISE', 'ANALYZE', 'MANAGE'] }] }),
+    } as Response);
+
+    const result = await metaPartnerService.verifyDatasetAccess(
+      'client-token', 'pixel-1', 'person-42', ['ADVERTISE', 'ANALYZE'], 'client-business-1'
+    );
+
+    expect(result).toEqual({ verified: false, assignedTasks: ['ADVERTISE', 'ANALYZE', 'MANAGE'] });
+  });
+
+  it('verifies Pixel partner access and requested tasks from the agencies edge', async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({ data: [{ id: 'agency-business-1', permitted_tasks: ['ADVERTISE'] }] }),
+    } as Response);
+
+    const result = await metaPartnerService.verifyDatasetAgencyAccess(
+      'client-token', 'pixel-1', 'agency-business-1', ['ADVERTISE', 'ANALYZE']
+    );
+
+    expect(fetch).toHaveBeenCalledWith(
+      'https://graph.facebook.com/v25.0/pixel-1/agencies?fields=id,permitted_tasks',
+      expect.objectContaining({ method: 'GET', signal: expect.any(AbortSignal) })
+    );
+    expect(result).toEqual({ verified: false, assignedTasks: ['ADVERTISE'] });
   });
 
   it('returns unverified when the ad account assigned user is missing required tasks', async () => {
@@ -130,5 +263,205 @@ describe('MetaPartnerService', () => {
       verified: false,
       assignedTasks: ['ADVERTISE'],
     });
+  });
+
+  it('returns unverified when Meta read-back includes tasks beyond the requested set', async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        data: [{ id: 'system-user-42', tasks: ['MANAGE', 'ADVERTISE', 'ANALYZE', 'CREATE_CONTENT'] }],
+      }),
+    } as Response);
+
+    const result = await metaPartnerService.verifyAdAccountAccess(
+      'client-system-user-token',
+      'act_123',
+      'system-user-42',
+      ['MANAGE', 'ADVERTISE', 'ANALYZE']
+    );
+
+    expect(result).toEqual({
+      verified: false,
+      assignedTasks: ['MANAGE', 'ADVERTISE', 'ANALYZE', 'CREATE_CONTENT'],
+    });
+  });
+
+  it('grants catalog tasks to an assignee and verifies the same catalog assignment', async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ success: true }) } as Response)
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [
+        { id: 'system-user-42', tasks: ['ADVERTISE', 'AA_ANALYZE'] },
+      ] }) } as Response);
+
+    await metaPartnerService.grantCatalogAccess(
+      'client-token',
+      'catalog_123',
+      'system-user-42',
+      ['ADVERTISE', 'AA_ANALYZE'],
+    );
+    const result = await metaPartnerService.verifyCatalogAccess(
+      'client-token',
+      'catalog_123',
+      'system-user-42',
+      ['ADVERTISE', 'AA_ANALYZE'],
+    );
+
+    expect(fetch).toHaveBeenNthCalledWith(
+      1,
+      'https://graph.facebook.com/v25.0/catalog_123/assigned_users',
+      expect.objectContaining({ method: 'POST' }),
+    );
+    const request = vi.mocked(fetch).mock.calls[0]?.[1] as RequestInit;
+    const params = new URLSearchParams(request.body as string);
+    expect(params.get('user')).toBe('system-user-42');
+    expect(params.get('tasks')).toBe(JSON.stringify(['ADVERTISE', 'AA_ANALYZE']));
+    expect(result).toEqual({ verified: true, assignedTasks: ['ADVERTISE', 'AA_ANALYZE'] });
+  });
+
+  it('shares a catalog with the agency portfolio and verifies the agency edge', async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ success: true }) } as Response)
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [{ id: 'agency-bm-1', permitted_tasks: ['ADVERTISE', 'AA_ANALYZE'] }] }) } as Response);
+
+    await metaPartnerService.grantCatalogAgencyAccess(
+      'client-token',
+      'catalog_123',
+      'agency-bm-1',
+      ['ADVERTISE', 'AA_ANALYZE'],
+    );
+    const result = await metaPartnerService.verifyCatalogAgencyAccess(
+      'client-token',
+      'catalog_123',
+      'agency-bm-1',
+      ['ADVERTISE', 'AA_ANALYZE'],
+    );
+
+    expect(fetch).toHaveBeenNthCalledWith(
+      1,
+      'https://graph.facebook.com/v25.0/catalog_123/agencies',
+      expect.objectContaining({ method: 'POST' }),
+    );
+    expect(fetch).toHaveBeenNthCalledWith(
+      2,
+      'https://graph.facebook.com/v25.0/catalog_123/agencies?fields=id,permitted_tasks',
+      expect.objectContaining({ method: 'GET' }),
+    );
+    const request = vi.mocked(fetch).mock.calls[0]?.[1] as RequestInit;
+    const params = new URLSearchParams(request.body as string);
+    expect(params.get('business')).toBe('agency-bm-1');
+    expect(params.get('permitted_tasks')).toBe(JSON.stringify(['ADVERTISE', 'AA_ANALYZE']));
+    expect(result).toBe(true);
+  });
+
+  it('follows agency pagination before deciding the agency has no access', async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ data: [{ id: 'other-agency', permitted_tasks: ['ADVERTISE'] }], paging: { next: 'https://graph.facebook.com/v25.0/catalog_1/agencies?after=cursor-2' } }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ data: [{ id: 'agency-bm-1', permitted_tasks: ['ADVERTISE', 'AA_ANALYZE'] }] }),
+      } as Response);
+
+    await expect(metaPartnerService.verifyCatalogAgencyAccess(
+      'client-token', 'catalog_1', 'agency-bm-1', ['ADVERTISE', 'AA_ANALYZE']
+    )).resolves.toBe(true);
+    expect(fetch).toHaveBeenNthCalledWith(
+      2,
+      'https://graph.facebook.com/v25.0/catalog_1/agencies?after=cursor-2',
+      expect.objectContaining({ method: 'GET', signal: expect.any(AbortSignal) }),
+    );
+  });
+
+  it('verifies manual ad-account sharing against agency permitted tasks', async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({ data: [{ id: 'agency-bm-1', permitted_tasks: ['ADVERTISE'] }] }),
+    } as Response);
+
+    const result = await metaPartnerService.verifyAdAccountAgencyAccess(
+      'client-token', 'act_123', 'agency-bm-1', ['MANAGE', 'ADVERTISE']
+    );
+
+    expect(fetch).toHaveBeenCalledWith(
+      'https://graph.facebook.com/v25.0/act_123/agencies?fields=id,permitted_tasks',
+      expect.objectContaining({ method: 'GET', signal: expect.any(AbortSignal) })
+    );
+    expect(result).toEqual({ verified: false, assignedTasks: ['ADVERTISE'] });
+  });
+
+  it('revokes an assigned user and verifies that Meta no longer lists the user', async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [{ id: '42', tasks: ['MANAGE'] }] }) } as Response)
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ success: true }) } as Response)
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) } as Response);
+
+    await metaPartnerService.revokeAssignedUserAccess('client-token', 'page_123', '42');
+
+    expect(fetch).toHaveBeenNthCalledWith(2,
+      'https://graph.facebook.com/v25.0/page_123/assigned_users',
+      expect.objectContaining({ method: 'DELETE' }),
+    );
+    const request = vi.mocked(fetch).mock.calls[1]?.[1] as RequestInit;
+    const params = new URLSearchParams(request.body as string);
+    expect(params.get('user')).toBe('42');
+    expect(params.get('access_token')).toBeNull();
+    expect(new Headers(request.headers).get('Authorization')).toBe('Bearer client-token');
+    expect(request.signal).toBeInstanceOf(AbortSignal);
+    expect(fetch).toHaveBeenCalledTimes(3);
+  });
+
+  it('does not report revocation when Meta still lists the assigned user', async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [{ id: '42', tasks: ['MANAGE'] }] }) } as Response)
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ success: true }) } as Response)
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [{ id: '42', tasks: ['MANAGE'] }] }) } as Response);
+
+    await expect(metaPartnerService.revokeAssignedUserAccess('client-token', 'page_123', '42'))
+      .rejects.toThrow('Meta still reports user 42 assigned to asset page_123');
+  });
+
+  it('removes an agency from a Page and verifies that Meta no longer lists it', async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [{ id: 'biz-agency' }] }) } as Response)
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ success: true }) } as Response)
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) } as Response);
+
+    await metaPartnerService.revokeAgencyAccess('client-token', 'page_123', 'biz-agency');
+
+    expect(fetch).toHaveBeenNthCalledWith(2,
+      'https://graph.facebook.com/v25.0/page_123/agencies',
+      expect.objectContaining({ method: 'DELETE' }),
+    );
+    const request = vi.mocked(fetch).mock.calls[1]?.[1] as RequestInit;
+    const params = new URLSearchParams(request.body as string);
+    expect(params.get('business')).toBe('biz-agency');
+    expect(params.get('access_token')).toBeNull();
+    expect(new Headers(request.headers).get('Authorization')).toBe('Bearer client-token');
+    expect(fetch).toHaveBeenCalledTimes(3);
+  });
+
+  it('removes an agency from a catalog and verifies catalog agency read-back', async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [{ id: 'biz-agency', permitted_tasks: ['ADVERTISE'] }] }) } as Response)
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ success: true }) } as Response)
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) } as Response);
+
+    await metaPartnerService.revokeCatalogAgencyAccess('client-token', 'catalog_123', 'biz-agency');
+
+    expect(fetch).toHaveBeenNthCalledWith(1,
+      'https://graph.facebook.com/v25.0/catalog_123/agencies?fields=id,permitted_tasks',
+      expect.objectContaining({ method: 'GET' }),
+    );
+    expect(fetch).toHaveBeenNthCalledWith(2,
+      'https://graph.facebook.com/v25.0/catalog_123/agencies',
+      expect.objectContaining({ method: 'DELETE' }),
+    );
+    expect(fetch).toHaveBeenNthCalledWith(3,
+      'https://graph.facebook.com/v25.0/catalog_123/agencies?fields=id,permitted_tasks',
+      expect.objectContaining({ method: 'GET' }),
+    );
+    expect(new Headers(vi.mocked(fetch).mock.calls[1]?.[1]?.headers).get('Authorization')).toBe('Bearer client-token');
   });
 });

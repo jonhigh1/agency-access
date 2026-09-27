@@ -101,7 +101,7 @@ export function AssetGroup({
               aria-checked={allSelected ? true : someSelected ? 'mixed' : false}
               aria-label={`Select all ${title}`}
               onClick={handleSelectAll}
-              className="flex items-center gap-1.5 cursor-pointer group"
+              className="flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 px-2 cursor-pointer group"
             >
               <div
                 className={`
@@ -141,7 +141,7 @@ export function AssetGroup({
             onClick={() => setIsExpanded(!isExpanded)}
             aria-expanded={isExpanded}
             aria-label={isExpanded ? `Collapse ${title}` : `Expand ${title}`}
-            className="border border-black bg-card p-1 hover:bg-paper transition-colors"
+            className="min-h-[44px] min-w-[44px] border border-black bg-card p-2 hover:bg-paper transition-colors"
           >
             <m.div
               animate={{ rotate: isExpanded ? 0 : -90 }}

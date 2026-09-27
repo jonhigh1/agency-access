@@ -47,6 +47,31 @@ Append-only log of what was done each session. Newest first. Read the last 3–5
 
 ---
 
+## Session: 2026-09-26 — Client invite flow 10X plan: critique → plan → review; execution paused on merge
+
+### What was done
+- Ran a dual-agent UX critique of the client invite flow (`/invite/92190f8e1c81`, Meta step): heuristic score **15/40 (Poor)**, 7/8 cognitive-load checks failed, no dark patterns. Full report + snapshot at `.impeccable/critique/2026-09-26T15-53-26Z__ps-web-src-app-invite-token-client-invite-page-tsx.md`.
+- Root-caused the production PostHog 404s: `apps/web/src/proxy.ts` middleware runs invite visitors' `/ingest/*` beacons through Clerk `auth.protect` — one-line matcher fix, bundled as plan unit U1.
+- Wrote the 10X redesign plan via ce-plan (bootstrap, Deep, 11 units) with three research subagents + a flow-gap analysis. Two pre-existing defects surfaced: mid-flow refresh loses all wizard state (falls back to intake), and intake answers are never submitted — the API endpoint validates then discards (stored TODO).
+- Ran ce-doc-review non-interactively: 7 in-process reviewers + 2 cross-model peers (codex/GPT-5.6-luna; adversarial + product-lens peers exited, named in coverage). Applied 3 fixes; Jon confirmed folding the remaining 20 proposed fixes + 2 decisions into the plan (new KTD13 token-security contract; U8 gained the intake-persistence backend half; U7 prefill source is an Open Question).
+- ce-work start blocked by the plan's own stop condition (KTD8: land after `codex/meta-app-review-proof` merges — currently 3 unpushed commits, 216 dirty files, 35 behind main). Jon chose to wait.
+
+### Files changed
+- `docs/plans/2026-09-26-0931-feat-client-invite-flow-10x-redesign-plan.md` — new unified plan, implementation-ready
+- `CONCEPTS.md` — added `Owner Business` entry
+- `.impeccable/critique/…` — critique snapshot (untracked)
+
+### Decisions made
+- 10X rethink over in-place fixes; whole-flow scope; must-fix gates: plain language/trust, visible CTA + honest status, design-system conformance (all session-settled, annotated in plan KD1–KD5).
+- Consolidate both portfolio selectors into one component (KTD5); checklist status model replaces the percentage (KTD6); measurement included (KD5).
+- Execution sequencing: fresh branch strictly after the Meta app-review branch merges.
+
+### Next steps
+- Merge `codex/meta-app-review-proof` → main, then re-invoke `ce-work` with `docs/plans/2026-09-26-0931-feat-client-invite-flow-10x-redesign-plan.md` (units U1→U11; U1 first, U6 parallel track).
+- Decide the U7 Open Question (resume prefill: fulfillment-row derivation vs one sanctioned payload field) before U7 lands.
+
+---
+
 ## Session: 2026-09-13 — Content calendar Week 1 shipped (Snapchat guide + cluster push)
 
 ### What was done

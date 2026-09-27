@@ -256,6 +256,9 @@ export function AdAccountSharingInstructions({
           <div className="flex-1">
             <h4 className="font-bold text-ink mb-1">{content.step2.title}</h4>
             <p className="text-muted-foreground text-sm mb-3">{content.step2.description}</p>
+            <p role="note" className="mb-3 border border-warning bg-warning/10 px-3 py-2 text-sm text-warning">
+              {content.step2.securityNote}
+            </p>
             
             {/* Sub-steps for Step 2 */}
             <div className="space-y-3 ml-4 border-l-2 border-border pl-4">

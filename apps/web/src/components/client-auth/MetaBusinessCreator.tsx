@@ -16,7 +16,7 @@ import { CheckCircle2, AlertCircle, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SingleSelect } from '@/components/ui/single-select';
 import { resolveApiUrl } from '@/lib/api/api-env';
-import { parseJsonResponse } from '@/lib/api/parse-json-response';
+import { ApiResponseError, parseJsonResponse } from '@/lib/api/parse-json-response';
 
 // Meta business verticals (subset covering agency clients; OTHER is the safe default)
 const VERTICALS = [
@@ -61,6 +61,7 @@ interface MetaBusinessCreatorProps {
   userPages: Array<UserPage>;
   onSuccess?: (business: { id: string; name: string }) => void;
   onError?: (error: string) => void;
+  onReconcile?: () => Promise<boolean>;
 }
 
 type CreationState = 'idle' | 'loading' | 'success' | 'error';
@@ -71,9 +72,13 @@ export function MetaBusinessCreator({
   userPages,
   onSuccess,
   onError,
+  onReconcile,
 }: MetaBusinessCreatorProps) {
   const [state, setState] = useState<CreationState>('idle');
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [creationError, setCreationError] = useState<Error | null>(null);
+  const [isRefreshingBusinesses, setIsRefreshingBusinesses] = useState(false);
+  const requiresReconciliation = creationError instanceof ApiResponseError
+    && ['CREATION_OUTCOME_UNKNOWN', 'CREATION_IN_PROGRESS'].includes(creationError.code || '');
 
   // Form state
   const [businessName, setBusinessName] = useState('');
@@ -120,19 +125,19 @@ export function MetaBusinessCreator({
     e.preventDefault();
 
     if (!businessName.trim()) {
-      setErrorMessage('Please enter a business name');
+      setCreationError(new Error('Please enter a business name'));
       setState('error');
       return;
     }
     if (!primaryPageId) {
-      setErrorMessage('Please select a primary Page');
+      setCreationError(new Error('Please select a primary Page'));
       setState('error');
       return;
     }
 
     try {
       setState('loading');
-      setErrorMessage(null);
+      setCreationError(null);
 
       const response = await fetch(
         resolveApiUrl(`/api/client/${accessRequestToken}/create/meta/business`),
@@ -151,11 +156,11 @@ export function MetaBusinessCreator({
 
       const json = await parseJsonResponse<{
         data?: CreateBusinessResponse;
-        error?: { message?: string };
+          error?: { code?: string; message?: string };
       }>(response, { fallbackErrorMessage: 'Failed to create Business Portfolio' });
 
       if (json.error || !json.data) {
-        throw new Error(json.error?.message || 'Failed to create Business Portfolio');
+        throw new ApiResponseError(json.error?.message || 'Failed to create Business Portfolio', json.error?.code);
       }
 
       setState('success');
@@ -163,7 +168,7 @@ export function MetaBusinessCreator({
     } catch (err) {
       const message =
         err instanceof Error ? err.message : 'Failed to create Business Portfolio';
-      setErrorMessage(message);
+      setCreationError(err instanceof Error ? err : new Error(message));
       setState('error');
       onError?.(message);
     }
@@ -171,7 +176,7 @@ export function MetaBusinessCreator({
 
   const handleReset = () => {
     setState('idle');
-    setErrorMessage(null);
+    setCreationError(null);
   };
 
   // Error state
@@ -185,11 +190,21 @@ export function MetaBusinessCreator({
 
           <div className="flex-1">
             <h3 className="font-bold text-[var(--coral)] mb-1 font-display">Creation Failed</h3>
-            <p className="text-sm text-[var(--coral)] mb-3">{errorMessage}</p>
+            <p className="text-sm text-[var(--coral)] mb-3">{creationError?.message}</p>
+            {requiresReconciliation ? <p className="text-sm text-[rgb(var(--warning))] mb-3">Do not create another Business Portfolio until you refresh Meta and check whether it already exists.</p> : null}
 
-            <Button variant="brutalist" size="sm" onClick={handleReset}>
-              Try Again
-            </Button>
+            {requiresReconciliation && onReconcile ? (
+              <Button type="button" variant="secondary" size="sm" className="min-h-[44px]" disabled={isRefreshingBusinesses} onClick={async () => {
+                setIsRefreshingBusinesses(true);
+                try {
+                  await onReconcile();
+                } finally {
+                  setIsRefreshingBusinesses(false);
+                }
+              }}>{isRefreshingBusinesses ? 'Refreshing…' : 'Refresh Business Portfolios'}</Button>
+            ) : requiresReconciliation ? (
+              <p role="status" className="text-sm text-[rgb(var(--warning))]">Return to asset selection to refresh Meta Business Portfolios. Do not repeat creation yet.</p>
+            ) : <Button variant="brutalist" size="sm" onClick={handleReset}>Try Again</Button>}
           </div>
         </div>
       </div>

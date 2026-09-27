@@ -16,6 +16,7 @@ vi.mock('../meta-system-user.service.js', () => ({
   metaSystemUserService: {
     getOrCreateSystemUser: vi.fn(),
     createSystemUserAccessToken: vi.fn(),
+    getSystemUsers: vi.fn(),
     getDefaultPartnerAdminSystemUserName: vi
       .fn()
       .mockReturnValue('Agency Platform Admin System User'),
@@ -43,6 +44,7 @@ import { metaSystemUserService } from '../meta-system-user.service.js';
 
 const mockMetaConnectorInstance = {
   getAllAssets: vi.fn(),
+  getClientInstagramAccounts: vi.fn(),
 };
 
 describe('MetaAssetsService', () => {
@@ -54,8 +56,255 @@ describe('MetaAssetsService', () => {
     vi.clearAllMocks();
   });
 
+  describe('getAssignableRecipients', () => {
+    it('returns people and system users from the selected agency portfolio', async () => {
+      vi.mocked(agencyPlatformService.getConnection).mockResolvedValue({
+        data: { id: 'agency-meta-connection-1', businessId, metadata: {} },
+        error: null,
+      } as any);
+      vi.mocked(agencyPlatformService.getValidToken).mockResolvedValue({ data: accessToken, error: null });
+      vi.mocked(metaSystemUserService.getSystemUsers).mockResolvedValue({
+        data: [{ id: 'system-1', name: 'Automation', role: 'ADMIN' }],
+        error: null,
+      } as any);
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ data: [{ id: 'person-1', name: 'Jon High', email: 'jon@example.com', role: 'ADMIN' }] }),
+      }));
+      vi.mocked(createAuditLog).mockResolvedValue({ data: {} as any, error: null });
+
+      const request = {
+        ip: '203.0.113.4',
+        headers: { 'user-agent': 'test-agent' },
+        user: { sub: 'user-1', email: 'owner@example.com' },
+      } as any;
+      const result = await metaAssetsService.getAssignableRecipients(agencyId, request);
+
+      expect(result.error).toBeNull();
+      expect(result.data).toEqual([
+        { type: 'human', id: 'person-1', name: 'Jon High', email: 'jon@example.com', role: 'ADMIN' },
+        { type: 'system_user', id: 'system-1', name: 'Automation', role: 'ADMIN' },
+      ]);
+      const [url, options] = vi.mocked(fetch).mock.calls[0];
+      expect(String(url)).toContain(`/${businessId}/business_users`);
+      expect(String(url)).not.toContain('access_token');
+      expect(options).toEqual({
+        method: 'GET',
+        headers: { Authorization: `Bearer ${accessToken}` },
+        signal: expect.any(AbortSignal),
+        redirect: 'error',
+      });
+      expect(createAuditLog).toHaveBeenCalledWith(expect.objectContaining({
+        agencyId,
+        userEmail: 'owner@example.com',
+        action: 'ACCESSED',
+        resourceType: 'connection',
+        resourceId: expect.any(String),
+        agencyConnectionId: expect.any(String),
+        platform: 'meta',
+        request,
+        metadata: {
+          operation: 'list_assignable_recipients',
+          actorType: 'authenticated_user',
+          actorId: 'user-1',
+        },
+      }));
+    });
+
+    it('loads all human recipients across Meta Graph pages', async () => {
+      vi.mocked(agencyPlatformService.getConnection).mockResolvedValue({
+        data: { id: 'agency-meta-connection-1', businessId, metadata: {} }, error: null,
+      } as any);
+      vi.mocked(agencyPlatformService.getValidToken).mockResolvedValue({ data: accessToken, error: null });
+      vi.mocked(metaSystemUserService.getSystemUsers).mockResolvedValue({ data: [], error: null });
+      vi.mocked(createAuditLog).mockResolvedValue({ data: {} as any, error: null });
+      const secondPage = `https://graph.facebook.com/v25.0/${businessId}/business_users?after=cursor`;
+      vi.stubGlobal('fetch', vi.fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ data: [{ id: 'person-1', name: 'First' }], paging: { next: secondPage } }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ data: [{ id: 'person-2', name: 'Second' }] }),
+        }));
+
+      const result = await metaAssetsService.getAssignableRecipients(agencyId, {
+        ip: '203.0.113.4', headers: { 'user-agent': 'test-agent' }, user: { sub: 'user-1' },
+      } as any);
+
+      expect(result).toEqual({
+        data: [
+          { type: 'human', id: 'person-1', name: 'First' },
+          { type: 'human', id: 'person-2', name: 'Second' },
+        ],
+        error: null,
+      });
+      expect(fetch).toHaveBeenCalledTimes(2);
+    });
+
+    it('does not return a partial recipient list when system-user discovery has no result or error', async () => {
+      vi.mocked(agencyPlatformService.getConnection).mockResolvedValue({
+        data: { id: 'agency-meta-connection-1', businessId, metadata: {} }, error: null,
+      } as any);
+      vi.mocked(agencyPlatformService.getValidToken).mockResolvedValue({ data: accessToken, error: null });
+      vi.mocked(metaSystemUserService.getSystemUsers).mockResolvedValue({ data: null, error: null });
+      vi.mocked(createAuditLog).mockResolvedValue({ data: {} as any, error: null });
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+        ok: true, json: async () => ({ data: [{ id: 'person-1', name: 'First' }] }),
+      }));
+
+      const result = await metaAssetsService.getAssignableRecipients(agencyId, {
+        ip: '203.0.113.4', headers: { 'user-agent': 'test-agent' }, user: { sub: 'user-1' },
+      } as any);
+
+      expect(result).toEqual({
+        data: null,
+        error: { code: 'SYSTEM_USER_LIST_FAILED', message: 'Failed to list Meta system users' },
+      });
+    });
+
+    it('does not return system users when human recipient discovery fails', async () => {
+      vi.mocked(agencyPlatformService.getConnection).mockResolvedValue({
+        data: { id: 'agency-meta-connection-1', businessId, metadata: {} }, error: null,
+      } as any);
+      vi.mocked(agencyPlatformService.getValidToken).mockResolvedValue({ data: accessToken, error: null });
+      vi.mocked(metaSystemUserService.getSystemUsers).mockResolvedValue({
+        data: [{ id: 'system-1', name: 'Automation', role: 'ADMIN' }], error: null,
+      } as any);
+      vi.mocked(createAuditLog).mockResolvedValue({ data: {} as any, error: null });
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+        ok: false,
+        json: async () => ({ error: { message: 'Permission denied' } }),
+      }));
+
+      const result = await metaAssetsService.getAssignableRecipients(agencyId, {
+        ip: '203.0.113.4', headers: { 'user-agent': 'test-agent' }, user: { sub: 'user-1' },
+      } as any);
+
+      expect(result).toEqual({
+        data: null,
+        error: { code: 'META_BUSINESS_USERS_FAILED', message: 'Permission denied' },
+      });
+    });
+
+    it('does not return humans when system-user discovery fails', async () => {
+      vi.mocked(agencyPlatformService.getConnection).mockResolvedValue({
+        data: { id: 'agency-meta-connection-1', businessId, metadata: {} }, error: null,
+      } as any);
+      vi.mocked(agencyPlatformService.getValidToken).mockResolvedValue({ data: accessToken, error: null });
+      vi.mocked(metaSystemUserService.getSystemUsers).mockResolvedValue({
+        data: null, error: { code: 'SYSTEM_USER_LIST_FAILED', message: 'Graph unavailable' },
+      });
+      vi.mocked(createAuditLog).mockResolvedValue({ data: {} as any, error: null });
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+        ok: true, json: async () => ({ data: [{ id: 'person-1', name: 'First' }] }),
+      }));
+
+      const result = await metaAssetsService.getAssignableRecipients(agencyId, {
+        ip: '203.0.113.4', headers: { 'user-agent': 'test-agent' }, user: { sub: 'user-1' },
+      } as any);
+
+      expect(result).toEqual({
+        data: null,
+        error: { code: 'SYSTEM_USER_LIST_FAILED', message: 'Graph unavailable' },
+      });
+    });
+
+    it('does not attribute a public invite lookup to the stored client email', async () => {
+      vi.mocked(agencyPlatformService.getConnection).mockResolvedValue({
+        data: { id: 'agency-meta-connection-1', businessId, metadata: {} }, error: null,
+      } as any);
+      vi.mocked(agencyPlatformService.getValidToken).mockResolvedValue({ data: accessToken, error: null });
+      vi.mocked(metaSystemUserService.getSystemUsers).mockResolvedValue({ data: [], error: null } as any);
+      vi.mocked(createAuditLog).mockResolvedValue({ data: {} as any, error: null });
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true, json: async () => ({ data: [] }) }));
+      const request = { ip: '203.0.113.5', headers: { 'user-agent': 'invite-test' } } as any;
+
+      await metaAssetsService.getAssignableRecipients(
+        agencyId, request, undefined, 'access_request_holder', 'request-1'
+      );
+
+      expect(createAuditLog).toHaveBeenCalledWith(expect.objectContaining({
+        agencyId,
+        userEmail: undefined,
+        request,
+        metadata: {
+          operation: 'list_assignable_recipients',
+          actorType: 'access_request_holder',
+          actorId: 'request-1',
+        },
+      }));
+    });
+
+    it('does not read an agency token when the audit write fails', async () => {
+      vi.stubGlobal('fetch', vi.fn());
+      vi.mocked(agencyPlatformService.getConnection).mockResolvedValue({
+        data: { id: 'agency-meta-connection-1', businessId, metadata: {} },
+        error: null,
+      } as any);
+      vi.mocked(createAuditLog).mockResolvedValue({
+        data: null,
+        error: { code: 'INTERNAL_ERROR', message: 'Audit storage unavailable' },
+      });
+
+      const result = await metaAssetsService.getAssignableRecipients(agencyId, {} as any);
+
+      expect(result.error?.code).toBe('INTERNAL_ERROR');
+      expect(agencyPlatformService.getValidToken).not.toHaveBeenCalled();
+      expect(fetch).not.toHaveBeenCalled();
+    });
+  });
+
+  it('reads client Instagram assets and returns Graph errors as verification failures', async () => {
+    vi.mocked(agencyPlatformService.getConnection).mockResolvedValue({
+      data: { id: 'connection-1' }, error: null,
+    } as any);
+    vi.mocked(createAuditLog).mockResolvedValue({ data: {} as any, error: null });
+    vi.mocked(agencyPlatformService.getValidToken).mockResolvedValue({ data: accessToken, error: null });
+    vi.mocked(MetaConnector).mockImplementation(function () { return mockMetaConnectorInstance as any; });
+    mockMetaConnectorInstance.getClientInstagramAccounts.mockResolvedValue([{ id: 'ig-1', username: 'client' }]);
+    const request = { ip: '203.0.113.4', headers: { 'user-agent': 'test-agent' } } as any;
+
+    await expect(metaAssetsService.getClientInstagramAssetsForBusiness(agencyId, businessId, request, 'request-1')).resolves.toEqual({
+      data: [{ id: 'ig-1', username: 'client' }],
+      error: null,
+    });
+    expect(mockMetaConnectorInstance.getClientInstagramAccounts).toHaveBeenCalledWith(accessToken, businessId);
+    expect(createAuditLog).toHaveBeenCalledWith(expect.objectContaining({
+      action: 'ACCESSED', resourceId: 'connection-1',
+      metadata: expect.objectContaining({ operation: 'list_client_instagram_assets', actorId: 'request-1' }),
+    }));
+
+    mockMetaConnectorInstance.getClientInstagramAccounts.mockRejectedValue(new Error('Graph denied access'));
+    await expect(metaAssetsService.getClientInstagramAssetsForBusiness(agencyId, businessId, request, 'request-1')).resolves.toMatchObject({
+      data: null,
+      error: { code: 'META_CLIENT_INSTAGRAM_ASSETS_FAILED', message: 'Graph denied access' },
+    });
+  });
+
   describe('getAssetsForBusiness', () => {
+    it('does not read the Meta token when the access audit fails', async () => {
+      vi.mocked(agencyPlatformService.getConnection).mockResolvedValue({
+        data: { id: 'connection-1' }, error: null,
+      } as any);
+      vi.mocked(createAuditLog).mockResolvedValue({
+        data: null, error: { code: 'INTERNAL_ERROR', message: 'Audit storage unavailable' },
+      } as any);
+
+      const result = await metaAssetsService.getAssetsForBusiness(
+        agencyId, businessId, { ip: '203.0.113.4', headers: {} } as any
+      );
+
+      expect(result.error?.code).toBe('INTERNAL_ERROR');
+      expect(agencyPlatformService.getValidToken).not.toHaveBeenCalled();
+    });
+
     it('should retrieve assets using valid token', async () => {
+      vi.mocked(agencyPlatformService.getConnection).mockResolvedValue({
+        data: { id: 'connection-1' }, error: null,
+      } as any);
+      vi.mocked(createAuditLog).mockResolvedValue({ data: {} as any, error: null });
       const mockAssets = {
         businessId,
         businessName: 'Test Biz',
@@ -71,20 +320,29 @@ describe('MetaAssetsService', () => {
       });
       mockMetaConnectorInstance.getAllAssets.mockResolvedValue(mockAssets);
 
-      const result = await metaAssetsService.getAssetsForBusiness(agencyId, businessId);
+      const request = { ip: '203.0.113.4', headers: { 'user-agent': 'test-agent' } } as any;
+      const result = await metaAssetsService.getAssetsForBusiness(agencyId, businessId, request);
 
+      expect(createAuditLog).toHaveBeenCalledWith(expect.objectContaining({
+        action: 'ACCESSED', resourceId: 'connection-1',
+        metadata: expect.objectContaining({ operation: 'list_business_assets' }),
+      }));
       expect(agencyPlatformService.getValidToken).toHaveBeenCalledWith(agencyId, 'meta');
       expect(mockMetaConnectorInstance.getAllAssets).toHaveBeenCalledWith(accessToken, businessId);
       expect(result.data).toEqual(mockAssets);
     });
 
     it('should return error if token retrieval fails', async () => {
+      vi.mocked(agencyPlatformService.getConnection).mockResolvedValue({
+        data: { id: 'connection-1' }, error: null,
+      } as any);
+      vi.mocked(createAuditLog).mockResolvedValue({ data: {} as any, error: null });
       vi.mocked(agencyPlatformService.getValidToken).mockResolvedValue({
         data: null,
         error: { code: 'CONNECTION_NOT_FOUND', message: 'Not found' } as any,
       });
 
-      const result = await metaAssetsService.getAssetsForBusiness(agencyId, businessId);
+      const result = await metaAssetsService.getAssetsForBusiness(agencyId, businessId, { ip: '', headers: {} } as any);
 
       expect(result.error?.code).toBe('CONNECTION_NOT_FOUND');
     });
@@ -153,7 +411,7 @@ describe('MetaAssetsService', () => {
       vi.mocked(metaSystemUserService.createSystemUserAccessToken).mockResolvedValue({
         data: {
           tokenSecretId: 'meta_partner_admin_system_user_agency-1_biz-1',
-          scopes: ['ads_management', 'business_management'],
+          scopes: ['ads_management', 'business_management', 'pages_read_engagement'],
         },
         error: null,
       });
@@ -200,6 +458,7 @@ describe('MetaAssetsService', () => {
             partnerAdminSystemUserScopes: [
               'ads_management',
               'business_management',
+              'pages_read_engagement',
             ],
             partnerAdminSystemUserProvisionedAt: expect.any(String),
           },

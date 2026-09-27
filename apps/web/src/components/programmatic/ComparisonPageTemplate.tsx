@@ -934,7 +934,7 @@ function getDifferentiatorDescription(differentiator: string): string {
     [`${SUPPORTED_PLATFORM_COUNT} Platform Connectors`]:
       "Core ad, analytics, commerce, and email connectors in one flow.",
     "Infisical-backed Token Storage":
-      "OAuth token references in Infisical with audit logs—no SOC 2 claim on this page.",
+      "OAuth token references in Infisical with audit logs.",
     "Automatic Token Refresh":
       "Monitors token health and refreshes before expiry where the provider supports it.",
     "API + Webhooks on Growth+": "REST API and webhooks on Growth and Scale—not Starter.",

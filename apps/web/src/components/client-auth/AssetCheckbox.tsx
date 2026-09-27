@@ -37,7 +37,8 @@ export function AssetCheckbox({
     <m.label
       htmlFor={id}
       className={`
-        relative flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg border cursor-pointer
+        relative flex min-h-[44px] min-w-0 items-center gap-2.5 px-2.5 py-1.5 rounded-none border cursor-pointer
+        focus-within:outline-[3px] focus-within:outline-[rgb(var(--coral)/0.25)] focus-within:outline-offset-0 focus-within:[box-shadow:0_0_0_6px_rgb(var(--primary)/0.08)]
         transition-all duration-200
         ${
           checked

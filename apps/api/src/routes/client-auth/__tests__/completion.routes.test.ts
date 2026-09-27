@@ -1,8 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import Fastify, { type FastifyInstance } from 'fastify';
-import { registerCompletionRoutes } from '../completion.routes.js';
-import { accessRequestService } from '@/services/access-request.service';
-import { notificationService } from '@/services/notification.service';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import Fastify from 'fastify';
 
 vi.mock('@/services/access-request.service', () => ({
   accessRequestService: {
@@ -10,80 +7,80 @@ vi.mock('@/services/access-request.service', () => ({
     markRequestAuthorized: vi.fn(),
   },
 }));
-
 vi.mock('@/services/notification.service', () => ({
-  notificationService: {
-    queueNotification: vi.fn(),
-  },
+  notificationService: { queueNotification: vi.fn() },
 }));
 
-describe('Client completion routes', () => {
-  let app: FastifyInstance;
+import { accessRequestService } from '@/services/access-request.service';
+import { notificationService } from '@/services/notification.service';
+import { registerCompletionRoutes } from '../completion.routes';
 
-  beforeEach(async () => {
-    vi.resetAllMocks();
-    app = Fastify();
+describe('client completion routes', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('does not claim completion or notify when fulfillment is partial', async () => {
+    const app = Fastify();
     await registerCompletionRoutes(app);
+    vi.mocked(accessRequestService.getAccessRequestByToken).mockResolvedValue({
+      data: { id: 'request-1', agencyId: 'agency-1', clientEmail: 'client@example.com' } as any,
+      error: null,
+    });
+    vi.mocked(accessRequestService.markRequestAuthorized).mockResolvedValue({
+      data: { id: 'request-1', status: 'partial' } as any,
+      error: null,
+    });
 
+    const response = await app.inject({ method: 'POST', url: '/client/token-1/complete' });
+
+    expect(response.statusCode).toBe(409);
+    expect(response.json().error.code).toBe('FULFILLMENT_INCOMPLETE');
+    expect(notificationService.queueNotification).not.toHaveBeenCalled();
+    await app.close();
+  });
+
+  it('notifies only after the fulfillment evaluator returns completed', async () => {
+    const app = Fastify();
+    await registerCompletionRoutes(app);
     vi.mocked(accessRequestService.getAccessRequestByToken).mockResolvedValue({
       data: {
         id: 'request-1',
         agencyId: 'agency-1',
         clientEmail: 'client@example.com',
-        authorizationProgress: { completedPlatforms: ['meta'] },
+        authorizationProgress: { fulfilledProducts: [{ product: 'meta_ads' }] },
       } as any,
       error: null,
     });
-  });
+    vi.mocked(accessRequestService.markRequestAuthorized).mockResolvedValue({
+      data: { id: 'request-1', status: 'completed' } as any,
+      error: null,
+    });
+    vi.mocked(notificationService.queueNotification).mockResolvedValue({ data: true, error: null });
 
-  afterEach(async () => {
+    const response = await app.inject({ method: 'POST', url: '/client/token-1/complete' });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().data.success).toBe(true);
+    expect(notificationService.queueNotification).toHaveBeenCalledTimes(1);
     await app.close();
   });
 
-  it('queues one agency notification on first completion', async () => {
-    vi.mocked(accessRequestService.markRequestAuthorized).mockResolvedValue({
-      data: { id: 'request-1', status: 'completed' },
-      error: null,
-      previousStatus: 'partial',
-    } as any);
-
-    const response = await app.inject({
-      method: 'POST',
-      url: '/client/token-1/complete',
-    });
-
-    expect(response.statusCode).toBe(200);
-    expect(response.json()).toEqual({
-      data: { success: true, message: 'Authorization complete' },
+  it('does not notify again after completion', async () => {
+    const app = Fastify();
+    await registerCompletionRoutes(app);
+    vi.mocked(accessRequestService.getAccessRequestByToken).mockResolvedValue({
+      data: { id: 'request-1', agencyId: 'agency-1', clientEmail: 'client@example.com' } as any,
       error: null,
     });
-    expect(notificationService.queueNotification).toHaveBeenCalledTimes(1);
-    expect(notificationService.queueNotification).toHaveBeenCalledWith(
-      expect.objectContaining({
-        agencyId: 'agency-1',
-        accessRequestId: 'request-1',
-        clientEmail: 'client@example.com',
-      })
-    );
-  });
-
-  it('does not enqueue a second notification when the request was already completed', async () => {
     vi.mocked(accessRequestService.markRequestAuthorized).mockResolvedValue({
-      data: { id: 'request-1', status: 'completed' },
+      data: { id: 'request-1', status: 'completed' } as any,
       error: null,
       previousStatus: 'completed',
     } as any);
 
-    const response = await app.inject({
-      method: 'POST',
-      url: '/client/token-1/complete',
-    });
+    const response = await app.inject({ method: 'POST', url: '/client/token-1/complete' });
 
     expect(response.statusCode).toBe(200);
-    expect(response.json()).toEqual({
-      data: { success: true, message: 'Authorization complete' },
-      error: null,
-    });
     expect(notificationService.queueNotification).not.toHaveBeenCalled();
+    await app.close();
   });
 });

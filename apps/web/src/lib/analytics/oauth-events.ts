@@ -5,7 +5,6 @@ type OAuthCallbackSuccessProps = {
   auth_source: 'agency_redirect' | 'agency_meta_popup' | 'client_redirect' | 'client_meta_popup';
   agency_id?: string | null;
   connection_id?: string | null;
-  access_request_token?: string | null;
   requires_business_selection?: boolean;
 };
 
@@ -15,7 +14,6 @@ type OAuthCallbackFailureProps = {
   auth_source: 'agency_redirect' | 'agency_meta_popup' | 'client_redirect' | 'client_meta_popup';
   error_message?: string | null;
   agency_id?: string | null;
-  access_request_token?: string | null;
 };
 
 function normalizePlatform(platform: string | null | undefined): string {
@@ -36,8 +34,9 @@ export function trackOAuthCallbackSuccess(properties: OAuthCallbackSuccessProps)
 
 export function trackOAuthCallbackFailure(properties: OAuthCallbackFailureProps): void {
   const platform = properties.platform ? normalizePlatform(properties.platform) : 'unknown';
+  const { error_message: _errorMessage, ...safeProperties } = properties;
   void capturePosthogEvent('oauth_callback_failure', {
-    ...properties,
+    ...safeProperties,
     platform,
   });
   // Keep legacy event name for existing PostHog insights during transition.
@@ -45,28 +44,23 @@ export function trackOAuthCallbackFailure(properties: OAuthCallbackFailureProps)
     agency_id: properties.agency_id,
     platform,
     error_code: properties.error_code,
-    error_message: properties.error_message,
     auth_source: properties.auth_source,
-    access_request_token: properties.access_request_token,
   });
 }
 
 export function trackClientOAuthExchangeSuccess(properties: {
   platform: string;
-  access_request_token: string;
   connection_id: string;
   auth_source: 'client_redirect' | 'client_meta_popup';
 }): void {
   trackOAuthCallbackSuccess({
     platform: properties.platform,
     auth_source: properties.auth_source,
-    access_request_token: properties.access_request_token,
     connection_id: properties.connection_id,
   });
 
   void capturePosthogEvent('client_oauth_exchange_success', {
     platform: normalizePlatform(properties.platform),
-    access_request_token: properties.access_request_token,
     connection_id: properties.connection_id,
     auth_source: properties.auth_source,
   });
@@ -74,7 +68,6 @@ export function trackClientOAuthExchangeSuccess(properties: {
 
 export function trackClientOAuthExchangeFailure(properties: {
   platform?: string | null;
-  access_request_token?: string | null;
   error_code: string;
   error_message?: string | null;
   auth_source: 'client_redirect' | 'client_meta_popup';
@@ -82,16 +75,12 @@ export function trackClientOAuthExchangeFailure(properties: {
   trackOAuthCallbackFailure({
     platform: properties.platform ?? null,
     error_code: properties.error_code,
-    error_message: properties.error_message,
     auth_source: properties.auth_source,
-    access_request_token: properties.access_request_token,
   });
 
   void capturePosthogEvent('client_oauth_exchange_failure', {
     platform: properties.platform ? normalizePlatform(properties.platform) : 'unknown',
-    access_request_token: properties.access_request_token,
     error_code: properties.error_code,
-    error_message: properties.error_message,
     auth_source: properties.auth_source,
   });
 }

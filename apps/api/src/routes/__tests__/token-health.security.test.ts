@@ -51,6 +51,7 @@ describe('Token health routes - security', () => {
       data: { agencyId: 'agency-owner', principalId: 'user_123', agency: { id: 'agency-owner', name: 'Owner', email: 'owner@example.com' } },
       error: null,
     });
+    vi.mocked(authorization.resolveUserEmail).mockReturnValue('owner@example.com');
     vi.mocked(connectionService.getAgencyTokenHealth).mockResolvedValue({ data: [], error: null } as any);
     vi.mocked(connectionService.getAgencyConnections).mockResolvedValue({ data: [], error: null } as any);
     vi.mocked(connectionService.getAgencyConnectionSummaries).mockResolvedValue({ data: [], error: null } as any);
@@ -117,6 +118,37 @@ describe('Token health routes - security', () => {
     expect(response.statusCode).toBe(404);
     expect(response.json().error.code).toBe('AUTHORIZATION_NOT_FOUND');
     expect(connectionService.revokePlatformAuthorization).not.toHaveBeenCalled();
+  });
+
+  it('passes verified actor and trusted request IP to connection revocation', async () => {
+    const connection = { id: 'conn-1', agencyId: 'agency-owner' };
+    vi.mocked(prisma.clientConnection.findFirst).mockResolvedValue(connection as any);
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/connections/conn-1/revoke',
+      headers: { authorization: 'Bearer token' },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(connectionService.revokeConnection).toHaveBeenCalledWith('conn-1', connection, {
+      userEmail: 'owner@example.com',
+      ipAddress: expect.any(String),
+    });
+  });
+
+  it('blocks token revocation when verified actor email is unavailable', async () => {
+    vi.mocked(authorization.resolveUserEmail).mockReturnValue(undefined);
+    vi.mocked(prisma.clientConnection.findFirst).mockResolvedValue({ id: 'conn-1', agencyId: 'agency-owner' } as any);
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/connections/conn-1/revoke',
+      headers: { authorization: 'Bearer token' },
+    });
+
+    expect(response.statusCode).toBe(401);
+    expect(connectionService.revokeConnection).not.toHaveBeenCalled();
   });
 
   it('lists connections as summaries with a default limit of 50', async () => {

@@ -448,6 +448,7 @@ export const MetaManagedBusinessLinkStatusSchema = z.enum([
   'not_started',
   'pending',
   'linked',
+  'manual_action_required',
   'failed',
 ]);
 export type MetaManagedBusinessLinkStatus = z.infer<typeof MetaManagedBusinessLinkStatusSchema>;
@@ -460,30 +461,9 @@ export const MetaManagedBusinessLinkStateSchema = z.object({
   lastAttemptAt: z.string().datetime().optional(),
   lastErrorCode: z.string().optional(),
   lastErrorMessage: z.string().optional(),
+  nextAction: z.string().optional(),
 });
 export type MetaManagedBusinessLinkState = z.infer<typeof MetaManagedBusinessLinkStateSchema>;
-
-export const MetaSystemUserProvisionStatusSchema = z.enum([
-  'not_started',
-  'pending',
-  'ready',
-  'failed',
-]);
-export type MetaSystemUserProvisionStatus = z.infer<typeof MetaSystemUserProvisionStatusSchema>;
-
-export const MetaSystemUserProvisionStateSchema = z.object({
-  status: MetaSystemUserProvisionStatusSchema,
-  clientBusinessId: z.string().min(1),
-  appId: z.string().min(1),
-  scopes: z.array(z.string().min(1)).default([]),
-  systemUserId: z.string().optional(),
-  tokenSecretId: z.string().optional(),
-  provisionedAt: z.string().datetime().optional(),
-  lastAttemptAt: z.string().datetime().optional(),
-  lastErrorCode: z.string().optional(),
-  lastErrorMessage: z.string().optional(),
-});
-export type MetaSystemUserProvisionState = z.infer<typeof MetaSystemUserProvisionStateSchema>;
 
 export const MetaAssetGrantStatusSchema = z.enum([
   'pending',
@@ -494,10 +474,100 @@ export const MetaAssetGrantStatusSchema = z.enum([
 ]);
 export type MetaAssetGrantStatus = z.infer<typeof MetaAssetGrantStatusSchema>;
 
+export const MetaFulfillmentStatusSchema = z.enum([
+  'selected',
+  'sharing_attempted',
+  'verified',
+  'manual_action_required',
+  'blocked',
+  'stale',
+  'revoked',
+  'excluded',
+]);
+export type MetaFulfillmentStatus = z.infer<typeof MetaFulfillmentStatusSchema>;
+
+export interface MetaFulfillmentResult {
+  id: string;
+  assetKind: MetaAssetKind;
+  assetId: string;
+  assetName: string;
+  recipientType: MetaGrantRecipientType;
+  recipientId: string;
+  recipientName: string;
+  requestedTasks: string[];
+  verifiedTasks: string[];
+  status: MetaFulfillmentStatus;
+  nextActor?: string;
+  nextAction?: string;
+  errorCode?: string;
+  errorMessage?: string;
+  verifiedAt?: string;
+  updatedAt: string;
+  exclusion?: {
+    reason: string;
+    actor: string;
+    excludedAt: string;
+  };
+}
+
+export const MetaGrantRecipientTypeSchema = z.enum(['business', 'human', 'system_user']);
+export type MetaGrantRecipientType = z.infer<typeof MetaGrantRecipientTypeSchema>;
+
+export const MetaAccessConfigSchema = z.object({
+  recipients: z.array(z.object({
+    type: z.enum(['human', 'system_user']),
+    id: z.string().min(1),
+    name: z.string().min(1).optional(),
+  })).default([]),
+  pageTasks: z.array(z.string().min(1)).default([]),
+  adAccountTasks: z.array(z.string().min(1)).default([]),
+  datasetTasks: z.array(z.string().min(1)).optional(),
+  catalogTasks: z.array(z.string().min(1)).default(['MANAGE']),
+});
+export type MetaAccessConfig = z.infer<typeof MetaAccessConfigSchema>;
+
+export function getDefaultMetaAccessTasks(products: string[]): Pick<MetaAccessConfig, 'pageTasks' | 'adAccountTasks'> & { datasetTasks: string[] } {
+  const selected = new Set(products);
+  const pageTasks = new Set<string>();
+  const adAccountTasks = new Set<string>();
+  const datasetTasks = new Set<string>();
+  if (selected.has('meta_ads')) {
+    pageTasks.add('ADVERTISE');
+    pageTasks.add('ANALYZE');
+    adAccountTasks.add('ADVERTISE');
+    adAccountTasks.add('ANALYZE');
+    datasetTasks.add('ADVERTISE');
+    datasetTasks.add('ANALYZE');
+  }
+  if (selected.has('meta_pages')) {
+    pageTasks.add('CREATE_CONTENT');
+    pageTasks.add('ANALYZE');
+  }
+  if (selected.has('instagram')) {
+    pageTasks.add('ADVERTISE');
+    pageTasks.add('ANALYZE');
+    adAccountTasks.add('ADVERTISE');
+    adAccountTasks.add('ANALYZE');
+  }
+  return { pageTasks: [...pageTasks], adAccountTasks: [...adAccountTasks], datasetTasks: [...datasetTasks] };
+}
+
+export const MetaAssignableRecipientSchema = z.object({
+  type: z.enum(['human', 'system_user']),
+  id: z.string().min(1),
+  name: z.string().min(1),
+  email: z.string().email().optional(),
+  role: z.string().optional(),
+});
+export type MetaAssignableRecipient = z.infer<typeof MetaAssignableRecipientSchema>;
+
 export const MetaAssetGrantResultSchema = z.object({
   assetId: z.string().min(1),
   assetType: MetaAssetKindSchema,
+  recipientType: MetaGrantRecipientTypeSchema.optional(),
+  recipientId: z.string().min(1).optional(),
   requestedTasks: z.array(z.string().min(1)).default([]),
+  verifiedTasks: z.array(z.string().min(1)).optional(),
   status: MetaAssetGrantStatusSchema,
   grantedAt: z.string().datetime().optional(),
   verifiedAt: z.string().datetime().optional(),
@@ -508,7 +578,6 @@ export type MetaAssetGrantResult = z.infer<typeof MetaAssetGrantResultSchema>;
 
 export const MetaOBOStateSchema = z.object({
   managedBusinessLink: MetaManagedBusinessLinkStateSchema.optional(),
-  clientSystemUser: MetaSystemUserProvisionStateSchema.optional(),
   assetGrantResults: z.array(MetaAssetGrantResultSchema).optional(),
   lastVerifiedAt: z.string().datetime().optional(),
 });
@@ -574,6 +643,103 @@ export const PLATFORM_DOMAINS: Record<Platform, string> = {
   zapier: 'zapier.com',
 };
 
+export const META_GRAPH_VERSION = 'v25.0' as const;
+
+export const META_CORE_PERMISSIONS = [
+  'ads_management',
+  'business_management',
+  'pages_read_engagement',
+  'pages_show_list',
+] as const;
+
+export const META_PERMISSION_CONTRACT = {
+  core: {
+    permissions: META_CORE_PERMISSIONS,
+  },
+  systemUser: {
+    permissions: ['ads_management', 'business_management', 'pages_read_engagement'],
+  },
+  tracks: {
+    meta_pages: ['business_management', 'pages_show_list', 'pages_read_engagement'],
+    instagram: ['business_management', 'pages_read_engagement'],
+  },
+} as const;
+
+export const META_PERMISSION_OPERATIONS = {
+  pages_show_list: {
+    tokenClass: 'client_user',
+    method: 'GET',
+    path: '/me/accounts',
+    visibleResult: 'The client can select a Page by its Meta ID and name.',
+    verificationRead: 'GET /me/accounts; confirm the selected Page ID and name.',
+  },
+  pages_read_engagement: {
+    tokenAcquisition: {
+      tokenClass: 'client_user',
+      method: 'GET',
+      path: '/{page_id}?fields=id,name,category,tasks,fan_count,followers_count,instagram_business_account{id,username},access_token',
+      purpose: 'Read selected Page metadata and obtain a Page token without exposing it to the browser.',
+    },
+    tokenClass: 'selected_page',
+    method: 'GET',
+    path: '/{page_id}/feed?fields=id,created_time&limit=3',
+    visibleResult: 'The client sees Page identity, managed tasks, linked Instagram, and recent public post dates when present.',
+    verificationRead: 'Repeat the Page-token feed read; an empty data array is a valid result.',
+  },
+  business_management: {
+    tokenClass: 'client_user',
+    method: 'GET',
+    path: '/me/businesses and /{business_id}/{asset_edge}',
+    visibleResult: 'The client selects the exact Business Portfolio and its assets.',
+    verificationRead: 'Repeat the client-user business and asset reads; confirm selected IDs and names.',
+  },
+  ads_management: {
+    tokenClass: 'client_user',
+    method: 'POST',
+    path: '/{asset_id}/assigned_users',
+    visibleResult: 'The client sees the assigned agency recipient and requested tasks.',
+    verificationRead: 'GET /{asset_id}/assigned_users; confirm recipient ID and every requested task.',
+  },
+} as const;
+
+export type MetaPermissionTrack = 'core' | keyof typeof META_PERMISSION_CONTRACT.tracks;
+
+export function getMetaOAuthPermissionSet(
+  platform: string,
+  requestedProducts: readonly string[],
+): { track: MetaPermissionTrack; permissions: readonly string[] } | null {
+  if (!['meta', 'meta_ads', 'meta_pages', 'instagram'].includes(platform)) return null;
+
+  const products = platform === 'meta' && requestedProducts.length ? requestedProducts : [platform];
+  if (products.includes('meta_ads')) {
+    return { track: 'core', permissions: META_PERMISSION_CONTRACT.core.permissions };
+  }
+  if (products.includes('meta_pages')) {
+    return { track: 'meta_pages', permissions: META_PERMISSION_CONTRACT.tracks.meta_pages };
+  }
+  if (products.includes('instagram')) {
+    return { track: 'instagram', permissions: META_PERMISSION_CONTRACT.tracks.instagram };
+  }
+  return platform === 'meta' && requestedProducts.length === 0
+    ? { track: 'core', permissions: META_PERMISSION_CONTRACT.core.permissions }
+    : null;
+}
+
+export function isMetaPermissionTrackValid(
+  track: MetaPermissionTrack,
+  permissions: readonly string[],
+): boolean {
+  const allowed = track === 'core'
+    ? META_PERMISSION_CONTRACT.core.permissions
+    : META_PERMISSION_CONTRACT.tracks[track];
+  const parsed = z.array(MetaPermissionSchema).safeParse(permissions);
+  return parsed.success && permissions.length === allowed.length &&
+    new Set(permissions).size === permissions.length && allowed.every((permission) => permissions.includes(permission));
+}
+
+export const MetaPermissionSchema = z.enum(META_CORE_PERMISSIONS);
+export type MetaPermission = z.infer<typeof MetaPermissionSchema>;
+
 // Platform OAuth scopes
 export const PLATFORM_SCOPES: Record<Platform, string[]> = {
   // Unified Google - covers all Google products with single OAuth
@@ -584,24 +750,9 @@ export const PLATFORM_SCOPES: Record<Platform, string[]> = {
     'https://www.googleapis.com/auth/tagmanager.readonly', // Google Tag Manager
     'https://www.googleapis.com/auth/content', // Google Merchant Center
   ],
-  meta: [
-    'ads_management',
-    'business_management',
-    'pages_read_engagement',
-    'pages_show_list',
-    // Instagram accounts are accessed through Facebook Pages via business_management scope
-    // No Instagram-specific OAuth scopes needed
-  ],
-  meta_ads: [
-    'ads_management',
-    'business_management',
-    'pages_read_engagement',
-    'pages_show_list',
-  ],
-  meta_pages: [
-    'business_management',
-    'pages_read_engagement',
-  ],
+  meta: [...META_PERMISSION_CONTRACT.core.permissions],
+  meta_ads: [...META_PERMISSION_CONTRACT.core.permissions],
+  meta_pages: [...META_PERMISSION_CONTRACT.tracks.meta_pages],
   google_ads: [
     'https://www.googleapis.com/auth/adwords',
   ],
@@ -640,12 +791,7 @@ export const PLATFORM_SCOPES: Record<Platform, string[]> = {
   snapchat_ads: [
     'snapchat-marketing-api',
   ],
-  instagram: [
-    // Instagram Business accounts are accessed through Facebook Pages
-    // Use business_management and pages_read_engagement scopes
-    'business_management',
-    'pages_read_engagement',
-  ],
+  instagram: [...META_PERMISSION_CONTRACT.tracks.instagram],
   kit: [
     // Kit OAuth scopes
     'public', // Default scope, fine-grained coming soon
@@ -1311,6 +1457,7 @@ export interface MetaAdAccount {
   name: string;
   accountStatus: string;
   currency: string;
+  sharedWithBusiness?: true;
 }
 
 export interface MetaPage {
@@ -1321,10 +1468,15 @@ export interface MetaPage {
 }
 
 export interface MetaPageEngagementProof {
-  page: Pick<MetaPage, 'id' | 'name'>;
+  page: Pick<MetaPage, 'id' | 'name'> & {
+    category?: string;
+    managedTasks: string[];
+    fanCount?: number;
+    followerCount?: number;
+  };
+  connectedInstagram?: Pick<MetaInstagramAccount, 'id' | 'username'>;
   posts: Array<{
     id: string;
-    message?: string;
     createdTime?: string;
   }>;
 }
@@ -1953,6 +2105,8 @@ export interface ClientAccessRequestPayload {
   intakeFields: IntakeField[];
   intakeResponses?: Record<string, string>;
   branding: Partial<BrandingConfig>;
+  metaAccessConfig?: MetaAccessConfig;
+  metaFulfillment?: MetaFulfillmentResult[];
   manualInviteTargets: Record<string, ManualInviteTarget>;
   authorizationProgress: ClientAuthorizationProgress;
 }

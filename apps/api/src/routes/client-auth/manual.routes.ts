@@ -150,7 +150,6 @@ export async function registerManualRoutes(fastify: FastifyInstance) {
         fastify.log.error({
           error,
           context: logContext,
-          token,
           agencyEmail,
         });
 
@@ -266,7 +265,6 @@ export async function registerManualRoutes(fastify: FastifyInstance) {
     fastify.log.error({
       error,
       context: 'Failed to create Pinterest manual connection',
-      token,
       businessId,
     });
 
@@ -363,7 +361,6 @@ export async function registerManualRoutes(fastify: FastifyInstance) {
       fastify.log.error({
         error,
         context: 'Failed to create Shopify manual connection',
-        token,
         shopDomain,
       });
 

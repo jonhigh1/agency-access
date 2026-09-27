@@ -1,4 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { createHash } from 'node:crypto';
 
 vi.mock('../../lib/infisical.js', () => ({
   infisical: {
@@ -16,6 +17,12 @@ vi.mock('../../lib/prisma.js', () => ({
       findUnique: vi.fn(),
       update: vi.fn(),
     },
+    metaAssetCreation: {
+      findUnique: vi.fn(),
+      create: vi.fn(),
+      update: vi.fn(),
+      updateMany: vi.fn(),
+    },
   },
 }));
 
@@ -26,6 +33,11 @@ vi.mock('../audit.service.js', () => ({
 }));
 
 vi.mock('../connectors/meta.js', () => ({
+  MetaGraphMutationError: class MetaGraphMutationError extends Error {
+    constructor(message: string, readonly status: number, readonly metaCode?: number, readonly metaSubcode?: number) {
+      super(message);
+    }
+  },
   metaConnector: {
     getUserPages: vi.fn(),
     createBusiness: vi.fn(),
@@ -37,7 +49,7 @@ vi.mock('../connectors/meta.js', () => ({
 import { infisical } from '../../lib/infisical.js';
 import { prisma } from '../../lib/prisma.js';
 import { auditService } from '../audit.service.js';
-import { metaConnector } from '../connectors/meta.js';
+import { MetaGraphMutationError, metaConnector } from '../connectors/meta.js';
 import { metaAssetCreationService } from '../meta-asset-creation.service.js';
 
 const connectionId = 'conn-1';
@@ -58,6 +70,10 @@ function activePlatformAuth(metadata: unknown = {}) {
 describe('MetaAssetCreationService.createBusiness', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(prisma.metaAssetCreation.findUnique).mockResolvedValue(null as never);
+    vi.mocked(prisma.metaAssetCreation.create).mockImplementation(async (args: any) => ({ id: 'creation-1', ...args.data }) as never);
+    vi.mocked(prisma.metaAssetCreation.update).mockResolvedValue({} as never);
+    vi.mocked(prisma.metaAssetCreation.updateMany).mockResolvedValue({ count: 1 } as never);
     vi.mocked(infisical.getOAuthTokens).mockResolvedValue({
       accessToken: 'client-token',
       refreshToken: null,
@@ -98,7 +114,7 @@ describe('MetaAssetCreationService.createBusiness', () => {
 
     const result = await metaAssetCreationService.createBusiness(
       connectionId,
-      { name: 'Acme Business', vertical: 'OTHER', primaryPageId: 'page-1', timezoneId: '25' },
+      { accessRequestId: 'request-1', name: 'Acme Business', vertical: 'OTHER', primaryPageId: 'page-1', timezoneId: '25' },
       userEmail,
       agencyId
     );
@@ -180,7 +196,7 @@ describe('MetaAssetCreationService.createBusiness', () => {
 
     const result = await metaAssetCreationService.createBusiness(
       connectionId,
-      { name: 'First Business', vertical: 'OTHER', primaryPageId: 'page-1', timezoneId: '45' },
+      { accessRequestId: 'request-1', name: 'First Business', vertical: 'OTHER', primaryPageId: 'page-1', timezoneId: '45' },
       userEmail,
       agencyId
     );
@@ -192,6 +208,237 @@ describe('MetaAssetCreationService.createBusiness', () => {
       expect.objectContaining({ id: 'biz-first' }),
     ]);
     expect(metadata.meta.selection.clientBusinessId).toBe('biz-first');
+  });
+
+  it('replays a stored creation result without calling Meta again', async () => {
+    vi.mocked(prisma.platformAuthorization.findUnique).mockResolvedValue(activePlatformAuth() as never);
+    const intentHash = createHash('sha256')
+      .update(JSON.stringify({
+        assetType: 'business',
+        parentAssetId: 'page-1',
+        intent: { name: 'Acme', vertical: 'OTHER', primaryPageId: 'page-1', timezoneId: '25' },
+      }))
+      .digest('hex');
+    vi.mocked(prisma.metaAssetCreation.findUnique).mockResolvedValue({
+      id: 'creation-1', accessRequestId: 'request-1', connectionId, authorizationId: 'auth-1',
+      assetType: 'business', parentAssetId: 'page-1', idempotencyKey: intentHash, intentHash,
+      status: 'created', result: { id: 'biz-existing', name: 'Acme', timezoneId: '25' },
+    } as never);
+
+    const result = await metaAssetCreationService.createBusiness(
+      connectionId,
+      { accessRequestId: 'request-1', name: 'Acme', vertical: 'OTHER', primaryPageId: 'page-1', timezoneId: '25' },
+      userEmail,
+      agencyId
+    );
+
+    expect(result.data).toEqual({ id: 'biz-existing', name: 'Acme', timezoneId: '25' });
+    expect(metaConnector.createBusiness).not.toHaveBeenCalled();
+  });
+
+  it('treats a concurrent unique-claim conflict as in progress without calling Meta', async () => {
+    vi.mocked(prisma.platformAuthorization.findUnique).mockResolvedValue(activePlatformAuth() as never);
+    const intentHash = createHash('sha256')
+      .update(JSON.stringify({
+        assetType: 'business',
+        parentAssetId: 'page-1',
+        intent: { name: 'Acme', vertical: 'OTHER', primaryPageId: 'page-1', timezoneId: '25' },
+      }))
+      .digest('hex');
+    vi.mocked(prisma.metaAssetCreation.findUnique)
+      .mockResolvedValueOnce(null as never)
+      .mockResolvedValueOnce({
+        id: 'creation-winner', accessRequestId: 'request-1', connectionId,
+        authorizationId: 'auth-1',
+        assetType: 'business', parentAssetId: 'page-1',
+        idempotencyKey: intentHash, intentHash, status: 'in_progress', updatedAt: new Date(),
+      } as never);
+    vi.mocked(prisma.metaAssetCreation.create).mockRejectedValue({ code: 'P2002' });
+
+    const result = await metaAssetCreationService.createBusiness(
+      connectionId,
+      { accessRequestId: 'request-1', name: 'Acme', vertical: 'OTHER', primaryPageId: 'page-1', timezoneId: '25' },
+      userEmail,
+      agencyId
+    );
+
+    expect(result.error?.code).toBe('CREATION_IN_PROGRESS');
+    expect(metaConnector.createBusiness).not.toHaveBeenCalled();
+  });
+
+  it('marks an abandoned in-progress claim unknown and requires asset discovery', async () => {
+    vi.mocked(prisma.platformAuthorization.findUnique).mockResolvedValue(activePlatformAuth() as never);
+    const intentHash = createHash('sha256')
+      .update(JSON.stringify({
+        assetType: 'business',
+        parentAssetId: 'page-1',
+        intent: { name: 'Acme', vertical: 'OTHER', primaryPageId: 'page-1', timezoneId: '25' },
+      }))
+      .digest('hex');
+    vi.mocked(prisma.metaAssetCreation.findUnique).mockResolvedValue({
+      id: 'creation-abandoned', accessRequestId: 'request-1', connectionId, authorizationId: 'auth-1',
+      assetType: 'business', parentAssetId: 'page-1', idempotencyKey: intentHash, intentHash,
+      status: 'in_progress', updatedAt: new Date(Date.now() - 6 * 60 * 1000),
+    } as never);
+    vi.mocked(prisma.metaAssetCreation.updateMany).mockResolvedValue({ count: 1 } as never);
+
+    const result = await metaAssetCreationService.createBusiness(
+      connectionId,
+      { accessRequestId: 'request-1', name: 'Acme', vertical: 'OTHER', primaryPageId: 'page-1', timezoneId: '25' },
+      userEmail,
+      agencyId
+    );
+
+    expect(result.error?.code).toBe('CREATION_OUTCOME_UNKNOWN');
+    expect(prisma.metaAssetCreation.updateMany).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({ id: 'creation-abandoned', status: 'in_progress' }),
+      data: { status: 'outcome_unknown', lastErrorCode: 'CREATION_WORKER_ABANDONED' },
+    }));
+    expect(metaConnector.createBusiness).not.toHaveBeenCalled();
+  });
+
+  it('does not retry a Meta creation with unknown outcome', async () => {
+    vi.mocked(prisma.platformAuthorization.findUnique).mockResolvedValue(activePlatformAuth() as never);
+    let creation: Record<string, any> | null = null;
+    vi.mocked(prisma.metaAssetCreation.findUnique).mockImplementation(async () => creation as never);
+    vi.mocked(prisma.metaAssetCreation.create).mockImplementation(async ({ data }: any) => {
+      creation = { id: 'creation-1', ...data };
+      return creation as never;
+    });
+    vi.mocked(prisma.metaAssetCreation.updateMany).mockImplementation(async ({ data }: any) => {
+      creation = { ...creation, ...data };
+      return { count: 1 } as never;
+    });
+    vi.mocked(metaConnector.createBusiness).mockRejectedValue(new Error('fetch failed'));
+
+    const params = { accessRequestId: 'request-1', name: 'Acme', vertical: 'OTHER', primaryPageId: 'page-1', timezoneId: '25' };
+    const first = await metaAssetCreationService.createBusiness(connectionId, params, userEmail, agencyId);
+    const retry = await metaAssetCreationService.createBusiness(connectionId, params, userEmail, agencyId);
+
+    expect(first.error?.code).toBe('CREATION_OUTCOME_UNKNOWN');
+    expect(retry.error?.code).toBe('CREATION_OUTCOME_UNKNOWN');
+    expect(metaConnector.createBusiness).toHaveBeenCalledTimes(1);
+    expect(creation?.status).toBe('outcome_unknown');
+  });
+
+  it('does not retry after Meta returns a 5xx creation response', async () => {
+    vi.mocked(prisma.platformAuthorization.findUnique).mockResolvedValue(activePlatformAuth() as never);
+    let creation: Record<string, any> | null = null;
+    vi.mocked(prisma.metaAssetCreation.findUnique).mockImplementation(async () => creation as never);
+    vi.mocked(prisma.metaAssetCreation.create).mockImplementation(async ({ data }: any) => {
+      creation = { id: 'creation-1', ...data };
+      return creation as never;
+    });
+    vi.mocked(prisma.metaAssetCreation.updateMany).mockImplementation(async ({ data }: any) => {
+      creation = { ...creation, ...data };
+      return { count: 1 } as never;
+    });
+    vi.mocked(metaConnector.createBusiness).mockRejectedValue(
+      new MetaGraphMutationError('Meta business creation failed: Internal Server Error', 500, 2),
+    );
+
+    const params = { accessRequestId: 'request-1', name: 'Acme', vertical: 'OTHER', primaryPageId: 'page-1', timezoneId: '25' };
+    const first = await metaAssetCreationService.createBusiness(connectionId, params, userEmail, agencyId);
+    const retry = await metaAssetCreationService.createBusiness(connectionId, params, userEmail, agencyId);
+
+    expect(first.error?.code).toBe('CREATION_OUTCOME_UNKNOWN');
+    expect(retry.error?.code).toBe('CREATION_OUTCOME_UNKNOWN');
+    expect(metaConnector.createBusiness).toHaveBeenCalledTimes(1);
+    expect(creation?.status).toBe('outcome_unknown');
+  });
+
+  it('does not retry after Meta creates a business but local persistence fails', async () => {
+    vi.mocked(prisma.platformAuthorization.findUnique).mockResolvedValue(activePlatformAuth() as never);
+    let creation: Record<string, any> | null = null;
+    vi.mocked(prisma.metaAssetCreation.findUnique).mockImplementation(async () => creation as never);
+    vi.mocked(prisma.metaAssetCreation.create).mockImplementation(async ({ data }: any) => {
+      creation = { id: 'creation-1', ...data };
+      return creation as never;
+    });
+    vi.mocked(prisma.metaAssetCreation.updateMany).mockImplementation(async ({ data }: any) => {
+      creation = { ...creation, ...data };
+      return { count: 1 } as never;
+    });
+    vi.mocked(metaConnector.createBusiness).mockResolvedValue({ id: 'biz-new', name: 'Acme', timezoneId: '25' });
+    vi.mocked(prisma.platformAuthorization.update).mockRejectedValue(new Error('database unavailable'));
+
+    const params = { accessRequestId: 'request-1', name: 'Acme', vertical: 'OTHER', primaryPageId: 'page-1', timezoneId: '25' };
+    const first = await metaAssetCreationService.createBusiness(connectionId, params, userEmail, agencyId);
+    const retry = await metaAssetCreationService.createBusiness(connectionId, params, userEmail, agencyId);
+
+    expect(first.error?.code).toBe('CREATION_OUTCOME_UNKNOWN');
+    expect(retry.error?.code).toBe('CREATION_OUTCOME_UNKNOWN');
+    expect(metaConnector.createBusiness).toHaveBeenCalledTimes(1);
+    expect(creation?.status).toBe('outcome_unknown');
+    expect(prisma.metaAssetCreation.updateMany).toHaveBeenCalledWith(expect.objectContaining({
+      data: { status: 'outcome_unknown', lastErrorCode: 'PROVIDER_OUTCOME_UNKNOWN' },
+    }));
+  });
+
+  it('does not replay an idempotency claim under a different Meta authorization', async () => {
+    vi.mocked(prisma.platformAuthorization.findUnique).mockResolvedValue(
+      { ...activePlatformAuth(), id: 'auth-2' } as never
+    );
+    vi.mocked(prisma.metaAssetCreation.findUnique).mockResolvedValue({
+      id: 'creation-1',
+      accessRequestId: 'request-1',
+      connectionId,
+      authorizationId: 'auth-1',
+      assetType: 'business',
+      parentAssetId: 'none',
+      intentHash: createHash('sha256').update(JSON.stringify({
+        assetType: 'business',
+        parentAssetId: 'none',
+        intent: { name: 'Acme', vertical: 'OTHER', primaryPageId: 'page-1', timezoneId: '25' },
+      })).digest('hex'),
+      status: 'outcome_unknown',
+    } as never);
+
+    const result = await metaAssetCreationService.createBusiness(
+      connectionId,
+      { accessRequestId: 'request-1', name: 'Acme', vertical: 'OTHER', primaryPageId: 'page-1', timezoneId: '25' },
+      userEmail,
+      agencyId
+    );
+
+    expect(result.error?.code).toBe('IDEMPOTENCY_KEY_REUSED');
+    expect(metaConnector.createBusiness).not.toHaveBeenCalled();
+  });
+
+  it('retries after Meta clearly rejects creation', async () => {
+    vi.mocked(prisma.platformAuthorization.findUnique).mockResolvedValue(activePlatformAuth() as never);
+    let creation: Record<string, any> | null = null;
+    vi.mocked(prisma.metaAssetCreation.findUnique).mockImplementation(async () => creation as never);
+    vi.mocked(prisma.metaAssetCreation.create).mockImplementation(async ({ data }: any) => {
+      creation = { id: 'creation-1', ...data };
+      return creation as never;
+    });
+    vi.mocked(prisma.metaAssetCreation.updateMany).mockImplementation(async ({ where, data }: any) => {
+      if (creation?.id === where.id && creation.status === where.status) {
+        creation = { ...creation, ...data };
+        return { count: 1 } as never;
+      }
+      return { count: 0 } as never;
+    });
+    vi.mocked(prisma.metaAssetCreation.update).mockImplementation(async ({ data }: any) => {
+      creation = { ...creation, ...data };
+      return creation as never;
+    });
+    vi.mocked(metaConnector.createBusiness)
+      .mockRejectedValueOnce(new MetaGraphMutationError('Meta business creation failed: permissions error', 400, 200))
+      .mockResolvedValueOnce({ id: 'biz-new', name: 'Acme', timezoneId: '25' });
+    vi.mocked(prisma.clientConnection.findUnique).mockResolvedValue({ id: connectionId, grantedAssets: null } as never);
+    vi.mocked(prisma.clientConnection.update).mockResolvedValue({} as never);
+    vi.mocked(prisma.platformAuthorization.update).mockResolvedValue({} as never);
+
+    const params = { accessRequestId: 'request-1', name: 'Acme', vertical: 'OTHER', primaryPageId: 'page-1', timezoneId: '25' };
+    const first = await metaAssetCreationService.createBusiness(connectionId, params, userEmail, agencyId);
+    const retry = await metaAssetCreationService.createBusiness(connectionId, params, userEmail, agencyId);
+
+    expect(first.error?.code).toBe('INSUFFICIENT_PERMISSIONS');
+    expect(retry.data?.id).toBe('biz-new');
+    expect(metaConnector.createBusiness).toHaveBeenCalledTimes(2);
+    expect(creation?.status).toBe('created');
   });
 
   it.each([
@@ -208,7 +455,7 @@ describe('MetaAssetCreationService.createBusiness', () => {
     setup();
     const result = await metaAssetCreationService.createBusiness(
       connectionId,
-      { name: 'Acme', vertical: 'OTHER', primaryPageId: 'page-1', timezoneId: '25' },
+      { accessRequestId: 'request-1', name: 'Acme', vertical: 'OTHER', primaryPageId: 'page-1', timezoneId: '25' },
       userEmail,
       agencyId
     );
@@ -225,7 +472,7 @@ describe('MetaAssetCreationService.createBusiness', () => {
 
     const result = await metaAssetCreationService.createBusiness(
       connectionId,
-      { name: 'Acme', vertical: 'OTHER', primaryPageId: 'page-1', timezoneId: '25' },
+      { accessRequestId: 'request-1', name: 'Acme', vertical: 'OTHER', primaryPageId: 'page-1', timezoneId: '25' },
       userEmail,
       agencyId
     );
@@ -245,7 +492,7 @@ describe('MetaAssetCreationService.createBusiness', () => {
 
     const result = await metaAssetCreationService.createBusiness(
       connectionId,
-      { name: 'Acme', vertical: 'OTHER', primaryPageId: 'page-1', timezoneId: '25' },
+      { accessRequestId: 'request-1', name: 'Acme', vertical: 'OTHER', primaryPageId: 'page-1', timezoneId: '25' },
       userEmail,
       agencyId
     );
@@ -270,11 +517,11 @@ describe('MetaAssetCreationService.createBusiness', () => {
     vi.mocked(prisma.platformAuthorization.findUnique).mockResolvedValue(
       activePlatformAuth() as never
     );
-    vi.mocked(metaConnector.createBusiness).mockRejectedValue(new Error(message));
+    vi.mocked(metaConnector.createBusiness).mockRejectedValue(new MetaGraphMutationError(message, 400, 200));
 
     const result = await metaAssetCreationService.createBusiness(
       connectionId,
-      { name: 'Acme', vertical: 'OTHER', primaryPageId: 'page-1', timezoneId: '25' },
+      { accessRequestId: 'request-1', name: 'Acme', vertical: 'OTHER', primaryPageId: 'page-1', timezoneId: '25' },
       userEmail,
       agencyId
     );
@@ -343,5 +590,74 @@ describe('MetaAssetCreationService.getUserPages', () => {
 
     expect(result.data).toBeNull();
     expect(result.error?.code).toBe('USER_PAGES_FETCH_FAILED');
+  });
+});
+
+describe('MetaAssetCreationService.createProductCatalog', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(prisma.platformAuthorization.findUnique).mockResolvedValue(activePlatformAuth() as never);
+    vi.mocked(infisical.getOAuthTokens).mockResolvedValue({
+      accessToken: 'client-token',
+      refreshToken: null,
+      expiresAt: null,
+    } as never);
+    vi.mocked(prisma.metaAssetCreation.findUnique)
+      .mockResolvedValueOnce(null as never)
+      .mockResolvedValueOnce({
+        id: 'creation-1',
+        accessRequestId: 'request-1',
+        connectionId,
+        authorizationId: 'auth-1',
+        assetType: 'catalog',
+        parentAssetId: 'business-1',
+        intentHash: createHash('sha256')
+          .update(JSON.stringify({ assetType: 'catalog', parentAssetId: 'business-1', intent: { name: 'Spring catalog' } }))
+          .digest('hex'),
+        status: 'in_progress',
+        updatedAt: new Date(),
+      } as never);
+    vi.mocked(prisma.metaAssetCreation.create).mockImplementation(async (args: any) => ({
+      id: 'creation-1',
+      ...args.data,
+    }) as never);
+    vi.mocked(prisma.metaAssetCreation.update).mockResolvedValue({} as never);
+    vi.mocked(prisma.clientConnection.findUnique).mockResolvedValue({
+      id: connectionId,
+      grantedAssets: { meta: { createdProductCatalogs: [] } },
+    } as never);
+    vi.mocked(prisma.clientConnection.update).mockResolvedValue({} as never);
+  });
+
+  it('creates one Meta catalog and stores one result for overlapping duplicate requests', async () => {
+    let releaseMetaCreate!: () => void;
+    let notifyMetaCreateStarted!: () => void;
+    const metaCreateStarted = new Promise<void>((resolve) => { notifyMetaCreateStarted = resolve; });
+    const waitForMetaCreate = new Promise<void>((resolve) => { releaseMetaCreate = resolve; });
+    vi.mocked(metaConnector.createProductCatalog).mockImplementation(async () => {
+      notifyMetaCreateStarted();
+      await waitForMetaCreate;
+      return { id: 'catalog-1', name: 'Spring catalog', catalogType: 'commerce' };
+    });
+
+    const firstRequest = metaAssetCreationService.createProductCatalog(
+      connectionId, 'business-1', { accessRequestId: 'request-1', name: 'Spring catalog' }, userEmail, agencyId
+    );
+    await metaCreateStarted;
+    const duplicateRequest = await metaAssetCreationService.createProductCatalog(
+      connectionId, 'business-1', { accessRequestId: 'request-1', name: 'Spring catalog' }, userEmail, agencyId
+    );
+
+    expect(duplicateRequest.error?.code).toBe('CREATION_IN_PROGRESS');
+    expect(metaConnector.createProductCatalog).toHaveBeenCalledTimes(1);
+    releaseMetaCreate();
+    const firstResult = await firstRequest;
+
+    expect(firstResult).toEqual({
+      data: { id: 'catalog-1', name: 'Spring catalog', catalogType: 'commerce' },
+      error: null,
+    });
+    expect(prisma.metaAssetCreation.create).toHaveBeenCalledTimes(1);
+    expect(prisma.metaAssetCreation.update).toHaveBeenCalledTimes(1);
   });
 });

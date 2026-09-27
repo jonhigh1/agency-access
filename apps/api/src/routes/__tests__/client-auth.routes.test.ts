@@ -6,11 +6,18 @@ import { oauthStateService } from '@/services/oauth-state.service';
 import { getConnector } from '@/services/connectors/factory';
 import { snapchatConnector } from '@/services/connectors/snapchat';
 import { env } from '@/lib/env';
+import { prisma } from '@/lib/prisma';
 
 // Mock services
 vi.mock('@/services/access-request.service');
 vi.mock('@/services/oauth-state.service');
 vi.mock('@/services/connectors/factory');
+vi.mock('@/lib/prisma', () => ({
+  prisma: {
+    accessRequest: { findUnique: vi.fn() },
+    clientConnection: { findFirst: vi.fn() },
+  },
+}));
 
 // Mock env
 vi.mock('@/lib/env', () => ({
@@ -32,6 +39,19 @@ describe('Client Auth Routes', () => {
     app = Fastify();
     await app.register(clientAuthRoutes);
     vi.clearAllMocks();
+    vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue({
+      id: 'req-1',
+      agencyId: 'agency-1',
+      uniqueToken: 'test-token',
+      status: 'active',
+      expiresAt: new Date('2027-01-01T00:00:00.000Z'),
+      platforms: [
+        { platform: 'meta_ads', accessLevel: 'manage' },
+        { platform: 'google_ads', accessLevel: 'manage' },
+        { platform: 'snapchat_ads', accessLevel: 'manage' },
+      ],
+    } as any);
+    vi.mocked(prisma.clientConnection.findFirst).mockResolvedValue(null);
   });
 
   afterEach(async () => {
@@ -93,6 +113,59 @@ describe('Client Auth Routes', () => {
           'pages_show_list',
         ],
         'http://localhost:3000/invite/oauth-callback'
+      );
+    });
+
+    it('routes Meta popup presentation through the same backend callback with a signed popup return URL', async () => {
+      vi.mocked(accessRequestService.getAccessRequestByToken).mockResolvedValue({
+        data: {
+          id: 'req-popup', agencyId: 'agency-1', clientEmail: 'client@example.com',
+          platforms: [{ platformGroup: 'meta', products: [{ product: 'meta_ads', accessLevel: 'admin' }] }],
+        } as any,
+        error: null,
+      });
+      vi.mocked(oauthStateService.createState).mockResolvedValue({ data: 'popup-state', error: null });
+      const mockConnector = { getAuthUrl: vi.fn().mockReturnValue('https://facebook.com/oauth') };
+      vi.mocked(getConnector).mockReturnValue(mockConnector as any);
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/client/popup-token/oauth-url',
+        payload: { platform: 'meta', presentation: 'popup' },
+      });
+
+      expect(response.statusCode).toBe(200);
+      expect(oauthStateService.createState).toHaveBeenCalledWith(expect.objectContaining({
+        redirectUrl: 'http://localhost:3000/invite/oauth-callback?presentation=popup',
+      }));
+      expect(mockConnector.getAuthUrl).toHaveBeenCalledWith(
+        'popup-state',
+        ['ads_management', 'business_management', 'pages_read_engagement', 'pages_show_list'],
+        'http://localhost:3000/invite/oauth-callback?presentation=popup',
+      );
+    });
+
+    it('requests only the Page OAuth track when the request does not include Meta Ads', async () => {
+      vi.mocked(accessRequestService.getAccessRequestByToken).mockResolvedValue({
+        data: {
+          id: 'req-pages', agencyId: 'agency-1', clientEmail: 'client@example.com',
+          platforms: [{ platform: 'meta_pages', accessLevel: 'admin' }],
+        } as any,
+        error: null,
+      });
+      vi.mocked(oauthStateService.createState).mockResolvedValue({ data: 'state-pages', error: null });
+      const mockConnector = { getAuthUrl: vi.fn().mockReturnValue('https://facebook.com/oauth') };
+      vi.mocked(getConnector).mockReturnValue(mockConnector as any);
+
+      const response = await app.inject({
+        method: 'POST', url: '/client/invite-pages/oauth-url', payload: { platform: 'meta' },
+      });
+
+      expect(response.statusCode).toBe(200);
+      expect(mockConnector.getAuthUrl).toHaveBeenCalledWith(
+        'state-pages',
+        ['business_management', 'pages_show_list', 'pages_read_engagement'],
+        'http://localhost:3000/invite/oauth-callback',
       );
     });
 
@@ -665,50 +738,8 @@ describe('Client Auth Routes', () => {
     });
   });
 
-  describe('POST /client/:token/meta/finalize', () => {
-    it('returns 400 for invalid payload (missing required fields)', async () => {
-      const response = await app.inject({
-        method: 'POST',
-        url: '/client/test-token/meta/finalize',
-        payload: { state: 'stateless.xxx.yyy', accessToken: 'token' },
-      });
-
-      expect(response.statusCode).toBe(400);
-      const json = response.json();
-      expect(json.error?.code).toBe('VALIDATION_ERROR');
-      expect(json.error?.message).toContain('Invalid Meta finalize payload');
-    });
-
-    it('returns 400 for invalid or expired OAuth state', async () => {
-      vi.mocked(oauthStateService.validateState).mockResolvedValue({
-        data: null,
-        error: { code: 'INVALID_STATE', message: 'Invalid or expired' },
-      });
-
-      const response = await app.inject({
-        method: 'POST',
-        url: '/client/test-token/meta/finalize',
-        payload: {
-          state: 'stateless.invalid.signature',
-          accessToken: 'fb-token-123',
-          userId: 'fb-user-123',
-        },
-      });
-
-      expect(response.statusCode).toBe(400);
-      expect(response.json().error?.code).toBe('INVALID_STATE');
-    });
-
-    it('returns 400 when state platform is not meta or meta_ads', async () => {
-      vi.mocked(oauthStateService.validateState).mockResolvedValue({
-        data: {
-          accessRequestId: 'req-1',
-          platform: 'google',
-          clientEmail: 'client@example.com',
-        } as any,
-        error: null,
-      });
-
+  describe('removed POST /client/:token/meta/finalize', () => {
+    it('is not registered', async () => {
       const response = await app.inject({
         method: 'POST',
         url: '/client/test-token/meta/finalize',
@@ -719,9 +750,8 @@ describe('Client Auth Routes', () => {
         },
       });
 
-      expect(response.statusCode).toBe(400);
-      expect(response.json().error?.code).toBe('PLATFORM_MISMATCH');
-      expect(response.json().error?.message).toContain('Meta finalize only supports meta or meta_ads');
+      expect(response.statusCode).toBe(404);
+      expect(oauthStateService.validateState).not.toHaveBeenCalled();
     });
   });
 });

@@ -8,7 +8,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { prisma } from '@/lib/prisma';
 import * as clientService from '@/services/client.service';
-import { infisical } from '@/lib/infisical';
+import { connectionService } from '@/services/connection.service';
 
 // Mock Prisma
 vi.mock('@/lib/prisma', () => ({
@@ -28,8 +28,8 @@ vi.mock('@/lib/prisma', () => ({
   },
 }));
 
-vi.mock('@/lib/infisical', () => ({
-  infisical: { deleteSecret: vi.fn() },
+vi.mock('@/services/connection.service', () => ({
+  connectionService: { revokeConnection: vi.fn() },
 }));
 
 const mockPrisma = vi.mocked(prisma);
@@ -37,6 +37,7 @@ const mockPrisma = vi.mocked(prisma);
 describe('Phase 5: Client Service - TDD Tests', () => {
   beforeEach(() => {
     vi.resetAllMocks();
+    vi.mocked(connectionService.revokeConnection).mockResolvedValue({ data: null, error: null } as any);
   });
 
   describe('createClient', () => {
@@ -360,22 +361,83 @@ describe('Phase 5: Client Service - TDD Tests', () => {
       expect(mockPrisma.client.delete).not.toHaveBeenCalled();
     });
 
-    it('should fail closed when secret deletion fails', async () => {
+    it('should fail closed when provider access revocation fails', async () => {
       vi.mocked(mockPrisma.client.findUnique).mockResolvedValue({
         id: 'client-1',
         agencyId: 'agency-1',
         accessRequests: [{
-          connection: { authorizations: [{ secretId: 'secret-1' }] },
+          connection: { id: 'connection-1', authorizations: [{ secretId: 'secret-1' }] },
         }],
       } as any);
-      vi.mocked(infisical.deleteSecret).mockRejectedValue(new Error('Infisical unavailable'));
+      vi.mocked(connectionService.revokeConnection).mockResolvedValue({
+        data: null,
+        error: { code: 'META_ACCESS_REVOCATION_FAILED', message: 'Meta access revocation failed' },
+      } as any);
 
-      await expect(clientService.deleteClient('client-1', 'agency-1')).rejects.toThrow('Infisical unavailable');
+      await expect(clientService.deleteClient('client-1', 'agency-1')).rejects.toThrow('Meta access revocation failed');
       expect(mockPrisma.client.delete).not.toHaveBeenCalled();
     });
   });
 
   describe('getClientDetail', () => {
+    it('uses verified Meta grants for catalog-only and Instagram client status', async () => {
+      const now = new Date('2026-09-24T12:00:00.000Z');
+      const grants = [
+        { assetKind: 'catalog', assetId: 'catalog-1' },
+        { assetKind: 'instagram_account', assetId: 'instagram-1' },
+      ].flatMap(({ assetKind, assetId }) => ['business', 'human'].map((recipientType) => ({
+        assetKind,
+        assetId,
+        status: 'verified',
+        recipientType,
+        recipientId: recipientType === 'business' ? 'business-1' : 'person-1',
+        requestedTasks: ['MANAGE'],
+        verifiedTasks: ['MANAGE'],
+        verifiedAuthorizationEpoch: 2,
+        authorization: { authorizationEpoch: 2, status: 'active', expiresAt: null },
+        destination: { businessId: 'agency-business-1', agencyConnection: { status: 'active', businessId: 'agency-business-1' } },
+      })));
+      const clientData = {
+        id: 'client-1', agencyId: 'agency-1', name: 'Taylor Client', company: 'Acme', email: 'taylor@acme.com',
+        website: null, language: 'en', createdAt: now, updatedAt: now,
+        accessRequests: [{
+          id: 'request-meta', clientName: 'Meta access', status: 'completed', createdAt: now, authorizedAt: now,
+          platforms: { meta: ['meta_ads', 'instagram'] },
+          metaAccessConfig: { recipients: [{ type: 'human', id: 'person-1', name: 'Operator' }], pageTasks: [], adAccountTasks: [], datasetTasks: [] },
+          connection: {
+            id: 'connection-meta', status: 'active', createdAt: now,
+            grantedAssets: { meta_ads: { catalogs: ['catalog-1'] }, instagram: { instagramAccounts: ['instagram-1'] } },
+            authorizations: [{ platform: 'meta', status: 'active', authorizationEpoch: 2, expiresAt: null }],
+            metaAssetGrants: grants,
+          },
+        }],
+      } as any;
+      vi.mocked(mockPrisma.client.findUnique).mockResolvedValue(clientData);
+
+      const result = await clientService.getClientDetail({ clientId: 'client-1', agencyId: 'agency-1' });
+
+      expect(result?.platformGroups).toEqual(expect.arrayContaining([
+        expect.objectContaining({ platformGroup: 'meta', products: expect.arrayContaining([
+          expect.objectContaining({ product: 'meta_ads', status: 'connected' }),
+          expect.objectContaining({ product: 'instagram', status: 'connected' }),
+        ]) }),
+      ]));
+
+      clientData.accessRequests[0].connection.metaAssetGrants = grants.map((grant) => ({ ...grant, status: 'stale' }));
+      const staleResult = await clientService.getClientDetail({ clientId: 'client-1', agencyId: 'agency-1' });
+      expect(staleResult?.platformGroups[0].products).toEqual(expect.arrayContaining([
+        expect.objectContaining({ product: 'meta_ads', status: 'needs_reconnect', note: 'Reconnect Meta to verify access again' }),
+        expect.objectContaining({ product: 'instagram', status: 'needs_reconnect', note: 'Reconnect Meta to verify access again' }),
+      ]));
+
+      clientData.accessRequests[0].connection.metaAssetGrants = grants.map((grant) => ({ ...grant, status: 'sharing_attempted' }));
+      const sharingResult = await clientService.getClientDetail({ clientId: 'client-1', agencyId: 'agency-1' });
+      expect(sharingResult?.platformGroups[0].products).toEqual(expect.arrayContaining([
+        expect.objectContaining({ product: 'meta_ads', status: 'selection_required', note: 'Finish sharing and verify Meta access' }),
+        expect.objectContaining({ product: 'instagram', status: 'selection_required', note: 'Finish sharing and verify Meta access' }),
+      ]));
+    });
+
     it('keeps Google products pending until a native grant lifecycle is verified', async () => {
       vi.mocked(mockPrisma.client.findUnique).mockResolvedValue({
         id: 'client-1',
@@ -787,6 +849,7 @@ describe('Phase 5: Client Service - TDD Tests', () => {
               createdAt: true,
               authorizedAt: true,
               platforms: true,
+              metaAccessConfig: true,
               connection: {
                 select: {
                   id: true,
@@ -794,11 +857,32 @@ describe('Phase 5: Client Service - TDD Tests', () => {
                   createdAt: true,
                   revokedAt: true,
                   grantedAssets: true,
+                  metaAssetGrants: {
+                    select: {
+                      assetKind: true,
+                      assetId: true,
+                      status: true,
+                      recipientType: true,
+                      recipientId: true,
+                      requestedTasks: true,
+                      verifiedTasks: true,
+                      verifiedAuthorizationEpoch: true,
+                      authorization: { select: { authorizationEpoch: true, status: true, expiresAt: true } },
+                      destination: {
+                        select: {
+                          businessId: true,
+                          agencyConnection: { select: { status: true, businessId: true } },
+                        },
+                      },
+                    },
+                  },
                   authorizations: {
                     select: {
                       platform: true,
                       status: true,
                       metadata: true,
+                      authorizationEpoch: true,
+                      expiresAt: true,
                     },
                   },
                 },

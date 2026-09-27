@@ -15,7 +15,7 @@
  * - grantedAssets: confirmation from backend after grant
  */
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { m, AnimatePresence } from 'framer-motion';
 import { Loader2, ExternalLink, CheckCircle2, ChevronDown } from 'lucide-react';
@@ -25,29 +25,27 @@ import { GoogleAssetSelector } from './GoogleAssetSelector';
 import { LinkedInAssetSelector } from './LinkedInAssetSelector';
 import { TikTokAssetSelector } from './TikTokAssetSelector';
 import { AutomaticPagesGrant } from './AutomaticPagesGrant';
+import { CatalogAccessGrant } from './CatalogAccessGrant';
+import { InstagramAccessGrant } from './InstagramAccessGrant';
 import { MetaPageEngagementProof } from './MetaPageEngagementProof';
 import { AdAccountSharingInstructions } from './AdAccountSharingInstructions';
 import type { ManualMetaShareCompletionResult } from './AdAccountSharingInstructions';
 import { StepHelpText } from './StepHelpText';
 import { PlatformIcon, Button } from '@/components/ui';
 import { PLATFORM_NAMES } from '@agency-platform/shared';
-import type { Platform } from '@agency-platform/shared';
+import type { MetaAccessConfig, Platform } from '@agency-platform/shared';
 import { trackOnboardingEvent } from '@/lib/analytics/onboarding';
-import {
-  trackClientOAuthExchangeFailure,
-  trackClientOAuthExchangeSuccess,
-} from '@/lib/analytics/oauth-events';
 import { rememberInviteOAuthReturnToken } from '@/lib/client-invite-oauth';
 import { getClientInviteManualRoute } from '@/lib/client-invite-platforms';
 import { getApiBaseUrl } from '@/lib/api/api-env';
 import { parseJsonResponse } from '@/lib/api/parse-json-response';
-import { launchMetaClientPopupLogin } from '@/lib/meta-business-login';
 
 interface PlatformAuthWizardProps {
   platform: Platform;
   platformName: string;
   products: Array<{ product: string; accessLevel: string }>;
   accessRequestToken: string;
+  metaAccessConfig?: MetaAccessConfig;
   onComplete: () => void;
   completionActionLabel?: string;
   deferManualRedirect?: boolean;
@@ -96,6 +94,54 @@ function isGoogleProduct(product: string): boolean {
 
 function clampStep(step: number): 1 | 2 | 3 {
   return step > 3 ? 3 : step as 1 | 2 | 3;
+}
+
+function waitForMetaPopup(popup: Window) {
+  let timeout: number;
+  let closeCheck: number;
+  let finish: (result: { connectionId: string; platform: string }) => void;
+  let fail: (error: Error) => void;
+  let settled = false;
+  const promise = new Promise<{ connectionId: string; platform: string }>((resolve, reject) => {
+    finish = (result) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      resolve(result);
+    };
+    fail = (error) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      reject(error);
+    };
+  });
+  const cleanup = () => {
+    window.removeEventListener('message', onMessage);
+    window.clearTimeout(timeout);
+    window.clearInterval(closeCheck);
+  };
+  const onMessage = (event: MessageEvent) => {
+    const data = event.data;
+    if (event.origin !== window.location.origin || event.source !== popup || data?.type !== 'authhub:oauth-result') return;
+    if (data.success && typeof data.connectionId === 'string' && data.platform === 'meta') {
+      finish({ connectionId: data.connectionId, platform: data.platform });
+    } else {
+      fail(new Error(data.errorCode === 'OAUTH_DENIED'
+        ? 'You declined or cancelled access. Try again when ready.'
+        : 'Meta could not complete authorization. Try again.'));
+    }
+  };
+  window.addEventListener('message', onMessage);
+  timeout = window.setTimeout(() => {
+    fail(new Error('Meta authorization timed out. Close the pop-up and try again.'));
+  }, 120_000);
+  closeCheck = window.setInterval(() => {
+    if (popup.closed) {
+      fail(new Error('Meta authorization closed before it finished. Try again.'));
+    }
+  }, 500);
+  return { promise, cleanup, cancel: () => fail(new Error('Meta authorization was cancelled.')) };
 }
 
 function hasNoAssetsFollowUp(product: string, assets: any): boolean {
@@ -152,9 +198,18 @@ function getMetaFollowUpLines(assets: any): string[] {
         : typeof account?.id === 'string'
           ? account.id
           : 'Selected Instagram account';
-    lines.push(
-      `Follow-up needed: ${accountName} requires manual follow-up because Instagram automation is not supported yet`
-    );
+    lines.push(assets.instagramBusinessAccessStatus === 'verified'
+      ? `Follow-up needed: ${accountName} agency access is verified; individual recipient access is not verified`
+      : `Follow-up needed: ${accountName} needs agency Business Portfolio sharing and verification`);
+  });
+
+  const selectedDatasets = Array.isArray(assets.selectedDatasetsWithNames)
+    ? assets.selectedDatasetsWithNames
+    : Array.isArray(assets.datasets)
+      ? assets.datasets.map((id: string) => ({ id, name: id }))
+      : [];
+  selectedDatasets.forEach((dataset: any) => {
+    lines.push(`Follow-up needed: ${dataset.name || dataset.id} requires manual Meta access assignment and verification`);
   });
 
   return lines;
@@ -170,7 +225,7 @@ function getSelectedAssetCount(product: string, assets: any): number {
     case 'meta_ads':
     case 'linkedin_ads':
     case 'linkedin_pages':
-      return (assets.adAccounts?.length ?? 0) + (assets.pages?.length ?? 0) + (assets.instagramAccounts?.length ?? 0);
+      return (assets.adAccounts?.length ?? 0) + (assets.pages?.length ?? 0) + (assets.instagramAccounts?.length ?? 0) + (assets.catalogs?.length ?? 0) + (assets.datasets?.length ?? 0);
     case 'meta_pages':
       return assets.pages?.length ?? 0;
     case 'ga4':
@@ -271,6 +326,7 @@ export function PlatformAuthWizard({
   platformName,
   products,
   accessRequestToken,
+  metaAccessConfig,
   onComplete,
   completionActionLabel,
   deferManualRedirect = false,
@@ -290,6 +346,24 @@ export function PlatformAuthWizard({
     requestedMetaAssetProducts[0] ||
     null;
   const finalActionLabel = completionActionLabel || 'Continue to next platform';
+  const activePopupWaiter = useRef<{
+    popup: Window;
+    waiter: ReturnType<typeof waitForMetaPopup>;
+  } | null>(null);
+  const activePopup = useRef<Window | null>(null);
+  const isMounted = useRef(true);
+
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+      const active = activePopupWaiter.current;
+      activePopupWaiter.current = null;
+      active?.waiter.cancel();
+      activePopup.current?.close();
+      activePopup.current = null;
+    };
+  }, []);
 
   // Redirect platforms to manual flow (no OAuth - uses team invitations)
   useEffect(() => {
@@ -312,6 +386,8 @@ export function PlatformAuthWizard({
   const [businessIdLoading, setBusinessIdLoading] = useState(false);
   const [businessIdError, setBusinessIdError] = useState<string | null>(null);
   const [pagesGranted, setPagesGranted] = useState(false);
+  const [catalogsGranted, setCatalogsGranted] = useState(false);
+  const [instagramBusinessAccessVerified, setInstagramBusinessAccessVerified] = useState(false);
   const [metaAdAccountShareStatus, setMetaAdAccountShareStatus] = useState<
     'idle' | 'verified' | 'partial'
   >('idle');
@@ -340,115 +416,31 @@ export function PlatformAuthWizard({
   const metaAdAssets = groupAssets['meta_ads'] || {};
   const hasMetaPages = (metaAdAssets.pages?.length ?? 0) > 0;
   const hasMetaAdAccounts = (metaAdAssets.adAccounts?.length ?? 0) > 0;
+  const hasMetaCatalogs = (metaAdAssets.catalogs?.length ?? 0) > 0;
+  const hasMetaInstagramAccounts = (metaAdAssets.instagramAccounts?.length ?? 0) > 0;
+  const instagramSelectionKey = (metaAdAssets.instagramAccounts || []).join('|');
 
-  // Step 1: Initiate OAuth (or Meta popup)
-  const handleConnectClick = async () => {
+  useEffect(() => {
+    setInstagramBusinessAccessVerified(false);
+  }, [instagramSelectionKey]);
+
+  // Step 1: Initiate OAuth
+  const handleConnectClick = async (presentation: 'redirect' | 'popup' = 'redirect') => {
+    const popup = presentation === 'popup' ? window.open('about:blank', '_blank', 'popup,width=680,height=760') : null;
+    if (presentation === 'popup' && !popup) {
+      setError('Your browser blocked the pop-up. Allow pop-ups for this site, then try again.');
+      return;
+    }
+    if (popup) activePopup.current = popup;
+    let popupWait: ReturnType<typeof waitForMetaPopup> | null = null;
     try {
       setIsProcessing(true);
       setError(null);
 
-      // Meta client invite: try popup first, fallback to redirect when SDK blocked (e.g. Firefox tracking protection)
-      if (platform === 'meta') {
-        const appId = process.env.NEXT_PUBLIC_META_APP_ID?.trim();
-        if (!appId) {
-          setError('Meta login is not configured. Please contact your agency.');
-          setIsProcessing(false);
-          return;
-        }
-
-        try {
-          const stateResponse = await fetch(`${apiBaseUrl}/api/client/${accessRequestToken}/oauth-state`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ platform: 'meta' }),
-          });
-
-          const stateJson = await parseJsonResponse<{
-            data: { state: string };
-            error: null | { message?: string };
-          }>(stateResponse, {
-            fallbackErrorMessage: 'Failed to prepare Meta login',
-          });
-
-          if (stateJson.error || !stateJson.data?.state) {
-            throw new Error(stateJson.error?.message || 'Failed to prepare Meta login');
-          }
-
-          const authPayload = await launchMetaClientPopupLogin(appId);
-
-          const finalizeResponse = await fetch(`${apiBaseUrl}/api/client/${accessRequestToken}/meta/finalize`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              state: stateJson.data.state,
-              accessToken: authPayload.accessToken,
-              userId: authPayload.userId,
-              expiresIn: authPayload.expiresIn,
-              signedRequest: authPayload.signedRequest,
-              dataAccessExpirationTime: authPayload.dataAccessExpirationTime,
-            }),
-          });
-
-          const finalizeJson = await parseJsonResponse<{
-            data: { connectionId: string; platform: string; token: string };
-            error: null | { message?: string };
-          }>(finalizeResponse, {
-            fallbackErrorMessage: 'Failed to complete Meta connection',
-          });
-
-          if (finalizeJson.error || !finalizeJson.data?.connectionId) {
-            throw new Error(finalizeJson.error?.message || 'Failed to complete Meta connection');
-          }
-
-          trackClientOAuthExchangeSuccess({
-            platform: finalizeJson.data.platform,
-            access_request_token: accessRequestToken,
-            connection_id: finalizeJson.data.connectionId,
-            auth_source: 'client_meta_popup',
-          });
-
-          setConnectionId(finalizeJson.data.connectionId);
-          setCurrentStep(2);
-          setIsProcessing(false);
-          return;
-        } catch (popupError) {
-          trackClientOAuthExchangeFailure({
-            platform: 'meta',
-            error_code: 'META_POPUP_FAILED',
-            error_message:
-              popupError instanceof Error ? popupError.message : 'Meta popup login failed',
-            auth_source: 'client_meta_popup',
-            access_request_token: accessRequestToken,
-          });
-          // Fallback to redirect when popup fails (e.g. Firefox Enhanced Tracking Protection blocks Facebook SDK)
-          const response = await fetch(`${apiBaseUrl}/api/client/${accessRequestToken}/oauth-url`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ platform: 'meta' }),
-          });
-
-          const json = await parseJsonResponse<{
-            data: { authUrl: string };
-            error: null | { message?: string };
-          }>(response, {
-            fallbackErrorMessage: 'Failed to start Meta authorization',
-          });
-
-          if (json.error) {
-            throw new Error(json.error?.message || 'Failed to start Meta authorization');
-          }
-
-          rememberInviteOAuthReturnToken(accessRequestToken);
-          window.location.href = json.data.authUrl;
-          return;
-        }
-      }
-
-      // All other platforms: redirect flow
       const response = await fetch(`${apiBaseUrl}/api/client/${accessRequestToken}/oauth-url`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ platform }),
+        body: JSON.stringify(presentation === 'popup' ? { platform, presentation } : { platform }),
       });
 
       const json = await parseJsonResponse<{
@@ -461,6 +453,7 @@ export function PlatformAuthWizard({
       if (json.error) {
         throw new Error(json.error.message || 'Failed to generate OAuth URL');
       }
+      if (!isMounted.current) return;
 
       const { authUrl } = json.data;
 
@@ -474,9 +467,25 @@ export function PlatformAuthWizard({
 
       rememberInviteOAuthReturnToken(accessRequestToken);
 
-      // Redirect to external OAuth provider
-      window.location.href = authUrl;
+      if (popup) {
+        if (popup.closed) throw new Error('Meta authorization closed before it started. Try again.');
+        popupWait = waitForMetaPopup(popup);
+        activePopupWaiter.current = { popup, waiter: popupWait };
+        popup.location.href = authUrl;
+        const result = await popupWait.promise;
+        if (!isMounted.current || activePopupWaiter.current?.waiter !== popupWait) return;
+        activePopupWaiter.current = null;
+        activePopup.current = null;
+        router.replace(`/invite/${accessRequestToken}?connectionId=${result.connectionId}&platform=${result.platform}&step=2`);
+      } else {
+        window.location.href = authUrl;
+      }
     } catch (err) {
+      popupWait?.cleanup();
+      if (activePopupWaiter.current?.waiter === popupWait) activePopupWaiter.current = null;
+      popup?.close();
+      if (activePopup.current === popup) activePopup.current = null;
+      if (!isMounted.current) return;
       setError(err instanceof Error ? err.message : 'Failed to initiate OAuth');
       setIsProcessing(false);
     }
@@ -502,6 +511,7 @@ export function PlatformAuthWizard({
 
     if (isMetaAssetProduct(product)) {
       setPagesGranted(false);
+      setCatalogsGranted(false);
       setMetaAdAccountShareStatus('idle');
     }
 
@@ -665,7 +675,7 @@ export function PlatformAuthWizard({
       // For Meta with pages/ad accounts, grant access is shown in step 2
       // For other platforms or Meta without grant needs, go to final step
       if (metaNeedsGrantStep) {
-        if (hasMetaPages || hasMetaAdAccounts) {
+        if (hasMetaPages || hasMetaAdAccounts || hasMetaCatalogs || hasMetaInstagramAccounts) {
           // Stay on step 2 to show grant access UI
           setChooseAccountsExpanded(false);
           setGrantAccessExpanded(true);
@@ -768,7 +778,7 @@ export function PlatformAuthWizard({
             )}
 
             <Button
-              onClick={handleConnectClick}
+              onClick={() => handleConnectClick()}
               isLoading={isProcessing}
               size="xl"
               variant="brutalist"
@@ -776,6 +786,18 @@ export function PlatformAuthWizard({
             >
               Connect {platformName}
             </Button>
+
+            {platform === 'meta' && (
+              <Button
+                onClick={() => handleConnectClick('popup')}
+                isLoading={isProcessing}
+                size="xl"
+                variant="secondary"
+                disabled={isProcessing}
+              >
+                Open Meta in a pop-up
+              </Button>
+            )}
 
             <StepHelpText
               title="What happens when you click Connect?"
@@ -877,12 +899,12 @@ export function PlatformAuthWizard({
               </button>
 
               <AnimatePresence initial={false}>
-                {chooseAccountsExpanded && (
                   <m.div
                     initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
+                    animate={{ height: chooseAccountsExpanded ? 'auto' : 0, opacity: chooseAccountsExpanded ? 1 : 0 }}
                     transition={{ duration: 0.3, ease: 'easeInOut' }}
+                    aria-hidden={!chooseAccountsExpanded}
+                    inert={!chooseAccountsExpanded}
                     className="overflow-hidden"
                   >
                     <div className="p-3 space-y-3">
@@ -923,14 +945,32 @@ export function PlatformAuthWizard({
 
                       {isMetaAssetProduct(p.product) && primaryMetaAssetProduct === p.product && (
                         <div className="relative">
+                          {metaAccessConfig ? (
+                            <div className="mb-4 border border-black bg-paper p-3 text-sm text-ink">
+                              <p className="font-semibold">Access this request will assign</p>
+                              <ul className="mt-2 list-disc space-y-1 pl-5">
+                                {metaAccessConfig.recipients.map((recipient) => (
+                                  <li key={`${recipient.type}:${recipient.id}`}>
+                                    {recipient.name || recipient.id} ({recipient.type === 'human' ? 'person' : 'system user'})
+                                  </li>
+                                ))}
+                              </ul>
+                              {metaAccessConfig.pageTasks.length > 0 ? (
+                                <p className="mt-2 text-xs text-muted-foreground">
+                                  Page tasks: {metaAccessConfig.pageTasks.map((task) => task === 'MANAGE_LEADS' ? 'Manage Leads Access' : task).join(', ')}
+                                </p>
+                              ) : null}
+                            </div>
+                          ) : null}
                           <MetaAssetSelector
                             sessionId={connectionId!}
                             accessRequestToken={accessRequestToken}
                             businessId={businessId || undefined}
+                            requestedPageTasks={metaAccessConfig?.pageTasks}
                             allowedAssetTypes={
                               p.product === 'meta_pages' && !requestedMetaAssetProducts.includes('meta_ads')
                                 ? ['page']
-                                : ['ad_account', 'page', 'instagram']
+                              : ['ad_account', 'page', 'instagram', 'catalog', 'dataset']
                             }
                             onSelectionChange={(selectedAssets) => {
                               // Store both IDs and full asset objects for grant step
@@ -1005,13 +1045,12 @@ export function PlatformAuthWizard({
                         )}
                       </div>
                     </m.div>
-                  )}
                 </AnimatePresence>
           </div>
 
           {/* Section Divider for Meta Grant Access */}
           {platform === 'meta' && metaNeedsGrantStep && connectionId && assetsSaved && (() => {
-            if (!hasMetaPages && !hasMetaAdAccounts) {
+            if (!hasMetaPages && !hasMetaAdAccounts && !hasMetaCatalogs && !hasMetaInstagramAccounts) {
               return null;
             }
 
@@ -1044,9 +1083,14 @@ export function PlatformAuthWizard({
             });
           const hasPages = selectedPages.length > 0;
           const hasAdAccounts = selectedAdAccounts.length > 0;
+          const selectedInstagramAccounts: Array<{ id: string; name: string }> = metaAssets.selectedInstagramWithNames ||
+            (metaAssets.instagramAccounts || []).map((id: string) => ({ id, name: id }));
+          const hasInstagramAccounts = selectedInstagramAccounts.length > 0;
 
               // Only show grant access UI if there are pages or ad accounts
-              if (!hasPages && !hasAdAccounts) {
+              const selectedCatalogs: Array<{ id: string; name: string }> = metaAssets.selectedCatalogsWithNames ||
+                (metaAssets.catalogs || []).map((id: string) => ({ id, name: metaAssets.allProductCatalogs?.find((catalog: any) => catalog.id === id)?.name || id }));
+              if (!hasPages && !hasAdAccounts && selectedCatalogs.length === 0 && !hasInstagramAccounts) {
                 return null;
               }
 
@@ -1120,9 +1164,9 @@ export function PlatformAuthWizard({
                     setPagesGranted(results.some((r) => r.status === 'granted'));
                     // If ad accounts also need sharing, wait; otherwise advance
                     if (
-                      !hasAdAccounts ||
-                      metaAdAccountShareStatus === 'verified' ||
-                      metaAdAccountShareStatus === 'partial'
+                      (!hasAdAccounts || metaAdAccountShareStatus === 'verified' || metaAdAccountShareStatus === 'partial') &&
+                      (!hasMetaCatalogs || catalogsGranted) &&
+                      (!hasInstagramAccounts || instagramBusinessAccessVerified)
                     ) {
                           setCurrentStep(3);
                     }
@@ -1150,7 +1194,8 @@ export function PlatformAuthWizard({
                         },
                       }));
                       // If pages also need granting, wait; otherwise advance
-                      if (!hasPages || pagesGranted) {
+                      if ((!hasPages || pagesGranted) && (!hasMetaCatalogs || catalogsGranted) &&
+                        (!hasInstagramAccounts || instagramBusinessAccessVerified)) {
                             setCurrentStep(3);
                       }
                     }}
@@ -1159,7 +1204,49 @@ export function PlatformAuthWizard({
                 </div>
               )}
 
-              {hasAdAccounts && !businessId && (
+              {selectedCatalogs.length > 0 && (
+                <CatalogAccessGrant
+                  key={JSON.stringify(selectedCatalogs.map((catalog: { id: string }) => catalog.id).sort())}
+                  catalogs={selectedCatalogs}
+                  connectionId={connectionId}
+                  accessRequestToken={accessRequestToken}
+                  onComplete={(verified) => {
+                    setCatalogsGranted(verified);
+                    if (verified && (!hasPages || pagesGranted) && (!hasAdAccounts || metaAdAccountShareStatus !== 'idle') &&
+                      (!hasInstagramAccounts || instagramBusinessAccessVerified)) {
+                      setCurrentStep(3);
+                    }
+                  }}
+                />
+              )}
+
+              {hasInstagramAccounts && businessId && typeof metaAssets.selectedBusinessId === 'string' ? (
+                <InstagramAccessGrant
+                  key={JSON.stringify(selectedInstagramAccounts.map((account) => account.id).sort())}
+                  accounts={selectedInstagramAccounts}
+                  clientBusinessId={metaAssets.selectedBusinessId}
+                  agencyBusinessId={businessId}
+                  connectionId={connectionId}
+                  accessRequestToken={accessRequestToken}
+                  onComplete={(verified) => {
+                    setInstagramBusinessAccessVerified(verified);
+                    setGroupAssets((prev) => ({
+                      ...prev,
+                      meta_ads: {
+                        ...(prev.meta_ads || {}),
+                        instagramBusinessAccessStatus: verified ? 'verified' : 'unresolved',
+                      },
+                    }));
+                    if (verified && (!hasPages || pagesGranted) &&
+                      (!hasAdAccounts || metaAdAccountShareStatus !== 'idle') &&
+                      (!hasMetaCatalogs || catalogsGranted)) {
+                      setCurrentStep(3);
+                    }
+                  }}
+                />
+              ) : null}
+
+              {(hasAdAccounts || hasInstagramAccounts) && !businessId && (
                     <div className={`border-2 p-6 ${
                       businessIdError
                         ? 'border-[var(--coral)] bg-[var(--coral)]/10'
@@ -1187,7 +1274,9 @@ export function PlatformAuthWizard({
                           {(pagesGranted || !hasPages) &&
                           (!hasAdAccounts ||
                             metaAdAccountShareStatus === 'verified' ||
-                            metaAdAccountShareStatus === 'partial') && (
+                            metaAdAccountShareStatus === 'partial') &&
+                          (!hasMetaCatalogs || catalogsGranted) &&
+                          (!hasInstagramAccounts || instagramBusinessAccessVerified) && (
                             <div className="mt-5 flex justify-center">
                               <Button
                                 onClick={() => setCurrentStep(3)}
@@ -1466,6 +1555,18 @@ export function PlatformAuthWizard({
                                   {line}
                                 </p>
                               ))}
+                            {product === 'meta_ads' &&
+                            (groupAssets['meta_ads']?.instagramAccounts?.length ?? 0) > 0 &&
+                            typeof groupAssets['meta_ads']?.selectedBusinessId === 'string' ? (
+                              <a
+                                className="mt-2 inline-flex min-h-[44px] items-center font-semibold text-[var(--ink)] underline"
+                                href={`https://business.facebook.com/settings/${encodeURIComponent(groupAssets['meta_ads'].selectedBusinessId)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                Manage Instagram sharing in Meta
+                              </a>
+                            ) : null}
                           </div>
                         );
                       })}

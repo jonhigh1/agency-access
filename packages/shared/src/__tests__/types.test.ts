@@ -30,12 +30,148 @@ import {
   ClientDetailResponse,
   GoogleAdsAccount,
   MetaClientBusinessSelectionSchema,
+  MetaManagedBusinessLinkStateSchema,
+  META_GRAPH_VERSION,
+  META_PERMISSION_CONTRACT,
+  META_PERMISSION_OPERATIONS,
+  getMetaOAuthPermissionSet,
+  isMetaPermissionTrackValid,
+  MetaPermissionSchema,
+  MetaAccessConfigSchema,
+  getDefaultMetaAccessTasks,
+  PLATFORM_SCOPES,
 } from '../types';
 
 // Type imports for TypeScript validation
 import type { SubscriptionTier, MetricType, UsageSnapshot, MetricUsage, QuotaExceededError } from '../types';
 
 describe('Phase 5: Shared Types - TDD Tests', () => {
+  it('defines the exact core Meta review permission set', () => {
+    const expectedScopes = [
+      'ads_management',
+      'business_management',
+      'pages_read_engagement',
+      'pages_show_list',
+    ];
+
+    expect(META_PERMISSION_CONTRACT.core.permissions).toEqual(expectedScopes);
+    expect(META_PERMISSION_CONTRACT.systemUser.permissions).toEqual([
+      'ads_management',
+      'business_management',
+      'pages_read_engagement',
+    ]);
+    expect(PLATFORM_SCOPES.meta).toEqual(expectedScopes);
+    expect(PLATFORM_SCOPES.meta_ads).toEqual(expectedScopes);
+    expect(PLATFORM_SCOPES.meta_pages).toEqual(META_PERMISSION_CONTRACT.tracks.meta_pages);
+    expect(PLATFORM_SCOPES.instagram).toEqual(META_PERMISSION_CONTRACT.tracks.instagram);
+  });
+
+  it('rejects permissions outside the Meta review contract', () => {
+    expect(() => MetaPermissionSchema.parse('unknown_permission')).toThrow();
+    expect(() => MetaPermissionSchema.parse('ads_read')).toThrow();
+    expect(() => MetaPermissionSchema.parse('business_asset_user_profile_access')).toThrow();
+  });
+
+  it('maps every core permission to a user-visible operation and rejects OAuth track drift', () => {
+    expect(Object.keys(META_PERMISSION_OPERATIONS).sort()).toEqual([...META_PERMISSION_CONTRACT.core.permissions].sort());
+    expect(META_PERMISSION_OPERATIONS).toEqual({
+      pages_show_list: expect.objectContaining({
+        tokenClass: 'client_user', method: 'GET', path: '/me/accounts',
+        verificationRead: expect.stringContaining('selected Page ID and name'),
+      }),
+      pages_read_engagement: expect.objectContaining({
+        tokenAcquisition: expect.objectContaining({
+          tokenClass: 'client_user',
+          method: 'GET',
+          path: '/{page_id}?fields=id,name,category,tasks,fan_count,followers_count,instagram_business_account{id,username},access_token',
+          purpose: expect.stringContaining('without exposing it to the browser'),
+        }),
+        tokenClass: 'selected_page', method: 'GET', path: '/{page_id}/feed?fields=id,created_time&limit=3',
+        verificationRead: expect.stringContaining('Page-token feed read'),
+      }),
+      business_management: expect.objectContaining({
+        tokenClass: 'client_user', method: 'GET', path: '/me/businesses and /{business_id}/{asset_edge}',
+        verificationRead: expect.stringContaining('selected IDs and names'),
+      }),
+      ads_management: expect.objectContaining({
+        tokenClass: 'client_user', method: 'POST', path: '/{asset_id}/assigned_users',
+        verificationRead: expect.stringContaining('recipient ID and every requested task'),
+      }),
+    });
+    expect(isMetaPermissionTrackValid('core', META_PERMISSION_CONTRACT.core.permissions)).toBe(true);
+    expect(isMetaPermissionTrackValid('core', [...META_PERMISSION_CONTRACT.core.permissions, 'catalog_management'])).toBe(false);
+    expect(isMetaPermissionTrackValid('meta_pages', META_PERMISSION_CONTRACT.tracks.meta_pages)).toBe(true);
+    expect(isMetaPermissionTrackValid('meta_pages', META_PERMISSION_CONTRACT.core.permissions)).toBe(false);
+  });
+
+  it('does not request ads_read because AuthHub has no Ads Insights operation', () => {
+    expect(META_PERMISSION_CONTRACT.core.permissions).not.toContain('ads_read');
+    expect(META_PERMISSION_CONTRACT.systemUser.permissions).not.toContain('ads_read');
+    expect(META_PERMISSION_OPERATIONS).not.toHaveProperty('ads_read');
+  });
+
+  it('resolves grouped and direct Meta OAuth requests through the shared permission contract', () => {
+    expect(getMetaOAuthPermissionSet('meta', ['meta_pages'])).toEqual({
+      track: 'meta_pages',
+      permissions: META_PERMISSION_CONTRACT.tracks.meta_pages,
+    });
+    expect(getMetaOAuthPermissionSet('meta_pages', [])).toEqual({
+      track: 'meta_pages',
+      permissions: META_PERMISSION_CONTRACT.tracks.meta_pages,
+    });
+    expect(getMetaOAuthPermissionSet('instagram', [])).toEqual({
+      track: 'instagram',
+      permissions: META_PERMISSION_CONTRACT.tracks.instagram,
+    });
+    expect(getMetaOAuthPermissionSet('meta_ads', [])).toEqual({
+      track: 'core',
+      permissions: META_PERMISSION_CONTRACT.core.permissions,
+    });
+    expect(getMetaOAuthPermissionSet('google_ads', [])).toBeNull();
+  });
+
+  it('pins the shared Meta Graph API authority to v25.0', () => {
+    expect(META_GRAPH_VERSION).toBe('v25.0');
+  });
+
+  it('validates explicit Meta human and system-user recipients', () => {
+    expect(MetaAccessConfigSchema.parse({
+      recipients: [
+        { type: 'human', id: 'person-1' },
+        { type: 'system_user', id: 'system-user-1' },
+      ],
+      pageTasks: ['MANAGE'],
+      adAccountTasks: ['ANALYZE'],
+    }).recipients).toHaveLength(2);
+    expect(() => MetaAccessConfigSchema.parse({
+      recipients: [{ type: 'business', id: 'business-1' }],
+    })).toThrow();
+  });
+
+  it('derives least-privilege Meta tasks from requested products', () => {
+    expect(getDefaultMetaAccessTasks(['meta_ads'])).toEqual({
+      pageTasks: ['ADVERTISE', 'ANALYZE'],
+      adAccountTasks: ['ADVERTISE', 'ANALYZE'],
+      datasetTasks: ['ADVERTISE', 'ANALYZE'],
+    });
+    expect(getDefaultMetaAccessTasks(['meta_pages'])).toEqual({
+      pageTasks: ['CREATE_CONTENT', 'ANALYZE'],
+      adAccountTasks: [],
+      datasetTasks: [],
+    });
+  });
+
+  it('supports a truthful manual Meta partner-business action state', () => {
+    expect(
+      MetaManagedBusinessLinkStateSchema.parse({
+        status: 'manual_action_required',
+        partnerBusinessId: 'partner-bm-1',
+        clientBusinessId: 'client-bm-1',
+        nextAction: 'Add the partner business portfolio in Meta Business Settings.',
+      })
+    ).toMatchObject({ status: 'manual_action_required' });
+  });
+
   describe('PLATFORM_TOKEN_CAPABILITIES', () => {
     it('should classify Google as refreshable OAuth', () => {
       expect(getPlatformTokenCapability('google')).toMatchObject({

@@ -10,7 +10,8 @@ import { z } from 'zod';
 import type { Platform } from '@agency-platform/shared';
 import { connectionService } from '../services/connection.service.js';
 import { authenticate } from '@/middleware/auth.js';
-import { resolvePrincipalAgency, type AuthorizationError } from '@/lib/authorization.js';
+import { resolvePrincipalAgency, resolveUserEmail, type AuthorizationError } from '@/lib/authorization.js';
+import { extractClientIp } from '@/lib/ip.js';
 import { prisma } from '@/lib/prisma.js';
 import { sendError, sendValidationError } from '../lib/response.js';
 import { DEFAULT_LIST_LIMIT, MAX_LIST_LIMIT } from '@/lib/list-pagination.js';
@@ -43,7 +44,11 @@ async function resolveAgencyIdOrReply(request: FastifyRequest, reply: FastifyRep
     };
   }
 
-  return { agencyId: principal.data.agencyId, sent: null };
+  return {
+    agencyId: principal.data.agencyId,
+    userEmail: resolveUserEmail((request as any).user),
+    sent: null,
+  };
 }
 
 /**
@@ -162,7 +167,7 @@ export async function tokenHealthRoutes(fastify: FastifyInstance) {
 
   // Revoke connection
   fastify.post('/connections/:id/revoke', async (request, reply) => {
-    const { agencyId, sent } = await resolveAgencyIdOrReply(request, reply);
+    const { agencyId, userEmail, sent } = await resolveAgencyIdOrReply(request, reply);
     if (!agencyId) return sent;
 
     const { id } = request.params as { id: string };
@@ -172,7 +177,11 @@ export async function tokenHealthRoutes(fastify: FastifyInstance) {
       return sendRouteError(reply, connectionNotFound(), 404);
     }
 
-    const result = await connectionService.revokeConnection(id, connection);
+    if (!userEmail) return sendError(reply, 'USER_EMAIL_REQUIRED', 'Verified user email is required to revoke Meta access', 401);
+    const result = await connectionService.revokeConnection(id, connection, {
+      userEmail,
+      ipAddress: extractClientIp(request),
+    });
 
     if (result.error) {
       return reply.code(result.error.code === 'NOT_FOUND' ? 404 : 500).send({
@@ -214,7 +223,7 @@ export async function tokenHealthRoutes(fastify: FastifyInstance) {
 
   // Revoke platform authorization
   fastify.post('/authorizations/:id/revoke', async (request, reply) => {
-    const { agencyId, sent } = await resolveAgencyIdOrReply(request, reply);
+    const { agencyId, userEmail, sent } = await resolveAgencyIdOrReply(request, reply);
     if (!agencyId) return sent;
 
     const { id } = request.params as { id: string };
@@ -229,7 +238,11 @@ export async function tokenHealthRoutes(fastify: FastifyInstance) {
       });
     }
 
-    const result = await connectionService.revokePlatformAuthorization(auth.connectionId, auth.platform as Platform);
+    if (!userEmail) return sendError(reply, 'USER_EMAIL_REQUIRED', 'Verified user email is required to revoke Meta access', 401);
+    const result = await connectionService.revokePlatformAuthorization(auth.connectionId, auth.platform as Platform, {
+      userEmail,
+      ipAddress: extractClientIp(request),
+    });
 
     if (result.error) {
       return reply.code(result.error.code === 'NOT_FOUND' ? 404 : 500).send({

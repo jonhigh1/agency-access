@@ -313,6 +313,26 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
   });
 
   /**
+   * GET /agency-platforms/meta/assignees
+   * List people and system users from the selected agency Business Portfolio.
+   */
+  fastify.get('/agency-platforms/meta/assignees', async (request, reply) => {
+    const { agencyId } = request.query as { agencyId?: string };
+
+    if (!agencyId) {
+      return sendValidationError(reply, 'agencyId is required');
+    }
+    if (!ensureAgencyAccess(request, reply, agencyId)) return;
+
+    const result = await metaAssetsService.getAssignableRecipients(agencyId, request);
+    if (result.error) {
+      return reply.code(result.error.code === 'META_DESTINATION_NOT_READY' ? 400 : 502).send(result);
+    }
+
+    return reply.send(result);
+  });
+
+  /**
    * PATCH /agency-platforms/meta/asset-settings
    * Save asset settings for a Meta connection
    */
@@ -370,7 +390,7 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
     }
     if (!ensureAgencyAccess(request, reply, agencyId)) return;
 
-    const result = await metaAssetsService.getAssetsForBusiness(agencyId, businessId);
+    const result = await metaAssetsService.getAssetsForBusiness(agencyId, businessId, request);
 
     if (result.error) {
       return reply.code(500).send(result);
@@ -401,7 +421,7 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
 
     const summaries = await Promise.all(
       businesses.map(async (business: any) => {
-        const result = await metaAssetsService.getAssetsForBusiness(agencyId, business.id);
+        const result = await metaAssetsService.getAssetsForBusiness(agencyId, business.id, request);
         if (result.data) {
           return {
             businessId: business.id,

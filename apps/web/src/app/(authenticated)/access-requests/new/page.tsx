@@ -28,6 +28,7 @@ import { AccessLevelSelector } from '@/components/access-level-selector';
 import { SaveAsTemplateModal } from '@/components/save-as-template-modal';
 import { FlowShell } from '@/components/flow/flow-shell';
 import { SingleSelect } from '@/components/ui/single-select';
+import { MetaAssigneeSelector } from '@/components/access-request/MetaAssigneeSelector';
 
 // Context & Utilities
 import {
@@ -48,7 +49,8 @@ import { ACCESS_LEVEL_DESCRIPTIONS, PLATFORM_NAMES } from '@agency-platform/shar
 
 function AccessRequestWizardContent() {
   const clerkAuth = useAuth();
-  const { userId, orgId } = useAuthOrBypass(clerkAuth);
+  const auth = useAuthOrBypass(clerkAuth);
+  const { userId } = auth;
   const { getToken } = clerkAuth;
   const router = useRouter();
   const {
@@ -58,6 +60,7 @@ function AccessRequestWizardContent() {
     updatePlatforms,
     updateAccessLevel,
     updatePlatformAccessLevel,
+    updateMetaAccessConfig,
     updateIntakeFields,
     updateBranding,
     setStep,
@@ -78,7 +81,12 @@ function AccessRequestWizardContent() {
   const [validationAttempt, setValidationAttempt] = useState(0);
 
   // Fetch agency by clerkUserId - shared hook with the connections page
-  const { data: agencyData } = useUserAgency();
+  const {
+    data: agencyData,
+    isLoading: isAgencyLoading,
+    isError: agencyError,
+    refetch: refetchAgency,
+  } = useUserAgency();
 
   // Use the agency's UUID id
   const agencyId = agencyData?.id;
@@ -376,6 +384,32 @@ function AccessRequestWizardContent() {
                 platformAccessLevels={state.platformAccessLevels}
                 onPlatformAccessLevelChange={updatePlatformAccessLevel}
               />
+
+              {(state.selectedPlatforms.meta?.length || 0) > 0 && (
+                <div className="mt-5">
+                  {agencyId ? (
+                    <MetaAssigneeSelector
+                      agencyId={agencyId}
+                      products={state.selectedPlatforms.meta}
+                      value={state.metaAccessConfig}
+                      onChange={updateMetaAccessConfig}
+                    />
+                  ) : agencyError ? (
+                    <div role="alert" className="flex items-center justify-between gap-4 border border-coral/30 bg-coral/10 p-4">
+                      <p className="text-sm text-danger-ink">Could not load your agency. Retry before creating a Meta request.</p>
+                      <Button type="button" variant="secondary" onClick={() => void refetchAgency()}>
+                        Retry
+                      </Button>
+                    </div>
+                  ) : (
+                    <p role="status" className="text-sm text-muted-foreground">
+                      {!auth.isLoaded || isAgencyLoading
+                        ? 'Loading your agency…'
+                        : 'No agency is linked to this account. Complete agency setup before creating a Meta request.'}
+                    </p>
+                  )}
+                </div>
+              )}
 
               {/* Info about connecting more platforms */}
               {platformConnections.filter((p: any) => p.connected).length > 0 && (

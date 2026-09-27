@@ -9,6 +9,13 @@ import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import { queueWebhookDelivery } from '@/lib/queue-helpers';
 import * as accessRequestService from '@/services/access-request.service';
+import { metaAssetsService } from '@/services/meta-assets.service';
+
+const META_ACCESS_CONFIG = {
+  recipients: [{ type: 'human' as const, id: 'person-1', name: 'Jon High' }],
+  pageTasks: ['MANAGE'],
+  adAccountTasks: ['ANALYZE'],
+};
 
 // Mock env first to prevent Zod validation errors
 vi.mock('@/lib/env', () => ({
@@ -62,6 +69,13 @@ vi.mock('@/lib/prisma', () => ({
       create: vi.fn(),
       findMany: vi.fn(),
     },
+    metaAssetGrant: {
+      findFirst: vi.fn(),
+      update: vi.fn(),
+    },
+    auditLog: {
+      create: vi.fn(),
+    },
     webhookEndpoint: {
       findUnique: vi.fn(),
     },
@@ -76,10 +90,18 @@ vi.mock('@/lib/queue-helpers', () => ({
   queueWebhookDelivery: vi.fn(),
 }));
 
+vi.mock('@/services/meta-assets.service', () => ({
+  metaAssetsService: { getAssignableRecipients: vi.fn() },
+}));
+
 describe('AccessRequestService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useRealTimers();
+    vi.mocked(metaAssetsService.getAssignableRecipients).mockResolvedValue({
+      data: [{ type: 'human', id: 'person-1', name: 'Jon High' }],
+      error: null,
+    });
   });
 
   afterEach(() => {
@@ -87,6 +109,29 @@ describe('AccessRequestService', () => {
   });
 
   describe('createAccessRequest', () => {
+    it('rejects a Meta assignee that is not in the agency portfolio', async () => {
+      vi.mocked(prisma.agency.findUnique).mockResolvedValue({ id: 'agency-1' } as any);
+      vi.mocked(metaAssetsService.getAssignableRecipients).mockResolvedValue({
+        data: [{ type: 'human', id: 'person-1', name: 'Jon High' }],
+        error: null,
+      });
+
+      const result = await accessRequestService.createAccessRequest({
+        agencyId: 'agency-1',
+        clientName: 'Test Client',
+        clientEmail: 'client@test.com',
+        platforms: [{ platform: 'meta_ads', accessLevel: 'manage' }],
+        metaAccessConfig: {
+          recipients: [{ type: 'human', id: 'person-from-another-agency' }],
+          pageTasks: ['MANAGE'],
+          adAccountTasks: ['ANALYZE'],
+        },
+      });
+
+      expect(result.error?.code).toBe('INVALID_META_ASSIGNEE');
+      expect(prisma.accessRequest.create).not.toHaveBeenCalled();
+    });
+
     it('should create a new access request with unique token', async () => {
       const mockAgency = {
         id: 'agency-1',
@@ -117,12 +162,22 @@ describe('AccessRequestService', () => {
         clientEmail: 'client@test.com',
         platforms: [{ platform: 'meta_ads', accessLevel: 'manage' }],
         intakeFields: [],
+        metaAccessConfig: META_ACCESS_CONFIG,
       });
 
       expect(result.error).toBeNull();
       expect(result.data).toBeDefined();
       expect(result.data?.uniqueToken).toBe('a1b2c3d4e5f6');
       expect(result.data?.status).toBe('pending');
+      expect(prisma.accessRequest.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          metaAccessConfig: {
+            ...META_ACCESS_CONFIG,
+            catalogTasks: ['MANAGE'],
+            datasetTasks: ['ADVERTISE', 'ANALYZE'],
+          },
+        }),
+      });
     });
 
     it('should expire new access requests after seven days by default', async () => {
@@ -145,6 +200,7 @@ describe('AccessRequestService', () => {
         clientEmail: 'client@test.com',
         platforms: [{ platform: 'meta_ads', accessLevel: 'manage' }],
         intakeFields: [],
+        metaAccessConfig: META_ACCESS_CONFIG,
       });
 
       expect(prisma.accessRequest.create).toHaveBeenCalledWith({
@@ -202,6 +258,7 @@ describe('AccessRequestService', () => {
         clientEmail: 'client@test.com',
         platforms: [{ platform: 'meta_ads', accessLevel: 'manage' }],
         intakeFields: [],
+        metaAccessConfig: META_ACCESS_CONFIG,
       });
 
       expect(result.error).toBeNull();
@@ -253,6 +310,7 @@ describe('AccessRequestService', () => {
         clientEmail: 'client@test.com',
         platforms: [{ platform: 'meta_pages' as any, accessLevel: 'manage' }],
         intakeFields: [],
+        metaAccessConfig: META_ACCESS_CONFIG,
       });
 
       expect(result.error).toBeNull();
@@ -279,6 +337,7 @@ describe('AccessRequestService', () => {
         platforms: [{ platform: 'meta_ads', accessLevel: 'manage' }],
         intakeFields: [],
         externalReference: 'crm-123',
+        metaAccessConfig: META_ACCESS_CONFIG,
       } as any);
 
       expect(result.error).toBeNull();
@@ -289,6 +348,39 @@ describe('AccessRequestService', () => {
           }),
         })
       );
+    });
+
+    it('requires a Meta assignee selection for Meta requests', async () => {
+      vi.mocked(prisma.agency.findUnique).mockResolvedValue({ id: 'agency-1' } as any);
+
+      const result = await accessRequestService.createAccessRequest({
+        agencyId: 'agency-1',
+        clientName: 'Test Client',
+        clientEmail: 'client@test.com',
+        platforms: [{ platform: 'meta_ads', accessLevel: 'manage' }],
+      });
+
+      expect(result.error?.code).toBe('META_ASSIGNEE_SELECTION_REQUIRED');
+      expect(prisma.accessRequest.create).not.toHaveBeenCalled();
+    });
+
+    it('requires at least one human Meta assignee', async () => {
+      vi.mocked(prisma.agency.findUnique).mockResolvedValue({ id: 'agency-1' } as any);
+
+      const result = await accessRequestService.createAccessRequest({
+        agencyId: 'agency-1',
+        clientName: 'Test Client',
+        clientEmail: 'client@test.com',
+        platforms: [{ platform: 'meta_ads', accessLevel: 'manage' }],
+        metaAccessConfig: {
+          recipients: [{ type: 'system_user', id: 'system-user-1' }],
+          pageTasks: ['MANAGE'],
+          adAccountTasks: ['ANALYZE'],
+        },
+      });
+
+      expect(result.error?.code).toBe('META_HUMAN_ASSIGNEE_REQUIRED');
+      expect(prisma.accessRequest.create).not.toHaveBeenCalled();
     });
   });
 
@@ -500,7 +592,7 @@ describe('AccessRequestService', () => {
               googleAdsManagement: {
                 preferredGrantMode: 'manager_link',
                 managerCustomerId: '6449142979',
-                inviteEmail: 'jon.highmu@gmail.com',
+                inviteEmail: 'client@example.com',
               },
             },
             googleAccounts: {
@@ -745,6 +837,19 @@ describe('AccessRequestService', () => {
       expect(result.data).toBeNull();
       expect(result.error?.code).toBe('REQUEST_EXPIRED');
     });
+
+    it('should return error for a request with expired lifecycle status', async () => {
+      vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue({
+        id: 'request-1',
+        status: 'expired',
+        expiresAt: new Date(Date.now() + 100000),
+      } as any);
+
+      const result = await accessRequestService.getAccessRequestByToken('expired-status-token');
+
+      expect(result.data).toBeNull();
+      expect(result.error?.code).toBe('REQUEST_EXPIRED');
+    });
   });
 
   describe('getAgencyAccessRequests', () => {
@@ -816,6 +921,403 @@ describe('AccessRequestService', () => {
   });
 
   describe('getAccessRequestById', () => {
+    it('does not treat Instagram OAuth alone as completed access', async () => {
+      vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue({
+        id: 'request-instagram',
+        agencyId: 'agency-1',
+        platforms: [{ platform: 'instagram', accessLevel: 'manage' }],
+        metaAccessConfig: { recipients: [{ type: 'human', id: 'person-1' }] },
+      } as any);
+      vi.mocked(prisma.clientConnection.findMany).mockResolvedValue([{
+        grantedAssets: {},
+        authorizations: [{ platform: 'meta', status: 'active', authorizationEpoch: 1 }],
+        metaAssetGrants: [],
+      }] as any);
+      vi.mocked(prisma.agencyPlatformConnection.findMany).mockResolvedValue([] as any);
+
+      const result = await accessRequestService.getAccessRequestById('request-instagram');
+
+      expect(result.data?.authorizationProgress.isComplete).toBe(false);
+      expect(result.data?.authorizationProgress.unresolvedProducts).toEqual([
+        { product: 'instagram', platformGroup: 'meta', reason: 'selection_required' },
+      ]);
+    });
+
+    it('requires verified access for the selected Instagram account', async () => {
+      vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue({
+        id: 'request-instagram',
+        agencyId: 'agency-1',
+        platforms: [{ platform: 'instagram', accessLevel: 'manage' }],
+        metaAccessConfig: { recipients: [{ type: 'human', id: 'person-1' }] },
+      } as any);
+      vi.mocked(prisma.clientConnection.findMany).mockResolvedValue([{
+        grantedAssets: { meta_ads: { instagramAccounts: ['ig-1'] } },
+        authorizations: [{ platform: 'meta', status: 'active', authorizationEpoch: 1 }],
+        metaAssetGrants: [],
+      }] as any);
+      vi.mocked(prisma.agencyPlatformConnection.findMany).mockResolvedValue([] as any);
+
+      const result = await accessRequestService.getAccessRequestById('request-instagram');
+
+      expect(result.data?.authorizationProgress.isComplete).toBe(false);
+      expect(result.data?.authorizationProgress.unresolvedProducts).toEqual([
+        { product: 'instagram', platformGroup: 'meta', reason: 'sharing_required' },
+      ]);
+    });
+
+    it('completes Instagram only after linked-asset access is verified for the business and human', async () => {
+      vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue({
+        id: 'request-instagram',
+        agencyId: 'agency-1',
+        platforms: [{ platform: 'instagram', accessLevel: 'manage' }],
+        metaAccessConfig: { recipients: [{ type: 'human', id: 'person-1' }] },
+      } as any);
+      const verifiedGrant = (recipientType: string, recipientId: string) => ({
+        assetKind: 'instagram_account',
+        assetId: 'ig-1',
+        status: 'verified',
+        recipientType,
+        recipientId,
+        updatedAt: new Date('2026-09-23T00:00:00.000Z'),
+        requestedTasks: [],
+        verifiedTasks: [],
+        verifiedAuthorizationEpoch: 1,
+        authorization: { authorizationEpoch: 1, status: 'active' },
+        destination: { businessId: 'agency-business', agencyConnection: { status: 'active', businessId: 'agency-business' } },
+      });
+      vi.mocked(prisma.clientConnection.findMany).mockResolvedValue([{
+        grantedAssets: { meta_ads: { instagramAccounts: ['ig-1'] } },
+        authorizations: [{ platform: 'meta', status: 'active', authorizationEpoch: 1 }],
+        metaAssetGrants: [
+          verifiedGrant('business', 'agency-business'),
+          verifiedGrant('human', 'person-1'),
+        ],
+      }] as any);
+      vi.mocked(prisma.agencyPlatformConnection.findMany).mockResolvedValue([] as any);
+
+      const result = await accessRequestService.getAccessRequestById('request-instagram');
+
+      expect(result.error).toBeNull();
+      expect(result.data?.authorizationProgress.completedPlatforms).toEqual(['meta']);
+      expect(result.data?.authorizationProgress.unresolvedProducts).toEqual([]);
+    });
+
+    it('keeps Meta Ads incomplete until selected catalogs are granted', async () => {
+      vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue({
+        id: 'request-1',
+        agencyId: 'agency-1',
+        platforms: [{ platform: 'meta_ads', accessLevel: 'manage' }],
+        metaAccessConfig: { recipients: [{ type: 'human', id: 'person-1' }] },
+      } as any);
+      vi.mocked(prisma.clientConnection.findMany).mockResolvedValue([{
+        grantedAssets: { meta_ads: { catalogs: ['catalog-1'] } },
+        authorizations: [{ platform: 'meta', status: 'active', authorizationEpoch: 1 }],
+        metaAssetGrants: [],
+      }] as any);
+
+      const result = await accessRequestService.getAccessRequestById('request-1');
+
+      expect(result.data?.authorizationProgress.isComplete).toBe(false);
+      expect(result.data?.authorizationProgress.unresolvedProducts).toEqual([
+        { product: 'meta_ads', platformGroup: 'meta', reason: 'sharing_required' },
+      ]);
+    });
+
+    it('keeps Meta Ads incomplete while selected Pixel access needs manual action', async () => {
+      vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue({
+        id: 'request-pixel',
+        agencyId: 'agency-1',
+        platforms: [{ platform: 'meta_ads', accessLevel: 'manage' }],
+        metaAccessConfig: { recipients: [{ type: 'human', id: 'person-1', name: 'Owner' }] },
+      } as any);
+      vi.mocked(prisma.clientConnection.findMany).mockResolvedValue([{
+        grantedAssets: { meta_ads: { datasets: ['pixel-1'] } },
+        authorizations: [{ platform: 'meta', status: 'active', authorizationEpoch: 1 }],
+        metaAssetGrants: [
+          { id: 'pixel-business', assetKind: 'dataset', assetId: 'pixel-1', assetName: 'Website Pixel', status: 'manual_action_required', recipientType: 'business', recipientId: 'business-1', requestedTasks: [], verifiedTasks: [], nextActor: 'client_admin', updatedAt: new Date() },
+          { id: 'pixel-person', assetKind: 'dataset', assetId: 'pixel-1', assetName: 'Website Pixel', status: 'manual_action_required', recipientType: 'human', recipientId: 'person-1', requestedTasks: [], verifiedTasks: [], nextActor: 'client_admin', updatedAt: new Date() },
+        ],
+      }] as any);
+
+      const result = await accessRequestService.getAccessRequestById('request-pixel');
+
+      expect(result.data?.authorizationProgress.isComplete).toBe(false);
+      expect(result.data?.authorizationProgress.unresolvedProducts).toEqual([
+        { product: 'meta_ads', platformGroup: 'meta', reason: 'manual_action_required' },
+      ]);
+      expect((result.data as any)?.metaFulfillment).toEqual(expect.arrayContaining([
+        expect.objectContaining({ assetKind: 'dataset', assetId: 'pixel-1', status: 'manual_action_required', nextActor: 'client_admin' }),
+      ]));
+    });
+
+    it('requires every configured Meta recipient and the agency business', async () => {
+      vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue({
+        id: 'request-1',
+        agencyId: 'agency-1',
+        platforms: [{ platform: 'meta_pages', accessLevel: 'manage' }],
+        metaAccessConfig: {
+          recipients: [
+            { type: 'human', id: 'person-1', name: 'Owner' },
+            { type: 'system_user', id: 'system-1', name: 'Automation' },
+          ],
+          pageTasks: ['MANAGE'],
+          adAccountTasks: [],
+        },
+      } as any);
+      vi.mocked(prisma.clientConnection.findMany).mockResolvedValue([{
+        grantedAssets: { meta_pages: { pages: ['page-1'] } },
+        authorizations: [{ platform: 'meta', status: 'active', authorizationEpoch: 1 }],
+        metaAssetGrants: [{
+          assetKind: 'page',
+          assetId: 'page-1',
+          status: 'verified',
+          recipientType: 'human',
+          recipientId: 'person-1',
+          requestedTasks: ['MANAGE'],
+          verifiedTasks: ['MANAGE'],
+          verifiedAuthorizationEpoch: 1,
+          authorization: { authorizationEpoch: 1, status: 'active' },
+          updatedAt: new Date('2026-09-22T12:00:00.000Z'),
+        }],
+      }] as any);
+
+      const result = await accessRequestService.getAccessRequestById('request-1');
+
+      expect(result.data?.authorizationProgress.isComplete).toBe(false);
+      expect(result.data?.authorizationProgress.unresolvedProducts).toEqual([
+        { product: 'meta_pages', platformGroup: 'meta', reason: 'sharing_required' },
+      ]);
+    });
+
+    it('does not count a verified Meta grant with no authorization record', async () => {
+      vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue({
+        id: 'request-1',
+        agencyId: 'agency-1',
+        platforms: [{ platform: 'meta_pages', accessLevel: 'manage' }],
+        metaAccessConfig: { recipients: [{ type: 'human', id: 'person-1' }] },
+      } as any);
+      vi.mocked(prisma.clientConnection.findMany).mockResolvedValue([{
+        grantedAssets: { meta_pages: { pages: ['page-1'] } },
+        authorizations: [],
+        metaAssetGrants: [{
+          assetKind: 'page', assetId: 'page-1', status: 'verified',
+          recipientType: 'business', recipientId: 'business-1',
+          requestedTasks: [], verifiedTasks: [], verifiedAuthorizationEpoch: 1,
+          authorization: { authorizationEpoch: 1, status: 'active' },
+          updatedAt: new Date('2026-09-22T12:00:00.000Z'),
+        }, {
+          assetKind: 'page',
+          assetId: 'page-1',
+          status: 'verified',
+          recipientType: 'human',
+          recipientId: 'person-1',
+          requestedTasks: ['MANAGE'],
+          verifiedTasks: ['MANAGE'],
+          verifiedAuthorizationEpoch: 1,
+          updatedAt: new Date('2026-09-22T12:00:00.000Z'),
+          authorization: null,
+        }],
+      }] as any);
+
+      const result = await accessRequestService.getAccessRequestById('request-1');
+
+      expect(result.data?.authorizationProgress.isComplete).toBe(false);
+      expect(result.data?.authorizationProgress.unresolvedProducts).toEqual([
+        { product: 'meta_pages', platformGroup: 'meta', reason: 'stale' },
+      ]);
+      expect((result.data as any)?.metaFulfillment).toEqual([
+        expect.objectContaining({ status: 'verified' }),
+        expect.objectContaining({ status: 'stale', nextActor: 'client_admin' }),
+      ]);
+    });
+
+    it('keeps Meta access incomplete when verified tasks omit a requested task', async () => {
+      vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue({
+        id: 'request-1',
+        agencyId: 'agency-1',
+        platforms: [{ platform: 'meta_pages', accessLevel: 'manage' }],
+        metaAccessConfig: { recipients: [{ type: 'human', id: 'person-1' }] },
+      } as any);
+      vi.mocked(prisma.clientConnection.findMany).mockResolvedValue([{
+        grantedAssets: { meta_pages: { pages: ['page-1'] } },
+        authorizations: [{ platform: 'meta', status: 'active', authorizationEpoch: 1 }],
+        metaAssetGrants: [{
+          assetKind: 'page', assetId: 'page-1', status: 'verified',
+          recipientType: 'business', recipientId: 'business-1',
+          requestedTasks: [], verifiedTasks: [], verifiedAuthorizationEpoch: 1,
+          authorization: { authorizationEpoch: 1, status: 'active' },
+          updatedAt: new Date('2026-09-22T12:00:00.000Z'),
+        }, {
+          assetKind: 'page',
+          assetId: 'page-1',
+          status: 'verified',
+          recipientType: 'human',
+          recipientId: 'person-1',
+          requestedTasks: ['MANAGE', 'ADVERTISE'],
+          verifiedTasks: ['MANAGE'],
+          verifiedAuthorizationEpoch: 1,
+          updatedAt: new Date('2026-09-22T12:00:00.000Z'),
+          authorization: { authorizationEpoch: 1, status: 'active' },
+        }],
+      }] as any);
+
+      const result = await accessRequestService.getAccessRequestById('request-1');
+
+      expect(result.data?.authorizationProgress.isComplete).toBe(false);
+      expect(result.data?.authorizationProgress.unresolvedProducts).toEqual([
+        { product: 'meta_pages', platformGroup: 'meta', reason: 'missing_tasks' },
+      ]);
+      expect((result.data as any)?.metaFulfillment).toEqual([
+        expect.objectContaining({ status: 'verified' }),
+        expect.objectContaining({ status: 'blocked', errorCode: 'MISSING_TASKS' }),
+      ]);
+    });
+
+    it('accepts verified business visibility without inventing person tasks', async () => {
+      vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue({
+        id: 'request-1', agencyId: 'agency-1',
+        platforms: [{ platform: 'meta_pages', accessLevel: 'manage' }],
+        metaAccessConfig: { recipients: [{ type: 'human', id: 'person-1' }] },
+      } as any);
+      const authorization = { authorizationEpoch: 1, status: 'active', expiresAt: new Date(Date.now() + 60_000) };
+      const common = {
+        assetKind: 'page', assetId: 'page-1', status: 'verified',
+        verifiedAuthorizationEpoch: 1, authorization,
+        updatedAt: new Date(),
+      };
+      vi.mocked(prisma.clientConnection.findMany).mockResolvedValue([{
+        grantedAssets: { meta_pages: { pages: ['page-1'] } },
+        authorizations: [{ platform: 'meta', status: 'active', authorizationEpoch: 1 }],
+        metaAssetGrants: [
+          { ...common, recipientType: 'business', recipientId: 'business-1', requestedTasks: [], verifiedTasks: null },
+          { ...common, recipientType: 'human', recipientId: 'person-1', requestedTasks: ['MANAGE'], verifiedTasks: ['MANAGE'] },
+        ],
+      }] as any);
+
+      const result = await accessRequestService.getAccessRequestById('request-1');
+
+      expect(result.data?.authorizationProgress.isComplete).toBe(true);
+    });
+
+    it('keeps prior portfolio grants in history without letting them block current verified access', async () => {
+      vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue({
+        id: 'request-1', agencyId: 'agency-1',
+        platforms: [{ platform: 'meta_pages', accessLevel: 'manage' }],
+        metaAccessConfig: { recipients: [{ type: 'human', id: 'person-1' }] },
+      } as any);
+      const currentAgencyConnection = { status: 'active', businessId: 'business-current' };
+      const previousAgencyConnection = { status: 'active', businessId: 'business-current' };
+      const common = {
+        assetKind: 'page', assetId: 'page-1', status: 'verified',
+        requestedTasks: ['MANAGE'], verifiedTasks: ['MANAGE'],
+        verifiedAuthorizationEpoch: 1,
+        authorization: { authorizationEpoch: 1, status: 'active' },
+        updatedAt: new Date(),
+      };
+      vi.mocked(prisma.clientConnection.findMany).mockResolvedValue([{
+        grantedAssets: { meta_pages: { pages: ['page-1'] } },
+        authorizations: [{ platform: 'meta', status: 'active', authorizationEpoch: 1 }],
+        metaAssetGrants: [
+          { ...common, recipientType: 'business', recipientId: 'business-old', destination: {
+            businessId: 'business-old', agencyConnection: previousAgencyConnection,
+          } },
+          { ...common, recipientType: 'human', recipientId: 'person-1', destination: {
+            businessId: 'business-old', agencyConnection: previousAgencyConnection,
+          } },
+          { ...common, recipientType: 'business', recipientId: 'business-current', destination: {
+            businessId: 'business-current', agencyConnection: currentAgencyConnection,
+          } },
+          { ...common, recipientType: 'human', recipientId: 'person-1', destination: {
+            businessId: 'business-current', agencyConnection: currentAgencyConnection,
+          } },
+        ],
+      }] as any);
+
+      const result = await accessRequestService.getAccessRequestById('request-1');
+
+      expect(result.data?.authorizationProgress.isComplete).toBe(true);
+      expect((result.data as any)?.metaFulfillment).toEqual([
+        expect.objectContaining({ status: 'stale' }),
+        expect.objectContaining({ status: 'stale' }),
+        expect.objectContaining({ status: 'verified' }),
+        expect.objectContaining({ status: 'verified' }),
+      ]);
+    });
+
+    it('does not count Meta grants when the agency destination is revoked or changed', async () => {
+      vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue({
+        id: 'request-1', agencyId: 'agency-1',
+        platforms: [{ platform: 'meta_pages', accessLevel: 'manage' }],
+        metaAccessConfig: { recipients: [{ type: 'human', id: 'person-1' }] },
+      } as any);
+      const baseGrant = {
+        assetKind: 'page', assetId: 'page-1', status: 'verified',
+        requestedTasks: ['MANAGE'], verifiedTasks: ['MANAGE'],
+        verifiedAuthorizationEpoch: 1,
+        authorization: { authorizationEpoch: 1, status: 'active' },
+        destination: { businessId: 'former-business', agencyConnection: { status: 'active', businessId: 'current-business' } },
+        updatedAt: new Date('2026-09-22T12:00:00.000Z'),
+      };
+      vi.mocked(prisma.clientConnection.findMany).mockResolvedValue([{
+        grantedAssets: { meta_pages: { pages: ['page-1'] } },
+        authorizations: [{ platform: 'meta', status: 'active', authorizationEpoch: 1 }],
+        metaAssetGrants: [
+          { ...baseGrant, recipientType: 'business', recipientId: 'business-1' },
+          { ...baseGrant, recipientType: 'human', recipientId: 'person-1' },
+        ],
+      }] as any);
+
+      const result = await accessRequestService.getAccessRequestById('request-1');
+
+      expect(result.data?.authorizationProgress.isComplete).toBe(false);
+      expect(result.data?.authorizationProgress.unresolvedProducts).toEqual([
+        { product: 'meta_pages', platformGroup: 'meta', reason: 'stale' },
+      ]);
+      expect((result.data as any)?.metaFulfillment).toEqual([
+        expect.objectContaining({ status: 'stale' }),
+        expect.objectContaining({ status: 'stale' }),
+      ]);
+    });
+
+    it('does not count verified Meta grants after their authorization expires', async () => {
+      vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue({
+        id: 'request-1', agencyId: 'agency-1',
+        platforms: [{ platform: 'meta_pages', accessLevel: 'manage' }],
+        metaAccessConfig: { recipients: [{ type: 'human', id: 'person-1' }] },
+      } as any);
+      const expiredAuthorization = {
+        authorizationEpoch: 1,
+        status: 'active',
+        expiresAt: new Date(Date.now() - 60_000),
+      };
+      const baseGrant = {
+        assetKind: 'page', assetId: 'page-1', status: 'verified',
+        requestedTasks: ['MANAGE'], verifiedTasks: ['MANAGE'],
+        verifiedAuthorizationEpoch: 1,
+        authorization: expiredAuthorization,
+        updatedAt: new Date(),
+      };
+      vi.mocked(prisma.clientConnection.findMany).mockResolvedValue([{
+        grantedAssets: { meta_pages: { pages: ['page-1'] } },
+        authorizations: [{ platform: 'meta', status: 'active', authorizationEpoch: 1 }],
+        metaAssetGrants: [
+          { ...baseGrant, recipientType: 'business', recipientId: 'business-1', requestedTasks: [], verifiedTasks: [] },
+          { ...baseGrant, recipientType: 'human', recipientId: 'person-1' },
+        ],
+      }] as any);
+
+      const result = await accessRequestService.getAccessRequestById('request-1');
+
+      expect(result.data?.authorizationProgress.isComplete).toBe(false);
+      expect(result.data?.authorizationProgress.unresolvedProducts).toEqual([
+        { product: 'meta_pages', platformGroup: 'meta', reason: 'stale' },
+      ]);
+      expect((result.data as any)?.metaFulfillment).toEqual([
+        expect.objectContaining({ status: 'stale', nextActor: 'client_admin' }),
+        expect.objectContaining({ status: 'stale', nextActor: 'client_admin' }),
+      ]);
+    });
+
     it('scopes a request lookup to the agency when one is supplied', async () => {
       vi.mocked(prisma.accessRequest.findFirst).mockResolvedValue(null);
 
@@ -835,6 +1337,53 @@ describe('AccessRequestService', () => {
       expect(prisma.accessRequest.findFirst).toHaveBeenCalledWith({
         where: { agencyId: 'agency-1', externalReference: 'agent-operation:operation-1' },
       });
+    });
+
+    it('returns truthful per-asset and per-recipient Meta fulfillment details', async () => {
+      vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue({
+        id: 'request-1',
+        agencyId: 'agency-1',
+        platforms: [{ platform: 'meta_pages', accessLevel: 'manage' }],
+        metaAccessConfig: {
+          recipients: [{ type: 'human', id: 'person-1', name: 'Jon High' }],
+          pageTasks: ['MANAGE'],
+          adAccountTasks: [],
+        },
+      } as any);
+      vi.mocked(prisma.clientConnection.findMany).mockResolvedValue([{
+        grantedAssets: { meta_pages: { pages: ['page-1'] } },
+        authorizations: [{ platform: 'meta', status: 'active', authorizationEpoch: 2 }],
+        metaAssetGrants: [{
+          id: 'grant-1',
+          assetKind: 'page',
+          assetId: 'page-1',
+          assetName: 'Client Page',
+          status: 'manual_action_required',
+          recipientType: 'human',
+          recipientId: 'person-1',
+          requestedTasks: ['MANAGE'],
+          verifiedTasks: [],
+          nextActor: 'client_admin',
+          lastErrorCode: 'MANUAL_SHARE_PENDING',
+          lastErrorMessage: 'Share this Page in Meta Business Settings.',
+          metadata: null,
+          verifiedAt: null,
+          updatedAt: new Date('2026-09-22T12:00:00.000Z'),
+          authorization: { authorizationEpoch: 2, status: 'active' },
+          destination: { businessId: 'business-1', name: 'Agency Portfolio' },
+        }],
+      }] as any);
+
+      const result = await accessRequestService.getAccessRequestById('request-1');
+
+      expect((result.data as any)?.metaFulfillment).toEqual([expect.objectContaining({
+        id: 'grant-1',
+        assetName: 'Client Page',
+        recipientName: 'Jon High',
+        status: 'manual_action_required',
+        nextActor: 'client_admin',
+        nextAction: 'Share this Page in Meta Business Settings.',
+      })]);
     });
 
     it('returns pending Shopify submission state when Shopify is requested but not submitted', async () => {
@@ -925,11 +1474,65 @@ describe('AccessRequestService', () => {
   });
 
   describe('markRequestAuthorized', () => {
+    it.each([
+      ['revoked', 'REQUEST_REVOKED'],
+      ['expired', 'REQUEST_EXPIRED'],
+    ])('does not recalculate a %s request', async (status, errorCode) => {
+      vi.mocked(prisma.accessRequest.findUnique).mockResolvedValueOnce({
+        id: 'request-1',
+        status,
+        expiresAt: new Date(Date.now() + 100000),
+        platforms: [{ platform: 'meta_ads', accessLevel: 'manage' }],
+      } as any);
+
+      const result = await accessRequestService.markRequestAuthorized('request-1');
+
+      expect(result.data).toBeNull();
+      expect(result.error?.code).toBe(errorCode);
+      expect(prisma.clientConnection.findMany).not.toHaveBeenCalled();
+      expect(prisma.accessRequest.update).not.toHaveBeenCalled();
+    });
+
+    it('reopens a completed Meta request after reauthorization makes its grants stale', async () => {
+      const previouslyCompletedAt = new Date('2026-09-20T12:00:00.000Z');
+      vi.mocked(prisma.accessRequest.findUnique)
+        .mockResolvedValueOnce({
+          id: 'request-1',
+          status: 'completed',
+          expiresAt: new Date(Date.now() + 100000),
+          platforms: [{ platform: 'meta_ads', accessLevel: 'manage' }],
+          metaAccessConfig: { recipients: [{ type: 'human', id: 'person-1' }], adAccountTasks: ['ANALYZE'] },
+        } as any)
+        .mockResolvedValueOnce({
+          id: 'request-1', status: 'completed', agencyId: 'agency-1', authorizedAt: previouslyCompletedAt,
+        } as any);
+      vi.mocked(prisma.clientConnection.findMany).mockResolvedValue([{
+        grantedAssets: { meta_ads: { adAccounts: ['act-1'] } },
+        authorizations: [{ platform: 'meta', status: 'active', authorizationEpoch: 2 }],
+        metaAssetGrants: [
+          { assetKind: 'ad_account', assetId: 'act-1', status: 'stale', recipientType: 'business', recipientId: 'business-1', requestedTasks: [], verifiedTasks: [], verifiedAuthorizationEpoch: null, authorization: { authorizationEpoch: 2, status: 'active' }, destination: { businessId: 'business-1', agencyConnection: { status: 'active', businessId: 'business-1' } } },
+          { assetKind: 'ad_account', assetId: 'act-1', status: 'stale', recipientType: 'human', recipientId: 'person-1', requestedTasks: ['ANALYZE'], verifiedTasks: [], verifiedAuthorizationEpoch: null, authorization: { authorizationEpoch: 2, status: 'active' }, destination: { businessId: 'business-1', agencyConnection: { status: 'active', businessId: 'business-1' } } },
+        ],
+      }] as any);
+      vi.mocked(prisma.accessRequest.update).mockResolvedValue({
+        id: 'request-1', status: 'partial', authorizedAt: previouslyCompletedAt,
+      } as any);
+
+      const result = await accessRequestService.markRequestAuthorized('request-1');
+
+      expect(result.error).toBeNull();
+      expect(result.data?.status).toBe('partial');
+      expect(prisma.accessRequest.update).toHaveBeenCalledWith(expect.objectContaining({
+        where: { id: 'request-1' }, data: { status: 'partial' },
+      }));
+    });
+
     it('should mark request as completed and emit a completed webhook event once', async () => {
       vi.mocked(prisma.accessRequest.findUnique)
         .mockResolvedValueOnce({
           id: 'request-1',
           platforms: [{ platform: 'meta_ads', accessLevel: 'manage' }],
+          metaAccessConfig: { recipients: [{ type: 'human', id: 'person-1' }] },
         } as any)
         .mockResolvedValueOnce({
           id: 'request-1',
@@ -965,7 +1568,23 @@ describe('AccessRequestService', () => {
               availableAssetCount: 1,
             },
           },
-          authorizations: [{ platform: 'meta', status: 'active' }],
+          authorizations: [{ platform: 'meta', status: 'active', authorizationEpoch: 1 }],
+          metaAssetGrants: [{
+            assetKind: 'ad_account',
+            assetId: 'act_123',
+            status: 'verified',
+            recipientType: 'business',
+            recipientId: 'business-1',
+            requestedTasks: [],
+            verifiedTasks: [],
+            verifiedAuthorizationEpoch: 1,
+            authorization: { authorizationEpoch: 1, status: 'active' },
+          }, {
+            assetKind: 'ad_account', assetId: 'act_123', status: 'verified',
+            recipientType: 'human', recipientId: 'person-1',
+            requestedTasks: [], verifiedTasks: [], verifiedAuthorizationEpoch: 1,
+            authorization: { authorizationEpoch: 1, status: 'active' },
+          }],
         },
       ] as any);
       vi.mocked(prisma.webhookEndpoint.findUnique).mockResolvedValue({
@@ -1107,6 +1726,7 @@ describe('AccessRequestService', () => {
         .mockResolvedValueOnce({
           id: 'request-1',
           platforms: [{ platform: 'meta_ads', accessLevel: 'manage' }],
+          metaAccessConfig: { recipients: [{ type: 'human', id: 'person-1' }] },
         } as any)
         .mockResolvedValueOnce({
           id: 'request-1',
@@ -1132,7 +1752,23 @@ describe('AccessRequestService', () => {
               availableAssetCount: 1,
             },
           },
-          authorizations: [{ platform: 'meta', status: 'active' }],
+          authorizations: [{ platform: 'meta', status: 'active', authorizationEpoch: 1 }],
+          metaAssetGrants: [{
+            assetKind: 'ad_account',
+            assetId: 'act_123',
+            status: 'verified',
+            recipientType: 'business',
+            recipientId: 'business-1',
+            requestedTasks: [],
+            verifiedTasks: [],
+            verifiedAuthorizationEpoch: 1,
+            authorization: { authorizationEpoch: 1, status: 'active' },
+          }, {
+            assetKind: 'ad_account', assetId: 'act_123', status: 'verified',
+            recipientType: 'human', recipientId: 'person-1',
+            requestedTasks: [], verifiedTasks: [], verifiedAuthorizationEpoch: 1,
+            authorization: { authorizationEpoch: 1, status: 'active' },
+          }],
         },
       ] as any);
 
@@ -1146,7 +1782,212 @@ describe('AccessRequestService', () => {
     });
   });
 
+  describe('excludeMetaGrant', () => {
+    it.each([
+      ['revoked', new Date(Date.now() + 60_000), 'REQUEST_REVOKED'],
+      ['expired', new Date(Date.now() + 60_000), 'REQUEST_EXPIRED'],
+      ['pending', new Date(Date.now() - 60_000), 'REQUEST_EXPIRED'],
+    ])('rejects exclusion for %s request', async (status, expiresAt, errorCode) => {
+      vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue({
+        agencyId: 'agency-1', status, expiresAt,
+      } as any);
+      vi.mocked(prisma.agency.findUnique).mockResolvedValue({ clerkUserId: 'owner-1' } as any);
+      vi.mocked(prisma.metaAssetGrant.findFirst).mockResolvedValue({ id: 'grant-1' } as any);
+
+      const result = await accessRequestService.excludeMetaGrant({
+        accessRequestId: 'request-1',
+        grantId: 'grant-1',
+        agencyId: 'agency-1',
+        ownerSubject: 'owner-1',
+        actorEmail: 'owner@example.com',
+        reason: 'No longer required.',
+      });
+
+      expect(result.error?.code).toBe(errorCode);
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+      expect(prisma.metaAssetGrant.update).not.toHaveBeenCalled();
+      expect(prisma.accessRequest.update).not.toHaveBeenCalled();
+    });
+
+    it('lets the agency owner exclude one named grant and writes the audit in the same transaction', async () => {
+      vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue({
+        agencyId: 'agency-1',
+        status: 'partial',
+        platforms: [{ platform: 'meta_ads', accessLevel: 'manage' }],
+        metaAccessConfig: { recipients: [{ type: 'human', id: 'person-1' }] },
+      } as any);
+      vi.mocked(prisma.agency.findUnique).mockResolvedValue({ clerkUserId: 'owner-1' } as any);
+      vi.mocked(prisma.metaAssetGrant.findFirst).mockResolvedValue({
+        id: 'grant-1',
+        assetKind: 'ad_account',
+        assetId: 'act_1',
+        recipientType: 'business',
+        recipientId: 'partner-bm-1',
+        metadata: {},
+      } as any);
+      vi.mocked(prisma.metaAssetGrant.update).mockResolvedValue({ id: 'grant-1', status: 'excluded' } as any);
+      vi.mocked(prisma.auditLog.create).mockResolvedValue({ id: 1n } as any);
+      vi.mocked(prisma.clientConnection.findMany).mockResolvedValue([{
+        grantedAssets: { meta_ads: { adAccounts: ['act_1'] } },
+        authorizations: [{ platform: 'meta', status: 'active', authorizationEpoch: 1 }],
+        metaAssetGrants: [{
+          assetKind: 'ad_account',
+          assetId: 'act_1',
+          status: 'excluded',
+          recipientType: 'business',
+          recipientId: 'partner-bm-1',
+          verifiedAuthorizationEpoch: null,
+          authorization: { authorizationEpoch: 1, status: 'active' },
+        }, {
+          assetKind: 'ad_account', assetId: 'act_1', status: 'verified',
+          recipientType: 'human', recipientId: 'person-1',
+          requestedTasks: [], verifiedTasks: [], verifiedAuthorizationEpoch: 1,
+          authorization: { authorizationEpoch: 1, status: 'active' },
+        }],
+      }] as any);
+      vi.mocked(prisma.accessRequest.update).mockResolvedValue({ id: 'request-1', status: 'completed' } as any);
+      vi.mocked(prisma.$transaction).mockImplementation(async (callback: any) => callback(prisma));
+
+      const result = await accessRequestService.excludeMetaGrant({
+        accessRequestId: 'request-1',
+        grantId: 'grant-1',
+        agencyId: 'agency-1',
+        ownerSubject: 'owner-1',
+        actorEmail: 'owner@example.com',
+        reason: 'Client does not use this ad account.',
+      });
+
+      expect(result.error).toBeNull();
+      expect(prisma.metaAssetGrant.update).toHaveBeenCalledWith({
+        where: { id: 'grant-1' },
+        data: expect.objectContaining({
+          status: 'excluded',
+          verifiedAt: null,
+          verifiedAuthorizationEpoch: null,
+          metadata: expect.objectContaining({
+            exclusion: expect.objectContaining({
+              reason: 'Client does not use this ad account.',
+              excludedBy: 'owner-1',
+            }),
+          }),
+        }),
+      });
+      expect(prisma.auditLog.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ action: 'META_GRANT_EXCLUDED', resourceId: 'grant-1' }),
+      });
+      expect(prisma.accessRequest.update).toHaveBeenCalledWith({
+        where: { id: 'request-1' },
+        data: expect.objectContaining({ status: 'completed' }),
+      });
+    });
+
+    it('rejects a non-owner before changing the grant', async () => {
+      vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue({ agencyId: 'agency-1' } as any);
+      vi.mocked(prisma.agency.findUnique).mockResolvedValue({ clerkUserId: 'owner-1' } as any);
+      vi.mocked(prisma.metaAssetGrant.findFirst).mockResolvedValue({ id: 'grant-1' } as any);
+
+      const result = await accessRequestService.excludeMetaGrant({
+        accessRequestId: 'request-1',
+        grantId: 'grant-1',
+        agencyId: 'agency-1',
+        ownerSubject: 'member-1',
+        actorEmail: 'member@example.com',
+        reason: 'Client does not use this ad account.',
+      });
+
+      expect(result.error?.code).toBe('OWNER_REQUIRED');
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+    });
+
+    it('rejects a cross-agency request before changing the grant', async () => {
+      vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue({ agencyId: 'agency-2' } as any);
+      vi.mocked(prisma.agency.findUnique).mockResolvedValue({ clerkUserId: 'owner-1' } as any);
+      vi.mocked(prisma.metaAssetGrant.findFirst).mockResolvedValue({ id: 'grant-1' } as any);
+
+      const result = await accessRequestService.excludeMetaGrant({
+        accessRequestId: 'request-1',
+        grantId: 'grant-1',
+        agencyId: 'agency-1',
+        ownerSubject: 'owner-1',
+        actorEmail: 'owner@example.com',
+        reason: 'Client does not use this ad account.',
+      });
+
+      expect(result.error?.code).toBe('FORBIDDEN');
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+    });
+
+    it('requires verified access to be revoked before excluding the requirement', async () => {
+      vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue({
+        agencyId: 'agency-1', status: 'partial', expiresAt: new Date(Date.now() + 60_000),
+      } as any);
+      vi.mocked(prisma.agency.findUnique).mockResolvedValue({ clerkUserId: 'owner-1' } as any);
+      vi.mocked(prisma.metaAssetGrant.findFirst).mockResolvedValue({ id: 'grant-1', status: 'verified' } as any);
+
+      const result = await accessRequestService.excludeMetaGrant({
+        accessRequestId: 'request-1',
+        grantId: 'grant-1',
+        agencyId: 'agency-1',
+        ownerSubject: 'owner-1',
+        actorEmail: 'owner@example.com',
+        reason: 'This access is no longer required.',
+      });
+
+      expect(result.error?.code).toBe('META_GRANT_MUST_BE_REVOKED');
+      expect(prisma.$transaction).not.toHaveBeenCalled();
+      expect(prisma.metaAssetGrant.update).not.toHaveBeenCalled();
+    });
+  });
+
   describe('updateAccessRequest', () => {
+    it('lets an agency add valid Meta assignees to an existing request', async () => {
+      vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue({
+        id: 'request-1',
+        status: 'pending',
+        agencyId: 'agency-1',
+        platforms: [{ platform: 'meta_ads', accessLevel: 'manage' }],
+        metaAccessConfig: null,
+      } as any);
+      vi.mocked(prisma.accessRequest.update).mockResolvedValue({
+        id: 'request-1',
+        status: 'pending',
+        metaAccessConfig: META_ACCESS_CONFIG,
+      } as any);
+
+      const result = await accessRequestService.updateAccessRequest('request-1', {
+        metaAccessConfig: META_ACCESS_CONFIG,
+      } as any);
+
+      expect(result.error).toBeNull();
+      expect(metaAssetsService.getAssignableRecipients).toHaveBeenCalledWith('agency-1', undefined);
+      expect(prisma.accessRequest.update).toHaveBeenCalledWith({
+        where: { id: 'request-1' },
+        data: expect.objectContaining({
+          metaAccessConfig: expect.objectContaining({ recipients: META_ACCESS_CONFIG.recipients }),
+        }),
+      });
+    });
+
+    it('rejects an unassignable Meta recipient when updating an existing request', async () => {
+      vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue({
+        id: 'request-1',
+        status: 'pending',
+        agencyId: 'agency-1',
+        platforms: [{ platform: 'meta_ads', accessLevel: 'manage' }],
+        metaAccessConfig: null,
+      } as any);
+
+      const result = await accessRequestService.updateAccessRequest('request-1', {
+        metaAccessConfig: {
+          ...META_ACCESS_CONFIG,
+          recipients: [{ type: 'human', id: 'other-agency-person' }],
+        },
+      } as any);
+
+      expect(result.error?.code).toBe('INVALID_META_ASSIGNEE');
+      expect(prisma.accessRequest.update).not.toHaveBeenCalled();
+    });
+
     it('should reject updates for non-editable request statuses', async () => {
       vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue({
         id: 'request-1',
@@ -1170,6 +2011,8 @@ describe('AccessRequestService', () => {
         status: 'pending',
         clientEmail: 'client@test.com',
         uniqueToken: 'tokenold12345',
+        platforms: [{ platform: 'meta_ads', accessLevel: 'manage' }],
+        metaAccessConfig: META_ACCESS_CONFIG,
       } as any);
       vi.mocked(prisma.accessRequest.update).mockResolvedValue({
         id: 'request-1',
@@ -1332,14 +2175,16 @@ describe('AccessRequestService', () => {
 
   describe('cancelAccessRequest', () => {
     it('returns after durable revoke even when webhook delivery stalls', async () => {
-      vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue({
-        agencyId: 'agency-1',
-        status: 'pending',
-      } as any);
-      vi.mocked(prisma.accessRequest.update).mockResolvedValue({
-        id: 'request-1',
-        status: 'revoked',
-      } as any);
+      const transaction = {
+        accessRequest: {
+          findUnique: vi.fn().mockResolvedValue({
+            agencyId: 'agency-1', status: 'pending', clientName: 'Client', clientEmail: 'client@example.com',
+          }),
+          updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+        },
+        auditLog: { create: vi.fn() },
+      };
+      vi.mocked(prisma.$transaction).mockImplementation(async (callback: any) => callback(transaction));
       vi.mocked(prisma.webhookEndpoint.findUnique).mockReturnValue(
         new Promise(() => {}) as any
       );
@@ -1347,14 +2192,59 @@ describe('AccessRequestService', () => {
       const result = await accessRequestService.cancelAccessRequest('request-1');
 
       expect(result).toEqual({ data: { success: true }, error: null });
-      expect(prisma.accessRequest.update).toHaveBeenCalledWith({
-        where: { id: 'request-1' },
+      expect(transaction.accessRequest.updateMany).toHaveBeenCalledWith({
+        where: { id: 'request-1', status: { not: 'revoked' } },
         data: { status: 'revoked' },
       });
     });
 
+    it('writes the revoke audit row in the same transaction', async () => {
+      const transaction = {
+        accessRequest: {
+          findUnique: vi.fn().mockResolvedValue({
+            agencyId: 'agency-1', status: 'pending', clientName: 'Client', clientEmail: 'client@example.com',
+          }),
+          updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+        },
+        auditLog: { create: vi.fn().mockResolvedValue({ id: 1n }) },
+      };
+      vi.mocked(prisma.$transaction).mockImplementation(async (callback: any) => callback(transaction));
+
+      const result = await accessRequestService.cancelAccessRequest('request-1', {
+        userEmail: 'owner@example.com', ipAddress: '127.0.0.1', userAgent: 'test-agent',
+      });
+
+      expect(result).toEqual({ data: { success: true }, error: null });
+      expect(transaction.auditLog.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({
+          agencyId: 'agency-1', userEmail: 'owner@example.com', action: 'ACCESS_REQUEST_REVOKED',
+          resourceType: 'access_request', resourceId: 'request-1', ipAddress: '127.0.0.1', userAgent: 'test-agent',
+        }),
+      });
+    });
+
+    it('does not report cancellation success when the audit write fails', async () => {
+      const transaction = {
+        accessRequest: {
+          findUnique: vi.fn().mockResolvedValue({
+            agencyId: 'agency-1', status: 'pending', clientName: 'Client', clientEmail: 'client@example.com',
+          }),
+          updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+        },
+        auditLog: { create: vi.fn().mockRejectedValue(new Error('audit unavailable')) },
+      };
+      vi.mocked(prisma.$transaction).mockImplementation(async (callback: any) => callback(transaction));
+
+      const result = await accessRequestService.cancelAccessRequest('request-1', {
+        userEmail: 'owner@example.com', ipAddress: '127.0.0.1', userAgent: 'test-agent',
+      });
+
+      expect(result).toMatchObject({ data: null, error: { code: 'INTERNAL_ERROR' } });
+      expect(prisma.webhookEndpoint.findUnique).not.toHaveBeenCalled();
+    });
+
     it('returns database errors instead of starting side effects', async () => {
-      vi.mocked(prisma.accessRequest.findUnique).mockRejectedValue(new Error('database unavailable'));
+      vi.mocked(prisma.$transaction).mockRejectedValue(new Error('database unavailable'));
 
       const result = await accessRequestService.cancelAccessRequest('request-1');
 

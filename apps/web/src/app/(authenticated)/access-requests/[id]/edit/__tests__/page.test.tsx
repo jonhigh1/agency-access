@@ -23,6 +23,22 @@ vi.mock('@/lib/api/access-requests', () => ({
   updateAccessRequest: vi.fn(),
 }));
 
+vi.mock('@/components/access-request/MetaAssigneeSelector', () => ({
+  MetaAssigneeSelector: ({ value, onChange }: { value: any; onChange: (value: any) => void }) => (
+    <section aria-label="Meta access recipients">
+      <button
+        type="button"
+        onClick={() => onChange({
+          ...value,
+          recipients: [{ type: 'human', id: 'person-1', name: 'Jon High' }],
+        })}
+      >
+        Select Meta person
+      </button>
+    </section>
+  ),
+}));
+
 describe('EditAccessRequestPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -75,6 +91,45 @@ describe('EditAccessRequestPage', () => {
     expect(screen.getByRole('button', { name: /edit client profile/i })).toBeInTheDocument();
     expect(await screen.findByText('Beehiiv')).toBeInTheDocument();
     expect(screen.queryByText('Meta')).not.toBeInTheDocument();
+  });
+
+  it('lets an agency repair an existing Meta request by selecting assignees', async () => {
+    vi.mocked(accessRequestsApi.getAccessRequest).mockResolvedValue({
+      data: {
+        id: 'legacy-meta-request',
+        agencyId: 'agency-1',
+        clientName: 'Acme',
+        clientEmail: 'owner@acme.com',
+        status: 'pending',
+        uniqueToken: 'legacy-token',
+        expiresAt: '2026-03-14T00:00:00.000Z',
+        createdAt: '2026-03-01T00:00:00.000Z',
+        updatedAt: '2026-03-01T00:00:00.000Z',
+        platforms: [{
+          platformGroup: 'meta',
+          products: [{ product: 'meta_ads', accessLevel: 'manage', accounts: [] }],
+        }],
+      } as any,
+    });
+    vi.mocked(accessRequestsApi.updateAccessRequest).mockResolvedValue({
+      data: { id: 'legacy-meta-request', authorizationLinkChanged: false } as any,
+    });
+
+    render(<EditAccessRequestPage params={Promise.resolve({ id: 'legacy-meta-request' })} />);
+
+    await screen.findByRole('region', { name: 'Meta access recipients' });
+    await userEvent.click(screen.getByRole('button', { name: 'Select Meta person' }));
+    await userEvent.click(screen.getByTestId('edit-access-request-save'));
+
+    await waitFor(() => expect(accessRequestsApi.updateAccessRequest).toHaveBeenCalledWith(
+      'legacy-meta-request',
+      expect.objectContaining({
+        metaAccessConfig: expect.objectContaining({
+          recipients: [{ type: 'human', id: 'person-1', name: 'Jon High' }],
+        }),
+      }),
+      expect.any(Function)
+    ));
   });
 
   it('redirects to detail page when request is non-editable', async () => {

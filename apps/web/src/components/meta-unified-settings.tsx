@@ -10,7 +10,7 @@ import { Button } from './ui/button';
 import { SingleSelect } from '@/components/ui/single-select';
 import { resolveApiUrl } from '@/lib/api/api-env';
 import { extractApiErrorMessage } from '@/lib/api/extract-error';
-import { finalizeMetaBusinessLogin, launchMetaBusinessLogin } from '@/lib/meta-business-login';
+import { startAgencyMetaOAuth } from '@/lib/agency-meta-oauth';
 import { Loader2, ChevronDown, AlertCircle, Info, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -32,14 +32,12 @@ export function MetaUnifiedSettings({ agencyId }: MetaUnifiedSettingsProps) {
   const [selectedBusinessName, setSelectedBusinessName] = useState<string>('');
   const [isPermissionsModalOpen, setIsPermissionsModalOpen] = useState(false);
   const [reauthError, setReauthError] = useState<string | null>(null);
-  const [reauthSuccess, setReauthSuccess] = useState<string | null>(null);
   const [isReauthenticating, setIsReauthenticating] = useState(false);
 
   // Fetch businesses
   const {
     data: businessesData,
     error: businessesError,
-    refetch: refetchBusinesses,
   } = useQuery({
     queryKey: ['meta-businesses', agencyId],
     queryFn: async () => {
@@ -231,31 +229,14 @@ export function MetaUnifiedSettings({ agencyId }: MetaUnifiedSettingsProps) {
     }
 
     setReauthError(null);
-    setReauthSuccess(null);
     setIsReauthenticating(true);
 
     try {
-      const authPayload = await launchMetaBusinessLogin({
-        appId: process.env.NEXT_PUBLIC_META_APP_ID || '',
-        configId: process.env.NEXT_PUBLIC_META_LOGIN_FOR_BUSINESS_CONFIG_ID || '',
-      });
-
-      await finalizeMetaBusinessLogin({
+      await startAgencyMetaOAuth({
         agencyId,
         userEmail,
         getToken,
-        authPayload,
       });
-
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['meta-businesses', agencyId] }),
-        queryClient.invalidateQueries({ queryKey: ['platform-connections', agencyId] }),
-      ]);
-      const refreshed = await refetchBusinesses();
-      const portfolioCount = refreshed.data?.businesses.length ?? 0;
-      setReauthSuccess(
-        `Meta login refreshed. ${portfolioCount} Business ${portfolioCount === 1 ? 'Portfolio is' : 'Portfolios are'} available.`
-      );
     } catch (error) {
       setReauthError((error as Error).message);
     } finally {
@@ -331,13 +312,6 @@ export function MetaUnifiedSettings({ agencyId }: MetaUnifiedSettingsProps) {
             />
           ) : null}
 
-          {reauthSuccess ? (
-            <ManageAssetsStatusPanel
-              label="Meta refreshed"
-              title={reauthSuccess}
-              tone="default"
-            />
-          ) : null}
         </div>
       </ManageAssetsSectionCard>
 

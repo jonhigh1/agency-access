@@ -1,11 +1,12 @@
 'use client';
 
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
 import { useAuth } from '@clerk/nextjs';
 import { useRouter } from 'next/navigation';
 import { AlertCircle, ChevronDown, Plus, Trash2 } from 'lucide-react';
 import { LogoSpinner } from '@/components/ui/logo-spinner';
 import { ConfirmModal } from '@/components/access-request-detail/confirm-modal';
+import { MetaAssigneeSelector } from '@/components/access-request/MetaAssigneeSelector';
 import { AccessLevelSelector } from '@/components/access-level-selector';
 import { HierarchicalPlatformSelector } from '@/components/hierarchical-platform-selector';
 import { Button, SingleSelect } from '@/components/ui';
@@ -13,7 +14,7 @@ import { getAccessRequest, updateAccessRequest } from '@/lib/api/access-requests
 import type { AccessRequest } from '@/lib/api/access-requests';
 import { transformPlatformsForAPI, normalizePlatformToGroup } from '@/lib/transform-platforms';
 import { fetchActiveAgencyPlatformConnections } from '@/hooks/use-user-agency';
-import type { AccessLevel } from '@agency-platform/shared';
+import { getDefaultMetaAccessTasks, type AccessLevel, type MetaAccessConfig } from '@agency-platform/shared';
 import type { IntakeField } from '@/contexts/access-request-context';
 
 interface EditAccessRequestPageProps {
@@ -66,6 +67,16 @@ function inferAccessLevel(request: AccessRequest): AccessLevel {
   return 'standard';
 }
 
+function defaultMetaAccessConfig(request: AccessRequest): MetaAccessConfig {
+  if (request.metaAccessConfig) return request.metaAccessConfig;
+  const products = request.platforms.flatMap((group) => group.products.map((product) => product.product));
+  return {
+    recipients: [],
+    ...getDefaultMetaAccessTasks(products),
+    catalogTasks: ['MANAGE'],
+  };
+}
+
 export default function EditAccessRequestPage({ params }: EditAccessRequestPageProps) {
   const { getToken } = useAuth();
   const router = useRouter();
@@ -77,6 +88,12 @@ export default function EditAccessRequestPage({ params }: EditAccessRequestPageP
   const [globalAccessLevel, setGlobalAccessLevel] = useState<AccessLevel>('standard');
   const [platformAccessLevels, setPlatformAccessLevels] = useState<Record<string, AccessLevel>>({});
   const [intakeFields, setIntakeFields] = useState<IntakeField[]>([]);
+  const [metaAccessConfig, setMetaAccessConfig] = useState<MetaAccessConfig>({
+    recipients: [],
+    pageTasks: [],
+    adAccountTasks: [],
+    catalogTasks: ['MANAGE'],
+  });
   const [branding, setBranding] = useState<BrandingDraft>({
     logoUrl: '',
     primaryColor: '#FF6B35',
@@ -99,8 +116,9 @@ export default function EditAccessRequestPage({ params }: EditAccessRequestPageP
         globalAccessLevel,
         intakeFields,
         branding,
+        metaAccessConfig,
       }),
-    [externalReference, selectedPlatforms, globalAccessLevel, intakeFields, branding]
+    [externalReference, selectedPlatforms, globalAccessLevel, intakeFields, branding, metaAccessConfig]
   );
   const hasUnsavedChanges = initialSnapshot !== '' && initialSnapshot !== snapshot;
 
@@ -129,6 +147,7 @@ export default function EditAccessRequestPage({ params }: EditAccessRequestPageP
         primaryColor: requestData.branding?.primaryColor || '#FF6B35',
         subdomain: requestData.branding?.subdomain || '',
       };
+      const nextMetaAccessConfig = defaultMetaAccessConfig(requestData);
 
       setRequest(requestData);
       setExternalReference(requestData.externalReference || '');
@@ -136,6 +155,7 @@ export default function EditAccessRequestPage({ params }: EditAccessRequestPageP
       setGlobalAccessLevel(inferAccessLevel(requestData));
       setIntakeFields(normalizedFields);
       setBranding(nextBranding);
+      setMetaAccessConfig(nextMetaAccessConfig);
 
       setInitialSnapshot(JSON.stringify({
         externalReference: requestData.externalReference || '',
@@ -143,6 +163,7 @@ export default function EditAccessRequestPage({ params }: EditAccessRequestPageP
         globalAccessLevel: inferAccessLevel(requestData),
         intakeFields: normalizedFields,
         branding: nextBranding,
+        metaAccessConfig: nextMetaAccessConfig,
       }));
 
       setLoading(false);
@@ -244,6 +265,10 @@ export default function EditAccessRequestPage({ params }: EditAccessRequestPageP
     setIntakeFields((prev) => prev.filter((field) => field.id !== id));
   };
 
+  const updateMetaAccessConfig = useCallback((config: MetaAccessConfig) => {
+    setMetaAccessConfig(config);
+  }, []);
+
   const handleDiscard = () => {
     if (hasUnsavedChanges) {
       setShowDiscardConfirm(true);
@@ -262,6 +287,11 @@ export default function EditAccessRequestPage({ params }: EditAccessRequestPageP
     const selectedCount = Object.values(selectedPlatforms).reduce((sum, products) => sum + products.length, 0);
     if (selectedCount === 0) {
       setError('Select at least one platform before saving.');
+      return;
+    }
+
+    if (selectedPlatforms.meta?.length && !metaAccessConfig.recipients.some((recipient) => recipient.type === 'human')) {
+      setError('Choose at least one Meta person who will use the client assets.');
       return;
     }
 
@@ -285,6 +315,7 @@ export default function EditAccessRequestPage({ params }: EditAccessRequestPageP
           primaryColor: branding.primaryColor || undefined,
           subdomain: branding.subdomain || undefined,
         },
+        ...(selectedPlatforms.meta?.length ? { metaAccessConfig } : {}),
       },
       getToken
     );
@@ -358,6 +389,16 @@ export default function EditAccessRequestPage({ params }: EditAccessRequestPageP
             connectedPlatforms={mergedConnectedPlatforms}
             agencyId={request?.agencyId}
           />
+          {(selectedPlatforms.meta?.length || 0) > 0 && request?.agencyId ? (
+            <div className="mt-5">
+              <MetaAssigneeSelector
+                agencyId={request.agencyId}
+                products={selectedPlatforms.meta}
+                value={metaAccessConfig}
+                onChange={updateMetaAccessConfig}
+              />
+            </div>
+          ) : null}
         </div>
 
         <div className="border-2 border-black bg-card p-6 shadow-brutalist space-y-4">

@@ -10,6 +10,9 @@ import { prisma } from '@/lib/prisma';
 import { infisical } from '@/lib/infisical';
 import { auditService } from '@/services/audit.service';
 import { refreshClientPlatformAuthorization } from '@/services/token-lifecycle.service';
+import { getConnector } from '@/services/connectors/factory';
+import { metaPartnerService } from '@/services/meta-partner.service';
+import { markRequestAuthorized } from '@/services/access-request.service';
 import {
   getPlatformTokenCapability,
   type Platform,
@@ -18,9 +21,94 @@ import {
 } from '@agency-platform/shared';
 import { invalidateDashboardCache } from '@/lib/cache.js';
 import { resolveListLimit, resolveListOffset } from '@/lib/list-pagination.js';
+import { readPendingSecretDeletionIds } from '@/lib/meta-authorization-metadata.js';
 
 /** One day in milliseconds, used for the day-granular countdown field. */
 const DAY_MS = 24 * 60 * 60 * 1000;
+
+function isMetaPlatform(platform: string): platform is Platform {
+  return platform === 'meta' || platform === 'meta_ads' || platform === 'meta_pages';
+}
+
+async function revokeMetaProviderAccess(authorization: {
+  id: string;
+  platform: string;
+  secretId: string;
+  metadata?: unknown;
+}, connectionId: string, auditContext?: { userEmail: string; ipAddress: string }): Promise<string> {
+  if (!isMetaPlatform(authorization.platform)) throw new Error('Expected a Meta authorization');
+  const metadata = authorization.metadata && typeof authorization.metadata === 'object' && !Array.isArray(authorization.metadata)
+    ? authorization.metadata as Record<string, unknown>
+    : {};
+  if (metadata.providerRevokedAt) return String(metadata.providerRevokedAt);
+
+  const grants = await prisma.metaAssetGrant.findMany({
+    where: {
+      authorizationId: authorization.id,
+      grantMethod: { in: ['assigned_users', 'manual_assigned_users', 'manual_business_share', 'manual_agency', 'catalog_agencies'] },
+      recipientType: { in: ['human', 'system_user', 'business'] },
+      assetKind: { in: ['page', 'ad_account', 'catalog', 'dataset'] },
+      status: { notIn: ['selected', 'revoked'] },
+    },
+    select: { id: true, assetKind: true, assetId: true, recipientType: true, recipientId: true, grantMethod: true },
+  });
+  if (!auditContext?.userEmail || !auditContext.ipAddress) throw new Error('Meta token access audit context is required');
+  const audit = await auditService.logTokenAccess({
+    connectionId,
+    platform: authorization.platform,
+    userEmail: auditContext.userEmail,
+    ipAddress: auditContext.ipAddress,
+    details: { operation: 'meta_provider_revocation', authorizationId: authorization.id },
+  });
+  if (audit.error) throw new Error('Failed to audit Meta token access');
+  const tokens = await infisical.getOAuthTokens(authorization.secretId);
+  const assignments = new Map<string, typeof grants[number]>();
+
+  for (const grant of grants) {
+    assignments.set(`${grant.grantMethod}:${grant.assetKind}:${grant.assetId}:${grant.recipientType}:${grant.recipientId}`, grant);
+  }
+  const revocations = [...assignments.values()].map((grant) => async () => {
+    if (grant.recipientType === 'business') {
+      if (grant.assetKind === 'catalog') {
+        await metaPartnerService.revokeCatalogAgencyAccess(tokens.accessToken, grant.assetId, grant.recipientId);
+      } else {
+        await metaPartnerService.revokeAgencyAccess(tokens.accessToken, grant.assetId, grant.recipientId);
+      }
+    } else {
+      await metaPartnerService.revokeAssignedUserAccess(tokens.accessToken, grant.assetId, grant.recipientId);
+    }
+    await prisma.metaAssetGrant.updateMany({
+      where: {
+        authorizationId: authorization.id,
+        assetKind: grant.assetKind,
+        assetId: grant.assetId,
+        grantMethod: grant.grantMethod,
+        recipientType: grant.recipientType,
+        recipientId: grant.recipientId,
+        status: { notIn: ['selected', 'revoked'] },
+      },
+      data: { status: 'revoked', verifiedAt: null, verifiedAuthorizationEpoch: null },
+    });
+  });
+
+  // ponytail: cap Meta revocation fan-out at five; tune with measured rate-limit and latency data.
+  for (let index = 0; index < revocations.length; index += 5) {
+    const outcomes = await Promise.allSettled(revocations.slice(index, index + 5).map((revoke) => revoke()));
+    const failed = outcomes.find((outcome) => outcome.status === 'rejected');
+    if (failed?.status === 'rejected') throw failed.reason;
+  }
+
+  const connector = getConnector(authorization.platform);
+  const revokeToken = connector.revokeToken;
+  if (!revokeToken) throw new Error(`Meta connector cannot revoke authorization for ${authorization.platform}`);
+  await revokeToken.call(connector, tokens.accessToken);
+  const providerRevokedAt = new Date().toISOString();
+  await prisma.platformAuthorization.update({
+    where: { id: authorization.id },
+    data: { metadata: { ...metadata, providerRevokedAt } },
+  });
+  return providerRevokedAt;
+}
 
 function calculateHealthStatus(
   expiresAt: Date | null,
@@ -240,6 +328,13 @@ export async function getPlatformTokens(connectionId: string, platform: Platform
       };
     }
 
+    if (authorization.status !== 'active') {
+      return {
+        data: null,
+        error: { code: 'REAUTHORIZATION_REQUIRED', message: 'Platform authorization is inactive. Reconnect before using tokens.' },
+      };
+    }
+
     // Retrieve tokens from Infisical
     const tokens = await infisical.retrieveOAuthTokens(authorization.secretId);
 
@@ -296,6 +391,13 @@ export async function updatePlatformTokens(
       };
     }
 
+    if (authorization.status !== 'active') {
+      return {
+        data: null,
+        error: { code: 'REAUTHORIZATION_REQUIRED', message: 'Platform authorization is inactive. Reconnect before updating tokens.' },
+      };
+    }
+
     // Update tokens in Infisical
     await infisical.updateOAuthTokens(authorization.secretId, tokens);
 
@@ -326,7 +428,8 @@ type ClientConnectionRow = NonNullable<Awaited<ReturnType<typeof prisma.clientCo
  */
 export async function revokeConnection(
   connectionId: string,
-  preloadedConnection?: ClientConnectionRow
+  preloadedConnection?: ClientConnectionRow,
+  auditContext?: { userEmail: string; ipAddress: string }
 ) {
   try {
     // Get connection with authorizations (or reuse the caller's fetch)
@@ -349,13 +452,7 @@ export async function revokeConnection(
       where: { connectionId },
     });
 
-    // Delete all tokens from Infisical in parallel. The connection can still be
-    // revoked when one provider secret is already missing or unavailable.
-    const deletionResults = await Promise.allSettled(
-      authorizations.map((auth) => infisical.deleteSecret(auth.secretId)),
-    );
-
-    for (const [index, auth] of authorizations.entries()) {
+    for (const auth of authorizations) {
       if (auth.platform === 'tiktok' || auth.platform === 'tiktok_ads') {
         await auditService.createAuditLog({
           agencyId: connection.agencyId,
@@ -370,22 +467,59 @@ export async function revokeConnection(
         });
       }
 
-      const deletion = deletionResults[index];
-      if (deletion.status === 'rejected') {
+      let metaProviderStep = isMetaPlatform(auth.platform);
+      let providerRevokedAt: string | null = null;
+      try {
+        if (metaProviderStep) providerRevokedAt = await revokeMetaProviderAccess(auth, connectionId, auditContext);
+        metaProviderStep = false;
+        await infisical.deleteSecret(auth.secretId);
+        for (const secretId of readPendingSecretDeletionIds(auth.metadata)) {
+          await infisical.deleteSecret(secretId);
+        }
+        await prisma.platformAuthorization.update({
+          where: { id: auth.id },
+          data: {
+            status: 'revoked',
+            ...(isMetaPlatform(auth.platform) && readPendingSecretDeletionIds(auth.metadata).length > 0
+              ? { metadata: { ...(auth.metadata as Record<string, unknown>), pendingSecretDeletion: [], ...(providerRevokedAt ? { providerRevokedAt } : {}) } }
+              : {}),
+          },
+        });
+      } catch (error) {
+        const metaFailure = metaProviderStep;
+        await prisma.platformAuthorization.update({
+          where: { id: auth.id },
+          data: { status: 'invalid' },
+        });
+        if (connection.accessRequestId) await markRequestAuthorized(connection.accessRequestId);
         await auditService.createAuditLog({
           agencyId: connection.agencyId,
           userEmail: connection.clientEmail,
-          action: 'TOKEN_DELETION_FAILED',
+          action: metaFailure ? 'META_ACCESS_REVOCATION_FAILED' : 'TOKEN_DELETION_FAILED',
           resourceType: 'client_connection',
           resourceId: connectionId,
           metadata: {
             platform: auth.platform,
             secretId: auth.secretId,
-            error: deletion.reason instanceof Error ? deletion.reason.message : String(deletion.reason),
+            error: metaFailure ? 'Provider-side Meta revocation failed' : (error instanceof Error ? error.message : String(error)),
           },
         });
+        await prisma.clientConnection.update({
+          where: { id: connectionId },
+          data: { status: 'partial' },
+        });
+        return {
+          data: null,
+          error: {
+            code: metaFailure ? 'META_ACCESS_REVOCATION_FAILED' : 'TOKEN_DELETION_FAILED',
+            message: 'Connection cleanup failed. Retry connection revocation.',
+          },
+          partialFailure: true,
+        };
       }
     }
+
+    if (connection.accessRequestId) await markRequestAuthorized(connection.accessRequestId);
 
     // Update connection status
     await prisma.clientConnection.update({
@@ -393,16 +527,10 @@ export async function revokeConnection(
       data: { status: 'revoked' },
     });
 
-    // Update all authorizations to revoked
-    await prisma.platformAuthorization.updateMany({
-      where: { connectionId },
-      data: { status: 'revoked' },
-    });
-
     return {
       data: connection,
       error: null,
-      partialFailure: deletionResults.some((result) => result.status === 'rejected'),
+      partialFailure: false,
     };
   } catch (error) {
     return {
@@ -699,7 +827,8 @@ export async function refreshPlatformAuthorization(
  */
 export async function revokePlatformAuthorization(
   connectionId: string,
-  platform: Platform
+  platform: Platform,
+  auditContext?: { userEmail: string; ipAddress: string }
 ) {
   try {
     const authorization = await prisma.platformAuthorization.findFirst({
@@ -716,8 +845,45 @@ export async function revokePlatformAuthorization(
       };
     }
 
-    // Delete tokens from Infisical
-    await infisical.deleteOAuthTokens(authorization.secretId);
+    let metaProviderStep = isMetaPlatform(platform);
+    let providerRevokedAt: string | null = null;
+    try {
+      if (metaProviderStep) providerRevokedAt = await revokeMetaProviderAccess(authorization, connectionId, auditContext);
+      metaProviderStep = false;
+      await infisical.deleteSecret(authorization.secretId);
+      for (const secretId of readPendingSecretDeletionIds(authorization.metadata)) {
+        await infisical.deleteSecret(secretId);
+      }
+    } catch (error) {
+      const connection = await prisma.clientConnection.findUnique({
+        where: { id: connectionId },
+        select: { agencyId: true, clientEmail: true, accessRequestId: true },
+      });
+      await prisma.platformAuthorization.update({
+        where: { id: authorization.id },
+        data: { status: 'invalid' },
+      });
+      if (connection?.accessRequestId) await markRequestAuthorized(connection.accessRequestId);
+      await auditService.createAuditLog({
+        agencyId: connection?.agencyId,
+        userEmail: connection?.clientEmail,
+        action: metaProviderStep ? 'META_ACCESS_REVOCATION_FAILED' : 'TOKEN_DELETION_FAILED',
+        resourceType: 'client_connection',
+        resourceId: connectionId,
+        metadata: {
+          platform,
+          authorizationId: authorization.id,
+          error: metaProviderStep ? 'Provider-side Meta revocation failed' : (error instanceof Error ? error.message : String(error)),
+        },
+      });
+      return {
+        data: null,
+        error: {
+          code: metaProviderStep ? 'META_ACCESS_REVOCATION_FAILED' : 'TOKEN_DELETION_FAILED',
+          message: 'Authorization cleanup failed. Retry revocation.',
+        },
+      };
+    }
 
     if (platform === 'tiktok' || platform === 'tiktok_ads') {
       const connection = await prisma.clientConnection.findUnique({
@@ -744,8 +910,19 @@ export async function revokePlatformAuthorization(
     // Update authorization status
     const updated = await prisma.platformAuthorization.update({
       where: { id: authorization.id },
-      data: { status: 'revoked' },
+      data: {
+        status: 'revoked',
+        ...(isMetaPlatform(platform) && readPendingSecretDeletionIds(authorization.metadata).length > 0
+          ? { metadata: { ...(authorization.metadata as Record<string, unknown>), pendingSecretDeletion: [], ...(providerRevokedAt ? { providerRevokedAt } : {}) } }
+          : {}),
+      },
     });
+
+    const connection = await prisma.clientConnection.findUnique({
+      where: { id: connectionId },
+      select: { accessRequestId: true },
+    });
+    if (connection?.accessRequestId) await markRequestAuthorized(connection.accessRequestId);
 
     return { data: updated, error: null };
   } catch (error) {

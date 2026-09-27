@@ -1,5 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { MetaConnector } from '../meta.js';
+import { META_GRAPH_VERSION, META_PERMISSION_CONTRACT } from '@agency-platform/shared';
+import { MetaConnector, MetaGraphMutationError, metaConnector } from '../meta.js';
+import { getConnector } from '../factory.js';
+import { metaConnector } from '../meta.js';
+import { getConnector } from '../factory.js';
 
 const { mockEnv } = vi.hoisted(() => ({
   mockEnv: {
@@ -34,7 +38,9 @@ describe('MetaConnector Asset Discovery', () => {
 
       const authUrl = new URL(connector.getAuthUrl('state-123'));
 
-      expect(`${authUrl.origin}${authUrl.pathname}`).toBe('https://www.facebook.com/v25.0/dialog/oauth');
+      expect(`${authUrl.origin}${authUrl.pathname}`).toBe(
+        `https://www.facebook.com/${META_GRAPH_VERSION}/dialog/oauth`
+      );
       expect(authUrl.searchParams.get('client_id')).toBe('test-app-id');
       expect(authUrl.searchParams.get('redirect_uri')).toBe('http://localhost:3001/agency-platforms/meta/callback');
       expect(authUrl.searchParams.get('state')).toBe('state-123');
@@ -48,18 +54,17 @@ describe('MetaConnector Asset Discovery', () => {
       connector = new MetaConnector();
 
       const authUrl = new URL(
-        connector.getAuthUrl('state-123', [
-          'ads_management',
-          'business_management',
-          'pages_read_engagement',
-          'pages_show_list',
-        ], 'https://authhub.co/invite/oauth-callback')
+        connector.getAuthUrl(
+          'state-123',
+          [...META_PERMISSION_CONTRACT.core.permissions],
+          'https://authhub.co/invite/oauth-callback'
+        )
       );
 
       expect(authUrl.searchParams.get('redirect_uri')).toBe('https://authhub.co/invite/oauth-callback');
       expect(authUrl.searchParams.get('config_id')).toBeNull();
       expect(authUrl.searchParams.get('scope')).toBe(
-        'ads_management,business_management,pages_read_engagement,pages_show_list'
+        META_PERMISSION_CONTRACT.core.permissions.join(',')
       );
     });
 
@@ -67,8 +72,65 @@ describe('MetaConnector Asset Discovery', () => {
       const authUrl = new URL(connector.getAuthUrl('state-123'));
 
       expect(authUrl.searchParams.get('config_id')).toBeNull();
-      expect(authUrl.searchParams.get('scope')).toBe('ads_management,business_management,pages_read_engagement,pages_show_list');
+      expect(authUrl.searchParams.get('scope')).toBe(
+        META_PERMISSION_CONTRACT.core.permissions.join(',')
+      );
     });
+  });
+
+  it('does not treat agency Business Portfolio identity as proof of client asset access', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ id: businessId, name: 'Agency Portfolio' }),
+    } as Response);
+
+    const result = await connector.verifyClientAccess(
+      accessToken,
+      businessId,
+      'client@example.com',
+      'admin',
+    );
+
+    expect(result).toMatchObject({
+      hasAccess: false,
+      accessLevel: 'read_only',
+      assets: [],
+      error: expect.stringContaining('asset-specific'),
+    });
+    expect(fetch).not.toHaveBeenCalled();
+  });
+
+  describe('getLongLivedToken', () => {
+    it('does not create an invalid expiry when Meta omits expires_in', async () => {
+      vi.mocked(fetch).mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ access_token: 'long-lived-token', token_type: 'bearer' }),
+      } as Response);
+
+      await expect(connector.getLongLivedToken(accessToken)).resolves.toMatchObject({
+        accessToken: 'long-lived-token',
+        tokenType: 'bearer',
+        expiresIn: undefined,
+        expiresAt: undefined,
+      });
+    });
+  });
+
+  it('bounds token inspection and keeps the app token out of the request URL', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ data: { user_id: 'user-1', is_valid: true, scopes: ['ads_read'] } }),
+    } as Response);
+
+    await expect(connector.getTokenMetadata('client-access-token')).resolves.toMatchObject({
+      userId: 'user-1', isValid: true, scopes: ['ads_read'],
+    });
+
+    const [url, init] = vi.mocked(fetch).mock.calls.at(-1)!;
+    expect(String(url)).toContain('input_token=client-access-token');
+    expect(String(url)).not.toContain('test-app-secret');
+    expect(init?.headers).toEqual({ Authorization: 'Bearer test-app-id|test-app-secret' });
+    expect(init?.signal).toBeInstanceOf(AbortSignal);
   });
 
   describe('getLongLivedToken', () => {
@@ -97,7 +159,7 @@ describe('MetaConnector Asset Discovery', () => {
               { id: 'biz_1', name: 'Business One', vertical_name: 'Retail' },
             ],
             paging: {
-              next: 'https://graph.facebook.com/v25.0/me/businesses?after=cursor-2',
+              next: `https://graph.facebook.com/${META_GRAPH_VERSION}/me/businesses?after=cursor-2`,
             },
           }),
         } as Response)
@@ -114,31 +176,19 @@ describe('MetaConnector Asset Discovery', () => {
           json: async () => ({
             data: [],
           }),
-        } as Response)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => ({
-            data: [],
-          }),
-        } as Response)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => ({
-            data: [],
-          }),
         } as Response);
 
       const result = await connector.getBusinessAccounts(accessToken);
 
       expect(fetch).toHaveBeenNthCalledWith(
         1,
-        expect.stringContaining('graph.facebook.com/v25.0/me/businesses'),
+        expect.stringContaining(`graph.facebook.com/${META_GRAPH_VERSION}/me/businesses`),
         expect.any(Object)
       );
       expect(fetch).toHaveBeenNthCalledWith(
         2,
-        'https://graph.facebook.com/v25.0/me/businesses?after=cursor-2&access_token=test-access-token',
-        expect.any(Object)
+        `https://graph.facebook.com/${META_GRAPH_VERSION}/me/businesses?after=cursor-2`,
+        expect.objectContaining({ headers: { Authorization: `Bearer ${accessToken}` } })
       );
       expect(result).toEqual({
         businesses: [
@@ -180,28 +230,20 @@ describe('MetaConnector Asset Discovery', () => {
               },
             ],
           }),
-        } as Response)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => ({
-            data: [],
-          }),
-        } as Response)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => ({
-            data: [],
-          }),
         } as Response);
 
       const result = await connector.getBusinessAccounts(accessToken);
 
       const secondCallUrl = new URL(String(vi.mocked(fetch).mock.calls[1]?.[0]));
       expect(`${secondCallUrl.origin}${secondCallUrl.pathname}`).toBe(
-        'https://graph.facebook.com/v25.0/me/business_users'
+        `https://graph.facebook.com/${META_GRAPH_VERSION}/me/business_users`
       );
       expect(secondCallUrl.searchParams.get('fields')).toBe('business{id,name,verification_status}');
-      expect(secondCallUrl.searchParams.get('access_token')).toBe(accessToken);
+      expect(secondCallUrl.searchParams.has('access_token')).toBe(false);
+      expect(vi.mocked(fetch).mock.calls[1]?.[1]).toEqual(expect.objectContaining({
+        headers: { Authorization: `Bearer ${accessToken}` },
+      }));
+      expect(fetch).toHaveBeenCalledTimes(2);
 
       expect(result).toEqual({
         businesses: [
@@ -226,18 +268,6 @@ describe('MetaConnector Asset Discovery', () => {
         .mockResolvedValueOnce({
           ok: false,
           text: async () => 'Permissions error',
-        } as Response)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => ({
-            data: [],
-          }),
-        } as Response)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => ({
-            data: [],
-          }),
         } as Response);
 
       const result = await connector.getBusinessAccounts(accessToken);
@@ -251,66 +281,6 @@ describe('MetaConnector Asset Discovery', () => {
       });
     });
 
-    it('includes recursively managed businesses so OBO-linked portfolios appear in the list', async () => {
-      vi.mocked(fetch)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => ({
-            data: [
-              { id: 'biz_partner', name: 'Partner Business', vertical_name: 'Agency' },
-            ],
-          }),
-        } as Response)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => ({
-            data: [],
-          }),
-        } as Response)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => ({
-            data: [
-              { id: 'biz_client_1', name: 'Client Business One', verification_status: 'verified' },
-            ],
-          }),
-        } as Response)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => ({
-            data: [
-              { id: 'biz_client_2', name: 'Client Business Two' },
-            ],
-          }),
-        } as Response)
-        .mockResolvedValueOnce({
-          ok: true,
-          json: async () => ({
-            data: [],
-          }),
-        } as Response);
-
-      const result = await connector.getBusinessAccounts(accessToken);
-
-      expect(result).toEqual({
-        businesses: [
-          { id: 'biz_partner', name: 'Partner Business', verticalName: 'Agency', verificationStatus: undefined },
-          { id: 'biz_client_1', name: 'Client Business One', verticalName: undefined, verificationStatus: 'verified' },
-          { id: 'biz_client_2', name: 'Client Business Two', verticalName: undefined, verificationStatus: undefined },
-        ],
-        hasAccess: true,
-      });
-
-      expect(fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/biz_partner/managed_businesses'),
-        expect.any(Object)
-      );
-      expect(fetch).toHaveBeenCalledWith(
-        expect.stringContaining('/biz_client_1/managed_businesses'),
-        expect.any(Object)
-      );
-    });
-
     it('throws when Meta business discovery fails', async () => {
       vi.mocked(fetch).mockResolvedValue({
         ok: false,
@@ -321,9 +291,67 @@ describe('MetaConnector Asset Discovery', () => {
         /Failed to fetch business accounts/
       );
     });
+
+    it('does not send the access token to a non-Meta business pagination host', async () => {
+      vi.mocked(fetch).mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ data: [], paging: { next: 'https://attacker.example/collect' } }),
+      } as Response);
+
+      await expect(connector.getBusinessAccounts(accessToken))
+        .rejects.toThrow('Meta returned an invalid pagination URL');
+      expect(fetch).toHaveBeenCalledTimes(1);
+    });
   });
 
   describe('getAdAccounts', () => {
+    it('follows pagination on owned and shared account edges', async () => {
+      vi.mocked(fetch).mockImplementation(async (url) => {
+        const value = String(url);
+        const isOwned = value.includes('/owned_ad_accounts');
+        const isNext = value.includes('after=cursor-2');
+        const id = isOwned ? (isNext ? 'act_owned_2' : 'act_owned_1') : (isNext ? 'act_shared_2' : 'act_shared_1');
+        return {
+          ok: true,
+          json: async () => ({
+            data: [{ id, name: id, account_status: 1, currency: 'USD' }],
+            ...(!isNext ? { paging: { next: `https://graph.facebook.com/${META_GRAPH_VERSION}/${businessId}/${isOwned ? 'owned_ad_accounts' : 'client_ad_accounts'}?after=cursor-2` } } : {}),
+          }),
+        } as Response;
+      });
+
+      const result = await connector.getAdAccounts(accessToken, businessId);
+
+      expect(result.map(({ id }) => id)).toEqual(['act_owned_1', 'act_owned_2', 'act_shared_1', 'act_shared_2']);
+      expect(fetch).toHaveBeenCalledTimes(4);
+    });
+
+    it('rejects pagination URLs outside Graph API', async () => {
+      vi.mocked(fetch).mockImplementation(async (url) => ({
+        ok: true,
+        json: async () => String(url).includes('/owned_ad_accounts')
+          ? { data: [], paging: { next: 'https://attacker.example/collect' } }
+          : { data: [] },
+      } as Response));
+
+      await expect(connector.getAdAccounts(accessToken, businessId))
+        .rejects.toThrow('Meta returned an invalid pagination URL');
+      expect(fetch).toHaveBeenCalledTimes(2);
+    });
+
+    it('stops when Meta repeats a pagination URL', async () => {
+      vi.mocked(fetch).mockImplementation(async (url) => ({
+        ok: true,
+        json: async () => String(url).includes('/owned_ad_accounts')
+          ? { data: [], paging: { next: String(url) } }
+          : { data: [] },
+      } as Response));
+
+      await expect(connector.getAdAccounts(accessToken, businessId))
+        .rejects.toThrow('Meta returned a repeated pagination URL');
+      expect(fetch).toHaveBeenCalledTimes(3);
+    });
+
     it('should fetch ad accounts for a business', async () => {
       const mockResponse = {
         data: [
@@ -336,23 +364,48 @@ describe('MetaConnector Asset Discovery', () => {
         ],
       };
 
-      vi.mocked(fetch).mockResolvedValue({
-        ok: true,
-        json: async () => mockResponse,
-      } as Response);
+      vi.mocked(fetch)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => mockResponse,
+        } as Response)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({
+            data: [
+              {
+                id: 'act_456',
+                name: 'Shared Ad Account',
+                account_status: 1,
+                currency: 'USD',
+              },
+            ],
+          }),
+        } as Response);
 
       const result = await connector.getAdAccounts(accessToken, businessId);
 
       expect(fetch).toHaveBeenCalledWith(
-        expect.stringContaining(`graph.facebook.com/v25.0/${businessId}/owned_ad_accounts`),
+        expect.stringContaining(`graph.facebook.com/${META_GRAPH_VERSION}/${businessId}/owned_ad_accounts`),
         expect.any(Object)
       );
-      expect(result).toHaveLength(1);
+      expect(fetch).toHaveBeenCalledWith(
+        expect.stringContaining(`graph.facebook.com/${META_GRAPH_VERSION}/${businessId}/client_ad_accounts`),
+        expect.any(Object)
+      );
+      expect(result).toHaveLength(2);
       expect(result[0]).toEqual({
         id: 'act_123',
         name: 'Test Ad Account',
         accountStatus: 'ACTIVE',
         currency: 'USD',
+      });
+      expect(result[1]).toEqual({
+        id: 'act_456',
+        name: 'Shared Ad Account',
+        accountStatus: 'ACTIVE',
+        currency: 'USD',
+        sharedWithBusiness: true,
       });
     });
 
@@ -368,36 +421,39 @@ describe('MetaConnector Asset Discovery', () => {
   });
 
   describe('getPages', () => {
-    it('should fetch pages for a business', async () => {
-      const mockResponse = {
-        data: [
-          {
-            id: 'page_123',
-            name: 'Test Page',
-            category: 'Marketing',
-            tasks: ['ADVERTISE', 'ANALYZE'],
-          },
-        ],
-      };
-
-      vi.mocked(fetch).mockResolvedValue({
+    it('fetches owned and client pages for a business and deduplicates them', async () => {
+      vi.mocked(fetch).mockImplementation(async (url) => ({
         ok: true,
-        json: async () => mockResponse,
-      } as Response);
+        json: async () => String(url).includes('/owned_pages')
+          ? { data: [{ id: 'page_123', name: 'Test Page', category: 'Marketing', tasks: ['ADVERTISE', 'ANALYZE'] }] }
+          : { data: [
+              { id: 'page_123', name: 'Test Page', category: 'Marketing', tasks: ['ADVERTISE', 'ANALYZE'] },
+              { id: 'page_456', name: 'Client Page', category: 'Retail', tasks: ['ANALYZE'] },
+            ] },
+      } as Response));
 
       const result = await connector.getPages(accessToken, businessId);
 
+      expect(fetch).toHaveBeenCalledTimes(2);
       expect(fetch).toHaveBeenCalledWith(
-        expect.stringContaining(`graph.facebook.com/v25.0/${businessId}/owned_pages`),
+        expect.stringContaining(`graph.facebook.com/${META_GRAPH_VERSION}/${businessId}/owned_pages`),
         expect.any(Object)
       );
-      expect(result).toHaveLength(1);
-      expect(result[0]).toEqual({
+      expect(fetch).toHaveBeenCalledWith(
+        expect.stringContaining(`graph.facebook.com/${META_GRAPH_VERSION}/${businessId}/client_pages`),
+        expect.any(Object)
+      );
+      expect(result).toEqual([{
         id: 'page_123',
         name: 'Test Page',
         category: 'Marketing',
         tasks: ['ADVERTISE', 'ANALYZE'],
-      });
+      }, {
+        id: 'page_456',
+        name: 'Client Page',
+        category: 'Retail',
+        tasks: ['ANALYZE'],
+      }]);
     });
   });
 
@@ -413,15 +469,17 @@ describe('MetaConnector Asset Discovery', () => {
         ],
       };
 
-      vi.mocked(fetch).mockResolvedValue({
+      vi.mocked(fetch).mockImplementation(async (url) => ({
         ok: true,
-        json: async () => mockResponse,
-      } as Response);
+        json: async () => String(url).includes('/client_product_catalogs')
+          ? { data: [{ id: 'cat_shared', name: 'Shared Catalog', catalog_type: 'PRODUCT_CATALOG' }] }
+          : mockResponse,
+      } as Response));
 
       const result = await connector.getInstagramAccounts(accessToken, businessId);
 
       expect(fetch).toHaveBeenCalledWith(
-        expect.stringContaining(`graph.facebook.com/v25.0/${businessId}/instagram_accounts`),
+        expect.stringContaining(`graph.facebook.com/${META_GRAPH_VERSION}/${businessId}/instagram_accounts`),
         expect.any(Object)
       );
       expect(result).toHaveLength(1);
@@ -431,6 +489,24 @@ describe('MetaConnector Asset Discovery', () => {
         profilePictureUrl: 'http://example.com/pic.jpg',
       });
     });
+  });
+
+  it('reads client Instagram assets by Instagram user ID for partner verification', async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({ data: [
+        { id: 'asset_123', ig_user_id: 'ig_123', ig_username: 'client_ig' },
+        { id: 'asset_without_identity' },
+      ] }),
+    } as Response);
+
+    await expect(connector.getClientInstagramAccounts(accessToken, businessId)).resolves.toEqual([
+      { id: 'ig_123', username: 'client_ig' },
+    ]);
+    expect(fetch).toHaveBeenCalledWith(
+      expect.stringContaining(`/${businessId}/client_instagram_assets?fields=id%2Cig_user_id%2Cig_username`),
+      expect.objectContaining({ headers: { Authorization: `Bearer ${accessToken}` } }),
+    );
   });
 
   describe('getProductCatalogs', () => {
@@ -445,23 +521,42 @@ describe('MetaConnector Asset Discovery', () => {
         ],
       };
 
-      vi.mocked(fetch).mockResolvedValue({
+      vi.mocked(fetch).mockImplementation(async (url) => ({
         ok: true,
-        json: async () => mockResponse,
-      } as Response);
+        json: async () => String(url).includes('/client_product_catalogs')
+          ? { data: [{ id: 'cat_shared', name: 'Shared Catalog', catalog_type: 'PRODUCT_CATALOG' }] }
+          : mockResponse,
+      } as Response));
 
       const result = await connector.getProductCatalogs(accessToken, businessId);
 
       expect(fetch).toHaveBeenCalledWith(
-        expect.stringContaining(`graph.facebook.com/v25.0/${businessId}/owned_product_catalogs`),
+        expect.stringContaining(`graph.facebook.com/${META_GRAPH_VERSION}/${businessId}/owned_product_catalogs`),
         expect.any(Object)
       );
-      expect(result).toHaveLength(1);
+      expect(fetch).toHaveBeenCalledWith(
+        expect.stringContaining(`graph.facebook.com/${META_GRAPH_VERSION}/${businessId}/client_product_catalogs`),
+        expect.any(Object)
+      );
+      expect(result).toHaveLength(2);
       expect(result[0]).toEqual({
         id: 'cat_123',
         name: 'Test Catalog',
         catalogType: 'PRODUCT_CATALOG',
       });
+      expect(result[1]).toEqual({ id: 'cat_shared', name: 'Shared Catalog', catalogType: 'PRODUCT_CATALOG' });
+    });
+
+    it('should fail discovery when either catalog edge is unavailable', async () => {
+      vi.mocked(fetch).mockImplementation(async (url) => {
+        if (String(url).includes('/client_product_catalogs')) {
+          return { ok: false, status: 403 } as Response;
+        }
+        return { ok: true, json: async () => ({ data: [] }) } as Response;
+      });
+
+      await expect(connector.getProductCatalogs(accessToken, businessId))
+        .rejects.toThrow(/client_product_catalogs returned 403/);
     });
   });
 
@@ -470,19 +565,28 @@ describe('MetaConnector Asset Discovery', () => {
       // Mock business info and other endpoints
       vi.mocked(fetch).mockImplementation(async (url) => {
         const urlStr = url.toString();
-        if (urlStr.includes(`v25.0/${businessId}?`)) {
+        if (urlStr.includes(`${META_GRAPH_VERSION}/${businessId}?`)) {
           return { ok: true, json: async () => ({ id: businessId, name: 'Test Business' }) } as Response;
         }
         if (urlStr.includes('/owned_ad_accounts')) {
           return { ok: true, json: async () => ({ data: [{ id: 'act_1', name: 'Ad Account 1', account_status: 1, currency: 'USD' }] }) } as Response;
         }
+        if (urlStr.includes('/client_ad_accounts')) {
+          return { ok: true, json: async () => ({ data: [{ id: 'act_2', name: 'Shared Ad Account', account_status: 1, currency: 'USD' }] }) } as Response;
+        }
         if (urlStr.includes('/owned_pages')) {
           return { ok: true, json: async () => ({ data: [{ id: 'page_1', name: 'Page 1', category: 'Test', tasks: [] }] }) } as Response;
+        }
+        if (urlStr.includes('/client_pages')) {
+          return { ok: true, json: async () => ({ data: [] }) } as Response;
         }
         if (urlStr.includes('/instagram_accounts')) {
           return { ok: true, json: async () => ({ data: [] }) } as Response;
         }
         if (urlStr.includes('/owned_product_catalogs')) {
+          return { ok: true, json: async () => ({ data: [] }) } as Response;
+        }
+        if (urlStr.includes('/client_product_catalogs')) {
           return { ok: true, json: async () => ({ data: [] }) } as Response;
         }
         return { ok: false, status: 404, text: async () => 'Not Found' } as Response;
@@ -492,7 +596,7 @@ describe('MetaConnector Asset Discovery', () => {
 
       expect(result.businessId).toBe(businessId);
       expect(result.businessName).toBe('Test Business');
-      expect(result.adAccounts).toHaveLength(1);
+      expect(result.adAccounts).toHaveLength(2);
       expect(result.pages).toHaveLength(1);
       expect(result.instagramAccounts).toHaveLength(0);
       expect(result.productCatalogs).toHaveLength(0);
@@ -529,8 +633,8 @@ describe('MetaConnector Business Creation', () => {
         { id: 'page-2', name: 'Acme Deals', category: 'Shopping' },
       ]);
       expect(fetch).toHaveBeenCalledWith(
-        'https://graph.facebook.com/v25.0/me/accounts?fields=id,name,category&access_token=test-access-token',
-        { method: 'GET' }
+        `https://graph.facebook.com/${META_GRAPH_VERSION}/me/accounts?fields=id%2Cname%2Ccategory`,
+        expect.objectContaining({ headers: { Authorization: `Bearer ${accessToken}` } })
       );
     });
 
@@ -584,7 +688,7 @@ describe('MetaConnector Business Creation', () => {
       });
 
       expect(fetch).toHaveBeenCalledWith(
-        'https://graph.facebook.com/v25.0/me/businesses',
+        `https://graph.facebook.com/${META_GRAPH_VERSION}/me/businesses`,
         expect.objectContaining({
           method: 'POST',
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -592,7 +696,7 @@ describe('MetaConnector Business Creation', () => {
       );
 
       const [url, init] = vi.mocked(fetch).mock.calls[0] as [string, RequestInit];
-      expect(url).toBe('https://graph.facebook.com/v25.0/me/businesses');
+      expect(url).toBe(`https://graph.facebook.com/${META_GRAPH_VERSION}/me/businesses`);
       const body = new URLSearchParams(init.body as string);
       expect(body.get('access_token')).toBe('test-access-token');
       expect(body.get('name')).toBe('Acme Business');
@@ -607,7 +711,7 @@ describe('MetaConnector Business Creation', () => {
         status: 400,
         text: async () =>
           JSON.stringify({
-            error: { message: 'You have reached the limit of businesses you can create' },
+            error: { message: 'You have reached the limit of businesses you can create', code: 200, error_subcode: 1815001 },
           }),
       } as unknown as Response);
 
@@ -618,9 +722,13 @@ describe('MetaConnector Business Creation', () => {
           primaryPageId: 'page-1',
           timezoneId: '25',
         })
-      ).rejects.toThrow(
-        'Meta business creation failed: You have reached the limit of businesses you can create'
-      );
+      ).rejects.toMatchObject({
+        name: MetaGraphMutationError.name,
+        message: 'Meta business creation failed: You have reached the limit of businesses you can create',
+        status: 400,
+        metaCode: 200,
+        metaSubcode: 1815001,
+      });
     });
 
     it('throws with the raw error body when the payload is not JSON', async () => {
@@ -637,7 +745,12 @@ describe('MetaConnector Business Creation', () => {
           primaryPageId: 'page-1',
           timezoneId: '25',
         })
-      ).rejects.toThrow('Meta business creation failed: Internal Server Error');
+      ).rejects.toMatchObject({
+        name: MetaGraphMutationError.name,
+        message: 'Meta business creation failed: Internal Server Error',
+        status: 500,
+        metaCode: undefined,
+      });
     });
   });
 
@@ -659,5 +772,52 @@ describe('MetaConnector Business Creation', () => {
         'https://business.facebook.com/settings/biz-123/payment'
       );
     });
+  });
+});
+
+describe('MetaConnector token revocation', () => {
+  it('revokes app permission without putting the token in the request URL', async () => {
+    const connector = new MetaConnector();
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => true } as Response);
+
+    await connector.revokeToken('sensitive-token');
+
+    expect(fetch).toHaveBeenCalledWith(
+      `https://graph.facebook.com/${META_GRAPH_VERSION}/me/permissions`,
+      expect.objectContaining({ method: 'DELETE' }),
+    );
+    const request = vi.mocked(fetch).mock.calls[0]?.[1] as RequestInit;
+    expect(request.signal).toBeInstanceOf(AbortSignal);
+    expect(new URLSearchParams(request.body as string).get('access_token')).toBe('sensitive-token');
+    expect(String(vi.mocked(fetch).mock.calls[0]?.[0])).not.toContain('sensitive-token');
+  });
+
+  it('fails when Meta does not confirm app permission revocation', async () => {
+    const connector = new MetaConnector();
+    global.fetch = vi.fn().mockResolvedValue({ ok: true, json: async () => false } as Response);
+
+    await expect(connector.revokeToken('sensitive-token')).rejects.toThrow('Meta did not confirm app permission revocation');
+  });
+
+  it('treats an already-invalid access token as revoked', async () => {
+    const connector = new MetaConnector();
+    global.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      json: async () => ({ error: { code: 190, type: 'OAuthException' } }),
+    } as Response);
+
+    await expect(connector.revokeToken('sensitive-token')).resolves.toBeUndefined();
+  });
+});
+
+describe('Meta connector registration', () => {
+  it('uses the Meta connector for Instagram OAuth', () => {
+    expect(getConnector('instagram')).toBe(metaConnector);
+  });
+});
+
+describe('Meta connector registration', () => {
+  it('uses the Meta connector for Instagram OAuth', () => {
+    expect(getConnector('instagram')).toBe(metaConnector);
   });
 });

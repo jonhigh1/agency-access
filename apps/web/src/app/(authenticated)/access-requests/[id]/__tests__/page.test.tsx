@@ -6,6 +6,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import AccessRequestDetailPage from '../page';
 import * as accessRequestsApi from '@/lib/api/access-requests';
 
+const getTokenMock = vi.hoisted(() => vi.fn().mockResolvedValue('token-123'));
+
 function renderWithProviders(ui: React.ReactElement) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
@@ -15,7 +17,7 @@ function renderWithProviders(ui: React.ReactElement) {
 
 vi.mock('@clerk/nextjs', () => ({
   useAuth: () => ({
-    getToken: vi.fn().mockResolvedValue('token-123'),
+    getToken: getTokenMock,
   }),
 }));
 
@@ -29,6 +31,7 @@ vi.mock('@/lib/api/access-requests', () => ({
   getAccessRequest: vi.fn(),
   getAuthorizationUrl: vi.fn((request: any) => `https://app.authhub.co/invite/${request.uniqueToken}`),
   cancelAccessRequest: vi.fn().mockResolvedValue({ data: { success: true } }),
+  excludeMetaGrant: vi.fn().mockResolvedValue({ data: { id: 'grant-1', status: 'excluded' } }),
   sendAccessRequestReminder: vi.fn(),
 }));
 
@@ -270,6 +273,89 @@ describe('AccessRequestDetailPage', () => {
     expect(screen.queryByRole('link', { name: /edit request/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /cancel request/i })).not.toBeInTheDocument();
     expect(screen.getByRole('link', { name: /create new request from this/i })).toBeInTheDocument();
+  });
+
+  it('shows per-recipient Meta results and lets the agency owner exclude one requirement', async () => {
+    const user = userEvent.setup();
+    const baseRequest = {
+      id: 'request-meta',
+      agencyId: 'agency-1',
+      clientName: 'Meta Client',
+      clientEmail: 'meta@client.com',
+      status: 'partial' as const,
+      uniqueToken: 'token-meta',
+      expiresAt: '2026-10-01T00:00:00.000Z',
+      createdAt: '2026-09-22T00:00:00.000Z',
+      updatedAt: '2026-09-22T00:00:00.000Z',
+      platforms: [{
+        platformGroup: 'meta',
+        products: [{ product: 'meta_pages', accessLevel: 'admin' as const, accounts: [] }],
+      }],
+    };
+    vi.mocked(accessRequestsApi.getAccessRequest)
+      .mockResolvedValueOnce({
+        data: {
+          ...baseRequest,
+          metaFulfillment: [{
+            id: 'grant-1',
+            assetKind: 'page',
+            assetId: 'page-1',
+            assetName: 'Client Page',
+            recipientType: 'human',
+            recipientId: 'person-1',
+            recipientName: 'Jon High',
+            requestedTasks: ['MANAGE'],
+            verifiedTasks: [],
+            status: 'manual_action_required',
+            nextActor: 'client_admin',
+            nextAction: 'Share this Page in Meta Business Settings.',
+            updatedAt: '2026-09-22T12:00:00.000Z',
+          }],
+        },
+      })
+      .mockResolvedValueOnce({
+        data: {
+          ...baseRequest,
+          status: 'completed',
+          metaFulfillment: [{
+            id: 'grant-1',
+            assetKind: 'page',
+            assetId: 'page-1',
+            assetName: 'Client Page',
+            recipientType: 'human',
+            recipientId: 'person-1',
+            recipientName: 'Jon High',
+            requestedTasks: ['MANAGE'],
+            verifiedTasks: [],
+            status: 'excluded',
+            updatedAt: '2026-09-22T12:01:00.000Z',
+            exclusion: {
+              reason: 'Client does not need this assignee.',
+              actor: 'Agency owner',
+              excludedAt: '2026-09-22T12:01:00.000Z',
+            },
+          }],
+        },
+      });
+
+    renderWithProviders(<AccessRequestDetailPage params={Promise.resolve({ id: 'request-meta' })} />);
+
+    expect(await screen.findByText('Meta Access Results')).toBeInTheDocument();
+    expect(screen.getByText(/Human: Jon High/)).toBeInTheDocument();
+    expect(screen.getByText(/Next: Share this Page/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Exclude requirement' }));
+    await user.type(screen.getByLabelText('Reason'), 'Client does not need this assignee.');
+    await user.click(screen.getByLabelText(/I confirm this requirement/));
+    await user.click(screen.getByRole('button', { name: 'Confirm exclusion' }));
+
+    await waitFor(() => expect(accessRequestsApi.excludeMetaGrant).toHaveBeenCalledWith(
+      'request-meta',
+      'grant-1',
+      'Client does not need this assignee.',
+      expect.any(Function)
+    ));
+    expect(await screen.findByText('Excluded')).toBeInTheDocument();
+    expect(screen.getByText(/Agency owner: Client does not need this assignee/)).toBeInTheDocument();
   });
 
   it('renders recovery state when request load fails', async () => {

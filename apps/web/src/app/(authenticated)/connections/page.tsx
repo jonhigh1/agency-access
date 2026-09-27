@@ -24,7 +24,6 @@ import {
 import { LogoSpinner } from '@/components/ui/logo-spinner';
 import { DEV_BYPASS_TOKEN, useAuthOrBypass } from '@/lib/dev-auth';
 import { useUserAgency } from '@/hooks/use-user-agency';
-import { finalizeMetaBusinessLogin, launchMetaBusinessLogin } from '@/lib/meta-business-login';
 import { readPerfHarnessContext } from '@/lib/perf-harness';
 import { resolveApiUrl } from '@/lib/api/api-env';
 import { isManualInvitePlatform } from '@/lib/client-invite-platforms';
@@ -236,7 +235,8 @@ function ConnectionsPageContent() {
 
       setConnectingPlatform(platform);
 
-      const userEmail = user?.primaryEmailAddress?.emailAddress || 'user@agency.com';
+      const userEmail = user?.primaryEmailAddress?.emailAddress || user?.emailAddresses?.[0]?.emailAddress;
+      if (!userEmail) throw new Error('Unable to resolve your account email.');
       const token = await getAuthToken();
 
       const response = await fetch(
@@ -335,8 +335,6 @@ function ConnectionsPageContent() {
       // Open manual invitation modal in create mode
       setManualInvitationPlatform(platform);
       setIsManualModalOpen(true);
-    } else if (platform === 'meta') {
-      void handleMetaConnect();
     } else {
       // Use OAuth flow
       initiateOAuth(platform);
@@ -363,59 +361,6 @@ function ConnectionsPageContent() {
     // Refetch platforms to update the UI
     if (agencyId) {
       queryClient.invalidateQueries({ queryKey: ['available-platforms', agencyId] });
-    }
-  };
-
-  const handleMetaConnect = async () => {
-    if (!agencyId) {
-      showErrorMessage('Agency not found. Please complete onboarding first.');
-      return;
-    }
-
-    const userEmail = user?.primaryEmailAddress?.emailAddress || 'user@agency.com';
-    setConnectingPlatform('meta');
-
-    try {
-      const authPayload = await launchMetaBusinessLogin({
-        appId: process.env.NEXT_PUBLIC_META_APP_ID || '',
-        configId: process.env.NEXT_PUBLIC_META_LOGIN_FOR_BUSINESS_CONFIG_ID || '',
-      });
-
-      await finalizeMetaBusinessLogin({
-        agencyId,
-        userEmail,
-        getToken: getAuthToken,
-        authPayload,
-      });
-
-      if (typeof window !== 'undefined') {
-        window.localStorage.removeItem(`etag-available-platforms-${agencyId}`);
-        window.localStorage.removeItem(`cached-platforms-${agencyId}`);
-      }
-
-      await queryClient.invalidateQueries({ queryKey: ['available-platforms', agencyId] });
-      trackOAuthCallbackSuccess({
-        platform: 'meta',
-        auth_source: 'agency_meta_popup',
-        agency_id: agencyId,
-      });
-      void capturePosthogEvent('platform_connected', {
-        agency_id: agencyId,
-        platform: 'meta',
-        connection_source: 'meta_popup',
-      });
-      showSuccessMessage('Successfully connected Meta!');
-    } catch (error) {
-      trackOAuthCallbackFailure({
-        platform: 'meta',
-        error_code: 'META_POPUP_FAILED',
-        error_message: error instanceof Error ? error.message : 'Failed to connect Meta',
-        auth_source: 'agency_meta_popup',
-        agency_id: agencyId,
-      });
-      showErrorMessage((error as Error).message);
-    } finally {
-      setConnectingPlatform(null);
     }
   };
 

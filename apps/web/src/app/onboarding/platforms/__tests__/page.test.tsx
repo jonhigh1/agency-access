@@ -10,8 +10,6 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import PlatformsPage from '../page';
 
-const mockLaunchMetaBusinessLogin = vi.fn();
-const mockFinalizeMetaBusinessLogin = vi.fn();
 
 // Mock Next.js navigation
 const mockPush = vi.fn();
@@ -52,16 +50,9 @@ vi.mock('@tanstack/react-query', () => ({
   }),
 }));
 
-vi.mock('@/lib/meta-business-login', () => ({
-  launchMetaBusinessLogin: (...args: any[]) => mockLaunchMetaBusinessLogin(...args),
-  finalizeMetaBusinessLogin: (...args: any[]) => mockFinalizeMetaBusinessLogin(...args),
-}));
-
 describe('Onboarding Platforms Page', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    process.env.NEXT_PUBLIC_META_APP_ID = 'meta-app-123';
-    process.env.NEXT_PUBLIC_META_LOGIN_FOR_BUSINESS_CONFIG_ID = 'meta-config-123';
 
     // Default: No platforms connected yet
     mockUseQuery.mockReturnValue({
@@ -76,15 +67,6 @@ describe('Onboarding Platforms Page', () => {
       isPending: false,
     });
 
-    mockLaunchMetaBusinessLogin.mockResolvedValue({
-      accessToken: 'meta-token',
-      userId: 'meta-user-1',
-      expiresIn: 3600,
-    });
-    mockFinalizeMetaBusinessLogin.mockResolvedValue({
-      id: 'conn-meta-1',
-      platform: 'meta',
-    });
   });
 
   describe('Page Content', () => {
@@ -177,7 +159,7 @@ describe('Onboarding Platforms Page', () => {
       expect(mutateFn).toHaveBeenCalled();
     });
 
-    it('uses Meta Business Login instead of the legacy OAuth initiation mutation for Meta', async () => {
+    it('uses the server OAuth initiation flow for Meta', async () => {
       const user = userEvent.setup();
       const mutateFn = vi.fn();
 
@@ -191,73 +173,7 @@ describe('Onboarding Platforms Page', () => {
       const connectButton = screen.getAllByRole('button', { name: /connect/i })[1];
       await user.click(connectButton);
 
-      expect(mutateFn).not.toHaveBeenCalled();
-      expect(mockLaunchMetaBusinessLogin).toHaveBeenCalledWith({
-        appId: 'meta-app-123',
-        configId: 'meta-config-123',
-      });
-      expect(mockFinalizeMetaBusinessLogin).toHaveBeenCalledWith({
-        agencyId: 'agency-1',
-        userEmail: 'owner@agency.com',
-        getToken: expect.any(Function),
-        authPayload: expect.objectContaining({
-          accessToken: 'meta-token',
-          userId: 'meta-user-1',
-        }),
-      });
-      expect(mockInvalidateQueries).toHaveBeenCalledWith({
-        queryKey: ['agency-platforms', 'agency-1'],
-      });
-    });
-
-    it('shows actionable Meta Business Login errors on the page', async () => {
-      const user = userEvent.setup();
-      const mutateFn = vi.fn();
-
-      mockUseMutation.mockReturnValue({
-        mutate: mutateFn,
-        isPending: false,
-      });
-      mockLaunchMetaBusinessLogin.mockRejectedValueOnce(
-        new Error('Failed to load Meta Business Login. Please try again.')
-      );
-
-      render(<PlatformsPage />);
-
-      const connectButton = screen.getAllByRole('button', { name: /connect/i })[1];
-      await user.click(connectButton);
-
-      expect(mutateFn).not.toHaveBeenCalled();
-      await waitFor(() => {
-        expect(
-          screen.getByText('Failed to load Meta Business Login. Please try again.')
-        ).toBeInTheDocument();
-      });
-    });
-
-    it('shows actionable Meta finalize errors on the page', async () => {
-      const user = userEvent.setup();
-      const mutateFn = vi.fn();
-
-      mockUseMutation.mockReturnValue({
-        mutate: mutateFn,
-        isPending: false,
-      });
-      mockFinalizeMetaBusinessLogin.mockRejectedValueOnce(
-        new Error('Failed to finalize Meta Business Login')
-      );
-
-      render(<PlatformsPage />);
-
-      const connectButton = screen.getAllByRole('button', { name: /connect/i })[1];
-      await user.click(connectButton);
-
-      expect(mutateFn).not.toHaveBeenCalled();
-      await waitFor(() => {
-        expect(
-          screen.getByText('Failed to finalize Meta Business Login')
-        ).toBeInTheDocument();
-      });
+      expect(mutateFn).toHaveBeenCalledWith('meta');
     });
 
     it('should initiate OAuth for Snapchat instead of opening the manual modal', async () => {

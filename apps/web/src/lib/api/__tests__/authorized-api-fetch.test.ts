@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { AuthorizedApiError, authorizedApiFetch } from '../authorized-api-fetch';
 
 describe('authorizedApiFetch', () => {
@@ -9,6 +9,8 @@ describe('authorizedApiFetch', () => {
     (global as any).fetch = fetchMock;
     process.env.NEXT_PUBLIC_API_URL = 'https://api.example.com';
   });
+
+  afterEach(() => vi.useRealTimers());
 
   it('throws when token is missing', async () => {
     await expect(
@@ -122,5 +124,35 @@ describe('authorizedApiFetch', () => {
 
     await expectation;
     vi.useRealTimers();
+  });
+  it('forwards a caller abort to fetch', async () => {
+    const controller = new AbortController();
+    fetchMock.mockImplementation((_url: string, options: RequestInit) =>
+      new Promise((_resolve, reject) => {
+        options.signal?.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')));
+      })
+    );
+
+    const request = authorizedApiFetch('/api/access-requests/request-1/cancel', {
+      method: 'POST',
+      getToken: async () => 'token-123',
+      signal: controller.signal,
+    });
+    await Promise.resolve();
+    controller.abort();
+
+    await expect(request).rejects.toMatchObject({ name: 'AbortError' });
+  });
+
+  it('forwards a caller abort while acquiring the token', async () => {
+    const controller = new AbortController();
+    const request = authorizedApiFetch('/api/clients', {
+      getToken: () => new Promise<string | null>(() => {}),
+      signal: controller.signal,
+    });
+    controller.abort();
+
+    await expect(request).rejects.toMatchObject({ name: 'AbortError' });
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });
