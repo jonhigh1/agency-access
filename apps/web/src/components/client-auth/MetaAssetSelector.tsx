@@ -628,8 +628,10 @@ export function MetaAssetSelector({
     setDatasetVerification(null);
     setIsVerifyingDatasets(false);
     setCatalogCreationErrorsFor({});
-    setCatalogCreationNeedsReviewFor(new Set());
-    setAdAccountCreationNeedsReviewFor(new Set());
+    // Creation-review records persist across switches: they are keyed by the
+    // business that owns them and render only when that business is active,
+    // so they cannot go stale on another business (keeps a pending creation
+    // discoverable when the client returns to its source portfolio).
     setCatalogCreated(null);
     setShowCatalogCreator(false);
     setShowAdAccountCreator(false);
