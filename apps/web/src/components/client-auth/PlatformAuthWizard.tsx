@@ -1017,6 +1017,7 @@ export function PlatformAuthWizard({
               isLoading={isProcessing}
               size="xl"
               variant="brutalist"
+              className="whitespace-nowrap px-6 sm:px-12"
               rightIcon={!isProcessing ? <ExternalLink className="w-5 h-5" /> : undefined}
             >
               Connect {platformName}
@@ -1029,6 +1030,7 @@ export function PlatformAuthWizard({
                 size="xl"
                 variant="secondary"
                 disabled={isProcessing}
+                className="whitespace-nowrap px-6 sm:px-12"
               >
                 Open Meta in a pop-up
               </Button>
