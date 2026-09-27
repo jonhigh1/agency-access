@@ -68,6 +68,48 @@ describe('Client intake routes', () => {
     expect(prisma.accessRequest.update).not.toHaveBeenCalled();
   });
 
+  // KTD13: answers are client-controlled text on a public-token endpoint.
+  // The body schema caps values and cardinality before any field validation.
+  it('rejects an oversized answer value before persistence', async () => {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/client/token-1/intake',
+      payload: { intakeResponses: { company: 'a'.repeat(10_001) } },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json().error).toMatchObject({ code: 'VALIDATION_ERROR' });
+    expect(prisma.accessRequest.update).not.toHaveBeenCalled();
+  });
+
+  it('rejects more than 50 intake answers before persistence', async () => {
+    const responses = Object.fromEntries(
+      Array.from({ length: 51 }, (_, index) => [`field-${index}`, 'x'])
+    );
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/client/token-1/intake',
+      payload: { intakeResponses: responses },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json().error).toMatchObject({ code: 'VALIDATION_ERROR' });
+    expect(prisma.accessRequest.update).not.toHaveBeenCalled();
+  });
+
+  it('rejects non-string answer values before persistence', async () => {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/client/token-1/intake',
+      payload: { intakeResponses: { company: { nested: 'object' } } },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json().error).toMatchObject({ code: 'VALIDATION_ERROR' });
+    expect(prisma.accessRequest.update).not.toHaveBeenCalled();
+  });
+
   it('returns 404 REQUEST_NOT_FOUND for an unknown token', async () => {
     vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue(null as any);
 

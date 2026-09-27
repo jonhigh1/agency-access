@@ -501,6 +501,36 @@ describe('Invite Flow Page', () => {
     );
   });
 
+  it('advances without an intake POST when no intake fields are configured', async () => {
+    const fetchMock = vi.fn(async (url: string) => {
+      if (url.includes('/api/client/token-123/intake')) {
+        throw new Error('intake POST must not fire without configured fields');
+      }
+      return {
+        ok: true,
+        json: async () => ({
+          data: {
+            id: 'request-1', agencyId: 'agency-1', agencyName: 'Demo Agency', clientName: 'Client',
+            clientEmail: 'client@test.com', status: 'pending', uniqueToken: 'token-123',
+            expiresAt: new Date().toISOString(), intakeFields: [], branding: {},
+            platforms: [{ platformGroup: 'google', products: [{ product: 'google_ads', accessLevel: 'admin' }] }],
+            manualInviteTargets: { google: {} }, authorizationProgress: { completedPlatforms: [], isComplete: false },
+          },
+          error: null,
+        }),
+      } as Response;
+    });
+    stubFetch(fetchMock);
+
+    render(<InvitePage />);
+    await userEvent.click(await screen.findByRole('button', { name: /continue to connect/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText('Active platform: Google')).toBeInTheDocument();
+    });
+    expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/intake'))).toHaveLength(0);
+  });
+
   it('skips intake for a returning visitor who already completed a platform', async () => {
     sessionStorage.setItem('invite-progress:token-123', JSON.stringify(['google']));
 
