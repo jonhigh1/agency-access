@@ -104,6 +104,8 @@ interface MetaAssetSelectorProps {
     allInstagramAccounts?: MetaAssets['instagramAccounts'];
     allProductCatalogs?: NonNullable<MetaAssets['productCatalogs']>;
     allDatasets?: MetaAssets['pixels'];
+    /** True only after the asset fetch resolved; empty lists alone are the mount state. */
+    assetsLoaded?: boolean;
   }) => void;
   onError?: (error: string) => void;
   /**
