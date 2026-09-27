@@ -272,9 +272,15 @@ describe('Invite Flow Page', () => {
 
     render(<InvitePage />);
 
+    // Visual QA found the security label echoing the hero sentence on the
+    // same screen ("Secure — passwords never requested" right after
+    // "Passwords are never requested."). The badge is gone; the promise
+    // itself stays — the hero sentence, plus the footer reassurance at the
+    // point of action.
     await waitFor(() => {
-      expect(screen.getAllByText(/secure — passwords never requested/i)).toHaveLength(1);
+      expect(screen.getAllByText(/passwords are never requested/i).length).toBeGreaterThan(0);
     });
+    expect(screen.queryByText(/secure — passwords never requested/i)).not.toBeInTheDocument();
   });
 
   it('calls completion endpoint when all platforms are complete', async () => {

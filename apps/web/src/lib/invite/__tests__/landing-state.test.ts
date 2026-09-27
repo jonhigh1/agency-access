@@ -41,11 +41,13 @@ const fulfillmentRow = (overrides: Partial<MetaFulfillmentResult>): MetaFulfillm
 });
 
 describe('terminal request codes', () => {
-  it('recognizes the three terminal codes and rejects ordinary failures', () => {
+  it('recognizes the four terminal codes and rejects ordinary failures', () => {
     expect(isTerminalRequestCode('REQUEST_EXPIRED')).toBe(true);
     expect(isTerminalRequestCode('REQUEST_REVOKED')).toBe(true);
     expect(isTerminalRequestCode('ACCESS_REQUEST_NOT_FOUND')).toBe(true);
-    expect(isTerminalRequestCode('REQUEST_NOT_FOUND')).toBe(false);
+    // The API's own not-found code for a missing access request: without it a
+    // dead link loops on the retry card and the branded terminal never renders.
+    expect(isTerminalRequestCode('REQUEST_NOT_FOUND')).toBe(true);
     expect(isTerminalRequestCode('NETWORK_ERROR')).toBe(false);
     expect(isTerminalRequestCode(null)).toBe(false);
     expect(isTerminalRequestCode(undefined)).toBe(false);
@@ -55,6 +57,7 @@ describe('terminal request codes', () => {
     expect(terminalKindFromCode('REQUEST_EXPIRED')).toBe('expired');
     expect(terminalKindFromCode('REQUEST_REVOKED')).toBe('revoked');
     expect(terminalKindFromCode('ACCESS_REQUEST_NOT_FOUND')).toBe('unavailable');
+    expect(terminalKindFromCode('REQUEST_NOT_FOUND')).toBe('unavailable');
   });
 });
 
@@ -156,6 +159,15 @@ describe('resolveInviteLandingState', () => {
     });
     expect(unavailable.phase).toBe('terminal');
     expect(unavailable.terminalKind).toBe('unavailable');
+
+    // The API's own not-found code ends the flow too (visual QA: a dead link
+    // looped on the retry card instead of the branded terminal).
+    const notFound = resolveInviteLandingState({
+      ...baseInput(),
+      terminalErrorCode: 'REQUEST_NOT_FOUND',
+    });
+    expect(notFound.phase).toBe('terminal');
+    expect(notFound.terminalKind).toBe('unavailable');
   });
 
   it('lands a completed request on the done screen', () => {

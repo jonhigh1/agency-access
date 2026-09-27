@@ -51,12 +51,15 @@ describe('client invite platform capabilities', () => {
   });
 
   it('reports mixed security copy when both oauth and manual platforms are requested', () => {
-    expect(getInviteSecuritySummary(['google', 'mailchimp'])).toMatchObject({
-      badge: expect.stringMatching(/secure — passwords never requested/i),
+    const summary = getInviteSecuritySummary(['google', 'mailchimp']);
+    expect(summary).toMatchObject({
       detail: expect.stringMatching(/official login screens/i),
       usesManualFlow: true,
       usesOAuthFlow: true,
     });
+    // The badge was removed: the hero sentence already carries the
+    // "passwords never requested" promise, and the label duplicated it.
+    expect('badge' in summary).toBe(false);
   });
 
   it('flags mailchimp manual callback handling as complete-on-return', () => {

@@ -752,7 +752,6 @@ export default function ClientAuthorizationPage({
         <InviteHeroHeader
           title={phaseCopy.title}
           description={phaseCopy.description}
-          badge={securitySummary.badge}
           logoUrl={data.branding?.logoUrl}
           logoAlt={`${agencyDisplayName} logo`}
         />

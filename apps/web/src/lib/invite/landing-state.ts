@@ -36,11 +36,14 @@ import type {
 } from '@agency-platform/shared';
 
 /** Error codes that end the flow. The API wraps expiry as
- * `ACCESS_REQUEST_NOT_FOUND` in some save paths, so it is matched here too. */
+ * `ACCESS_REQUEST_NOT_FOUND` in some save paths, and surfaces its own
+ * `REQUEST_NOT_FOUND` for a missing request — both end the flow, so a dead
+ * link renders the branded terminal instead of looping on the retry card. */
 export const TERMINAL_REQUEST_CODES = [
   'REQUEST_EXPIRED',
   'REQUEST_REVOKED',
   'ACCESS_REQUEST_NOT_FOUND',
+  'REQUEST_NOT_FOUND',
 ] as const;
 
 export type TerminalRequestCode = (typeof TERMINAL_REQUEST_CODES)[number];
@@ -54,6 +57,7 @@ export function isTerminalRequestCode(code: string | null | undefined): code is 
 export function terminalKindFromCode(code: string): InviteTerminalKind {
   if (code === 'REQUEST_REVOKED') return 'revoked';
   if (code === 'ACCESS_REQUEST_NOT_FOUND') return 'unavailable';
+  if (code === 'REQUEST_NOT_FOUND') return 'unavailable';
   return 'expired';
 }
 
