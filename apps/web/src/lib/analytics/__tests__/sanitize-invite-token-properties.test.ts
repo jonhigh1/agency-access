@@ -68,6 +68,55 @@ describe('sanitizeInviteTokenProperties (KTD13)', () => {
     expect(sanitizeInviteTokenProperties(properties)).toEqual(properties);
   });
 
+  it('redacts OAuth code and state parameters from the oauth-callback pageview URL', () => {
+    expect(
+      redactInviteTokenFromString(
+        'https://authhub.co/invite/oauth-callback?code=SQZ-123&auth_code=ALT-9&state=csrf-abc'
+      )
+    ).toBe(
+      `https://authhub.co/invite/oauth-callback?code=${INVITE_TOKEN_REDACTED_MARKER}&auth_code=${INVITE_TOKEN_REDACTED_MARKER}&state=${INVITE_TOKEN_REDACTED_MARKER}`
+    );
+  });
+
+  it('redacts OAuth parameters when the invite token segment is also present', () => {
+    expect(
+      redactInviteTokenFromString(
+        'https://authhub.co/invite/abc123/kit/manual?code=SQZ-123&step=1'
+      )
+    ).toBe(
+      `https://authhub.co/invite/${INVITE_TOKEN_REDACTED_MARKER}/kit/manual?code=${INVITE_TOKEN_REDACTED_MARKER}&step=1`
+    );
+  });
+
+  it('redacts OAuth parameters found after the fragment-position edge of a redacted path', () => {
+    expect(
+      sanitizeInviteTokenProperties({
+        $current_url: 'https://authhub.co/invite/oauth-callback?code=SQZ-123&state=csrf-abc',
+      })
+    ).toEqual({
+      $current_url:
+        'https://authhub.co/invite/oauth-callback?code=[removed]&state=[removed]',
+    });
+  });
+
+  it('keeps non-OAuth query parameters on invite URLs intact', () => {
+    expect(
+      sanitizeInviteTokenProperties({
+        $current_url: 'https://authhub.co/invite/abc123?step=2&connectionId=conn-1&platform=meta',
+      })
+    ).toEqual({
+      $current_url:
+        'https://authhub.co/invite/[removed]?step=2&connectionId=conn-1&platform=meta',
+    });
+  });
+
+  it('does not redact code-like parameters on non-invite URLs', () => {
+    const properties = {
+      $current_url: 'https://authhub.co/api/auth/callback?code=xyz&state=abc',
+    };
+    expect(sanitizeInviteTokenProperties(properties)).toEqual(properties);
+  });
+
   it('leaves non-string properties untouched', () => {
     const properties = {
       platform_count: 3,
