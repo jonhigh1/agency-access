@@ -20,9 +20,13 @@ describe('PlatformWizardCard', () => {
 
     expect(screen.getByText('Connect Google CTA')).toBeInTheDocument();
 
-    const card = container.querySelector('.shadow-brutalist');
+    // U10: the wizard card is border-led — the invite stage card owns the
+    // view's single brutalist shadow — but it must still paint fully on the
+    // first frame (no opacity: 0 from the enter transition).
+    const card = container.querySelector('.border-2');
     expect(card).not.toBeNull();
     expect(card?.getAttribute('style') || '').not.toContain('opacity: 0');
+    expect(card).not.toHaveClass('shadow-brutalist');
   });
 
   it('can render without duplicate header chrome when a parent stage already provides context', () => {

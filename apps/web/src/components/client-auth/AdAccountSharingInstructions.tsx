@@ -24,6 +24,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { META_AD_ACCOUNT_INSTRUCTIONS } from '@/lib/content/meta-ad-account-instructions';
+import { toDisplayName } from '@/lib/display-name';
 import { getApiBaseUrl } from '@/lib/api/api-env';
 import { parseJsonResponse } from '@/lib/api/parse-json-response';
 import {
@@ -345,7 +346,7 @@ export function AdAccountSharingInstructions({
     verificationResults?.filter((result) => result.status !== 'verified') || [];
   const hasUnresolvedResults = unresolvedResults.length > 0;
 
-  const agencyName = businessName || 'the agency';
+  const agencyName = toDisplayName(businessName || '') || 'the agency';
   const introText = content.intro
     .replace('{agency}', agencyName)
     .replace('{count}', String(selectedAdAccounts.length));

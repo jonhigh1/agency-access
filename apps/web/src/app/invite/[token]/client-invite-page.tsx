@@ -26,6 +26,7 @@ import {
 } from '@/lib/client-invite-platforms';
 import { buildInvitePlatformQueue } from '@/lib/invite-platform-queue';
 import { buildInvitePlatformChecklist } from '@/lib/invite/platform-status';
+import { toDisplayName } from '@/lib/display-name';
 import {
   isTerminalRequestCode,
   resolveInviteLandingState,
@@ -81,12 +82,29 @@ const TERMINAL_LANDING_COPY: Record<InviteTerminalKind, { title: string; descrip
   },
 };
 
-function InviteTerminalCard({ kind }: { kind: InviteTerminalKind }) {
+function InviteTerminalCard({
+  kind,
+  logoUrl,
+  agencyName,
+}: {
+  kind: InviteTerminalKind;
+  logoUrl?: string | null;
+  agencyName?: string | null;
+}) {
   const copy = TERMINAL_LANDING_COPY[kind];
+  const displayName = toDisplayName(agencyName || '');
 
   return (
     <div className="min-h-screen bg-paper flex items-center justify-center px-4">
       <div className="w-full max-w-md border-2 border-black bg-card p-8 text-center shadow-brutalist">
+        {logoUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element
+          <img
+            src={logoUrl}
+            alt={displayName ? `${displayName} logo` : 'Agency logo'}
+            className="mx-auto mb-4 h-10 w-auto max-h-10 object-contain"
+          />
+        ) : null}
         <h1 className="font-display text-2xl font-semibold text-ink">{copy.title}</h1>
         <p className="mt-3 text-sm leading-6 text-muted-foreground">{copy.description}</p>
         <p className="mt-2 text-sm leading-6 text-ink">
@@ -645,6 +663,7 @@ export default function ClientAuthorizationPage({
       return <InviteTerminalCard kind={terminalKindFromCode(loadErrorCode)} />;
     }
 
+
     return (
       <InviteLoadStateCard
         phase={loadPhase === 'ready' ? 'loading' : loadPhase}
@@ -662,19 +681,29 @@ export default function ClientAuthorizationPage({
   // U7: a save, verify, or refresh response said expired/revoked mid-flow.
   // The terminal card replaces everything (AE6).
   if (isTerminalRequestCode(forcedTerminalCode)) {
-    return <InviteTerminalCard kind={terminalKindFromCode(forcedTerminalCode)} />;
+    return (
+      <InviteTerminalCard
+        kind={terminalKindFromCode(forcedTerminalCode)}
+        logoUrl={data.branding?.logoUrl}
+        agencyName={data.agencyName}
+      />
+    );
   }
 
   const isConnectStatusReview = phase === 'platforms' && isComplete && isReviewingConnectStatus;
 
+  // The agency name renders on every screen; normalize an all-lowercase
+  // entry for display and keep the raw value as the fallback.
+  const agencyDisplayName = toDisplayName(data.agencyName) || data.agencyName;
+
   // Per-phase copy.
   const phaseCopyByPhase: Record<PagePhase, { title: string; description: string }> = {
     intake: {
-      title: `${data.agencyName} needs access to finish setup`,
+      title: `${agencyDisplayName} needs access to finish setup`,
       description:
         intakeFields.length > 0
-          ? `${data.agencyName} asked for a few details, then you confirm which accounts to share.`
-          : `${data.agencyName} requested access to ${platformSummary || 'your platforms'}. Confirm which accounts to share below.`,
+          ? `${agencyDisplayName} asked for a few details, then you confirm which accounts to share.`
+          : `${agencyDisplayName} requested access to ${platformSummary || 'your platforms'}. Confirm which accounts to share below.`,
     },
     platforms: {
       title: isConnectStatusReview
@@ -696,7 +725,7 @@ export default function ClientAuthorizationPage({
       title: completionError
         ? 'Access needs follow-up'
         : completionVerified
-        ? `${data.agencyName} now has verified access`
+        ? `${agencyDisplayName} now has verified access`
         : 'Verifying access',
       description: completionError
         ? 'Finish the unresolved access item, then check again.'
@@ -709,7 +738,7 @@ export default function ClientAuthorizationPage({
 
   return (
     <InviteFlowShell
-      title={data.agencyName}
+      title={agencyDisplayName}
       description={`Authorize access for ${data.clientName}`}
       header={
         <InviteHeroHeader
@@ -717,7 +746,7 @@ export default function ClientAuthorizationPage({
           description={phaseCopy.description}
           badge={securitySummary.badge}
           logoUrl={data.branding?.logoUrl}
-          logoAlt={`${data.agencyName} logo`}
+          logoAlt={`${agencyDisplayName} logo`}
         />
       }
       checklist={progressChecklist}
@@ -864,7 +893,7 @@ export default function ClientAuthorizationPage({
       {phase === 'platforms' && (
         <div className="space-y-4">
           {isConnectStatusReview ? (
-            <div className="border-2 border-black bg-card p-4 shadow-brutalist">
+            <div className="border-2 border-black bg-card p-4">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h2 className="text-lg font-semibold text-ink font-display">Review connected platforms</h2>
@@ -953,7 +982,7 @@ export default function ClientAuthorizationPage({
           <RefreshCw className="mx-auto h-8 w-8 animate-spin text-ink" aria-hidden="true" />
           <h2 className="mt-5 text-2xl font-semibold text-ink font-display">Confirming access</h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Your platforms are connected. We are confirming the final status with {data.agencyName}.
+            Your platforms are connected. We are confirming the final status with {agencyDisplayName}.
           </p>
         </div>
       )}
@@ -1000,7 +1029,7 @@ export default function ClientAuthorizationPage({
                 All set — you&apos;re done
               </h2>
               <p className="mt-2 text-sm text-muted-foreground">
-                {data.agencyName} now has access to the accounts you approved. Nothing else is
+                {agencyDisplayName} now has access to the accounts you approved. Nothing else is
                 needed from you.
               </p>
               <div className="mt-6 border border-black bg-paper p-4 text-left">

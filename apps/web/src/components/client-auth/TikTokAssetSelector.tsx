@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { Music } from 'lucide-react';
 import { AssetGroup, type Asset } from './AssetGroup';
 import { SingleSelect } from '@/components/ui/single-select';
 import { AssetSelectorEmpty, AssetSelectorError, AssetSelectorLoading } from './AssetSelectorStates';
@@ -209,7 +210,7 @@ export function TikTokAssetSelector({
         onSelectionChange={setSelectedAdvertisers}
         icon={(
           <div className="w-10 h-10 border-2 border-black dark:border-white bg-coral flex items-center justify-center">
-            <span className="text-white text-lg">🎵</span>
+            <Music className="h-5 w-5 text-white" aria-hidden="true" />
           </div>
         )}
       />

@@ -18,7 +18,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { m, AnimatePresence } from 'framer-motion';
-import { Loader2, ExternalLink, CheckCircle2, ChevronDown } from 'lucide-react';
+import { Loader2, ExternalLink, CheckCircle2, ChevronDown, Lock } from 'lucide-react';
 import { PlatformWizardCard } from './PlatformWizardCard';
 import { MetaAssetSelector } from './MetaAssetSelector';
 import { GoogleAssetSelector } from './GoogleAssetSelector';
@@ -954,7 +954,7 @@ export function PlatformAuthWizard({
             </div>
 
             {error && (
-              <div className="border-2 border-[var(--coral)] bg-[var(--coral)]/10 p-4 text-[var(--coral)]">
+              <div className="border-2 border-[var(--coral)] bg-[var(--coral)]/10 p-4 text-danger-ink">
                 {error}
               </div>
             )}
@@ -1001,7 +1001,7 @@ export function PlatformAuthWizard({
             <div className="text-center space-y-6 py-8">
               {/* Warning Icon with Brutalist Border */}
               <div className="inline-flex items-center justify-center w-20 h-20 border-2 border-black dark:border-white bg-[var(--warning)]/10 mb-4">
-                <span className="text-4xl">🔐</span>
+                <Lock className="h-8 w-8 text-warning" aria-hidden="true" />
               </div>
               <div>
                 <h3 className="text-2xl font-bold text-[var(--ink)] mb-3 font-display">
@@ -1026,7 +1026,7 @@ export function PlatformAuthWizard({
           return (
             <div className="text-center space-y-6 py-8">
               <div className="inline-flex items-center justify-center w-20 h-20 border-2 border-black dark:border-white bg-[var(--teal)]/10 mb-4">
-                <CheckCircle2 className="w-10 h-10 text-[var(--teal)]" />
+                <CheckCircle2 className="w-10 h-10 text-success-ink" />
               </div>
               <div>
                 <h3 className="text-2xl font-bold text-[var(--ink)] mb-3 font-display">
@@ -1038,7 +1038,7 @@ export function PlatformAuthWizard({
               </div>
 
               {error && (
-                <div className="border-2 border-[var(--coral)] bg-[var(--coral)]/10 p-4 text-[var(--coral)]">
+                <div className="border-2 border-[var(--coral)] bg-[var(--coral)]/10 p-4 text-danger-ink">
                   {error}
                 </div>
               )}
@@ -1091,7 +1091,7 @@ export function PlatformAuthWizard({
                   >
                     <div className="p-3 space-y-3">
             {error && (
-                        <div className="border-2 border-[var(--coral)] bg-[var(--coral)]/10 p-3 text-[var(--coral)] text-sm">
+                        <div className="border-2 border-[var(--coral)] bg-[var(--coral)]/10 p-3 text-danger-ink text-sm">
                 {error}
               </div>
             )}
@@ -1347,13 +1347,13 @@ export function PlatformAuthWizard({
 
                   {/* Show error banner if Business Manager ID is missing */}
                   {businessIdError && (
-                    <div className="border-2 border-[var(--coral)] bg-[var(--coral)]/10 p-4 text-[var(--coral)] mb-4">
+                    <div className="border-2 border-[var(--coral)] bg-[var(--coral)]/10 p-4 text-danger-ink mb-4">
                       <p className="font-semibold">{businessIdError}</p>
                     </div>
                   )}
 
               {error && (
-                    <div className="border-2 border-[var(--coral)] bg-[var(--coral)]/10 p-4 text-[var(--coral)] mb-4">
+                    <div className="border-2 border-[var(--coral)] bg-[var(--coral)]/10 p-4 text-danger-ink mb-4">
                   {error}
                 </div>
               )}
@@ -1476,8 +1476,8 @@ export function PlatformAuthWizard({
                         </p>
                       ) : businessIdError ? (
                         <div className="space-y-2">
-                          <p className="text-[var(--coral)] font-semibold">Error loading Business Manager ID</p>
-                          <p className="text-[var(--coral)] text-sm">{businessIdError}</p>
+                          <p className="text-danger-ink font-semibold">Error loading Business Manager ID</p>
+                          <p className="text-danger-ink text-sm">{businessIdError}</p>
                         </div>
                       ) : (
                   <p className="text-[var(--warning)]">
@@ -1537,7 +1537,7 @@ export function PlatformAuthWizard({
                         )}
 
                         {tiktokShareError && (
-                          <div className="border-2 border-[var(--coral)] bg-[var(--coral)]/10 p-4 text-[var(--coral)]">
+                          <div className="border-2 border-[var(--coral)] bg-[var(--coral)]/10 p-4 text-danger-ink">
                             <p className="font-semibold mb-2">Automatic TikTok sharing failed</p>
                             <p className="text-sm">{tiktokShareError}</p>
                             <p className="text-sm mt-3">
@@ -1606,7 +1606,7 @@ export function PlatformAuthWizard({
                         )}
 
                         {tiktokShareResult?.success && (
-                          <div className="border-2 border-[var(--teal)] bg-[var(--teal)]/10 p-4 text-[var(--teal)]">
+                          <div className="border-2 border-[var(--teal)] bg-[var(--teal)]/10 p-4 text-success-ink">
                             <p className="font-semibold">TikTok partner sharing completed</p>
                             <p className="text-sm mt-1">
                               Selected advertisers were shared with your agency Business Center.
@@ -1638,9 +1638,9 @@ export function PlatformAuthWizard({
                 initial={{ scale: 1 }}
                 animate={{ scale: 1 }}
                 transition={{ duration: 0.4, type: 'spring' }}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[var(--teal)] bg-[var(--teal)]/10"
+                className="flex h-10 w-10 shrink-0 items-center justify-center border border-[var(--teal)] bg-[var(--teal)]/10"
               >
-                <CheckCircle2 className="w-5 h-5 text-[var(--teal)]" />
+                <CheckCircle2 className="w-5 h-5 text-success-ink" />
               </m.div>
               <div>
                 <h3 className="text-lg font-bold text-[var(--ink)] font-display">
@@ -1722,7 +1722,7 @@ export function PlatformAuthWizard({
                               <PlatformIcon platform={product as Platform} size="sm" />
                               <span className="text-sm font-semibold text-[var(--ink)]">{productName}</span>
                               {summaryLines.length > 0 && !summaryLines[0].startsWith('Follow-up') && (
-                                <span className="ml-auto text-xs font-medium text-[var(--teal)]">
+                                <span className="ml-auto text-xs font-medium text-success-ink">
                                   {summaryLines[0]}
                                 </span>
                               )}

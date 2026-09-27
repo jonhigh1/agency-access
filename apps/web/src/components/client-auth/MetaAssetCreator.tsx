@@ -179,7 +179,7 @@ export function MetaAssetCreator({
       <div className="border-2 border-[var(--teal)] bg-[var(--teal)]/10 p-6 text-center">
         {/* Success Icon - Brutalist Square */}
         <div className="w-16 h-16 border-2 border-[var(--teal)] bg-[var(--teal)]/20 flex items-center justify-center mx-auto mb-4">
-          <CheckCircle2 className="w-10 h-10 text-[var(--teal)]" />
+          <CheckCircle2 className="w-10 h-10 text-success-ink" />
         </div>
 
         <h3 className="text-lg font-bold text-[var(--ink)] mb-2 font-display">Account Created!</h3>
@@ -208,12 +208,12 @@ export function MetaAssetCreator({
         <div className="flex items-start gap-3">
           {/* Error Icon - Brutalist Square */}
           <div className="w-10 h-10 border-2 border-[var(--coral)] bg-[var(--coral)]/20 flex items-center justify-center flex-shrink-0">
-            <AlertCircle className="w-6 h-6 text-[var(--coral)]" />
+            <AlertCircle className="w-6 h-6 text-danger-ink" />
           </div>
 
           <div className="flex-1">
-            <h3 className="font-bold text-[var(--coral)] mb-1 font-display">Creation Failed</h3>
-            <p className="text-sm text-[var(--coral)] mb-3">{creationError?.message}</p>
+            <h3 className="font-bold text-danger-ink mb-1 font-display">Creation Failed</h3>
+            <p className="text-sm text-danger-ink mb-3">{creationError?.message}</p>
             {requiresReconciliation ? <p className="text-sm text-[rgb(var(--warning))] mb-3">Do not create another account until you refresh the Meta asset list and check for this account.</p> : null}
 
             <div className="flex gap-2">

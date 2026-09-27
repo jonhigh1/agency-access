@@ -13,6 +13,7 @@
  */
 
 import { useEffect, useEffectEvent, useRef, useState } from 'react';
+import { BarChart3 } from 'lucide-react';
 import { AssetGroup, type Asset } from './AssetGroup';
 import { AssetSelectorLoading, AssetSelectorError, AssetSelectorEmpty } from './AssetSelectorStates';
 import { getGoogleAdsAccountLabel } from '@/lib/google-ads-account-label';
@@ -263,7 +264,7 @@ export function GoogleAssetSelector({
         onSelectionChange={setSelectedIds}
         icon={
           <div className="h-8 w-8 border-2 border-black bg-coral flex items-center justify-center dark:border-white">
-            <span className="text-base text-white">📊</span>
+            <BarChart3 className="h-4 w-4 text-white" aria-hidden="true" />
           </div>
         }
       />

@@ -26,7 +26,7 @@ import { MetaBusinessSetupChecklist } from './MetaBusinessSetupChecklist';
 import { GuidedRedirectCard } from './GuidedRedirectModal';
 import { PortfolioSelector, type PortfolioBusiness } from './PortfolioSelector';
 import { clearManualGrantChecklistStorage } from '@/lib/invite/manual-grant-checklist-storage';
-import { Plus } from 'lucide-react';
+import { Briefcase, Camera, FileText, MailX, Plus, ShoppingBag } from 'lucide-react';
 import { getApiBaseUrl } from '@/lib/api/api-env';
 import { ApiResponseError, parseJsonResponse } from '@/lib/api/parse-json-response';
 import { Button } from '@/components/ui/button';
@@ -842,7 +842,7 @@ export function MetaAssetSelector({
         <div>
           <div className="flex items-center gap-3 mb-3">
             <div className="w-10 h-10 border-2 border-black dark:border-white bg-[rgb(var(--coral))] flex items-center justify-center">
-              <span className="text-white text-lg">💼</span>
+              <Briefcase className="h-5 w-5 text-white" aria-hidden="true" />
             </div>
             <div>
               <h3 className="text-lg font-bold text-[rgb(var(--ink))] font-display">Ad Accounts</h3>
@@ -890,9 +890,7 @@ export function MetaAssetSelector({
             <div className="py-8 text-center px-6">
               {/* Empty state icon - Brutalist Square */}
               <div className="w-20 h-20 border-2 border-black dark:border-white bg-[rgb(var(--muted))]/30 dark:bg-[rgb(var(--muted))]/60 flex items-center justify-center mx-auto mb-4">
-                <span className="text-4xl" role="img" aria-label="Empty">
-                  📭
-                </span>
+                <MailX className="h-8 w-8 text-[rgb(var(--muted-foreground))]" aria-hidden="true" />
               </div>
 
               {/* Message */}
@@ -921,7 +919,7 @@ export function MetaAssetSelector({
         <div>
           <div className="flex items-center gap-3 mb-3">
             <div className="w-10 h-10 border-2 border-black dark:border-white bg-[rgb(var(--coral))]/100 flex items-center justify-center">
-              <span className="text-white text-lg">📄</span>
+              <FileText className="h-5 w-5 text-white" aria-hidden="true" />
             </div>
             <div>
               <h3 className="text-lg font-bold text-[rgb(var(--ink))] font-display">Pages</h3>
@@ -962,9 +960,7 @@ export function MetaAssetSelector({
             <div className="py-8 text-center px-6">
               {/* Empty state icon - Brutalist Square */}
               <div className="w-20 h-20 border-2 border-black dark:border-white bg-[rgb(var(--muted))]/30 dark:bg-[rgb(var(--muted))]/60 flex items-center justify-center mx-auto mb-4">
-                <span className="text-4xl" role="img" aria-label="Empty">
-                  📄
-                </span>
+                <FileText className="h-8 w-8 text-[rgb(var(--muted-foreground))]" aria-hidden="true" />
               </div>
 
               {/* Message */}
@@ -1020,7 +1016,7 @@ export function MetaAssetSelector({
           onSelectionChange={setSelectedInstagram}
           icon={
             <div className="w-10 h-10 border-2 border-black dark:border-white bg-pink-500 flex items-center justify-center">
-              <span className="text-white text-lg">📷</span>
+              <Camera className="h-5 w-5 text-white" aria-hidden="true" />
             </div>
           }
           defaultExpanded={instagramAssets.length > 0}
@@ -1030,7 +1026,7 @@ export function MetaAssetSelector({
         {showCatalogs ? (
           <div>
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 border-2 border-black dark:border-white bg-[rgb(var(--coral))] flex items-center justify-center" aria-hidden="true">🛍️</div>
+              <div className="w-10 h-10 border-2 border-black dark:border-white bg-[rgb(var(--coral))] flex items-center justify-center" aria-hidden="true"><ShoppingBag className="h-5 w-5 text-white" /></div>
               <div>
                 <h3 className="text-lg font-bold text-[rgb(var(--ink))] font-display">Product Catalogs</h3>
                 <p className="text-sm text-[rgb(var(--muted-foreground))] mt-0.5">{selectedCatalogs.size} of {assets?.productCatalogs?.length || 0} selected</p>

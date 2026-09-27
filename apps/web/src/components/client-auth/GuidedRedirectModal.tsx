@@ -217,7 +217,7 @@ export function GuidedRedirectCard({
       <div className="flex items-center gap-3 mb-4">
         {/* Warning/Info Icon - Brutalist Square */}
         <div className="w-10 h-10 border-2 border-[var(--coral)] bg-[var(--coral)]/20 flex items-center justify-center flex-shrink-0">
-          <ExternalLink className="w-5 h-5 text-[var(--coral)]" />
+          <ExternalLink className="w-5 h-5 text-danger-ink" />
         </div>
         <div>
           <h3 className="text-lg font-bold text-[var(--ink)] font-display">{title}</h3>

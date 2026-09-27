@@ -149,12 +149,12 @@ export function AutomaticPagesGrant({
       </div>
 
       {localError && (
-        <div className="bg-coral/10 border-2 border-coral/30 rounded-xl p-4 text-danger-ink">
+        <div className="bg-coral/10 border-2 border-coral/30 p-4 text-danger-ink">
           <p className="font-semibold">{localError}</p>
         </div>
       )}
 
-      <div className="bg-card border-2 border-border rounded-xl p-6">
+      <div className="bg-card border-2 border-border p-6">
         <div className="flex items-start gap-4 mb-4">
           <div className="w-10 h-10 rounded-lg bg-coral/20 flex items-center justify-center flex-shrink-0">
             <span className="text-xl">f</span>

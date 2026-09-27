@@ -247,7 +247,7 @@ export function SingleSelect({
             aria-selected={isSelected}
             data-active={isActive ? 'true' : undefined}
             className={cn(
-              'w-full px-3 py-2.5 text-left text-sm flex items-center justify-between gap-3',
+              'w-full min-h-[44px] px-3 py-2.5 text-left text-sm flex items-center justify-between gap-3',
             'transition-[background-color,color] duration-[var(--motion-hover)] cursor-pointer',
             isSelected
               ? 'bg-accent/20 dark:bg-accent/30 text-ink dark:text-ink font-medium'

@@ -5,6 +5,7 @@ import type { ReactNode } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, CircleAlert } from 'lucide-react';
 import { capturePosthogEvent } from '@/lib/analytics/capture-posthog';
+import { toDisplayName } from '@/lib/display-name';
 import type { ClientAccessRequestPayload, Platform } from '@agency-platform/shared';
 import { InviteFlowShell } from '@/components/flow/invite-flow-shell';
 import { ManualInviteHeader } from '@/components/flow/manual-invite-header';
@@ -346,11 +347,11 @@ export function ManualInviteFlow<TData extends ManualInviteFlowData>({
 
   return (
     <InviteFlowShell
-      title={data.agencyName}
+      title={toDisplayName(data.agencyName) || data.agencyName}
       description={config.shellDescription}
       header={
         <ManualInviteHeader
-          agencyName={data.agencyName}
+          agencyName={toDisplayName(data.agencyName) || data.agencyName}
           platformName={config.platformName}
           logoUrl={data.branding?.logoUrl}
           securityNote={config.headerSecurityNote}
