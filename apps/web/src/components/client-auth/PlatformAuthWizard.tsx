@@ -462,6 +462,23 @@ export function PlatformAuthWizard({
   // (until then the resolver must report a neutral loading reason, KTD2).
   // Consumed once; any selection reset cancels it permanently.
   const resumeSavedPendingRef = useRef(hasInitialMetaSelections);
+
+  // #10: popup OAuth resume updates initialMetaSelections on the same mounted
+  // instance, and the useState initializer above runs only once. Re-apply the
+  // prefill when its content changes, keyed by the serialized shape so an
+  // unrelated parent re-render cannot re-seed it after a reset.
+  // #22: bumped by every selection-derived reset so an in-flight save's
+  // success handler can detect that its state was replaced underneath it.
+  const saveVersionRef = useRef(0);
+  const prefillKey = hasInitialMetaSelections ? JSON.stringify(initialMetaSelections) : '';
+  const appliedPrefillKeyRef = useRef(prefillKey);
+  useEffect(() => {
+    if (!prefillKey || appliedPrefillKeyRef.current === prefillKey) return;
+    appliedPrefillKeyRef.current = prefillKey;
+    setMetaSelectionPrefill(JSON.parse(prefillKey) as InviteSelectionPrefill);
+    resumeSavedPendingRef.current = true;
+    setChooseAccountsExpanded(false);
+  }, [prefillKey]);
   const [sharedAccountsExpanded, setSharedAccountsExpanded] = useState(false);
   const [tiktokShareResult, setTikTokShareResult] = useState<TikTokShareResponse | null>(null);
   const [isTikTokSharing, setIsTikTokSharing] = useState(false);
@@ -609,6 +626,8 @@ export function PlatformAuthWizard({
    * clears it together.
    */
   const resetSelectionDerivedState = useCallback(() => {
+    // #22: every reset invalidates an in-flight save's success handler.
+    saveVersionRef.current += 1;
     setAssetsSaved(false);
     setPagesGranted(false);
     setCatalogsGranted(false);
@@ -697,6 +716,8 @@ export function PlatformAuthWizard({
       SAVE_REQUEST_TIMEOUT_MS
     );
 
+    const saveVersionAtStart = saveVersionRef.current;
+
     try {
       setIsProcessing(true);
       setError(null);
@@ -727,6 +748,13 @@ export function PlatformAuthWizard({
         }
       } finally {
         clearTimeout(saveDeadlineId);
+      }
+
+      // #22: a reset (business switch, change-selection) landed while the
+      // save round-trips were in flight. The stale success must not re-assert
+      // saved state over the fresh reset — bail before any post-success write.
+      if (saveVersionRef.current !== saveVersionAtStart) {
+        return;
       }
 
       // Mark assets as saved

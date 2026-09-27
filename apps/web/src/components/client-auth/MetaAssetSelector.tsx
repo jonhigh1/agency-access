@@ -434,17 +434,23 @@ export function MetaAssetSelector({
 
       // U7 resume prefill: keep only the saved selections the fresh fetch
       // still shows. One pass — after this the selection is client-owned.
+      // An all-pruned intersection returns null, and that null must CLEAR
+      // the stale mount-seeded selection, not skip the sync (#19).
       const pendingPrefill = pendingInitialSelection.current;
       if (pendingPrefill) {
         pendingInitialSelection.current = null;
-        const prunedPrefill = intersectSelectionPrefill(pendingPrefill, fetchedAssets);
-        if (prunedPrefill) {
-          setSelectedAdAccounts(new Set(prunedPrefill.adAccounts));
-          setSelectedPages(new Set(prunedPrefill.pages));
-          setSelectedInstagram(new Set(prunedPrefill.instagramAccounts));
-          setSelectedCatalogs(new Set(prunedPrefill.catalogs));
-          setSelectedDatasets(new Set(prunedPrefill.datasets));
-        }
+        const prunedPrefill = intersectSelectionPrefill(pendingPrefill, fetchedAssets) ?? {
+          adAccounts: [],
+          pages: [],
+          instagramAccounts: [],
+          catalogs: [],
+          datasets: [],
+        };
+        setSelectedAdAccounts(new Set(prunedPrefill.adAccounts));
+        setSelectedPages(new Set(prunedPrefill.pages));
+        setSelectedInstagram(new Set(prunedPrefill.instagramAccounts));
+        setSelectedCatalogs(new Set(prunedPrefill.catalogs));
+        setSelectedDatasets(new Set(prunedPrefill.datasets));
       }
 
       return fetchedAssets;

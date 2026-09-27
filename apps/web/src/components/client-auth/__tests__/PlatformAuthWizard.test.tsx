@@ -1137,6 +1137,94 @@ describe('PlatformAuthWizard', () => {
       }
     });
 
+    it('applies a popup-resume prefill that arrives after mount (#10)', async () => {
+      vi.mocked(fetch).mockResolvedValue({
+        ok: true,
+        text: async () => JSON.stringify({ data: { success: true }, error: null }),
+      } as Response);
+
+      const { rerender } = render(
+        <PlatformAuthWizard
+          platform="meta"
+          platformName="Meta"
+          products={[{ product: 'meta_ads', accessLevel: 'admin' }]}
+          accessRequestToken="token-1"
+          onComplete={onCompleteMock}
+          initialConnectionId="conn-1"
+          initialStep={2}
+        />
+      );
+
+      // Popup OAuth resumes on the same mounted instance: the page updates
+      // initialMetaSelections via router.replace, so the prefill must land
+      // through props, not the useState initializer.
+      rerender(
+        <PlatformAuthWizard
+          platform="meta"
+          platformName="Meta"
+          products={[{ product: 'meta_ads', accessLevel: 'admin' }]}
+          accessRequestToken="token-1"
+          onComplete={onCompleteMock}
+          initialConnectionId="conn-1"
+          initialStep={2}
+          initialMetaSelections={{
+            adAccounts: ['act_r1', 'act_r2'],
+            pages: [],
+            instagramAccounts: [],
+            catalogs: [],
+            datasets: [],
+          }}
+        />
+      );
+
+      expect(await screen.findByText('Resume prefill: act_r1, act_r2')).toBeInTheDocument();
+    });
+
+    it('does not re-assert saved state when a business switch lands mid-save (#22)', async () => {
+      let resolveSave: (response: Response) => void = () => {};
+      vi.mocked(fetch).mockImplementation(((url: string | URL) => {
+        if (String(url).includes('/save-assets')) {
+          return new Promise<Response>((resolve) => {
+            resolveSave = resolve;
+          });
+        }
+        return Promise.resolve({
+          ok: true,
+          text: async () => JSON.stringify({ data: { businessId: 'biz_x' }, error: null }),
+        } as Response);
+      }) as typeof fetch);
+
+      renderShareScreen({
+        platform: 'meta',
+        platformName: 'Meta',
+        products: [{ product: 'meta_ads', accessLevel: 'admin' }],
+      });
+
+      fireEvent.click(screen.getByRole('button', { name: /select meta assets/i }));
+      const shareButton = screen.getByRole('button', { name: /share access/i });
+      await waitFor(() => expect(shareButton).toBeEnabled());
+      fireEvent.click(shareButton);
+
+      // The client switches business while the save is still in flight: the
+      // reset clears the selection blob and the selector reports biz_2. While
+      // the save is pending the resolver legitimately shows the saving state;
+      // the race is what happens when the stale success lands.
+      fireEvent.click(screen.getByRole('button', { name: /switch meta business/i }));
+      expect(vi.mocked(fetch).mock.calls.some(([url]) => String(url).includes('/save-assets'))).toBe(true);
+
+      resolveSave({
+        ok: true,
+        text: async () => JSON.stringify({ data: { success: true }, error: null }),
+      } as Response);
+
+      // The stale success must not outrank the fresh reset: the new business
+      // still demands its own selection, so the create-required reason stays.
+      await waitFor(() => {
+        expect(screen.getByText('Create an ad account in Client One to continue')).toBeInTheDocument();
+      });
+      expect(screen.getByRole('button', { name: /share access/i })).toBeDisabled();
+    });
+
     it('fires invite_cta_blocked once per reason kind — not per render (U11)', async () => {
       vi.mocked(fetch).mockResolvedValue({
         ok: true,
