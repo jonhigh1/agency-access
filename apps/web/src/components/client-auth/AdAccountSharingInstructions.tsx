@@ -32,6 +32,11 @@ import {
   readManualGrantChecklistRows,
   writeManualGrantChecklistRow,
 } from '@/lib/invite/manual-grant-checklist-storage';
+
+/** Row ids exist exactly once: built here from the builder, referenced everywhere (#33). */
+const STEP1_ROW_ID = manualGrantChecklistRowId(1);
+const STEP2_ROW_ID = manualGrantChecklistRowId(2);
+const STEP2_COPY_CARD_ROW_ID = manualGrantChecklistRowId(2, 2);
 import {
   trackInviteGrantChecklistToggled,
   trackInviteVerifyResult,
@@ -444,12 +449,12 @@ export function AdAccountSharingInstructions({
           <p className="label-micro hairline-b px-4 py-3">{content.checklistHint}</p>
           <ol className="px-4">
             <ChecklistRow
-              rowId="step-1"
+              rowId={STEP1_ROW_ID}
               number="1"
               title={content.step1.title}
               description={content.step1.description}
-              checked={Boolean(checkedRows['step-1'])}
-              onToggle={(checked) => toggleRow('step-1', checked)}
+              checked={Boolean(checkedRows[STEP1_ROW_ID])}
+              onToggle={(checked) => toggleRow(STEP1_ROW_ID, checked)}
             >
               {selectedAdAccounts.length > 0 && (
                 <div className="pb-3 pl-8">
@@ -466,12 +471,12 @@ export function AdAccountSharingInstructions({
             </ChecklistRow>
 
             <ChecklistRow
-              rowId="step-2"
+              rowId={STEP2_ROW_ID}
               number="2"
               title={content.step2.title}
               description={content.step2.description}
-              checked={Boolean(checkedRows['step-2'])}
-              onToggle={(checked) => toggleRow('step-2', checked)}
+              checked={Boolean(checkedRows[STEP2_ROW_ID])}
+              onToggle={(checked) => toggleRow(STEP2_ROW_ID, checked)}
             >
               <p
                 role="note"
@@ -492,7 +497,7 @@ export function AdAccountSharingInstructions({
                 checked={Boolean(checkedRows[row.id])}
                 onToggle={(checked) => toggleRow(row.id, checked)}
               >
-                {row.id === 'step-2-2' && (
+                {row.id === STEP2_COPY_CARD_ROW_ID && (
                   <div className="pb-3 pl-11">
                     <BusinessIdCopyCard
                       businessId={businessId}

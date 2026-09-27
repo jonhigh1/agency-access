@@ -1335,7 +1335,7 @@ export function PlatformAuthWizard({
                       {metaSelectionCount === 1 ? 'account' : 'accounts'}. Clearing removes the selection, the saved state, and all grant and verification progress.
                     </p>
                     <div className="flex flex-wrap gap-3">
-                      <Button type="button" variant="brutalist" onClick={performSelectionReset}>
+                      <Button type="button" variant="primary" onClick={performSelectionReset}>
                         Clear selection and edit
                       </Button>
                       <Button type="button" variant="secondary" onClick={() => setPendingSelectionReset(false)}>

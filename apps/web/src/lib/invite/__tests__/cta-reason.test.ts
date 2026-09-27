@@ -157,7 +157,7 @@ describe('resolveCta', () => {
       })
     );
 
-    expectDisabled(resolution, 'Select at least one ad account to continue');
+    expectDisabled(resolution, 'Select at least one Page to continue');
   });
 
   it('is disabled with a neutral saving reason while the save request is in flight', () => {
@@ -414,5 +414,39 @@ describe('resolveCta reasonKind (U11)', () => {
 
     expect(ready.reasonKind).toBeUndefined();
     expect(advance.reasonKind).toBeUndefined();
+  });
+});
+
+describe('per-product select reason (#25)', () => {
+  it('names Pages for pages-only products, not "ad account"', () => {
+    const resolution = resolveCta({
+      assetsLoading: false,
+      businessLookupPending: false,
+      businessLookupError: null,
+      assetsFetchError: null,
+      products: [{ product: 'meta_pages', selectedCount: 0, zeroSelectionMode: 'selection-required' }],
+      saved: false,
+      saveInFlight: false,
+      grantsRequired: false,
+      grantsPending: false,
+    });
+    expect(resolution.reason).toBe('Select at least one Page to continue');
+    expect(resolution.reasonKind).toBe('select_required');
+  });
+
+  it('keeps the account copy for account products and analytics kind stability', () => {
+    const resolution = resolveCta({
+      assetsLoading: false,
+      businessLookupPending: false,
+      businessLookupError: null,
+      assetsFetchError: null,
+      products: [{ product: 'meta_ads', selectedCount: 0, zeroSelectionMode: 'selection-required' }],
+      saved: false,
+      saveInFlight: false,
+      grantsRequired: false,
+      grantsPending: false,
+    });
+    expect(resolution.reason).toBe('Select at least one ad account to continue');
+    expect(resolution.reasonKind).toBe('select_required');
   });
 });

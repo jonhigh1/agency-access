@@ -107,13 +107,6 @@ export function trackInviteOpenedOncePerSession(properties: InviteOpenedProps): 
 /* so re-renders cannot double-fire.                                           */
 /* -------------------------------------------------------------------------- */
 
-/**
- * How the client arrived at the shared business. `single_owner` is the
- * receipt-first auto-selection; `chooser` is an explicit confirm from the
- * question card.
- */
-export type InviteBusinessChoiceMode = 'single_owner' | 'chooser';
-
 type InviteBusinessCountProps = { business_count: number };
 
 type InviteBusinessShownProps = InviteBusinessCountProps;

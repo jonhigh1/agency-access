@@ -90,6 +90,7 @@ export function InviteFlowShell({
                       platformName={entry.platformName}
                       description={entry.copy}
                       status={INVITE_CHIP_STATUS_BY_PLATFORM_STATUS[entry.status]}
+                      isActive={entry.isActive}
                     />
                   </li>
                 ))}

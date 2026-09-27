@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { capturePosthogEvent } from '@/lib/analytics/capture-posthog';
+import { ApiResponseError } from '@/lib/api/parse-json-response';
 
 export type InviteLoadPhase = 'loading' | 'delayed' | 'timeout' | 'ready' | 'error';
 
@@ -110,13 +111,10 @@ export function useInviteRequestLoader<TData>({
         if (requestIdRef.current !== requestId) return;
 
         if (!response.ok || payload.error || !payload.data) {
-          const apiError = new Error(
-            payload.error?.message || 'Failed to load authorization request.'
-          ) as Error & { apiCode?: string };
-          if (payload.error?.code) {
-            apiError.apiCode = payload.error.code;
-          }
-          throw apiError;
+          throw new ApiResponseError(
+            payload.error?.message || 'Failed to load authorization request.',
+            payload.error?.code
+          );
         }
 
         const parsed = parseData ? parseData(payload.data) : payload.data;
@@ -131,11 +129,7 @@ export function useInviteRequestLoader<TData>({
 
         setPhase('error');
         setError(err instanceof Error ? err.message : 'Failed to load authorization request.');
-        setErrorCode(
-          err instanceof Error && typeof (err as Error & { apiCode?: string }).apiCode === 'string'
-            ? (err as Error & { apiCode?: string }).apiCode!
-            : null
-        );
+        setErrorCode(err instanceof ApiResponseError ? (err.code ?? null) : null);
       } finally {
         window.clearTimeout(delayedTimer);
         window.clearTimeout(timeoutTimer);

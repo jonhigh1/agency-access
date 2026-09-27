@@ -172,6 +172,8 @@ export interface InvitePlatformChecklistEntry {
   platformName: string;
   status: InvitePlatformStatus;
   copy: string;
+  /** True for the platform whose stage card is on screen below the list. */
+  isActive?: boolean;
 }
 
 /**

@@ -95,6 +95,7 @@ export const CTA_REASONS = {
   preparing: 'Preparing your accounts',
   saving: 'Saving your selection',
   selectAtLeastOne: 'Select at least one ad account to continue',
+  selectAtLeastOnePage: 'Select at least one Page to continue',
   assetsFetchFailed: "We couldn't load your accounts. Try again.",
   businessLookupFailed: "We couldn't load your business details. Try again.",
   grantPending: 'Access grants are still in progress. Complete the grant steps above.',
@@ -105,6 +106,16 @@ export const CTA_REASONS = {
 /** KTD10: the zero-asset reason names the creation action. */
 export function createAccountReason(businessName?: string | null): string {
   return `Create an ad account in ${businessName?.trim() || 'your business'} to continue`;
+}
+
+/** Pages-only products must not be told to select an "ad account" (#25). */
+const SELECT_REASON_BY_PRODUCT: Record<string, string> = {
+  meta_pages: CTA_REASONS.selectAtLeastOnePage,
+  linkedin_pages: CTA_REASONS.selectAtLeastOnePage,
+};
+
+function selectRequiredReason(product: string): string {
+  return SELECT_REASON_BY_PRODUCT[product] ?? CTA_REASONS.selectAtLeastOne;
 }
 
 const disabledWithReason = (reasonKind: CtaReasonKind, reason: string): CtaResolution => ({
@@ -167,7 +178,7 @@ export function resolveCta(input: CtaReasonInput): CtaResolution {
   for (const product of input.products) {
     if (product.selectedCount > 0) continue;
     if (product.zeroSelectionMode === 'selection-required') {
-      return disabledWithReason('select_required', CTA_REASONS.selectAtLeastOne);
+      return disabledWithReason('select_required', selectRequiredReason(product.product));
     }
   }
 

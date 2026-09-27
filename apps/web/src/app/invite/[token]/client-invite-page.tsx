@@ -105,7 +105,7 @@ function InviteTerminalCard({
             className="mx-auto mb-4 h-10 w-auto max-h-10 object-contain"
           />
         ) : null}
-        <h1 className="font-display text-2xl font-semibold text-ink">{copy.title}</h1>
+        <h1 className="font-display text-2xl font-semibold text-ink text-balance">{copy.title}</h1>
         <p className="mt-3 text-sm leading-6 text-muted-foreground">{copy.description}</p>
         <p className="mt-2 text-sm leading-6 text-ink">
           Nothing has been shared yet. You can safely close this page.
@@ -254,8 +254,11 @@ export default function ClientAuthorizationPage({
         platforms: data?.platforms || [],
         completedPlatforms,
         unresolvedProducts: data?.authorizationProgress?.unresolvedProducts,
-      }),
-    [completedPlatforms, data]
+      }).map((entry) => ({
+        ...entry,
+        isActive: entry.platform === platformQueue.activePlatform?.platformGroup,
+      })),
+    [completedPlatforms, data, platformQueue.activePlatform]
   );
   const activePlatformStatus = platformQueue.activePlatform
     ? progressChecklist.find(

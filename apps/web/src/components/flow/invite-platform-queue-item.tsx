@@ -8,6 +8,12 @@ interface InvitePlatformQueueItemProps {
   platformName: string;
   description: string;
   status: InviteStatus;
+  /**
+   * The active platform's stage card carries the same status chip directly
+   * below the list; the row suppresses its own chip so the status is stated
+   * once on screen (visual QA: double "NEEDS YOU").
+   */
+  isActive?: boolean;
 }
 
 /**
@@ -19,6 +25,7 @@ export function InvitePlatformQueueItem({
   platformName,
   description,
   status,
+  isActive = false,
 }: InvitePlatformQueueItemProps) {
   return (
     <m.div
@@ -32,7 +39,7 @@ export function InvitePlatformQueueItem({
         <p className="text-sm font-semibold text-ink">{platformName}</p>
         <p className="label-nano mt-0.5">{description}</p>
       </div>
-      <InviteStatusChip status={status} />
+      {!isActive && <InviteStatusChip status={status} />}
     </m.div>
   );
 }
