@@ -606,6 +606,10 @@ export function MetaAssetSelector({
       // Store all assets for lookup
       allPages: assets?.pages || [],
       allAdAccounts: assets?.adAccounts || [],
+      // U7/#3: the mount emission fires before the asset fetch resolves with
+      // every list defined-empty. Consumers must not read those empty lists
+      // as a completed fetch — the wizard's loading gate keys on this flag.
+      assetsLoaded: assets != null,
       allInstagramAccounts: assets?.instagramAccounts || [],
       allProductCatalogs: assets?.productCatalogs || [],
       allDatasets: assets?.pixels || [],

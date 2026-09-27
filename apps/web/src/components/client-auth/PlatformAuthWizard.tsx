@@ -96,6 +96,13 @@ interface TikTokShareResponse {
   };
 }
 
+// #2: the save round-trip includes server-side Meta Graph discovery, so it
+// can legitimately take tens of seconds. Past this deadline the client maps
+// the abort to a retryable message instead of spinning forever.
+const SAVE_REQUEST_TIMEOUT_MS = 45_000;
+const SAVE_REQUEST_TIMEOUT_MESSAGE =
+  'Saving is taking longer than expected. Check your connection and try again.';
+
 function isMetaAssetProduct(product: string): boolean {
   return product === 'meta_ads' || product === 'meta_pages';
 }
@@ -679,28 +686,47 @@ export function PlatformAuthWizard({
   const handleBatchSave = async () => {
     if (!connectionId) return;
 
+    // #2: the save route now runs Meta Graph discovery server-side, making it
+    // the slowest request in the flow. A client-side deadline turns a wedged
+    // save into a retryable error instead of a spinner with no exit. The
+    // deadline covers only the save round-trips; it is cleared before the
+    // grant transitions so later fetches are never aborted.
+    const saveController = new AbortController();
+    const saveDeadlineId = setTimeout(
+      () => saveController.abort(),
+      SAVE_REQUEST_TIMEOUT_MS
+    );
+
     try {
       setIsProcessing(true);
       setError(null);
 
       // Save each product in order because each response updates shared connection state.
-      for (const p of products) {
-        const selectedAssets = groupAssets[p.product] || {};
-        const response = await fetch(`${apiBaseUrl}/api/client/${accessRequestToken}/save-assets`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            connectionId,
-            platform: p.product, // Product-level ID for saving
-            selectedAssets,
-          }),
-        });
-        const json = await parseJsonResponse<{ error?: { message?: string } }>(response, {
-          fallbackErrorMessage: 'Failed to save some selected assets',
-        });
-        if (json.error) {
-          throw new Error(json.error.message || 'Failed to save some selected assets');
+      try {
+        for (const p of products) {
+          const selectedAssets = groupAssets[p.product] || {};
+          const response = await fetch(
+            `${apiBaseUrl}/api/client/${accessRequestToken}/save-assets`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                connectionId,
+                platform: p.product, // Product-level ID for saving
+                selectedAssets,
+              }),
+              signal: saveController.signal,
+            }
+          );
+          const json = await parseJsonResponse<{ error?: { message?: string } }>(response, {
+            fallbackErrorMessage: 'Failed to save some selected assets',
+          });
+          if (json.error) {
+            throw new Error(json.error.message || 'Failed to save some selected assets');
+          }
         }
+      } finally {
+        clearTimeout(saveDeadlineId);
       }
 
       // Mark assets as saved
@@ -812,9 +838,14 @@ export function PlatformAuthWizard({
         setCurrentStep(3);
       }
     } catch (err) {
-      // U7: an expired or revoked request is terminal (AE6). The page replaces
-      // the whole flow with the terminal card — never a "not found" error.
-      if (err instanceof ApiResponseError && isTerminalRequestCode(err.code)) {
+      // #2: the deadline fired mid-save. Map the abort to a retryable
+      // message; the server may still complete, so the client keeps its
+      // selection and can simply save again.
+      if (saveController.signal.aborted) {
+        setError(SAVE_REQUEST_TIMEOUT_MESSAGE);
+      } else if (err instanceof ApiResponseError && isTerminalRequestCode(err.code)) {
+        // U7: an expired or revoked request is terminal (AE6). The page replaces
+        // the whole flow with the terminal card — never a "not found" error.
         onRequestUnavailable?.(err.code);
       } else {
         setError(err instanceof Error ? err.message : 'Failed to save assets');
@@ -828,15 +859,14 @@ export function PlatformAuthWizard({
   // resolver (R4, KTD2) decides whether it is clickable and which single
   // truthful reason applies right now.
   const selectableProducts = products.filter((product) => supportsAssetSelection(product.product));
-  // U7 resume: the selector emits an empty selection blob before its asset
-  // fetch resolves. Until the fetched asset lists arrive, grant requirements
-  // are unknowable — the resolver must see a loading state, never an
+  // U7 resume: the selector emits a selection blob on mount with every asset
+  // list defined-empty, so list presence can never prove a completed fetch
+  // (#3). The selector reports `assetsLoaded` only after fetchAssets
+  // resolves; until then the resolver sees a loading state — never an
   // enableable advance (KTD2: loading is neutral, never a selection demand).
   const metaSelectionBlob = groupAssets['meta_ads'] || undefined;
   const metaAssetsLoaded =
-    !metaNeedsGrantStep ||
-    metaSelectionBlob?.allPages !== undefined ||
-    metaSelectionBlob?.allAdAccounts !== undefined;
+    !metaNeedsGrantStep || metaSelectionBlob?.assetsLoaded === true;
   const assetsLoading =
     selectableProducts.some((product) => groupAssets[product.product] === undefined) ||
     !metaAssetsLoaded;

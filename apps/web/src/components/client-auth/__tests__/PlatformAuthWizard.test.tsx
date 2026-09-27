@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { PlatformAuthWizard } from '../PlatformAuthWizard';
 import { manualGrantChecklistStorageKey } from '@/lib/invite/manual-grant-checklist-storage';
 
@@ -61,6 +61,7 @@ vi.mock('@/components/client-auth/MetaAssetSelector', () => ({
             ],
             selectedBusinessId: 'biz_1',
             selectedBusinessName: 'Client One',
+            assetsLoaded: true,
           })
         }
       >
@@ -78,6 +79,7 @@ vi.mock('@/components/client-auth/MetaAssetSelector', () => ({
             selectedInstagramWithNames: [{ id: 'ig_1', name: 'Shop IG' }],
             selectedBusinessId: 'biz_1',
             selectedBusinessName: 'Client One',
+            assetsLoaded: true,
           })
         }
       >
@@ -94,6 +96,7 @@ vi.mock('@/components/client-auth/MetaAssetSelector', () => ({
             selectedInstagramWithNames: [{ id: 'ig_1', name: 'Shop IG' }],
             selectedBusinessId: 'biz_1',
             selectedBusinessName: 'Client One',
+            assetsLoaded: true,
           })
         }
       >
@@ -110,10 +113,29 @@ vi.mock('@/components/client-auth/MetaAssetSelector', () => ({
             datasets: [],
             allAdAccounts: [{ id: 'act_9', name: 'Available Account' }],
             selectionRequired: false,
+            assetsLoaded: true,
           })
         }
       >
         Emit Empty Meta Selection With Available Assets
+      </button>
+      <button
+        type="button"
+        onClick={() =>
+          onSelectionChange({
+            adAccounts: [],
+            pages: [],
+            instagramAccounts: [],
+            catalogs: [],
+            datasets: [],
+            // Lists are present but the real selector only sets assetsLoaded
+            // after a successful fetch; its absence means still-loading.
+            allAdAccounts: [{ id: 'act_9', name: 'Available Account' }],
+            selectionRequired: false,
+          })
+        }
+      >
+        Emit Unloaded Meta Selection Blob
       </button>
       <button
         type="button"
@@ -131,6 +153,7 @@ vi.mock('@/components/client-auth/MetaAssetSelector', () => ({
             selectionRequired: true,
             selectedBusinessId: 'biz_2',
             selectedBusinessName: 'Client One',
+            assetsLoaded: true,
           });
         }}
       >
@@ -1043,6 +1066,75 @@ describe('PlatformAuthWizard', () => {
       expect(shareButton).toBeDisabled();
       expect(screen.getByText('Preparing your accounts')).toBeInTheDocument();
       expect(screen.queryByText(/select at least one/i)).not.toBeInTheDocument();
+    });
+
+    it('stays in the neutral loading state until the selector reports assetsLoaded (#3)', async () => {
+      vi.mocked(fetch).mockResolvedValue({
+        ok: true,
+        text: async () => JSON.stringify({ data: { success: true }, error: null }),
+      } as Response);
+
+      renderShareScreen({
+        platform: 'meta',
+        platformName: 'Meta',
+        products: [{ product: 'meta_ads', accessLevel: 'admin' }],
+      });
+
+      // A blob that carries asset lists but no assetsLoaded flag mirrors the
+      // selector's mount emission: lists are defined-empty until the fetch
+      // resolves, so the CTA must remain a neutral loading state — never a
+      // selection demand, and never enabled.
+      fireEvent.click(screen.getByRole('button', { name: /emit unloaded meta selection blob/i }));
+
+      expect(screen.getByText('Preparing your accounts')).toBeInTheDocument();
+      expect(screen.queryByText(/select at least one/i)).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /share access/i })).toBeDisabled();
+
+      // The post-fetch emission flips the gate and the resolver moves on.
+      fireEvent.click(
+        screen.getByRole('button', { name: /emit empty meta selection with available assets/i })
+      );
+      expect(await screen.findByText('Select at least one ad account to continue')).toBeInTheDocument();
+    });
+
+    it('deadline the save request with a retryable error instead of spinning forever (#2)', async () => {
+      const hangOnSave = (url: string | URL, init?: RequestInit) => {
+        if (String(url).includes('/save-assets')) {
+          return new Promise<Response>((_resolve, reject) => {
+            init?.signal?.addEventListener('abort', () => {
+              const abortError = new Error('The operation was aborted');
+              abortError.name = 'AbortError';
+              reject(abortError);
+            });
+          });
+        }
+        return Promise.resolve({
+          ok: true,
+          text: async () => JSON.stringify({ data: { businessId: 'biz_x' }, error: null }),
+        } as Response);
+      };
+      vi.mocked(fetch).mockImplementation(hangOnSave as typeof fetch);
+
+      renderShareScreen({
+        platform: 'meta',
+        platformName: 'Meta',
+        products: [{ product: 'meta_ads', accessLevel: 'admin' }],
+      });
+
+      fireEvent.click(screen.getByRole('button', { name: /select meta assets/i }));
+      const shareButton = screen.getByRole('button', { name: /share access/i });
+      await waitFor(() => expect(shareButton).toBeEnabled());
+
+      vi.useFakeTimers();
+      try {
+        fireEvent.click(shareButton);
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(45_000);
+        });
+        expect(screen.getByText(/taking longer than expected/i)).toBeInTheDocument();
+      } finally {
+        vi.useRealTimers();
+      }
     });
 
     it('fires invite_cta_blocked once per reason kind — not per render (U11)', async () => {
