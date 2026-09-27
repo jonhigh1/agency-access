@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <rect width="1200" height="630" fill="#FAFAFA"/>
+  <rect width="1200" height="12" fill="#FF6B35"/>
+  <rect x="38" y="50" width="1124" height="530" fill="none" stroke="#09090B" stroke-width="2"/>
+
+  <rect x="82" y="91" width="43" height="43" fill="#FF6B35"/>
+  <path d="M93 112h21m-10-10-10 10 10 10m-1-10 10-10" fill="none" stroke="#09090B" stroke-width="3" stroke-linecap="square" stroke-linejoin="miter"/>
+  <text x="140" y="126" fill="#09090B" font-family="Arial, Helvetica, sans-serif" font-size="39" font-weight="800" letter-spacing="-2">AuthHub</text>
+  <text x="82" y="201" fill="#3F3F46" font-family="Arial, Helvetica, sans-serif" font-size="19" font-weight="700" letter-spacing="2.3">FOR MARKETING AGENCIES</text>
+
+  <text x="78" y="289" fill="#09090B" font-family="Arial, Helvetica, sans-serif" font-size="77" font-weight="800" letter-spacing="-3.5">Client access.</text>
+  <rect x="80" y="310" width="352" height="95" fill="#FF6B35"/>
+  <text x="94" y="382" fill="#09090B" font-family="Arial, Helvetica, sans-serif" font-size="76" font-weight="800" letter-spacing="-3.5">One link.</text>
+
+  <text x="82" y="464" fill="#27272A" font-family="Arial, Helvetica, sans-serif" font-size="27" font-weight="400">Request ad and analytics access.</text>
+  <text x="82" y="500" fill="#27272A" font-family="Arial, Helvetica, sans-serif" font-size="27" font-weight="400">Guide clients. Track progress.</text>
+
+  <rect x="755" y="145" width="368" height="371" fill="#09090B"/>
+  <rect x="744" y="134" width="368" height="371" fill="#FAFAFA" stroke="#09090B" stroke-width="3"/>
+  <rect x="744" y="134" width="368" height="67" fill="#09090B"/>
+  <text x="769" y="176" fill="#FAFAFA" font-family="Arial, Helvetica, sans-serif" font-size="18" font-weight="700" letter-spacing="1.5">ACCESS REQUEST</text>
+  <rect x="1057" y="158" width="28" height="18" fill="#FF6B35"/>
+  <text x="769" y="244" fill="#3F3F46" font-family="Arial, Helvetica, sans-serif" font-size="17" font-weight="700" letter-spacing="1.2">ONE CLIENT LINK</text>
+  <rect x="768" y="261" width="318" height="52" fill="#F4F4F5" stroke="#09090B" stroke-width="1.5"/>
+  <text x="783" y="295" fill="#09090B" font-family="Arial, Helvetica, sans-serif" font-size="23" font-weight="700">authhub.co/request/...</text>
+  <rect x="768" y="341" width="318" height="1" fill="#A1A1AA"/>
+  <text x="769" y="380" fill="#09090B" font-family="Arial, Helvetica, sans-serif" font-size="23" font-weight="700">Meta Ads</text>
+  <text x="1069" y="380" fill="#0F766E" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" text-anchor="end">✓</text>
+  <rect x="768" y="395" width="318" height="1" fill="#D4D4D8"/>
+  <text x="769" y="434" fill="#09090B" font-family="Arial, Helvetica, sans-serif" font-size="23" font-weight="700">Google Ads</text>
+  <text x="1069" y="434" fill="#0F766E" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" text-anchor="end">✓</text>
+  <rect x="768" y="449" width="318" height="1" fill="#D4D4D8"/>
+  <text x="769" y="488" fill="#09090B" font-family="Arial, Helvetica, sans-serif" font-size="23" font-weight="700">GA4</text>
+  <text x="1069" y="488" fill="#0F766E" font-family="Arial, Helvetica, sans-serif" font-size="20" font-weight="700" text-anchor="end">✓</text>
+
+  <text x="82" y="553" fill="#52525B" font-family="Arial, Helvetica, sans-serif" font-size="16" font-weight="700" letter-spacing="1.4">AUTHHUB.CO</text>
+</svg>

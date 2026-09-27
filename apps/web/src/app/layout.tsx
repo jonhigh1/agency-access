@@ -38,8 +38,8 @@ const jetbrainsMono = JetBrains_Mono({
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || 'https://authhub.co'),
-  title: "AuthHub - Client Access in 5 Minutes",
-  description: "One link replaces weeks of OAuth setup. Connect to Meta, Google Ads, GA4, LinkedIn, and more.",
+  title: "AuthHub | Client Access in One Link",
+  description: "Request ad and analytics access with one guided client link. Track what is done across Meta, Google Ads, GA4, and more.",
   icons: {
     icon: "/authhub.png",
     apple: "/authhub.png",
@@ -48,14 +48,12 @@ export const metadata: Metadata = {
     canonical: 'https://authhub.co',
   },
   openGraph: {
-    title: "AuthHub - Client Access in 5 Minutes",
-    description: "One link replaces weeks of OAuth setup.",
-    images: ["/authhub.png"],
+    title: "AuthHub | Client Access in One Link",
+    description: "Request ad and analytics access with one guided client link. Track what is done across Meta, Google Ads, GA4, and more.",
     url: "https://authhub.co",
   },
   twitter: {
     card: "summary_large_image",
-    images: ["/authhub.png"],
   },
   // DNS preconnect hints for faster Google Fonts loading
   other: {
