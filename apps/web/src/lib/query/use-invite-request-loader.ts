@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { capturePosthogEvent } from '@/lib/analytics/capture-posthog';
+import { ApiResponseError } from '@/lib/api/parse-json-response';
 
 export type InviteLoadPhase = 'loading' | 'delayed' | 'timeout' | 'ready' | 'error';
 
@@ -24,21 +25,27 @@ interface UseInviteRequestLoaderOptions<TData> {
    */
   serverInviteResult?:
     | { status: 'ok'; payload: TData }
-    | { status: 'error'; message: string };
+    | { status: 'error'; message: string; code?: string | null };
 }
 
 interface UseInviteRequestLoaderResult<TData> {
   data: TData | null;
   error: string | null;
+  /** The API error code behind `error`, when the API named one. Lets the
+   * caller tell terminal states (expired, revoked) from network failures. */
+  errorCode: string | null;
   phase: InviteLoadPhase;
   retry: () => void;
 }
+
+/** Single source of truth for the invite payload/request deadline. */
+export const INVITE_REQUEST_TIMEOUT_MS = 20000;
 
 export function useInviteRequestLoader<TData>({
   endpoint,
   source,
   delayedMs = 8000,
-  timeoutMs = 20000,
+  timeoutMs = INVITE_REQUEST_TIMEOUT_MS,
   parseData,
   serverInviteResult,
 }: UseInviteRequestLoaderOptions<TData>): UseInviteRequestLoaderResult<TData> {
@@ -48,6 +55,9 @@ export function useInviteRequestLoader<TData>({
   );
   const [error, setError] = useState<string | null>(() =>
     serverInviteResult?.status === 'error' ? serverInviteResult.message : null
+  );
+  const [errorCode, setErrorCode] = useState<string | null>(() =>
+    serverInviteResult?.status === 'error' ? serverInviteResult.code || null : null
   );
   const [phase, setPhase] = useState<InviteLoadPhase>(() => {
     if (!serverInviteResult) return 'loading';
@@ -73,6 +83,7 @@ export function useInviteRequestLoader<TData>({
 
     setPhase('loading');
     setError(null);
+    setErrorCode(null);
     setData(null);
 
     const delayedTimer = window.setTimeout(() => {
@@ -100,7 +111,10 @@ export function useInviteRequestLoader<TData>({
         if (requestIdRef.current !== requestId) return;
 
         if (!response.ok || payload.error || !payload.data) {
-          throw new Error(payload.error?.message || 'Failed to load authorization request.');
+          throw new ApiResponseError(
+            payload.error?.message || 'Failed to load authorization request.',
+            payload.error?.code
+          );
         }
 
         const parsed = parseData ? parseData(payload.data) : payload.data;
@@ -115,6 +129,7 @@ export function useInviteRequestLoader<TData>({
 
         setPhase('error');
         setError(err instanceof Error ? err.message : 'Failed to load authorization request.');
+        setErrorCode(err instanceof ApiResponseError ? (err.code ?? null) : null);
       } finally {
         window.clearTimeout(delayedTimer);
         window.clearTimeout(timeoutTimer);
@@ -133,6 +148,7 @@ export function useInviteRequestLoader<TData>({
   return {
     data,
     error,
+    errorCode,
     phase,
     retry,
   };

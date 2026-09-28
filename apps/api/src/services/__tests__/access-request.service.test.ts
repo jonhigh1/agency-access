@@ -922,6 +922,22 @@ describe('AccessRequestService', () => {
   });
 
   describe('getAccessRequestById', () => {
+    it('includes stored intake answers in the agency-facing payload (G2)', async () => {
+      vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue({
+        id: 'request-1',
+        agencyId: 'agency-1',
+        platforms: [{ platform: 'google_ads', accessLevel: 'manage' }],
+        intakeFields: [{ id: 'company', label: 'Company name', type: 'text', required: true }],
+        intakeResponses: { company: 'Acme' },
+      } as any);
+      vi.mocked(prisma.clientConnection.findMany).mockResolvedValue([] as any);
+
+      const result = await accessRequestService.getAccessRequestById('request-1');
+
+      expect(result.error).toBeNull();
+      expect((result.data as any).intakeResponses).toEqual({ company: 'Acme' });
+    });
+
     it('does not treat Instagram OAuth alone as completed access', async () => {
       vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue({
         id: 'request-instagram',

@@ -18,9 +18,11 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { m, AnimatePresence } from 'framer-motion';
-import { Loader2, ExternalLink, CheckCircle2, ChevronDown } from 'lucide-react';
+import { Loader2, ExternalLink, CheckCircle2, ChevronDown, Lock } from 'lucide-react';
 import { PlatformWizardCard } from './PlatformWizardCard';
 import { MetaAssetSelector } from './MetaAssetSelector';
+import { type MetaSelectionBlob } from './meta-selection-blob';
+import { SelectionResetConfirmDialog } from './SelectionResetConfirmDialog';
 import { GoogleAssetSelector } from './GoogleAssetSelector';
 import { LinkedInAssetSelector } from './LinkedInAssetSelector';
 import { TikTokAssetSelector } from './TikTokAssetSelector';
@@ -29,16 +31,29 @@ import { CatalogAccessGrant } from './CatalogAccessGrant';
 import { InstagramAccessGrant } from './InstagramAccessGrant';
 import { MetaPageEngagementProof } from './MetaPageEngagementProof';
 import { AdAccountSharingInstructions } from './AdAccountSharingInstructions';
+import { clearManualGrantChecklistStorage } from '@/lib/invite/manual-grant-checklist-storage';
 import type { ManualMetaShareCompletionResult } from './AdAccountSharingInstructions';
 import { StepHelpText } from './StepHelpText';
 import { PlatformIcon, Button } from '@/components/ui';
 import { PLATFORM_NAMES } from '@agency-platform/shared';
 import type { MetaAccessConfig, Platform } from '@agency-platform/shared';
 import { trackOnboardingEvent } from '@/lib/analytics/onboarding';
+import { trackInviteCtaBlocked, trackInviteSelectionSaved } from '@/lib/analytics/invite-events';
 import { rememberInviteOAuthReturnToken } from '@/lib/client-invite-oauth';
 import { getClientInviteManualRoute } from '@/lib/client-invite-platforms';
 import { getApiBaseUrl } from '@/lib/api/api-env';
-import { parseJsonResponse } from '@/lib/api/parse-json-response';
+import { ApiResponseError, parseJsonResponse } from '@/lib/api/parse-json-response';
+import {
+  resolveCta,
+  type CtaProductSelectionState,
+  type RequestAvailability,
+  type ZeroSelectionMode,
+} from '@/lib/invite/cta-reason';
+import {
+  hasSelectableAssets,
+  isTerminalRequestCode,
+  type InviteSelectionPrefill,
+} from '@/lib/invite/landing-state';
 
 interface PlatformAuthWizardProps {
   platform: Platform;
@@ -52,6 +67,17 @@ interface PlatformAuthWizardProps {
   // Optional initial values from OAuth callback
   initialConnectionId?: string;
   initialStep?: 1 | 2 | 3;
+  // U7 resume: the client's saved Meta selections derived from the invite
+  // payload's fulfillment rows. The selector prunes these against its fresh
+  // asset fetch, so only still-shared assets prefill. Absent for a fresh
+  // connect and for non-Meta platforms.
+  initialMetaSelections?: InviteSelectionPrefill | null;
+  // U7 terminal states: 'available' until the page learns the request expired
+  // or was revoked; a terminal value disables the primary action truthfully.
+  requestAvailability?: RequestAvailability;
+  // U7: fired when a save returns a terminal request code so the page can
+  // replace the flow with the terminal card instead of a generic failure.
+  onRequestUnavailable?: (code: string) => void;
 }
 
 interface TikTokShareResult {
@@ -71,6 +97,13 @@ interface TikTokShareResponse {
     agencyBusinessCenterId?: string | null;
   };
 }
+
+// #2: the save round-trip includes server-side Meta Graph discovery, so it
+// can legitimately take tens of seconds. Past this deadline the client maps
+// the abort to a retryable message instead of spinning forever.
+const SAVE_REQUEST_TIMEOUT_MS = 45_000;
+const SAVE_REQUEST_TIMEOUT_MESSAGE =
+  'Saving is taking longer than expected. Check your connection and try again.';
 
 function isMetaAssetProduct(product: string): boolean {
   return product === 'meta_ads' || product === 'meta_pages';
@@ -144,7 +177,7 @@ function waitForMetaPopup(popup: Window) {
   return { promise, cleanup, cancel: () => fail(new Error('Meta authorization was cancelled.')) };
 }
 
-function hasNoAssetsFollowUp(product: string, assets: any): boolean {
+function hasNoAssetsFollowUp(product: string, assets: MetaSelectionBlob): boolean {
   if (
     (isGoogleProduct(product) || product === 'linkedin_ads' || product === 'linkedin_pages') &&
     assets.availableAssetCount === 0
@@ -163,7 +196,7 @@ function hasNoAssetsFollowUp(product: string, assets: any): boolean {
   return false;
 }
 
-function getMetaFollowUpLines(assets: any): string[] {
+function getMetaFollowUpLines(assets: MetaSelectionBlob): string[] {
   const lines: string[] = [];
   const unresolvedManualResults = Array.isArray(assets.manualAdAccountVerificationResults)
     ? assets.manualAdAccountVerificationResults.filter(
@@ -215,7 +248,7 @@ function getMetaFollowUpLines(assets: any): string[] {
   return lines;
 }
 
-function hasGrantFollowUp(product: string, assets: any): boolean {
+function hasGrantFollowUp(product: string, assets: MetaSelectionBlob): boolean {
   return isMetaAssetProduct(product) && getMetaFollowUpLines(assets).length > 0;
 }
 
@@ -246,17 +279,35 @@ function getSelectedAssetCount(product: string, assets: any): number {
   }
 }
 
-function isProductReadyForSave(product: string, assets: any): boolean {
-  const selectedCount = getSelectedAssetCount(product, assets);
-  if (selectedCount > 0) {
-    return true;
-  }
+/**
+ * Zero available Meta assets cannot be saved (the save API rejects zero
+ * assets), so the client must create an asset first (KTD10). The selection
+ * blob carries the full available lists, so an all-empty blob means the
+ * client's business has nothing to select from.
+ */
+function getMetaZeroSelectionMode(assets: MetaSelectionBlob): ZeroSelectionMode {
+  const availableCount =
+    (assets.allAdAccounts?.length ?? 0) +
+    (assets.allPages?.length ?? 0) +
+    (assets.allInstagramAccounts?.length ?? 0) +
+    (assets.allProductCatalogs?.length ?? 0) +
+    (assets.allDatasets?.length ?? 0);
+  return availableCount === 0 ? 'create-required' : 'selection-required';
+}
 
-  if (hasNoAssetsFollowUp(product, assets)) {
-    return true;
-  }
+/** Maps one product's selection blob to the resolver's per-product input. */
+function getProductCtaState(product: string, assets: MetaSelectionBlob): CtaProductSelectionState {
+  const zeroSelectionMode: ZeroSelectionMode = isMetaAssetProduct(product)
+    ? getMetaZeroSelectionMode(assets)
+    : hasNoAssetsFollowUp(product, assets)
+      ? 'follow-up-save'
+      : 'selection-required';
 
-  return false;
+  return {
+    product,
+    selectedCount: getSelectedAssetCount(product, assets),
+    zeroSelectionMode,
+  };
 }
 
 function getProductSummaryLines(product: string, assets: any): string[] {
@@ -332,6 +383,9 @@ export function PlatformAuthWizard({
   deferManualRedirect = false,
   initialConnectionId,
   initialStep,
+  initialMetaSelections,
+  requestAvailability = 'available',
+  onRequestUnavailable,
 }: PlatformAuthWizardProps) {
   const router = useRouter();
   const apiBaseUrl = getApiBaseUrl();
@@ -376,11 +430,22 @@ export function PlatformAuthWizard({
   // All platforms use 3 steps: Connect → Choose Accounts & Grant Access → Done
   const metaNeedsGrantStep = platform === 'meta' && primaryMetaAssetProduct !== null;
   const maxSteps = 3;
+  // U7 resume prefill: present only when the payload carried saved Meta
+  // selections. Consumed once — any selection reset (switch business, change
+  // saved selection) clears it so a selector remount cannot resurrect it.
+  const hasInitialMetaSelections =
+    metaNeedsGrantStep && hasSelectableAssets(initialMetaSelections);
+  const [metaSelectionPrefill, setMetaSelectionPrefill] = useState<InviteSelectionPrefill | null>(
+    hasInitialMetaSelections ? (initialMetaSelections as InviteSelectionPrefill) : null
+  );
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(initialStep ? clampStep(initialStep) : 1);
   const [connectionId, setConnectionId] = useState<string | null>(initialConnectionId || null);
   const [groupAssets, setGroupAssets] = useState<Record<string, any>>({});
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Selector-scoped fetch failure. Kept separate from `error` so the CTA
+  // reason reports a load failure, not a save or grant failure.
+  const [assetsFetchError, setAssetsFetchError] = useState<string | null>(null);
   const [businessId, setBusinessId] = useState<string | null>(null);
   const [businessName, setBusinessName] = useState<string | null>(null);
   const [businessIdLoading, setBusinessIdLoading] = useState(false);
@@ -392,8 +457,30 @@ export function PlatformAuthWizard({
     'idle' | 'verified' | 'partial'
   >('idle');
   const [assetsSaved, setAssetsSaved] = useState(false);
-  const [chooseAccountsExpanded, setChooseAccountsExpanded] = useState(true);
+  const [chooseAccountsExpanded, setChooseAccountsExpanded] = useState(() => !hasInitialMetaSelections);
   const [grantAccessExpanded, setGrantAccessExpanded] = useState(true);
+  // U7 resume: the server already holds the client's saved selections, so the
+  // share step reads as saved once the fresh asset fetch lands — not before
+  // (until then the resolver must report a neutral loading reason, KTD2).
+  // Consumed once; any selection reset cancels it permanently.
+  const resumeSavedPendingRef = useRef(hasInitialMetaSelections);
+
+  // #10: popup OAuth resume updates initialMetaSelections on the same mounted
+  // instance, and the useState initializer above runs only once. Re-apply the
+  // prefill when its content changes, keyed by the serialized shape so an
+  // unrelated parent re-render cannot re-seed it after a reset.
+  // #22: bumped by every selection-derived reset so an in-flight save's
+  // success handler can detect that its state was replaced underneath it.
+  const saveVersionRef = useRef(0);
+  const prefillKey = hasInitialMetaSelections ? JSON.stringify(initialMetaSelections) : '';
+  const appliedPrefillKeyRef = useRef(prefillKey);
+  useEffect(() => {
+    if (!prefillKey || appliedPrefillKeyRef.current === prefillKey) return;
+    appliedPrefillKeyRef.current = prefillKey;
+    setMetaSelectionPrefill(JSON.parse(prefillKey) as InviteSelectionPrefill);
+    resumeSavedPendingRef.current = true;
+    setChooseAccountsExpanded(false);
+  }, [prefillKey]);
   const [sharedAccountsExpanded, setSharedAccountsExpanded] = useState(false);
   const [tiktokShareResult, setTikTokShareResult] = useState<TikTokShareResponse | null>(null);
   const [isTikTokSharing, setIsTikTokSharing] = useState(false);
@@ -493,6 +580,8 @@ export function PlatformAuthWizard({
 
   // Update selection for a specific product in the group
   const handleProductSelectionChange = useCallback((product: string, selectedAssets: any) => {
+    // A fresh selection blob means the selector loaded fresh data.
+    setAssetsFetchError(null);
     setGroupAssets((prev) => {
       if (isMetaAssetProduct(product)) {
         return {
@@ -531,6 +620,56 @@ export function PlatformAuthWizard({
     }
   }, [platform]);
 
+  /**
+   * Single ownership point for clearing wizard state derived from Meta asset
+   * selections. Every reset path (selector switch-business reset, the post-save
+   * change-selection affordance) goes through it. When new selection-derived
+   * wizard state is added, register its storage here so every reset path
+   * clears it together.
+   */
+  const resetSelectionDerivedState = useCallback(() => {
+    // #22: every reset invalidates an in-flight save's success handler.
+    saveVersionRef.current += 1;
+    setAssetsSaved(false);
+    setPagesGranted(false);
+    setCatalogsGranted(false);
+    setMetaAdAccountShareStatus('idle');
+    setInstagramBusinessAccessVerified(false);
+    // U9 registration: the manual-grant checklist persists per-row check
+    // state in sessionStorage. A post-save change-selection must uncheck it,
+    // so clear its storage alongside the in-memory resets.
+    clearManualGrantChecklistStorage(accessRequestToken);
+    // The resume prefill counts as selection-derived state: once the client
+    // resets their selections it must not come back on a selector remount,
+    // and the resumed saved state must not reapply after the fresh fetch.
+    setMetaSelectionPrefill(null);
+    resumeSavedPendingRef.current = false;
+    setGroupAssets((prev) => {
+      if (!prev.meta_ads && !prev.meta_pages) return prev;
+      const next = { ...prev };
+      delete next.meta_ads;
+      delete next.meta_pages;
+      return next;
+    });
+    setChooseAccountsExpanded(true);
+  }, [accessRequestToken]);
+
+  // Selector fetch failures feed both the in-card banner and the CTA reason.
+  const handleSelectorError = useCallback((message: string) => {
+    setAssetsFetchError(message);
+    setError(message);
+  }, []);
+
+  // Post-save change-selection: re-open selection editing with a clean slate.
+  const [pendingSelectionReset, setPendingSelectionReset] = useState(false);
+  const [metaSelectorResetKey, setMetaSelectorResetKey] = useState(0);
+
+  const performSelectionReset = useCallback(() => {
+    setPendingSelectionReset(false);
+    resetSelectionDerivedState();
+    setMetaSelectorResetKey((key) => key + 1);
+  }, [resetSelectionDerivedState]);
+
   // Fetch Business Manager ID for Meta
   useEffect(() => {
     if (platform === 'meta' && currentStep >= 2 && !businessId && !businessIdLoading) {
@@ -568,32 +707,74 @@ export function PlatformAuthWizard({
   const handleBatchSave = async () => {
     if (!connectionId) return;
 
+    // #2: the save route now runs Meta Graph discovery server-side, making it
+    // the slowest request in the flow. A client-side deadline turns a wedged
+    // save into a retryable error instead of a spinner with no exit. The
+    // deadline covers only the save round-trips; it is cleared before the
+    // grant transitions so later fetches are never aborted.
+    const saveController = new AbortController();
+    const saveDeadlineId = setTimeout(
+      () => saveController.abort(),
+      SAVE_REQUEST_TIMEOUT_MS
+    );
+
+    const saveVersionAtStart = saveVersionRef.current;
+
     try {
       setIsProcessing(true);
       setError(null);
 
       // Save each product in order because each response updates shared connection state.
-      for (const p of products) {
-        const selectedAssets = groupAssets[p.product] || {};
-        const response = await fetch(`${apiBaseUrl}/api/client/${accessRequestToken}/save-assets`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            connectionId,
-            platform: p.product, // Product-level ID for saving
-            selectedAssets,
-          }),
-        });
-        const json = await parseJsonResponse<{ error?: { message?: string } }>(response, {
-          fallbackErrorMessage: 'Failed to save some selected assets',
-        });
-        if (json.error) {
-          throw new Error(json.error.message || 'Failed to save some selected assets');
+      try {
+        for (const p of products) {
+          const selectedAssets = groupAssets[p.product] || {};
+          const response = await fetch(
+            `${apiBaseUrl}/api/client/${accessRequestToken}/save-assets`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                connectionId,
+                platform: p.product, // Product-level ID for saving
+                selectedAssets,
+              }),
+              signal: saveController.signal,
+            }
+          );
+          const json = await parseJsonResponse<{ error?: { message?: string } }>(response, {
+            fallbackErrorMessage: 'Failed to save some selected assets',
+          });
+          if (json.error) {
+            throw new Error(json.error.message || 'Failed to save some selected assets');
+          }
         }
+      } finally {
+        clearTimeout(saveDeadlineId);
+      }
+
+      // #22: a reset (business switch, change-selection) landed while the
+      // save round-trips were in flight. The stale success must not re-assert
+      // saved state over the fresh reset — bail before any post-success write.
+      if (saveVersionRef.current !== saveVersionAtStart) {
+        return;
       }
 
       // Mark assets as saved
       setAssetsSaved(true);
+
+      // U11: one event per successful save. Counts only — never asset names.
+      {
+        const selectable = products.filter((product) => supportsAssetSelection(product.product));
+        trackInviteSelectionSaved({
+          platform,
+          total_selected: selectable.reduce(
+            (sum, product) =>
+              sum + getSelectedAssetCount(product.product, groupAssets[product.product] || {}),
+            0
+          ),
+          product_count: selectable.length,
+        });
+      }
 
       if (platform === 'tiktok') {
         const tiktokAssets = groupAssets['tiktok_ads'] || groupAssets['tiktok'] || {};
@@ -687,22 +868,106 @@ export function PlatformAuthWizard({
         setCurrentStep(3);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to save assets');
+      // #2: the deadline fired mid-save. Map the abort to a retryable
+      // message; the server may still complete, so the client keeps its
+      // selection and can simply save again.
+      if (saveController.signal.aborted) {
+        setError(SAVE_REQUEST_TIMEOUT_MESSAGE);
+      } else if (err instanceof ApiResponseError && isTerminalRequestCode(err.code)) {
+        // U7: an expired or revoked request is terminal (AE6). The page replaces
+        // the whole flow with the terminal card — never a "not found" error.
+        onRequestUnavailable?.(err.code);
+      } else {
+        setError(err instanceof Error ? err.message : 'Failed to save assets');
+      }
     } finally {
       setIsProcessing(false);
     }
   };
 
-  // Check if any assets are selected in the group
-  const canContinueFromAssetSelection = () => {
-    const selectableProducts = products.filter((product) => supportsAssetSelection(product.product));
-    if (selectableProducts.length === 0) {
-      return false;
-    }
+  // The primary action is always rendered on the share screen. The pure
+  // resolver (R4, KTD2) decides whether it is clickable and which single
+  // truthful reason applies right now.
+  const selectableProducts = products.filter((product) => supportsAssetSelection(product.product));
+  // U7 resume: the selector emits a selection blob on mount with every asset
+  // list defined-empty, so list presence can never prove a completed fetch
+  // (#3). The selector reports `assetsLoaded` only after fetchAssets
+  // resolves; until then the resolver sees a loading state — never an
+  // enableable advance (KTD2: loading is neutral, never a selection demand).
+  const metaSelectionBlob = groupAssets['meta_ads'] || undefined;
+  const metaAssetsLoaded =
+    !metaNeedsGrantStep || metaSelectionBlob?.assetsLoaded === true;
+  const assetsLoading =
+    selectableProducts.some((product) => groupAssets[product.product] === undefined) ||
+    !metaAssetsLoaded;
 
-    return selectableProducts.every((product) =>
-      isProductReadyForSave(product.product, groupAssets[product.product] || {})
-    );
+  // U7 resume: mark the share step saved once — when the resumed prefill is
+  // pending and the fresh asset fetch has reported its lists.
+  useEffect(() => {
+    if (!resumeSavedPendingRef.current || !metaAssetsLoaded) return;
+    resumeSavedPendingRef.current = false;
+    setAssetsSaved(true);
+  }, [metaAssetsLoaded]);
+  const ctaProductStates = selectableProducts.map((product) =>
+    getProductCtaState(product.product, groupAssets[product.product] || {})
+  );
+
+  const grantsRequired = Boolean(
+    platform === 'meta' &&
+      metaNeedsGrantStep &&
+      (hasMetaPages || hasMetaAdAccounts || hasMetaCatalogs || hasMetaInstagramAccounts)
+  );
+  const grantsPending = Boolean(
+    grantsRequired &&
+      ((hasMetaPages && !pagesGranted) ||
+        (hasMetaCatalogs && !catalogsGranted) ||
+        (hasMetaAdAccounts && metaAdAccountShareStatus === 'idle') ||
+        (hasMetaInstagramAccounts && !instagramBusinessAccessVerified))
+  );
+
+  const ctaResolution =
+    currentStep === 2 && connectionId && requiresAssetSelection
+      ? resolveCta({
+          assetsLoading,
+          businessLookupPending: businessIdLoading,
+          businessLookupError: businessIdError,
+          assetsFetchError,
+          products: ctaProductStates,
+          saved: assetsSaved,
+          saveInFlight: isProcessing || isTikTokSharing,
+          grantsRequired,
+          grantsPending,
+          // The creation reason names the client's selected business.
+          businessName: groupAssets['meta_ads']?.selectedBusinessName ?? null,
+          // U7: the page passes the live availability from the load, refresh,
+          // and save responses; a terminal value disables the action with the
+          // matching reason instead of allowing a doomed save.
+          requestAvailability,
+        })
+      : null;
+
+  // U11 funnel: report each blocked state once per occurrence. The effect runs
+  // on the reason-kind transition only — re-renders with an unchanged kind are
+  // silent, and leaving the blocked state (or the share step) re-arms it.
+  const ctaBlockedReasonKind = ctaResolution?.reasonKind;
+  const lastReportedBlockedKindRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!ctaBlockedReasonKind) {
+      lastReportedBlockedKindRef.current = null;
+      return;
+    }
+    if (lastReportedBlockedKindRef.current === ctaBlockedReasonKind) return;
+    lastReportedBlockedKindRef.current = ctaBlockedReasonKind;
+    trackInviteCtaBlocked({ platform, reason_kind: ctaBlockedReasonKind });
+  }, [ctaBlockedReasonKind, platform]);
+
+  const handlePrimaryAction = () => {
+    if (!ctaResolution || ctaResolution.disabled) return;
+    if (ctaResolution.kind === 'advance') {
+      setCurrentStep(3);
+      return;
+    }
+    void handleBatchSave();
   };
 
   const hasZeroAssetFollowUp = Object.entries(groupAssets).some(
@@ -772,7 +1037,7 @@ export function PlatformAuthWizard({
             </div>
 
             {error && (
-              <div className="border-2 border-[var(--coral)] bg-[var(--coral)]/10 p-4 text-[var(--coral)]">
+              <div className="border-2 border-[var(--coral)] bg-[var(--coral)]/10 p-4 text-danger-ink">
                 {error}
               </div>
             )}
@@ -782,6 +1047,7 @@ export function PlatformAuthWizard({
               isLoading={isProcessing}
               size="xl"
               variant="brutalist"
+              className="whitespace-nowrap px-6 sm:px-12"
               rightIcon={!isProcessing ? <ExternalLink className="w-5 h-5" /> : undefined}
             >
               Connect {platformName}
@@ -794,6 +1060,7 @@ export function PlatformAuthWizard({
                 size="xl"
                 variant="secondary"
                 disabled={isProcessing}
+                className="whitespace-nowrap px-6 sm:px-12"
               >
                 Open Meta in a pop-up
               </Button>
@@ -819,7 +1086,7 @@ export function PlatformAuthWizard({
             <div className="text-center space-y-6 py-8">
               {/* Warning Icon with Brutalist Border */}
               <div className="inline-flex items-center justify-center w-20 h-20 border-2 border-black dark:border-white bg-[var(--warning)]/10 mb-4">
-                <span className="text-4xl">🔐</span>
+                <Lock className="h-8 w-8 text-warning" aria-hidden="true" />
               </div>
               <div>
                 <h3 className="text-2xl font-bold text-[var(--ink)] mb-3 font-display">
@@ -844,7 +1111,7 @@ export function PlatformAuthWizard({
           return (
             <div className="text-center space-y-6 py-8">
               <div className="inline-flex items-center justify-center w-20 h-20 border-2 border-black dark:border-white bg-[var(--teal)]/10 mb-4">
-                <CheckCircle2 className="w-10 h-10 text-[var(--teal)]" />
+                <CheckCircle2 className="w-10 h-10 text-success-ink" />
               </div>
               <div>
                 <h3 className="text-2xl font-bold text-[var(--ink)] mb-3 font-display">
@@ -856,7 +1123,7 @@ export function PlatformAuthWizard({
               </div>
 
               {error && (
-                <div className="border-2 border-[var(--coral)] bg-[var(--coral)]/10 p-4 text-[var(--coral)]">
+                <div className="border-2 border-[var(--coral)] bg-[var(--coral)]/10 p-4 text-danger-ink">
                   {error}
                 </div>
               )}
@@ -909,7 +1176,7 @@ export function PlatformAuthWizard({
                   >
                     <div className="p-3 space-y-3">
             {error && (
-                        <div className="border-2 border-[var(--coral)] bg-[var(--coral)]/10 p-3 text-[var(--coral)] text-sm">
+                        <div className="border-2 border-[var(--coral)] bg-[var(--coral)]/10 p-3 text-danger-ink text-sm">
                 {error}
               </div>
             )}
@@ -963,10 +1230,12 @@ export function PlatformAuthWizard({
                             </div>
                           ) : null}
                           <MetaAssetSelector
+                            key={`meta-asset-selector-${metaSelectorResetKey}`}
                             sessionId={connectionId!}
                             accessRequestToken={accessRequestToken}
                             businessId={businessId || undefined}
                             requestedPageTasks={metaAccessConfig?.pageTasks}
+                            initialSelection={metaSelectionPrefill}
                             allowedAssetTypes={
                               p.product === 'meta_pages' && !requestedMetaAssetProducts.includes('meta_ads')
                                 ? ['page']
@@ -977,7 +1246,8 @@ export function PlatformAuthWizard({
                               // selectedAssets now includes selectedPagesWithNames, etc. from MetaAssetSelector
                               handleProductSelectionChange(p.product, selectedAssets);
                             }}
-                            onError={setError}
+                            onSelectionDerivedStateReset={resetSelectionDerivedState}
+                            onError={handleSelectorError}
                           />
                         </div>
                       )}
@@ -996,7 +1266,7 @@ export function PlatformAuthWizard({
                             accessRequestToken={accessRequestToken}
                             product={p.product}
                             onSelectionChange={(assets) => handleProductSelectionChange(p.product, assets)}
-                            onError={setError}
+                            onError={handleSelectorError}
                           />
                         </div>
                       )}
@@ -1007,7 +1277,7 @@ export function PlatformAuthWizard({
                             sessionId={connectionId!}
                             accessRequestToken={accessRequestToken}
                             onSelectionChange={(assets) => handleProductSelectionChange(p.product, assets)}
-                            onError={setError}
+                            onError={handleSelectorError}
                           />
                         </div>
                       )}
@@ -1019,7 +1289,7 @@ export function PlatformAuthWizard({
                             accessRequestToken={accessRequestToken}
                             product={p.product}
                             onSelectionChange={(assets) => handleProductSelectionChange(p.product, assets)}
-                            onError={setError}
+                            onError={handleSelectorError}
                           />
                         </div>
                       )}
@@ -1028,25 +1298,45 @@ export function PlatformAuthWizard({
                 })}
             </div>
 
-                        {/* Unified Batch Save Button - only show if assets haven't been saved yet */}
-                        {!assetsSaved && !isProcessing && canContinueFromAssetSelection() && (
-            <div className="sticky bottom-0 bg-card border-t-2 border-black dark:border-white p-3 -mx-3 -mb-3 mt-4 flex justify-center">
-              <Button
-                onClick={handleBatchSave}
-                disabled={!canContinueFromAssetSelection()}
-                isLoading={isProcessing}
-                size="xl"
-                variant="brutalist"
-                rightIcon={!isProcessing ? <CheckCircle2 className="w-6 h-6" /> : undefined}
-              >
-                {hasZeroAssetFollowUp ? 'Share access' : 'Share Access'}
-              </Button>
-            </div>
-                        )}
                       </div>
                     </m.div>
                 </AnimatePresence>
           </div>
+
+          {/* Post-save change-selection: the only way back after assets are saved. */}
+          {(() => {
+            const metaSelectionCount = getSelectedAssetCount('meta_ads', groupAssets['meta_ads'] || {});
+            if (!(platform === 'meta' && metaNeedsGrantStep && connectionId && assetsSaved)) return null;
+            return (
+              <div className="flex flex-col items-start gap-3">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => {
+                    if (metaSelectionCount > 0) {
+                      setPendingSelectionReset(true);
+                      return;
+                    }
+                    performSelectionReset();
+                  }}
+                >
+                  Change selection
+                </Button>
+                {pendingSelectionReset ? (
+                  <SelectionResetConfirmDialog
+                    titleId="meta-selection-reset-title"
+                    descriptionId="meta-selection-reset-description"
+                    title="Clear this selection and start over?"
+                    selectionCount={metaSelectionCount}
+                    consequence="Clearing removes the selection, the saved state, and all grant and verification progress."
+                    confirmLabel="Clear selection and edit"
+                    onConfirm={performSelectionReset}
+                    onCancel={() => setPendingSelectionReset(false)}
+                  />
+                ) : null}
+              </div>
+            );
+          })()}
 
           {/* Section Divider for Meta Grant Access */}
           {platform === 'meta' && metaNeedsGrantStep && connectionId && assetsSaved && (() => {
@@ -1130,13 +1420,13 @@ export function PlatformAuthWizard({
 
                   {/* Show error banner if Business Manager ID is missing */}
                   {businessIdError && (
-                    <div className="border-2 border-[var(--coral)] bg-[var(--coral)]/10 p-4 text-[var(--coral)] mb-4">
+                    <div className="border-2 border-[var(--coral)] bg-[var(--coral)]/10 p-4 text-danger-ink mb-4">
                       <p className="font-semibold">{businessIdError}</p>
                     </div>
                   )}
 
               {error && (
-                    <div className="border-2 border-[var(--coral)] bg-[var(--coral)]/10 p-4 text-[var(--coral)] mb-4">
+                    <div className="border-2 border-[var(--coral)] bg-[var(--coral)]/10 p-4 text-danger-ink mb-4">
                   {error}
                 </div>
               )}
@@ -1259,8 +1549,8 @@ export function PlatformAuthWizard({
                         </p>
                       ) : businessIdError ? (
                         <div className="space-y-2">
-                          <p className="text-[var(--coral)] font-semibold">Error loading Business Manager ID</p>
-                          <p className="text-[var(--coral)] text-sm">{businessIdError}</p>
+                          <p className="text-danger-ink font-semibold">Error loading Business Manager ID</p>
+                          <p className="text-danger-ink text-sm">{businessIdError}</p>
                         </div>
                       ) : (
                   <p className="text-[var(--warning)]">
@@ -1269,25 +1559,6 @@ export function PlatformAuthWizard({
                       )}
                     </div>
                   )}
-
-                          {/* Continue button when both are complete */}
-                          {(pagesGranted || !hasPages) &&
-                          (!hasAdAccounts ||
-                            metaAdAccountShareStatus === 'verified' ||
-                            metaAdAccountShareStatus === 'partial') &&
-                          (!hasMetaCatalogs || catalogsGranted) &&
-                          (!hasInstagramAccounts || instagramBusinessAccessVerified) && (
-                            <div className="mt-5 flex justify-center">
-                              <Button
-                                onClick={() => setCurrentStep(3)}
-                                size="xl"
-                                variant="brutalist"
-                                rightIcon={<CheckCircle2 className="w-6 h-6" />}
-                              >
-                                Review access confirmation
-                              </Button>
-                </div>
-              )}
                         </div>
                       </m.div>
                     )}
@@ -1339,7 +1610,7 @@ export function PlatformAuthWizard({
                         )}
 
                         {tiktokShareError && (
-                          <div className="border-2 border-[var(--coral)] bg-[var(--coral)]/10 p-4 text-[var(--coral)]">
+                          <div className="border-2 border-[var(--coral)] bg-[var(--coral)]/10 p-4 text-danger-ink">
                             <p className="font-semibold mb-2">Automatic TikTok sharing failed</p>
                             <p className="text-sm">{tiktokShareError}</p>
                             <p className="text-sm mt-3">
@@ -1408,7 +1679,7 @@ export function PlatformAuthWizard({
                         )}
 
                         {tiktokShareResult?.success && (
-                          <div className="border-2 border-[var(--teal)] bg-[var(--teal)]/10 p-4 text-[var(--teal)]">
+                          <div className="border-2 border-[var(--teal)] bg-[var(--teal)]/10 p-4 text-success-ink">
                             <p className="font-semibold">TikTok partner sharing completed</p>
                             <p className="text-sm mt-1">
                               Selected advertisers were shared with your agency Business Center.
@@ -1440,9 +1711,9 @@ export function PlatformAuthWizard({
                 initial={{ scale: 1 }}
                 animate={{ scale: 1 }}
                 transition={{ duration: 0.4, type: 'spring' }}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[var(--teal)] bg-[var(--teal)]/10"
+                className="flex h-10 w-10 shrink-0 items-center justify-center border border-[var(--teal)] bg-[var(--teal)]/10"
               >
-                <CheckCircle2 className="w-5 h-5 text-[var(--teal)]" />
+                <CheckCircle2 className="w-5 h-5 text-success-ink" />
               </m.div>
               <div>
                 <h3 className="text-lg font-bold text-[var(--ink)] font-display">
@@ -1524,7 +1795,7 @@ export function PlatformAuthWizard({
                               <PlatformIcon platform={product as Platform} size="sm" />
                               <span className="text-sm font-semibold text-[var(--ink)]">{productName}</span>
                               {summaryLines.length > 0 && !summaryLines[0].startsWith('Follow-up') && (
-                                <span className="ml-auto text-xs font-medium text-[var(--teal)]">
+                                <span className="ml-auto text-xs font-medium text-success-ink">
                                   {summaryLines[0]}
                                 </span>
                               )}
@@ -1603,6 +1874,43 @@ export function PlatformAuthWizard({
 
   const stepContent = renderStepContent();
 
+  // The share screen's primary action renders at the card boundary, outside
+  // every collapsible stage card's overflow-hidden container, so it stays
+  // visible and reachable at narrow viewports (R4, R13 enabler).
+  const shareFooter = ctaResolution ? (
+    <div className="border-t-2 border-black bg-card p-4 dark:border-white">
+      <div className="flex flex-col items-stretch gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+        <Button
+          onClick={handlePrimaryAction}
+          disabled={ctaResolution.disabled}
+          isLoading={isProcessing || isTikTokSharing}
+          size="xl"
+          variant="brutalist"
+          className="w-full sm:w-auto"
+          aria-describedby={ctaResolution.reason ? 'wizard-primary-action-reason' : undefined}
+          rightIcon={
+            !ctaResolution.disabled && !(isProcessing || isTikTokSharing) ? (
+              <CheckCircle2 className="w-6 h-6" />
+            ) : undefined
+          }
+        >
+          {ctaResolution.kind === 'advance'
+            ? 'Continue'
+            : 'Share Access'}
+        </Button>
+        {ctaResolution.reason ? (
+          <p
+            id="wizard-primary-action-reason"
+            aria-live="polite"
+            className="text-sm text-muted-foreground sm:max-w-[16rem] sm:text-right"
+          >
+            {ctaResolution.reason}
+          </p>
+        ) : null}
+      </div>
+    </div>
+  ) : undefined;
+
   return (
     <PlatformWizardCard
       platform={platform}
@@ -1610,6 +1918,7 @@ export function PlatformAuthWizard({
       currentStep={currentStep}
       totalSteps={maxSteps}
       chrome="minimal"
+      footer={shareFooter}
     >
       {stepContent}
     </PlatformWizardCard>

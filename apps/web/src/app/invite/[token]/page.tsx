@@ -5,12 +5,17 @@ import { fetchClientInvitePayload } from '@/lib/server/fetch-client-invite-paylo
 import ClientInvitePage from './client-invite-page';
 import InviteTokenLoading from './loading';
 
+// KTD13: this page is reached through a logged-out bearer link, so the URL
+// contains a secret. The restrictive referrer policy lives in this segment's
+// layout.tsx (it also covers the nested manual-invite routes); PostHog URL
+// scrubbing (instrumentation-client) covers analytics.
+
 async function InviteTokenInner({ token }: { token: string }) {
   const result = await fetchClientInvitePayload(token);
 
   const serverInviteResult = result.ok
     ? ({ status: 'ok' as const, payload: result.payload })
-    : ({ status: 'error' as const, message: result.message });
+    : ({ status: 'error' as const, message: result.message, code: result.code });
 
   return <ClientInvitePage token={token} serverInviteResult={serverInviteResult} />;
 }

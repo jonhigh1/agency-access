@@ -38,7 +38,7 @@ export function InviteLoadStateCard({
   return (
     <div className="min-h-screen bg-paper flex items-center justify-center px-4">
       <div className="w-full max-w-md border-2 border-black bg-card p-8 text-center shadow-brutalist">
-        <h1 className="font-display text-2xl font-semibold text-ink">
+        <h1 className="font-display text-2xl font-semibold text-ink text-balance">
           {phase === 'timeout' ? 'Still working on it' : 'This link is not working'}
         </h1>
         <p className="mt-3 text-sm leading-6 text-muted-foreground">{message}</p>

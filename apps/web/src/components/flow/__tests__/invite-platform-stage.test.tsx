@@ -9,8 +9,6 @@ describe('InvitePlatformStage', () => {
       <InvitePlatformStage
         platform={'meta' as Platform}
         platformName="Meta"
-        stepNumber={2}
-        totalCount={3}
         description="Complete this step."
         exitNote="You will leave for Meta and come right back here."
         identities={[{ label: 'Agency email', value: 'ops@demo.co' }]}
@@ -23,6 +21,37 @@ describe('InvitePlatformStage', () => {
     expect(screen.getByText(/ops@demo\.co/i)).toBeInTheDocument();
     expect(screen.getByText(/come right back/i)).toBeInTheDocument();
     expect(screen.getByText('Active connect task')).toBeInTheDocument();
-    expect(screen.getByText(/now · step 2 of 3/i)).toBeInTheDocument();
+  });
+
+  it('carries no step-count label and derives its chip from the checklist status', () => {
+    const { container, rerender } = render(
+      <InvitePlatformStage
+        platform={'meta' as Platform}
+        platformName="Meta"
+        description="Complete this step."
+        exitNote="You will leave for Meta and come right back here."
+      >
+        <div>Active connect task</div>
+      </InvitePlatformStage>
+    );
+
+    // Connect-first (default) reads as the live step: "In progress".
+    expect(screen.getByText('In progress')).toBeInTheDocument();
+    expect(container.textContent).not.toMatch(/step \d+ of \d+/i);
+
+    rerender(
+      <InvitePlatformStage
+        platform={'meta' as Platform}
+        platformName="Meta"
+        status="waiting-on-agency"
+        description="Complete this step."
+        exitNote="You will leave for Meta and come right back here."
+      >
+        <div>Active connect task</div>
+      </InvitePlatformStage>
+    );
+
+    expect(screen.getByText('Waiting')).toBeInTheDocument();
+    expect(screen.queryByText('In progress')).toBeNull();
   });
 });

@@ -87,7 +87,7 @@ export function MetaPageEngagementProof({
       {proof ? (
         <div className="mt-3 border-2 border-[var(--teal)] bg-[var(--teal)]/10 p-3" role="status" aria-live="polite">
           <div className="mb-2 flex items-center gap-2 font-semibold text-[var(--ink)]">
-            <CheckCircle2 className="h-4 w-4 text-[var(--teal)]" aria-hidden="true" />
+            <CheckCircle2 className="h-4 w-4 text-success-ink" aria-hidden="true" />
             Page access validated for {proof.page.name}
           </div>
           <dl className="mb-3 grid grid-cols-1 gap-2 text-sm sm:grid-cols-2">

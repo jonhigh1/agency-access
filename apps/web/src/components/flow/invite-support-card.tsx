@@ -19,9 +19,9 @@ export function InviteSupportCard({
   className,
 }: InviteSupportCardProps) {
   return (
-    <div className={cn('rounded-2xl border border-border bg-card p-4', className)}>
+    <div className={cn('border border-border bg-card p-4', className)}>
       <div className="flex items-start gap-3">
-        <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border bg-paper text-muted-foreground">
+        <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center border border-border bg-paper text-muted-foreground">
           <LifeBuoy className="h-4 w-4" />
         </div>
         <div className="min-w-0">

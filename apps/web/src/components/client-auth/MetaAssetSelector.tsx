@@ -1,5 +1,7 @@
 'use client';
 
+import { type MetaSelectionBlob } from './meta-selection-blob';
+
 /**
  * MetaAssetSelector - Multi-asset selection for Meta platform
  *
@@ -17,24 +19,32 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { capturePosthogEvent } from '@/lib/analytics/capture-posthog';
+import { trackInviteAssetsLoaded } from '@/lib/analytics/invite-events';
 import { AssetGroup, type Asset } from './AssetGroup';
 import { MultiSelectCombobox } from '@/components/ui/multi-select-combobox';
-import { SingleSelect } from '@/components/ui/single-select';
 import { AssetSelectorLoading, AssetSelectorError } from './AssetSelectorStates';
 import { MetaAssetCreator } from './MetaAssetCreator';
 import { MetaBusinessCreator } from './MetaBusinessCreator';
 import { MetaBusinessSetupChecklist } from './MetaBusinessSetupChecklist';
 import { GuidedRedirectCard } from './GuidedRedirectModal';
-import { Plus } from 'lucide-react';
+import { SelectionResetConfirmDialog } from './SelectionResetConfirmDialog';
+import { PortfolioSelector, type PortfolioBusiness } from './PortfolioSelector';
+import { clearManualGrantChecklistStorage } from '@/lib/invite/manual-grant-checklist-storage';
+import { Briefcase, Camera, FileText, MailX, Plus, ShoppingBag } from 'lucide-react';
 import { getApiBaseUrl } from '@/lib/api/api-env';
 import { ApiResponseError, parseJsonResponse } from '@/lib/api/parse-json-response';
 import { Button } from '@/components/ui/button';
+import {
+  intersectSelectionPrefill,
+  type InviteSelectionPrefill,
+} from '@/lib/invite/landing-state';
 
 interface MetaAssets {
   businesses?: Array<{
     id: string;
     name: string;
     verificationStatus?: string;
+    verticalName?: string;
   }>;
   selectedBusinessId?: string | null;
   selectedBusinessName?: string | null;
@@ -67,31 +77,22 @@ interface MetaAssetSelectorProps {
   accessRequestToken: string;
   businessId?: string;
   requestedPageTasks?: string[];
+  /**
+   * U7 resume prefill: saved asset ids from the invite payload's fulfillment
+   * rows. Read once — the first successful asset fetch intersects it with the
+   * fresh data, so only still-shared assets are pre-checked. Absent on a
+   * fresh connect.
+   */
+  initialSelection?: InviteSelectionPrefill | null;
   allowedAssetTypes?: Array<'ad_account' | 'page' | 'instagram' | 'catalog' | 'dataset'>;
-  onSelectionChange: (selectedAssets: {
-    adAccounts: string[];
-    pages: string[];
-    instagramAccounts: string[];
-    catalogs: string[];
-    datasets: string[];
-    selectedBusinessId?: string;
-    selectedBusinessName?: string;
-    businesses?: Array<{ id: string; name: string }>;
-    selectionRequired?: boolean;
-    // Extended properties for grant step
-    selectedPagesWithNames?: Array<{ id: string; name: string }>;
-    selectedAdAccountsWithNames?: Array<{ id: string; name: string }>;
-    selectedInstagramWithNames?: Array<{ id: string; name: string }>;
-    selectedCatalogsWithNames?: Array<{ id: string; name: string }>;
-    selectedDatasetsWithNames?: Array<{ id: string; name: string }>;
-    selectedAssetNames?: string[];
-    allPages?: MetaAssets['pages'];
-    allAdAccounts?: MetaAssets['adAccounts'];
-    allInstagramAccounts?: MetaAssets['instagramAccounts'];
-    allProductCatalogs?: NonNullable<MetaAssets['productCatalogs']>;
-    allDatasets?: MetaAssets['pixels'];
-  }) => void;
+  onSelectionChange: (selectedAssets: MetaSelectionBlob) => void;
   onError?: (error: string) => void;
+  /**
+   * Called after this selector wipes its selection-derived state (switch
+   * business, business re-load) so the parent can clear its own derived
+   * state (saved flag, grant flags, verification results) in the same pass.
+   */
+  onSelectionDerivedStateReset?: () => void;
 }
 
 export function MetaAssetSelector({
@@ -99,8 +100,10 @@ export function MetaAssetSelector({
   accessRequestToken,
   businessId,
   requestedPageTasks = [],
+  initialSelection,
   allowedAssetTypes = ['ad_account', 'page', 'instagram'],
   onSelectionChange,
+  onSelectionDerivedStateReset,
   onError,
 }: MetaAssetSelectorProps) {
   const [isLoading, setIsLoading] = useState(true);
@@ -108,14 +111,31 @@ export function MetaAssetSelector({
   const [error, setError] = useState<string | null>(null);
   const [selectedBusinessId, setSelectedBusinessId] = useState<string | null>(null);
   const [selectedBusinessName, setSelectedBusinessName] = useState<string | null>(null);
-  const [pendingBusinessId, setPendingBusinessId] = useState('');
+  // Opened from PortfolioSelector's zero-business card (onCreateBusiness);
+  // hosts the existing guided Page prerequisite and business creator.
+  const [businessCreationOpen, setBusinessCreationOpen] = useState(false);
 
-  // Selection state
-  const [selectedAdAccounts, setSelectedAdAccounts] = useState<Set<string>>(new Set());
-  const [selectedPages, setSelectedPages] = useState<Set<string>>(new Set());
-  const [selectedInstagram, setSelectedInstagram] = useState<Set<string>>(new Set());
-  const [selectedCatalogs, setSelectedCatalogs] = useState<Set<string>>(new Set());
-  const [selectedDatasets, setSelectedDatasets] = useState<Set<string>>(new Set());
+  // U7 resume prefill. Held in a ref so it is consumed exactly once, by the
+  // first successful asset fetch; later fetches and resets start from what is
+  // on screen, never from the prefill.
+  const pendingInitialSelection = useRef<InviteSelectionPrefill | null>(initialSelection || null);
+
+  // Selection state, seeded from the resume prefill when present.
+  const [selectedAdAccounts, setSelectedAdAccounts] = useState<Set<string>>(
+    () => new Set(initialSelection?.adAccounts ?? [])
+  );
+  const [selectedPages, setSelectedPages] = useState<Set<string>>(
+    () => new Set(initialSelection?.pages ?? [])
+  );
+  const [selectedInstagram, setSelectedInstagram] = useState<Set<string>>(
+    () => new Set(initialSelection?.instagramAccounts ?? [])
+  );
+  const [selectedCatalogs, setSelectedCatalogs] = useState<Set<string>>(
+    () => new Set(initialSelection?.catalogs ?? [])
+  );
+  const [selectedDatasets, setSelectedDatasets] = useState<Set<string>>(
+    () => new Set(initialSelection?.datasets ?? [])
+  );
   const [datasetVerification, setDatasetVerification] = useState<string | null>(null);
   const [isVerifyingDatasets, setIsVerifyingDatasets] = useState(false);
   const [showCatalogCreator, setShowCatalogCreator] = useState(false);
@@ -139,8 +159,15 @@ export function MetaAssetSelector({
   const [createdBusiness, setCreatedBusiness] = useState<{ id: string; name: string } | null>(null);
   const userPagesFetchedFor = useRef<string | null>(null);
 
+  // Reset confirmation (never destroy a live selection silently). Holds the
+  // newly confirmed business until the client accepts the reset.
+  const [pendingResetConfirm, setPendingResetConfirm] = useState<PortfolioBusiness | null>(null);
+
   // Track if we've already captured the event (to avoid duplicates)
   const hasTrackedSelection = useRef(false);
+  // U11: report invite_assets_loaded once per business per component life, so
+  // re-fetches of the same portfolio (creation refresh, retry) never re-fire.
+  const assetsLoadedReportedForRef = useRef<Set<string>>(new Set());
   const activeBusinessId = selectedBusinessId || (assets?.selectionRequired ? undefined : businessId || undefined);
   const activeBusinessIdRef = useRef(activeBusinessId);
   const assetFetchVersion = useRef(0);
@@ -195,7 +222,10 @@ export function MetaAssetSelector({
 
   const handleBusinessReconcile = async () => {
     const refreshed = await fetchAssets();
-    if (refreshed) setBusinessCreationNeedsReview(true);
+    if (refreshed) {
+      setBusinessCreationNeedsReview(true);
+      if ((refreshed.businesses || []).length > 0) setBusinessCreationOpen(false);
+    }
     return Boolean(refreshed);
   };
 
@@ -362,7 +392,46 @@ export function MetaAssetSelector({
       setAssets(fetchedAssets);
       setSelectedBusinessId(fetchedAssets.selectedBusinessId || requestedBusinessId || null);
       setSelectedBusinessName(fetchedAssets.selectedBusinessName || null);
-      setPendingBusinessId(fetchedAssets.selectedBusinessId || requestedBusinessId || '');
+
+      // U11: funnel step — this business's assets are loaded. Counts and flags
+      // only; availability numbers reuse the same shapes as meta_assets_selected.
+      const loadedForBusiness =
+        fetchedAssets.selectedBusinessId || requestedBusinessId || 'unscoped';
+      if (!assetsLoadedReportedForRef.current.has(loadedForBusiness)) {
+        assetsLoadedReportedForRef.current.add(loadedForBusiness);
+        trackInviteAssetsLoaded({
+          available_ad_accounts: fetchedAssets.adAccounts?.length || 0,
+          available_pages: fetchedAssets.pages?.length || 0,
+          available_instagram: fetchedAssets.instagramAccounts?.length || 0,
+          available_catalogs: fetchedAssets.productCatalogs?.length || 0,
+          available_datasets: fetchedAssets.pixels?.length || 0,
+          business_count: fetchedAssets.businesses?.length || 0,
+          selection_required: Boolean(fetchedAssets.selectionRequired),
+          has_load_warnings: Boolean(fetchedAssets.assetLoadWarnings?.length),
+        });
+      }
+
+      // U7 resume prefill: keep only the saved selections the fresh fetch
+      // still shows. One pass — after this the selection is client-owned.
+      // An all-pruned intersection returns null, and that null must CLEAR
+      // the stale mount-seeded selection, not skip the sync (#19).
+      const pendingPrefill = pendingInitialSelection.current;
+      if (pendingPrefill) {
+        pendingInitialSelection.current = null;
+        const prunedPrefill = intersectSelectionPrefill(pendingPrefill, fetchedAssets) ?? {
+          adAccounts: [],
+          pages: [],
+          instagramAccounts: [],
+          catalogs: [],
+          datasets: [],
+        };
+        setSelectedAdAccounts(new Set(prunedPrefill.adAccounts));
+        setSelectedPages(new Set(prunedPrefill.pages));
+        setSelectedInstagram(new Set(prunedPrefill.instagramAccounts));
+        setSelectedCatalogs(new Set(prunedPrefill.catalogs));
+        setSelectedDatasets(new Set(prunedPrefill.datasets));
+      }
+
       return fetchedAssets;
     } catch (err) {
       if (fetchVersion !== assetFetchVersion.current) return null;
@@ -412,12 +481,11 @@ export function MetaAssetSelector({
     }
   };
 
-  // Lazy-fetch user pages once when the zero-portfolio branch is entered
+  // Lazy-fetch user pages once when the creation branch is opened from the
+  // portfolio selector's zero-business card.
   useEffect(() => {
     if (isLoading || error || !assets) return;
-    const zeroPortfolio =
-      (assets.businesses || []).length === 0 && !selectedBusinessId && !businessId;
-    if (!zeroPortfolio) return;
+    if (!businessCreationOpen) return;
 
     const fetchKey = `${sessionId}`;
     if (userPagesFetchedFor.current !== fetchKey) {
@@ -425,12 +493,13 @@ export function MetaAssetSelector({
       void fetchUserPages();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [assets, isLoading, error, selectedBusinessId, businessId, sessionId]);
+  }, [assets, isLoading, error, businessCreationOpen, sessionId]);
 
   // Business created → refetch scoped to the new portfolio and open the
   // ad-account creator inline: one pass, no return-and-reselect journey.
   const handleBusinessCreated = (business: { id: string; name: string }) => {
     const creationVersion = ++businessCreationVersion.current;
+    setBusinessCreationOpen(false);
     void fetchAssets(business.id).then((fetchedAssets) => {
       if (!fetchedAssets || businessCreationVersion.current !== creationVersion) return;
       setCreatedBusiness(business);
@@ -524,6 +593,10 @@ export function MetaAssetSelector({
       // Store all assets for lookup
       allPages: assets?.pages || [],
       allAdAccounts: assets?.adAccounts || [],
+      // U7/#3: the mount emission fires before the asset fetch resolves with
+      // every list defined-empty. Consumers must not read those empty lists
+      // as a completed fetch — the wizard's loading gate keys on this flag.
+      assetsLoaded: assets != null,
       allInstagramAccounts: assets?.instagramAccounts || [],
       allProductCatalogs: assets?.productCatalogs || [],
       allDatasets: assets?.pixels || [],
@@ -593,6 +666,23 @@ export function MetaAssetSelector({
   const hasNoBusinessPortfolio =
     !requiresBusinessSelection && !creationBusinessId && availableBusinesses.length === 0;
 
+  // PortfolioSelector data (R2/KTD11): names only, with the Meta vertical as
+  // the collision tiebreaker. The full list comes from the server's asset
+  // discovery, so the selector's escape fetcher resolves it without a second
+  // Graph round-trip.
+  const portfolioBusinesses: PortfolioBusiness[] = availableBusinesses.map((business) => ({
+    id: business.id,
+    name: business.name,
+    verificationStatus: business.verificationStatus,
+    ...(business.verticalName ? { vertical: business.verticalName } : {}),
+  }));
+  const selectedPortfolioBusiness: PortfolioBusiness | null = selectedBusinessId
+    ? portfolioBusinesses.find((business) => business.id === selectedBusinessId) ||
+      { id: selectedBusinessId, name: selectedBusinessName || '' }
+    : null;
+  const fetchPortfolioBusinessList = (): Promise<PortfolioBusiness[]> =>
+    Promise.resolve(portfolioBusinesses);
+
   const selectedBusinessVerification = availableBusinesses.find(
     (b) => b.id === selectedBusinessId
   )?.verificationStatus;
@@ -602,65 +692,103 @@ export function MetaAssetSelector({
         (selectedBusinessVerification && selectedBusinessVerification !== 'verified'))
   );
 
-  const handleBusinessSelectionLoad = () => {
-    if (!pendingBusinessId) return;
-    activeBusinessIdRef.current = pendingBusinessId;
+  /**
+   * Single ownership point for "reset everything selection-derived" in this
+   * selector. Every reset path (switch business, business re-load) goes
+   * through it. When new selection-derived state is added (for example a
+   * manual-grant checklist), register its storage here so every reset path
+   * clears it together.
+   */
+  const resetSelectionDerivedState = (options: { keepBusiness?: boolean } = {}) => {
     setSelectedAdAccounts(new Set());
     setSelectedPages(new Set());
     setSelectedInstagram(new Set());
     setSelectedCatalogs(new Set());
     setSelectedDatasets(new Set());
-    setCatalogCreated(null);
-    void fetchAssets(pendingBusinessId);
-  };
-
-  const handleSwitchBusiness = () => {
-    businessCreationVersion.current += 1;
-    activeBusinessIdRef.current = undefined;
-    assetFetchVersion.current += 1;
-    setSelectedBusinessId(null);
-    setSelectedBusinessName(null);
-    setPendingBusinessId('');
-    setSelectedAdAccounts(new Set());
-    setSelectedPages(new Set());
-    setSelectedInstagram(new Set());
-    setSelectedCatalogs(new Set());
-    setSelectedDatasets(new Set());
+    setDatasetVerification(null);
+    setIsVerifyingDatasets(false);
+    setCatalogCreationErrorsFor({});
+    // U9 registration: the manual-grant checklist persists per-row check
+    // state in sessionStorage. It is selection-derived, so a business switch
+    // must uncheck it — clear its storage alongside the in-memory resets.
+    clearManualGrantChecklistStorage(accessRequestToken);
+    // Creation-review records persist across switches: they are keyed by the
+    // business that owns them and render only when that business is active,
+    // so they cannot go stale on another business (keeps a pending creation
+    // discoverable when the client returns to its source portfolio).
     setCatalogCreated(null);
     setShowCatalogCreator(false);
     setShowAdAccountCreator(false);
     setShowPageCreator(false);
     setCreatedBusiness(null);
-    setAssets((currentAssets) =>
-      currentAssets
-        ? {
-            ...currentAssets,
-            selectedBusinessId: null,
-            selectedBusinessName: null,
-            selectionRequired: true,
-            adAccounts: [],
-            pages: [],
-            instagramAccounts: [],
-          }
-        : currentAssets
-    );
+    setBusinessCreationNeedsReview(false);
+    setBusinessCreationOpen(false);
+    if (!options.keepBusiness) {
+      setSelectedBusinessId(null);
+      setSelectedBusinessName(null);
+    }
   };
+
+  // Apply a business confirmed in PortfolioSelector: full reset (R5/KTD3),
+  // then fetch that business's assets. The fetch response swaps the receipt
+  // and the scoped asset lists in one pass.
+  const applyBusinessSelection = (business: { id: string; name: string }) => {
+    setPendingResetConfirm(null);
+    businessCreationVersion.current += 1;
+    assetFetchVersion.current += 1;
+    activeBusinessIdRef.current = business.id;
+    resetSelectionDerivedState({ keepBusiness: true });
+    onSelectionDerivedStateReset?.();
+    void fetchAssets(business.id);
+  };
+
+  // Confirmation-first (R6): re-confirming the active business is a no-op so
+  // the escape-to-chooser detour never destroys work. A different business
+  // confirms with the selection count first when work exists (R5).
+  const handleBusinessConfirmed = (business: PortfolioBusiness) => {
+    if (business.id === selectedBusinessId) return;
+    if (totalSelected > 0) {
+      setPendingResetConfirm(business);
+      return;
+    }
+    applyBusinessSelection(business);
+  };
+
+  const openBusinessCreation = () => setBusinessCreationOpen(true);
 
   return (
     <div className="space-y-6">
+      {pendingResetConfirm ? (
+        <SelectionResetConfirmDialog
+          titleId="meta-reset-confirm-title"
+          descriptionId="meta-reset-confirm-description"
+          title="Switch business and clear this selection?"
+          selectionCount={totalSelected}
+          consequence="Switching clears the selection, the saved state, and all grant and verification progress."
+          confirmLabel="Clear selection and switch"
+          className="space-y-4 border-2 border-black bg-[rgb(var(--card))] p-6 dark:border-white"
+          onConfirm={() => {
+            if (pendingResetConfirm) applyBusinessSelection(pendingResetConfirm);
+          }}
+          onCancel={() => setPendingResetConfirm(null)}
+        />
+      ) : null}
       {businessCreationNeedsReview ? <p role="status" className="border-2 border-[rgb(var(--warning))] bg-[rgb(var(--warning))]/10 p-4 text-sm text-[rgb(var(--warning))]">Business Portfolio creation is unconfirmed. Select the intended portfolio, then continue with asset selection and verification. Do not repeat creation in this request.</p> : null}
-      {hasNoBusinessPortfolio ? (
-        <div className="border-2 border-black dark:border-white bg-[rgb(var(--warm-gray))]/20 p-6 space-y-4">
-          <div>
-            <h3 className="text-lg font-bold text-[rgb(var(--ink))] font-display">
-              No Business Portfolio yet
-            </h3>
-            <p className="text-sm text-[rgb(var(--muted-foreground))] mt-1">
-              Meta requires a Business Portfolio to hold ad accounts and Pages. Create one
-              here — it takes about a minute.
-            </p>
-          </div>
 
+      {/* Confirmation-first portfolio choice (R6, KTD5): receipt for a
+          confirmed business with an escape, one plain question when ambiguous,
+          and the creation path when the client has zero businesses. */}
+      <PortfolioSelector
+        businesses={portfolioBusinesses}
+        selectedBusiness={selectedPortfolioBusiness}
+        selectionRequired={Boolean(assets?.selectionRequired)}
+        fetchBusinesses={fetchPortfolioBusinessList}
+        onBusinessConfirmed={handleBusinessConfirmed}
+        onCreateBusiness={openBusinessCreation}
+      />
+
+      {businessCreationOpen ? (
+        <div className="border-2 border-black dark:border-white bg-[rgb(var(--warm-gray))]/20 p-6 space-y-4">
           {userPagesError ? (
             <div className="border-2 border-[rgb(var(--warning))] bg-[rgb(var(--warning))]/10 p-4 text-sm text-[rgb(var(--warning))]">
               {userPagesError}
@@ -692,72 +820,6 @@ export function MetaAssetSelector({
             />
           ) : null}
         </div>
-      ) : requiresBusinessSelection ? (
-        <div className="border-2 border-black dark:border-white bg-[rgb(var(--warm-gray))]/20 p-6 space-y-4">
-          <div>
-            <h3 className="text-lg font-bold text-[rgb(var(--ink))] font-display">
-              Select Business Portfolio
-            </h3>
-            <p className="text-sm text-[rgb(var(--muted-foreground))] mt-1">
-              Choose the client Business Portfolio that owns the Meta assets you want to share.
-            </p>
-          </div>
-
-          <div className="space-y-3">
-            <label
-              htmlFor="meta-business-portfolio"
-              className="block text-xs font-bold uppercase tracking-[0.18em] text-[rgb(var(--muted-foreground))]"
-            >
-              Business Portfolio
-            </label>
-            <SingleSelect
-              options={availableBusinesses.map((b) => ({
-                value: b.id,
-                label: `${b.name} (${b.id})`,
-              }))}
-              value={pendingBusinessId}
-              onChange={(v) => setPendingBusinessId(v)}
-              placeholder="Select a portfolio..."
-              ariaLabel="Business Portfolio"
-              triggerClassName="border-2 border-black dark:border-white min-h-[48px]"
-            />
-            <Button
-              type="button"
-              variant="primary"
-              onClick={handleBusinessSelectionLoad}
-              disabled={!pendingBusinessId || isLoading}
-            >
-              Load accounts
-            </Button>
-          </div>
-        </div>
-      ) : null}
-
-      {selectedBusinessName ? (
-        <div className="border-2 border-black dark:border-white bg-[rgb(var(--card))] px-4 py-3">
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <p className="text-sm font-bold text-[rgb(var(--ink))]">
-                Sharing from {selectedBusinessName}
-              </p>
-              {availableBusinesses.length > 1 ? (
-                <p className="text-xs text-[rgb(var(--muted-foreground))] mt-1">
-                  Switch to another client Business Portfolio before continuing if these assets are not the right ones.
-                </p>
-              ) : null}
-            </div>
-            {availableBusinesses.length > 1 ? (
-              <Button
-                type="button"
-                variant="secondary"
-                size="sm"
-                onClick={handleSwitchBusiness}
-              >
-                Switch business
-              </Button>
-            ) : null}
-          </div>
-        </div>
       ) : null}
 
       {assets?.assetLoadWarnings?.map((warning) => (
@@ -779,7 +841,7 @@ export function MetaAssetSelector({
         <div>
           <div className="flex items-center gap-3 mb-3">
             <div className="w-10 h-10 border-2 border-black dark:border-white bg-[rgb(var(--coral))] flex items-center justify-center">
-              <span className="text-white text-lg">💼</span>
+              <Briefcase className="h-5 w-5 text-white" aria-hidden="true" />
             </div>
             <div>
               <h3 className="text-lg font-bold text-[rgb(var(--ink))] font-display">Ad Accounts</h3>
@@ -827,9 +889,7 @@ export function MetaAssetSelector({
             <div className="py-8 text-center px-6">
               {/* Empty state icon - Brutalist Square */}
               <div className="w-20 h-20 border-2 border-black dark:border-white bg-[rgb(var(--muted))]/30 dark:bg-[rgb(var(--muted))]/60 flex items-center justify-center mx-auto mb-4">
-                <span className="text-4xl" role="img" aria-label="Empty">
-                  📭
-                </span>
+                <MailX className="h-8 w-8 text-[rgb(var(--muted-foreground))]" aria-hidden="true" />
               </div>
 
               {/* Message */}
@@ -858,7 +918,7 @@ export function MetaAssetSelector({
         <div>
           <div className="flex items-center gap-3 mb-3">
             <div className="w-10 h-10 border-2 border-black dark:border-white bg-[rgb(var(--coral))]/100 flex items-center justify-center">
-              <span className="text-white text-lg">📄</span>
+              <FileText className="h-5 w-5 text-white" aria-hidden="true" />
             </div>
             <div>
               <h3 className="text-lg font-bold text-[rgb(var(--ink))] font-display">Pages</h3>
@@ -899,9 +959,7 @@ export function MetaAssetSelector({
             <div className="py-8 text-center px-6">
               {/* Empty state icon - Brutalist Square */}
               <div className="w-20 h-20 border-2 border-black dark:border-white bg-[rgb(var(--muted))]/30 dark:bg-[rgb(var(--muted))]/60 flex items-center justify-center mx-auto mb-4">
-                <span className="text-4xl" role="img" aria-label="Empty">
-                  📄
-                </span>
+                <FileText className="h-8 w-8 text-[rgb(var(--muted-foreground))]" aria-hidden="true" />
               </div>
 
               {/* Message */}
@@ -957,7 +1015,7 @@ export function MetaAssetSelector({
           onSelectionChange={setSelectedInstagram}
           icon={
             <div className="w-10 h-10 border-2 border-black dark:border-white bg-pink-500 flex items-center justify-center">
-              <span className="text-white text-lg">📷</span>
+              <Camera className="h-5 w-5 text-white" aria-hidden="true" />
             </div>
           }
           defaultExpanded={instagramAssets.length > 0}
@@ -967,7 +1025,7 @@ export function MetaAssetSelector({
         {showCatalogs ? (
           <div>
             <div className="flex items-center gap-3 mb-3">
-              <div className="w-10 h-10 border-2 border-black dark:border-white bg-[rgb(var(--coral))] flex items-center justify-center" aria-hidden="true">🛍️</div>
+              <div className="w-10 h-10 border-2 border-black dark:border-white bg-[rgb(var(--coral))] flex items-center justify-center" aria-hidden="true"><ShoppingBag className="h-5 w-5 text-white" /></div>
               <div>
                 <h3 className="text-lg font-bold text-[rgb(var(--ink))] font-display">Product Catalogs</h3>
                 <p className="text-sm text-[rgb(var(--muted-foreground))] mt-0.5">{selectedCatalogs.size} of {assets?.productCatalogs?.length || 0} selected</p>

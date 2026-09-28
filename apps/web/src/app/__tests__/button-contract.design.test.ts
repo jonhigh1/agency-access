@@ -78,9 +78,12 @@ function walkFile(file: string, violations: Violation[]): void {
   const push = (index: number, kind: string, detail: string) =>
     violations.push({ file, line: lineOf(source, index), kind, detail });
 
-  // Raw button-like elements. `=>` in arrow-function handlers contains `>`,
-  // so the attribute run must allow it or those buttons escape the walker.
-  const rawOpen = /<(button|Link|a)\b((?:[^>]|=>)*)>/g;
+  // Raw button-like elements. Arrow-function handlers contain `>`, and a
+  // greedy [^>] run stops at that arrow's `>` before the `=>` alternative is
+  // ever tried — the match succeeds and handler-first raw buttons escape the
+  // walker entirely (review #32). Trying `=>` FIRST makes the arrow pair win
+  // the `=` so the attribute run survives the handler.
+  const rawOpen = /<(button|Link|a)\b((?:=>|[^>])*)>/g;
   let match: RegExpExecArray | null;
   while ((match = rawOpen.exec(source)) !== null) {
     const attrs = match[2];
@@ -145,6 +148,42 @@ function collectViolations(): Violation[] {
   return violations;
 }
 
+/**
+ * Pre-existing debt surfaced when the walker's attribute regex was fixed to
+ * see handler-first raw buttons (review #32): these files were written while
+ * the walker could not see them. Each entry is a tracked migration target —
+ * the file moves out of this list as its buttons migrate to <Button>. The
+ * ratchet below fails the suite the moment the list's violation count grows,
+ * so the debt can only shrink. Files NOT on this list get full enforcement.
+ */
+const LEGACY_HANDLER_FIRST_FILES = new Set([
+  'src/components/marketing/pricing/savings-calculator.tsx',
+  'src/components/client-selector.tsx',
+  'src/components/settings/billing/plan-comparison.tsx',
+  'src/components/marketing/pricing/pricing-toggle.tsx',
+  'src/components/hierarchical-platform-selector.tsx',
+  'src/components/google-ads-access-method.tsx',
+  'src/components/settings/settings-tabs.tsx',
+  'src/components/settings/billing/manage-subscription-card.tsx',
+  'src/components/onboarding/screens/team-invite-screen.tsx',
+  'src/components/onboarding/opinionated-input.tsx',
+  'src/components/marketing/success-stories-section.tsx',
+  'src/components/marketing/homepage-faq-section.tsx',
+  'src/components/manual-invitation-modal.tsx',
+  'src/components/blog/blog-header.tsx',
+  'src/app/(authenticated)/internal/admin/affiliates/page.tsx',
+  'src/app/(authenticated)/internal/admin/subscriptions/page.tsx',
+  'src/app/(authenticated)/internal/admin/agencies/page.tsx',
+  'src/app/(authenticated)/token-health/page.tsx',
+  'src/app/(authenticated)/access-requests/new/page.tsx',
+  'src/components/client-detail/ClientTabs.tsx',
+  'src/components/client-detail/CreateRequestModal.tsx',
+  'src/components/agency-meta/PermissionSelect.tsx',
+]);
+
+/** Frozen at the ratchet's introduction: 66 violations across the 22 files above. */
+const LEGACY_VIOLATION_COUNT_CAP = 66;
+
 describe('Button contract (global walker)', () => {
   const violations = collectViolations();
 
@@ -154,16 +193,41 @@ describe('Button contract (global walker)', () => {
     expect(files).toContain('src/app/(authenticated)/dashboard/page.tsx');
   });
 
-  it('has no hand-rolled or contract-fighting buttons', () => {
-    const formatted = violations
+  it('sees handler-first raw buttons (the #32 escape is closed)', () => {
+    const planted = [
+      '<button',
+      '  onClick={() => void handleReauthenticate()}',
+      '  className="text-indigo-600 font-semibold hover:underline px-1"',
+      '>',
+    ].join('\n');
+    const rawOpen = /<(button|Link|a)\b((?:=>|[^>])*)>/g;
+    const match = rawOpen.exec(planted);
+    expect(match).not.toBeNull();
+    expect(match![2]).toContain('text-indigo-600');
+  });
+
+  it('has no hand-rolled or contract-fighting buttons outside the tracked legacy files', () => {
+    const actionable = violations.filter(
+      (v) => !LEGACY_HANDLER_FIRST_FILES.has(v.file.replace(/^src\//, 'src/').replace('\\', '/'))
+    );
+    const formatted = actionable
       .slice(0, 60)
       .map((v) => `  ${v.file}:${v.line}  [${v.kind}]  ${v.detail}`);
     const summary =
-      violations.length === 0
+      actionable.length === 0
         ? ''
-        : `\n${violations.length} violations:\n${formatted.join('\n')}${
-            violations.length > 60 ? `\n  … and ${violations.length - 60} more` : ''
+        : `\n${actionable.length} violations:\n${formatted.join('\n')}${
+            actionable.length > 60 ? `\n  … and ${actionable.length - 60} more` : ''
           }`;
-    expect(violations, summary).toEqual([]);
+    expect(actionable, summary).toEqual([]);
+  });
+
+  it('ratchets the tracked legacy backlog down, never up', () => {
+    const legacy = violations.filter((v) => LEGACY_HANDLER_FIRST_FILES.has(v.file));
+    const summary = `Legacy backlog moved ${legacy.length} > cap ${LEGACY_VIOLATION_COUNT_CAP}:\n` + legacy
+      .slice(0, 60)
+      .map((v) => `  ${v.file}:${v.line}  [${v.kind}]  ${v.detail}`)
+      .join('\n');
+    expect(legacy.length, summary).toBeLessThanOrEqual(LEGACY_VIOLATION_COUNT_CAP);
   });
 });

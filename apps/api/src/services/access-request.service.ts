@@ -26,6 +26,7 @@ import {
   MetaAccessConfigSchema,
   getDefaultMetaAccessTasks,
   type MetaFulfillmentStatus,
+  type UnresolvedProductReason,
 } from '@agency-platform/shared';
 import { invalidateDashboardCache } from '@/lib/cache.js';
 import { env } from '@/lib/env.js';
@@ -411,23 +412,8 @@ type RequestedProduct = {
   platformGroup: string;
 };
 
-type UnresolvedProductReason =
-  | 'no_assets'
-  | 'selection_required'
-  | 'assignee_selection_required'
-  | 'sharing_required'
-  | 'missing_tasks'
-  | 'stale'
-  | 'pending'
-  | 'granted'
-  | 'failed'
-  | 'unresolved'
-  | 'authorization_required'
-  | 'oauth_only_insufficient'
-  | 'pending_native_grant'
-  | 'follow_up_needed'
-  | 'unsupported_automation_path'
-  | MetaFulfillmentStatus;
+// Review #38: the reason vocabulary lives in @agency-platform/shared so the
+// web checklist's total reason map is typecheck-enforced against it.
 
 type UnresolvedProduct = RequestedProduct & {
   reason: UnresolvedProductReason;

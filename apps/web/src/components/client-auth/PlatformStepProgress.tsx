@@ -97,9 +97,9 @@ export function PlatformStepProgress({ currentStep, totalSteps = 3 }: PlatformSt
                   text-xs font-semibold uppercase tracking-wide
                   ${
                     isCompleted
-                      ? 'text-[var(--teal)]'
+                      ? 'text-success-ink'
                       : isCurrent
-                      ? 'text-[var(--coral)]'
+                      ? 'text-ink'
                       : 'text-muted-foreground'
                   }
                 `}

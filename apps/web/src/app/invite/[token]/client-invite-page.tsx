@@ -7,10 +7,12 @@ import { Check, Loader2, Lock, RefreshCw } from 'lucide-react';
 import { capturePosthogEvent } from '@/lib/analytics/capture-posthog';
 import { trackInviteOpenedOncePerSession } from '@/lib/analytics/invite-events';
 import { InviteFlowShell } from '@/components/flow/invite-flow-shell';
+import { InviteTerminalCard } from '@/components/flow/invite-terminal-card';
+import { beginRequestDeadline } from '@/lib/invite/request-deadline';
 import { InviteHeroHeader } from '@/components/flow/invite-hero-header';
-import { InvitePlatformQueueItem } from '@/components/flow/invite-platform-queue-item';
 import { InvitePlatformStage } from '@/components/flow/invite-platform-stage';
 import { InviteLoadStateCard } from '@/components/flow/invite-load-state-card';
+import { InviteSupportCard } from '@/components/flow/invite-support-card';
 import { InviteTrustNote } from '@/components/flow/invite-trust-note';
 import { MetaFulfillmentCard } from '@/components/access-request-detail';
 import { Button, SingleSelect } from '@/components/ui';
@@ -18,13 +20,22 @@ import { PlatformIcon } from '@/components/ui/platform-icon';
 import { ACCESS_LEVEL_DESCRIPTIONS, PLATFORM_NAMES, IntakeField } from '@agency-platform/shared';
 import { useInviteRequestLoader } from '@/lib/query/use-invite-request-loader';
 import { resolveApiUrl } from '@/lib/api/api-env';
-import { parseJsonResponse } from '@/lib/api/parse-json-response';
+import { ApiResponseError, parseJsonResponse } from '@/lib/api/parse-json-response';
 import {
   getInviteSecuritySummary,
   isClientInviteManualCallbackPlatform,
   isClientInviteManualPlatform,
 } from '@/lib/client-invite-platforms';
 import { buildInvitePlatformQueue } from '@/lib/invite-platform-queue';
+import { buildInvitePlatformChecklist } from '@/lib/invite/platform-status';
+import { toDisplayName } from '@/lib/display-name';
+import {
+  isTerminalRequestCode,
+  resolveInviteLandingState,
+  terminalKindFromCode,
+  type InviteTerminalKind,
+  type InviteWizardStart,
+} from '@/lib/invite/landing-state';
 import type { AccessLevel, ClientAccessRequestPayload, Platform } from '@agency-platform/shared';
 
 const PlatformAuthWizard = dynamic(
@@ -47,18 +58,30 @@ export type ClientInvitePageProps = {
   token?: string;
   serverInviteResult?:
     | { status: 'ok'; payload: ClientAccessRequestPayload }
-    | { status: 'error'; message: string };
+    | { status: 'error'; message: string; code?: string | null };
 };
 
 type PagePhase = 'intake' | 'platforms' | 'finalizing' | 'complete';
 
 const SESSION_STORAGE_PREFIX = 'invite-progress:';
 
-// Mirrors the 20s deadline in useInviteRequestLoader so a stalled request
-// cannot wedge the client on a spinner with no exit.
-const REQUEST_TIMEOUT_MS = 20000;
 
 const isAbortError = (error: unknown) => error instanceof Error && error.name === 'AbortError';
+
+// Shared mapper inputs for both landing resolutions (OAuth-return and plain
+// hydrate); only `resume` differs between the two call sites.
+const landingBaseInputs = (
+  payload: ClientAccessRequestPayload,
+  mergedCompleted: ReadonlySet<Platform>
+): Omit<Parameters<typeof resolveInviteLandingState>[0], 'resume'> => ({
+  platforms: payload.platforms || [],
+  completedPlatforms: mergedCompleted,
+  unresolvedProducts: payload.authorizationProgress?.unresolvedProducts,
+  requestStatus: payload.status,
+  isComplete: payload.authorizationProgress?.isComplete,
+  terminalErrorCode: null,
+  metaFulfillment: payload.metaFulfillment,
+});
 
 function buildPlatformSummary(platforms: Platform[]): string {
   const uniqueNames = Array.from(new Set(platforms.map((platform) => PLATFORM_NAMES[platform])));
@@ -87,6 +110,12 @@ export default function ClientAuthorizationPage({
   const [data, setData] = useState<ClientAccessRequestPayload | null>(() =>
     serverInviteResult?.status === 'ok' ? serverInviteResult.payload : null
   );
+  // U7: set when any response (load, save, refresh) carries a terminal request
+  // code. Once set, the terminal card replaces the whole flow — terminal is
+  // one-way (AE6).
+  const [forcedTerminalCode, setForcedTerminalCode] = useState<string | null>(null);
+  // U7: the share-step resume start state resolved by the landing mapper.
+  const [resumeWizardStart, setResumeWizardStart] = useState<InviteWizardStart | null>(null);
   const [completionError, setCompletionError] = useState<string | null>(null);
   const [completionVerified, setCompletionVerified] = useState(false);
   const [intakeResponses, setIntakeResponses] = useState<Record<string, string>>({});
@@ -98,6 +127,8 @@ export default function ClientAuthorizationPage({
     platform: Platform;
   } | null>(null);
   const [isReviewingConnectStatus, setIsReviewingConnectStatus] = useState(false);
+  const [isCheckingStatus, setIsCheckingStatus] = useState(false);
+  const [statusCheckError, setStatusCheckError] = useState<string | null>(null);
 
   const finalizationInFlightRef = useRef(false);
   const completionConfirmedRef = useRef(false);
@@ -113,6 +144,7 @@ export default function ClientAuthorizationPage({
   const {
     data: loadedPayload,
     error: loadError,
+    errorCode: loadErrorCode,
     phase: loadPhase,
     retry: retryLoad,
   } = useInviteRequestLoader<ClientAccessRequestPayload>({
@@ -145,6 +177,26 @@ export default function ClientAuthorizationPage({
   const activePlatformName = platformQueue.activePlatform
     ? PLATFORM_NAMES[platformQueue.activePlatform.platformGroup as Platform]
     : null;
+
+  // R3: one progress surface. Derived per platform from server truth plus the
+  // locally completed set the page already maintains.
+  const progressChecklist = useMemo(
+    () =>
+      buildInvitePlatformChecklist({
+        platforms: data?.platforms || [],
+        completedPlatforms,
+        unresolvedProducts: data?.authorizationProgress?.unresolvedProducts,
+      }).map((entry) => ({
+        ...entry,
+        isActive: entry.platform === platformQueue.activePlatform?.platformGroup,
+      })),
+    [completedPlatforms, data, platformQueue.activePlatform]
+  );
+  const activePlatformStatus = platformQueue.activePlatform
+    ? progressChecklist.find(
+        (entry) => entry.platform === platformQueue.activePlatform!.platformGroup
+      )?.status
+    : undefined;
 
   const railIdentities = useMemo(() => {
     if (!data) return [];
@@ -254,12 +306,37 @@ export default function ClientAuthorizationPage({
       if (isClientInviteManualCallbackPlatform(urlPlatform)) {
         mergedCompleted = new Set<Platform>([...Array.from(mergedCompleted), urlPlatform]);
         setOauthConnectionInfo(null);
+        setResumeWizardStart(null);
+        setCompletedPlatforms(mergedCompleted);
+        setPhase('platforms');
+        return;
+      }
+
+      // U7: the OAuth return or refresh resumes the SAME connection at the
+      // share step, with Meta selections prefilled from server truth. The
+      // mapper owns the phase decision (R7, KTD12).
+      const landing = resolveInviteLandingState({
+        ...landingBaseInputs(loadedPayload, mergedCompleted),
+        resume: { platform: urlPlatform, connectionId: urlConnectionId },
+      });
+
+      if (landing.wizardStart) {
+        setOauthConnectionInfo({
+          connectionId: landing.wizardStart.connectionId,
+          platform: landing.wizardStart.platform,
+        });
+        setResumeWizardStart(landing.wizardStart);
       } else {
-        setOauthConnectionInfo({ connectionId: urlConnectionId, platform: urlPlatform });
+        setOauthConnectionInfo(null);
+        setResumeWizardStart(null);
       }
 
       setCompletedPlatforms(mergedCompleted);
-      setPhase('platforms');
+      setPhase(landing.phase === 'complete' ? 'complete' : 'platforms');
+      if (landing.phase === 'complete') {
+        completionConfirmedRef.current = true;
+        setCompletionVerified(true);
+      }
       return;
     }
 
@@ -271,12 +348,19 @@ export default function ClientAuthorizationPage({
 
     if (urlView === 'connect') {
       setOauthConnectionInfo(null);
+      setResumeWizardStart(null);
       setIsReviewingConnectStatus(allRequestedPlatformsComplete || Boolean(loadedPayload.authorizationProgress?.isComplete));
       setPhase('platforms');
       return;
     }
 
-    if (loadedPayload.status === 'completed') {
+    const landing = resolveInviteLandingState({
+      ...landingBaseInputs(loadedPayload, mergedCompleted),
+      resume: null,
+      metaFulfillment: loadedPayload.metaFulfillment,
+    });
+
+    if (landing.phase === 'complete') {
       setIsReviewingConnectStatus(false);
       completionConfirmedRef.current = true;
       setCompletionVerified(true);
@@ -284,15 +368,12 @@ export default function ClientAuthorizationPage({
       return;
     }
 
-    if (allRequestedPlatformsComplete || loadedPayload.authorizationProgress?.isComplete) {
-      setIsReviewingConnectStatus(false);
-      setPhase('platforms');
-      return;
+    if (landing.phase === 'intake') {
+      setOauthConnectionInfo(null);
+      setResumeWizardStart(null);
     }
 
-    const hasStartedConnecting = mergedCompleted.size > 0;
-
-    setPhase(hasStartedConnecting ? 'platforms' : 'intake');
+    setPhase(landing.phase === 'intake' ? 'intake' : 'platforms');
   }, [loadedPayload, storageKey, token, urlConnectionId, urlPlatform, urlStep, urlView]);
 
   useEffect(() => {
@@ -320,13 +401,12 @@ export default function ClientAuthorizationPage({
     setCompletionError(null);
     setPhase('finalizing');
 
-    const abortController = new AbortController();
-    const timeoutTimer = window.setTimeout(() => abortController.abort(), REQUEST_TIMEOUT_MS);
+    const deadline = beginRequestDeadline();
 
     try {
       const response = await fetch(resolveApiUrl(`/api/client/${token}/complete`), {
         method: 'POST',
-        signal: abortController.signal,
+        signal: deadline.signal,
       });
 
       await parseJsonResponse(response, { fallbackErrorMessage: 'Failed to finalize authorization' });
@@ -344,6 +424,13 @@ export default function ClientAuthorizationPage({
       sessionStorage.removeItem(storageKey);
       setPhase('complete');
     } catch (error) {
+      // U7: an expired or revoked request is terminal, not a retry loop (AE6).
+      const errorCode = error instanceof ApiResponseError ? error.code : undefined;
+      if (isTerminalRequestCode(errorCode)) {
+        setForcedTerminalCode(errorCode);
+        return;
+      }
+
       setCompletionError(
         isAbortError(error)
           ? 'The final confirmation is taking longer than expected. Retry below.'
@@ -353,7 +440,7 @@ export default function ClientAuthorizationPage({
       );
       setPhase('complete');
     } finally {
-      window.clearTimeout(timeoutTimer);
+      deadline.settle();
       finalizationInFlightRef.current = false;
     }
   };
@@ -369,6 +456,51 @@ export default function ClientAuthorizationPage({
   const handleRetryComplete = async () => {
     setIsReviewingConnectStatus(false);
     await finalizeCompletion();
+  };
+
+  // Check again (KTD7): refetch GET /client/:token BEFORE any result renders.
+  // The checklist state changes only after the fresh payload resolves, so the
+  // pre-fetch status is never presented as a fresh result. On failure the
+  // prior entries stay on screen behind an explicit failure note.
+  const refreshAuthorizationProgress = async () => {
+    if (isCheckingStatus) return;
+    setIsCheckingStatus(true);
+    setStatusCheckError(null);
+
+    const deadline = beginRequestDeadline();
+
+    try {
+      const response = await fetch(resolveApiUrl(`/api/client/${token}`), {
+        cache: 'no-store',
+        signal: deadline.signal,
+      });
+      const result = await parseJsonResponse<{ data?: ClientAccessRequestPayload }>(response, {
+        fallbackErrorMessage: 'Could not check your progress. Please try again.',
+      });
+      const fresh = result.data;
+      if (!fresh) return;
+
+      setData(fresh);
+      setCompletedPlatforms((prev) => {
+        const merged = new Set<Platform>(prev);
+        for (const platform of fresh.authorizationProgress?.completedPlatforms || []) {
+          merged.add(platform as Platform);
+        }
+        return merged;
+      });
+    } catch (error) {
+      // U7: check-again is a refetch (KTD7); a terminal answer from it ends
+      // the flow instead of surfacing a transient failure note.
+      const errorCode = error instanceof ApiResponseError ? error.code : undefined;
+      if (isTerminalRequestCode(errorCode)) {
+        setForcedTerminalCode(errorCode);
+        return;
+      }
+      setStatusCheckError("We couldn't check just now. Try again.");
+    } finally {
+      deadline.settle();
+      setIsCheckingStatus(false);
+    }
   };
 
   useEffect(() => {
@@ -391,15 +523,14 @@ export default function ClientAuthorizationPage({
     setIntakeError(null);
     setIsReviewingConnectStatus(false);
 
-    const abortController = new AbortController();
-    const timeoutTimer = window.setTimeout(() => abortController.abort(), REQUEST_TIMEOUT_MS);
+    const deadline = beginRequestDeadline();
 
     try {
       const response = await fetch(resolveApiUrl(`/api/client/${token}/intake`), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ intakeResponses }),
-        signal: abortController.signal,
+        signal: deadline.signal,
       });
       const result = await parseJsonResponse<{ data?: { intakeResponses?: Record<string, string> } }>(
         response,
@@ -409,6 +540,13 @@ export default function ClientAuthorizationPage({
       setIntakeResponses(result.data?.intakeResponses || intakeResponses);
       setPhase('platforms');
     } catch (error) {
+      // U7: an expired request must never read as a save hiccup (AE6).
+      const errorCode = error instanceof ApiResponseError ? error.code : undefined;
+      if (isTerminalRequestCode(errorCode)) {
+        setForcedTerminalCode(errorCode);
+        return;
+      }
+
       setIntakeError(
         isAbortError(error)
           ? 'Saving your responses is taking longer than expected. Please try again.'
@@ -417,7 +555,7 @@ export default function ClientAuthorizationPage({
           : 'Could not save your responses. Please try again.'
       );
     } finally {
-      window.clearTimeout(timeoutTimer);
+      deadline.settle();
       setIsSavingIntake(false);
     }
   };
@@ -430,6 +568,7 @@ export default function ClientAuthorizationPage({
     setIsReviewingConnectStatus(false);
     if (oauthConnectionInfo?.platform === platform) {
       setOauthConnectionInfo(null);
+      setResumeWizardStart(null);
     }
 
     // Clear OAuth callback params from URL to avoid stale state when switching to next platform
@@ -461,6 +600,13 @@ export default function ClientAuthorizationPage({
   };
 
   if (!data) {
+    // U7 (R3): expired and revoked load failures are terminal. The retry
+    // card would read as "try the same dead link again" — never render it.
+    if (isTerminalRequestCode(loadErrorCode)) {
+      return <InviteTerminalCard kind={terminalKindFromCode(loadErrorCode)} />;
+    }
+
+
     return (
       <InviteLoadStateCard
         phase={loadPhase === 'ready' ? 'loading' : loadPhase}
@@ -475,19 +621,32 @@ export default function ClientAuthorizationPage({
     );
   }
 
-  const flowSteps = completionError ? ['Setup', 'Follow-up', 'Done'] : ['Setup', 'Connect', 'Done'];
-  const flowTotalSteps = 3;
-  const currentStep = phase === 'intake' ? 1 : phase === 'platforms' || completionError ? 2 : 3;
+  // U7: a save, verify, or refresh response said expired/revoked mid-flow.
+  // The terminal card replaces everything (AE6).
+  if (isTerminalRequestCode(forcedTerminalCode)) {
+    return (
+      <InviteTerminalCard
+        kind={terminalKindFromCode(forcedTerminalCode)}
+        logoUrl={data.branding?.logoUrl}
+        agencyName={data.agencyName}
+      />
+    );
+  }
+
   const isConnectStatusReview = phase === 'platforms' && isComplete && isReviewingConnectStatus;
+
+  // The agency name renders on every screen; normalize an all-lowercase
+  // entry for display and keep the raw value as the fallback.
+  const agencyDisplayName = toDisplayName(data.agencyName) || data.agencyName;
 
   // Per-phase copy.
   const phaseCopyByPhase: Record<PagePhase, { title: string; description: string }> = {
     intake: {
-      title: `${data.agencyName} needs access to finish setup`,
+      title: `${agencyDisplayName} needs access to finish setup`,
       description:
         intakeFields.length > 0
-          ? `${data.agencyName} asked for a few details, then you confirm which accounts to share.`
-          : `${data.agencyName} requested access to ${platformSummary || 'your platforms'}. Confirm which accounts to share below.`,
+          ? `${agencyDisplayName} asked for a few details, then you confirm which accounts to share.`
+          : `${agencyDisplayName} requested access to ${platformSummary || 'your platforms'}. Confirm which accounts to share below.`,
     },
     platforms: {
       title: isConnectStatusReview
@@ -509,7 +668,7 @@ export default function ClientAuthorizationPage({
       title: completionError
         ? 'Access needs follow-up'
         : completionVerified
-        ? `${data.agencyName} now has verified access`
+        ? `${agencyDisplayName} now has verified access`
         : 'Verifying access',
       description: completionError
         ? 'Finish the unresolved access item, then check again.'
@@ -522,20 +681,22 @@ export default function ClientAuthorizationPage({
 
   return (
     <InviteFlowShell
-      title={data.agencyName}
+      title={agencyDisplayName}
       description={`Authorize access for ${data.clientName}`}
       header={
         <InviteHeroHeader
           title={phaseCopy.title}
           description={phaseCopy.description}
-          badge={securitySummary.badge}
           logoUrl={data.branding?.logoUrl}
-          logoAlt={`${data.agencyName} logo`}
+          logoAlt={`${agencyDisplayName} logo`}
         />
       }
-      step={currentStep}
-      totalSteps={flowTotalSteps}
-      steps={flowSteps}
+      checklist={progressChecklist}
+      onRefresh={
+        phase === 'intake' || phase === 'platforms' ? refreshAuthorizationProgress : undefined
+      }
+      isRefreshing={isCheckingStatus}
+      refreshError={statusCheckError}
     >
       {phase === 'intake' &&
         (intakeFields.length > 0 ? (
@@ -674,7 +835,7 @@ export default function ClientAuthorizationPage({
       {phase === 'platforms' && (
         <div className="space-y-4">
           {isConnectStatusReview ? (
-            <div className="border-2 border-black bg-card p-4 shadow-brutalist">
+            <div className="border-2 border-black bg-card p-4">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h2 className="text-lg font-semibold text-ink font-display">Review connected platforms</h2>
@@ -701,8 +862,7 @@ export default function ClientAuthorizationPage({
             <InvitePlatformStage
               platform={platformQueue.activePlatform.platformGroup as Platform}
               platformName={PLATFORM_NAMES[platformQueue.activePlatform.platformGroup as Platform]}
-              stepNumber={Math.min(completedPlatforms.size + 1, requestedPlatforms.length || 1)}
-              totalCount={requestedPlatforms.length}
+              status={activePlatformStatus}
               description={
                 platformQueue.nextPlatform
                   ? `Complete this step, then continue to ${PLATFORM_NAMES[platformQueue.nextPlatform.platformGroup as Platform]}.`
@@ -739,37 +899,21 @@ export default function ClientAuthorizationPage({
                 initialStep={
                   oauthConnectionInfo?.platform === platformQueue.activePlatform.platformGroup ? 2 : undefined
                 }
+                initialMetaSelections={
+                  resumeWizardStart?.platform === platformQueue.activePlatform.platformGroup
+                    ? resumeWizardStart.metaSelectionPrefill
+                    : undefined
+                }
+                requestAvailability={
+                  isTerminalRequestCode(forcedTerminalCode)
+                    ? terminalKindFromCode(forcedTerminalCode) === 'revoked'
+                      ? 'revoked'
+                      : 'expired'
+                    : 'available'
+                }
+                onRequestUnavailable={(code) => setForcedTerminalCode(code)}
               />
             </InvitePlatformStage>
-            </div>
-          ) : null}
-
-          {requestedPlatforms.length > 1 ? (
-            <div>
-              <p className="label-micro mb-1">The full request</p>
-              <div>
-                {data.platforms.map((groupConfig, index) => {
-                  const platform = groupConfig.platformGroup as Platform;
-                  const isDone = completedPlatforms.has(platform);
-                  const isActive = platformQueue.activePlatform?.platformGroup === platform;
-                  return (
-                    <InvitePlatformQueueItem
-                      key={platform}
-                      platform={platform}
-                      platformName={PLATFORM_NAMES[platform]}
-                      description={
-                        isDone
-                          ? 'Access confirmed.'
-                          : isActive
-                          ? 'Current step.'
-                          : 'Waiting until earlier steps are done.'
-                      }
-                      status={isDone ? 'complete' : isActive ? 'active' : 'waiting'}
-                      sequence={index + 1}
-                    />
-                  );
-                })}
-              </div>
             </div>
           ) : null}
         </div>
@@ -780,7 +924,7 @@ export default function ClientAuthorizationPage({
           <RefreshCw className="mx-auto h-8 w-8 animate-spin text-ink" aria-hidden="true" />
           <h2 className="mt-5 text-2xl font-semibold text-ink font-display">Confirming access</h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            Your platforms are connected. We are confirming the final status with {data.agencyName}.
+            Your platforms are connected. We are confirming the final status with {agencyDisplayName}.
           </p>
         </div>
       )}
@@ -827,7 +971,7 @@ export default function ClientAuthorizationPage({
                 All set — you&apos;re done
               </h2>
               <p className="mt-2 text-sm text-muted-foreground">
-                {data.agencyName} now has access to the accounts you approved. Nothing else is
+                {agencyDisplayName} now has access to the accounts you approved. Nothing else is
                 needed from you.
               </p>
               <div className="mt-6 border border-black bg-paper p-4 text-left">

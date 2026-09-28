@@ -1,4 +1,5 @@
 import posthog from 'posthog-js';
+import { sanitizeInviteTokenProperties } from '@/lib/analytics/sanitize-invite-token-properties';
 
 /**
  * Deferred PostHog Initialization
@@ -14,6 +15,13 @@ import posthog from 'posthog-js';
  * event for ingestion auth. HogQL exposes this as properties.token on all events
  * (pageview, onboarding_started, etc.) — it is not a custom app property. Funnels
  * must use `access_request_token` or `accessRequestId`, never properties.token.
+ *
+ * KTD13: invite URLs carry an anonymous bearer token on a logged-out visit.
+ * sanitize_properties runs on EVERY captured event (pageviews, autocapture,
+ * and explicit captures), replacing the `/invite/<token>` path segment with a
+ * redaction marker in $current_url, $pathname, $referrer, and any other
+ * string property. The invite pages also set referrer: 'no-referrer' so the
+ * token never leaves the browser via the Referer header either.
  */
 function initPosthog() {
   const key = process.env.NEXT_PUBLIC_POSTHOG_KEY;
@@ -45,6 +53,7 @@ function initPosthog() {
       capture_pageview: true,
       capture_pageleave: true,
       debug: process.env.NODE_ENV === 'development',
+      sanitize_properties: (properties) => sanitizeInviteTokenProperties(properties),
     });
   } catch (e) {
     if (process.env.NODE_ENV === 'development') {

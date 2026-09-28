@@ -5,17 +5,20 @@
  *
  * Handles OAuth callback success/error states.
  * Shows user-friendly messages and redirects appropriately.
- * For Meta, shows Business Portfolio selector instead of auto-redirect.
+ * For Meta, shows the consolidated portfolio selector (receipt-first) instead
+ * of auto-redirect: agency onboarding and connections both return here.
  */
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useRef, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { useAuth } from '@clerk/nextjs';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useAuth, useUser } from '@clerk/nextjs';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
+import { AlertCircle, Loader2, RefreshCw } from 'lucide-react';
 import { capturePosthogEvent } from '@/lib/analytics/capture-posthog';
-import { MetaBusinessPortfolioSelector } from '@/components/meta-business-portfolio-selector';
+import { PortfolioSelector, type PortfolioBusiness } from '@/components/client-auth/PortfolioSelector';
 import { Button } from '@/components/ui/button';
+import { startAgencyMetaOAuth } from '@/lib/agency-meta-oauth';
 import { resolveApiUrl } from '@/lib/api/api-env';
 import {
   trackOAuthCallbackFailure,
@@ -36,9 +39,14 @@ function CallbackPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { orgId, getToken } = useAuth();
+  const { user } = useUser();
   const queryClient = useQueryClient();
   const [countdown, setCountdown] = useState(5);
   const [showPortfolioSelector, setShowPortfolioSelector] = useState(false);
+  const [confirmedBusiness, setConfirmedBusiness] = useState<PortfolioBusiness | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [reauthError, setReauthError] = useState<string | null>(null);
+  const [isReauthenticating, setIsReauthenticating] = useState(false);
 
   const success = searchParams.get('success') === 'true';
   const platform = searchParams.get('platform');
@@ -46,6 +54,7 @@ function CallbackPageContent() {
   const requireBusinessSelection = searchParams.get('requireBusinessSelection') === 'true';
   const connectionId = searchParams.get('connectionId');
   const agencyIdParam = searchParams.get('agencyId');
+  const targetAgencyId = agencyIdParam || orgId;
 
   const platformName = platform ? PLATFORM_NAMES[platform as Platform] || platform : 'Platform';
   const errorMessage = errorCode
@@ -78,22 +87,110 @@ function CallbackPageContent() {
       return response.json();
     },
     onSuccess: () => {
-      const targetAgencyId = agencyIdParam || orgId;
       queryClient.invalidateQueries({ queryKey: ['platform-connections', targetAgencyId] });
       queryClient.invalidateQueries({ queryKey: ['available-platforms', targetAgencyId] });
       router.push('/connections?success=true&platform=meta');
     },
+    onError: (error: Error) => {
+      setSaveError(error.message || 'Failed to complete connection');
+    },
   });
 
-  const handlePortfolioSelect = (businessId: string, businessName: string) => {
+  // Clerk-authenticated business discovery (KTD5). The endpoint returns
+  // `{ data: { businesses: [{ id, name, verticalName?, verificationStatus? }] } }`.
+  const portfolioQuery = useQuery({
+    queryKey: ['meta-portfolio-businesses', targetAgencyId],
+    enabled: showPortfolioSelector && Boolean(targetAgencyId),
+    staleTime: Infinity,
+    retry: false,
+    queryFn: async (): Promise<PortfolioBusiness[]> => {
+      const token = await getToken();
+      const response = await fetch(
+        resolveApiUrl(`/agency-platforms/meta/business-accounts?agencyId=${targetAgencyId}&refresh=true`),
+        {
+          headers: {
+            ...(token && { Authorization: `Bearer ${token}` }),
+          },
+        }
+      );
+      if (!response.ok) throw new Error('Failed to load your Meta business portfolios.');
+      const result = await response.json();
+      const businesses = (result?.data?.businesses || []) as Array<Record<string, unknown>>;
+      return businesses
+        .filter((business) => business?.id && business?.name)
+        .map((business) => ({
+          id: String(business.id),
+          name: String(business.name),
+          ...(typeof business.verificationStatus === 'string'
+            ? { verificationStatus: business.verificationStatus }
+            : {}),
+          ...(typeof business.verticalName === 'string'
+            ? { vertical: business.verticalName }
+            : {}),
+        }));
+    },
+  });
+
+  const portfolioBusinesses = portfolioQuery.data ?? [];
+  // Receipt-first (R6): a single owner business is confirmed automatically.
+  const selectedBusiness =
+    confirmedBusiness ?? (portfolioBusinesses.length === 1 ? portfolioBusinesses[0] : null);
+
+  const handlePortfolioSelect = (business: PortfolioBusiness) => {
+    if (isSaving) return;
+    setSaveError(null);
+    setConfirmedBusiness(business);
     void capturePosthogEvent('meta_business_portfolio_selected', {
       agency_id: agencyIdParam || orgId,
       connection_id: connectionId,
       platform: 'meta',
-      business_id: businessId,
-      business_name: businessName,
+      business_id: business.id,
+      business_name: business.name,
     });
-    completeMetaOauth({ businessId, businessName });
+    completeMetaOauth({ businessId: business.id, businessName: business.name });
+  };
+
+  // The receipt view has no confirm button, so the auto-selected single owner
+  // must fire the save itself — once. A failed save still allows the manual
+  // escape → chooser path to retry through handlePortfolioSelect.
+  const autoConfirmedRef = useRef(false);
+  useEffect(() => {
+    if (
+      !confirmedBusiness &&
+      portfolioBusinesses.length === 1 &&
+      !autoConfirmedRef.current
+    ) {
+      autoConfirmedRef.current = true;
+      handlePortfolioSelect(portfolioBusinesses[0]);
+    }
+  }, [confirmedBusiness, portfolioBusinesses, handlePortfolioSelect]);
+
+  // Zero-portfolio agencies recover by re-running the Meta OAuth consent so
+  // the business list refreshes (legacy affordance, preserved).
+  const handleReauthenticate = async () => {
+    const userEmail =
+      user?.primaryEmailAddress?.emailAddress || user?.emailAddresses?.[0]?.emailAddress;
+    if (!userEmail || !targetAgencyId) {
+      setReauthError('Unable to resolve your account email.');
+      return;
+    }
+
+    setReauthError(null);
+    setIsReauthenticating(true);
+
+    try {
+      await startAgencyMetaOAuth({
+        agencyId: targetAgencyId,
+        userEmail,
+        getToken,
+      });
+    } catch (err) {
+      setReauthError(
+        err instanceof Error ? err.message : 'Failed to refresh Meta Business Portfolios.'
+      );
+    } finally {
+      setIsReauthenticating(false);
+    }
   };
 
   // Track OAuth callback results in PostHog
@@ -162,8 +259,8 @@ function CallbackPageContent() {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Processing your connection...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[rgb(var(--coral))] mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Processing your connection...</p>
         </div>
       </div>
     );
@@ -173,12 +270,12 @@ function CallbackPageContent() {
     // Show Business Portfolio selector for Meta
     if (showPortfolioSelector && (orgId || agencyIdParam)) {
       return (
-        <div className="flex items-center justify-center min-h-screen bg-gray-50 p-4">
+        <div className="flex items-center justify-center min-h-screen bg-paper p-4">
           <div className="max-w-lg w-full">
             <div className="mb-6 text-center">
-              <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <div className="w-16 h-16 bg-[rgb(var(--teal))]/15 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg
-                  className="w-8 h-8 text-green-600"
+                  className="w-8 h-8 text-success-ink"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -191,14 +288,65 @@ function CallbackPageContent() {
                   />
                 </svg>
               </div>
-              <h1 className="text-2xl font-bold text-slate-900 mb-2">Successfully Connected!</h1>
-              <p className="text-slate-600">Now select your Meta Business Portfolio</p>
+              <h1 className="text-2xl font-bold text-ink mb-2">Successfully Connected!</h1>
+              <p className="text-muted-foreground">Now select your Meta Business Portfolio</p>
             </div>
-            <MetaBusinessPortfolioSelector 
-              agencyId={(agencyIdParam || orgId) as string} 
-              onSelect={handlePortfolioSelect} 
-              isSaving={isSaving}
-            />
+            {portfolioQuery.isLoading ? (
+              <div className="p-12 text-center">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-muted-foreground" />
+                <p className="text-muted-foreground font-medium">Checking for Meta Business accounts...</p>
+              </div>
+            ) : portfolioQuery.error ? (
+              <div className="p-8 text-center bg-[rgb(var(--coral))]/10 rounded-none border-2 border-[rgb(var(--coral))]/40">
+                <AlertCircle className="h-8 w-8 text-danger-ink mx-auto mb-3" />
+                <p className="text-danger-ink font-semibold mb-1">Failed to load portfolios</p>
+                <p className="text-danger-ink text-sm mb-4">Please try refreshing the page or connecting again.</p>
+                <Button onClick={() => void portfolioQuery.refetch()} variant="ghost" size="sm" className="text-danger-ink">
+                  <RefreshCw className="h-4 w-4" />
+                  Retry
+                </Button>
+              </div>
+            ) : portfolioBusinesses.length === 0 ? (
+              <div className="p-10 text-center bg-[rgb(var(--warm-gray))]/20 rounded-none border-2 border-black dark:border-white border-dashed">
+                <div className="w-16 h-16 bg-[rgb(var(--warm-gray))]/40 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <AlertCircle className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <h3 className="text-ink font-bold mb-2">No Meta Business portfolios found</h3>
+                <p className="text-muted-foreground text-sm max-w-xs mx-auto mb-6">
+                  Don&apos;t see your Business Portfolio? To refresh this list{' '}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-auto px-1 text-ink underline-offset-2"
+                    onClick={() => void handleReauthenticate()}
+                    disabled={isReauthenticating}
+                  >
+                    {isReauthenticating ? 'logging in again…' : 'log in again'}
+                  </Button>
+                </p>
+                {reauthError && <p className="text-sm text-danger-ink">{reauthError}</p>}
+              </div>
+            ) : isSaving ? (
+              <div className="p-10 text-center" role="status">
+                <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-muted-foreground" />
+                <p className="text-muted-foreground font-medium">Connecting your Business Portfolio...</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {saveError ? (
+                  <div role="alert" className="border-2 border-[rgb(var(--coral))]/40 bg-[rgb(var(--coral))]/10 text-danger-ink rounded-none p-4 text-sm">
+                    {saveError}
+                  </div>
+                ) : null}
+                <PortfolioSelector
+                  businesses={portfolioBusinesses}
+                  selectedBusiness={selectedBusiness}
+                  selectionRequired={portfolioBusinesses.length > 1}
+                  fetchBusinesses={() => Promise.resolve(portfolioBusinesses)}
+                  onBusinessConfirmed={handlePortfolioSelect}
+                />
+              </div>
+            )}
           </div>
         </div>
       );
@@ -206,16 +354,16 @@ function CallbackPageContent() {
 
     // Standard success message for other platforms
     return (
-      <div className="flex items-center justify-center min-h-screen bg-gray-50">
-        <div className="max-w-md w-full bg-card rounded-lg shadow-lg p-8">
+      <div className="flex items-center justify-center min-h-screen bg-paper">
+        <div className="max-w-md w-full bg-card rounded-none border-2 border-black dark:border-white shadow-brutalist p-8">
           {/* Success Icon */}
           <div className="flex justify-center mb-6">
             <div
               data-testid="success-icon"
-              className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center"
+              className="w-16 h-16 bg-[rgb(var(--teal))]/15 rounded-full flex items-center justify-center"
             >
               <svg
-                className="w-8 h-8 text-green-600"
+                className="w-8 h-8 text-success-ink"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -231,13 +379,13 @@ function CallbackPageContent() {
           </div>
 
           {/* Success Message */}
-          <h1 className="text-2xl font-bold text-center mb-2">Successfully Connected!</h1>
-          <p className="text-center text-gray-600 mb-8">
+          <h1 className="text-2xl font-bold text-center mb-2 text-ink">Successfully Connected!</h1>
+          <p className="text-center text-muted-foreground mb-8">
             You've successfully connected {platformName} to your agency account.
           </p>
 
           {/* Auto-redirect notice */}
-          <p className="text-sm text-center text-gray-500 mb-6">
+          <p className="text-sm text-center text-muted-foreground mb-6">
             Redirecting to connections in {countdown} seconds...
           </p>
 
@@ -265,16 +413,16 @@ function CallbackPageContent() {
 
   // Error state
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-50">
-      <div className="max-w-md w-full bg-card rounded-lg shadow-lg p-8">
+    <div className="flex items-center justify-center min-h-screen bg-paper">
+      <div className="max-w-md w-full bg-card rounded-none border-2 border-black dark:border-white shadow-brutalist p-8">
         {/* Error Icon */}
         <div className="flex justify-center mb-6">
           <div
             data-testid="error-icon"
-            className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center"
+            className="w-16 h-16 bg-[rgb(var(--coral))]/15 rounded-full flex items-center justify-center"
           >
             <svg
-              className="w-8 h-8 text-red-600"
+              className="w-8 h-8 text-danger-ink"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -290,12 +438,12 @@ function CallbackPageContent() {
         </div>
 
         {/* Error Message */}
-        <h1 className="text-2xl font-bold text-center mb-2 text-red-900">Connection Failed</h1>
-        <p className="text-center text-gray-600 mb-2">{errorMessage}</p>
+        <h1 className="text-2xl font-bold text-center mb-2 text-danger-ink">Connection Failed</h1>
+        <p className="text-center text-muted-foreground mb-2">{errorMessage}</p>
 
         {/* Error code */}
         {errorCode && (
-          <p className="text-center text-sm text-gray-500 mb-8">Error code: {errorCode}</p>
+          <p className="text-center text-sm text-muted-foreground mb-8">Error code: {errorCode}</p>
         )}
 
         {/* Action buttons */}
@@ -317,8 +465,8 @@ export default function CallbackPage() {
     <Suspense fallback={
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[rgb(var(--coral))] mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
         </div>
       </div>
     }>

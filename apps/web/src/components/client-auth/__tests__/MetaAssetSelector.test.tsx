@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
+import posthog from 'posthog-js';
 import { MetaAssetSelector } from '../MetaAssetSelector';
 
 vi.mock('posthog-js', () => ({
@@ -62,6 +63,12 @@ vi.mock('../GuidedRedirectModal', () => ({
   ),
 }));
 
+/** The receipt renders "Sharing from {name}" across a text node and a span. */
+const findSharingReceipt = (businessName: string) =>
+  screen.findByText((_, element) =>
+    element?.tagName === 'P' && element.textContent === `Sharing from ${businessName}`
+  );
+
 describe('MetaAssetSelector', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -120,11 +127,11 @@ describe('MetaAssetSelector', () => {
       />
     );
 
-    expect(await screen.findByText(/select business portfolio/i)).toBeInTheDocument();
+    expect(await screen.findByText(/which business are we sharing from/i)).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole('combobox', { name: /business portfolio/i }));
+    fireEvent.click(screen.getByRole('combobox', { name: 'Business' }));
     fireEvent.click(screen.getByRole('option', { name: /Client Two/ }));
-    fireEvent.click(screen.getByRole('button', { name: /load accounts/i }));
+    fireEvent.click(screen.getByRole('button', { name: /confirm business/i }));
 
     await waitFor(() => {
       expect(fetchMock).toHaveBeenNthCalledWith(
@@ -133,11 +140,11 @@ describe('MetaAssetSelector', () => {
       );
     });
 
-    expect(await screen.findByText(/sharing from client two/i)).toBeInTheDocument();
+    await findSharingReceipt('Client Two');
     expect(screen.getByText('Select ad accounts...')).toBeInTheDocument();
   });
 
-  it('preserves the selected business scope when refreshing assets and exposes a switch-business control', async () => {
+  it('preserves the selected business scope when refreshing assets and exposes an escape to the chooser', async () => {
     const fetchMock = vi
       .fn()
       .mockResolvedValueOnce({
@@ -177,6 +184,25 @@ describe('MetaAssetSelector', () => {
             },
             error: null,
           }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () =>
+          JSON.stringify({
+            data: {
+              businesses: [
+                { id: 'biz_1', name: 'Client One' },
+                { id: 'biz_2', name: 'Client Two' },
+              ],
+              selectionRequired: false,
+              selectedBusinessId: 'biz_1',
+              selectedBusinessName: 'Client One',
+              adAccounts: [],
+              pages: [],
+              instagramAccounts: [],
+            },
+            error: null,
+          }),
       } as Response);
 
     vi.stubGlobal('fetch', fetchMock);
@@ -191,8 +217,8 @@ describe('MetaAssetSelector', () => {
       />
     );
 
-    expect(await screen.findByText(/sharing from client two/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /switch business/i })).toBeInTheDocument();
+    await findSharingReceipt('Client Two');
+    expect(screen.getByRole('button', { name: /choose a different business/i })).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole('button', { name: /create ad account/i }));
     fireEvent.click(screen.getByRole('button', { name: /meta asset creator/i }));
@@ -204,8 +230,58 @@ describe('MetaAssetSelector', () => {
       );
     });
 
-    fireEvent.click(screen.getByRole('button', { name: /switch business/i }));
-    expect(await screen.findByText(/select business portfolio/i)).toBeInTheDocument();
+    // U11: the refresh is the SAME business — assets_loaded must not re-fire.
+    const assetsLoadedCalls = () =>
+      vi
+        .mocked(posthog.capture)
+        .mock.calls.filter(([event]) => event === 'invite_assets_loaded');
+    await waitFor(() => expect(assetsLoadedCalls()).toHaveLength(1));
+    expect(assetsLoadedCalls()[0]).toEqual([
+      'invite_assets_loaded',
+      {
+        available_ad_accounts: 0,
+        available_pages: 0,
+        available_instagram: 0,
+        available_catalogs: 0,
+        available_datasets: 0,
+        business_count: 2,
+        selection_required: false,
+        has_load_warnings: false,
+      },
+    ]);
+
+    // Escape to the chooser, pick the other portfolio, and confirm the reset;
+    // the reload stays scoped to the newly picked business.
+    fireEvent.click(screen.getByRole('button', { name: /choose a different business/i }));
+    fireEvent.click(await screen.findByRole('combobox', { name: 'Business' }));
+    fireEvent.click(screen.getByRole('option', { name: /Client One/ }));
+    fireEvent.click(screen.getByRole('button', { name: /confirm business/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /clear selection and switch/i }));
+
+    await waitFor(() => {
+      expect(fetchMock).toHaveBeenNthCalledWith(
+        3,
+        'https://api.example.com/api/client/token-1/assets/meta_ads?connectionId=conn-1&businessId=biz_1'
+      );
+    });
+    await findSharingReceipt('Client One');
+
+    // U11: the switched business is a new occurrence — exactly one more event,
+    // carrying only counts (no business names or ids).
+    await waitFor(() => expect(assetsLoadedCalls()).toHaveLength(2));
+    const [, secondPayload] = assetsLoadedCalls()[1] as [string, Record<string, unknown>];
+    expect(secondPayload).toEqual({
+      available_ad_accounts: 0,
+      available_pages: 0,
+      available_instagram: 0,
+      available_catalogs: 0,
+      available_datasets: 0,
+      business_count: 2,
+      selection_required: false,
+      has_load_warnings: false,
+    });
+    expect(JSON.stringify(secondPayload)).not.toContain('Client One');
+    expect(JSON.stringify(secondPayload)).not.toContain('biz_1');
   });
 
   it('does not refresh or restore a catalog business after the user switches portfolios', async () => {
@@ -242,22 +318,23 @@ describe('MetaAssetSelector', () => {
       />
     );
 
-    await screen.findByText(/sharing from client two/i);
+    await findSharingReceipt('Client Two');
     fireEvent.click(screen.getByRole('button', { name: 'Select pixel' }));
     expect(screen.getByTestId('Select Pixels and Datasets...')).toHaveAttribute('data-selected', 'pixel_old');
     fireEvent.click(screen.getByRole('button', { name: /^create catalog$/i }));
     fireEvent.change(screen.getByLabelText(/product catalog name/i), { target: { value: 'Client Catalog' } });
     fireEvent.click(screen.getByRole('button', { name: /^create catalog$/i }));
-    fireEvent.click(screen.getByRole('button', { name: /switch business/i }));
-    fireEvent.click(screen.getByRole('combobox', { name: /business portfolio/i }));
+    fireEvent.click(screen.getByRole('button', { name: /choose a different business/i }));
+    fireEvent.click(await screen.findByRole('combobox', { name: 'Business' }));
     fireEvent.click(screen.getByRole('option', { name: /client one/i }));
-    fireEvent.click(screen.getByRole('button', { name: /load accounts/i }));
-    await screen.findByText(/sharing from client one/i);
+    fireEvent.click(screen.getByRole('button', { name: /confirm business/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /clear selection and switch/i }));
+    await findSharingReceipt('Client One');
     expect(onSelectionChange.mock.lastCall?.[0].datasets).toEqual([]);
 
     resolveCatalogCreation(makeResponse({ id: 'catalog_new', name: 'Client Catalog' }));
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3));
-    expect(screen.getByText(/sharing from client one/i)).toBeInTheDocument();
+    await findSharingReceipt('Client One');
   });
 
   it('ignores dataset verification that returns after the selection changes', async () => {
@@ -287,7 +364,7 @@ describe('MetaAssetSelector', () => {
       />
     );
 
-    await screen.findByText(/sharing from client one/i);
+    await findSharingReceipt('Client One');
     fireEvent.click(screen.getByRole('button', { name: 'Select pixel' }));
     fireEvent.click(screen.getByRole('button', { name: 'Verify access' }));
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));

@@ -46,7 +46,7 @@ export function StepHelpText({
         aria-controls={contentId}
       >
         <div className="w-8 h-8 border-2 border-black dark:border-white bg-[var(--paper)] flex items-center justify-center flex-shrink-0">
-          <Info className="w-4 h-4 text-[var(--coral)]" />
+          <Info className="w-4 h-4 text-danger-ink" />
         </div>
         <span className="font-semibold text-[var(--ink)] flex-1">{title}</span>
         <m.div
@@ -99,7 +99,7 @@ export function StepHelpText({
                   key={index}
                   className="flex items-start gap-2 text-sm text-foreground dark:text-muted-foreground"
                 >
-                  <span className="text-[var(--coral)] mt-0.5">•</span>
+                  <span className="text-danger-ink mt-0.5">•</span>
                   <span>{detail}</span>
                 </li>
               ))}

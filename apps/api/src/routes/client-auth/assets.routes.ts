@@ -415,6 +415,66 @@ function validateMetaAssetSelection(
   return null;
 }
 
+/** Pull the validated id list out of a selected*WithNames array (review #16):
+ * the grant flow prefers these arrays over the flat id lists, so their ids
+ * must pass the same membership gate as the flat ones. */
+function extractWithNamesIds(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => {
+      if (!item || typeof item !== 'object') return '';
+      return String((item as Record<string, unknown>).id || '');
+    })
+    .filter(Boolean);
+}
+
+/**
+ * Shared save/grant scope validation (review #13): derive the selected asset
+ * kinds, run the narrowed Meta discovery, and validate every selected id
+ * against the discovered set. WithNames ids are unioned into their kind so a
+ * client cannot smuggle an unvalidated id through the names arrays.
+ */
+async function scopedMetaAssetSelection(
+  accessToken: string,
+  businessId: string,
+  selected: Partial<Record<MetaAssetKind, string[]>>,
+  withNames: Partial<Record<MetaAssetKind, unknown[]>> = {},
+): Promise<{ assets: MetaAssets } | { error: { code: string; message: string; statusCode: number } }> {
+  const selectedKinds: MetaAssetKind[] = [];
+  const merged: Partial<Record<MetaAssetKind, string[]>> = {};
+  for (const [kind, ids] of Object.entries(selected) as Array<[MetaAssetKind, string[]]>) {
+    const union = Array.from(new Set([...(ids || []), ...extractWithNamesIds(withNames[kind])]));
+    merged[kind] = union;
+    if (union.length > 0) selectedKinds.push(kind);
+  }
+
+  let assets: MetaAssets;
+  try {
+    assets = await clientAssetsService.fetchMetaAssets(
+      accessToken,
+      businessId,
+      selectedKinds.length > 0 ? selectedKinds : undefined
+    );
+  } catch (error) {
+    if (error instanceof MetaBusinessPortfolioUnavailableError) {
+      return { error: { code: error.code, message: error.message, statusCode: error.statusCode } };
+    }
+    return {
+      error: {
+        code: 'META_ASSET_DISCOVERY_FAILED',
+        message: 'Could not confirm selected assets belong to the selected client Business Portfolio.',
+        statusCode: 502,
+      },
+    };
+  }
+
+  const selectionError = validateMetaAssetSelection(businessId, assets, merged);
+  if (selectionError) {
+    return { error: selectionError };
+  }
+  return { assets };
+}
+
 export async function registerAssetRoutes(fastify: FastifyInstance) {
   async function resolveAuthorizedConnection(token: string, connectionId: string) {
     const accessRequest = await accessRequestService.getAccessRequestByToken(token);
@@ -547,6 +607,68 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
         );
         if (requirements.length === 0) {
           return sendError(reply, 'NO_SELECTED_ASSETS', 'Select at least one Meta asset', 400);
+        }
+
+        // KTD5: the selection blob is client-controlled input. Before anything
+        // is persisted, validate the claimed business and every asset ID
+        // against what this connection's Meta token can actually see.
+        const claimedBusinessId =
+          typeof resolvedSelectedAssets.selectedBusinessId === 'string'
+            ? resolvedSelectedAssets.selectedBusinessId
+            : null;
+        if (claimedBusinessId && claimedBusinessId !== clientBusinessId) {
+          // Review #11: one code, one status — the grant path and the shared
+          // validator both emit this mismatch as 409.
+          return sendError(
+            reply,
+            'META_BUSINESS_SELECTION_MISMATCH',
+            'Selected Business Portfolio does not match the client selection saved for this connection',
+            409
+          );
+        }
+
+        const scopeAudit = await auditService.createAuditLog({
+          agencyId: connection.agencyId,
+          action: 'META_TOKEN_READ',
+          userEmail: connection.clientEmail,
+          resourceType: 'client_connection',
+          resourceId: connectionId,
+          metadata: {
+            platform: platformStr,
+            source: 'save_assets_scope_validation',
+            selectedBusinessId: clientBusinessId,
+          },
+          request,
+        });
+        if (scopeAudit?.error) {
+          return sendError(reply, 'AUDIT_LOG_FAILED', 'Could not record Meta access before reading its token', 500);
+        }
+
+        const clientTokens = await infisical.getOAuthTokens(existingAuth.secretId);
+        if (!clientTokens?.accessToken) {
+          return sendError(reply, 'TOKEN_NOT_FOUND', 'OAuth tokens not found in secure storage', 500);
+        }
+
+        const scopeResult = await scopedMetaAssetSelection(
+          clientTokens.accessToken,
+          clientBusinessId,
+          {
+            page: normalizeStringIds(resolvedSelectedAssets.pages),
+            ad_account: normalizeStringIds(resolvedSelectedAssets.adAccounts),
+            instagram_account: normalizeStringIds(resolvedSelectedAssets.instagramAccounts),
+            catalog: normalizeStringIds(resolvedSelectedAssets.catalogs),
+            dataset: normalizeStringIds(resolvedSelectedAssets.datasets),
+          },
+          {
+            page: resolvedSelectedAssets.selectedPagesWithNames,
+            ad_account: resolvedSelectedAssets.selectedAdAccountsWithNames,
+            instagram_account: resolvedSelectedAssets.selectedInstagramWithNames,
+            catalog: resolvedSelectedAssets.selectedCatalogsWithNames,
+            dataset: resolvedSelectedAssets.selectedDatasetsWithNames,
+          }
+        );
+        if ('error' in scopeResult) {
+          return sendError(reply, scopeResult.error.code, scopeResult.error.message, scopeResult.error.statusCode);
         }
         metaRequirementContext = {
           accessRequestId: authContext.accessRequest.id,
@@ -904,30 +1026,16 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
       }
 
       const clientAccessToken = clientAccessTokenResult.data.accessToken;
-      let scopedClientAssets;
-      try {
-        const selectedAssetKinds: MetaAssetKind[] = [];
-        if (selectedPageIds.length) selectedAssetKinds.push('page');
-        if (selectedAdAccountIds.length) selectedAssetKinds.push('ad_account');
-        if (selectedInstagramIds.length) selectedAssetKinds.push('instagram_account');
-        if (selectedCatalogIds.length) selectedAssetKinds.push('catalog');
-        if (selectedDatasetIds.length) selectedAssetKinds.push('dataset');
-        scopedClientAssets = await clientAssetsService.fetchMetaAssets(
-          clientAccessToken,
-          selectedBusinessId,
-          selectedAssetKinds.length ? selectedAssetKinds : undefined
-        );
-      } catch {
-        return sendError(reply, 'META_ASSET_DISCOVERY_FAILED', 'Could not confirm selected assets belong to the selected client Business Portfolio.', 502);
-      }
-      const selectionError = validateMetaAssetSelection(selectedBusinessId, scopedClientAssets, {
+      const grantScopeResult = await scopedMetaAssetSelection(clientAccessToken, selectedBusinessId, {
         page: selectedPageIds,
         ad_account: selectedAdAccountIds,
         instagram_account: selectedInstagramIds,
         catalog: selectedCatalogIds,
         dataset: selectedDatasetIds,
       });
-      if (selectionError) return sendError(reply, selectionError.code, selectionError.message, selectionError.statusCode);
+      if ('error' in grantScopeResult) {
+        return sendError(reply, grantScopeResult.error.code, grantScopeResult.error.message, grantScopeResult.error.statusCode);
+      }
       const managedBusinessLinkResult = await metaOBOService.ensureManagedBusinessRelationship({
         authorizationId: platformAuth.id,
         connectionId,

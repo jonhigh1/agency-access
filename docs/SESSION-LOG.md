@@ -1,5 +1,26 @@
 ---
 
+## Session: 2026-09-26/27 — Client invite flow 10X redesign (PR #73)
+
+### What was done
+- Executed plan 2026-09-26-0931 end to end: U1-U11 (ingest middleware fix, non-destructive selection reset, reason-resolver CTA, receipt-first PortfolioSelector on both surfaces with server-validated saves, named-platform checklist, server-truth landing states, intake audit, manual-grant checklist, design-contract walker, token-scrubbed funnel events), then a simplification pass.
+- Ran ce-code-review (run 20260927-104425-d1ca0db7, 11 reviewers + cross-model codex pass): verdict Not ready; fixed all 4 P1 blockers (Sentry token leak, OAuth code/state in PostHog, save deadline, assetsLoaded gate) plus the Vercel build break the gate fix caused.
+- Visual QA on the live invite (browser capture, rule + taste gates): fixed the REQUEST_NOT_FOUND terminal gap, the duplicated security badge, 390px CTA wrapping.
+- Review batch fixes: A (API scope validation unified, WithNames ids validated, 403->409, 500/502 tests), B (prefill prune-to-empty, popup resume effect, save/reset race guard), C (walker silent-pass surfaces: rgb-wrapped accent regex, handler-first button regex + legacy ratchet, callback page migrated to v2 tokens, directory-walk coverage).
+
+### Files changed
+- apps/web: proxy.ts, invite page + flow components, client-auth components, lib/invite/*, lib/analytics/*, sentry.client.config.ts, platforms/callback page, walkers and their tests
+- apps/api: assets.routes.ts, schemas.ts, assets.meta.test.ts
+- packages/shared: (types added during U1-U11 per plan; see plan)
+
+### Decisions made
+- See DEC-010 through DEC-013 in docs/DECISIONS.md.
+- Review residuals: 23 actionable P2/P3s tracked in the PR Known Residuals; #14 (Graph-discovery caching) resolved as "do not - plan stop condition" with post-deploy 502 monitoring; #24 (PortfolioSelector fetch-surface removal) recorded as a settled conflict vs KTD5, not applied.
+
+### Next steps
+- Merge PR #73; run the post-deploy checklist in the PR body (ingest smoke, token-scrub spot-check, Meta save 502-rate watch, heuristic re-score >= 28/40).
+- Migrate the tracked legacy button-contract backlog (ratcheted in button-contract.design.test.ts).
+
 ## Session: 2026-09-13/14 — App craft and motion plan implementation (PR #56)
 
 ### What was done

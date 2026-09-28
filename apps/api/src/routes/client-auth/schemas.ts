@@ -40,6 +40,9 @@ export const saveAssetsSchema = z.object({
   connectionId: z.string(),
   platform: z.string(),
   selectedAssets: z.object({
+    // Client-controlled claim (KTD5): the route validates it against the
+    // business this connection's platform token can actually see.
+    selectedBusinessId: z.string().optional(),
     adAccounts: z.array(z.string()).optional(),
     advertisers: z.array(z.string()).optional(),
     pages: z.array(z.string()).optional(),

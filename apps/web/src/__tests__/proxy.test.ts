@@ -166,3 +166,64 @@ describe('proxy public route handling', () => {
     expect(protectMock).not.toHaveBeenCalled();
   });
 });
+
+describe('proxy PostHog ingest handling', () => {
+  beforeEach(() => {
+    protectMock.mockReset();
+    delete process.env.NEXT_PUBLIC_BYPASS_AUTH;
+    process.env.NODE_ENV = 'test';
+  });
+
+  describe('middleware handler', () => {
+    it.each([
+      '/ingest/e/?ip=1&_=&v=1',
+      '/ingest/batch/',
+      '/ingest/decide?v=3',
+      '/ingest/static/array.js',
+    ])('does not protect PostHog beacon path %s for anonymous visitors', async (pathname) => {
+      const { default: proxy } = await import('../proxy');
+
+      const response = await proxy(
+        { protect: protectMock },
+        new Request(`https://authhub.test${pathname}`),
+      );
+
+      expect(response).toBeUndefined();
+      expect(protectMock).not.toHaveBeenCalled();
+    });
+
+    it('still protects the dashboard for anonymous visitors (sign-in redirect path)', async () => {
+      const { default: proxy } = await import('../proxy');
+
+      await proxy({ protect: protectMock }, new Request('https://authhub.test/dashboard'));
+
+      expect(protectMock).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('matcher config', () => {
+    // Next.js compiles each matcher entry as a full-path match.
+    const middlewareMatcher = async () => {
+      const { config } = await import('../proxy');
+      return new RegExp(`^${config.matcher[0]}$`);
+    };
+
+    it.each(['/ingest', '/ingest/e/', '/ingest/batch/', '/ingest/static/array.js'])(
+      'excludes PostHog ingest path %s from middleware (rewrite serves the proxy)',
+      async (pathname) => {
+        expect((await middlewareMatcher()).test(pathname)).toBe(false);
+      },
+    );
+
+    it.each(['/ingest-notes', '/dashboard/clients', '/settings'])(
+      'keeps non-ingest app route %s inside middleware (auth still applies)',
+      async (pathname) => {
+        expect((await middlewareMatcher()).test(pathname)).toBe(true);
+      },
+    );
+
+    it('keeps api routes excluded from the middleware as before', async () => {
+      expect((await middlewareMatcher()).test('/api/projects')).toBe(false);
+    });
+  });
+});

@@ -49,14 +49,14 @@ export function CopyCode({ value, label }: CopyCodeProps) {
           aria-label={copied ? 'Copied' : 'Copy to clipboard'}
         >
           {copied ? (
-            <Check className="w-5 h-5 text-emerald-600" />
+            <Check className="w-5 h-5 text-success-ink" />
           ) : (
             <Copy className="w-5 h-5 text-muted-foreground" />
           )}
         </button>
       </div>
       {copied && (
-        <p className="text-xs text-emerald-600 font-medium">Copied to clipboard</p>
+        <p className="text-xs text-success-ink font-medium">Copied to clipboard</p>
       )}
     </div>
   );

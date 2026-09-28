@@ -11,6 +11,24 @@ vi.mock('@/lib/analytics/capture-posthog', () => ({
   capturePosthogEvent: captureMock,
 }));
 
+/** The receipt renders "Sharing from {name}" across a text node and a span. */
+const findSharingReceipt = (businessName: string) =>
+  screen.findByText((_, element) =>
+    element?.tagName === 'P' && element.textContent === `Sharing from ${businessName}`
+  );
+const querySharingReceipt = (businessName: string) =>
+  screen.queryByText((_, element) =>
+    element?.tagName === 'P' && element.textContent === `Sharing from ${businessName}`
+  );
+
+/** Escape the receipt, pick a business in the chooser, and confirm. */
+async function chooseBusiness(user: ReturnType<typeof userEvent.setup>, businessName: RegExp) {
+  await user.click(screen.getByRole('button', { name: /choose a different business/i }));
+  await user.click(await screen.findByRole('combobox', { name: 'Business' }));
+  await user.click(screen.getByRole('option', { name: businessName }));
+  await user.click(screen.getByRole('button', { name: /confirm business/i }));
+}
+
 describe('MetaAssetSelector interactions', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -80,7 +98,7 @@ describe('MetaAssetSelector interactions', () => {
     expect(assetGrid).toHaveClass('md:grid-cols-2');
   });
 
-  it('reports selected Meta assets after a business is loaded and an asset is clicked', async () => {
+  it('reports selected Meta assets after a business is confirmed and an asset is clicked', async () => {
     const user = userEvent.setup();
     const onSelectionChange = vi.fn();
 
@@ -141,13 +159,13 @@ describe('MetaAssetSelector interactions', () => {
       />
     );
 
-    await screen.findByText('Select Business Portfolio');
+    await screen.findByText(/which business are we sharing from/i);
 
-    await user.click(screen.getByRole('combobox', { name: 'Business Portfolio' }));
+    await user.click(screen.getByRole('combobox', { name: 'Business' }));
     await user.click(screen.getByRole('option', { name: /DogTimez Retail/ }));
-    await user.click(screen.getByRole('button', { name: 'Load accounts' }));
+    await user.click(screen.getByRole('button', { name: /confirm business/i }));
 
-    await screen.findByText('Sharing from DogTimez Retail');
+    await findSharingReceipt('DogTimez Retail');
     await user.click(screen.getByText('Select pages...', { exact: false }));
     await user.click(await screen.findByText('DogTimez Facebook'));
 
@@ -158,11 +176,23 @@ describe('MetaAssetSelector interactions', () => {
           selectedBusinessId: 'biz_client_2',
           selectedBusinessName: 'DogTimez Retail',
           selectedPagesWithNames: [{ id: 'page_1001', name: 'DogTimez Facebook' }],
+          // Keys the grant step and server-side scope validation read back.
+          businesses: [
+            { id: 'biz_client_1', name: 'DogTimez Holdings' },
+            { id: 'biz_client_2', name: 'DogTimez Retail' },
+          ],
+          selectionRequired: false,
+          allPages: [{ id: 'page_1001', name: 'DogTimez Facebook', category: 'Brand' }],
         })
       );
     });
 
-    expect(captureMock).not.toHaveBeenCalled();
+    // U11: load/shown funnel events may already have fired, but the
+    // selection event must still wait for a real selection.
+    expect(captureMock).not.toHaveBeenCalledWith(
+      'meta_assets_selected',
+      expect.anything()
+    );
   });
 
   it('returns selected product catalogs with their names', async () => {
@@ -285,5 +315,285 @@ describe('MetaAssetSelector interactions', () => {
     expect(screen.getByText(/AuthHub will attempt assignment and report Meta read-back/)).toBeInTheDocument();
     expect(screen.getByText('leads_retrieval')).toBeInTheDocument();
     expect(screen.getByRole('link', { name: 'Open Meta Business Settings for Leads Access' })).toBeInTheDocument();
+  });
+
+  it('confirms with the selection count before a confirmed business switch and declines without changing anything', async () => {
+    const user = userEvent.setup();
+    const onSelectionChange = vi.fn();
+    const onSelectionDerivedStateReset = vi.fn();
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      text: async () => JSON.stringify({ data: {
+        businesses: [
+          { id: 'biz-1', name: 'Business One' },
+          { id: 'biz-2', name: 'Business Two' },
+        ],
+        selectedBusinessId: 'biz-1', selectedBusinessName: 'Business One', selectionRequired: false,
+        adAccounts: [], pages: [
+          { id: 'page-1', name: 'Page One' },
+          { id: 'page-2', name: 'Page Two' },
+          { id: 'page-3', name: 'Page Three' },
+        ], instagramAccounts: [], productCatalogs: [],
+      }, error: null }),
+    } as Response);
+
+    render(<MetaAssetSelector
+      sessionId="conn-1"
+      accessRequestToken="token-1"
+      allowedAssetTypes={['page']}
+      onSelectionChange={onSelectionChange}
+      onSelectionDerivedStateReset={onSelectionDerivedStateReset}
+    />);
+
+    await findSharingReceipt('Business One');
+    await user.click(screen.getByText('Select pages...', { exact: false }));
+    await user.click(await screen.findByText('Page One'));
+    await user.click(await screen.findByText('Page Two'));
+    await user.click(await screen.findByText('Page Three'));
+
+    // Escaping to the chooser alone never destroys work.
+    await user.click(screen.getByRole('button', { name: /choose a different business/i }));
+    await waitFor(() => expect(screen.getByRole('combobox', { name: 'Business' })).toBeInTheDocument());
+    expect(onSelectionDerivedStateReset).not.toHaveBeenCalled();
+
+    await user.click(screen.getByRole('combobox', { name: 'Business' }));
+    await user.click(screen.getByRole('option', { name: /Business Two/ }));
+    await user.click(screen.getByRole('button', { name: /confirm business/i }));
+
+    const dialog = await screen.findByRole('alertdialog');
+    expect(dialog).toHaveTextContent('3');
+    expect(screen.getByRole('button', { name: 'Clear selection and switch' })).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Cancel' }));
+
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(onSelectionDerivedStateReset).not.toHaveBeenCalled();
+    expect(onSelectionChange).toHaveBeenLastCalledWith(expect.objectContaining({
+      pages: ['page-1', 'page-2', 'page-3'],
+      selectedBusinessId: 'biz-1',
+    }));
+    // Declining closes the chooser and keeps the original receipt: nothing
+    // was destroyed.
+    await findSharingReceipt('Business One');
+    expect(screen.queryByRole('combobox', { name: 'Business' })).not.toBeInTheDocument();
+  });
+
+  it('clears selection-derived state on a confirmed switch and reports the reset', async () => {
+    const user = userEvent.setup();
+    const onSelectionChange = vi.fn();
+    const onSelectionDerivedStateReset = vi.fn();
+    vi.mocked(fetch)
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () => JSON.stringify({ data: {
+          businesses: [
+            { id: 'biz-1', name: 'Business One' },
+            { id: 'biz-2', name: 'Business Two' },
+          ],
+          selectedBusinessId: 'biz-1', selectedBusinessName: 'Business One', selectionRequired: false,
+          adAccounts: [], pages: [{ id: 'page-1', name: 'Page One' }], instagramAccounts: [], productCatalogs: [],
+        }, error: null }),
+      } as Response)
+      .mockResolvedValue({
+        ok: true,
+        text: async () => JSON.stringify({ data: {
+          businesses: [
+            { id: 'biz-1', name: 'Business One' },
+            { id: 'biz-2', name: 'Business Two' },
+          ],
+          selectedBusinessId: 'biz-2', selectedBusinessName: 'Business Two', selectionRequired: false,
+          adAccounts: [], pages: [], instagramAccounts: [], productCatalogs: [],
+        }, error: null }),
+      } as Response);
+
+    render(<MetaAssetSelector
+      sessionId="conn-1"
+      accessRequestToken="token-1"
+      allowedAssetTypes={['page']}
+      onSelectionChange={onSelectionChange}
+      onSelectionDerivedStateReset={onSelectionDerivedStateReset}
+    />);
+
+    await findSharingReceipt('Business One');
+    await user.click(screen.getByText('Select pages...', { exact: false }));
+    await user.click(await screen.findByText('Page One'));
+    await waitFor(() => expect(onSelectionChange).toHaveBeenCalledWith(expect.objectContaining({ pages: ['page-1'] })));
+
+    await chooseBusiness(user, /Business Two/);
+    await user.click(await screen.findByRole('button', { name: 'Clear selection and switch' }));
+
+    expect(onSelectionDerivedStateReset).toHaveBeenCalledTimes(1);
+    await waitFor(() => {
+      expect(onSelectionChange).toHaveBeenLastCalledWith(expect.objectContaining({
+        pages: [],
+        selectedBusinessId: 'biz-2',
+        selectionRequired: false,
+      }));
+    });
+    expect(querySharingReceipt('Business One')).not.toBeInTheDocument();
+    await findSharingReceipt('Business Two');
+  });
+
+  it('switches with zero selections without a confirm and still resets', async () => {
+    const user = userEvent.setup();
+    const onSelectionDerivedStateReset = vi.fn();
+    vi.mocked(fetch)
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () => JSON.stringify({ data: {
+          businesses: [
+            { id: 'biz-1', name: 'Business One' },
+            { id: 'biz-2', name: 'Business Two' },
+          ],
+          selectedBusinessId: 'biz-1', selectedBusinessName: 'Business One', selectionRequired: false,
+          adAccounts: [], pages: [{ id: 'page-1', name: 'Page One' }], instagramAccounts: [], productCatalogs: [],
+        }, error: null }),
+      } as Response)
+      .mockResolvedValue({
+        ok: true,
+        text: async () => JSON.stringify({ data: {
+          businesses: [
+            { id: 'biz-1', name: 'Business One' },
+            { id: 'biz-2', name: 'Business Two' },
+          ],
+          selectedBusinessId: 'biz-2', selectedBusinessName: 'Business Two', selectionRequired: false,
+          adAccounts: [], pages: [], instagramAccounts: [], productCatalogs: [],
+        }, error: null }),
+      } as Response);
+
+    render(<MetaAssetSelector
+      sessionId="conn-1"
+      accessRequestToken="token-1"
+      allowedAssetTypes={['page']}
+      onSelectionChange={vi.fn()}
+      onSelectionDerivedStateReset={onSelectionDerivedStateReset}
+    />);
+
+    await findSharingReceipt('Business One');
+    await chooseBusiness(user, /Business Two/);
+
+    expect(screen.queryByRole('alertdialog')).not.toBeInTheDocument();
+    expect(onSelectionDerivedStateReset).toHaveBeenCalledTimes(1);
+    await findSharingReceipt('Business Two');
+  });
+
+  it('clears Pixel verification results on a confirmed switch after partial verification', async () => {
+    const user = userEvent.setup();
+    const onSelectionDerivedStateReset = vi.fn();
+    const assetsResponse = {
+      ok: true,
+      text: async () => JSON.stringify({ data: {
+        businesses: [
+          { id: 'biz-1', name: 'Business One' },
+          { id: 'biz-2', name: 'Business Two' },
+        ],
+        selectedBusinessId: 'biz-1', selectedBusinessName: 'Business One', selectionRequired: false,
+        adAccounts: [], pages: [], instagramAccounts: [], productCatalogs: [],
+        pixels: [{ id: 'pixel-1', name: 'Website Pixel' }],
+      }, error: null }),
+    } as Response;
+    const switchedResponse = {
+      ok: true,
+      text: async () => JSON.stringify({ data: {
+        businesses: [
+          { id: 'biz-1', name: 'Business One' },
+          { id: 'biz-2', name: 'Business Two' },
+        ],
+        selectedBusinessId: 'biz-2', selectedBusinessName: 'Business Two', selectionRequired: false,
+        adAccounts: [], pages: [], instagramAccounts: [], productCatalogs: [], pixels: [],
+      }, error: null }),
+    } as Response;
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(assetsResponse)
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () => JSON.stringify({ data: { status: 'verified' }, error: null }),
+      } as Response)
+      .mockResolvedValueOnce(switchedResponse);
+
+    render(<MetaAssetSelector
+      sessionId="conn-1"
+      accessRequestToken="token-1"
+      allowedAssetTypes={['dataset']}
+      onSelectionChange={vi.fn()}
+      onSelectionDerivedStateReset={onSelectionDerivedStateReset}
+    />);
+
+    await screen.findByRole('heading', { name: 'Pixels and Datasets' });
+    await user.click(screen.getByText('Select Pixels and Datasets...', { exact: false }));
+    await user.click(await screen.findByText('Website Pixel'));
+    await user.click(screen.getByLabelText('Verify access'));
+    await user.click(screen.getByRole('button', { name: 'Verify access' }));
+    expect(await screen.findByRole('status')).toHaveTextContent(/Meta confirmed access for every selected recipient/);
+
+    await chooseBusiness(user, /Business Two/);
+    expect(screen.getByRole('alertdialog')).toHaveTextContent('1');
+    await user.click(screen.getByRole('button', { name: 'Clear selection and switch' }));
+
+    expect(onSelectionDerivedStateReset).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText(/Meta confirmed access for every selected recipient/)).not.toBeInTheDocument();
+    await findSharingReceipt('Business Two');
+  });
+
+  it('reports the reset when a business is confirmed from the chooser', async () => {
+    const user = userEvent.setup();
+    const onSelectionDerivedStateReset = vi.fn();
+    vi.mocked(fetch)
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () =>
+          JSON.stringify({
+            data: {
+              businesses: [
+                { id: 'biz_client_1', name: 'DogTimez Holdings' },
+                { id: 'biz_client_2', name: 'DogTimez Retail' },
+              ],
+              selectedBusinessId: null,
+              selectedBusinessName: null,
+              selectionRequired: true,
+              adAccounts: [],
+              pages: [],
+              instagramAccounts: [],
+              productCatalogs: [],
+            },
+            error: null,
+          }),
+      } as Response)
+      .mockResolvedValue({
+        ok: true,
+        text: async () =>
+          JSON.stringify({
+            data: {
+              businesses: [
+                { id: 'biz_client_1', name: 'DogTimez Holdings' },
+                { id: 'biz_client_2', name: 'DogTimez Retail' },
+              ],
+              selectedBusinessId: 'biz_client_2',
+              selectedBusinessName: 'DogTimez Retail',
+              selectionRequired: false,
+              adAccounts: [],
+              pages: [{ id: 'page_1001', name: 'DogTimez Facebook' }],
+              instagramAccounts: [],
+              productCatalogs: [],
+            },
+            error: null,
+          }),
+      } as Response);
+
+    render(<MetaAssetSelector
+      sessionId="conn-1"
+      accessRequestToken="token-1"
+      allowedAssetTypes={['page']}
+      onSelectionChange={vi.fn()}
+      onSelectionDerivedStateReset={onSelectionDerivedStateReset}
+    />);
+
+    await screen.findByText(/which business are we sharing from/i);
+    await user.click(screen.getByRole('combobox', { name: 'Business' }));
+    await user.click(screen.getByRole('option', { name: /DogTimez Retail/ }));
+    await user.click(screen.getByRole('button', { name: /confirm business/i }));
+
+    expect(onSelectionDerivedStateReset).toHaveBeenCalledTimes(1);
+    await findSharingReceipt('DogTimez Retail');
   });
 });

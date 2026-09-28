@@ -5,10 +5,12 @@
  *
  * Acid Brutalism Design:
  * - Hard borders (border-2 border-black)
- * - Brutalist shadow (shadow-brutalist)
+ * - No resting shadow — the invite stage card carries the view's single
+ *   brutalist emphasis, so this nested card stays border-led
  * - Binary radius (square)
  * - Platform icon header
- * - Animated step transitions
+ * - Animated step transitions (clipped by the content wrapper, never by the
+ *   card root — the footer must not sit inside an overflow-hidden ancestor)
  * - Footer with navigation buttons
  */
 
@@ -40,7 +42,7 @@ export function PlatformWizardCard({
 
   return (
     <m.div
-      className="bg-card rounded-none shadow-brutalist border-2 border-black dark:border-white overflow-hidden"
+      className="bg-card rounded-none border-2 border-black dark:border-white"
       initial={false}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
@@ -61,8 +63,15 @@ export function PlatformWizardCard({
         </div>
       ) : null}
 
-      {/* Content: Step-specific content with animation - min-h prevents blank collapse during transitions */}
-      <div className={showFullChrome ? 'p-5 sm:p-6 min-h-[200px]' : 'p-4 sm:p-5 min-h-[180px]'}>
+      {/* Content: Step-specific content with animation - min-h prevents blank
+          collapse during transitions. The overflow clip lives here so the step
+          slide-out never paints outside the card while the footer below stays
+          outside every overflow-hidden ancestor. */}
+      <div
+        className={
+          showFullChrome ? 'overflow-hidden p-5 sm:p-6 min-h-[200px]' : 'overflow-hidden p-4 sm:p-5 min-h-[180px]'
+        }
+      >
         <AnimatePresence mode="sync" initial={false}>
           <m.div
             key={currentStep}

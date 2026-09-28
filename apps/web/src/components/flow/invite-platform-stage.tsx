@@ -1,6 +1,10 @@
 import type { ReactNode } from 'react';
 import { PlatformIcon } from '@/components/ui';
 import type { Platform } from '@agency-platform/shared';
+import {
+  INVITE_CHIP_STATUS_BY_PLATFORM_STATUS,
+  type InvitePlatformStatus,
+} from '@/lib/invite/platform-status';
 import { InviteStatusChip } from './invite-status-chip';
 
 export interface InviteStageIdentity {
@@ -11,8 +15,12 @@ export interface InviteStageIdentity {
 interface InvitePlatformStageProps {
   platform: Platform;
   platformName: string;
-  stepNumber: number;
-  totalCount: number;
+  /**
+   * Derived checklist status for this platform (KTD6). Never hardcoded:
+   * the chip must tell the truth about the platform on screen. The checklist
+   * carries position, so there is no step label here.
+   */
+  status?: InvitePlatformStatus;
   description: string;
   exitNote: string;
   identities?: InviteStageIdentity[];
@@ -26,8 +34,7 @@ interface InvitePlatformStageProps {
 export function InvitePlatformStage({
   platform,
   platformName,
-  stepNumber,
-  totalCount,
+  status = 'connect-first',
   description,
   exitNote,
   identities = [],
@@ -39,11 +46,8 @@ export function InvitePlatformStage({
       aria-label={`Active platform: ${platformName}`}
     >
       <div className="border-b-2 border-black px-5 py-4 sm:px-6">
-        <div className="flex items-center justify-between gap-3">
-          <p className="label-micro">
-            Now · step {stepNumber} of {totalCount}
-          </p>
-          <InviteStatusChip status="active" />
+        <div className="flex items-center justify-end">
+          <InviteStatusChip status={INVITE_CHIP_STATUS_BY_PLATFORM_STATUS[status]} />
         </div>
         <div className="mt-3 flex items-center gap-3">
           <PlatformIcon platform={platform} size="md" />

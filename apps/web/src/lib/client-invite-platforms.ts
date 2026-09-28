@@ -70,7 +70,6 @@ export function isClientInviteManualCallbackPlatform(platform: Platform): boolea
 }
 
 export function getInviteSecuritySummary(platforms: Platform[]): {
-  badge: string;
   detail: string;
   usesOAuthFlow: boolean;
   usesManualFlow: boolean;
@@ -81,7 +80,6 @@ export function getInviteSecuritySummary(platforms: Platform[]): {
 
   if (usesOAuthFlow && usesManualFlow) {
     return {
-      badge: 'Secure — passwords never requested',
       detail: 'You will connect some accounts directly and authorize others through official login screens.',
       usesOAuthFlow,
       usesManualFlow,
@@ -90,7 +88,6 @@ export function getInviteSecuritySummary(platforms: Platform[]): {
 
   if (usesManualFlow) {
     return {
-      badge: 'Secure — passwords never requested',
       detail: 'You will invite your agency through each platform\'s own settings. No login credentials are shared.',
       usesOAuthFlow,
       usesManualFlow,
@@ -98,7 +95,6 @@ export function getInviteSecuritySummary(platforms: Platform[]): {
   }
 
   return {
-    badge: 'Secure — passwords never requested',
     detail: 'You will authorize access through each platform\'s official login screen. Your credentials stay with the platform.',
     usesOAuthFlow,
     usesManualFlow,
