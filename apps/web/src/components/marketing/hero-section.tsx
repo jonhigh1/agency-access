@@ -6,6 +6,7 @@ import { Globe, ShieldCheck, Zap, TrendingUp, Check } from 'lucide-react';
 import { m } from 'framer-motion';
 import { Reveal } from './reveal';
 import { ScheduleDemoModal } from './schedule-demo-modal';
+import Link from 'next/link';
 import { useState } from 'react';
 import { useAnimationOrchestrator } from '@/hooks/use-animation-orchestrator';
 
@@ -166,7 +167,13 @@ export function HeroSection() {
             >
               <div className="animate-float-pillar" style={{ animationDelay: '1s' }}>
                 <div className="flex items-center gap-2 font-dela text-sm">
-                  <Check className="w-4 h-4" /> Built for Humans + Agents
+                  <Check className="w-4 h-4" aria-hidden="true" />
+                  <Link
+                    href="/blog/mcp-oauth-client-access-agencies"
+                    className="underline decoration-paper/40 underline-offset-2 hover:decoration-paper focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-paper"
+                  >
+                    Built for Humans + Agents
+                  </Link>
                 </div>
               </div>
             </m.div>

@@ -31,6 +31,7 @@ relatedPosts:
   - how-to-revoke-client-access-offboarding
   - client-onboarding-checklist
   - social-media-access-request-template
+  - mcp-oauth-client-access-agencies
 ---
 
 # OAuth Token Management for Agencies: What Expires, What Breaks, and How to Fix It (2026)
@@ -171,6 +172,8 @@ For agencies managing fewer than 10 clients, a spreadsheet with expiry dates and
 Past 10 clients, the math changes. If you have 40 client connections across Meta and LinkedIn — which both use 60-day tokens — you're managing roughly 3 expiring tokens per week on average. That's 3 client reauthorization requests per week, and clients rarely act on the first message. Some of those will take 2-3 follow-ups. That's a part-time job.
 
 The operational answer at this scale is to centralize the access request layer. Tools like AuthHub handle token expiry monitoring, automate reauthorization outreach, and generate direct-link flows that clients can complete in under two minutes — rather than navigating platform settings on their own. The access request templates that [agencies send to new clients](/blog/social-media-access-request-template) become the same mechanism used for reauthorization.
+
+If you are wiring Claude, ChatGPT, or Cursor to client ad accounts, token refresh is only half the stack—the other half is how clients grant OAuth in the first place. See [MCP OAuth for agencies: using tokens with AI agents](/blog/mcp-oauth-client-access-agencies) for one-link intake, vaulting, and per-client isolation without password sharing.
 
 The math is worth running: if each reauthorization cycle takes 30-60 minutes of account management time across emails, follow-ups, and verification — and you're handling 12 reauthorizations per month — that's 6-12 hours a month on a problem with a known solution.
 
