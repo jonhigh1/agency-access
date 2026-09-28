@@ -182,10 +182,10 @@ export default function DashboardPage() {
       }
       return failureCount < 1;
     },
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
     gcTime: 10 * 60 * 1000,
-    refetchOnWindowFocus: false,
-    refetchOnMount: false,
+    refetchOnWindowFocus: true,
+    refetchOnMount: 'always',
     placeholderData: (previousData) => previousData,
   });
 

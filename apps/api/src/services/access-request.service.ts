@@ -2325,23 +2325,21 @@ export async function cancelAccessRequest(
       return { data: null, error: { code: 'NOT_FOUND', message: 'Access request not found' } };
     }
 
-    void Promise.all([
-      cancellation.changed
-        ? emitAccessRequestLifecycleWebhook({
-            accessRequestId: id,
-            previousStatus: cancellation.status,
-            nextStatus: 'revoked',
-          })
-        : Promise.resolve(),
-      cancellation.agencyId && cancellation.changed
-        ? invalidateDashboardCache(cancellation.agencyId)
-        : Promise.resolve(),
-    ]).catch((error) => {
-      logger.warn('Failed to complete access request cancellation side effects', {
+    if (cancellation.agencyId && cancellation.changed) {
+      await invalidateDashboardCache(cancellation.agencyId);
+    }
+    if (cancellation.changed) {
+      void emitAccessRequestLifecycleWebhook({
         accessRequestId: id,
-        error: error instanceof Error ? error.message : String(error),
+        previousStatus: cancellation.status,
+        nextStatus: 'revoked',
+      }).catch((error) => {
+        logger.warn('Failed to complete access request cancellation side effects', {
+          accessRequestId: id,
+          error: error instanceof Error ? error.message : String(error),
+        });
       });
-    });
+    }
 
     return { data: { success: true }, error: null };
   } catch (error) {

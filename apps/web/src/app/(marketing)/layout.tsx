@@ -6,12 +6,12 @@ import { MarketingNav } from "@/components/marketing/marketing-nav";
 import { MarketingFooter } from "@/components/marketing/marketing-footer";
 
 export const metadata: Metadata = {
-  title: "AuthHub | Streamline Client OAuth Onboarding",
-  description: "Replace 2-3 days of manual OAuth setup with a 5-minute automated flow. Let clients authorize Meta, Google Ads, GA4, LinkedIn, and more through a single branded link.",
+  title: "AuthHub | Client Access in One Link",
+  description: "Request ad and analytics access with one guided client link. Track what is done across Meta, Google Ads, GA4, and more.",
   keywords: ["OAuth", "marketing agencies", "client onboarding", "Meta Ads", "Google Ads", "agency tools"],
   openGraph: {
-    title: "AuthHub | Streamline Client OAuth Onboarding",
-    description: "Replace 2-3 days of manual OAuth setup with a 5-minute automated flow.",
+    title: "AuthHub | Client Access in One Link",
+    description: "Request ad and analytics access with one guided client link. Track what is done across Meta, Google Ads, GA4, and more.",
     type: "website",
   },
 };

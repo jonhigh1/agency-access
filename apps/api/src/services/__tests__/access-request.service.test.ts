@@ -6,6 +6,7 @@
 
 import { afterEach, describe, it, expect, beforeEach, vi } from 'vitest';
 import { prisma } from '@/lib/prisma';
+import { CacheKeys, getCached } from '@/lib/cache.js';
 import { Prisma } from '@prisma/client';
 import { queueWebhookDelivery } from '@/lib/queue-helpers';
 import * as accessRequestService from '@/services/access-request.service';
@@ -2190,6 +2191,28 @@ describe('AccessRequestService', () => {
   });
 
   describe('cancelAccessRequest', () => {
+    it('clears dashboard cache before returning after revoke', async () => {
+      const key = CacheKeys.dashboard('cache-agency');
+      await getCached({ key, fetch: async () => ({ data: { status: 'pending' }, error: null }) });
+      const transaction = {
+        accessRequest: {
+          findUnique: vi.fn().mockResolvedValue({
+            agencyId: 'cache-agency', status: 'pending', clientName: 'Client', clientEmail: 'client@example.com',
+          }),
+          updateMany: vi.fn().mockResolvedValue({ count: 1 }),
+        },
+        auditLog: { create: vi.fn() },
+      };
+      vi.mocked(prisma.$transaction).mockImplementation(async (callback: any) => callback(transaction));
+
+      await accessRequestService.cancelAccessRequest('request-cache');
+
+      const fetchFresh = vi.fn().mockResolvedValue({ data: { status: 'revoked' }, error: null });
+      const result = await getCached({ key, fetch: fetchFresh });
+      expect(result.cached).toBe(false);
+      expect(fetchFresh).toHaveBeenCalledOnce();
+    });
+
     it('returns after durable revoke even when webhook delivery stalls', async () => {
       const transaction = {
         accessRequest: {

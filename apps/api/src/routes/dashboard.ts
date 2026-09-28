@@ -13,7 +13,6 @@ import { connectionService } from '../services/connection.service.js';
 import { agencyService } from '@/services/agency.service.js';
 import { subscriptionService } from '@/services/subscription.service.js';
 import { getCached, CacheKeys, CacheTTL } from '../lib/cache.js';
-import { computeEtag } from '@/lib/etag.js';
 import { authenticate } from '@/middleware/auth.js';
 import { assertAgencyAccess, resolvePrincipalAgency } from '@/lib/authorization.js';
 import { env } from '@/lib/env.js';
@@ -67,7 +66,6 @@ export async function dashboardRoutes(fastify: FastifyInstance) {
     const cacheStart = performance.now();
     const cachedResult = await getCached<{
       payload: DashboardPayload;
-      etag: string;
     }>({
       key: cacheKey,
       ttl: CacheTTL.MEDIUM, // 5 minutes
@@ -159,12 +157,9 @@ export async function dashboardRoutes(fastify: FastifyInstance) {
             trialBanner,
           };
 
-          const etag = computeEtag(payload);
-
           return {
             data: {
               payload,
-              etag,
             },
             error: null,
           };
@@ -187,25 +182,13 @@ export async function dashboardRoutes(fastify: FastifyInstance) {
       });
     }
 
-    const { payload, etag } = cachedResult.data;
-
-    // Check for conditional request (If-None-Match header)
-    const ifNoneMatch = request.headers['if-none-match'];
-    if (ifNoneMatch === `"${etag}"` || ifNoneMatch === etag) {
-      return reply.code(304).send(); // Not Modified - no body sent
-    }
+    const { payload } = cachedResult.data;
 
     // Add cache status header for monitoring
     reply.header('X-Cache', cachedResult.cached ? 'HIT' : 'MISS');
 
-    // Add ETag for conditional requests
-    reply.header('ETag', `"${etag}"`);
-
-    // Add Cache-Control header for browser-level stale-while-revalidate
-    // - 5 minutes max age (browser can cache for 5 min)
-    // - 10 minutes stale-while-revalidate (can serve stale while refreshing in background)
-    // - private: Never cache by shared caches (CDNs, proxies) - contains user-specific data
-    reply.header('Cache-Control', 'private, max-age=300, stale-while-revalidate=600');
+    // Dashboard state changes after request revokes and connections. Keep browser refreshes fresh.
+    reply.header('Cache-Control', 'private, no-store');
 
     // Return consolidated dashboard data
     return reply.send({
