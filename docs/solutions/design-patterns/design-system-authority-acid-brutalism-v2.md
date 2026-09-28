@@ -33,7 +33,7 @@ tags:
 
 ## Context
 
-The root `DESIGN.md` is stale. It still documents Fraunces and Outfit as display/UI type roles (`DESIGN.md:19-28`), 8/10/12px radii (`DESIGN.md:47-51`), rounded buttons and cards (`DESIGN.md:59-86`), and five signal colors: coral, teal, acid, violet, and amber (`DESIGN.md:4-15`, `DESIGN.md:112-124`). That is not the production contract.
+The root `DESIGN.md` is stale — and now says so itself: a banner at its top marks it "do not use for product UI" and points to `apps/web/DESIGN_SYSTEM.md` as canonical (`DESIGN.md:90-92`, per DEC-008). Its body still documents Fraunces and Outfit as display/UI type roles (`DESIGN.md:19-28`), 8/10/12px radii (`DESIGN.md:47-51`), rounded buttons and cards (`DESIGN.md:59-86`), and five signal colors: coral, teal, acid, violet, and amber (`DESIGN.md:4-15`, `DESIGN.md:112-124`). That is not the production contract.
 
 `apps/web/DESIGN_SYSTEM.md` version 2.0 names the production aesthetic Acid Brutalism v2 (`apps/web/DESIGN_SYSTEM.md:3-5`). It defines the core rules: one coral accent, binary radius, a small shadow budget, and JetBrains Mono micro-labels (`apps/web/DESIGN_SYSTEM.md:17-21`). Its philosophy is structural: ink edges separate; color marks an event; contrast is token-controlled (`apps/web/DESIGN_SYSTEM.md:25-30`).
 
@@ -54,6 +54,8 @@ Use the mono data layer for status and metadata. JetBrains Mono carries micro-la
 Use status ink tokens, not raw accents, for text. Raw coral and raw teal fail AA as text on white; fills and borders may use those raw colors, but status text uses `--success-ink` or `--danger-ink` (`apps/web/DESIGN_SYSTEM.md:87-89`). The StatusBadge table makes the same split: family fill and border, semantic ink text (`apps/web/DESIGN_SYSTEM.md:244-255`).
 
 Make controls stateful and accessible. A group-level control must expose real selection state. A collapsed/expanded control must expose real expansion state. A save action must expose real busy/disabled state. Do not let a visual chip become the only evidence that a step changed.
+
+The v2 rules are also enforced mechanically by design-contract walker tests, not only by review. `invite.design.test.ts` walks the invite-flow sources asserting the v2 rules (`DESIGN_SYSTEM.md` is its stated binding authority), including a non-token-shadow rule, a generic-palette ban with a documented brand exception, and a per-view accent-text budget; `button-contract.design.test.ts` ratchets the legacy handler-first raw-button backlog down, never up (a frozen violation cap over a frozen file list). Treat these tests as the enforcement layer: a new v2 rule should land with a walker assertion, and a deliberate exception needs a documented entry in the test, not a silent violation.
 
 ## Why This Matters
 
@@ -91,7 +93,7 @@ It also computes three real selection states from the selected set: none, some, 
 
 The invite status model maps each state to an icon, plain word, and ink token: Done uses `Check` plus `text-success-ink`; In progress uses `Play` plus `text-ink`; Needs you uses `CircleAlert` plus `text-danger-ink` (`apps/web/src/components/flow/invite-status-chip.tsx:9-28`). The rendered chip combines icon, word, and `.label-micro`; its own contract says never color alone (`apps/web/src/components/flow/invite-status-chip.tsx:34-41`).
 
-The agency request model uses the same pattern for pending, partial, completed, expired, and revoked (`apps/web/src/components/access-request-detail/request-status-chip.tsx:9-34`). Its rendered output is icon, plain-language word, `.label-micro`, and semantic ink (`apps/web/src/components/access-request-detail/request-status-chip.tsx:39-47`).
+The agency request model renders the same truth through the shared `StatusBadge` — family fill and border with semantic ink text per the StatusBadge table (`apps/web/src/components/access-request-detail/request-overview-card.tsx:50-57`; `apps/web/DESIGN_SYSTEM.md:244-255`).
 
 ### Tests: assert state, not decoration
 
@@ -103,7 +105,7 @@ A chip saying “Step 2” is not evidence that step 2 can happen. Disabled stat
 
 - `docs/solutions/design-patterns/single-stage-client-request-flow.md` — the flow-structure contract this authority governed (Moderate overlap by design: that doc owns structure, this one owns the visual authority and its stale rival).
 - `apps/web/DESIGN_SYSTEM.md` — the authority itself.
-- `DESIGN.md` (repo root) — the stale rival. Superseded; do not copy from it. Update or archive it when touching design docs (`ce-compound-refresh` candidate).
+- `DESIGN.md` (repo root) — the stale rival. Superseded; it now carries its own staleness banner naming `DESIGN_SYSTEM.md` canonical (DEC-008). Do not copy from it; regenerating or removing it remains follow-up work.
 
 ## Refresh candidates (found this run, not yet fixed)
 

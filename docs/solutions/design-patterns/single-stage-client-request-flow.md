@@ -41,13 +41,13 @@ Single Stage won (session history). It was the only structure that directly remo
 For a client-facing multi-platform access flow, make the active authorization decision the screen:
 
 1. **Derive one active platform.** `buildInvitePlatformQueue()` separates completed platforms, chooses the returning OAuth platform when it is still incomplete, and otherwise chooses the first incomplete platform (`apps/web/src/lib/invite-platform-queue.ts:16-47`). Do not let the UI independently decide which platform is current.
-2. **Render one stage.** The invite page renders `InvitePlatformStage` only while an active platform exists; when all platforms are complete, that stage is absent rather than left in a fake active state (`apps/web/src/app/invite/[token]/client-invite-page.tsx:583-629`).
+2. **Render one stage.** The invite page renders `InvitePlatformStage` only while an active platform exists; when all platforms are complete, that stage is absent rather than left in a fake active state (`apps/web/src/app/invite/[token]/client-invite-page.tsx:860`).
 3. **Put trust where the action is.** The stage identifies who is asking, what happens on click, and the exit promise before the wizard starts (`apps/web/src/components/flow/invite-platform-stage.tsx:22-68`). A separate trust rail is not needed.
-4. **Make the rest a queue, not more cards.** All requested platforms appear in one numbered list with explicit Done / In progress / Waiting states (`apps/web/src/app/invite/[token]/client-invite-page.tsx:631-655`). The queue component is deliberately one truth list, not three status sections (`apps/web/src/components/flow/invite-platform-queue-item.tsx:14-40`).
-5. **Keep status readable without color alone.** Client statuses combine icon, word, and ink token (`apps/web/src/components/flow/invite-status-chip.tsx:3-39`). Agency request status follows the same rule and adds the next action line (`apps/web/src/components/access-request-detail/request-status-chip.tsx:36-60`).
-6. **Mirror the truth on the agency side.** The request detail header leads with lifecycle status and the next concrete action before overview, platforms, and actions (`apps/web/src/app/(authenticated)/access-requests/[id]/page.tsx:155-185`).
+4. **Make the rest a queue, not more cards.** All requested platforms appear in one numbered list — the named-platform checklist — driven by a pure reducer over server-reported fulfillment (`buildInvitePlatformChecklist`, `apps/web/src/lib/invite/platform-status.ts:34-39`, wired at `apps/web/src/app/invite/[token]/client-invite-page.tsx:185`). Its statuses are `done / connect-first / action-needed / waiting-on-agency / attention`, each with one line of client-facing copy. The queue component is deliberately one truth list, not three status sections (`apps/web/src/components/flow/invite-platform-queue-item.tsx`).
+5. **Keep status readable without color alone.** Client statuses combine icon, word, and ink token (`apps/web/src/components/flow/invite-status-chip.tsx:3-39`). Agency request status follows the same rule: `StatusBadge` plus a "Waiting on client authorization" callout (`apps/web/src/components/access-request-detail/request-overview-card.tsx:50-57`).
+6. **Mirror the truth on the agency side.** The request detail leads with lifecycle status and the next concrete action via `RequestOverviewCard` before overview, platforms, and actions (`apps/web/src/app/(authenticated)/access-requests/[id]/page.tsx:278`).
 
-The shell itself is the structural contract: one truthful header, one slim progress line, and one stage; no rail, dock, or step-chip wall (`apps/web/src/components/flow/invite-flow-shell.tsx:14-17`).
+The shell itself is the structural contract: one truthful header, one progress surface (the checklist), then one stage on screen; no rail, dock, step-chip wall, or percentage bar (`apps/web/src/components/flow/invite-flow-shell.tsx:35-37`). Terminal endings join the same contract: every dead-end renders through the landing-state mapper and one branded `InviteTerminalCard`, never an ad-hoc error block (`apps/web/src/lib/invite/landing-state.ts`, `apps/web/src/components/flow/invite-terminal-card.tsx`).
 
 ## Why This Matters
 
@@ -70,11 +70,11 @@ Do not force it onto expert bulk-administration screens where comparison across 
 
 ## Examples
 
-The current invite page states the active-platform rule in copy: “Finish [platform] first. The rest of the request is listed below.” (`apps/web/src/app/invite/[token]/client-invite-page.tsx:382-406`). It then follows that copy with one stage and one list (`apps/web/src/app/invite/[token]/client-invite-page.tsx:583-655`).
+The current invite page states the active-platform rule in copy: “Finish [platform] first. The rest of the request is listed below.” (`apps/web/src/app/invite/[token]/client-invite-page.tsx:660`). It then follows that copy with one stage and one list (`apps/web/src/app/invite/[token]/client-invite-page.tsx:860`).
 
 The contract has focused checks:
 
-- `InviteFlowShell` proves one-column header, progress, and content order (`apps/web/src/components/flow/__tests__/invite-flow-shell.test.tsx:5-38`).
+- `InviteFlowShell` proves one-column header, progress, and content order, pins the named-platform checklist as the one progress surface, and forbids a percentage bar, progressbar, or legacy step counter (`apps/web/src/components/flow/__tests__/invite-flow-shell.test.tsx`).
 - `InvitePlatformStage` proves identity verification, exit promise, active step, and wizard content appear together (`apps/web/src/components/flow/__tests__/invite-platform-stage.test.tsx:7-27`).
 - `buildInvitePlatformQueue` proves first-incomplete selection, OAuth-return restoration, and the all-complete empty state (`apps/web/src/lib/__tests__/invite-platform-queue.test.ts:20-58`).
 

@@ -33,7 +33,7 @@
     "@sentry/node": "^10.59.0",
     "@sentry/profiling-node": "^10.59.0",
     "dotenv": "^16.4.7",
-    "fastify": "^5.8.5",
+    "fastify": "^5.12.5",
     "fastify-raw-body": "^5.0.0",
     "pg-boss": "^12.14.0",
     "pino": "^9.6.0",
