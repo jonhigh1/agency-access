@@ -1,5 +1,7 @@
 # Meta Business Login Production Rollout
 
+> **Superseded flow — kept as an incident runbook.** The Meta Business Login JS SDK cutover described here was removed in `b7ed78e1` (PR #72, 2026-09-26). The finalize route no longer exists, and `POST /agency-platforms/meta/business-login/finalize` is now a tested security rule: browser-submitted Meta access tokens are rejected with 404 (`apps/api/src/routes/__tests__/agency-platforms.routes.test.ts:718-727`). Agency Meta connection runs through server-side OAuth (`initiate`/`callback`) with portfolio selection validated server-side. The **Prevention** and **Verification** sections below remain the durable runbook value.
+
 ## Problem
 The Meta Business Login JS SDK cutover appeared complete in code, but production failed in multiple operational stages:
 
@@ -9,9 +11,10 @@ The Meta Business Login JS SDK cutover appeared complete in code, but production
 - Render deploys failed because the pushed backend code was missing the `MetaConnector.getTokenMetadata()` implementation that the new finalize route depends on
 
 ## Root Cause
-- The web app requires browser-visible Meta config and reads only:
+- At the time, the web app required browser-visible Meta config and read only:
   - `NEXT_PUBLIC_META_APP_ID`
   - `NEXT_PUBLIC_META_LOGIN_FOR_BUSINESS_CONFIG_ID`
+  - (Since the #72 reversal, the web app reads neither variable in production.)
 - Vercel had the config ID stored under the wrong name:
   - `META_LOGIN_FOR_BUSINESS_CONFIG_ID`
   instead of:
@@ -28,8 +31,9 @@ The Meta Business Login JS SDK cutover appeared complete in code, but production
   - `NEXT_PUBLIC_META_APP_ID`
   - `NEXT_PUBLIC_META_LOGIN_FOR_BUSINESS_CONFIG_ID`
 - Enabled Meta JavaScript SDK login in the Meta app and added the production frontend domains to the allowed JS SDK domain list.
-- Confirmed the API finalize route exists in:
+- Confirmed the API finalize route existed at the time in:
   - `apps/api/src/routes/agency-platforms/oauth.routes.ts`
+  - (Removed with the flow in `b7ed78e1`; see the banner above.)
 - Reproduced the Render build locally and isolated the missing uncommitted backend changes in:
   - `apps/api/src/services/connectors/meta.ts`
   - `apps/api/src/services/connectors/__tests__/meta.connector.test.ts`
@@ -64,8 +68,8 @@ The Meta Business Login JS SDK cutover appeared complete in code, but production
 
 ## Affected Surfaces
 - Web:
-  - `apps/web/src/lib/meta-business-login.ts`
-  - `apps/web/src/components/meta-business-portfolio-selector.tsx`
+  - `apps/web/src/lib/meta-business-login.ts` (deleted with the flow in PR #73)
+  - `apps/web/src/components/meta-business-portfolio-selector.tsx` (deleted with the flow in PR #73)
   - `apps/web/src/components/meta-unified-settings.tsx`
   - `apps/web/src/app/onboarding/platforms/page.tsx`
   - `apps/web/src/app/(authenticated)/connections/page.tsx`

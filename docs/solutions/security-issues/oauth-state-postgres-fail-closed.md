@@ -40,7 +40,7 @@ OAuth state creation previously depended on a separate Redis store. Redis protoc
 
 ## Solution
 
-The current service stores each random state token and its HMAC signature in Postgres through Prisma, with an expiry time ([oauth-state.service.ts:95-125](../../../apps/api/src/services/oauth-state.service.ts#L95-L125)). The `OAuthStateToken` model has a unique token, signature, expiry, and consumption time ([schema.prisma:823-858](../../../apps/api/prisma/schema.prisma#L823-L858)).
+The current service stores each random state token and its HMAC signature in Postgres through Prisma, with an expiry time ([oauth-state.service.ts:95-125](../../../apps/api/src/services/oauth-state.service.ts#L95-L125)). The `OAuthStateToken` model has a unique token, signature, expiry, and consumption time ([schema.prisma:865-895](../../../apps/api/prisma/schema.prisma#L865-L895)).
 
 Production now fails closed. If durable storage is unavailable, creation returns `STATE_STORAGE_UNAVAILABLE` rather than issuing a weaker token ([oauth-state.service.ts:146-154](../../../apps/api/src/services/oauth-state.service.ts#L146-L154)). A stateless token is permitted only outside production ([oauth-state.service.ts:156-163](../../../apps/api/src/services/oauth-state.service.ts#L156-L163)), and production validation rejects it with `STATE_STORAGE_REQUIRED` ([oauth-state.service.ts:193-204](../../../apps/api/src/services/oauth-state.service.ts#L193-L204)).
 

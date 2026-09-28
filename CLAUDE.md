@@ -300,6 +300,8 @@ Actively manage institutional knowledge. This is as important as the current tas
 
 **Organize as a hierarchy of .md files:**
 - `docs/START-HERE.md` and `docs/` subdirs (solutions/, sprints/, features/) route to categories
+- `docs/solutions/` holds documented solutions to past problems (bugs, patterns, workflow lessons), organized by category with YAML frontmatter (`module`, `tags`, `problem_type`) — relevant when implementing or debugging in a documented area
+- `CONCEPTS.md` (repo root) is the shared domain vocabulary — useful when orienting to the codebase
 - Categories hold the details
 - Progressive disclosure: read top-down, only load what is needed
 

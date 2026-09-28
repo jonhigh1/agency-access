@@ -10,6 +10,8 @@ Start with:
 - `docs/workspace/source-map.md` — authority order and where facts live
 - `docs/workspace/workflow.md` — inspect, execute, and verify loop
 - `docs/workspace/review.md` — review and handoff standard
+- `docs/solutions/` — documented solutions to past problems (bugs, patterns, workflow lessons), organized by category with YAML frontmatter (`module`, `tags`, `problem_type`); relevant when implementing or debugging in a documented area
+- `CONCEPTS.md` (repo root) — shared domain vocabulary; useful when orienting to the codebase
 
 **Before any UI work**, read `apps/web/DESIGN_SYSTEM.md` first. Every component, page, layout, or visual change must follow the documented design system — no exceptions.
 
