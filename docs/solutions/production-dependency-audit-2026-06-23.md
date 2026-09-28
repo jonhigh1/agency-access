@@ -12,7 +12,7 @@ stale_reason: "Point-in-time snapshot overtaken by events. A 2026-09-27 rerun of
 
 # Production Dependency Audit - 2026-06-23
 
-> **Stale snapshot (2026-09-27).** The "found 0 vulnerabilities" result below no longer holds: a rerun of the same command on 2026-09-27 found **22 vulnerabilities (9 moderate, 12 high, 1 critical — `next` middleware bypass GHSA-6gpp-xcg3-4w24)**. Do not read this as the current audit state. The standing audit step lives in `docs/PRODUCTION_CHECKLIST.md`; run it fresh before any release.
+> **Stale snapshot (2026-09-27).** The "found 0 vulnerabilities" result below no longer holds: a rerun of the same command on 2026-09-27 found **22 vulnerabilities (9 moderate, 12 high, 1 critical — `next` middleware bypass GHSA-6gpp-xcg3-4w24)**. Remediated on 2026-09-28 by in-range dependency updates (`next` 16.3.6, `fastify` 5.12.5, and transitives) — the remaining finding is the accepted `prisma` CLI chain (`deepmerge-ts` stack exhaustion, repo-authored config input only). Do not read the numbers below as the current audit state. The standing audit step lives in `docs/PRODUCTION_CHECKLIST.md`; run it fresh before any release.
 
 ## Shipping Runtime Workspaces
 
