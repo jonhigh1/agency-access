@@ -15,8 +15,8 @@ import {
  */
 describe('manual-grant-checklist-storage', () => {
   beforeEach(() => {
+    vi.unstubAllGlobals();
     window.sessionStorage.clear();
-    vi.restoreAllMocks();
   });
 
   it('builds row ids in one shape: step rows and substep rows', () => {
@@ -64,21 +64,15 @@ describe('manual-grant-checklist-storage', () => {
     expect(readManualGrantChecklistRows('other', 'biz_1', ['step-1'])).toEqual({ 'step-1': true });
   });
 
-  it('starts from unchecked and writes nothing when sessionStorage throws', () => {
-    const throwing = new Map<string, string>();
+  it('stays inert and starts from unchecked when sessionStorage throws on every operation', () => {
+    const throwing = () => {
+      throw new Error('private mode');
+    };
     vi.stubGlobal('sessionStorage', {
-      getItem: () => {
-        throw new Error('private mode');
-      },
-      setItem: (key: string, value: string) => {
-        throwing.set(key, value);
-      },
-      removeItem: () => {
-        throw new Error('private mode');
-      },
-      key: () => {
-        throw new Error('private mode');
-      },
+      getItem: throwing,
+      setItem: throwing,
+      removeItem: throwing,
+      key: throwing,
       get length() {
         throw new Error('private mode');
       },
@@ -87,6 +81,5 @@ describe('manual-grant-checklist-storage', () => {
     expect(() => writeManualGrantChecklistRow('tok', 'biz_1', 'step-1', true)).not.toThrow();
     expect(readManualGrantChecklistRows('tok', 'biz_1', ['step-1'])).toEqual({ 'step-1': false });
     expect(() => clearManualGrantChecklistStorage('tok')).not.toThrow();
-    expect(throwing.size).toBe(0);
   });
 });

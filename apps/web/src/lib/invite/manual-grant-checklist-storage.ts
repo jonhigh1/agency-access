@@ -55,16 +55,18 @@ export function readManualGrantChecklistRows(
 ): Record<string, boolean> {
   if (typeof window === 'undefined') return {};
   const checked: Record<string, boolean> = {};
-  try {
-    rowIds.forEach((rowId) => {
+  rowIds.forEach((rowId) => {
+    // Per-row guard: a throwing read (private mode) leaves that row unchecked
+    // without aborting the remaining rows.
+    try {
       checked[rowId] =
         window.sessionStorage.getItem(
           manualGrantChecklistStorageKey(accessRequestToken, businessId, rowId)
         ) === '1';
-    });
-  } catch {
-    // sessionStorage unavailable: start from an unchecked checklist.
-  }
+    } catch {
+      checked[rowId] = false;
+    }
+  });
   return checked;
 }
 
