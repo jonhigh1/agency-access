@@ -231,6 +231,52 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
         },
       ],
     },
+    "mcp-oauth-client-access-agencies": {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      mainEntity: [
+        {
+          "@type": "Question",
+          name: "How do I give an AI agent / MCP server access to a client's Meta or Google account without passwords?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "Send a branded OAuth authorization link. The client completes each platform's official grant. Store and refresh the token in a vault with audit logs. Point your MCP connector or agent at that client's credentials only—never a shared personal admin token for the whole book.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "Is AuthHub an ads MCP server?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "No. AuthHub collects and vaults client OAuth. Ads MCP products (AdKit, Agency AI, 1ClickReport, meta-ads-mcp, and peers) expose tools to Claude, ChatGPT, or Cursor. Most AI-forward agencies need both.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "What happens when tokens expire on Friday night?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "Without refresh and monitoring, agents and automations fail silently until a human notices. AuthHub auto-refreshes where providers allow it and keeps health/audit signals. Platform-specific expiry and reauth workflows are covered in the OAuth token management for agencies guide.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "Can I migrate from Leadsie or another tool without downtime?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "Dual-run: keep the current tool live, send AuthHub links for new onboards and re-authorizations, cut over when the clients you care about complete the new flow. No silent permission port.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "When should I stay on a peer or DIY instead of AuthHub?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "Stay on Leadsie for breadth and audits. Pick AgencyAccess for branding, intake, 30-day trial, and API/Zapier. Pick ClientInvite for unlimited flat on a focused stack. DIY when engineering owns system users and secrets. Choose AuthHub when humans and agents need the same one-link OAuth intake with Infisical, refresh, and audit logs.",
+          },
+        },
+      ],
+    },
   };
   const faqSchema = faqSchemas[post.id] ?? null;
 
