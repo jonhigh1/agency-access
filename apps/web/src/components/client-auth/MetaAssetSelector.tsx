@@ -1,5 +1,6 @@
-import { type MetaSelectionBlob } from './meta-selection-blob';
 'use client';
+
+import { type MetaSelectionBlob } from './meta-selection-blob';
 
 /**
  * MetaAssetSelector - Multi-asset selection for Meta platform
