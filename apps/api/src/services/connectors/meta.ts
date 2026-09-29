@@ -4,6 +4,7 @@ import { metaGraphGet, META_GRAPH_TIMEOUT_MS } from '../../lib/meta-graph-reques
 import { logger } from '../../lib/logger.js';
 import {
   META_PERMISSION_CONTRACT,
+  sanitizeMetaOAuthScopes,
   type AccessLevel,
   type MetaAdAccount,
   type MetaAllAssets,
@@ -83,7 +84,6 @@ async function throwMetaMutationError(response: Response, operation: string): Pr
 export class MetaConnector {
   private readonly appId: string;
   private readonly appSecret: string;
-  private readonly loginForBusinessConfigId?: string;
   private readonly redirectUri: string;
 
   static readonly DEFAULT_SCOPES = [...META_PERMISSION_CONTRACT.core.permissions];
@@ -91,7 +91,6 @@ export class MetaConnector {
   constructor() {
     this.appId = env.META_APP_ID;
     this.appSecret = env.META_APP_SECRET;
-    this.loginForBusinessConfigId = env.META_LOGIN_FOR_BUSINESS_CONFIG_ID;
     // Use agency-platforms callback for production (redirects to frontend)
     // For testing, use /api/oauth/meta/callback in Meta app settings
     this.redirectUri = `${env.API_URL}/agency-platforms/meta/callback`;
@@ -140,15 +139,12 @@ export class MetaConnector {
       response_type: 'code',
     });
 
-    // Agency Business Login uses config_id, but client invite OAuth must keep
-    // requesting explicit scopes so non-role client users are not forced
-    // through the agency Business Login configuration.
-    if (this.loginForBusinessConfigId && !scopes) {
-      params.set('config_id', this.loginForBusinessConfigId);
-    } else {
-      const scopesToUse = scopes ?? MetaConnector.DEFAULT_SCOPES;
-      params.set('scope', scopesToUse.join(','));
-    }
+    // Always request explicit Marketing API scopes from code so consent matches
+    // META_PERMISSION_CONTRACT. Do not use Login for Business config_id alone —
+    // Meta dashboard configs can include permissions (e.g. catalog_management)
+    // outside the current App Review scope.
+    const scopesToUse = sanitizeMetaOAuthScopes(scopes ?? MetaConnector.DEFAULT_SCOPES);
+    params.set('scope', scopesToUse.join(','));
 
     return `https://www.facebook.com/${META_GRAPH_VERSION}/dialog/oauth?${params.toString()}`;
   }

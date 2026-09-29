@@ -652,6 +652,14 @@ export const META_CORE_PERMISSIONS = [
   'pages_show_list',
 ] as const;
 
+/** Never attach these to Meta OAuth consent URLs from AuthHub (deferred review tracks). */
+export const META_OAUTH_EXCLUDED_PERMISSIONS = ['catalog_management'] as const;
+
+export function sanitizeMetaOAuthScopes(scopes: readonly string[]): string[] {
+  const excluded = new Set<string>(META_OAUTH_EXCLUDED_PERMISSIONS);
+  return scopes.filter((scope) => !excluded.has(scope));
+}
+
 export const META_PERMISSION_CONTRACT = {
   core: {
     permissions: META_CORE_PERMISSIONS,

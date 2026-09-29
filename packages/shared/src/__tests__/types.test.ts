@@ -32,8 +32,11 @@ import {
   MetaClientBusinessSelectionSchema,
   MetaManagedBusinessLinkStateSchema,
   META_GRAPH_VERSION,
+  META_CORE_PERMISSIONS,
+  META_OAUTH_EXCLUDED_PERMISSIONS,
   META_PERMISSION_CONTRACT,
   META_PERMISSION_OPERATIONS,
+  sanitizeMetaOAuthScopes,
   getMetaOAuthPermissionSet,
   isMetaPermissionTrackValid,
   MetaPermissionSchema,
@@ -109,6 +112,14 @@ describe('Phase 5: Shared Types - TDD Tests', () => {
     expect(META_PERMISSION_CONTRACT.core.permissions).not.toContain('ads_read');
     expect(META_PERMISSION_CONTRACT.systemUser.permissions).not.toContain('ads_read');
     expect(META_PERMISSION_OPERATIONS).not.toHaveProperty('ads_read');
+  });
+
+  it('never includes catalog_management in Meta core OAuth permissions or sanitized scope lists', () => {
+    expect(META_CORE_PERMISSIONS).not.toContain('catalog_management');
+    expect(META_OAUTH_EXCLUDED_PERMISSIONS).toContain('catalog_management');
+    expect(
+      sanitizeMetaOAuthScopes([...META_CORE_PERMISSIONS, 'catalog_management'])
+    ).toEqual([...META_CORE_PERMISSIONS]);
   });
 
   it('excludes catalog from default client invite asset types unless explicitly enabled', () => {

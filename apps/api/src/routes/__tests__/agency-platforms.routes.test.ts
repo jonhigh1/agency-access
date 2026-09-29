@@ -665,6 +665,10 @@ describe('Agency Platforms Routes', () => {
         redirectUrl: 'https://app.example.com/settings/platforms',
         timestamp: expect.any(Number),
       });
+      expect(mockMetaConnectorInstance.getAuthUrl).toHaveBeenCalledWith(
+        mockStateToken,
+        ['ads_management', 'business_management', 'pages_read_engagement', 'pages_show_list']
+      );
     });
 
     it('should return 400 for unsupported platform', async () => {

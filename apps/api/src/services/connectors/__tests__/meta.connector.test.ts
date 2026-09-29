@@ -32,7 +32,7 @@ describe('MetaConnector Asset Discovery', () => {
   });
 
   describe('getAuthUrl', () => {
-    it('includes config_id when Meta Login for Business configuration is present', () => {
+    it('uses explicit core scopes when Meta Login for Business configuration is present (never config_id-only consent)', () => {
       mockEnv.META_LOGIN_FOR_BUSINESS_CONFIG_ID = '1436589444014622';
       connector = new MetaConnector();
 
@@ -45,8 +45,11 @@ describe('MetaConnector Asset Discovery', () => {
       expect(authUrl.searchParams.get('redirect_uri')).toBe('http://localhost:3001/agency-platforms/meta/callback');
       expect(authUrl.searchParams.get('state')).toBe('state-123');
       expect(authUrl.searchParams.get('response_type')).toBe('code');
-      expect(authUrl.searchParams.get('config_id')).toBe('1436589444014622');
-      expect(authUrl.searchParams.get('scope')).toBeNull();
+      expect(authUrl.searchParams.get('config_id')).toBeNull();
+      expect(authUrl.searchParams.get('scope')).toBe(
+        META_PERMISSION_CONTRACT.core.permissions.join(',')
+      );
+      expect(authUrl.searchParams.get('scope')).not.toContain('catalog_management');
     });
 
     it('uses explicit scopes instead of config_id for client OAuth flows', () => {
@@ -72,6 +75,19 @@ describe('MetaConnector Asset Discovery', () => {
       const authUrl = new URL(connector.getAuthUrl('state-123'));
 
       expect(authUrl.searchParams.get('config_id')).toBeNull();
+      expect(authUrl.searchParams.get('scope')).toBe(
+        META_PERMISSION_CONTRACT.core.permissions.join(',')
+      );
+    });
+
+    it('strips catalog_management if a caller passes it in the scope list', () => {
+      const authUrl = new URL(
+        connector.getAuthUrl('state-123', [
+          ...META_PERMISSION_CONTRACT.core.permissions,
+          'catalog_management',
+        ])
+      );
+
       expect(authUrl.searchParams.get('scope')).toBe(
         META_PERMISSION_CONTRACT.core.permissions.join(',')
       );
