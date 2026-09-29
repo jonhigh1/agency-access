@@ -92,7 +92,10 @@ vi.mock('@/lib/queue-helpers', () => ({
 }));
 
 vi.mock('@/services/meta-assets.service', () => ({
-  metaAssetsService: { getAssignableRecipients: vi.fn() },
+  metaAssetsService: {
+    getAssignableRecipients: vi.fn(),
+    getAssetSettings: vi.fn(),
+  },
 }));
 
 describe('AccessRequestService', () => {
@@ -101,6 +104,16 @@ describe('AccessRequestService', () => {
     vi.useRealTimers();
     vi.mocked(metaAssetsService.getAssignableRecipients).mockResolvedValue({
       data: [{ type: 'human', id: 'person-1', name: 'Jon High' }],
+      error: null,
+    });
+    vi.mocked(metaAssetsService.getAssetSettings).mockResolvedValue({
+      data: {
+        adAccount: { enabled: true, permissionLevel: 'analyze' },
+        page: { enabled: true, permissionLevel: 'analyze', limitPermissions: false },
+        catalog: { enabled: false, permissionLevel: 'analyze' },
+        dataset: { enabled: true, requestFullAccess: false },
+        instagramAccount: { enabled: true, requestFullAccess: false },
+      },
       error: null,
     });
   });
@@ -415,6 +428,42 @@ describe('AccessRequestService', () => {
           products: [{ product: 'meta_ads', accessLevel: 'admin', accounts: [] }],
         },
       ]);
+      expect(result.data?.metaCatalogEnabled).toBe(false);
+      expect(metaAssetsService.getAssetSettings).toHaveBeenCalledWith('agency-1');
+    });
+
+    it('exposes metaCatalogEnabled when agency enables catalogs in Meta settings', async () => {
+      const mockRequest = {
+        id: 'request-catalog',
+        uniqueToken: 'catalogtoken',
+        clientName: 'Test Client',
+        clientEmail: 'client@test.com',
+        agencyId: 'agency-1',
+        expiresAt: new Date(Date.now() + 100000),
+        platforms: [{ platform: 'meta_ads', accessLevel: 'manage' }],
+        intakeFields: [],
+        branding: {},
+      };
+
+      vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue(mockRequest as any);
+      vi.mocked(prisma.agency.findUnique).mockResolvedValue({ name: 'Agency' } as any);
+      vi.mocked(prisma.agencyPlatformConnection.findMany).mockResolvedValue([]);
+      vi.mocked(prisma.clientConnection.findMany).mockResolvedValue([]);
+      vi.mocked(metaAssetsService.getAssetSettings).mockResolvedValue({
+        data: {
+          adAccount: { enabled: true, permissionLevel: 'analyze' },
+          page: { enabled: true, permissionLevel: 'analyze', limitPermissions: false },
+          catalog: { enabled: true, permissionLevel: 'analyze' },
+          dataset: { enabled: true, requestFullAccess: false },
+          instagramAccount: { enabled: true, requestFullAccess: false },
+        },
+        error: null,
+      });
+
+      const result = await accessRequestService.getAccessRequestByToken('catalogtoken');
+
+      expect(result.error).toBeNull();
+      expect(result.data?.metaCatalogEnabled).toBe(true);
     });
 
     it('groups google_tag_manager under google and meta_ads under meta', async () => {

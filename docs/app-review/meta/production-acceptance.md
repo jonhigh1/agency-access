@@ -1,6 +1,6 @@
 # Meta production acceptance
 
-Status: **migration preflight passed; production acceptance and App Review pending**. No deployment of the two Meta migrations, app submission, or non-role acceptance is claimed by this checklist. The current permission matrix and Meta's active New requests exclude `ads_read`: AuthHub has no Ads Insights operation. Meta still lists the permission under the rejected Marketing API use case, but it is not in the active App Review draft. Older run notes below record the earlier draft state, not the current target scope.
+Status: **migration preflight passed; production acceptance and App Review pending**. No deployment of the two Meta migrations, app submission, or non-role acceptance is claimed by this checklist. The current permission matrix and Meta's active New requests exclude `ads_read`: AuthHub has no Ads Insights operation. Meta still lists the permission under the rejected Marketing API use case, but it is not in the active App Review draft. `catalog_management` is also excluded: catalogs are a later review track and the default client invite does not surface catalog selection or grant. Older run notes below record the earlier draft state, not the current target scope.
 
 ## Run record
 

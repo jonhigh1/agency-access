@@ -652,6 +652,14 @@ export const META_CORE_PERMISSIONS = [
   'pages_show_list',
 ] as const;
 
+/** Never attach these to Meta OAuth consent URLs from AuthHub (deferred review tracks). */
+export const META_OAUTH_EXCLUDED_PERMISSIONS = ['catalog_management'] as const;
+
+export function sanitizeMetaOAuthScopes(scopes: readonly string[]): string[] {
+  const excluded = new Set<string>(META_OAUTH_EXCLUDED_PERMISSIONS);
+  return scopes.filter((scope) => !excluded.has(scope));
+}
+
 export const META_PERMISSION_CONTRACT = {
   core: {
     permissions: META_CORE_PERMISSIONS,
@@ -1524,6 +1532,29 @@ export interface MetaAssetSettings {
   instagramAccount: { enabled: boolean; requestFullAccess: boolean };
 }
 
+export type MetaClientInviteAssetType =
+  | 'ad_account'
+  | 'page'
+  | 'instagram'
+  | 'catalog'
+  | 'dataset';
+
+/** Client invite MetaAssetSelector asset families for the current App Review scope. */
+export function buildMetaClientAllowedAssetTypes(options: {
+  pagesOnly: boolean;
+  catalogEnabled?: boolean;
+}): MetaClientInviteAssetType[] {
+  if (options.pagesOnly) {
+    return ['page'];
+  }
+  const types: MetaClientInviteAssetType[] = ['ad_account', 'page', 'instagram'];
+  if (options.catalogEnabled) {
+    types.push('catalog');
+  }
+  types.push('dataset');
+  return types;
+}
+
 export interface MetaAllAssets {
   businessId: string;
   businessName: string;
@@ -2130,6 +2161,8 @@ export interface ClientAccessRequestPayload {
   intakeResponses?: Record<string, string>;
   branding: Partial<BrandingConfig>;
   metaAccessConfig?: MetaAccessConfig;
+  /** When false or omitted, client invite hides catalog selection (no catalog_management App Review). */
+  metaCatalogEnabled?: boolean;
   metaFulfillment?: MetaFulfillmentResult[];
   manualInviteTargets: Record<string, ManualInviteTarget>;
   authorizationProgress: ClientAuthorizationProgress;

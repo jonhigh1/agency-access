@@ -42,6 +42,10 @@ Do not combine separate permission videos into a single implied transaction. Do 
 - `ads_management`: Show the selected asset, system-user ID, requested tasks, and Meta read-back. Then show agency Business Portfolio sharing and the human agency owner's access as separate outcomes. Label any manual Meta Business Settings step; do not present it as an API mutation.
 - Marketing API Access Tier is not a permission. The current Meta wizard asks for a use description and API-call evidence, not a screencast for this item. Do not create a separate video unless the live wizard changes.
 
+## Permissions not in the current submission
+
+Do not request, demonstrate, or imply `catalog_management` in this App Review package. Product catalogs are deferred to a later review track after catalog selection, creation, sharing, and read-back are complete end to end. The default client invite flow does not offer catalog selection unless an agency explicitly enables catalogs in Meta connection settings (that path is off for the current review). Do not record catalog creation, catalog grant, or catalog picker scenes for the active permission set.
+
 ## Historical feedback not in current scope
 
 The earlier `Business Asset User Profile Access` request was rejected. Meta asked for a video that retrieves and displays an engaging person's profile fields, such as name or photo, while keeping the business asset identity visible. This feature is not in the current New requests. Do not add profile collection or request that access to improve the current submission. Revisit only if the product later has a real, approved use case and the permission is explicitly added to the live review scope.

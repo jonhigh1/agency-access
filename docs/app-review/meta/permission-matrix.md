@@ -2,7 +2,7 @@
 
 Status: **not ready to submit**. This is an evidence register, not proof of Meta approval. The current [draft](https://developers.facebook.com/apps/1215220247221414/app-review/submissions/?submission_id=1424442432965860&business_id=3808519629379919) has not been submitted.
 
-Live wizard check on 2026-09-24: Verification, App settings, and Data handling show 100%; Allowed usage and Reviewer instructions show 0%; Requests are incomplete and Renewal is pending. New requests are Marketing API Access Tier, `pages_read_engagement`, `pages_show_list`, `business_management`, and `ads_management`.
+Live wizard check on 2026-09-24: Verification, App settings, and Data handling show 100%; Allowed usage and Reviewer instructions show 0%; Requests are incomplete and Renewal is pending. New requests are Marketing API Access Tier, `pages_read_engagement`, `pages_show_list`, `business_management`, and `ads_management`. AuthHub OAuth URLs always send that same core scope list from code (`META_CORE_PERMISSIONS`); they do not use Login for Business `config_id`-only consent and never append `catalog_management`.
 
 The [September 2026 feedback](https://developers.facebook.com/apps/1215220247221414/app-review/submissions/feedback/?submission_id=1410264624383641&business_id=3808519629379919) rejected permission requests because the videos did not show the full Meta login, consent, and end-to-end product use. Meta also reported too few Ads API calls in the prior 15 days. Recheck the live rolling gate before submission; never manufacture calls for the counter. For server-to-server or system-user-token work, state that architecture in the submission and explain the backend operation in the video.
 
@@ -30,6 +30,6 @@ These are local draft statements, not text entered into Meta. Keep them out of t
 
 Review these statements against the production deployment before copying them into Meta. Remove any statement that the recorded flow does not demonstrate.
 
-`Business Asset User Profile Access` was removed from this draft. AuthHub does not show profiles of people who engage with client assets. `catalog_management` belongs to a later review track after catalog selection, creation, sharing, and read-back work end to end.
+`Business Asset User Profile Access` was removed from this draft. AuthHub does not show profiles of people who engage with client assets. `catalog_management` is **not** in the active New requests list above; it belongs to a later review track after catalog selection, creation, sharing, and read-back work end to end. Default agency Meta settings keep catalogs disabled on the client invite until an agency opts in.
 
 Before recording each row: use a fresh production request and a clean browser session; show Meta login and the consent screen; identify the test Facebook user and controlled asset without exposing tokens; show the operation and its result; then show the separate agency-side result. For `pages_show_list`, use a client with a managed Page but no Business Portfolio so the `/me/accounts` branch runs. Do not present business-scoped Page selection as proof of this permission. Use English UI and captions. Record a timestamp and sanitized Graph receipt for each row. Do not upload or submit while any row is pending, the invite fails, or the result depends on access that existed before the test.

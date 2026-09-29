@@ -355,7 +355,13 @@ describe('ClientAssetsService - Meta', () => {
       return { ok: true, json: async () => ({ data: [] }) } as Response;
     });
 
-    const result = await clientAssetsService.fetchMetaAssets('token-123', 'business-1');
+    const result = await clientAssetsService.fetchMetaAssets('token-123', 'business-1', [
+      'ad_account',
+      'page',
+      'instagram_account',
+      'catalog',
+      'dataset',
+    ]);
 
     expect(result.productCatalogs).toEqual([]);
     expect(result.assetLoadWarnings).toContain(

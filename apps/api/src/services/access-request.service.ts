@@ -1742,6 +1742,12 @@ export async function getAccessRequestByToken(token: string) {
     );
     const metaFulfillment = buildMetaFulfillment(accessRequest, clientConnections as any);
 
+    let metaCatalogEnabled = false;
+    if (requestedPlatformGroups.includes('meta')) {
+      const settingsResult = await metaAssetsService.getAssetSettings(accessRequest.agencyId);
+      metaCatalogEnabled = settingsResult.data?.catalog.enabled ?? false;
+    }
+
     return {
       data: {
         ...accessRequest,
@@ -1750,6 +1756,7 @@ export async function getAccessRequestByToken(token: string) {
         manualInviteTargets,
         authorizationProgress,
         metaFulfillment,
+        ...(requestedPlatformGroups.includes('meta') ? { metaCatalogEnabled } : {}),
       },
       error: null,
     };

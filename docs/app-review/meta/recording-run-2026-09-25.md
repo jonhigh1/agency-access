@@ -4,7 +4,7 @@ Status: **blocked before final capture**. No final MP4 was made or uploaded. No 
 
 ## Live checks
 
-- Draft `1424442432965860` still showed Allowed usage 0% and Reviewer instructions 0%. Each of `pages_show_list`, `pages_read_engagement`, `business_management`, and `ads_management` showed **Get started** and required an end-to-end screencast.
+- Draft `1424442432965860` still showed Allowed usage 0% and Reviewer instructions 0%. Each of `pages_show_list`, `pages_read_engagement`, `business_management`, and `ads_management` showed **Get started** and required an end-to-end screencast. Do not add catalog picker, catalog creation, or catalog grant scenes; `catalog_management` is not in this submission.
 - Meta App Roles showed Jon High as Administrator. This alone does not prove the client asset role or a clean-session consent run.
 - The production new-request page initially held at **Loading clients...**. The Clients page later loaded one existing client; returning to the request form then worked. The old invite from earlier testing ended at **This link is not working** or **Still working on it**.
 - A new production request for the existing test client was created with Meta Ads and Meta Pages selected. The new invite loaded and reached the Meta connection step. Keep its private link in the AuthHub request success page, not this repository. No email was sent by the operator.

@@ -8,6 +8,7 @@ import type { SnapchatUserInfo } from '@/services/connectors/snapchat';
 import type { PlatformConnector } from '@/services/connectors/factory';
 import { ConnectorError } from '@/services/connectors/base.connector.js';
 import { env } from '@/lib/env';
+import { META_PERMISSION_CONTRACT } from '@agency-platform/shared';
 import { PLATFORM_CONNECTORS, SUPPORTED_PLATFORMS, MANUAL_PLATFORMS } from './constants.js';
 import { assertAgencyAccess } from '@/lib/authorization.js';
 import { metaAssetsService } from '@/services/meta-assets.service.js';
@@ -102,6 +103,10 @@ export async function registerOAuthRoutes(fastify: FastifyInstance) {
           undefined, // redirectUri
           extraParams.shop // shop parameter for Shopify
         );
+      } else if (platform === 'meta') {
+        authUrl = connector.getAuthUrl(stateResult.data!, [
+          ...META_PERMISSION_CONTRACT.core.permissions,
+        ]);
       } else {
         authUrl = connector.getAuthUrl(stateResult.data!);
       }

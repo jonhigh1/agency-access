@@ -173,7 +173,7 @@ class ClientAssetsService {
   async fetchMetaAssets(
     accessToken: string,
     businessId?: string,
-    assetKinds: MetaAssetKind[] = ['ad_account', 'page', 'instagram_account', 'catalog', 'dataset']
+    assetKinds: MetaAssetKind[] = ['ad_account', 'page', 'instagram_account', 'dataset']
   ): Promise<MetaAssets> {
     logger.info('Fetching Meta assets for client', { businessId: businessId || null });
 

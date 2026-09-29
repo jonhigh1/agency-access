@@ -882,6 +882,7 @@ export default function ClientAuthorizationPage({
                 products={platformQueue.activePlatform.products}
                 accessRequestToken={token}
                 metaAccessConfig={data.metaAccessConfig}
+                metaCatalogEnabled={data.metaCatalogEnabled ?? false}
                 deferManualRedirect={urlView === 'connect'}
                 onComplete={() =>
                   handlePlatformComplete(platformQueue.activePlatform!.platformGroup as Platform)

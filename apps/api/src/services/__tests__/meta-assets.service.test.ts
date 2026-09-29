@@ -565,4 +565,19 @@ describe('MetaAssetsService', () => {
       );
     });
   });
+
+  describe('getAssetSettings', () => {
+    it('defaults catalog to disabled for App Review scope', async () => {
+      vi.mocked(agencyPlatformService.getConnection).mockResolvedValue({
+        data: { id: 'conn-1', metadata: {} },
+        error: null,
+      } as any);
+
+      const result = await metaAssetsService.getAssetSettings(agencyId);
+
+      expect(result.error).toBeNull();
+      expect(result.data?.catalog.enabled).toBe(false);
+      expect(result.data?.adAccount.enabled).toBe(true);
+    });
+  });
 });
