@@ -45,7 +45,7 @@ AuthHub's [homepage](/) already frames this as **Built for Humans + Agents**: on
 
 MCP / AI-agent phrases are absent from AuthHub's GSC top queries in the last 28 days—but adjacent keyword demand is real (`mcp ai agent` 60, `mcp authentication` 40, `mcp oauth` 20, `ai agent mcp` 20 monthly US searches via SnowSEO, 2026-09-28; exact `mcp ai agent oauth` = 0). Developer docs and ads-MCP READMEs own connector setup; almost nobody owns the agency **client OAuth intake** layer those stacks still need.
 
-**[Start 14-day free trial — no credit card](/)** · [AuthHub pricing](/pricing) · [OAuth token management for agencies](/blog/oauth-token-management-agencies)
+**[Start 14-day free trial — no credit card](/)** · [AuthHub pricing](/pricing) · [OAuth token refresh for agencies](/blog/oauth-token-management-agencies)
 
 ---
 
@@ -94,7 +94,7 @@ Agencies fail MCP rollouts quietly:
 
 Multi-account MCP architecture posts (1ClickReport-style routing, AdLibrary-style isolation) correctly insist on **per-client credentials** and explicit client context. AuthHub sits **upstream**: the client grants access through your branded link; you vault and refresh; humans and agents consume the same grants with isolation enforced in agent routing.
 
-Platform-by-platform expiry and Friday-night failures live on [OAuth token management for agencies](/blog/oauth-token-management-agencies). That post owns refresh ops. This page owns access collection.
+Platform-by-platform expiry and Friday-night failures live on [OAuth token refresh for agencies](/blog/oauth-token-management-agencies)—the token refresh deep-dive. That post owns refresh ops. This page owns access collection.
 
 ---
 
@@ -216,7 +216,7 @@ No. AuthHub collects and vaults client OAuth. Ads MCP products (AdKit, Agency AI
 
 ### What happens when tokens expire on Friday night?
 
-Without refresh and monitoring, agents and automations fail silently until a human notices. AuthHub auto-refreshes where providers allow it and keeps health/audit signals. Platform-specific expiry quirks and reauth workflows are covered in [OAuth token management for agencies](/blog/oauth-token-management-agencies)—link out there; this page does not replace that pillar.
+Without refresh and monitoring, agents and automations fail silently until a human notices. AuthHub auto-refreshes where providers allow it and keeps health/audit signals. Platform-specific expiry quirks and reauth workflows are covered in [OAuth token refresh for agencies](/blog/oauth-token-management-agencies)—link out there; this page does not replace that pillar.
 
 ### Can I migrate from Leadsie or another tool without downtime?
 
@@ -232,7 +232,7 @@ Stay on Leadsie for breadth and audits. Pick AgencyAccess for branding + intake 
 
 - [AuthHub homepage](/) — Built for Humans + Agents; start the 14-day trial
 - [AuthHub pricing](/pricing) — Starter / Growth / Scale ($29 / $79 / $149 · 5 / 20 / 50)
-- [OAuth token management for agencies](/blog/oauth-token-management-agencies) — refresh, expiry, Friday-night failures
+- [OAuth token refresh for agencies](/blog/oauth-token-management-agencies) — refresh, expiry, Friday-night failures
 - [Best client onboarding software for agencies (2026)](/blog/best-client-onboarding-software-agencies-2026) — category context
 - [AuthHub vs Leadsie](/compare/leadsie-alternative) · [Leadsie pricing](/compare/leadsie-pricing) · [AgencyAccess alternative](/compare/agencyaccess-alternative) · [Three-way](/compare/leadsie-vs-agencyaccess-vs-authhub)
 - [Best Leadsie alternatives (2026)](/blog/best-leadsie-alternatives-2026) — multi-vendor map
