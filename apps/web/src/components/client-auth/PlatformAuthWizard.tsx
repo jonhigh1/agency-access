@@ -35,7 +35,10 @@ import { clearManualGrantChecklistStorage } from '@/lib/invite/manual-grant-chec
 import type { ManualMetaShareCompletionResult } from './AdAccountSharingInstructions';
 import { StepHelpText } from './StepHelpText';
 import { PlatformIcon, Button } from '@/components/ui';
-import { PLATFORM_NAMES } from '@agency-platform/shared';
+import {
+  PLATFORM_NAMES,
+  buildMetaClientAllowedAssetTypes,
+} from '@agency-platform/shared';
 import type { MetaAccessConfig, Platform } from '@agency-platform/shared';
 import { trackOnboardingEvent } from '@/lib/analytics/onboarding';
 import { trackInviteCtaBlocked, trackInviteSelectionSaved } from '@/lib/analytics/invite-events';
@@ -61,6 +64,8 @@ interface PlatformAuthWizardProps {
   products: Array<{ product: string; accessLevel: string }>;
   accessRequestToken: string;
   metaAccessConfig?: MetaAccessConfig;
+  /** Agency Meta connection setting; catalog UI requires explicit enable + later catalog_management review. */
+  metaCatalogEnabled?: boolean;
   onComplete: () => void;
   completionActionLabel?: string;
   deferManualRedirect?: boolean;
@@ -378,6 +383,7 @@ export function PlatformAuthWizard({
   products,
   accessRequestToken,
   metaAccessConfig,
+  metaCatalogEnabled = false,
   onComplete,
   completionActionLabel,
   deferManualRedirect = false,
@@ -1236,11 +1242,12 @@ export function PlatformAuthWizard({
                             businessId={businessId || undefined}
                             requestedPageTasks={metaAccessConfig?.pageTasks}
                             initialSelection={metaSelectionPrefill}
-                            allowedAssetTypes={
-                              p.product === 'meta_pages' && !requestedMetaAssetProducts.includes('meta_ads')
-                                ? ['page']
-                              : ['ad_account', 'page', 'instagram', 'catalog', 'dataset']
-                            }
+                            allowedAssetTypes={buildMetaClientAllowedAssetTypes({
+                              pagesOnly:
+                                p.product === 'meta_pages' &&
+                                !requestedMetaAssetProducts.includes('meta_ads'),
+                              catalogEnabled: metaCatalogEnabled,
+                            })}
                             onSelectionChange={(selectedAssets) => {
                               // Store both IDs and full asset objects for grant step
                               // selectedAssets now includes selectedPagesWithNames, etc. from MetaAssetSelector

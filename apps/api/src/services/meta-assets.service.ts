@@ -412,7 +412,7 @@ export const metaAssetsService = {
         data: {
           adAccount: { enabled: true, permissionLevel: 'analyze' },
           page: { enabled: true, permissionLevel: 'analyze', limitPermissions: false },
-          catalog: { enabled: true, permissionLevel: 'analyze' },
+          catalog: { enabled: false, permissionLevel: 'analyze' },
           dataset: { enabled: true, requestFullAccess: false },
           instagramAccount: { enabled: true, requestFullAccess: false },
         },

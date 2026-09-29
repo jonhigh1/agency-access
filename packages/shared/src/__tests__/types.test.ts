@@ -39,6 +39,7 @@ import {
   MetaPermissionSchema,
   MetaAccessConfigSchema,
   getDefaultMetaAccessTasks,
+  buildMetaClientAllowedAssetTypes,
   PLATFORM_SCOPES,
 } from '../types';
 
@@ -108,6 +109,23 @@ describe('Phase 5: Shared Types - TDD Tests', () => {
     expect(META_PERMISSION_CONTRACT.core.permissions).not.toContain('ads_read');
     expect(META_PERMISSION_CONTRACT.systemUser.permissions).not.toContain('ads_read');
     expect(META_PERMISSION_OPERATIONS).not.toHaveProperty('ads_read');
+  });
+
+  it('excludes catalog from default client invite asset types unless explicitly enabled', () => {
+    expect(buildMetaClientAllowedAssetTypes({ pagesOnly: false })).toEqual([
+      'ad_account',
+      'page',
+      'instagram',
+      'dataset',
+    ]);
+    expect(buildMetaClientAllowedAssetTypes({ pagesOnly: false, catalogEnabled: true })).toEqual([
+      'ad_account',
+      'page',
+      'instagram',
+      'catalog',
+      'dataset',
+    ]);
+    expect(buildMetaClientAllowedAssetTypes({ pagesOnly: true })).toEqual(['page']);
   });
 
   it('resolves grouped and direct Meta OAuth requests through the shared permission contract', () => {
