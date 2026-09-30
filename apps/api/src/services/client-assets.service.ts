@@ -112,14 +112,24 @@ export class MetaPageReauthorizationError extends Error {
   }
 }
 
-function metaPageRequestError(operation: string, body: string): Error {
+function metaPageRequestError(operation: string, body: string, pageId: string, status: number): Error {
+  let code: number | undefined;
+  let subcode: number | undefined;
   try {
-    const error = (JSON.parse(body) as { error?: { code?: number; message?: string } }).error;
-    if (error?.code === 190) return new MetaPageReauthorizationError();
-    return new Error(`${operation}: ${error?.message || body}`);
+    const error = (JSON.parse(body) as { error?: { code?: unknown; error_subcode?: unknown } } | null)?.error;
+    if (typeof error?.code === 'number') code = error.code;
+    if (typeof error?.error_subcode === 'number') subcode = error.error_subcode;
   } catch {
-    return new Error(`${operation}: ${body}`);
+    // Meta can return non-JSON errors. Never expose the response body.
   }
+  logger.error(operation, {
+    pageId,
+    status,
+    ...(code !== undefined ? { code } : {}),
+    ...(subcode !== undefined ? { subcode } : {}),
+  });
+  if (code === 190) return new MetaPageReauthorizationError();
+  return new Error('AuthHub could not validate this Page. Confirm your Page access in Meta, then try again.');
 }
 
 export interface TikTokAssets {
@@ -256,7 +266,7 @@ class ClientAssetsService {
     });
     if (!pageResponse.ok) {
       const error = await pageResponse.text();
-      throw metaPageRequestError('Meta Page access lookup failed', error);
+      throw metaPageRequestError('Meta Page access lookup failed', error, pageId, pageResponse.status);
     }
 
     const page = (await pageResponse.json()) as {
@@ -284,7 +294,7 @@ class ClientAssetsService {
     });
     if (!feedResponse.ok) {
       const error = await feedResponse.text();
-      throw metaPageRequestError('Meta Page content access failed', error);
+      throw metaPageRequestError('Meta Page content access failed', error, pageId, feedResponse.status);
     }
 
     const feedData = (await feedResponse.json()) as {

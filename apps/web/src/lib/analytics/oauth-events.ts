@@ -39,13 +39,6 @@ export function trackOAuthCallbackFailure(properties: OAuthCallbackFailureProps)
     ...safeProperties,
     platform,
   });
-  // Keep legacy event name for existing PostHog insights during transition.
-  void capturePosthogEvent('oauth_callback_error', {
-    agency_id: properties.agency_id,
-    platform,
-    error_code: properties.error_code,
-    auth_source: properties.auth_source,
-  });
 }
 
 export function trackClientOAuthExchangeSuccess(properties: {

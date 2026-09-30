@@ -27,6 +27,19 @@ const { clerkState, devAuthState } = vi.hoisted(() => ({
 // Mock next/navigation
 const mockReplace = vi.fn();
 const mockSearchParams = new URLSearchParams();
+const { capturePosthogEventMock, trackOAuthCallbackFailureMock } = vi.hoisted(() => ({
+  capturePosthogEventMock: vi.fn(),
+  trackOAuthCallbackFailureMock: vi.fn(),
+}));
+
+vi.mock('@/lib/analytics/capture-posthog', () => ({
+  capturePosthogEvent: capturePosthogEventMock,
+}));
+
+vi.mock('@/lib/analytics/oauth-events', () => ({
+  trackOAuthCallbackFailure: trackOAuthCallbackFailureMock,
+  trackOAuthCallbackSuccess: vi.fn(),
+}));
 
 vi.mock('next/dynamic', async () => {
   const React = await vi.importActual<typeof import('react')>('react');
@@ -309,6 +322,12 @@ describe('ConnectionsPage', () => {
 
     // Should clear URL params
     expect(mockReplace).toHaveBeenCalledWith('/connections');
+    expect(capturePosthogEventMock).toHaveBeenCalledTimes(1);
+    expect(capturePosthogEventMock).toHaveBeenCalledWith('platform_connected', {
+      agency_id: 'test-agency-id',
+      platform: 'meta_ads',
+      connection_source: 'oauth_callback',
+    });
   });
 
   it('should handle OAuth callback error', async () => {
@@ -335,6 +354,8 @@ describe('ConnectionsPage', () => {
     await waitFor(() => {
       expect(screen.getByText(/failed to connect platform: TOKEN_EXCHANGE_FAILED/i)).toBeInTheDocument();
     });
+
+    expect(trackOAuthCallbackFailureMock).toHaveBeenCalledTimes(1);
   });
 
   it('should initiate OAuth flow on Connect click', async () => {

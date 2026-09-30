@@ -4,7 +4,8 @@ import { useState } from 'react';
 import { Loader2, X, CheckCircle2, AlertCircle } from 'lucide-react';
 import { META_GRANT_ACCESS } from '@/lib/content/meta-grant-access';
 import { getApiBaseUrl } from '@/lib/api/api-env';
-import { parseJsonResponse } from '@/lib/api/parse-json-response';
+import { ApiResponseError, parseJsonResponse } from '@/lib/api/parse-json-response';
+import { capturePosthogEvent } from '@/lib/analytics/capture-posthog';
 import { Button } from '@/components/ui/button';
 
 interface Page {
@@ -27,7 +28,7 @@ interface MetaGrantAccessResponse {
       errorMessage?: string;
     }>;
   };
-  error?: { message?: string };
+  error?: { code?: string; message?: string };
 }
 
 interface AutomaticPagesGrantProps {
@@ -60,6 +61,15 @@ export function AutomaticPagesGrant({
       const errorMsg = 'No pages selected';
       setLocalError(errorMsg);
       onError?.(errorMsg);
+      void capturePosthogEvent('client_meta_grant_failed', {
+        connection_id: connectionId,
+        selected_page_count: 0,
+        result_count: 0,
+        verified_page_count: 0,
+        failed_page_count: 0,
+        error_code: 'NO_PAGES_SELECTED',
+        failure_reason: 'no_pages_selected',
+      });
       return;
     }
 
@@ -67,6 +77,10 @@ export function AutomaticPagesGrant({
       setIsGranting(true);
       setGrantResults(null); // Clear previous results
       setLocalError(null); // Clear previous errors
+      void capturePosthogEvent('client_meta_grant_started', {
+        connection_id: connectionId,
+        selected_page_count: displayPages.length,
+      });
       const apiUrl = getApiBaseUrl();
 
       const response = await fetch(`${apiUrl}/api/client/${accessRequestToken}/grant-meta-access`, {
@@ -87,27 +101,43 @@ export function AutomaticPagesGrant({
         const errorMessage = json.error.message || 'Failed to grant access';
         setLocalError(errorMessage);
         onError?.(errorMessage);
+        void capturePosthogEvent('client_meta_grant_failed', {
+          connection_id: connectionId,
+          selected_page_count: displayPages.length,
+          result_count: 0,
+          verified_page_count: 0,
+          failed_page_count: displayPages.length,
+          error_code: json.error.code || 'API_ERROR',
+          failure_reason: 'api_error',
+        });
         return;
       }
 
-      const results = Array.from((json.data?.assetGrantResults || [])
-        .filter((result) => result.assetType === 'page')
-        .reduce<Map<string, GrantResult>>((byPage, result) => {
-          const existing = byPage.get(result.assetId);
-          if (existing) {
-            if (result.status !== 'verified') {
-              existing.status = 'failed';
-              existing.error = result.errorMessage || existing.error;
-            }
-          } else {
-            byPage.set(result.assetId, {
-              id: result.assetId,
-              status: result.status === 'verified' ? 'granted' : 'failed',
-              error: result.status === 'verified' ? undefined : result.errorMessage,
-            });
+      const pageResults = (json.data?.assetGrantResults || []).filter((result) => result.assetType === 'page');
+      const resultsByPage = pageResults.reduce<Map<string, GrantResult>>((byPage, result) => {
+        const existing = byPage.get(result.assetId);
+        if (existing) {
+          if (result.status !== 'verified') {
+            existing.status = 'failed';
+            existing.error = result.errorMessage || existing.error;
           }
-          return byPage;
-        }, new Map()).values());
+        } else {
+          byPage.set(result.assetId, {
+            id: result.assetId,
+            status: result.status === 'verified' ? 'granted' : 'failed',
+            error: result.status === 'verified' ? undefined : result.errorMessage,
+          });
+        }
+        return byPage;
+      }, new Map());
+      const hasMissingResult = displayPages.some((page) => !resultsByPage.has(page.id));
+      const results = displayPages.map((page) =>
+        resultsByPage.get(page.id) || {
+          id: page.id,
+          status: 'failed' as const,
+          error: 'No verified grant result returned',
+        }
+      );
       setGrantResults(results);
       
       // Check if any pages failed
@@ -120,8 +150,24 @@ export function AutomaticPagesGrant({
           setLocalError(errorMsg);
           onError?.(errorMsg);
         }
+        void capturePosthogEvent('client_meta_grant_failed', {
+          connection_id: connectionId,
+          selected_page_count: displayPages.length,
+          result_count: pageResults.length,
+          verified_page_count: results.filter((result) => result.status === 'granted').length,
+          failed_page_count: failedPages.length,
+          error_code: hasMissingResult ? 'INCOMPLETE_RESULTS' : 'UNVERIFIED_RESULT',
+          failure_reason: hasMissingResult ? 'missing_verified_result' : 'unverified_result',
+        });
       } else {
         setLocalError(null); // Clear error on success
+        void capturePosthogEvent('client_meta_grant_completed', {
+          connection_id: connectionId,
+          selected_page_count: displayPages.length,
+          result_count: pageResults.length,
+          verified_page_count: results.length,
+          failed_page_count: 0,
+        });
       }
       
       onGrantComplete(results);
@@ -129,6 +175,15 @@ export function AutomaticPagesGrant({
       const errorMessage = error instanceof Error ? error.message : 'Failed to grant access';
       setLocalError(errorMessage);
       onError?.(errorMessage);
+      void capturePosthogEvent('client_meta_grant_failed', {
+        connection_id: connectionId,
+        selected_page_count: displayPages.length,
+        result_count: 0,
+        verified_page_count: 0,
+        failed_page_count: displayPages.length,
+        error_code: error instanceof ApiResponseError ? error.code || 'API_RESPONSE_ERROR' : 'REQUEST_FAILED',
+        failure_reason: error instanceof ApiResponseError ? 'api_response' : 'request_failed',
+      });
     } finally {
       setIsGranting(false);
     }
