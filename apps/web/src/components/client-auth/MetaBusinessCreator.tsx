@@ -182,7 +182,7 @@ export function MetaBusinessCreator({
   // Error state
   if (state === 'error') {
     return (
-      <div className="border-2 border-[var(--coral)] bg-[var(--coral)]/10 p-6">
+      <div className="border border-danger-ink bg-[rgb(var(--coral))]/10 p-6">
         <div className="flex items-start gap-3">
           <div className="w-10 h-10 border-2 border-[var(--coral)] bg-[var(--coral)]/20 flex items-center justify-center flex-shrink-0">
             <AlertCircle className="w-6 h-6 text-danger-ink" />
@@ -214,7 +214,7 @@ export function MetaBusinessCreator({
   // Success state
   if (state === 'success') {
     return (
-      <div className="border-2 border-[var(--teal)] bg-[var(--teal)]/10 p-6 text-center">
+      <div className="border border-success-ink bg-[rgb(var(--teal))]/10 p-6 text-center">
         <div className="w-16 h-16 border-2 border-[var(--teal)] bg-[var(--teal)]/20 flex items-center justify-center mx-auto mb-4">
           <CheckCircle2 className="w-10 h-10 text-success-ink" />
         </div>

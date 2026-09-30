@@ -404,7 +404,7 @@ export function AdAccountSharingInstructions({
       </div>
 
       <div
-        className={`border-2 p-4 ${
+        className={`border p-4 ${
           status === 'verified'
             ? 'border-[rgb(var(--teal))] bg-[rgb(var(--teal))]/10 text-success-ink'
             : 'border-[rgb(var(--warning))] bg-[rgb(var(--warning))]/10 text-ink'
@@ -519,7 +519,7 @@ export function AdAccountSharingInstructions({
       </div>
 
       {/* Actions */}
-      <div className="flex gap-4 pt-4 border-t-2 border-black/10 dark:border-white/10">
+      <div className="flex gap-4 pt-4 border-t border-black/10 dark:border-white/10">
         <Button asChild variant="secondary" className="flex-1">
           <a
             href="https://business.facebook.com/settings"

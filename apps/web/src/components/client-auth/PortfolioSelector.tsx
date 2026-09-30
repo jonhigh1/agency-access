@@ -195,7 +195,7 @@ export function PortfolioSelector({
   const renderCreationCard = () => (
     <section
       aria-label="No business portfolio yet"
-      className="border-2 border-black bg-[rgb(var(--warm-gray))]/20 p-6 space-y-4 dark:border-white"
+      className="bg-[rgb(var(--warm-gray))]/20 p-6 space-y-4"
     >
       <div>
         <h3 className="text-lg font-bold text-[rgb(var(--ink))] font-display">
@@ -217,7 +217,7 @@ export function PortfolioSelector({
   const renderQuestionCard = () => (
     <section
       aria-label="Choose a business"
-      className="border-2 border-black bg-[rgb(var(--warm-gray))]/20 p-6 space-y-4 dark:border-white"
+      className="bg-[rgb(var(--warm-gray))]/20 p-6 space-y-4"
     >
       <div>
         <span className="label-micro">Your business</span>
@@ -255,7 +255,7 @@ export function PortfolioSelector({
     <section
       role="alert"
       aria-label="Business loading problem"
-      className="border-2 border-[rgb(var(--coral))]/40 bg-[rgb(var(--coral))]/10 p-6 space-y-3"
+      className="border border-danger-ink bg-[rgb(var(--coral))]/10 p-6 space-y-3"
     >
       <h3 className="text-lg font-bold text-danger-ink font-display">
         We couldn&apos;t load your businesses
@@ -290,7 +290,7 @@ export function PortfolioSelector({
     return (
       <section
         aria-label="Sharing receipt"
-        className="border-2 border-black bg-[rgb(var(--card))] p-6 space-y-4 dark:border-white"
+        className="border-l-2 border-black bg-[rgb(var(--card))] p-6 space-y-4 dark:border-white"
       >
         <div>
           <span className="label-micro">Now sharing</span>

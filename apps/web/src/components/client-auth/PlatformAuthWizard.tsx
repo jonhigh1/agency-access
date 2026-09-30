@@ -1129,7 +1129,7 @@ export function PlatformAuthWizard({
               </div>
 
               {error && (
-                <div className="border-2 border-[var(--coral)] bg-[var(--coral)]/10 p-4 text-danger-ink">
+                <div className="border border-danger-ink bg-[var(--coral)]/10 p-4 text-danger-ink">
                   {error}
                 </div>
               )}
@@ -1148,8 +1148,10 @@ export function PlatformAuthWizard({
 
         return (
           <div className="space-y-4">
-            {/* Choose Accounts Section - Brutalist Card */}
-            <div className="border-2 border-black dark:border-white overflow-hidden">
+            {/* Choose Accounts Section — a disclosure, not a box: the stage
+                shell owns the border; this separates by the header bar and
+                hairlines (one shell per surface). */}
+            <div className="overflow-hidden">
               <button
                 type="button"
                 onClick={() => setChooseAccountsExpanded(!chooseAccountsExpanded)}
@@ -1182,7 +1184,7 @@ export function PlatformAuthWizard({
                   >
                     <div className="p-3 space-y-3">
             {error && (
-                        <div className="border-2 border-[var(--coral)] bg-[var(--coral)]/10 p-3 text-danger-ink text-sm">
+                        <div className="border border-danger-ink bg-[var(--coral)]/10 p-3 text-danger-ink text-sm">
                 {error}
               </div>
             )}
@@ -1219,7 +1221,7 @@ export function PlatformAuthWizard({
                       {isMetaAssetProduct(p.product) && primaryMetaAssetProduct === p.product && (
                         <div className="relative">
                           {metaAccessConfig ? (
-                            <div className="mb-4 border border-black bg-paper p-3 text-sm text-ink">
+                            <div className="mb-4 border-t border-black/10 pt-3 text-sm text-ink dark:border-white/10">
                               <p className="font-semibold">Access this request will assign</p>
                               <ul className="mt-2 list-disc space-y-1 pl-5">
                                 {metaAccessConfig.recipients.map((recipient) => (

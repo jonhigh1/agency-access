@@ -94,7 +94,7 @@ export function AssetSelectorError({
   retryLabel = 'Try again',
 }: AssetSelectorErrorProps) {
   return (
-    <div className="border-2 border-[var(--coral)] bg-[var(--coral)]/10 p-4 my-3">
+    <div className="border border-danger-ink bg-[rgb(var(--coral))]/10 p-4 my-3">
       <div className="flex items-start gap-3">
         {/* Error icon - Brutalist Square */}
         <div className="w-8 h-8 border-2 border-[var(--coral)] bg-[var(--coral)]/20 flex items-center justify-center flex-shrink-0">

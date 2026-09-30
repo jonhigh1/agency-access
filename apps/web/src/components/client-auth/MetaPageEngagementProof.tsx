@@ -76,7 +76,7 @@ export function MetaPageEngagementProof({
   };
 
   return (
-    <section className="border-2 border-black bg-card p-4 dark:border-white" aria-labelledby={`meta-page-proof-title-${selectedPage.id}`}>
+    <section className="border-t border-black/10 pt-4 dark:border-white/10" aria-labelledby={`meta-page-proof-title-${selectedPage.id}`}>
       <div className="mb-3">
         <h4 id={`meta-page-proof-title-${selectedPage.id}`} className="text-lg font-bold text-[var(--ink)] font-display">
           Validate Page access
@@ -86,7 +86,7 @@ export function MetaPageEngagementProof({
         </p>
       </div>
 
-      <div className="mb-3 border-2 border-black/20 p-3 dark:border-white/30">
+      <div className="mb-3">
         <p className="font-semibold text-[var(--ink)]">{selectedPage.name}</p>
         <p className="font-mono text-xs text-muted-foreground">Page ID: {selectedPage.id}</p>
       </div>
@@ -103,14 +103,14 @@ export function MetaPageEngagementProof({
       </Button>
 
       {error ? (
-        <div className="mt-3 flex gap-2 border-2 border-[var(--coral)] bg-[var(--coral)]/10 p-3 text-sm text-danger-ink" role="alert">
+        <div className="mt-3 flex gap-2 border border-danger-ink bg-[rgb(var(--coral))]/10 p-3 text-sm text-danger-ink" role="alert">
           <AlertCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
           <span>{error}</span>
         </div>
       ) : null}
 
       {proof ? (
-        <div className="mt-3 border-2 border-[var(--teal)] bg-[var(--teal)]/10 p-3" role="status" aria-live="polite">
+        <div className="mt-3 border border-success-ink bg-[rgb(var(--teal))]/10 p-3" role="status" aria-live="polite">
           <div className="mb-2 flex items-center gap-2 font-semibold text-[var(--ink)]">
             <CheckCircle2 className="h-4 w-4 text-success-ink" aria-hidden="true" />
             Page access validated for {proof.page.name}

@@ -68,7 +68,7 @@ export function InstagramAccessGrant({
   };
 
   return (
-    <section className="mt-6 space-y-3 border-2 border-black p-4" aria-label="Instagram access">
+    <section className="mt-6 space-y-3 border-t border-black/10 p-4 dark:border-white/10" aria-label="Instagram access">
       <h3 className="text-lg font-bold text-[var(--ink)] font-display">Share direct Instagram access</h3>
       <p className="text-sm text-muted-foreground">Selected accounts: {accounts.map((account) => account.name).join(', ')}</p>
       <ol className="list-decimal space-y-1 pl-5 text-sm">

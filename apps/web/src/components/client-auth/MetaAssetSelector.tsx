@@ -773,7 +773,7 @@ export function MetaAssetSelector({
           onCancel={() => setPendingResetConfirm(null)}
         />
       ) : null}
-      {businessCreationNeedsReview ? <p role="status" className="border-2 border-[rgb(var(--warning))] bg-[rgb(var(--warning))]/10 p-4 text-sm text-[rgb(var(--warning))]">Business Portfolio creation is unconfirmed. Select the intended portfolio, then continue with asset selection and verification. Do not repeat creation in this request.</p> : null}
+      {businessCreationNeedsReview ? <p role="status" className="border border-[rgb(var(--warning))] bg-[rgb(var(--warning))]/10 p-4 text-sm text-[rgb(var(--warning))]">Business Portfolio creation is unconfirmed. Select the intended portfolio, then continue with asset selection and verification. Do not repeat creation in this request.</p> : null}
 
       {/* Confirmation-first portfolio choice (R6, KTD5): receipt for a
           confirmed business with an escape, one plain question when ambiguous,
@@ -788,9 +788,9 @@ export function MetaAssetSelector({
       />
 
       {businessCreationOpen ? (
-        <div className="border-2 border-black dark:border-white bg-[rgb(var(--warm-gray))]/20 p-6 space-y-4">
+        <div className="bg-[rgb(var(--warm-gray))]/20 p-6 space-y-4">
           {userPagesError ? (
-            <div className="border-2 border-[rgb(var(--warning))] bg-[rgb(var(--warning))]/10 p-4 text-sm text-[rgb(var(--warning))]">
+            <div className="border border-[rgb(var(--warning))] bg-[rgb(var(--warning))]/10 p-4 text-sm text-[rgb(var(--warning))]">
               {userPagesError}
             </div>
           ) : userPagesLoading ? (
@@ -826,7 +826,7 @@ export function MetaAssetSelector({
         <div
           key={warning}
           role="alert"
-          className="border-2 border-[rgb(var(--warning))] bg-[rgb(var(--warning))]/10 p-4 text-sm text-[rgb(var(--warning))]"
+          className="border border-[rgb(var(--warning))] bg-[rgb(var(--warning))]/10 p-4 text-sm text-[rgb(var(--warning))]"
         >
           {warning}
         </div>
@@ -854,7 +854,7 @@ export function MetaAssetSelector({
 
           {/* Show creator if empty and user clicked "Create New" */}
           {showAdAccountCreator && creationBusinessId ? (
-            <div className="border-2 border-[rgb(var(--coral))] bg-[rgb(var(--coral))]/5 p-4 rounded-none mb-3">
+            <div className="bg-[rgb(var(--coral))]/5 p-4 rounded-none mb-3">
               <div className="flex items-center justify-between mb-3">
                 <h4 className="font-bold text-[rgb(var(--ink))]">Create New Ad Account</h4>
                 <button
@@ -904,7 +904,7 @@ export function MetaAssetSelector({
                   Create Ad Account
                 </Button>
               ) : (
-                <div className="border-2 border-[rgb(var(--warning))] bg-[rgb(var(--warning))]/10 p-4 text-sm text-[rgb(var(--warning))] max-w-sm mx-auto">
+                <div className="border border-[rgb(var(--warning))] bg-[rgb(var(--warning))]/10 p-4 text-sm text-[rgb(var(--warning))] max-w-sm mx-auto">
                   Select a Business Portfolio before creating ad accounts.
                 </div>
               )}
@@ -975,7 +975,7 @@ export function MetaAssetSelector({
                   Create Page
                 </Button>
               ) : (
-                <div className="border-2 border-[rgb(var(--warning))] bg-[rgb(var(--warning))]/10 p-4 text-sm text-[rgb(var(--warning))] max-w-sm mx-auto">
+                <div className="border border-[rgb(var(--warning))] bg-[rgb(var(--warning))]/10 p-4 text-sm text-[rgb(var(--warning))] max-w-sm mx-auto">
                   Select a Business Portfolio before creating pages.
                 </div>
               )}
@@ -985,7 +985,7 @@ export function MetaAssetSelector({
         ) : null}
 
         {showPages && activeBusinessId ? (
-          <section aria-labelledby="meta-leads-access-heading" className="border border-[rgb(var(--border))] p-4">
+          <section aria-labelledby="meta-leads-access-heading" className="border-t border-black/10 p-4 dark:border-white/10">
             <h3 id="meta-leads-access-heading" className="text-lg font-bold text-[rgb(var(--ink))] font-display">
               {requestedPageTasks.includes('MANAGE_LEADS') ? 'Requested: Meta Leads Access' : 'Optional: Meta Leads Access'}
             </h3>
@@ -1068,7 +1068,7 @@ export function MetaAssetSelector({
         ) : null}
 
         {showPixels ? (
-          <section aria-labelledby="meta-pixels-heading" className="border border-[rgb(var(--border))] p-4">
+          <section aria-labelledby="meta-pixels-heading" className="border-t border-black/10 p-4 dark:border-white/10">
             <div className="flex items-center justify-between gap-3">
               <h3 id="meta-pixels-heading" className="text-lg font-bold text-[rgb(var(--ink))] font-display">Pixels and Datasets</h3>
               <span className="label-micro">{assets?.pixels?.length || 0} FOUND</span>

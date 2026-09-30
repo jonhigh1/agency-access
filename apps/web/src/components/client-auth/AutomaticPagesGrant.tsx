@@ -204,7 +204,7 @@ export function AutomaticPagesGrant({
       </div>
 
       {localError && (
-        <div className="bg-coral/10 border-2 border-coral/30 p-4 text-danger-ink">
+        <div className="border border-danger-ink bg-coral/10 p-4 text-danger-ink">
           <p className="font-semibold">{localError}</p>
         </div>
       )}

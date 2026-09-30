@@ -58,7 +58,7 @@ export function CatalogAccessGrant({
   };
 
   return (
-    <section className="mt-6 space-y-3 border-2 border-black p-4" aria-label="Product catalog access">
+    <section className="mt-6 space-y-3 border-t border-black/10 p-4 dark:border-white/10" aria-label="Product catalog access">
       <h3 className="text-lg font-bold text-[var(--ink)] font-display">Share product catalogs</h3>
       <p className="text-sm text-muted-foreground">Selected catalogs: {catalogs.map((catalog) => catalog.name).join(', ')}</p>
       {message ? <p role="status" className="text-sm">{message}</p> : null}

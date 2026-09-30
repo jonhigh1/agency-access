@@ -167,8 +167,8 @@ function findRawWhiteSurface(source: string): string[] {
 }
 
 /**
- * Full-box (`border-2`) budget per file, frozen at the 2026-09-29 nesting
- * sweep: one bordered shell per surface, controls and icon chips carry the
+ * Full-box (`border-2`) budget per file, frozen at the 2026-09-29/30 nesting
+ * sweeps: one bordered shell per surface, controls and icon chips carry the
  * rest. The count can only fall — growth requires editing this map, which is
  * the review conversation. Files not listed allow zero.
  */
@@ -177,24 +177,21 @@ const BORDER2_BUDGET_BY_SOURCE_PATH: Record<string, number> = {
   'app/platforms/callback/page.tsx': 5,
   'app/invite/[token]/loading.tsx': 1,
   'app/invite/oauth-callback/page.tsx': 2,
-  'components/client-auth/AdAccountSharingInstructions.tsx': 2,
+  'components/client-auth/AdAccountSharingInstructions.tsx': 1,
   'components/client-auth/AssetCheckbox.tsx': 1,
   'components/client-auth/AssetGroup.tsx': 1,
-  'components/client-auth/AssetSelectorStates.tsx': 3,
-  'components/client-auth/AutomaticPagesGrant.tsx': 2,
-  'components/client-auth/CatalogAccessGrant.tsx': 1,
+  'components/client-auth/AssetSelectorStates.tsx': 2,
+  'components/client-auth/AutomaticPagesGrant.tsx': 1,
   'components/client-auth/GoogleAssetSelector.tsx': 1,
   'components/client-auth/GuidedRedirectModal.tsx': 9,
-  'components/client-auth/InstagramAccessGrant.tsx': 1,
   'components/client-auth/LinkedInAssetSelector.tsx': 1,
-  'components/client-auth/MetaAssetCreator.tsx': 8,
-  'components/client-auth/MetaAssetSelector.tsx': 15,
-  'components/client-auth/MetaBusinessCreator.tsx': 8,
+  'components/client-auth/MetaAssetCreator.tsx': 6,
+  'components/client-auth/MetaAssetSelector.tsx': 8,
+  'components/client-auth/MetaBusinessCreator.tsx': 6,
   'components/client-auth/MetaBusinessSetupChecklist.tsx': 2,
-  'components/client-auth/MetaPageEngagementProof.tsx': 4,
-  'components/client-auth/PlatformAuthWizard.tsx': 20,
+  'components/client-auth/PlatformAuthWizard.tsx': 17,
   'components/client-auth/PlatformStepProgress.tsx': 1,
-  'components/client-auth/PortfolioSelector.tsx': 5,
+  'components/client-auth/PortfolioSelector.tsx': 1,
   'components/client-auth/SelectionResetConfirmDialog.tsx': 1,
   'components/client-auth/TikTokAssetSelector.tsx': 2,
   'components/flow/invite-load-state-card.tsx': 1,
