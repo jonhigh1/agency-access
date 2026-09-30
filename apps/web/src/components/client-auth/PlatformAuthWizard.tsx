@@ -1458,9 +1458,11 @@ export function PlatformAuthWizard({
                       connectionId={connectionId}
                   accessRequestToken={accessRequestToken}
                   onGrantComplete={(results) => {
-                    setPagesGranted(results.some((r) => r.status === 'granted'));
+                    const allPagesGranted = results.length > 0 && results.every((result) => result.status === 'granted');
+                    setPagesGranted(allPagesGranted);
                     // If ad accounts also need sharing, wait; otherwise advance
                     if (
+                      allPagesGranted &&
                       (!hasAdAccounts || metaAdAccountShareStatus === 'verified' || metaAdAccountShareStatus === 'partial') &&
                       (!hasMetaCatalogs || catalogsGranted) &&
                       (!hasInstagramAccounts || instagramBusinessAccessVerified)

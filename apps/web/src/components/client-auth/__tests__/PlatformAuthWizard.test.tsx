@@ -90,6 +90,29 @@ vi.mock('@/components/client-auth/MetaAssetSelector', () => ({
         onClick={() =>
           onSelectionChange({
             adAccounts: [],
+            pages: ['page_1', 'page_2'],
+            instagramAccounts: [],
+            allPages: [
+              { id: 'page_1', name: 'Shop Page' },
+              { id: 'page_2', name: 'Second Page' },
+            ],
+            selectedPagesWithNames: [
+              { id: 'page_1', name: 'Shop Page' },
+              { id: 'page_2', name: 'Second Page' },
+            ],
+            selectedBusinessId: 'biz_1',
+            selectedBusinessName: 'Client One',
+            assetsLoaded: true,
+          })
+        }
+      >
+        Select Meta Pages Only
+      </button>
+      <button
+        type="button"
+        onClick={() =>
+          onSelectionChange({
+            adAccounts: [],
             pages: [],
             instagramAccounts: ['ig_1'],
             allPages: [],
@@ -246,9 +269,20 @@ vi.mock('@/components/client-auth/TikTokAssetSelector', () => ({
 
 vi.mock('@/components/client-auth/AutomaticPagesGrant', () => ({
   AutomaticPagesGrant: ({ onGrantComplete }: any) => (
-    <button type="button" onClick={() => onGrantComplete([{ id: 'page_1', status: 'granted' }])}>
-      Automatic Pages Grant
-    </button>
+    <>
+      <button type="button" onClick={() => onGrantComplete([{ id: 'page_1', status: 'granted' }])}>
+        Automatic Pages Grant
+      </button>
+      <button
+        type="button"
+        onClick={() => onGrantComplete([
+          { id: 'page_1', status: 'granted' },
+          { id: 'page_2', status: 'failed', error: 'No verified grant result returned' },
+        ])}
+      >
+        Return partial Page results
+      </button>
+    </>
   ),
 }));
 
@@ -808,6 +842,36 @@ describe('PlatformAuthWizard', () => {
       screen.getByText(/still pending still needs manual meta sharing/i)
     ).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /finish request/i })).toBeInTheDocument();
+  });
+
+  it('stays on the grant step when any selected Page grant fails', async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      text: async () => JSON.stringify({ data: { success: true }, error: null }),
+    } as Response);
+
+    render(
+      <PlatformAuthWizard
+        platform="meta"
+        platformName="Meta"
+        products={[{ product: 'meta_pages', accessLevel: 'admin' }]}
+        accessRequestToken="token-1"
+        onComplete={onCompleteMock}
+        initialConnectionId="conn-1"
+        initialStep={2}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /select meta pages only/i }));
+    const shareButton = await screen.findByRole('button', { name: /share access/i });
+    await waitFor(() => expect(shareButton).toBeEnabled());
+    fireEvent.click(shareButton);
+
+    fireEvent.click(await screen.findByRole('button', { name: /return partial page results/i }));
+
+    expect(screen.queryByRole('heading', { name: /connected/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /review access confirmation/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^automatic pages grant$/i })).toBeInTheDocument();
   });
 
   it('keeps Instagram access pending for direct Meta verification', async () => {

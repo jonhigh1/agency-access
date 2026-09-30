@@ -8,7 +8,7 @@
  * Users can connect platforms directly from this page via OAuth.
  */
 
-import { useState, useMemo, useEffect, Suspense } from 'react';
+import { useState, useMemo, useEffect, useRef, Suspense } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth, useUser } from '@clerk/nextjs';
@@ -91,6 +91,7 @@ function ConnectionsPageContent() {
   const [isManualModalOpen, setIsManualModalOpen] = useState(false);
   const [isEditingEmail, setIsEditingEmail] = useState(false);
   const [currentEmail, setCurrentEmail] = useState<string>('');
+  const callbackHandledRef = useRef(false);
   const perfHarness = useMemo(() => readPerfHarnessContext(), []);
 
   const principalClerkId = (isDevelopmentBypass ? perfHarness?.principalId : null) || orgId || userId;
@@ -127,7 +128,16 @@ function ConnectionsPageContent() {
     const error = searchParams.get('error');
     const platform = searchParams.get('platform');
 
+    if (!success && !error) {
+      callbackHandledRef.current = false;
+      return;
+    }
+
+    if (callbackHandledRef.current) return;
+
     if (success === 'true' && platform) {
+      if (!agencyId) return;
+      callbackHandledRef.current = true;
       // Track platform connected in PostHog
       void capturePosthogEvent('platform_connected', {
         agency_id: agencyId,
@@ -147,6 +157,7 @@ function ConnectionsPageContent() {
     }
 
     if (error) {
+      callbackHandledRef.current = true;
       trackOAuthCallbackFailure({
         platform: platform,
         error_code: error,

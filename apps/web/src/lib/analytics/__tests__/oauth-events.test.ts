@@ -34,7 +34,7 @@ describe('oauth-events', () => {
     });
   });
 
-  it('tracks oauth_callback_failure and legacy oauth_callback_error', () => {
+  it('tracks oauth_callback_failure without legacy oauth_callback_error', () => {
     trackOAuthCallbackFailure({
       platform: null,
       error_code: 'TOKEN_EXCHANGE_FAILED',
@@ -50,12 +50,7 @@ describe('oauth-events', () => {
       agency_id: 'agency-1',
     });
 
-    expect(captureMock).toHaveBeenCalledWith('oauth_callback_error', {
-      agency_id: 'agency-1',
-      platform: 'unknown',
-      error_code: 'TOKEN_EXCHANGE_FAILED',
-      auth_source: 'agency_redirect',
-    });
+    expect(captureMock).not.toHaveBeenCalledWith('oauth_callback_error', expect.anything());
   });
 
   it('tracks client oauth exchange success with client and shared events', () => {

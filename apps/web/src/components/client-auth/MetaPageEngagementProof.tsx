@@ -5,7 +5,8 @@ import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import type { MetaPageEngagementProof as PageProof } from '@agency-platform/shared';
 import { Button } from '@/components/ui/button';
 import { resolveApiUrl } from '@/lib/api/api-env';
-import { parseJsonResponse } from '@/lib/api/parse-json-response';
+import { ApiResponseError, parseJsonResponse } from '@/lib/api/parse-json-response';
+import { capturePosthogEvent } from '@/lib/analytics/capture-posthog';
 
 interface MetaPageEngagementProofProps {
   selectedPage: Pick<PageProof['page'], 'id' | 'name'>;
@@ -25,6 +26,10 @@ export function MetaPageEngagementProof({
   const handleVerify = async () => {
     setIsLoading(true);
     setError(null);
+    void capturePosthogEvent('client_meta_page_proof_started', {
+      connection_id: connectionId,
+      page_id: selectedPage.id,
+    });
 
     try {
       const query = new URLSearchParams({ connectionId, pageId: selectedPage.id });
@@ -32,19 +37,39 @@ export function MetaPageEngagementProof({
         resolveApiUrl(`/api/client/${accessRequestToken}/meta-page-proof?${query.toString()}`),
         { signal: AbortSignal.timeout(20_000) }
       );
-      const json = await parseJsonResponse<{ data?: PageProof; error?: { message?: string } }>(
+      const json = await parseJsonResponse<{ data?: PageProof; error?: { code?: string; message?: string } }>(
         response,
         { fallbackErrorMessage: 'Failed to read Page content' }
       );
 
       if (!response.ok || json.error || !json.data) {
-        throw new Error(json.error?.message || 'Failed to read Page content');
+        setProof(null);
+        setError(json.error?.message || 'Failed to read Page content');
+        void capturePosthogEvent('client_meta_page_proof_failed', {
+          connection_id: connectionId,
+          page_id: selectedPage.id,
+          error_code: json.error?.code || 'PAGE_PROOF_FAILED',
+          failure_reason: 'api_response',
+        });
+        return;
       }
 
       setProof(json.data);
+      void capturePosthogEvent('client_meta_page_proof_succeeded', {
+        connection_id: connectionId,
+        page_id: selectedPage.id,
+        post_count: json.data.posts.length,
+        has_connected_instagram: Boolean(json.data.connectedInstagram),
+      });
     } catch (requestError) {
       setProof(null);
       setError(requestError instanceof Error ? requestError.message : 'Failed to read Page content');
+      void capturePosthogEvent('client_meta_page_proof_failed', {
+        connection_id: connectionId,
+        page_id: selectedPage.id,
+        error_code: requestError instanceof ApiResponseError ? requestError.code || 'API_RESPONSE_ERROR' : 'REQUEST_FAILED',
+        failure_reason: requestError instanceof ApiResponseError ? 'api_response' : 'request_exception',
+      });
     } finally {
       setIsLoading(false);
     }

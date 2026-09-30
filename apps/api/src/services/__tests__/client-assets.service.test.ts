@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { clientAssetsService } from '../client-assets.service.js';
+import { logger } from '../../lib/logger.js';
 
 describe('ClientAssetsService - Meta', () => {
   beforeEach(() => {
@@ -464,6 +465,50 @@ describe('ClientAssetsService - Meta', () => {
       posts: [],
     });
   });
+
+  it.each(['user', 'page'] as const)('sanitizes a denied %s Page read and its diagnostic log', async (stage) => {
+    const log = vi.spyOn(logger, 'error').mockImplementation(() => {});
+    const denied = {
+      ok: false,
+      status: 403,
+      text: async () => JSON.stringify({ error: {
+        code: 10,
+        error_subcode: 123,
+        message: 'Denied access_token=private-token',
+        fbtrace_id: 'trace-with-private-token',
+      } }),
+    } as Response;
+    if (stage === 'page') {
+      vi.mocked(fetch).mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ id: 'page_1', name: 'Client Page', access_token: 'page-token-secret' }),
+      } as Response);
+    }
+    vi.mocked(fetch).mockResolvedValueOnce(denied);
+    try {
+      await expect(clientAssetsService.fetchPageEngagementProof('user-token', 'page_1'))
+        .rejects.toThrow('AuthHub could not validate this Page. Confirm your Page access in Meta, then try again.');
+      expect(log).toHaveBeenCalledWith(expect.any(String), {
+        pageId: 'page_1', status: 403, code: 10, subcode: 123,
+      });
+      expect(JSON.stringify(log.mock.calls)).not.toContain('private-token');
+    } finally {
+      log.mockRestore();
+    }
+  });
+
+  it.each(['<html>private-token</html>', 'null', '{"error":{"code":"private-token"}}'])
+    ('does not expose malformed Meta errors', async (body) => {
+      const log = vi.spyOn(logger, 'error').mockImplementation(() => {});
+      vi.mocked(fetch).mockResolvedValueOnce({ ok: false, status: 502, text: async () => body } as Response);
+      try {
+        await expect(clientAssetsService.fetchPageEngagementProof('user-token', 'page_1'))
+          .rejects.toThrow('AuthHub could not validate this Page. Confirm your Page access in Meta, then try again.');
+        expect(log).toHaveBeenCalledWith(expect.any(String), { pageId: 'page_1', status: 502 });
+      } finally {
+        log.mockRestore();
+      }
+    });
 
   it.each(['user', 'page'] as const)('requires Meta reauthorization when the %s token is invalid', async (tokenStage) => {
     const invalidTokenResponse = {

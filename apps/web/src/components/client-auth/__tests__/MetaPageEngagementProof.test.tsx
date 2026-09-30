@@ -2,6 +2,12 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MetaPageEngagementProof } from '../MetaPageEngagementProof';
 
+const { captureMock } = vi.hoisted(() => ({ captureMock: vi.fn() }));
+
+vi.mock('@/lib/analytics/capture-posthog', () => ({
+  capturePosthogEvent: captureMock,
+}));
+
 describe('MetaPageEngagementProof', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -51,6 +57,16 @@ describe('MetaPageEngagementProof', () => {
     expect(screen.getByText('@mainpage')).toBeInTheDocument();
     expect(screen.getByText('Recent Page post')).toBeInTheDocument();
     expect(document.querySelector('time')?.getAttribute('datetime')).toBe('2026-09-21T00:00:00+0000');
+    expect(captureMock).toHaveBeenCalledWith('client_meta_page_proof_started', {
+      connection_id: 'conn-1',
+      page_id: 'page_1',
+    });
+    expect(captureMock).toHaveBeenCalledWith('client_meta_page_proof_succeeded', {
+      connection_id: 'conn-1',
+      page_id: 'page_1',
+      post_count: 1,
+      has_connected_instagram: true,
+    });
   });
 
   it('shows the Meta permission error instead of claiming success', async () => {
@@ -78,6 +94,13 @@ describe('MetaPageEngagementProof', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/requires pages_read_engagement/i);
     expect(screen.queryByText(/page access validated/i)).not.toBeInTheDocument();
+    expect(captureMock).toHaveBeenCalledWith('client_meta_page_proof_failed', {
+      connection_id: 'conn-1',
+      page_id: 'page_1',
+      error_code: 'API_RESPONSE_ERROR',
+      failure_reason: 'api_response',
+    });
+    expect(JSON.stringify(captureMock.mock.calls)).not.toContain('pages_read_engagement');
   });
 
   it('shows successful validation when Meta returns no recent public posts', async () => {
@@ -137,5 +160,11 @@ describe('MetaPageEngagementProof', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/reconnect meta and try again/i);
     expect(screen.queryByText(/page access validated/i)).not.toBeInTheDocument();
+    expect(captureMock).toHaveBeenCalledWith('client_meta_page_proof_failed', {
+      connection_id: 'conn-1',
+      page_id: 'page_1',
+      error_code: 'REAUTHORIZATION_REQUIRED',
+      failure_reason: 'api_response',
+    });
   });
 });
