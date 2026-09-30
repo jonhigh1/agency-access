@@ -149,7 +149,7 @@ function ChecklistRow({
         <span
           aria-hidden="true"
           className={`mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center border-2 bg-card ${
-            checked ? 'border-coral bg-coral' : 'border-border'
+            checked ? 'border-coral bg-coral' : 'border-black dark:border-white'
           } peer-focus-visible:outline peer-focus-visible:outline-[3px] peer-focus-visible:outline-[rgb(var(--coral)/0.25)] peer-focus-visible:outline-offset-0 peer-focus-visible:[box-shadow:0_0_0_6px_rgb(var(--primary)/0.08)]`}
         >
           {checked && <Check className="h-3.5 w-3.5 text-white" strokeWidth={3} />}
@@ -185,7 +185,7 @@ function BusinessIdCopyCard({ businessId, businessName, content }: BusinessIdCop
   const { copied, copy } = useCopyToClipboard();
 
   return (
-    <div className="border border-border bg-muted/20 p-4">
+    <div className="border-t border-black/10 dark:border-white/10 p-4">
       <p className="label-micro">{content.label}</p>
       {businessName && (
         <p className="mt-1 text-sm text-muted-foreground">{businessName}</p>
@@ -445,7 +445,7 @@ export function AdAccountSharingInstructions({
       {/* Stateful checklist: two numbered steps, five numbered sub-steps,
           one checkbox per row, persisted per (token, business). */}
       <div>
-        <div className="border border-border">
+        <div>
           <p className="label-micro hairline-b px-4 py-3">{content.checklistHint}</p>
           <ol className="px-4">
             <ChecklistRow
@@ -519,7 +519,7 @@ export function AdAccountSharingInstructions({
       </div>
 
       {/* Actions */}
-      <div className="flex gap-4 pt-4 border-t-2 border-border">
+      <div className="flex gap-4 pt-4 border-t-2 border-black/10 dark:border-white/10">
         <Button asChild variant="secondary" className="flex-1">
           <a
             href="https://business.facebook.com/settings"

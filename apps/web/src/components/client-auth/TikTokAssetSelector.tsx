@@ -169,8 +169,8 @@ export function TikTokAssetSelector({
   return (
     <div className="space-y-3">
       {selectedAdvertisers.size > 0 && (
-        <div className="flex items-center gap-2 rounded-lg border border-coral/40 bg-coral/5 px-3 py-2">
-          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-coral text-xs font-bold text-white">
+        <div className="flex items-center gap-2 rounded-none border border-coral/40 bg-coral/5 px-3 py-2">
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-none bg-coral text-xs font-bold text-white">
             {selectedAdvertisers.size}
           </span>
           <p className="min-w-0 truncate text-sm text-ink">
@@ -198,7 +198,7 @@ export function TikTokAssetSelector({
             onChange={(v) => setSelectedBusinessCenterId(v)}
             placeholder="All Business Centers"
             ariaLabel="Business Center"
-            triggerClassName="rounded-lg border-2 border-border"
+            triggerClassName="rounded-none border-2 border-black dark:border-white"
           />
         </div>
       )}

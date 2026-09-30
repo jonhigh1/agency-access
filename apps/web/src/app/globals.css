@@ -160,7 +160,8 @@
   input[type="datetime-local"],
   textarea,
   select {
-    @apply bg-input text-foreground border-border rounded-md;
+    /* v2 Forms & Inputs base: 1px ink border, square — raw inputs stay visible on paper. */
+    @apply bg-input text-foreground border border-black dark:border-white rounded-none;
     @apply placeholder:text-muted-foreground;
     /* v2.0 two-ring focus: inner 3px coral stroke + outer 6px soft halo */
     @apply focus:border-coral focus:outline-none;

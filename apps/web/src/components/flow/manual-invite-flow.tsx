@@ -118,7 +118,7 @@ export function renderManualFormFields<TData>(
               value={value}
               onChange={(event) => ctx.setFieldValue(field.name, event.target.value)}
               placeholder={field.placeholder}
-              className={`w-full rounded-lg border border-border bg-paper px-3 py-2 text-sm text-ink${
+              className={`w-full rounded-none border border-black dark:border-white bg-paper px-3 py-2 text-sm text-ink${
                 field.mono ? ' font-mono' : ''
               }`}
               inputMode={field.inputMode}
@@ -258,7 +258,7 @@ export function ManualInviteFlow<TData extends ManualInviteFlowData>({
           <div className="space-y-3">
             {config.completion.renderSummary?.(ctx)}
             {submissionError ? (
-              <div className="rounded-lg border border-coral/30 bg-coral/10 px-3 py-2 text-sm text-danger-ink">
+              <div className="rounded-none border border-coral/30 bg-coral/10 px-3 py-2 text-sm text-danger-ink">
                 {submissionError}
               </div>
             ) : (

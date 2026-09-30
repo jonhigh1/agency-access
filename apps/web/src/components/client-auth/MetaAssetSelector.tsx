@@ -854,7 +854,7 @@ export function MetaAssetSelector({
 
           {/* Show creator if empty and user clicked "Create New" */}
           {showAdAccountCreator && creationBusinessId ? (
-            <div className="border-2 border-[rgb(var(--coral))] bg-[rgb(var(--coral))]/5 p-4 rounded-lg mb-3">
+            <div className="border-2 border-[rgb(var(--coral))] bg-[rgb(var(--coral))]/5 p-4 rounded-none mb-3">
               <div className="flex items-center justify-between mb-3">
                 <h4 className="font-bold text-[rgb(var(--ink))]">Create New Ad Account</h4>
                 <button

@@ -59,7 +59,7 @@ export function AssetSelectorEmpty({
   return (
     <div className="py-2 text-center px-4">
       {/* Empty state icon */}
-      <div className="w-9 h-9 border border-border bg-muted/30 dark:bg-muted/60 flex items-center justify-center mx-auto mb-1.5">
+      <div className="w-9 h-9 flex items-center justify-center mx-auto mb-1.5">
         <MailX className="w-5 h-5 text-muted-foreground" aria-hidden="true" />
       </div>
 

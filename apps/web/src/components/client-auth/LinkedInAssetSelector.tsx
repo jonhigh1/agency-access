@@ -158,8 +158,8 @@ export function LinkedInAssetSelector({
   return (
     <div className="space-y-3">
       {selectedIds.size > 0 && (
-        <div className="flex items-center gap-2 rounded-lg border border-coral/40 bg-coral/5 px-3 py-2">
-          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-coral text-xs font-bold text-white">
+        <div className="flex items-center gap-2 rounded-none border border-coral/40 bg-coral/5 px-3 py-2">
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-none bg-coral text-xs font-bold text-white">
             {selectedIds.size}
           </span>
           <p className="min-w-0 truncate text-sm text-ink">

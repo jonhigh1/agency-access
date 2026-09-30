@@ -39,7 +39,7 @@ function copyEmailRow(email: string, copyButton: ReactNode): ReactNode {
         <input
           readOnly
           value={email}
-          className="flex-1 rounded-lg border border-border bg-paper px-3 py-2 text-sm font-mono text-ink"
+          className="flex-1 rounded-none border border-black dark:border-white bg-paper px-3 py-2 text-sm font-mono text-ink"
         />
         {copyButton}
       </div>
@@ -83,7 +83,7 @@ function para(children: ReactNode): ReactNode {
 
 function bulletList(items: ReactNode[]): ReactNode {
   return (
-    <div className="rounded-lg border border-border bg-muted/10 px-4 py-3">
+    <div className="px-4 py-3">
       <ul className="list-disc space-y-2 pl-5 text-sm text-foreground">{items}</ul>
     </div>
   );
@@ -373,7 +373,7 @@ export const pinterestManualConfig: ManualInviteConfig<PinterestManualData> = {
               'Agency Business ID'
             )
           : (
-              <div className="rounded-lg border border-coral/30 bg-coral/10 px-3 py-3 text-sm text-danger-ink">
+              <div className="rounded-none border border-coral/30 bg-coral/10 px-3 py-3 text-sm text-danger-ink">
                 Pinterest Business ID is missing. Contact your agency before continuing.
               </div>
             ),

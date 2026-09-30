@@ -247,7 +247,7 @@ export function MetaBusinessCreator({
           onChange={(e) => setBusinessName(e.target.value)}
           placeholder="e.g., Acme Business"
           disabled={state === 'loading'}
-          className="w-full px-4 py-3 border-2 border-black dark:border-white rounded-lg bg-white dark:bg-ink text-[var(--ink)] placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[var(--coral)] focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed shadow-brutalist-sm focus:shadow-brutalist transition-shadow"
+          className="w-full px-4 py-3 border-2 border-black dark:border-white rounded-none bg-card text-[var(--ink)] placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[var(--coral)] focus:border-transparent disabled:opacity-50 disabled:cursor-not-allowed shadow-brutalist-sm focus:shadow-brutalist transition-shadow"
           maxLength={100}
         />
         <p className="text-xs text-muted-foreground mt-1">

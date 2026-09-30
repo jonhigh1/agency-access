@@ -1794,7 +1794,7 @@ export function PlatformAuthWizard({
                         return (
                           <div
                             key={product}
-                            className={`rounded-lg border px-3 py-2.5 text-left ${
+                            className={`rounded-none border px-3 py-2.5 text-left ${
                               isWarning
                                 ? 'border-[var(--warning)]/60 bg-[var(--warning)]/5'
                                 : 'border-[var(--teal)]/40 bg-[var(--teal)]/5'
@@ -1815,13 +1815,13 @@ export function PlatformAuthWizard({
                                 {assetNames.slice(0, 4).map((name) => (
                                   <span
                                     key={name}
-                                    className="rounded-md border border-border bg-card px-2 py-0.5 text-xs text-muted-foreground"
+                                    className="rounded-none px-2 py-0.5 text-xs text-muted-foreground"
                                   >
                                     {name}
                                   </span>
                                 ))}
                                 {assetNames.length > 4 && (
-                                  <span className="rounded-md border border-border bg-card px-2 py-0.5 text-xs text-muted-foreground">
+                                  <span className="rounded-none px-2 py-0.5 text-xs text-muted-foreground">
                                     +{assetNames.length - 4} more
                                   </span>
                                 )}

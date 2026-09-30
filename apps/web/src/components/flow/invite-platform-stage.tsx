@@ -45,7 +45,7 @@ export function InvitePlatformStage({
       className="border-2 border-black bg-card shadow-brutalist"
       aria-label={`Active platform: ${platformName}`}
     >
-      <div className="border-b-2 border-black px-5 py-4 sm:px-6">
+      <div className="border-b border-black/10 px-5 py-4 sm:px-6 dark:border-white/10">
         <div className="flex items-center justify-end">
           <InviteStatusChip status={INVITE_CHIP_STATUS_BY_PLATFORM_STATUS[status]} />
         </div>
@@ -58,7 +58,7 @@ export function InvitePlatformStage({
       </div>
 
       {identities.length > 0 ? (
-        <div className="border-b border-black/20 px-5 py-4 sm:px-6">
+        <div className="border-b border-black/10 px-5 py-4 sm:px-6 dark:border-white/10">
           <p className="label-micro">Verify before you approve</p>
           <p className="mt-2 break-words text-sm leading-6 text-ink">
             {identities.map((identity) => `${identity.label}: ${identity.value}`).join(' · ')}

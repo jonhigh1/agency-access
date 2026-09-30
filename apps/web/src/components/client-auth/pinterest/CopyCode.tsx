@@ -39,13 +39,13 @@ export function CopyCode({ value, label }: CopyCodeProps) {
       {label && (
         <p className="text-sm font-medium text-foreground">{label}</p>
       )}
-      <div className="flex items-center bg-muted/30 border border-border rounded-lg overflow-hidden">
+      <div className="flex items-center bg-muted/30 border border-black dark:border-white rounded-none overflow-hidden">
         <code className="flex-1 px-4 py-3 text-base font-mono text-ink tracking-wide">
           {value}
         </code>
         <button
           onClick={handleCopy}
-          className="flex items-center justify-center px-4 py-3 border-l border-border hover:bg-muted/40 transition-colors"
+          className="flex items-center justify-center px-4 py-3 border-l border-black/10 dark:border-white/10 hover:bg-muted/40 transition-colors"
           aria-label={copied ? 'Copied' : 'Copy to clipboard'}
         >
           {copied ? (

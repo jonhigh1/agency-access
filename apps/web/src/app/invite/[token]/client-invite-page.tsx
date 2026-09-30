@@ -46,7 +46,7 @@ const PlatformAuthWizard = dynamic(
   {
     loading: () => (
       <div
-        className="min-h-[220px] rounded-none border border-border bg-muted/25"
+        className="min-h-[220px] rounded-none bg-muted/25"
         aria-busy
         aria-label="Loading platform connection"
       />
@@ -704,7 +704,7 @@ export default function ClientAuthorizationPage({
             onSubmit={handleIntakeSubmit}
             className="border-2 border-black bg-card shadow-brutalist overflow-hidden"
           >
-            <div className="border-b border-border bg-muted/10 px-6 py-5">
+            <div className="border-b border-black/10 dark:border-white/10 bg-muted/10 px-6 py-5">
               <h2 className="text-xl font-semibold text-ink font-display">Quick Setup</h2>
               <p className="mt-1 text-sm text-muted-foreground">Share a few details before authorization.</p>
             </div>
@@ -729,7 +729,7 @@ export default function ClientAuthorizationPage({
                       required={field.required}
                       aria-invalid={showFieldUnanswered(field)}
                       rows={4}
-                      className="w-full"
+                      className="w-full px-4 py-3"
                     />
                   ) : field.type === 'dropdown' ? (
                     <SingleSelect
@@ -760,7 +760,7 @@ export default function ClientAuthorizationPage({
                       }
                       required={field.required}
                       aria-invalid={showFieldUnanswered(field)}
-                      className="w-full"
+                      className="w-full px-4 py-3"
                     />
                   )}
                 </div>
@@ -772,7 +772,7 @@ export default function ClientAuthorizationPage({
               ) : null}
             </div>
 
-            <div className="flex flex-col items-stretch gap-3 border-t border-border bg-muted/10 px-6 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
+            <div className="flex flex-col items-stretch gap-3 border-t border-black/10 dark:border-white/10 bg-muted/10 px-6 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4">
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Lock className="h-4 w-4" />
                 {securitySummary.detail}
@@ -820,7 +820,7 @@ export default function ClientAuthorizationPage({
               />
             </div>
 
-            <div className="flex flex-col items-stretch gap-3 border-t border-border bg-muted/10 px-5 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-6">
+            <div className="flex flex-col items-stretch gap-3 border-t border-black/10 dark:border-white/10 bg-muted/10 px-5 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4 sm:px-6">
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Lock className="h-3.5 w-3.5 shrink-0" />
                 <span>Passwords are never requested</span>

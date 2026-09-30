@@ -37,7 +37,7 @@ export function StepHelpText({
   const contentId = useId();
 
   return (
-    <div className="border-2 border-black bg-muted/20 p-4 mt-4">
+    <div className="border-t border-black/10 dark:border-white/10 mt-4 pt-4">
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
@@ -45,9 +45,7 @@ export function StepHelpText({
         aria-expanded={isOpen}
         aria-controls={contentId}
       >
-        <div className="w-8 h-8 border-2 border-black dark:border-white bg-[var(--paper)] flex items-center justify-center flex-shrink-0">
-          <Info className="w-4 h-4 text-danger-ink" />
-        </div>
+        <Info className="w-4 h-4 text-danger-ink flex-shrink-0" />
         <span className="font-semibold text-[var(--ink)] flex-1">{title}</span>
         <m.div
           animate={{ rotate: isOpen ? 180 : 0 }}
@@ -61,7 +59,7 @@ export function StepHelpText({
       <div
         id={contentId}
         hidden={!isOpen}
-        className="mt-4 border-t-2 border-black pt-4 dark:border-white"
+        className="mt-4 border-t border-black/10 pt-4 dark:border-white/10"
       >
         {description && (
           <p className="mb-4 text-sm text-foreground dark:text-muted-foreground">{description}</p>

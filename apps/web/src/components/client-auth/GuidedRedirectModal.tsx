@@ -69,16 +69,16 @@ export function GuidedRedirectModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-      <Card className="w-full max-w-lg border-2 border-black dark:border-white shadow-brutalist-lg bg-white dark:bg-ink">
+      <Card className="w-full max-w-lg border-2 border-black dark:border-white shadow-brutalist-lg bg-card">
         {/* Header */}
-        <div className="flex items-start justify-between p-6 border-b-2 border-black dark:border-white">
+        <div className="flex items-start justify-between p-6 border-b border-black/10 dark:border-white/10">
           <div>
             <h3 className="text-xl font-bold text-[var(--ink)] font-display">{title}</h3>
             <p className="text-sm text-muted-foreground dark:text-muted-foreground mt-1">{description}</p>
           </div>
           <button
             onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center border-2 border-black dark:border-white rounded hover:bg-muted/30 dark:hover:bg-muted/60 transition-colors"
+            className="w-8 h-8 flex items-center justify-center border-2 border-black dark:border-white rounded-none hover:bg-muted/30 dark:hover:bg-muted/60 transition-colors"
             aria-label="Close"
           >
             <X className="w-4 h-4" />
@@ -119,13 +119,13 @@ export function GuidedRedirectModal({
           </Button>
 
           {/* Confirmation Checkbox */}
-          <div className="flex items-start gap-3 p-4 border-2 border-black dark:border-white rounded-lg bg-muted/20 dark:bg-muted/60">
+          <div className="flex items-start gap-3 border-t border-black/10 dark:border-white/10 pt-4">
             <input
               type="checkbox"
               id="confirmed-created"
               checked={confirmedCreated}
               onChange={(e) => setConfirmedCreated(e.target.checked)}
-              className="mt-0.5 w-5 h-5 border-2 border-black dark:border-white rounded cursor-pointer accent-[var(--coral)]"
+              className="mt-0.5 w-5 h-5 border-2 border-black dark:border-white rounded-none cursor-pointer accent-[var(--coral)]"
             />
             <label
               htmlFor="confirmed-created"
@@ -137,7 +137,7 @@ export function GuidedRedirectModal({
         </div>
 
         {/* Footer */}
-        <div className="p-6 border-t-2 border-black dark:border-white bg-muted/20 dark:bg-muted/60">
+        <div className="p-6 border-t border-black/10 dark:border-white/10 bg-muted/20 dark:bg-muted/60">
           <div className="flex gap-3">
             <Button
               variant="secondary"
@@ -257,13 +257,13 @@ export function GuidedRedirectCard({
       </Button>
 
       {/* Confirmation Checkbox */}
-      <div className="flex items-start gap-3 p-3 border-2 border-black dark:border-white rounded-lg bg-white dark:bg-muted/60 mb-3">
+      <div className="flex items-start gap-3 border-t border-black/10 dark:border-white/10 pt-3 mt-3">
         <input
           type="checkbox"
           id="confirmed-created-card"
           checked={confirmedCreated}
           onChange={(e) => setConfirmedCreated(e.target.checked)}
-          className="mt-0.5 w-4 h-4 border-2 border-black dark:border-white rounded cursor-pointer accent-[var(--coral)]"
+          className="mt-0.5 w-4 h-4 border-2 border-black dark:border-white rounded-none cursor-pointer accent-[var(--coral)]"
         />
         <label
           htmlFor="confirmed-created-card"

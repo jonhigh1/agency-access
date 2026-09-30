@@ -4,9 +4,11 @@
  * PlatformWizardCard - Container for platform-specific wizard
  *
  * Acid Brutalism Design:
- * - Hard borders (border-2 border-black)
+ * - No own box — this card renders inside the invite stage shell, so it
+ *   separates by a paper background shift and hairlines only (one shell per
+ *   surface; borders within borders are the nesting failure mode)
  * - No resting shadow — the invite stage card carries the view's single
- *   brutalist emphasis, so this nested card stays border-led
+ *   brutalist emphasis
  * - Binary radius (square)
  * - Platform icon header
  * - Animated step transitions (clipped by the content wrapper, never by the
@@ -42,14 +44,14 @@ export function PlatformWizardCard({
 
   return (
     <m.div
-      className="bg-card rounded-none border-2 border-black dark:border-white"
+      className="bg-paper rounded-none"
       initial={false}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4 }}
     >
       {/* Header: Platform branding + progress */}
       {showFullChrome ? (
-        <div className="border-b-2 border-black dark:border-white p-4 sm:p-5 bg-[var(--paper)]">
+        <div className="border-b border-black/10 dark:border-white/10 p-4 sm:p-5">
           <div className="flex items-center gap-3 mb-3">
             <PlatformIcon platform={platform} size="lg" />
             <div>
@@ -87,7 +89,7 @@ export function PlatformWizardCard({
 
       {/* Footer: Navigation (optional) */}
       {footer && (
-        <div className="border-t-2 border-black bg-muted/20 p-4">
+        <div className="border-t border-black/10 dark:border-white/10 bg-muted/20 p-4">
           {footer}
         </div>
       )}

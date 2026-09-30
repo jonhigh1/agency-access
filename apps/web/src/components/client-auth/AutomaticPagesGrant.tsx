@@ -209,9 +209,9 @@ export function AutomaticPagesGrant({
         </div>
       )}
 
-      <div className="bg-card border-2 border-border p-6">
+      <div className="p-6">
         <div className="flex items-start gap-4 mb-4">
-          <div className="w-10 h-10 rounded-lg bg-coral/20 flex items-center justify-center flex-shrink-0">
+          <div className="w-10 h-10 rounded-none bg-coral/20 flex items-center justify-center flex-shrink-0">
             <span className="text-xl">f</span>
           </div>
           <div className="flex-1">
@@ -229,7 +229,7 @@ export function AutomaticPagesGrant({
           <label className="block text-sm font-semibold text-foreground mb-2">
             Select Accounts
           </label>
-          <div className="min-h-[60px] border-2 border-border rounded-lg p-3 flex flex-wrap gap-2">
+          <div className="min-h-[60px] border border-black/10 dark:border-white/10 rounded-none p-3 flex flex-wrap gap-2">
             {displayPages.length === 0 ? (
               <span className="text-muted-foreground text-sm">No pages selected</span>
             ) : (
@@ -241,12 +241,12 @@ export function AutomaticPagesGrant({
                 return (
                   <div
                     key={page.id}
-                    className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border-2 ${
+                    className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-none border-2 ${
                       isGranted
                         ? 'bg-[rgb(var(--teal))]/10 border-[rgb(var(--teal))]/40'
                         : isFailed
                         ? 'bg-coral/10 border-coral/30'
-                        : 'bg-muted/20 border-border'
+                        : 'bg-muted/20 border-black/10 dark:border-white/10'
                     }`}
                   >
                     <span className="text-sm font-medium text-ink">

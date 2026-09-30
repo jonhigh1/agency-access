@@ -43,7 +43,7 @@ export function AssetCheckbox({
         ${
           checked
             ? 'bg-coral/10 border-coral'
-            : 'bg-card border-border hover:border-coral/50'
+            : 'bg-card border-black dark:border-white hover:border-coral/50'
         }
         ${disabled ? 'opacity-50 cursor-not-allowed' : ''}
       `}
@@ -62,11 +62,11 @@ export function AssetCheckbox({
         />
         <m.div
           className={`
-            w-5 h-5 rounded-md border-2 flex items-center justify-center
+            w-5 h-5 rounded-none border-2 flex items-center justify-center
             ${
               checked
                 ? 'bg-coral border-coral'
-                : 'bg-card border-border'
+                : 'bg-card border-black dark:border-white'
             }
           `}
           animate={{

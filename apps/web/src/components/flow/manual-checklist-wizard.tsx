@@ -168,8 +168,8 @@ export function ManualChecklistWizard({
   const progressPercent = Math.max(0, Math.min(100, Math.round((completedSteps / Math.max(1, totalSteps)) * 100)));
 
   return (
-    <div className="rounded-lg border-2 border-black bg-card shadow-brutalist overflow-hidden">
-      <div className="border-b border-border bg-paper px-4 py-4 sm:px-5 sm:py-5">
+    <div className="rounded-none border-2 border-black bg-card shadow-brutalist overflow-hidden">
+      <div className="border-b border-black/10 bg-paper px-4 py-4 sm:px-5 sm:py-5 dark:border-white/10">
         <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{platformName} Checklist</p>
         <div className="mt-2 flex items-start justify-between gap-3">
           <h2 className="text-base font-semibold text-ink font-display sm:text-lg">{currentStep.title}</h2>
@@ -200,12 +200,10 @@ export function ManualChecklistWizard({
       </div>
 
       <div className="space-y-3 px-4 py-4 sm:space-y-4 sm:px-5 sm:py-5">
-        <div className="rounded-lg border border-border bg-paper px-3 py-3 sm:px-4 sm:py-4">
-          {currentStep.content}
-        </div>
+        {currentStep.content}
 
         {currentStep.completionGate ? (
-          <label className="flex items-start gap-3 rounded-lg border border-border bg-paper px-3 py-3 cursor-pointer">
+          <label className="flex items-start gap-3 cursor-pointer">
             <input
               type="checkbox"
               checked={currentStep.completionGate.checked}
@@ -215,20 +213,20 @@ export function ManualChecklistWizard({
                   setValidationError(null);
                 }
               }}
-              className="mt-1 h-4 w-4 rounded border-border text-danger-ink focus:ring-ring"
+              className="mt-1 h-4 w-4 rounded-none border-black text-danger-ink focus:ring-ring dark:border-white"
             />
             <span className="text-sm font-medium text-foreground">{currentStep.completionGate.label}</span>
           </label>
         ) : null}
 
         {validationError ? (
-          <div className="rounded-lg border border-coral/30 bg-coral/10 px-3 py-2 text-sm text-danger-ink">
+          <div className="border border-danger-ink bg-coral/10 px-3 py-2 text-sm text-danger-ink" role="alert">
             {validationError}
           </div>
         ) : null}
 
         {currentStep.helpContent ? (
-          <details className="rounded-lg border border-border bg-card px-3 py-2">
+          <details className="border-t border-black/10 pt-3 dark:border-white/10">
             <summary className="cursor-pointer text-sm font-medium text-foreground">Need help with this step?</summary>
             <div className="mt-2 text-sm text-muted-foreground">{currentStep.helpContent}</div>
           </details>
@@ -236,7 +234,7 @@ export function ManualChecklistWizard({
       </div>
 
       <div className="hidden lg:block sticky bottom-4 z-10 px-5 pb-4">
-        <div className="rounded-lg border border-border bg-paper px-3 py-3 flex items-center justify-between gap-3">
+        <div className="border-y border-black/10 bg-paper px-3 py-3 flex items-center justify-between gap-3 dark:border-white/10">
           <Button
             type="button"
             variant="secondary"
@@ -262,7 +260,7 @@ export function ManualChecklistWizard({
         </div>
       </div>
 
-      <div className="border-t border-border bg-paper px-4 py-3 lg:hidden">
+      <div className="border-t border-black/10 bg-paper px-4 py-3 lg:hidden dark:border-white/10">
         <div className="mx-auto max-w-3xl flex items-center gap-3">
           <Button
             type="button"
@@ -289,7 +287,7 @@ export function ManualChecklistWizard({
         </div>
       </div>
 
-      <div className="border-t border-border bg-paper px-5 py-3 flex items-center gap-2 text-xs text-muted-foreground">
+      <div className="border-t border-black/10 bg-paper px-5 py-3 flex items-center gap-2 text-xs text-muted-foreground dark:border-white/10">
         <Check className="h-4 w-4 text-success-ink" />
         Credentials are never requested in this flow.
       </div>

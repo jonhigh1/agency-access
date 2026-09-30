@@ -19,10 +19,10 @@ export function InviteTrustNote({
   const isCompact = density === 'compact';
 
   return (
-    <div className={cn(`border border-border bg-paper/80 ${isCompact ? 'p-3' : 'p-4'}`, className)}>
+    <div className={cn(`border-t border-black/10 dark:border-white/10 ${isCompact ? 'p-3' : 'p-4'}`, className)}>
       <div className={`flex items-start ${isCompact ? 'gap-2.5' : 'gap-3'}`}>
         <div
-          className={`mt-0.5 flex shrink-0 items-center justify-center border border-border bg-card text-muted-foreground ${isCompact ? 'h-8 w-8' : 'h-9 w-9'}`}
+          className={`mt-0.5 flex shrink-0 items-center justify-center text-muted-foreground ${isCompact ? 'h-8 w-8' : 'h-9 w-9'}`}
         >
           <Lock className="h-4 w-4" />
         </div>

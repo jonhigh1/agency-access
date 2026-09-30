@@ -40,7 +40,7 @@ export function FlowShell({
           </div>
 
           <div className="space-y-3">
-            <div className="h-2 overflow-hidden rounded-lg bg-muted/30" aria-hidden="true">
+            <div className="h-2 overflow-hidden rounded-none bg-muted/30" aria-hidden="true">
               <m.div
                 className="h-full bg-coral"
                 initial={{ width: 0 }}
@@ -67,12 +67,12 @@ export function FlowShell({
                     <div
                       key={label}
                       className={[
-                        'rounded-lg border px-3 py-2 text-xs font-semibold uppercase tracking-wide',
+                        'rounded-none border px-3 py-2 text-xs font-semibold uppercase tracking-wide',
                         isActive
                           ? 'border-coral bg-coral/10 text-danger-ink'
                           : isComplete
                           ? 'border-teal bg-teal/10 text-success-ink'
-                          : 'border-border bg-card text-muted-foreground',
+                          : 'border-black/10 bg-card text-muted-foreground dark:border-white/10',
                       ].join(' ')}
                     >
                       {label}

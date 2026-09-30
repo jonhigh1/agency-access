@@ -143,6 +143,70 @@ const NON_TOKEN_SHADOW = /(?<![-\w:])shadow-(?:sm|md|lg|xl|2xl|inner|none)(?![-\
 const GENERIC_PALETTE =
   /\b(?:slate|gray|zinc|neutral|stone|red|orange|amber|yellow|lime|green|emerald|cyan|sky|blue|indigo|violet|purple|fuchsia|pink|rose)-\d{2,3}\b/g;
 
+// v2 binary radius allows only square (rounded-none / default) and circle
+// (rounded-full, arbitrary 9999px). sm/md/lg are the rounded world surviving
+// in intermediate sizes — the 2026-09-29 intake sweep found 34 of them.
+const INTERMEDIATE_RADIUS = /(?<![-\w])rounded-(?:sm|md|lg)(?![-\w])/g;
+// The pre-v2 border token. v2 edges are ink (border-black / border-white) or
+// hairlines (border-black/10); `border-border` carried no width and hid the
+// intake inputs (2026-09-29).
+const LEGACY_BORDER_TOKEN = /(?<![-\w:])border-border(?![-\w])/g;
+// Raw white is not a token; surfaces are bg-card / bg-paper.
+const RAW_WHITE_SURFACE = /(?<![-\w])bg-white(?![-\w])(?!\/)/g;
+
+function findIntermediateRadius(source: string): string[] {
+  return [...source.matchAll(INTERMEDIATE_RADIUS)].map((match) => match[0]);
+}
+
+function findLegacyBorderToken(source: string): string[] {
+  return [...source.matchAll(LEGACY_BORDER_TOKEN)].map((match) => match[0]);
+}
+
+function findRawWhiteSurface(source: string): string[] {
+  return [...source.matchAll(RAW_WHITE_SURFACE)].map((match) => match[0]);
+}
+
+/**
+ * Full-box (`border-2`) budget per file, frozen at the 2026-09-29 nesting
+ * sweep: one bordered shell per surface, controls and icon chips carry the
+ * rest. The count can only fall — growth requires editing this map, which is
+ * the review conversation. Files not listed allow zero.
+ */
+const BORDER2_BUDGET_BY_SOURCE_PATH: Record<string, number> = {
+  'app/invite/[token]/client-invite-page.tsx': 8,
+  'app/platforms/callback/page.tsx': 5,
+  'app/invite/[token]/loading.tsx': 1,
+  'app/invite/oauth-callback/page.tsx': 2,
+  'components/client-auth/AdAccountSharingInstructions.tsx': 2,
+  'components/client-auth/AssetCheckbox.tsx': 1,
+  'components/client-auth/AssetGroup.tsx': 1,
+  'components/client-auth/AssetSelectorStates.tsx': 3,
+  'components/client-auth/AutomaticPagesGrant.tsx': 2,
+  'components/client-auth/CatalogAccessGrant.tsx': 1,
+  'components/client-auth/GoogleAssetSelector.tsx': 1,
+  'components/client-auth/GuidedRedirectModal.tsx': 9,
+  'components/client-auth/InstagramAccessGrant.tsx': 1,
+  'components/client-auth/LinkedInAssetSelector.tsx': 1,
+  'components/client-auth/MetaAssetCreator.tsx': 8,
+  'components/client-auth/MetaAssetSelector.tsx': 15,
+  'components/client-auth/MetaBusinessCreator.tsx': 8,
+  'components/client-auth/MetaBusinessSetupChecklist.tsx': 2,
+  'components/client-auth/MetaPageEngagementProof.tsx': 4,
+  'components/client-auth/PlatformAuthWizard.tsx': 20,
+  'components/client-auth/PlatformStepProgress.tsx': 1,
+  'components/client-auth/PortfolioSelector.tsx': 5,
+  'components/client-auth/SelectionResetConfirmDialog.tsx': 1,
+  'components/client-auth/TikTokAssetSelector.tsx': 2,
+  'components/flow/invite-load-state-card.tsx': 1,
+  'components/flow/invite-platform-stage.tsx': 1,
+  'components/flow/invite-terminal-card.tsx': 1,
+  'components/flow/manual-checklist-wizard.tsx': 1,
+};
+
+function countBorder2(source: string): number {
+  return [...source.matchAll(/(?<![-\w])border-2(?![-\w])/g)].length;
+}
+
 function findNonTokenShadows(source: string): string[] {
   return [...source.matchAll(NON_TOKEN_SHADOW)].map((match) => match[0]);
 }
@@ -217,8 +281,22 @@ describe('Invite surface — Design System v2.0 source contract', () => {
         expect(findRawAccentText(source)).toEqual([]);
       });
 
-      it('keeps radius binary (no xl/2xl/3xl/arbitrary)', () => {
+      it('keeps radius binary (no sm/md/lg/xl/2xl/3xl/arbitrary)', () => {
         expect(findNonBinaryRadius(source)).toEqual([]);
+        expect(findIntermediateRadius(source)).toEqual([]);
+      });
+
+      it('draws edges in ink, never the pre-v2 border token', () => {
+        expect(findLegacyBorderToken(source)).toEqual([]);
+      });
+
+      it('surfaces come from tokens, never raw bg-white', () => {
+        expect(findRawWhiteSurface(source)).toEqual([]);
+      });
+
+      it('stays within its full-box border budget (nesting can only fall)', () => {
+        const budget = BORDER2_BUDGET_BY_SOURCE_PATH[relativePath] ?? 0;
+        expect(countBorder2(source)).toBeLessThanOrEqual(budget);
       });
 
       it('stays within the resting card-shadow budget for its state views', () => {
@@ -254,13 +332,23 @@ describe('Invite surface — Design System v2.0 source contract', () => {
       ).toEqual([]);
     });
 
-    it('non-binary radius fires on xl/2xl/3xl and arbitrary values, spares sm/md/lg/full', () => {
+    it('non-binary radius fires on sm/md/lg and xl/2xl/3xl and arbitrary values, spares full', () => {
       expect(findNonBinaryRadius('<div className="rounded-xl">x</div>')).toHaveLength(1);
       expect(findNonBinaryRadius('<div className="rounded-2xl">x</div>')).toHaveLength(1);
       expect(findNonBinaryRadius('<div className="rounded-3xl">x</div>')).toHaveLength(1);
       expect(findNonBinaryRadius('<div className="rounded-[12px]">x</div>')).toHaveLength(1);
+      expect(findIntermediateRadius('<div className="rounded-md">x</div>')).toHaveLength(1);
+      expect(findIntermediateRadius('<div className="rounded-lg">x</div>')).toHaveLength(1);
+      expect(findIntermediateRadius('<div className="rounded-sm">x</div>')).toHaveLength(1);
       expect(findNonBinaryRadius('<div className="rounded-lg rounded-sm rounded-md">x</div>')).toEqual([]);
       expect(findNonBinaryRadius('<div className="rounded-full rounded-[9999px]">x</div>')).toEqual([]);
+    });
+
+    it('legacy border token and raw bg-white fire; token edges and bg-card pass', () => {
+      expect(findLegacyBorderToken('<div className="border-b border-border">x</div>')).toHaveLength(1);
+      expect(findLegacyBorderToken('<div className="border-2 border-black">x</div>')).toEqual([]);
+      expect(findRawWhiteSurface('<div className="bg-white p-4">x</div>')).toHaveLength(1);
+      expect(findRawWhiteSurface('<div className="bg-card p-4">x</div>')).toEqual([]);
     });
 
     it('the resting shadow counter skips -sm and prefixed variants, counts card-scale', () => {
