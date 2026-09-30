@@ -111,7 +111,7 @@ const SAVE_REQUEST_TIMEOUT_MESSAGE =
   'Saving is taking longer than expected. Check your connection and try again.';
 
 function isMetaAssetProduct(product: string): boolean {
-  return product === 'meta_ads' || product === 'meta_pages';
+  return product === 'meta_ads' || product === 'meta_pages' || product === 'instagram';
 }
 
 function supportsAssetSelection(product: string): boolean {
@@ -266,6 +266,8 @@ function getSelectedAssetCount(product: string, assets: any): number {
       return (assets.adAccounts?.length ?? 0) + (assets.pages?.length ?? 0) + (assets.instagramAccounts?.length ?? 0) + (assets.catalogs?.length ?? 0) + (assets.datasets?.length ?? 0);
     case 'meta_pages':
       return assets.pages?.length ?? 0;
+    case 'instagram':
+      return assets.instagramAccounts?.length ?? 0;
     case 'ga4':
       return assets.properties?.length ?? 0;
     case 'google_business_profile':
@@ -405,6 +407,14 @@ export function PlatformAuthWizard({
     requestedMetaAssetProducts.find((product) => product === 'meta_ads') ||
     requestedMetaAssetProducts[0] ||
     null;
+  const metaAllowedAssetTypes = buildMetaClientAllowedAssetTypes({
+    pagesOnly: false,
+    catalogEnabled: metaCatalogEnabled,
+  }).filter((type) =>
+    requestedMetaAssetProducts.includes('meta_ads') ||
+    (type === 'page' && requestedMetaAssetProducts.includes('meta_pages')) ||
+    (type === 'instagram' && requestedMetaAssetProducts.includes('instagram'))
+  );
   const finalActionLabel = completionActionLabel || 'Continue to next platform';
   const activePopupWaiter = useRef<{
     popup: Window;
@@ -594,6 +604,7 @@ export function PlatformAuthWizard({
           ...prev,
           meta_ads: selectedAssets,
           meta_pages: selectedAssets,
+          instagram: selectedAssets,
           [product]: selectedAssets,
         };
       }
@@ -651,10 +662,11 @@ export function PlatformAuthWizard({
     setMetaSelectionPrefill(null);
     resumeSavedPendingRef.current = false;
     setGroupAssets((prev) => {
-      if (!prev.meta_ads && !prev.meta_pages) return prev;
+      if (!prev.meta_ads && !prev.meta_pages && !prev.instagram) return prev;
       const next = { ...prev };
       delete next.meta_ads;
       delete next.meta_pages;
+      delete next.instagram;
       return next;
     });
     setChooseAccountsExpanded(true);
@@ -1244,12 +1256,7 @@ export function PlatformAuthWizard({
                             businessId={businessId || undefined}
                             requestedPageTasks={metaAccessConfig?.pageTasks}
                             initialSelection={metaSelectionPrefill}
-                            allowedAssetTypes={buildMetaClientAllowedAssetTypes({
-                              pagesOnly:
-                                p.product === 'meta_pages' &&
-                                !requestedMetaAssetProducts.includes('meta_ads'),
-                              catalogEnabled: metaCatalogEnabled,
-                            })}
+                            allowedAssetTypes={metaAllowedAssetTypes}
                             onSelectionChange={(selectedAssets) => {
                               // Store both IDs and full asset objects for grant step
                               // selectedAssets now includes selectedPagesWithNames, etc. from MetaAssetSelector

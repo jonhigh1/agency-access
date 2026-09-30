@@ -2502,6 +2502,84 @@ describe('Client Auth Asset Routes - Meta', () => {
       } as any);
     }
 
+    it('saves Instagram assets in both product and canonical Meta selections without clearing Ads', async () => {
+      mockSavePrereqs();
+      vi.mocked(prisma.clientConnection.findUnique).mockResolvedValue({
+        id: 'conn-1',
+        accessRequestId: 'request-a',
+        agencyId: 'agency-a',
+        clientEmail: 'client@example.com',
+        grantedAssets: { meta_ads: { selectedBusinessId: 'biz_client_2', adAccounts: ['act_1'] } },
+      } as any);
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/client/token-a/save-assets',
+        payload: {
+          connectionId: 'conn-1',
+          platform: 'instagram',
+          selectedAssets: {
+            selectedBusinessId: 'biz_client_2',
+            instagramAccounts: ['ig_2'],
+            selectedInstagramWithNames: [{ id: 'ig_2', name: 'clienttwo' }],
+          },
+        },
+      });
+
+      expect(response.statusCode).toBe(200);
+      expect(clientAssetsService.fetchMetaAssets).toHaveBeenCalledWith('meta-access-token', 'biz_client_2', ['instagram_account']);
+      expect(prisma.clientConnection.update).toHaveBeenCalledWith(expect.objectContaining({
+        data: { grantedAssets: {
+          meta_ads: expect.objectContaining({ adAccounts: ['act_1'], instagramAccounts: ['ig_2'] }),
+          instagram: expect.objectContaining({ instagramAccounts: ['ig_2'] }),
+        } },
+      }));
+      expect(prisma.platformAuthorization.update).toHaveBeenCalledWith(expect.objectContaining({
+        data: { metadata: expect.objectContaining({
+          selectedAssets: expect.objectContaining({
+            meta_ads: expect.objectContaining({ instagramAccounts: ['ig_2'] }),
+            instagram: expect.objectContaining({ instagramAccounts: ['ig_2'] }),
+          }),
+        }) },
+      }));
+      expect(prisma.metaAssetGrant.upsert).toHaveBeenCalledWith(expect.objectContaining({
+        create: expect.objectContaining({ assetKind: 'instagram_account', assetId: 'ig_2' }),
+      }));
+    });
+
+    it('rejects an empty Instagram selection before reading the Meta token', async () => {
+      mockSavePrereqs();
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/client/token-a/save-assets',
+        payload: { connectionId: 'conn-1', platform: 'instagram', selectedAssets: {} },
+      });
+
+      expect(response.statusCode).toBe(400);
+      expect(response.json().error.code).toBe('NO_SELECTED_ASSETS');
+      expect(infisical.getOAuthTokens).not.toHaveBeenCalled();
+      expect(prisma.clientConnection.update).not.toHaveBeenCalled();
+    });
+
+    it('rejects an Instagram account outside the selected client Business Portfolio', async () => {
+      mockSavePrereqs();
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/client/token-a/save-assets',
+        payload: {
+          connectionId: 'conn-1',
+          platform: 'instagram',
+          selectedAssets: { selectedBusinessId: 'biz_client_2', instagramAccounts: ['ig_foreign'] },
+        },
+      });
+
+      expect(response.statusCode).toBe(403);
+      expect(response.json().error.code).toBe('META_ASSET_NOT_IN_SELECTED_BUSINESS');
+      expect(prisma.clientConnection.update).not.toHaveBeenCalled();
+    });
+
     it('rejects WithNames ids outside the selected Business Portfolio even when the flat list is in scope', async () => {
       mockSavePrereqs();
 

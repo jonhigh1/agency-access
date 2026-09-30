@@ -196,6 +196,8 @@ function buildMetaGrantRequirements(
     add('dataset', selectedAssets.datasets, datasetTasks, selectedAssets.selectedDatasetsWithNames);
   } else if (platform === 'meta_pages') {
     add('page', selectedAssets.pages, pageTasks, selectedAssets.selectedPagesWithNames);
+  } else if (platform === 'instagram') {
+    add('instagram_account', selectedAssets.instagramAccounts, [], selectedAssets.selectedInstagramWithNames);
   }
 
   return requirements;
@@ -572,6 +574,7 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
         where: { connectionId_platform: { connectionId, platform: authPlatform } },
       });
       let metaRequirementContext: Parameters<typeof metaAssetGrantService.syncRequirements>[0] | null = null;
+      let selectedMetaBusinessId: string | null = null;
 
       if (authPlatform === 'meta') {
         if (!existingAuth || !authContext.accessRequest) {
@@ -582,6 +585,7 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
         if (!clientBusinessId) {
           return sendError(reply, 'META_BUSINESS_SELECTION_REQUIRED', 'Select a client Business Portfolio before selecting assets', 409);
         }
+        selectedMetaBusinessId = clientBusinessId;
         const agencyConnection = await prisma.agencyPlatformConnection.findUnique({
           where: { agencyId_platform: { agencyId: connection.agencyId, platform: 'meta' } },
         });
@@ -695,8 +699,22 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
       }
 
       const currentGrantedAssets = (connection.grantedAssets as any) || {};
+      const instagramSelection = platformStr === 'instagram'
+        ? {
+            instagramAccounts: resolvedSelectedAssets.instagramAccounts || [],
+            selectedInstagramWithNames: resolvedSelectedAssets.selectedInstagramWithNames || [],
+            selectedBusinessId: selectedMetaBusinessId,
+          }
+        : null;
+      const priorMetaAdsAssets = currentGrantedAssets.meta_ads || {};
       const updatedGrantedAssets = {
         ...currentGrantedAssets,
+        ...(instagramSelection ? {
+          meta_ads: {
+            ...(priorMetaAdsAssets.selectedBusinessId === selectedMetaBusinessId ? priorMetaAdsAssets : {}),
+            ...instagramSelection,
+          },
+        } : {}),
         [platform]: resolvedSelectedAssets,
       };
 
@@ -707,6 +725,7 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
 
       if (existingAuth) {
         const existingMetadata = (existingAuth.metadata as any) || {};
+        const priorMetaAdsMetadata = existingMetadata.selectedAssets?.meta_ads || {};
         const tiktokSelection =
           authPlatform === 'tiktok'
             ? {
@@ -727,6 +746,12 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
           ...existingMetadata,
           selectedAssets: {
             ...(existingMetadata.selectedAssets || {}),
+            ...(instagramSelection ? {
+              meta_ads: {
+                ...(priorMetaAdsMetadata.selectedBusinessId === selectedMetaBusinessId ? priorMetaAdsMetadata : {}),
+                ...instagramSelection,
+              },
+            } : {}),
             [platform]: resolvedSelectedAssets,
           },
           ...(tiktokSelection

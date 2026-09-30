@@ -36,9 +36,10 @@ vi.mock('@/components/client-auth/PlatformWizardCard', () => ({
 }));
 
 vi.mock('@/components/client-auth/MetaAssetSelector', () => ({
-  MetaAssetSelector: ({ onSelectionChange, onSelectionDerivedStateReset, initialSelection }: any) => (
+  MetaAssetSelector: ({ onSelectionChange, onSelectionDerivedStateReset, initialSelection, allowedAssetTypes }: any) => (
     <div>
       <div>Meta Asset Selector</div>
+      <div>{`Allowed Meta asset types: ${allowedAssetTypes.join(',')}`}</div>
       {initialSelection?.adAccounts?.length ? (
         <p>{`Resume prefill: ${initialSelection.adAccounts.join(', ')}`}</p>
       ) : null}
@@ -181,6 +182,9 @@ vi.mock('@/components/client-auth/MetaAssetSelector', () => ({
         }}
       >
         Switch Meta Business
+      </button>
+      <button type="button" onClick={() => onSelectionDerivedStateReset?.()}>
+        Reset Meta Selection Only
       </button>
     </div>
   ),
@@ -777,6 +781,143 @@ describe('PlatformAuthWizard', () => {
     expect(JSON.parse(String(vi.mocked(fetch).mock.calls[1][1]?.body))).toEqual(
       expect.objectContaining({ platform: 'ga4' })
     );
+  });
+
+  it('shares Meta selection across ads, pages, and Instagram products', async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      text: async () => JSON.stringify({ data: { success: true }, error: null }),
+    } as Response);
+
+    render(
+      <PlatformAuthWizard
+        platform="meta"
+        platformName="Meta"
+        products={[
+          { product: 'meta_ads', accessLevel: 'admin' },
+          { product: 'meta_pages', accessLevel: 'admin' },
+          { product: 'instagram', accessLevel: 'admin' },
+        ]}
+        accessRequestToken="token-1"
+        onComplete={onCompleteMock}
+        initialConnectionId="conn-1"
+        initialStep={2}
+      />
+    );
+
+    expect(screen.getByText('Allowed Meta asset types: ad_account,page,instagram,dataset')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /select meta pages and instagram assets/i }));
+    const shareButton = await screen.findByRole('button', { name: /share access/i });
+    await waitFor(() => expect(shareButton).toBeEnabled());
+    fireEvent.click(shareButton);
+
+    await waitFor(() => {
+      expect(
+        vi.mocked(fetch).mock.calls.filter(([url]) => String(url).includes('/save-assets'))
+      ).toHaveLength(3);
+    });
+
+    const saveBodies = vi.mocked(fetch).mock.calls
+      .filter(([url]) => String(url).includes('/save-assets'))
+      .map(([, options]) => JSON.parse(String(options?.body)));
+    expect(saveBodies).toEqual([
+      expect.objectContaining({ platform: 'meta_ads', selectedAssets: expect.objectContaining({ pages: ['page_1'], instagramAccounts: ['ig_1'] }) }),
+      expect.objectContaining({ platform: 'meta_pages', selectedAssets: expect.objectContaining({ pages: ['page_1'], instagramAccounts: ['ig_1'] }) }),
+      expect.objectContaining({ platform: 'instagram', selectedAssets: expect.objectContaining({ pages: ['page_1'], instagramAccounts: ['ig_1'] }) }),
+    ]);
+  });
+
+  it('blocks a grouped Meta save when Instagram has no selected accounts', async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      text: async () => JSON.stringify({ data: { success: true }, error: null }),
+    } as Response);
+
+    render(
+      <PlatformAuthWizard
+        platform="meta"
+        platformName="Meta"
+        products={[
+          { product: 'meta_ads', accessLevel: 'admin' },
+          { product: 'instagram', accessLevel: 'admin' },
+        ]}
+        accessRequestToken="token-1"
+        onComplete={onCompleteMock}
+        initialConnectionId="conn-1"
+        initialStep={2}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /select meta assets/i }));
+    const shareButton = await screen.findByRole('button', { name: /share access/i });
+
+    expect(shareButton).toBeDisabled();
+    fireEvent.click(shareButton);
+    expect(
+      vi.mocked(fetch).mock.calls.filter(([url]) => String(url).includes('/save-assets'))
+    ).toHaveLength(0);
+  });
+
+  it('selects and saves Instagram-only Meta assets', async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      text: async () => JSON.stringify({ data: { success: true }, error: null }),
+    } as Response);
+
+    render(
+      <PlatformAuthWizard
+        platform="meta"
+        platformName="Meta"
+        products={[{ product: 'instagram', accessLevel: 'admin' }]}
+        accessRequestToken="token-1"
+        onComplete={onCompleteMock}
+        initialConnectionId="conn-1"
+        initialStep={2}
+      />
+    );
+
+    expect(screen.getByText('Allowed Meta asset types: instagram')).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('button', { name: /select meta instagram assets/i }));
+    const shareButton = await screen.findByRole('button', { name: /share access/i });
+    await waitFor(() => expect(shareButton).toBeEnabled());
+    fireEvent.click(shareButton);
+
+    await waitFor(() => {
+      const saveCall = vi.mocked(fetch).mock.calls.find(([url]) => String(url).includes('/save-assets'));
+      expect(saveCall).toBeDefined();
+      expect(JSON.parse(String(saveCall?.[1]?.body))).toEqual(
+        expect.objectContaining({
+          platform: 'instagram',
+          selectedAssets: expect.objectContaining({ instagramAccounts: ['ig_1'] }),
+        })
+      );
+    });
+  });
+
+  it('clears the Instagram alias when Meta selection state resets', async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      text: async () => JSON.stringify({ data: { success: true }, error: null }),
+    } as Response);
+
+    render(
+      <PlatformAuthWizard
+        platform="meta"
+        platformName="Meta"
+        products={[{ product: 'instagram', accessLevel: 'admin' }]}
+        accessRequestToken="token-1"
+        onComplete={onCompleteMock}
+        initialConnectionId="conn-1"
+        initialStep={2}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /select meta instagram assets/i }));
+    await waitFor(() => expect(screen.getByRole('button', { name: /share access/i })).toBeEnabled());
+    fireEvent.click(screen.getByRole('button', { name: /reset meta selection only/i }));
+
+    expect(screen.getByRole('button', { name: /share access/i })).toBeDisabled();
+    expect(screen.getByText('Preparing your accounts')).toBeInTheDocument();
   });
 
   it('advances Meta into the confirmation step when manual ad-account verification is partial', async () => {
