@@ -34,11 +34,13 @@
   },
   "devDependencies": {
     "@googleworkspace/cli": "^0.11.1",
+    "@opentelemetry/instrumentation": "^0.219.0",
     "concurrently": "^9.1.0",
     "typescript": "^5.7.2"
   },
   "overrides": {
     "@opentelemetry/core": "^2.8.0",
+    "@opentelemetry/instrumentation": "^0.219.0",
     "@opentelemetry/exporter-trace-otlp-http": "^0.219.0",
     "@opentelemetry/otlp-exporter-base": "^0.219.0",
     "@opentelemetry/otlp-transformer": "^0.219.0",
