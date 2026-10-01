@@ -13,6 +13,7 @@ import { useAuth } from '@clerk/nextjs';
 import { Client } from '@agency-platform/shared';
 import { DEV_BYPASS_TOKEN, useAuthOrBypass } from '@/lib/dev-auth';
 import { AuthorizedApiError, authorizedApiFetch } from '@/lib/api/authorized-api-fetch';
+import { capturePosthogEvent } from '@/lib/analytics/capture-posthog';
 import { Button } from '@/components/ui/button';
 
 interface ClientSelectorProps {
@@ -54,23 +55,42 @@ export function ClientSelector({ onSelect, value }: ClientSelectorProps) {
     setLoading(true);
     setLoadError(null);
 
-    try {
-      const params = new URLSearchParams();
-      if (query) params.set('search', query);
-      params.set('limit', '50');
+    const params = new URLSearchParams();
+    if (query) params.set('search', query);
+    params.set('limit', '50');
 
-      const json = await authorizedApiFetch<PaginatedClientsResponse | { data: PaginatedClientsResponse }>(
+    const fetchClients = (skipCache: boolean) =>
+      authorizedApiFetch<PaginatedClientsResponse | { data: PaginatedClientsResponse }>(
         `/api/clients?${params.toString()}`,
         {
-          getToken: async () => (await getToken()) ?? (auth.isDevelopmentBypass ? DEV_BYPASS_TOKEN : null),
+          getToken: async () =>
+            (await (skipCache ? getToken({ skipCache: true }) : getToken())) ??
+            (auth.isDevelopmentBypass ? DEV_BYPASS_TOKEN : null),
           signal,
         }
       );
+
+    let tokenRefreshed = false;
+    try {
+      let json;
+      try {
+        json = await fetchClients(false);
+      } catch (err) {
+        if (signal.aborted || !(err instanceof AuthorizedApiError) || err.status !== 401) throw err;
+        tokenRefreshed = true;
+        json = await fetchClients(true);
+        void capturePosthogEvent('client_list_auth_recovered');
+      }
       if (signal.aborted) return;
       const result = Array.isArray(json?.data) ? json : json?.data ?? json;
       setClients(Array.isArray(result) ? result : (result as PaginatedClientsResponse).data || []);
     } catch (err) {
       if (signal.aborted) return;
+      void capturePosthogEvent('client_list_load_failed', {
+        status: err instanceof AuthorizedApiError ? err.status : null,
+        error_code: err instanceof AuthorizedApiError ? err.code : 'NETWORK_ERROR',
+        token_refreshed: tokenRefreshed,
+      });
       setLoadError(err instanceof Error ? err.message : 'Failed to load clients');
     } finally {
       if (!signal.aborted) setLoading(false);
