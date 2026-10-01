@@ -1,8 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   agencyAccessAlternativePage,
+  clientInviteAlternativePage,
   FORBIDDEN_AGENCYACCESS_COMPARE_TESTIMONIAL_NAMES,
+  FORBIDDEN_CLIENTINVITE_COMPARE_TESTIMONIAL_NAMES,
   leadsieAlternativePage,
+  getAllComparisonPageSlugs,
 } from "@/lib/comparison-data";
 import { generateComparisonSchema } from "@/lib/schema-generators";
 
@@ -277,5 +280,61 @@ describe("Leadsie comparison page claims", () => {
 
     expect(schema).not.toMatch(/AggregateRating/);
     expect(schema).not.toMatch(/"ratingValue":\s*4\.9/);
+  });
+});
+
+describe("ClientInvite comparison page claims", () => {
+  it("registers the clientinvite-alternative slug for static generation", () => {
+    expect(getAllComparisonPageSlugs()).toContain("clientinvite-alternative");
+  });
+
+  it("uses ship-packet title, meta, and 2026-10-01 price stamp", () => {
+    expect(clientInviteAlternativePage.metaTitle).toBe(
+      "ClientInvite vs AuthHub: Which Client Access Tool Fits Your Agency?",
+    );
+    expect(clientInviteAlternativePage.title).toBe(clientInviteAlternativePage.metaTitle);
+    expect(clientInviteAlternativePage.metaDescription).toBe(
+      "ClientInvite vs AuthHub for agencies: flat connections vs active-client tiers, platform coverage, and token refresh — with honest pick-X-if gates.",
+    );
+    expect(clientInviteAlternativePage.lastVerified).toBe("2026-10-01");
+  });
+
+  it("enforces AuthHub tiers, ClientInvite caps, and honest 15+ platforms", () => {
+    const copy = JSON.stringify(clientInviteAlternativePage);
+
+    expect(clientInviteAlternativePage.ourProduct.pricing.starter.price).toBe(29);
+    expect(clientInviteAlternativePage.ourProduct.pricing.pro?.price).toBe(79);
+    expect(clientInviteAlternativePage.ourProduct.pricing.enterprise?.price).toBe("149");
+    expect(clientInviteAlternativePage.competitor.pricing.starter?.price).toBe(29);
+    expect(clientInviteAlternativePage.competitor.pricing.pro?.price).toBe(89);
+
+    expect(copy).toMatch(/5 \/ 20 \/ 50|5\/20\/50/);
+    expect(copy).toMatch(/15\+/);
+    expect(copy).not.toMatch(/31\+/);
+    expect(copy).toMatch(/does not claim Shopify Partner|Shopify Partner not claimed/i);
+    expect(copy).not.toMatch(/SOC 2 certified|Type II/i);
+    expect(copy).not.toMatch(/access never expires/i);
+    expect(copy).not.toMatch(/Leadsie parity/i);
+
+    FORBIDDEN_CLIENTINVITE_COMPARE_TESTIMONIAL_NAMES.forEach((name) => {
+      expect(copy, `forbidden testimonial: ${name}`).not.toContain(name);
+    });
+    expect(clientInviteAlternativePage.testimonials).toEqual([]);
+  });
+
+  it("uses dual-run migration without quick migration promises", () => {
+    const migrationCopy = JSON.stringify(clientInviteAlternativePage.migrationSteps);
+    expect(migrationCopy).toMatch(/Dual-run|dual-run/i);
+    expect(migrationCopy).toMatch(/Re-authorize|re-authorize/i);
+    expect(migrationCopy).not.toMatch(/15-minute|Keep Existing Connections/i);
+    expect(clientInviteAlternativePage.migrationTimeMinutes).toBeUndefined();
+  });
+
+  it("includes three AEO sections with dated ClientInvite pricing", () => {
+    expect(clientInviteAlternativePage.aeoSections).toHaveLength(3);
+    const aeoCopy = JSON.stringify(clientInviteAlternativePage.aeoSections);
+    expect(aeoCopy).toMatch(/October 1, 2026/);
+    expect(aeoCopy).toMatch(/\$29.*3 monthly connections|\$29 for 3/);
+    expect(aeoCopy).toMatch(/\$89/);
   });
 });

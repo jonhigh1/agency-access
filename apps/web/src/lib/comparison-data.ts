@@ -3,6 +3,12 @@
  * Structured data for programmatic comparison pages
  */
 
+import { clientInviteAlternativePage } from "./clientinvite-alternative-data";
+
+export {
+  clientInviteAlternativePage,
+  FORBIDDEN_CLIENTINVITE_COMPARE_TESTIMONIAL_NAMES,
+} from "./clientinvite-alternative-data";
 import { LEADSIE_PRICING_SLUG } from "./leadsie-pricing-page";
 import { THREE_WAY_COMPARE_SLUG } from "./three-way-comparison-data";
 import type { ProgrammaticComparisonPage } from "./programmatic-types";
@@ -987,9 +993,7 @@ export const agencyAccessAlternativePage: ProgrammaticComparisonPage = {
 export const COMPARISON_PAGES: ProgrammaticComparisonPage[] = [
   leadsieAlternativePage,
   agencyAccessAlternativePage,
-  // Add more comparison pages here:
-  // otherPlatformAlternativePage,
-  // anotherCompetitorAlternativePage,
+  clientInviteAlternativePage,
 ];
 
 /**

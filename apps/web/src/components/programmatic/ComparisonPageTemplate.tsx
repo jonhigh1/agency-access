@@ -235,14 +235,209 @@ function AgencyAccessPricingSection({ page }: ComparisonPageTemplateProps) {
   );
 }
 
+function ClientInvitePricingSection({ page }: ComparisonPageTemplateProps) {
+  const {
+    competitor,
+    ourProduct,
+    competitorPricingSubtitle,
+    authhubSavingsHighlight,
+    valueCallout,
+    pricingScenarios,
+    pricingScenariosNote,
+    cta,
+  } = page;
+
+  const authHubTiers = [
+    { name: "Starter", data: ourProduct.pricing.starter },
+    { name: "Growth", data: ourProduct.pricing.pro },
+    { name: "Scale", data: ourProduct.pricing.enterprise },
+  ];
+
+  const clientInviteTiers = [
+    { name: "Freelancer", data: competitor.pricing.starter },
+    { name: "Agency", data: competitor.pricing.pro },
+  ];
+
+  return (
+    <section
+      id="comparison"
+      className="scroll-mt-24 border-y border-black/10 bg-[#F8FAFC] px-4 py-[46px] sm:px-6 lg:px-8 lg:py-[54px]"
+    >
+      <div className="mx-auto max-w-[920px]">
+        <div className="mb-9 text-center lg:mb-10">
+          <div className="mb-5 inline-flex items-center justify-center border-2 border-black bg-white px-[14px] py-[6px] text-[10px] font-black uppercase tracking-[0.22em] text-[#EA7A49] shadow-[3px_3px_0_0_#000]">
+            Pricing & limits
+          </div>
+          <h2 className="font-dela text-[2.2rem] leading-[0.96] tracking-[-0.045em] text-[#10162F] sm:text-[2.55rem]">
+            Live math (October 1, 2026 PT)
+          </h2>
+          <p className="mx-auto mt-5 max-w-[620px] font-mono text-[13px] font-medium leading-[1.45] tracking-[0.02em] text-[#7B8492] sm:text-[14px]">
+            Monthly list prices primary. ClientInvite sells monthly connections; AuthHub sells
+            active clients. Annual footnotes: AuthHub ~$24 / $66 / $124; ClientInvite save ~20%
+            on Agency.
+          </p>
+          {competitorPricingSubtitle && (
+            <p className="mx-auto mt-3 max-w-[620px] font-mono text-xs font-semibold text-[#596276]">
+              ClientInvite: {competitorPricingSubtitle}
+            </p>
+          )}
+        </div>
+
+        <div className="grid gap-5 md:grid-cols-2">
+          <article className="relative border-2 border-black bg-[#EDF6F7] px-[24px] pb-[22px] pt-[24px] shadow-[4px_4px_0_0_#000]">
+            <h3 className="font-dela text-[1.32rem] leading-none tracking-[-0.04em] text-[#151E35]">
+              AuthHub (monthly list)
+            </h3>
+            <ul className="mt-5 space-y-4">
+              {authHubTiers.map((tier) => (
+                <li key={tier.name} className="border-b border-black/10 pb-3 last:border-0">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span className="font-sans text-sm font-black uppercase tracking-wide text-[#151E35]">
+                      {tier.name}
+                    </span>
+                    <span className="font-dela text-2xl text-[#45B3A8]">
+                      ${tier.data?.price}
+                      <span className="font-mono text-xs font-medium text-[#717A89]">/mo</span>
+                    </span>
+                  </div>
+                  {tier.data?.features.slice(0, 3).map((feature) => (
+                    <p key={feature} className="mt-1 font-mono text-[11px] text-[#626A78]">
+                      {feature}
+                    </p>
+                  ))}
+                </li>
+              ))}
+            </ul>
+            {authhubSavingsHighlight && (
+              <p className="mt-4 font-mono text-[11px] font-semibold leading-snug text-[#45B3A8]">
+                {authhubSavingsHighlight}
+              </p>
+            )}
+            <Button
+              variant="primary"
+              size="sm"
+              asChild
+              className="mt-4 w-full font-sans text-[11px] font-black uppercase tracking-[0.06em]"
+            >
+              <Link href={(cta.primaryLink || "/signup") as Route}>Start Free Trial</Link>
+            </Button>
+          </article>
+
+          <article className="border-2 border-black bg-white px-[24px] pb-[22px] pt-[24px] shadow-[4px_4px_0_0_#000]">
+            <h3 className="font-dela text-[1.32rem] leading-none tracking-[-0.04em] text-[#151E35]">
+              ClientInvite (monthly list)
+            </h3>
+            <ul className="mt-5 space-y-4">
+              {clientInviteTiers.map((tier) => (
+                <li key={tier.name} className="border-b border-black/10 pb-3 last:border-0">
+                  <div className="flex items-baseline justify-between gap-2">
+                    <span className="font-sans text-sm font-black uppercase tracking-wide text-[#151E35]">
+                      {tier.name}
+                    </span>
+                    <span className="font-dela text-2xl text-[#596276]">
+                      ${tier.data?.price}
+                      <span className="font-mono text-xs font-medium text-[#717A89]">/mo</span>
+                    </span>
+                  </div>
+                  {tier.data?.features.slice(0, 2).map((feature) => (
+                    <p key={feature} className="mt-1 font-mono text-[11px] text-[#687180]">
+                      {feature}
+                    </p>
+                  ))}
+                </li>
+              ))}
+            </ul>
+          </article>
+        </div>
+
+        {valueCallout && (
+          <div className="mt-8 border-2 border-black bg-[#FFFBEB] px-4 py-4 shadow-[4px_4px_0_0_#000] sm:px-5">
+            <h3 className="font-dela text-base text-[#151E35]">{valueCallout.headline}</h3>
+            <p className="mt-2 font-mono text-xs leading-relaxed text-[#626A78]">{valueCallout.body}</p>
+          </div>
+        )}
+
+        {pricingScenarios && pricingScenarios.length > 0 && (
+          <div className="mt-8 overflow-x-auto border-2 border-black bg-white shadow-[4px_4px_0_0_#000]">
+            <table className="w-full border-collapse text-sm">
+              <thead className="border-b-2 border-black bg-gray-100">
+                <tr>
+                  <th scope="col" className="px-4 py-3 text-left font-bold">
+                    Scenario
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-left font-bold">
+                    ClientInvite plan
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-left font-bold">
+                    ClientInvite monthly
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-left font-bold">
+                    AuthHub plan
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-left font-bold">
+                    AuthHub monthly
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-300 font-mono text-xs">
+                {pricingScenarios.map((scenario) => (
+                  <tr key={scenario.clients}>
+                    <td className="px-4 py-3 font-semibold">{scenario.clients}</td>
+                    <td className="px-4 py-3">{scenario.competitorPlan}</td>
+                    <td className="px-4 py-3">{scenario.competitorCost}</td>
+                    <td className="px-4 py-3">{scenario.authHubPlan}</td>
+                    <td className="px-4 py-3 font-semibold">{scenario.authHubCost}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {pricingScenariosNote && (
+              <p className="border-t border-black/10 px-4 py-3 font-mono text-[11px] text-[#7B8492]">
+                {pricingScenariosNote}
+              </p>
+            )}
+          </div>
+        )}
+
+        {page.supplementalProse?.costMathDetail && (
+          <p className="mt-6 font-mono text-[11px] leading-relaxed text-[#626A78]">
+            {page.supplementalProse.costMathDetail}
+          </p>
+        )}
+        {page.supplementalProse?.pricingSourcesNote && (
+          <p className="mt-3 font-mono text-[11px] font-semibold text-[#596276]">
+            {page.supplementalProse.pricingSourcesNote}
+          </p>
+        )}
+
+        <div className="mt-6 space-y-3 text-center font-mono text-xs text-[#7B8492]">
+          <p>
+            Still on Leadsie credits?{" "}
+            <Link href={"/compare/leadsie-alternative" as Route} className="font-semibold text-coral underline-offset-2 hover:underline">
+              Leadsie alternative
+            </Link>
+            {" · "}
+            <Link href={"/blog/flat-rate-vs-credit-pricing" as Route} className="font-semibold text-coral underline-offset-2 hover:underline">
+              Flat-rate vs credit pricing
+            </Link>
+          </p>
+          <ComparingAllThreeLink />
+        </div>
+      </div>
+    </section>
+  );
+}
+
 /**
  * Main comparison page template component
  * Renders the full comparison page with all sections
  */
 export function ComparisonPageTemplate({ page }: ComparisonPageTemplateProps) {
   const isAgencyAccessPage = page.id === "agencyaccess-alternative";
+  const isClientInvitePage = page.id === "clientinvite-alternative";
   const isLeadsiePage = page.id === "leadsie-alternative";
-  const showThreeWayLink = isAgencyAccessPage || isLeadsiePage;
+  const isCustomTitlePage = isAgencyAccessPage || isClientInvitePage;
+  const showThreeWayLink = isAgencyAccessPage || isLeadsiePage || isClientInvitePage;
   const {
     competitor,
     ourProduct,
@@ -286,7 +481,7 @@ export function ComparisonPageTemplate({ page }: ComparisonPageTemplateProps) {
             </div>
 
             {/* Headline */}
-            {isAgencyAccessPage ? (
+            {isCustomTitlePage ? (
               <h1 className="text-3xl sm:text-4xl md:text-[2.65rem] font-bold tracking-tight mb-8 leading-tight text-[#1A1A1A]">
                 {page.title}
               </h1>
@@ -340,6 +535,18 @@ export function ComparisonPageTemplate({ page }: ComparisonPageTemplateProps) {
                 </Link>
               </p>
             )}
+            {isClientInvitePage && (
+              <p className="mb-4 font-mono text-sm text-[#6B7280]">
+                Still on Leadsie credits?{" "}
+                <Link href={"/compare/leadsie-alternative" as Route} className="font-semibold text-coral underline-offset-2 hover:underline">
+                  Leadsie alternative
+                </Link>
+                {" · "}
+                <Link href={"/blog/flat-rate-vs-credit-pricing" as Route} className="font-semibold text-coral underline-offset-2 hover:underline">
+                  Flat-rate vs credit pricing
+                </Link>
+              </p>
+            )}
             {showThreeWayLink && (
               <ComparingAllThreeLink className="mb-8 font-mono text-sm text-[#6B7280]" />
             )}
@@ -370,7 +577,9 @@ export function ComparisonPageTemplate({ page }: ComparisonPageTemplateProps) {
             <h2 className="font-dela text-xl md:text-2xl mb-4 text-center">
               {isAgencyAccessPage
                 ? "Where AuthHub and AgencyAccess diverge"
-                : `Why Agencies Switch to ${ourProduct.name}`}
+                : isClientInvitePage
+                  ? "Where ClientInvite and AuthHub diverge"
+                  : `Why Agencies Switch to ${ourProduct.name}`}
             </h2>
             <div className="grid md:grid-cols-3 gap-6 text-center">
               {ourProduct.differentiators.slice(0, 3).map((diff, i) => (
@@ -392,14 +601,18 @@ export function ComparisonPageTemplate({ page }: ComparisonPageTemplateProps) {
           <h2 className="font-dela text-2xl md:text-3xl text-ink mb-4 text-center">
             {isAgencyAccessPage
               ? "Shared job: one-link client access for agencies"
-              : `Why Agencies Look for ${competitor.name} Alternatives`}
+              : isClientInvitePage
+                ? "Why this comparison exists"
+                : `Why Agencies Look for ${competitor.name} Alternatives`}
           </h2>
           <p className="font-mono text-muted-foreground text-center mb-6 max-w-2xl mx-auto">
             {isAgencyAccessPage
               ? "Both solve access onboarding with official OAuth behind one client link. Decide on token expiry, vaulting and audit, automation hooks, and how plan caps hit a busy month. Intake is not a monopoly—both include it."
-              : `Growing agencies hit these walls with ${competitor.name}. Sound familiar?`}
+              : isClientInvitePage
+                ? "Both send a single branded authorization link—credentials stay with the platforms. Compare pricing units, platform breadth, token ops, and honest pick-X-if gates."
+                : `Growing agencies hit these walls with ${competitor.name}. Sound familiar?`}
           </p>
-          {isAgencyAccessPage && supplementalProse?.sharedJobLead && (
+          {(isAgencyAccessPage || isClientInvitePage) && supplementalProse?.sharedJobLead && (
             <div className="mx-auto mb-12 max-w-2xl space-y-4 font-mono text-sm text-muted-foreground">
               <p>{supplementalProse.sharedJobLead}</p>
               {supplementalProse.sharedJobFollow && <p>{supplementalProse.sharedJobFollow}</p>}
@@ -433,6 +646,8 @@ export function ComparisonPageTemplate({ page }: ComparisonPageTemplateProps) {
       {/* Pricing Comparison - AIDA: Interest */}
       {isAgencyAccessPage ? (
         <AgencyAccessPricingSection page={page} />
+      ) : isClientInvitePage ? (
+        <ClientInvitePricingSection page={page} />
       ) : (
         <section id="comparison" className="py-16 bg-white">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -650,7 +865,7 @@ export function ComparisonPageTemplate({ page }: ComparisonPageTemplateProps) {
         </section>
       )}
 
-      {isAgencyAccessPage && aeoSections && aeoSections.length > 0 && (
+      {(isAgencyAccessPage || isClientInvitePage) && aeoSections && aeoSections.length > 0 && (
         <section className="border-b-2 border-black bg-paper">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-10">
             <div className="mx-auto max-w-3xl space-y-6">
@@ -670,7 +885,9 @@ export function ComparisonPageTemplate({ page }: ComparisonPageTemplateProps) {
         <section className="border-b-2 border-black bg-card">
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
             <h2 className="font-dela text-2xl md:text-3xl text-ink mb-8 text-center">
-              {isAgencyAccessPage ? "Feature comparison" : "Feature-by-Feature Comparison"}
+              {isAgencyAccessPage || isClientInvitePage
+                ? "Feature comparison"
+                : "Feature-by-Feature Comparison"}
             </h2>
             <div className="max-w-4xl mx-auto overflow-x-auto">
               {detailedComparison.map((category, catIndex) => (
@@ -727,7 +944,7 @@ export function ComparisonPageTemplate({ page }: ComparisonPageTemplateProps) {
       <section className="border-b-2 border-black bg-card">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16">
           <h2 className="font-dela text-2xl md:text-3xl text-ink mb-12 text-center">
-            {isAgencyAccessPage
+            {isAgencyAccessPage || isClientInvitePage
               ? "Who should stay — and who should switch"
               : "Who Should Switch (and Who Shouldn\u2019t)"}
           </h2>
@@ -735,14 +952,16 @@ export function ComparisonPageTemplate({ page }: ComparisonPageTemplateProps) {
             {/* Stick with competitor */}
             <div className="border-2 border-black p-6 rounded-none shadow-brutalist-sm">
               <h3 className="font-dela text-xl text-ink mb-4">
-                {isAgencyAccessPage ? `Stick with ${competitor.name} if…` : `Stick with ${competitor.name} If`}
+                {isAgencyAccessPage || isClientInvitePage
+                  ? `When ${competitor.name} is the better pick`
+                  : `Stick with ${competitor.name} If`}
               </h3>
               <ul className="space-y-2 font-mono text-sm text-foreground">
                 {recommendations.stickWithCompetitor.map((item, i) => (
                   <li key={i}>• {item}</li>
                 ))}
               </ul>
-              {isAgencyAccessPage && supplementalProse?.stickWithClosing && (
+              {(isAgencyAccessPage || isClientInvitePage) && supplementalProse?.stickWithClosing && (
                 <p className="mt-4 font-mono text-sm font-semibold text-ink">
                   {supplementalProse.stickWithClosing}
                 </p>
@@ -752,14 +971,16 @@ export function ComparisonPageTemplate({ page }: ComparisonPageTemplateProps) {
             {/* Switch to AuthHub */}
             <div className="border-[3px] border-coral p-6 rounded-none shadow-brutalist-lg bg-coral/5">
               <h3 className="font-dela text-xl text-danger-ink mb-4">
-                Switch to {ourProduct.name} If
+                {isClientInvitePage
+                  ? `When ${ourProduct.name} is the better pick`
+                  : `Switch to ${ourProduct.name} If`}
               </h3>
               <ul className="space-y-2 font-mono text-sm text-foreground">
                 {recommendations.switchToAuthHub.map((item, i) => (
                   <li key={i}>• {item}</li>
                 ))}
               </ul>
-              {isAgencyAccessPage && supplementalProse?.switchOptionalNote && (
+              {(isAgencyAccessPage || isClientInvitePage) && supplementalProse?.switchOptionalNote && (
                 <p className="mt-4 font-mono text-xs text-muted-foreground leading-relaxed">
                   {supplementalProse.switchOptionalNote}
                 </p>
@@ -775,12 +996,16 @@ export function ComparisonPageTemplate({ page }: ComparisonPageTemplateProps) {
           <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-16 md:py-20">
             <div className="max-w-4xl mx-auto text-center">
               <h2 className="font-dela text-3xl md:text-4xl text-ink mb-4">
-                {isAgencyAccessPage ? "How migration works" : `Switch from ${competitor.name}`}
+                {isAgencyAccessPage || isClientInvitePage
+                  ? "Switching / dual-run migration"
+                  : `Switch from ${competitor.name}`}
               </h2>
               <p className="font-mono text-muted-foreground mb-12">
                 {isAgencyAccessPage
                   ? "Neither SaaS moves existing platform permissions. Canceling AgencyAccess does not revoke grants—and AuthHub does not inherit them."
-                  : `Moving from ${competitor.name} is straightforward. Here's how agencies do it:`}
+                  : isClientInvitePage
+                    ? "Neither SaaS moves existing platform permissions. Canceling ClientInvite does not hand AuthHub those grants—and AuthHub does not inherit them."
+                    : `Moving from ${competitor.name} is straightforward. Here's how agencies do it:`}
               </p>
 
               <div className="grid md:grid-cols-3 gap-6 md:gap-8 text-left">
@@ -891,17 +1116,45 @@ export function ComparisonPageTemplate({ page }: ComparisonPageTemplateProps) {
               </Link>
             )}
           </div>
-          {isAgencyAccessPage && (
+          {(isAgencyAccessPage || isClientInvitePage) && (
             <nav
               aria-label="Related compare and guide links"
               className="mt-8 flex flex-col gap-2 font-mono text-sm text-white/80 sm:flex-row sm:flex-wrap sm:justify-center sm:gap-x-4 sm:gap-y-2"
             >
               <Link href={"/compare/leadsie-alternative" as Route} className="hover:text-white hover:underline">
-                AuthHub vs Leadsie
+                {isClientInvitePage ? "Leadsie alternative" : "AuthHub vs Leadsie"}
               </Link>
               <Link href={"/compare/leadsie-pricing" as Route} className="hover:text-white hover:underline">
                 Leadsie pricing deep-dive
               </Link>
+              {isClientInvitePage && (
+                <>
+                  <Link
+                    href={"/blog/best-leadsie-alternatives-2026" as Route}
+                    className="hover:text-white hover:underline"
+                  >
+                    Best Leadsie alternatives (2026)
+                  </Link>
+                  <Link
+                    href={"/blog/flat-rate-vs-credit-pricing" as Route}
+                    className="hover:text-white hover:underline"
+                  >
+                    Flat-rate vs credit pricing
+                  </Link>
+                  <Link
+                    href={"/compare/agencyaccess-alternative" as Route}
+                    className="hover:text-white hover:underline"
+                  >
+                    AgencyAccess alternative
+                  </Link>
+                  <Link
+                    href={"/compare/leadsie-vs-agencyaccess-vs-authhub" as Route}
+                    className="hover:text-white hover:underline"
+                  >
+                    Three-way compare
+                  </Link>
+                </>
+              )}
               <Link
                 href={"/blog/best-client-onboarding-software-agencies-2026" as Route}
                 className="hover:text-white hover:underline"
@@ -911,6 +1164,14 @@ export function ComparisonPageTemplate({ page }: ComparisonPageTemplateProps) {
               <Link href={"/blog/oauth-token-management-agencies" as Route} className="hover:text-white hover:underline">
                 OAuth token management for agencies
               </Link>
+              {isClientInvitePage && (
+                <Link
+                  href={"/blog/mcp-oauth-client-access-agencies" as Route}
+                  className="hover:text-white hover:underline"
+                >
+                  MCP OAuth for agencies
+                </Link>
+              )}
             </nav>
           )}
           {cta.guarantee && (
