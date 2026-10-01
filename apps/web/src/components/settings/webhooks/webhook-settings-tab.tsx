@@ -297,7 +297,7 @@ export function WebhookSettingsTab() {
 
   if (isLoadingView) {
     body = (
-      <SettingsGroup title="Webhook Endpoint" description={ENDPOINT_GROUP_DESCRIPTION}>
+      <SettingsGroup title="Webhook endpoint" description={ENDPOINT_GROUP_DESCRIPTION}>
         <div className="space-y-4 py-5" aria-busy="true" aria-label="Loading webhook settings">
           <div className="h-4 w-48 animate-pulse bg-muted" />
           <div className="h-12 w-full max-w-lg animate-pulse bg-muted" />
@@ -308,7 +308,7 @@ export function WebhookSettingsTab() {
     );
   } else if (hasNoAgency) {
     body = (
-      <SettingsGroup title="Webhook Endpoint" description={ENDPOINT_GROUP_DESCRIPTION}>
+      <SettingsGroup title="Webhook endpoint" description={ENDPOINT_GROUP_DESCRIPTION}>
         <p className="py-5 text-sm text-muted-foreground">
           This workspace does not have an agency context yet, so webhook settings are unavailable.
         </p>
@@ -316,14 +316,19 @@ export function WebhookSettingsTab() {
     );
   } else if (hasQueryError) {
     body = (
-      <SettingsGroup title="Webhook Endpoint" description={ENDPOINT_GROUP_DESCRIPTION}>
-        <p className="py-5 text-sm text-danger-ink">{errorMessage}</p>
+      <SettingsGroup title="Webhook endpoint" description={ENDPOINT_GROUP_DESCRIPTION}>
+        <div className="space-y-3 py-5">
+          <p className="text-sm text-danger-ink" role="alert">{errorMessage}</p>
+          <Button type="button" variant="secondary" onClick={() => void Promise.all([agencyQuery.refetch(), endpointQuery.refetch(), deliveriesQuery.refetch()])}>
+            Try again
+          </Button>
+        </div>
       </SettingsGroup>
     );
   } else {
     body = (
       <>
-        <SettingsGroup title="Webhook Endpoint" description={ENDPOINT_GROUP_DESCRIPTION}>
+        <SettingsGroup title="Webhook endpoint" description={ENDPOINT_GROUP_DESCRIPTION}>
           {hasRecentFailure && (
             <div className="mt-4 border border-warning/30 bg-warning/10 p-4">
               <div className="flex items-center gap-2 text-sm font-semibold text-ink">
@@ -412,7 +417,7 @@ export function WebhookSettingsTab() {
           >
             <Button type="button" variant="brutalist" onClick={() => void handleSave()} disabled={isBusy}>
               <ShieldCheck className="h-4 w-4" />
-              {endpointExists ? 'Save Endpoint' : 'Create Endpoint'}
+              {endpointExists ? 'Save endpoint' : 'Create endpoint'}
             </Button>
           </SettingsRow>
         </SettingsGroup>
@@ -479,7 +484,7 @@ export function WebhookSettingsTab() {
           </SettingsRow>
         </SettingsGroup>
 
-        <SettingsGroup title="Recent Deliveries" description="Inspect the most recent attempts sent to this endpoint.">
+        <SettingsGroup title="Recent deliveries" description="Inspect the most recent attempts sent to this endpoint.">
           <div className="pt-4">
             <WebhookDeliveryInspector
               deliveries={deliveries}

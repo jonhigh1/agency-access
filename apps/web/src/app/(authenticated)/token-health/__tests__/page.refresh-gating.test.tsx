@@ -105,4 +105,14 @@ describe('TokenHealthPage refresh gating', () => {
 
     expect(screen.getByText('Unknown')).toBeInTheDocument();
   });
+
+  it('names page refresh and renders token fields as stacked mobile rows', async () => {
+    await renderWithRow(baseRow());
+
+    expect(screen.getByRole('button', { name: 'Refresh token health' })).toBeInTheDocument();
+    expect(screen.getAllByText('Client / Platform')[0].parentElement).toHaveClass('hidden', 'md:grid');
+    expect(screen.getAllByText('Status')[0].parentElement).toHaveClass('hidden', 'md:grid');
+    expect(screen.getByText('acme@example.com').parentElement).toHaveClass('md:col-span-3');
+    expect(screen.getByRole('button', { name: /refresh snapchat/i })).toHaveAccessibleName('Refresh snapchat token');
+  });
 });

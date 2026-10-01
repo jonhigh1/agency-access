@@ -6,6 +6,7 @@
 import { BlogPost, BLOG_CATEGORIES } from "@/lib/blog-types";
 import { Calendar, Clock, User } from "lucide-react";
 import Link from "next/link";
+import { formatBlogDate } from "@/lib/blog-date";
 
 interface BlogCardProps {
   post: BlogPost;
@@ -32,7 +33,7 @@ export function BlogCard({ post, variant = "default" }: BlogCardProps) {
             <div className="flex items-center gap-3 mt-2 text-xs font-mono text-gray-600">
               <span className="flex items-center gap-1">
                 <Calendar size={12} />
-                {new Date(post.publishedAt).toLocaleDateString("en-US", {
+              {formatBlogDate(post.publishedAt, {
                   month: "short",
                   day: "numeric",
                 })}
@@ -86,7 +87,7 @@ export function BlogCard({ post, variant = "default" }: BlogCardProps) {
               </span>
               <span className="flex items-center gap-1">
                 <Calendar size={14} />
-                {new Date(post.publishedAt).toLocaleDateString("en-US", {
+                {formatBlogDate(post.publishedAt, {
                   month: "short",
                   day: "numeric",
                   year: "numeric",
@@ -147,7 +148,7 @@ export function BlogCard({ post, variant = "default" }: BlogCardProps) {
           <div className="flex items-center gap-3">
             <span className="flex items-center gap-1">
               <Calendar size={12} />
-              {new Date(post.publishedAt).toLocaleDateString("en-US", {
+                {formatBlogDate(post.publishedAt, {
                 month: "short",
                 day: "numeric",
               })}

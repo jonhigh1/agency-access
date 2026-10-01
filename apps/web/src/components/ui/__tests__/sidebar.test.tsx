@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Sidebar, SidebarBody, SidebarLink } from '../sidebar';
 
@@ -25,6 +25,7 @@ vi.mock('framer-motion', () => ({
     div: ({ children, animate, initial, exit, transition, ...props }: any) => (
       <div {...props}>{children}</div>
     ),
+    dialog: ({ children, ...props }: any) => <dialog {...props}>{children}</dialog>,
     span: ({ children, animate, initial, exit, transition, ...props }: any) => (
       <span {...props}>{children}</span>
     ),
@@ -46,6 +47,14 @@ function StatefulMobileSidebar() {
 describe('Sidebar', () => {
   beforeEach(() => {
     mockUsePathname.mockReturnValue('/dashboard');
+    Object.defineProperty(HTMLDialogElement.prototype, 'showModal', {
+      configurable: true,
+      value() { this.setAttribute('open', ''); },
+    });
+    Object.defineProperty(HTMLDialogElement.prototype, 'close', {
+      configurable: true,
+      value() { this.removeAttribute('open'); },
+    });
   });
 
   it('renders mobile menu controls as accessible buttons with proper labels and state', async () => {
@@ -55,6 +64,7 @@ describe('Sidebar', () => {
     const openButton = screen.getByRole('button', { name: 'Open navigation menu' });
     expect(openButton).toHaveAttribute('aria-expanded', 'false');
     expect(openButton).toHaveClass('min-h-[44px]', 'min-w-[44px]');
+    expect(screen.queryByRole('dialog', { name: 'Sidebar navigation' })).not.toBeInTheDocument();
 
     await user.click(openButton);
 
@@ -63,6 +73,11 @@ describe('Sidebar', () => {
     closeButtons.forEach((closeButton) => {
       expect(closeButton).toHaveClass('min-h-[44px]', 'min-w-[44px]');
     });
+
+    const panel = screen.getByRole('dialog', { name: 'Sidebar navigation' });
+    fireEvent(panel, new Event('cancel', { cancelable: true }));
+    expect(screen.queryByRole('dialog', { name: 'Sidebar navigation' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Open navigation menu' })).toHaveFocus();
   });
 
   it('marks parent navigation link as active on nested routes', () => {

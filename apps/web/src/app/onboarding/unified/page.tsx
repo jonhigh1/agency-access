@@ -204,6 +204,7 @@ function OnboardingFlow() {
         return (
           <AgencyProfileScreen
             agencyName={state.agencyName}
+            agencyNameError={state.agencyNameError}
             timezone={state.agencySettings.timezone}
             industry={state.agencySettings.industry}
             onUpdate={(data) => updateAgency({ name: data.name, settings: { timezone: data.timezone, industry: data.industry } })}
@@ -241,6 +242,7 @@ function OnboardingFlow() {
             accessLink={state.accessLink || ''}
             agencyName={state.agencyName}
             accessRequestId={state.accessRequestId}
+            platforms={Object.values(state.selectedPlatforms).flat()}
           />
         );
 
@@ -261,7 +263,9 @@ function OnboardingFlow() {
             agencyName={state.agencyName}
             clientName={state.clientName || 'your client'}
             accessRequestId={state.accessRequestId || ''}
-            teamInvitesSent={state.teamInvites.length}
+            teamInvitesSent={state.teamInvitesSent}
+            platforms={Object.values(state.selectedPlatforms).flat()}
+            loading={state.loading}
             onComplete={completeOnboarding}
           />
         );
@@ -282,7 +286,7 @@ function OnboardingFlow() {
       canSkip={canSkip()}
       onSkip={handleSkip}
       loading={state.loading}
-      showClose={state.currentStep >= 4} // Can close after value is delivered
+      showClose={state.currentStep >= 4 && state.currentStep < 6} // Final screen has one persisted completion action.
       onClose={() => router.push('/dashboard')}
     >
       <OnboardingStepErrorBoundary onExit={() => router.push(DASHBOARD_ONBOARDING_RECOVERY_URL)}>

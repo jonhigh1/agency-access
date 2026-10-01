@@ -20,7 +20,7 @@ describe('CheckoutSuccessToast', () => {
   });
 
   it('renders the success message and clears the checkout param after the timer', () => {
-    render(<CheckoutSuccessToast />);
+    render(<CheckoutSuccessToast status="confirmed" />);
 
     expect(screen.getByText('Subscription updated')).toBeInTheDocument();
 
@@ -33,7 +33,7 @@ describe('CheckoutSuccessToast', () => {
   });
 
   it('reveals with a plain opacity transition — no slide-in, no soft shadow', () => {
-    const { container } = render(<CheckoutSuccessToast />);
+    const { container } = render(<CheckoutSuccessToast status="confirmed" />);
 
     const root = container.firstElementChild as HTMLElement;
     expect(root.className).toContain('transition-opacity');

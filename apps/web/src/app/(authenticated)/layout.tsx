@@ -97,7 +97,7 @@ function AuthenticatedLayoutInner({
     async () => (await clerkAuth.getToken()) || perfHarness?.token || null,
     [clerkAuth, perfHarness?.token]
   );
-  const { data: sharedAgency, isFetched: isAgencyFetched } = useUserAgency({
+  const { data: sharedAgency, isFetched: isAgencyFetched, isError: agencyLookupFailed } = useUserAgency({
     principalClerkId: sharedPrincipalId,
     getAuthToken: getLayoutAuthToken,
     enabled: !isDashboardRootPath && !!sharedPrincipalId,
@@ -136,6 +136,7 @@ function AuthenticatedLayoutInner({
 
       if (!runPerfAgencyCheck) {
         if (!isAgencyFetched || !sharedPrincipalId) return;
+        if (agencyLookupFailed) return;
         const cacheKey = `${sharedPrincipalId}:${sharedAgency?.id || 'none'}`;
         const cachedDecision = agencyRedirectCache.get(cacheKey);
         if (cachedDecision !== undefined) {
@@ -236,6 +237,7 @@ function AuthenticatedLayoutInner({
     perfHarness,
     isDashboardRootPath,
     isAgencyFetched,
+    agencyLookupFailed,
     sharedPrincipalId,
     sharedAgency,
     isOnboardingStatusFetched,
@@ -301,6 +303,9 @@ function AuthenticatedLayoutInner({
         'h-screen'
       )}
     >
+      <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[200] focus:bg-card focus:px-4 focus:py-3 focus:text-foreground">
+        Skip to content
+      </a>
       <Sidebar open={open} setOpen={setOpen}>
         <SidebarBody className="justify-between gap-10">
           <div className="flex flex-col flex-1 overflow-y-auto overflow-x-hidden">
@@ -435,7 +440,7 @@ function AuthenticatedLayoutInner({
       </Sidebar>
 
       {/* Main Content */}
-      <div className="flex flex-1 flex-col overflow-auto bg-background">
+      <main id="main-content" tabIndex={-1} className="flex flex-1 flex-col overflow-auto bg-background">
         {!isDashboardRootPath && subscription?.status === 'trialing' && subscription.trialEnd && (
           <TrialBanner
             trialEnd={subscription.trialEnd}
@@ -443,7 +448,7 @@ function AuthenticatedLayoutInner({
           />
         )}
         {children}
-      </div>
+      </main>
       <HelpScoutBeacon />
     </div>
   );

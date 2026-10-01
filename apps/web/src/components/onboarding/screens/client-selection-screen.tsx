@@ -19,7 +19,7 @@
 'use client';
 
 import { useState, useCallback, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 import { Client } from '@agency-platform/shared';
 import { OpinionatedInput } from '../opinionated-input';
 import { fadeVariants, fadeTransition } from '@/lib/animations';
@@ -129,7 +129,7 @@ export function ClientSelectionScreen({
   );
 
   return (
-    <motion.div
+    <m.div
       className="p-6 md:p-10"
       variants={fadeVariants}
       initial="initial"
@@ -172,7 +172,7 @@ export function ClientSelectionScreen({
             {/* Client List */}
             <div className="space-y-2 max-h-64 overflow-y-auto">
               {filteredClients.map((client) => (
-                <motion.button
+                <m.button
                   key={client.id}
                   type="button"
                   onClick={() => handleSelectClient(client)}
@@ -201,7 +201,7 @@ export function ClientSelectionScreen({
                       </svg>
                     )}
                   </div>
-                </motion.button>
+                </m.button>
               ))}
             </div>
 
@@ -302,6 +302,6 @@ export function ClientSelectionScreen({
           </p>
         </div>
       </div>
-    </motion.div>
+    </m.div>
   );
 }

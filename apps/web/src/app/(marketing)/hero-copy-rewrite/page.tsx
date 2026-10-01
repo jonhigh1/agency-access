@@ -27,7 +27,7 @@ export const metadata: Metadata = {
 
 export default function HeroCopyRewritePage() {
   return (
-    <main className="relative bg-background">
+    <div className="relative bg-background">
       <HeroCopyRewriteHeroSection />
       <HeroCopyRewriteSocialProofSection />
       <HeroCopyRewriteProblemSection />
@@ -37,6 +37,6 @@ export default function HeroCopyRewritePage() {
       <HeroCopyRewriteHowItWorksSection />
       <HeroCopyRewriteCaseStudySection />
       <HeroCopyRewriteFinalCtaSection />
-    </main>
+    </div>
   );
 }

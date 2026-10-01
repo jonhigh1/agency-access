@@ -12,7 +12,7 @@
     --muted-foreground: 115 115 115;
 
     --primary: 255 107 53;          /* #FF6B35 - AuthHub Coral */
-    --primary-foreground: 255 255 255;
+    --primary-foreground: 9 9 11;   /* Ink passes AA on coral in both themes. */
 
     --secondary: 0 168 150;         /* #00A896 - Teal */
     --secondary-foreground: 255 255 255;
@@ -84,9 +84,9 @@
     --muted: 161 161 170;           /* #A1A1AA - Muted gray */
     --muted-foreground: 200 200 210; /* #C8C8D2 - Muted text */
 
-    /* PRIMARY - Coral stays vibrant but with white text for consistency */
+    /* Primary text stays ink on coral for WCAG AA contrast. */
     --primary: 255 115 80;           /* #FF7350 - Slightly brighter coral for dark */
-    --primary-foreground: 255 255 255;  /* White text on primary buttons */
+    --primary-foreground: 9 9 11;
 
     /* SECONDARY - Teal adjusted for contrast */
     --secondary: 0 200 180;          /* #00C8B4 - Brighter teal */
@@ -570,6 +570,28 @@
     button:hover,
     a:hover {
       transform: none !important;
+    }
+
+    html.animations-ready .reveal-element {
+      opacity: 1 !important;
+      transform: none !important;
+    }
+
+    .marketing-marquee {
+      display: grid !important;
+      grid-template-columns: 1fr;
+      white-space: normal !important;
+      transform: none !important;
+      animation: none !important;
+    }
+
+    .marketing-marquee > [data-marquee-duplicate] {
+      display: none;
+    }
+
+    .marketing-marquee > div {
+      width: 100%;
+      min-width: 0;
     }
   }
 

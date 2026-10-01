@@ -200,13 +200,14 @@ export default function TokenHealthPage() {
         {/* Page Header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-2xl font-semibold text-slate-900">Token Health</h1>
-            <p className="text-sm text-slate-600 mt-1">
+            <h1 className="text-2xl font-semibold text-ink">Token health</h1>
+            <p className="text-sm text-muted-foreground mt-1">
               Monitor and manage client connection tokens
             </p>
           </div>
           <button
             onClick={fetchTokenHealth}
+            aria-label="Refresh token health"
             className="p-2 text-muted-foreground hover:bg-muted/10 rounded-none transition-colors"
             disabled={loading}
           >
@@ -215,7 +216,7 @@ export default function TokenHealthPage() {
         </div>
 
         {error && (
-          <div className="mb-6 rounded-lg border border-destructive/30 bg-destructive/10 p-4 text-sm text-destructive">
+          <div className="mb-6 rounded-none border border-coral/30 bg-coral/10 p-4 text-sm text-danger-ink" role="alert">
             {error}
           </div>
         )}
@@ -268,7 +269,7 @@ export default function TokenHealthPage() {
                 id="token-health-filter-menu"
                 role="listbox"
                 aria-label="Token health filters"
-                className="absolute top-full left-0 mt-2 w-48 bg-card border border-border rounded-lg shadow-sm overflow-hidden z-10"
+                className="absolute top-full left-0 mt-2 w-48 bg-card border border-border rounded-none overflow-hidden z-10"
               >
                 {HEALTH_FILTER_OPTIONS.map((f) => (
                   <button
@@ -302,29 +303,29 @@ export default function TokenHealthPage() {
 
         {/* Token List */}
         {loading ? (
-          <div className="bg-card rounded-2xl shadow-sm border border-border p-12 text-center">
+          <div className="bg-card rounded-none border border-border p-12 text-center">
             <div className="inline-flex items-center gap-3">
-              <RefreshCw className="h-6 w-6 animate-spin text-indigo-600" />
-              <span className="text-slate-600">Loading token health...</span>
+              <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
+              <span className="text-muted-foreground">Loading token health...</span>
             </div>
           </div>
         ) : filteredTokens.length === 0 ? (
-          <div className="bg-card rounded-2xl shadow-sm border border-border p-12 text-center">
-            <Clock className="h-12 w-12 text-slate-400 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-slate-900 mb-2">
+          <div className="bg-card rounded-none border border-border p-12 text-center">
+            <Clock className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <h3 className="text-lg font-semibold text-ink mb-2">
               {filter === 'all'
                 ? 'No connections yet'
                 : `No ${filter} tokens`}
             </h3>
-            <p className="text-slate-600 max-w-sm mx-auto">
+            <p className="text-muted-foreground max-w-sm mx-auto">
               {filter === 'all'
                 ? 'Tokens will appear here after clients authorize access.'
                 : `No tokens matching the ${filter} filter.`}
             </p>
           </div>
         ) : (
-          <div className="bg-card rounded-2xl shadow-sm border border-border overflow-hidden">
-            <div className="grid grid-cols-12 gap-4 px-6 py-3 bg-background border-b border-border text-sm font-medium text-slate-700">
+          <div className="bg-card rounded-none border border-border overflow-hidden">
+            <div className="hidden md:grid grid-cols-12 gap-4 px-6 py-3 bg-muted/10 border-b border-border text-sm font-medium text-ink">
               <div className="col-span-3">Client / Platform</div>
               <div className="col-span-3">Status</div>
               <div className="col-span-3">Expires In</div>
@@ -344,18 +345,20 @@ export default function TokenHealthPage() {
                 return (
                   <div
                     key={token.id}
-                    className="grid grid-cols-12 gap-4 px-6 py-4 items-center hover:bg-background transition-colors"
+                    className="grid grid-cols-1 gap-3 px-4 py-4 md:grid-cols-12 md:gap-4 md:px-6 md:items-center"
                   >
                     {/* Client & Platform */}
-                    <div className="col-span-3">
-                      <div className="font-medium text-slate-900">{token.clientName}</div>
+                    <div className="md:col-span-3">
+                      <span className="label-nano md:hidden">Client / Platform</span>
+                      <div className="font-medium text-ink">{token.clientName}</div>
                       <div className="flex items-center gap-2 mt-1">
                         <PlatformIcon platform={token.platform} size="sm" showLabel />
                       </div>
                     </div>
 
                     {/* Status */}
-                    <div className="col-span-3">
+                    <div className="md:col-span-3">
+                      <span className="label-nano md:hidden">Status</span>
                       <div className="flex flex-col items-start gap-1.5">
                         <HealthBadge health={token.health} />
                         {!isRowActive && (
@@ -367,7 +370,8 @@ export default function TokenHealthPage() {
                     </div>
 
                     {/* Expires In */}
-                    <div className="col-span-3">
+                    <div className="md:col-span-3">
+                      <span className="label-nano md:hidden">Expires in</span>
                       <ExpirationCountdown
                         daysUntilExpiry={token.daysUntilExpiry}
                         expiresAt={token.expiresAt}
@@ -375,28 +379,30 @@ export default function TokenHealthPage() {
                     </div>
 
                     {/* Last Refreshed */}
-                    <div className="col-span-2">
+                    <div className="md:col-span-2">
+                      <span className="label-nano md:hidden">Last refreshed</span>
                       {token.lastRefreshedAt ? (
-                        <span className="text-sm text-slate-600">
+                        <span className="text-sm text-muted-foreground">
                           {formatRelativeTime(token.lastRefreshedAt)}
                         </span>
                       ) : (
-                        <span className="text-sm text-slate-400">Never</span>
+                        <span className="text-sm text-muted-foreground">Never</span>
                       )}
                     </div>
 
                     {/* Actions */}
-                    <div className="col-span-1">
+                    <div className="md:col-span-1">
+                      <span className="label-nano md:hidden">Actions</span>
                       {isRowActive ? (
                         <button
                           onClick={() => handleRefresh(token.id, token.platform)}
                           aria-label={`Refresh ${token.platform} token`}
                           disabled={isRefreshing || !canRefreshRow}
-                          className={`p-2 rounded-none transition-colors ${
+                          className={`flex min-h-[44px] min-w-[44px] items-center justify-center rounded-none transition-colors ${
                             isRefreshing
                               ? 'opacity-50 cursor-not-allowed'
                               : canRefreshRow
-                                ? 'text-danger-ink hover:bg-coral/10'
+                                ? 'text-ink hover:bg-muted/20'
                                 : 'text-muted-foreground/50 cursor-not-allowed'
                           }`}
                         >
@@ -405,7 +411,7 @@ export default function TokenHealthPage() {
                       ) : (
                         <Link
                           href="/clients"
-                          className="text-xs font-medium text-danger-ink hover:underline"
+                          className="text-xs font-medium text-ink hover:underline"
                         >
                           Re-request access
                         </Link>

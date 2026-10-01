@@ -2,8 +2,8 @@
 
 import { cn } from "@/lib/utils";
 import Link, { LinkProps } from "next/link";
-import React, { useState, createContext, useContext } from "react";
-import { AnimatePresence, m, useReducedMotion } from "framer-motion";
+import React, { useState, useRef, useEffect, createContext, useContext } from "react";
+import { m } from "framer-motion";
 import { Menu, X, ChevronLeft } from "lucide-react";
 import { usePathname } from "next/navigation";
 
@@ -101,7 +101,7 @@ export const DesktopSidebar = ({
         type="button"
         onClick={() => setOpen(!open)}
         className={cn(
-          "absolute -right-2 top-4 z-10 flex h-8 w-8 items-center justify-center rounded-md border border-border bg-card text-foreground shadow-sm transition-colors",
+          "absolute -right-2 top-4 z-10 flex h-11 w-11 items-center justify-center rounded-none border border-border bg-card text-foreground shadow-sm transition-colors",
           "hover:bg-muted/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         )}
         aria-label={open ? "Collapse sidebar" : "Expand sidebar"}
@@ -126,9 +126,22 @@ export const MobileSidebar = ({
   children,
   ...props
 }: React.ComponentProps<"div">) => {
-  const { open, setOpen } = useSidebar();
-  const prefersReducedMotion = useReducedMotion();
-  const mobileMenuPanelId = "mobile-sidebar-panel";
+  const [open, setOpen] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDialogElement>(null);
+  const mobileMenuPanelId = React.useId();
+
+  useEffect(() => {
+    const panel = panelRef.current;
+    if (!panel) return;
+    if (open && !panel.open) {
+      panel.showModal();
+      panel.querySelector<HTMLElement>('button, a[href], input, select, textarea, [tabindex]:not([tabindex="-1"])')?.focus();
+    } else if (!open && panel.open) {
+      panel.close();
+      triggerRef.current?.focus();
+    }
+  }, [open]);
 
   return (
     <>
@@ -142,6 +155,7 @@ export const MobileSidebar = ({
           <button
             type="button"
             className="flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md transition-colors hover:bg-muted/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+            ref={triggerRef}
             onClick={() => setOpen(!open)}
             aria-label={open ? "Close navigation menu" : "Open navigation menu"}
             aria-controls={mobileMenuPanelId}
@@ -150,37 +164,29 @@ export const MobileSidebar = ({
             <Menu className="h-5 w-5" aria-hidden="true" />
           </button>
         </div>
-        <AnimatePresence>
-          {open && (
-            <m.div
+        <m.dialog
+              ref={panelRef}
               id={mobileMenuPanelId}
-              role="dialog"
-              aria-modal="true"
               aria-label="Sidebar navigation"
-              initial={prefersReducedMotion ? false : { x: "-100%", opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              exit={prefersReducedMotion ? { x: 0, opacity: 1 } : { x: "-100%", opacity: 0 }}
-              transition={{
-                duration: prefersReducedMotion ? 0 : 0.25,
-                ease: "easeInOut",
+              onCancel={(event) => {
+                event.preventDefault();
+                setOpen(false);
               }}
               className={cn(
-                "fixed inset-0 z-[100] flex h-full w-full flex-col justify-between bg-card p-6 text-foreground",
+                "fixed inset-0 z-[100] m-0 h-full w-full max-h-none max-w-none flex flex-col justify-between border-0 bg-card p-6 text-foreground backdrop:bg-ink/50 md:hidden",
                 className
               )}
             >
               <button
                 type="button"
                 className="absolute right-6 top-6 z-50 flex min-h-[44px] min-w-[44px] items-center justify-center rounded-md transition-colors hover:bg-muted/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                onClick={() => setOpen(!open)}
+                onClick={() => setOpen(false)}
                 aria-label="Close navigation menu"
               >
                 <X className="h-5 w-5" aria-hidden="true" />
               </button>
               {children}
-            </m.div>
-          )}
-        </AnimatePresence>
+        </m.dialog>
       </div>
     </>
   );

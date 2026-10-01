@@ -3,8 +3,13 @@
 import { Check, Clock, ShieldAlert, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import type { AgentOperationRecord } from '@/lib/api/agents';
+import { PLATFORM_NAMES, type Platform } from '@agency-platform/shared';
 
 const terminalStates = new Set(['approved', 'declined', 'expired', 'canceled', 'executing', 'succeeded', 'failed_terminal']);
+
+function humanize(value: string) {
+  return value.replaceAll('_', ' ').replace(/\b\w/g, (character) => character.toUpperCase());
+}
 
 function formatDate(value?: string | null) {
   if (!value) return 'Not available';
@@ -33,8 +38,8 @@ export function ApprovalCard({ operation, onDecision, isSubmitting = false }: {
       </dl>
       <div className="mt-6 rounded-lg border border-border bg-muted/40 p-4"><h2 className="font-semibold">External effect</h2><p className="mt-1 text-sm">{preview.externalEffect}</p></div>
       <div className="mt-5 grid gap-4 sm:grid-cols-2">
-        <div><h2 className="text-sm font-semibold">Platforms</h2><ul className="mt-2 flex flex-wrap gap-2">{preview.platforms.map((platform) => <li key={platform} className="rounded-md border border-border px-2 py-1 text-xs">{platform}</li>)}</ul></div>
-        <div><h2 className="text-sm font-semibold">Requested access</h2><ul className="mt-2 flex flex-wrap gap-2">{preview.permissions.map((permission) => <li key={permission} className="rounded-md border border-border px-2 py-1 text-xs">{permission}</li>)}</ul></div>
+        <div><h2 className="text-sm font-semibold">Platforms</h2><ul className="mt-2 flex flex-wrap gap-2">{preview.platforms.map((platform) => <li key={platform} className="rounded-md border border-border px-2 py-1 text-xs">{PLATFORM_NAMES[platform as Platform] ?? humanize(platform)}</li>)}</ul></div>
+        <div><h2 className="text-sm font-semibold">Requested access</h2><ul className="mt-2 flex flex-wrap gap-2">{preview.permissions.map((permission) => <li key={permission} className="rounded-md border border-border px-2 py-1 text-xs">{humanize(permission.replace(':', ' '))}</li>)}</ul></div>
       </div>
       {preview.changes.length > 0 && <div className="mt-5"><h2 className="text-sm font-semibold">Changes from current state</h2><ul className="mt-2 divide-y divide-border rounded-lg border border-border">{preview.changes.map((change) => <li key={change.field} className="grid gap-1 p-3 text-sm sm:grid-cols-3"><span className="font-medium">{change.field}</span><span className="text-muted-foreground line-through">{change.before ?? 'Not set'}</span><span>{change.after ?? 'Removed'}</span></li>)}</ul></div>}
       <div className="mt-6 border-t border-border pt-5">

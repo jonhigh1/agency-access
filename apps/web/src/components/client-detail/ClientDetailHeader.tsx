@@ -56,7 +56,7 @@ export function ClientDetailHeader({ client }: ClientDetailHeaderProps) {
 
   return (
     <>
-      <Card className="p-6 border-black/10 shadow-brutalist">
+      <Card className="p-6 border-black/10">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between">
           {/* Left side: Avatar and info */}
           <div className="flex items-start space-x-4 flex-1">
@@ -69,8 +69,8 @@ export function ClientDetailHeader({ client }: ClientDetailHeaderProps) {
 
             {/* Client info */}
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-3 mb-1">
-                <h1 className="text-2xl font-semibold text-foreground tracking-tight">
+              <div className="mb-1 flex flex-wrap items-center gap-2 sm:gap-3">
+                <h1 className="min-w-0 break-words text-2xl font-semibold text-foreground tracking-tight">
                   {client.name}
                 </h1>
                 <StatusBadge status={status} size="md" />
@@ -80,13 +80,13 @@ export function ClientDetailHeader({ client }: ClientDetailHeaderProps) {
                 {/* Company */}
                 <div className="flex items-center text-sm text-muted-foreground">
                   <Building2 className="h-4 w-4 mr-2 flex-shrink-0" />
-                  <span className="font-medium">{client.company}</span>
+                  <span className="min-w-0 break-words font-medium">{client.company}</span>
                 </div>
 
                 {/* Email */}
                 <div className="flex items-center text-sm text-muted-foreground">
                   <Mail className="h-4 w-4 mr-2 flex-shrink-0" />
-                  <span>{client.email}</span>
+                  <span className="min-w-0 break-all">{client.email}</span>
                 </div>
 
                 {/* Client since */}

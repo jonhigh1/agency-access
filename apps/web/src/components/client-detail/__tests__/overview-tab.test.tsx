@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, expect, it } from 'vitest';
 import { OverviewTab } from '../OverviewTab';
 
@@ -38,5 +39,19 @@ describe('OverviewTab', () => {
     expect(
       requestedAccessHeading.compareDocumentPosition(accessRequestsHeading)
     ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+  });
+
+  it('explains when a status filter hides existing requests', async () => {
+    const user = userEvent.setup();
+    render(<OverviewTab platformGroups={[]} accessRequests={[{
+      id: 'request-1', name: 'Initial setup', platforms: ['meta_ads'], status: 'completed',
+      createdAt: new Date('2026-03-08T00:00:00.000Z'), connectionStatus: 'active',
+    }]} />);
+
+    await user.click(screen.getByRole('combobox', { name: /filter access requests by status/i }));
+    await user.click(screen.getByRole('option', { name: 'Pending' }));
+
+    expect(screen.getByText(/no access requests match this status/i)).toBeInTheDocument();
+    expect(screen.queryByText(/create a new access request/i)).not.toBeInTheDocument();
   });
 });

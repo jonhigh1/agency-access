@@ -7,6 +7,7 @@ import { getApiBaseUrl } from '@/lib/api/api-env';
 import { ApiResponseError, parseJsonResponse } from '@/lib/api/parse-json-response';
 import { capturePosthogEvent } from '@/lib/analytics/capture-posthog';
 import { Button } from '@/components/ui/button';
+import { PlatformIcon } from '@/components/ui/platform-icon';
 
 interface Page {
   id: string;
@@ -212,7 +213,7 @@ export function AutomaticPagesGrant({
       <div className="p-6">
         <div className="flex items-start gap-4 mb-4">
           <div className="w-10 h-10 rounded-none bg-coral/20 flex items-center justify-center flex-shrink-0">
-            <span className="text-xl">f</span>
+            <PlatformIcon platform="meta_pages" size="sm" />
           </div>
           <div className="flex-1">
             <h4 className="text-lg font-bold text-ink mb-1">
@@ -261,7 +262,7 @@ export function AutomaticPagesGrant({
                     {!isGranting && (
                       <button
                         onClick={() => handleRemovePage(page.id)}
-                        className="text-muted-foreground hover:text-muted-foreground"
+                        className="flex min-h-[44px] min-w-[44px] items-center justify-center text-muted-foreground hover:text-muted-foreground"
                         aria-label="Remove page"
                       >
                         <X className="w-4 h-4" />

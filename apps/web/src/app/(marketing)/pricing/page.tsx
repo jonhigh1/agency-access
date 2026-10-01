@@ -70,7 +70,7 @@ export const metadata: Metadata = {
 
 export default async function PricingPage() {
   return (
-    <main className="relative bg-background">
+    <div className="relative bg-background">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(pricingSchema) }}
@@ -82,6 +82,6 @@ export default async function PricingPage() {
       <SuccessStoriesSection />
       <FAQSection />
       <FinalCTASection />
-    </main>
+    </div>
   );
 }

@@ -20,7 +20,7 @@
 'use client';
 
 import { useCallback, useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 import { Platform, PlatformSelection } from '@agency-platform/shared';
 import { PlatformSelectorGrid } from '../platform-selector-grid';
 import { fadeVariants, fadeTransition } from '@/lib/animations';
@@ -91,7 +91,7 @@ export function PlatformSelectionScreen({
   const platformCount = flatPlatforms.length;
 
   return (
-    <motion.div
+    <m.div
       className="p-6 md:p-10"
       variants={fadeVariants}
       initial="initial"
@@ -119,7 +119,7 @@ export function PlatformSelectionScreen({
         />
 
         {/* Selection Summary */}
-        <motion.div
+        <m.div
           className="mt-6 p-4 bg-paper border-2 border-black rounded-lg shadow-brutalist-sm"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -132,7 +132,7 @@ export function PlatformSelectionScreen({
               </span>
             )}
           </div>
-        </motion.div>
+        </m.div>
 
         {/* What Happens Next - Brutalist Info Card */}
         <div className="mt-6 p-5 bg-paper border-2 border-black rounded-lg">
@@ -141,12 +141,12 @@ export function PlatformSelectionScreen({
           </h3>
           <ol className="text-sm text-ink/80 space-y-2 list-decimal list-inside">
             <li>We'll generate a unique access link for your client</li>
-            <li>You'll send it to them (we'll copy it to your clipboard)</li>
+            <li>Copy the link on the next screen and send it to your client</li>
             <li>They'll click the link and authorize each platform in one flow</li>
             <li>Once they authorize, OAuth tokens appear in your dashboard</li>
           </ol>
         </div>
       </div>
-    </motion.div>
+    </m.div>
   );
 }

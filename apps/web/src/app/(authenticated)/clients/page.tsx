@@ -10,7 +10,7 @@
 import { useState, Suspense, useEffect } from 'react';
 import { useAuth } from '@clerk/nextjs';
 import { useQuery } from '@tanstack/react-query';
-import { Search, Filter, AlertCircle, ExternalLink, Plus } from 'lucide-react';
+import { Search, AlertCircle, ExternalLink, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { LogoSpinner } from '@/components/ui/logo-spinner';
 import Link from 'next/link';
 import { StatusBadge, PlatformIcon, EmptyState, Button } from '@/components/ui';
@@ -31,6 +31,7 @@ interface Client {
   platforms: Platform[];
   status: 'active' | 'pending' | 'expired' | 'revoked' | 'none';
   connectionCount: number;
+  requestCount: number;
   lastActivityAt: string;
   createdAt: string;
 }
@@ -50,7 +51,7 @@ function ClientsPageContent() {
   
   const [searchQuery, setSearchQuery] = useState(initialEmail || '');
   const [debouncedSearchQuery, setDebouncedSearchQuery] = useState(initialEmail || '');
-  const [showFilters, setShowFilters] = useState(false);
+  const [offset, setOffset] = useState(0);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [quotaError, setQuotaError] = useState<QuotaExceededError | null>(null);
@@ -69,10 +70,12 @@ function ClientsPageContent() {
     isLoading: isLoadingClients,
     error: fetchError,
   } = useQuery({
-    queryKey: ['clients-with-connections', debouncedSearchQuery],
+    queryKey: ['clients-with-connections', debouncedSearchQuery, offset],
     queryFn: async () => {
       const url = new URL(resolveApiUrl('/api/clients'));
       if (debouncedSearchQuery) url.searchParams.append('search', debouncedSearchQuery);
+      url.searchParams.set('limit', '50');
+      url.searchParams.set('offset', String(offset));
 
       return authorizedApiFetch(url.toString(), { getToken });
     },
@@ -80,7 +83,7 @@ function ClientsPageContent() {
   });
 
   const clients = clientsResponse?.data?.data || [];
-  const pagination = clientsResponse?.data?.pagination || { total: 0 };
+  const pagination = clientsResponse?.data?.pagination || { total: 0, limit: 50, offset };
 
   const handleCreateClientClick = async () => {
     try {
@@ -165,24 +168,16 @@ function ClientsPageContent() {
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
             <input
               type="text"
+              aria-label="Search clients"
               placeholder="Search clients by name, email, or company..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setOffset(0);
+              }}
               className="w-full min-h-[44px] rounded-none border border-input bg-background py-3 pl-10 pr-4"
             />
           </div>
-          <Button
-            type="button"
-            variant="secondary"
-            size="md"
-            onClick={() => setShowFilters(!showFilters)}
-            className={`shrink-0 ${
-              showFilters ? 'bg-coral/10' : 'bg-background'
-            }`}
-          >
-            <Filter className="h-5 w-5" />
-            Filters
-          </Button>
         </div>
 
         {/* Empty state */}
@@ -205,6 +200,9 @@ function ClientsPageContent() {
             <p className="text-muted-foreground">
               Try adjusting your search query
             </p>
+            <Button type="button" variant="secondary" size="sm" className="mt-4" onClick={() => setSearchQuery('')}>
+              Clear search
+            </Button>
           </div>
         )}
 
@@ -219,12 +217,12 @@ function ClientsPageContent() {
                 {/* Client Info */}
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1 min-w-0">
-                    <h3 className="font-sans font-semibold text-foreground truncate">
+                    <h3 title={client.name} className="font-sans font-semibold text-foreground break-words">
                       {client.name}
                     </h3>
-                    <p className="text-sm text-muted-foreground truncate">{client.email}</p>
+                    <p title={client.email} className="text-sm text-muted-foreground break-all">{client.email}</p>
                     {client.company && (
-                      <p className="text-xs text-muted-foreground mt-1 truncate">
+                      <p title={client.company} className="text-xs text-muted-foreground mt-1 break-words">
                         {client.company}
                       </p>
                     )}
@@ -254,7 +252,7 @@ function ClientsPageContent() {
                 <div className="grid grid-cols-1 gap-2 text-xs text-muted-foreground mb-4">
                   <div className="flex justify-between">
                     <span className="font-medium text-muted">Total Requests:</span>
-                    <span className="text-foreground">{client.connectionCount}</span>
+                    <span className="text-foreground">{client.requestCount}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="font-medium text-muted">Last Activity:</span>
@@ -283,8 +281,14 @@ function ClientsPageContent() {
 
         {/* Client count */}
         {clients.length > 0 && (
-          <div className="mt-8 text-center text-sm text-muted-foreground">
-            Showing {clients.length} of {pagination.total} clients
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3 text-sm text-muted-foreground">
+            <Button type="button" variant="secondary" size="sm" disabled={pagination.offset <= 0} onClick={() => setOffset(Math.max(0, pagination.offset - pagination.limit))}>
+              <ChevronLeft className="h-4 w-4" /> Previous page
+            </Button>
+            <span>Showing {pagination.offset + 1}–{pagination.offset + clients.length} of {pagination.total} clients</span>
+            <Button type="button" variant="secondary" size="sm" disabled={pagination.offset + clients.length >= pagination.total} onClick={() => setOffset(pagination.offset + pagination.limit)}>
+              Next page <ChevronRight className="h-4 w-4" />
+            </Button>
           </div>
         )}
       </div>

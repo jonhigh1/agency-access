@@ -35,7 +35,7 @@ import {
 export default function PartnerPortalPage() {
   const clerkAuth = useAuth();
   const { userId, isLoaded, isDevelopmentBypass } = useAuthOrBypass(clerkAuth);
-  const { data, isLoading, error } = useAffiliatePortalOverview();
+  const { data, isLoading, error, refetch } = useAffiliatePortalOverview();
   const {
     data: history,
     isLoading: isHistoryLoading,
@@ -45,6 +45,7 @@ export default function PartnerPortalPage() {
   const [campaign, setCampaign] = useState('');
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
+  const [campaignError, setCampaignError] = useState<string | null>(null);
 
   const linkRows = useMemo<AffiliateLinkSummary[]>(
     () => data?.links ?? [],
@@ -72,6 +73,12 @@ export default function PartnerPortalPage() {
   async function handleCreateVariant(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setFormError(null);
+    setCampaignError(null);
+
+    if (campaign.trim().length < 2) {
+      setCampaignError('Enter a campaign name with at least 2 characters.');
+      return;
+    }
 
     try {
       await createLinkMutation.mutateAsync({
@@ -80,7 +87,11 @@ export default function PartnerPortalPage() {
       });
       setCampaign('');
     } catch (mutationError) {
-      setFormError(mutationError instanceof Error ? mutationError.message : 'Unable to create link variant');
+      if ((mutationError as Error & { code?: string })?.code === 'VALIDATION_ERROR') {
+        setCampaignError(mutationError instanceof Error ? mutationError.message : 'Enter a valid campaign name.');
+      } else {
+        setFormError(mutationError instanceof Error ? mutationError.message : 'Unable to create link variant');
+      }
     }
   }
 
@@ -95,8 +106,8 @@ export default function PartnerPortalPage() {
   if (!userId) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-paper p-6">
-        <div className="clean-card max-w-lg p-8 text-center">
-          <p className="text-xs font-mono uppercase tracking-[0.3em] text-danger-ink">Partner Portal</p>
+        <div className="max-w-lg border border-border bg-card p-8 text-center">
+          <p className="text-xs font-mono uppercase tracking-[0.3em] text-muted-foreground">Partner Portal</p>
           <h1 className="mt-3 font-display text-3xl font-semibold text-ink">
             Sign in to access your affiliate dashboard.
           </h1>
@@ -122,20 +133,26 @@ export default function PartnerPortalPage() {
   }
 
   if (error || !data) {
+    const isAccessDenied = (error as (Error & { status?: number }) | null)?.status === 403;
     return (
       <div className="flex min-h-screen items-center justify-center bg-paper p-6">
-        <div className="clean-card max-w-2xl p-8">
+        <div className="max-w-2xl border border-border bg-card p-8">
           <div className="flex items-center justify-between gap-4">
             <div>
-              <p className="text-xs font-mono uppercase tracking-[0.3em] text-danger-ink">Partner Portal</p>
+              <p className="text-xs font-mono uppercase tracking-[0.3em] text-muted-foreground">Partner Portal</p>
               <h1 className="mt-3 font-display text-3xl font-semibold text-ink">
-                Access pending approval
+                {isAccessDenied ? 'Partner access unavailable' : 'Unable to load partner portal'}
               </h1>
               <p className="mt-3 text-sm text-muted-foreground">
-                {error instanceof Error
-                  ? error.message
-                  : 'This account is not approved for affiliate portal access yet.'}
+                {isAccessDenied
+                  ? 'This account does not have approved affiliate access.'
+                  : 'The partner portal could not load. Check your connection and retry.'}
               </p>
+              {!isAccessDenied ? (
+                <Button type="button" variant="secondary" className="mt-4" onClick={() => void refetch()}>
+                  Retry
+                </Button>
+              ) : null}
             </div>
             {isDevelopmentBypass ? (
               <span className="inline-flex items-center rounded-full border border-warning/30 bg-warning/10 px-3 py-1 text-xs font-mono uppercase tracking-wide text-warning">
@@ -240,10 +257,16 @@ export default function PartnerPortalPage() {
               <input
                 className="h-11 w-full rounded-lg border border-border bg-background px-4 text-sm text-foreground outline-none transition focus:border-coral focus:ring-2 focus:ring-coral/15"
                 value={campaign}
-                onChange={(event) => setCampaign(event.target.value)}
+                onChange={(event) => {
+                  setCampaign(event.target.value);
+                  setCampaignError(null);
+                }}
                 placeholder="Newsletter, webinar, LinkedIn post"
                 minLength={2}
                 required
+                aria-invalid={campaignError ? 'true' : undefined}
+                aria-describedby={campaignError ? 'campaign-error' : undefined}
+                onInvalid={() => setCampaignError('Enter a campaign name with at least 2 characters.')}
               />
             </label>
             <Button
@@ -254,8 +277,11 @@ export default function PartnerPortalPage() {
               <Link2 className="mr-2 h-4 w-4" />
               {createLinkMutation.isPending ? 'Creating…' : 'Create campaign link'}
             </Button>
+            {campaignError ? (
+              <p id="campaign-error" role="alert" className="text-sm text-danger-ink">{campaignError}</p>
+            ) : null}
             {formError ? (
-              <p className="text-sm text-danger-ink">{formError}</p>
+              <p role="alert" className="text-sm text-danger-ink">{formError}</p>
             ) : null}
           </form>
         </AffiliateSurfaceCard>
@@ -377,7 +403,7 @@ export default function PartnerPortalPage() {
             key: 'url',
             header: 'URL',
             render: (value) => (
-              <span className="block max-w-[28rem] truncate text-muted-foreground">
+              <span className="block max-w-[28rem] break-all text-muted-foreground">
                 {String(value || '')}
               </span>
             ),
@@ -399,7 +425,7 @@ export default function PartnerPortalPage() {
               <Button
                 type="button"
                 variant="ghost"
-                className="h-auto px-0 text-danger-ink hover:bg-transparent hover:text-danger-ink"
+                className="h-auto px-0 text-ink hover:bg-transparent hover:text-ink"
                 onClick={() => row.url && copyToClipboard(`link:${row.url}`, row.url)}
               >
                 {copiedKey === `link:${row.url}` ? 'Copied' : 'Copy'}

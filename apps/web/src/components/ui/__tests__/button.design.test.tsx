@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { Button } from '../button';
 
 const COMPONENT_PATH = join(__dirname, '..', 'button.tsx');
@@ -102,5 +102,26 @@ describe('Button v2.0 variant consolidation', () => {
     expect(button).toHaveAttribute('aria-busy', 'true');
     expect(button?.textContent).toContain('Save changes');
     expect(button?.querySelector('.invisible')).toHaveTextContent('Save changes');
+  });
+
+  it('renders asChild as one styled, focusable link', () => {
+    render(
+      <Button asChild variant="primary">
+        <a href="/clients">Open clients</a>
+      </Button>
+    );
+
+    const link = screen.getByRole('link', { name: 'Open clients' });
+    expect(screen.getAllByRole('link')).toHaveLength(1);
+    expect(link).toHaveClass('bg-primary', 'text-primary-foreground', 'min-h-[48px]');
+    expect(link.closest('button')).toBeNull();
+  });
+
+  it('uses ink foreground on coral primary actions', () => {
+    const { container } = render(<Button variant="brutalist">Continue</Button>);
+    expect(container.firstElementChild).toHaveClass('bg-coral', 'text-primary-foreground');
+
+    const globals = readFileSync(join(__dirname, '../../../app/globals.css'), 'utf-8');
+    expect(globals.match(/--primary-foreground:\s*9 9 11/g)).toHaveLength(2);
   });
 });

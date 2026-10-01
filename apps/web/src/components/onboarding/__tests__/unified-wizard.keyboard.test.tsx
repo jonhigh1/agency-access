@@ -48,4 +48,18 @@ describe('UnifiedWizard keyboard behavior', () => {
 
     expect(screen.getByText(/to skip/i)).toBeInTheDocument();
   });
+
+  it('leaves one completion action on final step and keeps progress below complete', () => {
+    renderWizard({
+      currentStep: 6,
+      totalSteps: 7,
+      canGoBack: false,
+      children: <button type="button">Go to Dashboard</button>,
+    });
+
+    expect(screen.getByText('Step 7 of 7')).toBeInTheDocument();
+    expect(screen.getByText('86% Complete')).toBeInTheDocument();
+    expect(screen.getAllByRole('button')).toHaveLength(1);
+    expect(screen.queryByRole('button', { name: /complete onboarding/i })).not.toBeInTheDocument();
+  });
 });

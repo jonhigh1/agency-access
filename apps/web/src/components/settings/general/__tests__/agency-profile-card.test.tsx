@@ -61,8 +61,8 @@ describe('AgencyProfileCard', () => {
     renderCard({ id: 'agency-1', name: 'Acme', settings: {} });
     await screen.findByDisplayValue('Acme');
 
-    expect(screen.getByLabelText('Agency Name')).toBeInstanceOf(HTMLInputElement);
-    expect(screen.getByLabelText('Company Website')).toBeInstanceOf(HTMLInputElement);
+    expect(screen.getByLabelText('Agency name')).toBeInstanceOf(HTMLInputElement);
+    expect(screen.getByLabelText('Company website')).toBeInstanceOf(HTMLInputElement);
     expect(screen.getByLabelText('Logo URL')).toBeInstanceOf(HTMLInputElement);
   });
 
@@ -89,7 +89,7 @@ describe('AgencyProfileCard', () => {
     });
 
     const agencyNameInput = await screen.findByDisplayValue('Old Agency Name');
-    const websiteInput = screen.getByLabelText('Company Website') as HTMLInputElement;
+    const websiteInput = screen.getByLabelText('Company website') as HTMLInputElement;
 
     expect(websiteInput.value).toContain('old.example.com');
 

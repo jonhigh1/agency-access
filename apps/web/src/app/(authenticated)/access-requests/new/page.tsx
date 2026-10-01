@@ -566,7 +566,8 @@ function AccessRequestWizardContent() {
                 <button
                   type="button"
                   onClick={() => removeIntakeField(field.id)}
-                  className="p-2 text-danger-ink hover:bg-coral/10 rounded-none transition-colors"
+                  aria-label={`Remove ${field.label || 'untitled'} field`}
+                  className="min-h-11 min-w-11 flex items-center justify-center text-danger-ink hover:bg-coral/10 rounded-none transition-colors"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>
@@ -767,6 +768,7 @@ function AccessRequestWizardContent() {
                     <button
                       type="button"
                       onClick={() => setStep(1)}
+                      aria-label="Edit client"
                       className="text-xs font-semibold uppercase tracking-wide text-danger-ink hover:text-danger-ink"
                     >
                       Edit
@@ -787,7 +789,7 @@ function AccessRequestWizardContent() {
                               key={platform}
                               className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-muted/30 text-foreground"
                             >
-                              {platform} ({products.length})
+                              {PLATFORM_NAMES[platform as keyof typeof PLATFORM_NAMES] || 'Other platform'} ({products.length})
                             </span>
                           ))}
                           {platformCount === 0 && (
@@ -800,6 +802,7 @@ function AccessRequestWizardContent() {
                     <button
                       type="button"
                       onClick={() => setStep(2)}
+                      aria-label="Edit platforms"
                       className="text-xs font-semibold uppercase tracking-wide text-danger-ink hover:text-danger-ink"
                     >
                       Edit
@@ -823,7 +826,7 @@ function AccessRequestWizardContent() {
                               const level = state.platformAccessLevels[platformGroup] || state.globalAccessLevel;
                               return (
                                 <span key={platformGroup} className="flex items-center gap-1.5">
-                                  <span className="text-sm text-foreground">{PLATFORM_NAMES[platformGroup as keyof typeof PLATFORM_NAMES] || platformGroup}:</span>
+                                  <span className="text-sm text-foreground">{PLATFORM_NAMES[platformGroup as keyof typeof PLATFORM_NAMES] || 'Other platform'}:</span>
                                   <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
                                     level === 'admin'
                                       ? 'bg-coral/20 text-danger-ink'
@@ -845,6 +848,7 @@ function AccessRequestWizardContent() {
                     <button
                       type="button"
                       onClick={() => setStep(2)}
+                      aria-label="Edit access level"
                       className="text-xs font-semibold uppercase tracking-wide text-danger-ink hover:text-danger-ink"
                     >
                       Edit
@@ -870,6 +874,7 @@ function AccessRequestWizardContent() {
                     <button
                       type="button"
                       onClick={() => setStep(3)}
+                      aria-label="Edit form fields"
                       className="text-xs font-semibold uppercase tracking-wide text-danger-ink hover:text-danger-ink"
                     >
                       Edit

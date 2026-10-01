@@ -74,6 +74,7 @@ export interface OnboardingState {
 
   // Agency profile (Screen 1)
   agencyName: string;
+  agencyNameError: string | null;
   agencySettings: AgencySettings;
 
   // First access request (Screen 2A)
@@ -90,9 +91,11 @@ export interface OnboardingState {
   agencyId?: string;
   accessLink?: string;
   accessRequestId?: string;
+  requestProgressPersisted: boolean;
 
   // Team invites (Screen 4 - Optional)
   teamInvites: TeamInvite[];
+  teamInvitesSent: number;
 
   // Meta state
   loading: boolean;
@@ -292,6 +295,7 @@ const initialState: OnboardingState = {
 
   // Agency profile
   agencyName: '',
+  agencyNameError: null,
   agencySettings: {
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     industry: 'digital_marketing', // Smart default
@@ -320,9 +324,11 @@ const initialState: OnboardingState = {
   agencyId: undefined,
   accessLink: undefined,
   accessRequestId: undefined,
+  requestProgressPersisted: false,
 
   // Team invites
   teamInvites: [],
+  teamInvitesSent: 0,
 
   // Meta
   loading: false,
@@ -350,6 +356,9 @@ export function UnifiedOnboardingProvider({
 
   const [state, setState] = useState<OnboardingState>(initialState);
   const hasHydratedProgressRef = useRef(false);
+  const completionInFlightRef = useRef(false);
+  const completionSucceededRef = useRef(false);
+  const navigationInFlightRef = useRef(false);
 
   // ============================================================
   // ANALYTICS TRACKING
@@ -388,7 +397,7 @@ export function UnifiedOnboardingProvider({
   const persistOnboardingProgress = useCallback(
     async (agencyId: string | undefined, progress: UnifiedOnboardingProgress) => {
       if (!agencyId) {
-        return;
+        return false;
       }
 
       try {
@@ -397,8 +406,9 @@ export function UnifiedOnboardingProvider({
           getToken,
           body: JSON.stringify(progress),
         });
+        return true;
       } catch {
-        // Non-blocking persistence path. Recovery still works from server-derived defaults.
+        return false;
       }
     },
     [getToken]
@@ -409,31 +419,31 @@ export function UnifiedOnboardingProvider({
   // ============================================================
 
   const nextStep = useCallback(() => {
-    let progressPayload: UnifiedOnboardingProgress | null = null;
-    let agencyIdForPersist: string | undefined;
-
-    setState((prev) => {
-      if (prev.currentStep >= ONBOARDING_TOTAL_STEPS) {
-        return prev;
-      }
-
-      const next = prev.currentStep + 1;
-      progressPayload = {
-        status: next >= 4 ? 'activated' : 'in_progress',
-        startedAt: new Date(prev.startedAt).toISOString(),
-        lastCompletedStep: prev.currentStep,
-        lastVisitedStep: next,
-        accessRequestId: prev.accessRequestId,
-      };
-      agencyIdForPersist = prev.agencyId;
-
-      return { ...prev, currentStep: next, error: null };
-    });
-
-    if (progressPayload) {
-      void persistOnboardingProgress(agencyIdForPersist, progressPayload);
+    if (navigationInFlightRef.current || state.currentStep >= ONBOARDING_TOTAL_STEPS - 1) return;
+    const next = state.currentStep + 1;
+    const advance = () => setState((prev) => ({ ...prev, currentStep: Math.min(prev.currentStep + 1, ONBOARDING_TOTAL_STEPS - 1), loading: false, error: null }));
+    if (state.agencyId && state.accessRequestId) {
+      navigationInFlightRef.current = true;
+      setState((prev) => ({ ...prev, loading: true, error: null }));
+      void persistOnboardingProgress(state.agencyId, {
+          status: next >= 4 ? 'activated' : 'in_progress',
+          startedAt: new Date(state.startedAt).toISOString(),
+          lastCompletedStep: state.currentStep,
+          lastVisitedStep: next,
+          accessRequestId: state.accessRequestId,
+        }).then((persisted) => {
+          if (persisted) {
+            advance();
+          } else {
+            setState((prev) => ({ ...prev, loading: false, error: 'Setup progress could not be saved. Please try again.' }));
+          }
+        }).finally(() => {
+          navigationInFlightRef.current = false;
+        });
+      return;
     }
-  }, [persistOnboardingProgress]);
+    advance();
+  }, [persistOnboardingProgress, state.accessRequestId, state.agencyId, state.currentStep, state.startedAt]);
 
   const prevStep = useCallback(() => {
     if (state.currentStep > 0) {
@@ -460,7 +470,7 @@ export function UnifiedOnboardingProvider({
       case 0: // Welcome screen - always can proceed
         return true;
       case 1: // Agency profile - requires agency name
-        return state.agencyName.trim().length > 0;
+        return state.agencyName.trim().length >= 2;
       case 2: // Client step requires a real client before link generation
         return isValidClientData(state.clientName, state.clientEmail);
       case 3: // Platform step can proceed with the default opinionated selection
@@ -492,6 +502,7 @@ export function UnifiedOnboardingProvider({
     setState((prev) => ({
       ...prev,
       agencyName: data.name,
+      agencyNameError: null,
       agencySettings: {
         ...prev.agencySettings,
         ...data.settings,
@@ -516,10 +527,13 @@ export function UnifiedOnboardingProvider({
   }, []);
 
   const addTeamInvite = useCallback((invite: TeamInvite) => {
-    setState((prev) => ({
-      ...prev,
-      teamInvites: [...prev.teamInvites, invite],
-    }));
+    const email = invite.email.trim();
+    setState((prev) => {
+      if (prev.teamInvites.some((existing) => existing.email.trim().toLowerCase() === email.toLowerCase())) {
+        return { ...prev, error: 'This email already has an invitation.' };
+      }
+      return { ...prev, error: null, teamInvites: [...prev.teamInvites, { ...invite, email }] };
+    });
   }, []);
 
   const removeTeamInvite = useCallback((email: string) => {
@@ -605,6 +619,7 @@ export function UnifiedOnboardingProvider({
       setState((prev) => ({
         ...prev,
         error: errorMessage,
+        agencyNameError: /already exists|duplicate/i.test(errorMessage) ? errorMessage : prev.agencyNameError,
         loading: false,
       }));
     }
@@ -708,6 +723,19 @@ export function UnifiedOnboardingProvider({
 
     try {
       setState((prev) => ({ ...prev, loading: true, error: null }));
+      if (state.agencyId && state.accessRequestId && state.accessLink) {
+        const persisted = state.requestProgressPersisted || await persistOnboardingProgress(state.agencyId, {
+          status: 'activated',
+          startedAt: new Date(state.startedAt).toISOString(),
+          activatedAt: new Date().toISOString(),
+          lastCompletedStep: 3,
+          lastVisitedStep: 4,
+          accessRequestId: state.accessRequestId,
+        });
+        if (!persisted) throw new Error('Your access request is saved, but setup progress could not be saved. Please try again.');
+        setState((prev) => ({ ...prev, requestProgressPersisted: true, loading: false }));
+        return { ok: true, agencyId: state.agencyId, accessRequestId: state.accessRequestId, accessLink: state.accessLink };
+      }
       const {
         agencyId,
         safeAgencyName,
@@ -794,10 +822,10 @@ export function UnifiedOnboardingProvider({
         agencyId: resolvedAgencyId,
         accessLink,
         accessRequestId: accessRequest.id,
-        loading: false,
+        loading: true,
       }));
 
-      void persistOnboardingProgress(resolvedAgencyId, {
+      const progressPersisted = await persistOnboardingProgress(resolvedAgencyId, {
         status: 'activated',
         startedAt: new Date(state.startedAt).toISOString(),
         activatedAt: new Date().toISOString(),
@@ -805,6 +833,8 @@ export function UnifiedOnboardingProvider({
         lastVisitedStep: 4,
         accessRequestId: accessRequest.id,
       });
+      if (!progressPersisted) throw new Error('Your access request is saved, but setup progress could not be saved. Please try again.');
+      setState((prev) => ({ ...prev, requestProgressPersisted: true, loading: false }));
 
       return {
         ok: true,
@@ -899,7 +929,7 @@ export function UnifiedOnboardingProvider({
     try {
       setState((prev) => ({ ...prev, loading: true, error: null }));
 
-      await authorizedApiFetch(`/api/agencies/${state.agencyId}/members/bulk`, {
+      const response = await authorizedApiFetch<{ data: Array<unknown> | { invited?: number } }>(`/api/agencies/${state.agencyId}/members/bulk`, {
         method: 'POST',
         getToken,
         body: JSON.stringify({
@@ -911,11 +941,16 @@ export function UnifiedOnboardingProvider({
       });
 
       trackOnboardingEvent('team_invites_sent', {
-        count: state.teamInvites.length,
+        count: Array.isArray(response.data)
+          ? response.data.length
+          : typeof response.data?.invited === 'number' ? response.data.invited : 0,
         timestamp: Date.now(),
       });
 
-      setState((prev) => ({ ...prev, loading: false }));
+      const confirmedCount = Array.isArray(response.data)
+        ? response.data.length
+        : typeof response.data?.invited === 'number' ? response.data.invited : 0;
+      setState((prev) => ({ ...prev, teamInvitesSent: confirmedCount, loading: false }));
       return true;
     } catch (err) {
       const errorMessage = getApiErrorMessage(err, 'Network error. Please try again.');
@@ -940,44 +975,34 @@ export function UnifiedOnboardingProvider({
   // ============================================================
 
   const completeOnboarding = useCallback(async () => {
-    try {
-      const {
-        agencyId: resolvedAgencyId,
-        safeAgencyName,
-        safeAgencyWebsite,
-        safeAgencyLogoUrl,
-      } = await resolveAgency();
+    if (completionInFlightRef.current || completionSucceededRef.current) return;
+    completionInFlightRef.current = true;
+    setState((prev) => ({ ...prev, loading: true, error: null }));
 
-      if (!resolvedAgencyId) {
-        throw new Error('Unable to complete onboarding because your agency could not be created.');
+    try {
+      if (!state.agencyId || !state.accessRequestId) {
+        throw new Error('Your saved request is unavailable. Open the dashboard to continue.');
       }
 
-      setState((prev) => ({
-        ...prev,
-        agencyId: resolvedAgencyId,
-        agencyName: safeAgencyName,
-        agencySettings: {
-          ...prev.agencySettings,
-          logoUrl: safeAgencyLogoUrl || '',
-          website: safeAgencyWebsite || '',
-        },
-      }));
-
-      const totalTime = Date.now() - state.startedAt;
-      trackOnboardingEvent('onboarding_completed', {
-        version: 'unified_v1',
-        totalDurationMs: totalTime,
-        stepsSkipped: state.teamInvites.length === 0 ? ['team_invite'] : [],
-        accessRequestId: state.accessRequestId,
-      });
-
-      await persistOnboardingProgress(resolvedAgencyId, {
+      const persisted = await persistOnboardingProgress(state.agencyId, {
         status: 'completed',
         completedAt: new Date().toISOString(),
         lastCompletedStep: 6,
         lastVisitedStep: 6,
         accessRequestId: state.accessRequestId,
       });
+      if (!persisted) throw new Error('Setup could not be saved. Please try again.');
+      completionSucceededRef.current = true;
+
+      const totalTime = Date.now() - state.startedAt;
+      trackOnboardingEvent('onboarding_completed', {
+        version: 'unified_v1',
+        totalDurationMs: totalTime,
+        stepsSkipped: state.teamInvitesSent === 0 ? ['team_invite'] : [],
+        accessRequestId: state.accessRequestId,
+      });
+
+      setState((prev) => ({ ...prev, loading: false, completedSteps: new Set([...prev.completedSteps, 6]) }));
 
       if (onComplete) {
         onComplete();
@@ -990,9 +1015,12 @@ export function UnifiedOnboardingProvider({
       setState((prev) => ({
         ...prev,
         error: errorMessage,
+        loading: false,
       }));
+    } finally {
+      completionInFlightRef.current = false;
     }
-  }, [onComplete, persistOnboardingProgress, resolveAgency, router, state]);
+  }, [onComplete, persistOnboardingProgress, router, state]);
 
   const skipOnboarding = useCallback(() => {
     trackOnboardingEvent('onboarding_skipped', {
@@ -1035,7 +1063,7 @@ export function UnifiedOnboardingProvider({
 
     const hydrateProgress = async () => {
       try {
-        const agencyLookup = await authorizedApiFetch<{ data: Array<{ id: string }>; error: null }>(
+        const agencyLookup = await authorizedApiFetch<{ data: Array<{ id: string; name?: string; settings?: Partial<AgencySettings> }>; error: null }>(
           `/api/agencies?clerkUserId=${encodeURIComponent(principalClerkId)}`,
           { getToken }
         );
@@ -1044,7 +1072,14 @@ export function UnifiedOnboardingProvider({
           return;
         }
 
-        const resolvedAgencyId = agencyLookup.data[0].id;
+        const agency = agencyLookup.data[0];
+        const resolvedAgencyId = agency.id;
+        setState((prev) => ({
+          ...prev,
+          agencyId: resolvedAgencyId,
+          agencyName: agency.name || prev.agencyName,
+          agencySettings: { ...prev.agencySettings, ...agency.settings },
+        }));
         const onboardingStatus = await authorizedApiFetch<{ data: AgencyOnboardingStatusData; error: null }>(
           `/api/agencies/${resolvedAgencyId}/onboarding-status`,
           { getToken }
@@ -1055,10 +1090,13 @@ export function UnifiedOnboardingProvider({
         }
 
         const resumeStep = resolveOnboardingResumeStep(onboardingStatus.data);
+        if (onboardingStatus.data.step.firstRequest || resumeStep >= 4) {
+          router.replace('/dashboard');
+          return;
+        }
         setState((prev) => ({
           ...prev,
-          agencyId: resolvedAgencyId,
-          currentStep: prev.currentStep > 0 ? prev.currentStep : resumeStep,
+          currentStep: prev.currentStep > 0 ? prev.currentStep : Math.min(resumeStep, 2),
         }));
       } catch {
         // Non-blocking hydration path.
@@ -1070,7 +1108,7 @@ export function UnifiedOnboardingProvider({
     return () => {
       cancelled = true;
     };
-  }, [enableProgressHydration, getToken, orgId, state.agencyId, state.currentStep, userId]);
+  }, [enableProgressHydration, getToken, orgId, userId]);
 
   // ============================================================
   // ERROR HANDLING

@@ -150,7 +150,7 @@ describe('WebhookSettingsTab', () => {
 
     renderWithQueryClient(<WebhookSettingsTab />);
 
-    expect(await screen.findByText('Webhook Endpoint')).toBeInTheDocument();
+    expect(await screen.findByText('Webhook endpoint')).toBeInTheDocument();
     expect(await screen.findByDisplayValue('https://example.com/webhooks')).toBeInTheDocument();
     expect(screen.getByText('Active')).toBeInTheDocument();
     expect(screen.getByText('access_request.completed')).toBeInTheDocument();
@@ -343,6 +343,17 @@ describe('WebhookSettingsTab', () => {
     expect(screen.queryByText('Signing secret')).not.toBeInTheDocument();
   });
 
+  it('offers retry when webhook settings fail to load', async () => {
+    mockGetWebhookEndpoint.mockRejectedValue(new Error('Service unavailable'));
+    mockListWebhookDeliveries.mockResolvedValue({ endpoint: null, deliveries: [] });
+
+    renderWithQueryClient(<WebhookSettingsTab />);
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Service unavailable');
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(mockGetWebhookEndpoint).toHaveBeenCalledTimes(2);
+  });
+
   it('surfaces the repeated-failure warning and failed delivery details', async () => {
     mockEndpointQueries({
       endpoint: buildEndpoint({
@@ -425,7 +436,7 @@ describe('WebhookSettingsTab', () => {
 
       const { container } = renderWithQueryClient(<WebhookSettingsTab />);
 
-      expect(screen.getByText('Webhook Endpoint')).toBeInTheDocument();
+      expect(screen.getByText('Webhook endpoint')).toBeInTheDocument();
       expect(container.querySelectorAll('.ink-panel')).toHaveLength(1);
       expect(screen.queryByText(/No endpoint is configured yet/i)).not.toBeInTheDocument();
       expect(container.querySelectorAll('.clean-card')).toHaveLength(0);
@@ -438,7 +449,7 @@ describe('WebhookSettingsTab', () => {
       const { container } = renderWithQueryClient(<WebhookSettingsTab />);
 
       expect(await screen.findByText('Endpoint lookup failed')).toBeInTheDocument();
-      expect(screen.getByText('Webhook Endpoint')).toBeInTheDocument();
+      expect(screen.getByText('Webhook endpoint')).toBeInTheDocument();
       expect(container.querySelectorAll('.ink-panel')).toHaveLength(1);
     });
 

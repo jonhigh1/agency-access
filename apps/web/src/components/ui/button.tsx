@@ -2,7 +2,7 @@
 
 import { LogoSpinner } from './logo-spinner';
 import { Slot } from '@radix-ui/react-slot';
-import { ButtonHTMLAttributes, forwardRef } from 'react';
+import { ButtonHTMLAttributes, cloneElement, forwardRef, isValidElement } from 'react';
 
 export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary' | 'ghost' | 'danger' | 'brutalist';
@@ -20,11 +20,11 @@ export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
  * two-ring accent focus (3px coral outline + 6px soft halo), 120ms hover.
  *
  * Variants:
- * - primary: Coral fill, hard shadow — main actions
+ * - primary: Coral fill with ink text, hard shadow — main actions
  * - secondary: White with 1px border — alternative/cancel actions
  * - ghost: Transparent — tertiary actions
  * - danger: Darkened coral (danger-ink) fill — destructive actions
- * - brutalist: Uppercase coral CTA with diagonal shift hover — one per view
+ * - brutalist: Uppercase coral CTA with ink text and diagonal shift hover — one per view
  *
  * Sizes:
  * - sm: Small buttons for tight spaces
@@ -61,7 +61,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       // danger uses the AA danger-ink fill — never identical to primary (v2.0)
       danger: 'border border-black dark:border-white bg-danger-ink text-white hover:bg-danger-ink/90 hover:translate-y-[-2px] active:scale-95 shadow-brutalist',
       // Brutalist: hero CTA only — uppercase coral, diagonal shift on hover
-      brutalist: 'bg-coral text-white border-2 border-black dark:border-white rounded-none shadow-brutalist hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] font-bold uppercase tracking-wide',
+      brutalist: 'bg-coral text-primary-foreground border-2 border-black dark:border-white rounded-none shadow-brutalist hover:shadow-none hover:translate-x-[2px] hover:translate-y-[2px] font-bold uppercase tracking-wide',
     };
 
     // Size styles (use NonNullable to exclude undefined from Record key type)
@@ -75,26 +75,32 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       icon: 'p-0 w-11 h-11 rounded-full min-h-[44px]',
     };
 
-    const content = (
+    const renderContent = (label: React.ReactNode) => (
       <>
         <span className={isLoading ? 'invisible inline-flex items-center gap-2' : 'inline-flex items-center gap-2'}>
           {leftIcon && <span className="flex-shrink-0">{leftIcon}</span>}
-          {children}
+          {label}
           {rightIcon && <span className="flex-shrink-0">{rightIcon}</span>}
         </span>
         {isLoading && <span className="absolute inset-0 inline-flex items-center justify-center"><LogoSpinner size="sm" /></span>}
       </>
     );
+    const content = renderContent(children);
 
     if (asChild) {
+      if (!isValidElement(children)) {
+        throw new Error('Button asChild requires one valid interactive child.');
+      }
+      const child = children as React.ReactElement<{ children?: React.ReactNode }>;
       return (
         <Slot
           ref={ref}
           className={`${baseStyles} ${variantStyles[variant]} ${sizeStyles[size]} ${className}`}
           aria-busy={isLoading || undefined}
+          aria-disabled={disabled || isLoading || undefined}
           {...props}
         >
-          {content}
+          {cloneElement(child, {}, renderContent(child.props.children))}
         </Slot>
       );
     }

@@ -219,35 +219,56 @@ export function PlanComparison() {
         </ul>
       </SettingsRow>
 
-      {/* Mobile tier summary — full grid appears at md and up */}
-      <div className="py-5 md:hidden">
+      {/* Mobile plan details and actions */}
+      <div data-testid="mobile-plan-comparison" className="space-y-3 py-5 md:hidden">
         <div className="border border-border bg-card p-4">
           <div className="space-y-3 font-mono text-sm">
-            {PRICING_DISPLAY_TIER_ORDER.map((tier) => {
+            {PRICING_DISPLAY_TIER_ORDER.map((tier, index) => {
               const isRecommended = tier === 'GROWTH';
+              const isCurrentTier = Boolean(subscription?.tier) && tier === currentTier;
+              const canUpgrade = index > tierIndex;
               return (
-                <div
+                <details
                   key={tier}
-                  className={`flex items-center justify-between gap-3 py-2 hairline-b last:border-b-0 ${
+                  className={`border-b border-border py-3 last:border-b-0 ${
                     isRecommended ? 'bg-coral/5 -mx-2 px-2' : ''
                   }`}
                 >
-                  <div className="min-w-0">
-                    <span className={`font-bold ${isRecommended ? 'text-danger-ink' : 'text-ink'}`}>
-                      {PRICING_DISPLAY_TIER_DETAILS[tier].name}
+                  <summary className="flex min-h-11 cursor-pointer list-none items-center justify-between gap-3">
+                    <span className="min-w-0">
+                      <span className={`block font-bold ${isRecommended ? 'text-danger-ink' : 'text-ink'}`}>
+                        {PRICING_DISPLAY_TIER_DETAILS[tier].name}
+                      </span>
+                      <span className={`block text-xs ${isRecommended ? 'text-danger-ink/70' : 'text-muted-foreground'}`}>
+                        {isRecommended ? 'Most Popular' : PRICING_DISPLAY_TIER_DETAILS[tier].persona}
+                      </span>
                     </span>
-                    <span className={`block text-xs ${isRecommended ? 'text-danger-ink/70' : 'text-muted-foreground'}`}>
-                      {isRecommended ? 'Most Popular' : PRICING_DISPLAY_TIER_DETAILS[tier].persona}
-                    </span>
+                    <span className="shrink-0 text-muted-foreground">${monthlyEquivalent(tier)}/mo</span>
+                  </summary>
+                  <p className="mt-3 text-xs text-muted-foreground">{PRICING_DISPLAY_TIER_DETAILS[tier].description}</p>
+                  <ul className="mt-3 space-y-2 font-display text-sm">
+                    {tierFeatures[tier].map((feature) => (
+                      <li key={feature.name} className="flex gap-2">
+                        <span aria-hidden="true" className={feature.included ? 'text-success-ink' : 'text-muted-foreground'}>{feature.included ? '✓' : '—'}</span>
+                        <span className={feature.included ? 'text-foreground' : 'text-muted-foreground'}>{feature.name}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <div className="mt-4">
+                    {isCurrentTier ? (
+                      <div className="border border-ink py-2 text-center text-sm font-medium text-ink">Current plan</div>
+                    ) : canUpgrade ? (
+                      <Button onClick={() => handleUpgrade(tier)} disabled={createCheckout.isPending} variant={isRecommended ? 'primary' : 'secondary'} size="sm" className="w-full">
+                        Start free trial
+                      </Button>
+                    ) : (
+                      <div className="border border-border py-2 text-center text-sm text-muted-foreground">—</div>
+                    )}
                   </div>
-                  <span className="shrink-0 text-muted-foreground">${monthlyEquivalent(tier)}/mo</span>
-                </div>
+                </details>
               );
             })}
           </div>
-          <p className="mt-4 text-center font-mono text-xs text-muted-foreground">
-            Full plan details available on larger screens
-          </p>
         </div>
       </div>
 

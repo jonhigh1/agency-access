@@ -505,4 +505,26 @@ describe('GoogleUnifiedSettings', () => {
     });
     expect(screen.queryByRole('option', { name: /Client Ads Account.*549-755-9774/i })).not.toBeInTheDocument();
   });
+
+  it('gives connected empty Business Profile state a refresh action', async () => {
+    const fetchMock = vi.fn(async (input: any) => {
+      if (String(input).includes('/accounts')) {
+        return { ok: true, json: async () => ({ data: {
+          adsAccounts: [], analyticsProperties: [], businessAccounts: [], tagManagerContainers: [],
+          searchConsoleSites: [], merchantCenterAccounts: [], hasAccess: true,
+        } }) } as any;
+      }
+      return { ok: true, json: async () => ({ data: {
+        googleAds: { enabled: false }, googleAnalytics: { enabled: false },
+        googleBusinessProfile: { enabled: true }, googleTagManager: { enabled: false },
+        googleSearchConsole: { enabled: false }, googleMerchantCenter: { enabled: false },
+      } }) } as any;
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    renderWithQueryClient(<GoogleUnifiedSettings agencyId="agency-1" />);
+
+    expect(await screen.findByText(/No Google Business Profile Location assets were found/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Refresh Google accounts' })).toBeInTheDocument();
+  });
 });

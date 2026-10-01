@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@clerk/nextjs';
+import Link from 'next/link';
 import { 
   getDefaultGoogleAssetSettings,
   GoogleAssetSettings,
@@ -100,6 +101,7 @@ export function GoogleUnifiedSettings({ agencyId }: GoogleUnifiedSettingsProps) 
     data: accountsData,
     isLoading: isLoadingAccounts,
     error: accountsError,
+    refetch: refetchAccounts,
   } = useQuery({
     queryKey: ['google-accounts', agencyId],
     queryFn: async () => {
@@ -219,6 +221,9 @@ export function GoogleUnifiedSettings({ agencyId }: GoogleUnifiedSettingsProps) 
       <div className="p-8 text-danger-ink text-center">
         <AlertCircle className="h-6 w-6 mx-auto mb-2" />
         Failed to load Google accounts
+        <Button type="button" variant="secondary" className="mx-auto mt-3" onClick={() => void refetchAccounts()}>
+          Try again
+        </Button>
       </div>
     );
   }
@@ -354,6 +359,8 @@ export function GoogleUnifiedSettings({ agencyId }: GoogleUnifiedSettingsProps) 
             requestManageUsers={settings.googleAnalytics.requestManageUsers}
             onRequestManageUsersToggle={(val) => updateSetting('googleAnalytics', 'requestManageUsers', val)}
             tooltip="Enable setting to request Administrator access (instead of Editor access)"
+            onRetryAccounts={() => void refetchAccounts()}
+            hasGoogleAccess={accountsData?.hasAccess ?? false}
           />
 
           <ProductCard
@@ -369,6 +376,8 @@ export function GoogleUnifiedSettings({ agencyId }: GoogleUnifiedSettingsProps) 
             requestManageUsers={settings.googleBusinessProfile.requestManageUsers}
             onRequestManageUsersToggle={(val) => updateSetting('googleBusinessProfile', 'requestManageUsers', val)}
             tooltip="Enable setting to request Owner access (instead of Manager access)"
+            onRetryAccounts={() => void refetchAccounts()}
+            hasGoogleAccess={accountsData?.hasAccess ?? false}
           />
 
           <ProductCard
@@ -384,6 +393,8 @@ export function GoogleUnifiedSettings({ agencyId }: GoogleUnifiedSettingsProps) 
             requestManageUsers={settings.googleTagManager.requestManageUsers}
             onRequestManageUsersToggle={(val) => updateSetting('googleTagManager', 'requestManageUsers', val)}
             tooltip="Enable setting to request Administrator access (instead of User access)"
+            onRetryAccounts={() => void refetchAccounts()}
+            hasGoogleAccess={accountsData?.hasAccess ?? false}
           />
 
           <ProductCard
@@ -399,6 +410,8 @@ export function GoogleUnifiedSettings({ agencyId }: GoogleUnifiedSettingsProps) 
             requestManageUsers={settings.googleSearchConsole.requestManageUsers}
             onRequestManageUsersToggle={(val) => updateSetting('googleSearchConsole', 'requestManageUsers', val)}
             tooltip="Enable setting to request Owner access (instead of Full access)"
+            onRetryAccounts={() => void refetchAccounts()}
+            hasGoogleAccess={accountsData?.hasAccess ?? false}
           />
 
           <ProductCard
@@ -414,6 +427,8 @@ export function GoogleUnifiedSettings({ agencyId }: GoogleUnifiedSettingsProps) 
             requestManageUsers={settings.googleMerchantCenter.requestManageUsers}
             onRequestManageUsersToggle={(val) => updateSetting('googleMerchantCenter', 'requestManageUsers', val)}
             tooltip="Enable setting to request Super Admin access (instead of Standard access)"
+            onRetryAccounts={() => void refetchAccounts()}
+            hasGoogleAccess={accountsData?.hasAccess ?? false}
           />
         </div>
       </ManageAssetsSectionCard>
@@ -438,6 +453,8 @@ interface ProductCardProps {
   onRequestManageUsersToggle?: (val: boolean) => void;
   tooltip?: string;
   warningMessage?: string;
+  hasGoogleAccess?: boolean;
+  onRetryAccounts?: () => void;
 }
 
 function getAccountDisplayName(account: any): string {
@@ -484,11 +501,13 @@ function ProductCard({
   onRequestManageUsersToggle,
   tooltip,
   warningMessage,
+  hasGoogleAccess = false,
+  onRetryAccounts = () => undefined,
 }: ProductCardProps) {
   return (
     <div
       className={cn(
-        'rounded-[1rem] border p-4 transition-colors duration-150',
+        'rounded-none border p-4 transition-colors duration-150',
         enabled
           ? 'border-border bg-paper hover:border-black hover:bg-paper/95'
           : 'border-border bg-card/70 opacity-60'
@@ -514,11 +533,22 @@ function ProductCard({
           {enabled && showAccountSelector && (
             <div className="space-y-3">
               {accounts.length === 0 ? (
-                <div className="rounded-[1rem] border border-coral/40 bg-coral/5 px-4 py-3">
+                <div className="rounded-none border border-coral/40 bg-coral/5 px-4 py-3">
                   <p className="text-sm font-medium text-danger-ink">No accounts available</p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    Connect your {label} account first to select assets.
+                    {hasGoogleAccess
+                      ? `No ${label} assets were found in this connected Google account.`
+                      : 'Google access is unavailable. Reconnect Google from Connections.'}
                   </p>
+                  {hasGoogleAccess ? (
+                    <Button type="button" size="sm" variant="secondary" className="mt-3" onClick={onRetryAccounts}>
+                      Refresh Google accounts
+                    </Button>
+                  ) : (
+                    <Button type="button" size="sm" variant="secondary" className="mt-3" asChild>
+                      <Link href="/connections">Open Connections</Link>
+                    </Button>
+                  )}
                 </div>
               ) : (
                 <>
@@ -556,7 +586,7 @@ function ProductCard({
           )}
 
           {enabled && showAccountSelector && onRequestManageUsersToggle && (
-            <div className="rounded-[1rem] border border-border bg-paper px-3 py-3">
+            <div className="rounded-none border border-border bg-paper px-3 py-3">
               <BrutalistCheckbox
                 checked={requestManageUsers || false}
                 onChange={onRequestManageUsersToggle}

@@ -47,7 +47,10 @@ export function RequestOverviewCard({
           <h2 className="font-display text-lg font-semibold text-ink">Request Overview</h2>
           <p className="text-sm text-muted-foreground">Client and request lifecycle details</p>
         </div>
-        <StatusBadge status={request.status as any} />
+        <div className="text-right">
+          <p className="label-micro mb-1 text-muted-foreground">Request status</p>
+          <StatusBadge status={request.status} />
+        </div>
       </div>
 
       {shouldShowAwaitingCallout && (

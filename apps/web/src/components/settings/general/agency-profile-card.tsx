@@ -100,8 +100,8 @@ export function AgencyProfileCard() {
   const disabled = isLoading || !agencyId;
 
   return (
-    <SettingsGroup title="Agency Profile" description="What clients see on your request pages.">
-      <SettingsRow label="Agency Name" description="Shown on every access request you send." controlId="agency-name">
+    <SettingsGroup title="Agency profile" description="What clients see on your request pages.">
+      <SettingsRow label="Agency name" description="Shown on every access request you send." controlId="agency-name">
         <input
           id="agency-name"
           type="text"
@@ -113,7 +113,7 @@ export function AgencyProfileCard() {
         />
       </SettingsRow>
 
-      <SettingsRow label="Company Website" description="Linked from client-facing pages." controlId="company-website">
+      <SettingsRow label="Company website" description="Linked from client-facing pages." controlId="company-website">
         <input
           id="company-website"
           type="url"
@@ -144,7 +144,7 @@ export function AgencyProfileCard() {
             onClick={handleSave}
             disabled={disabled || isSaving || agencyName.trim().length === 0}
           >
-            {isSaving ? 'Saving…' : 'Save Changes'}
+            {isSaving ? 'Saving…' : 'Save changes'}
           </Button>
           {feedbackMessage && (
             <p role="status" className={`text-sm ${feedbackError ? 'text-danger-ink' : 'text-success-ink'}`}>

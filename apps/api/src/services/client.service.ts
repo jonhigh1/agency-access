@@ -305,6 +305,7 @@ export async function getClientsWithConnections(
     prisma.client.findMany({
       where,
       include: {
+        _count: { select: { accessRequests: true } },
         accessRequests: {
           take: 1,
           orderBy: { createdAt: 'desc' },
@@ -351,6 +352,7 @@ export async function getClientsWithConnections(
       platforms: authorizations.map((auth) => auth.platform),
       status,
       connectionCount: connection ? 1 : 0,
+      requestCount: client._count.accessRequests,
       lastActivityAt: latestRequest?.createdAt || client.createdAt,
       createdAt: client.createdAt,
     };

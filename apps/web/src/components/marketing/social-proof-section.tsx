@@ -1,6 +1,6 @@
 'use client';
 
-import { m } from 'framer-motion';
+import { m, useReducedMotion } from 'framer-motion';
 import { useMobile } from '@/hooks/use-mobile';
 
 const valueHighlights = [
@@ -41,6 +41,7 @@ const marqueeHighlights = [...valueHighlights, ...valueHighlights, ...valueHighl
 
 export function SocialProofSection() {
   const isMobile = useMobile();
+  const prefersReducedMotion = useReducedMotion();
   return (
     <section className="py-12 sm:py-16 border-y-2 border-black bg-paper relative overflow-hidden">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10 mb-8 sm:mb-12">
@@ -77,17 +78,18 @@ export function SocialProofSection() {
           // Marquee track - infinite scroll animation for desktop
           <m.div
             initial={{ x: 0 }}
-            animate={{ x: '-50%' }}
+            animate={prefersReducedMotion ? { x: 0 } : { x: '-50%' }}
             transition={{
-              duration: 30,
+              duration: prefersReducedMotion ? 0 : 30,
               ease: 'linear',
-              repeat: Infinity,
+              repeat: prefersReducedMotion ? 0 : Infinity,
             }}
-            className="flex gap-6 sm:gap-12 whitespace-nowrap animate-marquee"
+            className="flex gap-6 sm:gap-12 whitespace-nowrap animate-marquee marketing-marquee"
           >
             {marqueeHighlights.map((item, i) => (
               <div
                 key={`${item.title}-${i}`}
+                data-marquee-duplicate={i >= valueHighlights.length ? 'true' : undefined}
                 className="flex items-center gap-4 px-6 py-4 border-2 border-black bg-card shadow-[4px_4px_0px_#000] rounded-none hover:shadow-[6px_6px_0px_#000] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200 cursor-default touch-feedback flex-shrink-0 min-w-[420px]"
               >
                 <div className="w-10 h-10 border-2 border-black bg-coral flex items-center justify-center font-black text-sm text-white rounded-none flex-shrink-0">

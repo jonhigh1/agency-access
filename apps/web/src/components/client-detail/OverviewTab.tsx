@@ -91,7 +91,9 @@ export function OverviewTab({
           <Card className="border-dashed border-border/70 bg-muted/10">
             <EmptyState
               title="No access requests found"
-              description="Create a new access request to invite this client to authorize platforms."
+              description={statusFilter === 'all'
+                ? 'Create a new access request to invite this client to authorize platforms.'
+                : 'No access requests match this status. Choose another status to see more requests.'}
             />
           </Card>
         ) : (
@@ -108,20 +110,16 @@ export function OverviewTab({
                       <h4 className="text-base font-semibold text-foreground">
                         {request.name}
                       </h4>
-                      <StatusBadge
-                        status={
-                          request.connectionStatus === 'active'
-                            ? 'active'
-                            : request.status === 'pending'
-                            ? 'pending'
-                            : request.status === 'expired' || request.connectionStatus === 'expired'
-                            ? 'expired'
-                            : request.status === 'revoked' || request.connectionStatus === 'revoked'
-                            ? 'revoked'
-                            : 'unknown'
-                        }
-                        size="sm"
-                      />
+                      <span className="inline-flex items-center gap-1.5">
+                        <span className="label-nano text-muted-foreground">Request</span>
+                        <StatusBadge status={request.status} size="sm" />
+                      </span>
+                      {request.connectionStatus ? (
+                        <span className="inline-flex items-center gap-1.5">
+                          <span className="label-nano text-muted-foreground">Connection</span>
+                          <StatusBadge status={request.connectionStatus} size="sm" />
+                        </span>
+                      ) : null}
                     </div>
 
                     {/* Platforms */}

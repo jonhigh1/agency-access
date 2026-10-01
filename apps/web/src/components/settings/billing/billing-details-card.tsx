@@ -19,6 +19,7 @@ const FIELD_LABEL_CLASS = 'mb-1 block text-xs font-medium text-muted-foreground'
 export function BillingDetailsCard() {
   const { data: billingDetails, isLoading } = useBillingDetails();
   const updateBilling = useUpdateBillingDetails();
+  const [saveMessage, setSaveMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   const [formData, setFormData] = useState<BillingDetails>({
     name: '',
@@ -51,7 +52,13 @@ export function BillingDetailsCard() {
   }, [billingDetails]);
 
   const handleSave = async () => {
-    await updateBilling.mutateAsync(formData);
+    setSaveMessage(null);
+    try {
+      await updateBilling.mutateAsync(formData);
+      setSaveMessage({ type: 'success', text: 'Billing details saved.' });
+    } catch {
+      setSaveMessage({ type: 'error', text: 'Could not save billing details. Your changes are still here. Try again.' });
+    }
   };
 
   const updateField = (field: string, value: string) => {
@@ -182,7 +189,13 @@ export function BillingDetailsCard() {
       </SettingsRow>
 
       <SettingsRow label="Save details" description="Changes apply to your next invoice.">
-        <Button variant="secondary" onClick={handleSave} disabled={updateBilling.isPending}>
+        <div className="space-y-2">
+          {saveMessage && (
+            <p role={saveMessage.type === 'error' ? 'alert' : 'status'} className={saveMessage.type === 'error' ? 'text-sm text-danger-ink' : 'text-sm text-success-ink'}>
+              {saveMessage.text}
+            </p>
+          )}
+          <Button variant="secondary" onClick={handleSave} disabled={updateBilling.isPending}>
           {updateBilling.isPending ? (
             <>
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -191,10 +204,11 @@ export function BillingDetailsCard() {
           ) : (
             <>
               <Save className="h-4 w-4" />
-              Save Details
+              Save details
             </>
           )}
-        </Button>
+          </Button>
+        </div>
       </SettingsRow>
     </SettingsGroup>
   );

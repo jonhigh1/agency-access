@@ -372,12 +372,12 @@ export default function EditAccessRequestPage({ params }: EditAccessRequestPageP
               Update settings while the authorization link is still pending.
             </p>
           </div>
-          <Button type="button" variant="secondary" onClick={() => router.back()}>
+          <Button type="button" variant="secondary" onClick={handleDiscard}>
             Back
           </Button>
         </header>
       <form onSubmit={handleSave} className="space-y-6">
-        <div className="border-2 border-black bg-card p-6 shadow-brutalist space-y-4">
+        <div className="border-2 border-black bg-card p-6 space-y-4">
           <h2 className="text-lg font-semibold text-ink">Platforms</h2>
           <AccessLevelSelector
             selectedAccessLevel={globalAccessLevel}
@@ -401,7 +401,7 @@ export default function EditAccessRequestPage({ params }: EditAccessRequestPageP
           ) : null}
         </div>
 
-        <div className="border-2 border-black bg-card p-6 shadow-brutalist space-y-4">
+        <div className="border-2 border-black bg-card p-6 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-lg font-semibold text-ink">Advanced</h2>
             <button
@@ -455,7 +455,7 @@ export default function EditAccessRequestPage({ params }: EditAccessRequestPageP
           )}
         </div>
 
-        <div className="border-2 border-black bg-card p-6 shadow-brutalist space-y-4">
+        <div className="border-2 border-black bg-card p-6 space-y-4">
           <h2 className="text-lg font-semibold text-ink">Customize</h2>
 
           <div className="space-y-3">
@@ -463,6 +463,7 @@ export default function EditAccessRequestPage({ params }: EditAccessRequestPageP
               <div key={field.id} className="rounded-lg border border-border p-3">
                 <div className="grid gap-3 sm:grid-cols-2">
                   <input
+                    aria-label={`${field.label || 'New'} field label`}
                     type="text"
                     value={field.label}
                     onChange={(event) => updateIntakeField(field.id, { label: event.target.value })}
@@ -488,6 +489,7 @@ export default function EditAccessRequestPage({ params }: EditAccessRequestPageP
                 <div className="mt-3 flex items-center justify-between">
                   <label className="inline-flex items-center gap-2 text-sm text-foreground">
                     <input
+                      aria-label={`Required for ${field.label || 'new field'}`}
                       type="checkbox"
                       checked={field.required}
                       onChange={(event) => updateIntakeField(field.id, { required: event.target.checked })}
@@ -498,6 +500,7 @@ export default function EditAccessRequestPage({ params }: EditAccessRequestPageP
                   <button
                     type="button"
                     onClick={() => removeIntakeField(field.id)}
+                    aria-label={`Remove ${field.label || 'untitled'} field`}
                     className="inline-flex items-center gap-1 text-sm text-danger-ink hover:text-danger-ink"
                   >
                     <Trash2 className="h-4 w-4" />

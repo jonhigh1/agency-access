@@ -20,7 +20,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 import { staggerContainer, staggerItem } from '@/lib/animations';
 import { cn } from '@/lib/utils';
 import { PlatformIcon } from '@/components/ui/platform-icon';
@@ -144,7 +144,7 @@ export function PlatformSelectorGrid({
             const isPreselected = isPreSelected(platform);
 
             return (
-              <motion.button
+              <m.button
                 key={platform}
                 type="button"
                 onClick={() => togglePlatform(platform)}
@@ -161,7 +161,7 @@ export function PlatformSelectorGrid({
                 whileTap={{ scale: disabled ? 1 : 0.98 }}
               >
                 {selected && (
-                  <motion.div
+                  <m.div
                     className="absolute top-2 right-2 w-6 h-6 bg-teal rounded-full flex items-center justify-center shadow-brutalist-sm border border-black"
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
@@ -177,7 +177,7 @@ export function PlatformSelectorGrid({
                         clipRule="evenodd"
                       />
                     </svg>
-                  </motion.div>
+                  </m.div>
                 )}
 
                 {isPreselected && !selected && (
@@ -194,15 +194,15 @@ export function PlatformSelectorGrid({
                 </div>
 
                 {hoveredPlatform === platform && !selected && (
-                  <motion.div
+                  <m.div
                     className="text-xs text-ink/50 mt-1"
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                   >
                     Click to select
-                  </motion.div>
+                  </m.div>
                 )}
-              </motion.button>
+              </m.button>
             );
           })}
         </div>
@@ -214,7 +214,7 @@ export function PlatformSelectorGrid({
     <div className="space-y-6">
       {/* Pre-selected Message - Brutalist Info Callout */}
       {showPreSelectedMessage && preSelected.length > 0 && (
-        <motion.div
+        <m.div
           className="p-4 bg-paper border-2 border-black rounded-lg shadow-brutalist-sm"
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -230,11 +230,11 @@ export function PlatformSelectorGrid({
               </div>
             </div>
           </div>
-        </motion.div>
+        </m.div>
       )}
 
       {/* Platform Groups */}
-      <motion.div
+      <m.div
         className="space-y-6"
         variants={staggerContainer}
         initial="hidden"
@@ -244,11 +244,11 @@ export function PlatformSelectorGrid({
           {PRIMARY_PLATFORM_GROUPS.map((group) => renderGroup(group, 'grid grid-cols-1 gap-3'))}
         </div>
         {renderGroup(SECONDARY_PLATFORM_GROUP, 'grid grid-cols-2 md:grid-cols-4 gap-3')}
-      </motion.div>
+      </m.div>
 
       {/* Selection Summary */}
       {selectedPlatforms.length > 0 && (
-        <motion.div
+        <m.div
           className="p-4 bg-paper border-2 border-black rounded-lg shadow-brutalist-sm"
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
@@ -259,7 +259,7 @@ export function PlatformSelectorGrid({
               {selectedPlatforms.map((p) => PLATFORM_NAMES[p]).join(', ')}
             </span>
           </div>
-        </motion.div>
+        </m.div>
       )}
     </div>
   );

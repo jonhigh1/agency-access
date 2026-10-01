@@ -25,9 +25,12 @@ export default function MarketingLayout({
     <LazyMotion features={domAnimation} strict>
       <GoogleTagManager />
       <div className="flex min-h-screen flex-col">
+        <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[200] focus:bg-card focus:px-4 focus:py-3 focus:text-foreground">
+          Skip to content
+        </a>
         <MarketingShellEffects />
         <MarketingNav />
-        <main className="flex-1">{children}</main>
+        <main id="main-content" tabIndex={-1} className="flex-1">{children}</main>
         <MarketingFooter />
       </div>
     </LazyMotion>

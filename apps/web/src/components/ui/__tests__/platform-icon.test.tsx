@@ -28,6 +28,25 @@ describe('PlatformIcon', () => {
     expect(image.src).toContain('cdn.brandfetch.io/google.com?c=brandfetch-test');
   });
 
+  it('uses the Facebook product mark for Meta Pages and keeps Meta corporate separate', async () => {
+    process.env.NEXT_PUBLIC_BRANDFETCH_CLIENT_ID = 'brandfetch-test';
+    const PlatformIcon = await loadPlatformIcon();
+
+    const { rerender } = render(<PlatformIcon platform="meta_pages" />);
+    expect((screen.getByAltText('Meta Pages logo') as HTMLImageElement).src).toContain('facebook.com');
+
+    rerender(<PlatformIcon platform="meta" />);
+    expect((screen.getByAltText('Meta logo') as HTMLImageElement).src).toContain('meta.com');
+  });
+
+  it('shows the Facebook mark when Brandfetch is unavailable', async () => {
+    delete process.env.NEXT_PUBLIC_BRANDFETCH_CLIENT_ID;
+    const PlatformIcon = await loadPlatformIcon();
+
+    render(<PlatformIcon platform="meta_pages" />);
+    expect(screen.getByRole('img', { name: 'Facebook logo' })).toBeInTheDocument();
+  });
+
   it('falls back to platform initial when Brandfetch client id is missing', async () => {
     delete process.env.NEXT_PUBLIC_BRANDFETCH_CLIENT_ID;
     const PlatformIcon = await loadPlatformIcon();

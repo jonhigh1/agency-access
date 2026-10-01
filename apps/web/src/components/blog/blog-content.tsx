@@ -12,6 +12,7 @@ import { Calendar, Clock, User, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SignUpButton } from '@/components/lazy-clerk-auth-buttons';
 import type { Components } from 'react-markdown';
+import { formatBlogDate } from '@/lib/blog-date';
 
 // Helper to set Growth tier (STARTER in backend) for trial signup
 const handleTrialSignup = () => {
@@ -202,7 +203,7 @@ export function BlogContent({ post }: BlogContentProps) {
           </span>
           <span className="flex items-center gap-2">
             <Calendar size={16} />
-            {new Date(post.publishedAt).toLocaleDateString('en-US', {
+            {formatBlogDate(post.publishedAt, {
               month: 'long',
               day: 'numeric',
               year: 'numeric',

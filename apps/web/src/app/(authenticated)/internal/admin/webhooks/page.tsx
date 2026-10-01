@@ -110,7 +110,7 @@ export default function InternalAdminWebhooksPage() {
             <a href="/internal/admin" className="text-muted-foreground hover:text-foreground">Overview</a>
             <a href="/internal/admin/agencies" className="text-muted-foreground hover:text-foreground">Agencies</a>
             <a href="/internal/admin/subscriptions" className="text-muted-foreground hover:text-foreground">Subscriptions</a>
-            <a href="/internal/admin/webhooks" className="text-danger-ink font-semibold">Webhooks</a>
+            <a href="/internal/admin/webhooks" className="text-ink font-semibold">Webhooks</a>
             <a href="/internal/admin/affiliates" className="text-muted-foreground hover:text-foreground">Affiliates</a>
           </nav>
         </header>
@@ -120,12 +120,17 @@ export default function InternalAdminWebhooksPage() {
           description={`${endpoints.length} endpoint${endpoints.length === 1 ? '' : 's'} loaded`}
           actions={(
             <div className="flex flex-wrap items-center gap-2">
-              <input
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Search agency name or email"
-                className="h-10 px-3 rounded-md border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-              />
+              <div>
+                <label htmlFor="webhook-search" className="sr-only">Search webhook endpoints by agency name or email</label>
+                <input
+                  id="webhook-search"
+                  type="search"
+                  value={search}
+                  onChange={(event) => setSearch(event.target.value)}
+                  placeholder="Search agency name or email"
+                  className="min-h-[44px] px-3 rounded-md border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+              </div>
               <SingleSelect
                 options={[
                   { value: '', label: 'All status' },

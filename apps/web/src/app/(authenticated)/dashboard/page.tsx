@@ -18,6 +18,7 @@ import { TrialBanner } from '@/components/trial-banner';
 import { StatCard, StatusBadge, EmptyState, PlatformIcon } from '@/components/ui';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { toRequestStatusBadgeStatus } from '@/lib/request-status';
 import { LogoSpinner } from '@/components/ui/logo-spinner';
 import { useEffect, useRef, useState } from 'react';
 import { readPerfHarnessContext, startPerfTimer } from '@/lib/perf-harness';
@@ -270,7 +271,7 @@ export default function DashboardPage() {
   // Shared Create Request button (header + Recent Access Requests panel).
   // v2.0 rule: one brutalist per view. Header mount keeps it (true brutalist:
   // uppercase, diagonal press); the panel header mount renders primary.
-  const createRequestButton = (variant: 'brutalist' | 'primary' = 'brutalist') => (
+  const createRequestButton = (variant: 'brutalist' | 'primary' | 'secondary' = 'brutalist') => (
     <Button
       type="button"
       variant={variant}
@@ -522,7 +523,7 @@ export default function DashboardPage() {
                 </p>
               )}
             </div>
-            {createRequestButton('primary')}
+            {createRequestButton('secondary')}
           </div>
 
           {requests.length === 0 ? (
@@ -566,7 +567,7 @@ export default function DashboardPage() {
                     <span className="text-xs text-muted-foreground">
                       {new Date(request.createdAt).toLocaleDateString()}
                     </span>
-                    <StatusBadge status={request.status as any} />
+                    <StatusBadge status={toRequestStatusBadgeStatus(request.status)} />
                     <ChevronRight
                       className="h-4 w-4 text-muted-foreground opacity-0 transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100"
                       aria-hidden="true"

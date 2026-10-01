@@ -72,7 +72,7 @@ export default function InternalAdminSubscriptionsPage() {
           <nav className="flex items-center gap-3 text-sm">
             <a href="/internal/admin" className="text-muted-foreground hover:text-foreground">Overview</a>
             <a href="/internal/admin/agencies" className="text-muted-foreground hover:text-foreground">Agencies</a>
-            <a href="/internal/admin/subscriptions" className="text-danger-ink font-semibold">Subscriptions</a>
+            <a href="/internal/admin/subscriptions" className="text-ink font-semibold">Subscriptions</a>
             <a href="/internal/admin/webhooks" className="text-muted-foreground hover:text-foreground">Webhooks</a>
             <a href="/internal/admin/affiliates" className="text-muted-foreground hover:text-foreground">Affiliates</a>
           </nav>

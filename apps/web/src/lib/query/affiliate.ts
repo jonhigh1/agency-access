@@ -37,7 +37,13 @@ async function fetchAffiliatePortal<T>(
 
   const payload = await response.json();
   if (!response.ok || payload?.error) {
-    throw new Error(payload?.error?.message || 'Affiliate portal request failed');
+    const error = new Error(payload?.error?.message || 'Affiliate portal request failed') as Error & {
+      code?: string;
+      status: number;
+    };
+    error.code = payload?.error?.code;
+    error.status = response.status;
+    throw error;
   }
 
   return payload.data as T;

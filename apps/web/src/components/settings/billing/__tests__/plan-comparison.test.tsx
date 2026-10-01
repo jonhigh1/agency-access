@@ -169,4 +169,15 @@ describe('PlanComparison', () => {
     expect(screen.queryByText('Current Plan')).toBeNull();
     expect(screen.getAllByRole('button', { name: /start free trial/i }).length).toBeGreaterThanOrEqual(3);
   });
+
+  it('shows plan details and tier actions in the mobile comparison', () => {
+    mockUseSubscription.mockReturnValue({ data: null, isLoading: false });
+
+    render(<PlanComparison />);
+
+    expect(screen.queryByText('Full plan details available on larger screens')).not.toBeInTheDocument();
+    const mobileComparison = screen.getByTestId('mobile-plan-comparison');
+    expect(within(mobileComparison).getByText('Up to 5 active clients')).toBeInTheDocument();
+    expect(within(mobileComparison).getAllByRole('button', { name: /start free trial/i })).toHaveLength(3);
+  });
 });

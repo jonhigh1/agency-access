@@ -10,7 +10,7 @@
 import { createContext, useContext, useState, useCallback, useEffect, useRef, ReactNode, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { QueryClient } from '@tanstack/react-query';
-import { Client, AccessLevel, AccessRequestTemplate, IntakeField, IntakeFieldTypeSchema, SUPPORTED_LANGUAGES, type MetaAccessConfig } from '@agency-platform/shared';
+import { Client, AccessLevel, AccessRequestTemplate, IntakeField, IntakeFieldTypeSchema, PLATFORM_NAMES, SUPPORTED_LANGUAGES, type MetaAccessConfig } from '@agency-platform/shared';
 import { transformPlatformsForAPI } from '@/lib/transform-platforms';
 import { createAccessRequest, type CreateAccessRequestPayload } from '@/lib/api/access-requests';
 import { capturePosthogEvent } from '@/lib/analytics/capture-posthog';
@@ -543,9 +543,12 @@ export function AccessRequestProvider({
 
         if (result.error.code === 'PLATFORMS_NOT_CONNECTED') {
           const missingPlatforms = result.error.details?.missingPlatforms || [];
+          const missingNames = missingPlatforms.map((platform) =>
+            PLATFORM_NAMES[platform as keyof typeof PLATFORM_NAMES] || 'another platform'
+          );
           setState((prev) => ({
             ...prev,
-            error: `Please connect these platforms first: ${missingPlatforms.join(', ')}`,
+            error: `Connect these platforms first: ${missingNames.join(', ')}. Manage connections, then try again.`,
             currentStep: 2,
             submitting: false,
           }));
