@@ -10,11 +10,23 @@ import { act, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { ClientSelector } from '../client-selector';
 
-const { mockUseAuth } = vi.hoisted(() => ({ mockUseAuth: vi.fn() }));
+const { mockUseAuth, mockCapture } = vi.hoisted(() => ({
+  mockUseAuth: vi.fn(),
+  mockCapture: vi.fn(),
+}));
 vi.mock('@clerk/nextjs', () => ({ useAuth: () => mockUseAuth() }));
+vi.mock('@/lib/analytics/capture-posthog', () => ({
+  capturePosthogEvent: mockCapture,
+}));
 
 // Mock fetch
 global.fetch = vi.fn();
+
+const unauthorizedResponse = {
+  ok: false,
+  status: 401,
+  json: async () => ({ error: { code: 'UNAUTHORIZED', message: 'Invalid token' } }),
+};
 
 describe('Phase 5: ClientSelector - TDD Tests', () => {
   const mockClients = [
@@ -136,6 +148,69 @@ describe('Phase 5: ClientSelector - TDD Tests', () => {
       await waitFor(() => {
         expect(screen.getByText(/failed to load clients/i)).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument();
+      });
+    });
+
+    it('should refresh the token and retry once when the client list returns 401', async () => {
+      const getToken = vi.fn().mockImplementation(async (options?: { skipCache?: boolean }) =>
+        options?.skipCache ? 'fresh-token' : 'stale-token'
+      );
+      mockUseAuth.mockReturnValue({ userId: 'user-1', orgId: 'org-1', isLoaded: true, getToken });
+      const okResponse = {
+        ok: true,
+        status: 200,
+        json: async () => ({ data: mockClients, pagination: { total: 3, limit: 50, offset: 0 } }),
+      };
+      // @ts-ignore
+      global.fetch.mockResolvedValueOnce(unauthorizedResponse).mockResolvedValue(okResponse);
+
+      render(<ClientSelector agencyId="agency-1" onSelect={vi.fn()} />);
+
+      expect(await screen.findByText('Acme Corporation')).toBeInTheDocument();
+      expect(screen.queryByText(/failed to load clients/i)).not.toBeInTheDocument();
+      expect(getToken).toHaveBeenCalledWith({ skipCache: true });
+
+      // @ts-ignore
+      const [, retryInit] = global.fetch.mock.calls[1];
+      expect((retryInit.headers as Headers).get('Authorization')).toBe('Bearer fresh-token');
+      expect(mockCapture).toHaveBeenCalledWith('client_list_auth_recovered');
+      expect(mockCapture).not.toHaveBeenCalledWith('client_list_load_failed', expect.anything());
+    });
+
+    it('should show the error and capture the failure when the retry also returns 401', async () => {
+      // @ts-ignore
+      global.fetch.mockResolvedValue(unauthorizedResponse);
+
+      render(<ClientSelector agencyId="agency-1" onSelect={vi.fn()} />);
+
+      expect(await screen.findByRole('button', { name: /retry/i })).toBeInTheDocument();
+      expect(global.fetch).toHaveBeenCalledTimes(2);
+      expect(mockCapture).toHaveBeenCalledWith('client_list_load_failed', {
+        status: 401,
+        error_code: 'UNAUTHORIZED',
+        token_refreshed: true,
+      });
+    });
+
+    it('should not retry on a non-401 failure', async () => {
+      const getToken = vi.fn().mockResolvedValue('mock-token');
+      mockUseAuth.mockReturnValue({ userId: 'user-1', orgId: 'org-1', isLoaded: true, getToken });
+      // @ts-ignore
+      global.fetch.mockResolvedValue({
+        ok: false,
+        status: 500,
+        json: async () => ({ error: { code: 'INTERNAL_ERROR', message: 'Boom' } }),
+      });
+
+      render(<ClientSelector agencyId="agency-1" onSelect={vi.fn()} />);
+
+      expect(await screen.findByRole('button', { name: /retry/i })).toBeInTheDocument();
+      expect(global.fetch).toHaveBeenCalledTimes(1);
+      expect(getToken).not.toHaveBeenCalledWith({ skipCache: true });
+      expect(mockCapture).toHaveBeenCalledWith('client_list_load_failed', {
+        status: 500,
+        error_code: 'INTERNAL_ERROR',
+        token_refreshed: false,
       });
     });
 
