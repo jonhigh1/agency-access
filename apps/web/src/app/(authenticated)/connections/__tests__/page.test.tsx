@@ -27,9 +27,10 @@ const { clerkState, devAuthState } = vi.hoisted(() => ({
 // Mock next/navigation
 const mockReplace = vi.fn();
 const mockSearchParams = new URLSearchParams();
-const { capturePosthogEventMock, trackOAuthCallbackFailureMock } = vi.hoisted(() => ({
+const { capturePosthogEventMock, trackOAuthCallbackFailureMock, trackOAuthCallbackSuccessMock } = vi.hoisted(() => ({
   capturePosthogEventMock: vi.fn(),
   trackOAuthCallbackFailureMock: vi.fn(),
+  trackOAuthCallbackSuccessMock: vi.fn(),
 }));
 
 vi.mock('@/lib/analytics/capture-posthog', () => ({
@@ -38,7 +39,7 @@ vi.mock('@/lib/analytics/capture-posthog', () => ({
 
 vi.mock('@/lib/analytics/oauth-events', () => ({
   trackOAuthCallbackFailure: trackOAuthCallbackFailureMock,
-  trackOAuthCallbackSuccess: vi.fn(),
+  trackOAuthCallbackSuccess: trackOAuthCallbackSuccessMock,
 }));
 
 vi.mock('next/dynamic', async () => {
@@ -708,5 +709,137 @@ describe('ConnectionsPage', () => {
       },
       { timeout: 3000 }
     );
+  });
+
+  it('tracks OAuth callback success via trackOAuthCallbackSuccess', async () => {
+    mockSearchParams.set('success', 'true');
+    mockSearchParams.set('platform', 'meta_ads');
+
+    (global.fetch as any)
+      .mockResolvedValueOnce(mockJsonResponse({ data: [{ id: 'test-agency-id' }] }))
+      .mockResolvedValueOnce(
+        mockJsonResponse({
+          data: [
+            { platform: 'meta_ads', name: 'Meta Ads', category: 'recommended', connected: false },
+            { platform: 'google_ads', name: 'Google Ads', category: 'recommended', connected: false },
+            { platform: 'ga4', name: 'Google Analytics', category: 'recommended', connected: false },
+            { platform: 'linkedin', name: 'LinkedIn Ads', category: 'recommended', connected: false },
+            { platform: 'tiktok', name: 'TikTok Ads', category: 'other', connected: false },
+            { platform: 'snapchat', name: 'Snapchat Ads', category: 'other', connected: false },
+            { platform: 'instagram', name: 'Instagram', category: 'other', connected: false },
+          ],
+        })
+      );
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(trackOAuthCallbackSuccessMock).toHaveBeenCalledWith({
+        platform: 'meta_ads',
+        auth_source: 'agency_redirect',
+        agency_id: 'test-agency-id',
+      });
+    });
+  });
+
+  it('does not crash when localStorage cached platforms are corrupted', async () => {
+    // Seed corrupted cache
+    localStorageStore.set('etag-available-platforms-test-agency-id', '"etag-1"');
+    localStorageStore.set('cached-platforms-test-agency-id', '{not valid json');
+
+    (global.fetch as any)
+      .mockResolvedValueOnce(mockJsonResponse({ data: [{ id: 'test-agency-id' }] }))
+      // First fetch returns 304 (cached), but cache is corrupted
+      .mockResolvedValueOnce(
+        new Response(null, {
+          status: 304,
+          headers: new Headers({ ETag: '"etag-1"' }),
+        })
+      )
+      // Refetch after cache miss
+      .mockResolvedValueOnce(
+        mockJsonResponse({
+          data: [
+            { platform: 'meta_ads', name: 'Meta Ads', category: 'recommended', connected: false },
+            { platform: 'google_ads', name: 'Google Ads', category: 'recommended', connected: false },
+            { platform: 'ga4', name: 'Google Analytics', category: 'recommended', connected: false },
+            { platform: 'linkedin', name: 'LinkedIn Ads', category: 'recommended', connected: false },
+            { platform: 'tiktok', name: 'TikTok Ads', category: 'other', connected: false },
+            { platform: 'snapchat', name: 'Snapchat Ads', category: 'other', connected: false },
+            { platform: 'instagram', name: 'Instagram', category: 'other', connected: false },
+          ],
+        })
+      );
+
+    renderPage();
+
+    // Should still render platforms after recovering from corrupted cache
+    await waitFor(() => {
+      expect(screen.getByText('Meta Ads')).toBeInTheDocument();
+    }, { timeout: 5000 });
+  });
+
+  it('does not crash when the API returns non-JSON', async () => {
+    (global.fetch as any)
+      .mockResolvedValueOnce(mockJsonResponse({ data: [{ id: 'test-agency-id' }] }))
+      .mockResolvedValueOnce(
+        new Response('Internal Server Error', {
+          status: 200,
+          headers: { 'Content-Type': 'text/plain' },
+        })
+      );
+
+    renderPage();
+
+    // Should not crash; platforms will be empty
+    await waitFor(() => {
+      expect(screen.getByText('No platforms available')).toBeInTheDocument();
+    }, { timeout: 5000 });
+  });
+
+  it('preserves ETag quotes when storing and sending', async () => {
+    (global.fetch as any)
+      .mockResolvedValueOnce(mockJsonResponse({ data: [{ id: 'test-agency-id' }] }))
+      .mockResolvedValueOnce(
+        mockJsonResponse(
+          {
+            data: [
+              { platform: 'meta_ads', name: 'Meta Ads', category: 'recommended', connected: false },
+              { platform: 'google_ads', name: 'Google Ads', category: 'recommended', connected: false },
+              { platform: 'ga4', name: 'Google Analytics', category: 'recommended', connected: false },
+              { platform: 'linkedin', name: 'LinkedIn Ads', category: 'recommended', connected: false },
+              { platform: 'tiktok', name: 'TikTok Ads', category: 'other', connected: false },
+              { platform: 'snapchat', name: 'Snapchat Ads', category: 'other', connected: false },
+              { platform: 'instagram', name: 'Instagram', category: 'other', connected: false },
+            ],
+          },
+          { etag: 'etag-abc' }
+        )
+      );
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByText('Meta Ads')).toBeInTheDocument();
+    });
+
+    // ETag should be stored WITH quotes
+    const storedEtag = localStorageStore.get('etag-available-platforms-test-agency-id');
+    expect(storedEtag).toBe('"etag-abc"');
+  });
+
+  it('clears OAuth success params when agency is not found', async () => {
+    mockSearchParams.set('success', 'true');
+    mockSearchParams.set('platform', 'meta_ads');
+
+    // Agency lookup returns empty (no agency found)
+    (global.fetch as any).mockResolvedValueOnce(mockJsonResponse({ data: [] }));
+
+    renderPage();
+
+    // Should clear URL params instead of hanging forever
+    await waitFor(() => {
+      expect(mockReplace).toHaveBeenCalledWith('/connections');
+    }, { timeout: 5000 });
   });
 });
