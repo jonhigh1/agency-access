@@ -30,6 +30,31 @@ import { resolveApiUrl } from '@/lib/api/api-env';
 import { isManualInvitePlatform } from '@/lib/client-invite-platforms';
 import { useTransientMessage } from '@/hooks/use-transient-message';
 
+/** Safe localStorage helpers — guard against quota errors and private-browsing exceptions. */
+function safeGetItem(key: string): string | null {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
+function safeSetItem(key: string, value: string): void {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    // Ignore quota or privacy-mode errors — caching is best-effort.
+  }
+}
+
+function safeRemoveItem(key: string): void {
+  try {
+    localStorage.removeItem(key);
+  } catch {
+    // Ignore.
+  }
+}
+
 function gatedModalFallback(label: string) {
   return (
     <div role="status" className="flex min-h-24 items-center justify-center text-sm text-muted-foreground" aria-busy="true">
@@ -102,7 +127,7 @@ function ConnectionsPageContent() {
   };
 
   // Resolve the active principal's agency by clerk user/org id.
-  const { data: agencyData } = useUserAgency({ principalClerkId, getAuthToken });
+  const { data: agencyData, isFetched: agencyFetched } = useUserAgency({ principalClerkId, getAuthToken });
 
   const agencyId = agencyData?.id ?? null;
 
@@ -128,13 +153,28 @@ function ConnectionsPageContent() {
     if (callbackHandledRef.current) return;
 
     if (success === 'true' && platform) {
-      if (!agencyId) return;
+      // Wait for agency lookup to complete before processing
+      if (!agencyId) {
+        // Agency lookup settled but no agency found — don't hang on URL params forever
+        if (agencyFetched && agencyData === null) {
+          callbackHandledRef.current = true;
+          showErrorMessage('Agency not found. Please complete onboarding first.');
+          router.replace('/connections');
+          clearSuccessMessage();
+        }
+        return;
+      }
       callbackHandledRef.current = true;
       // Track platform connected in PostHog
       void capturePosthogEvent('platform_connected', {
         agency_id: agencyId,
         platform: platform,
         connection_source: 'oauth_callback',
+      });
+      trackOAuthCallbackSuccess({
+        platform,
+        auth_source: 'agency_redirect',
+        agency_id: agencyId,
       });
 
       showSuccessMessage(`Successfully connected ${platform}!`);
@@ -162,7 +202,7 @@ function ConnectionsPageContent() {
 
       clearSuccessMessage();
     }
-  }, [searchParams, queryClient, agencyId, router, showSuccessMessage, showErrorMessage, clearSuccessMessage, clearErrorMessage]);
+  }, [searchParams, queryClient, agencyId, agencyFetched, agencyData, router, showSuccessMessage, showErrorMessage, clearSuccessMessage, clearErrorMessage]);
 
   // Fetch all platforms with connection status (with ETag caching)
   const {
@@ -178,9 +218,9 @@ function ConnectionsPageContent() {
       // Get Clerk session token for authenticated request
       const token = await getAuthToken();
 
-      // Get stored ETag from previous request
+      // Get stored ETag from previous request (preserve quotes per HTTP spec)
       const etagKey = `etag-available-platforms-${agencyId}`;
-      const storedEtag = localStorage.getItem(etagKey);
+      const storedEtag = safeGetItem(etagKey);
 
       const headers: Record<string, string> = {
         ...(token && { Authorization: `Bearer ${token}` }),
@@ -194,26 +234,38 @@ function ConnectionsPageContent() {
         { headers, cache: 'no-store' }
       );
 
-      // Store new ETag for future requests
-      const newEtag = response.headers.get('ETag')?.replace(/"/g, '');
+      // Store new ETag for future requests (keep the raw header value, including quotes)
+      const newEtag = response.headers.get('ETag');
       if (newEtag) {
-        localStorage.setItem(etagKey, newEtag);
+        safeSetItem(etagKey, newEtag);
       }
 
       // 304 Not Modified - return cached data
       if (response.status === 304) {
-        const cached = localStorage.getItem(`cached-platforms-${agencyId}`);
+        const cached = safeGetItem(`cached-platforms-${agencyId}`);
         if (cached) {
-          return JSON.parse(cached);
+          try {
+            return JSON.parse(cached) as PlatformInfo[];
+          } catch {
+            // Corrupted cache — fall through to refetch
+          }
         }
-        return [];
+        // No usable cache; refetch without conditional headers
+        const refetchResponse = await fetch(
+          resolveApiUrl(`/agency-platforms/available?agencyId=${agencyId}`),
+          { headers: { ...(token && { Authorization: `Bearer ${token}` }) }, cache: 'no-store' }
+        );
+        if (!refetchResponse.ok) throw new Error('Failed to fetch platforms');
+        const refetchResult = await refetchResponse.json().catch(() => ({ data: [] }));
+        safeSetItem(`cached-platforms-${agencyId}`, JSON.stringify(refetchResult.data || []));
+        return refetchResult.data || [];
       }
 
       if (!response.ok) throw new Error('Failed to fetch platforms');
-      const result = await response.json();
+      const result = await response.json().catch(() => ({ data: [] }));
 
       // Cache the response for 304 handling
-      localStorage.setItem(`cached-platforms-${agencyId}`, JSON.stringify(result.data || []));
+      safeSetItem(`cached-platforms-${agencyId}`, JSON.stringify(result.data || []));
 
       return result.data || [];
     },
@@ -317,8 +369,8 @@ function ConnectionsPageContent() {
       setDisconnectingPlatform(null);
       // Clear localStorage cache and bypass any cached fetch
       if (typeof window !== 'undefined' && agencyId) {
-        window.localStorage.removeItem(`etag-available-platforms-${agencyId}`);
-        window.localStorage.removeItem(`cached-platforms-${agencyId}`);
+        safeRemoveItem(`etag-available-platforms-${agencyId}`);
+        safeRemoveItem(`cached-platforms-${agencyId}`);
       }
       // Force immediate refetch so UI updates (invalidate + refetch; fetch uses cache: 'no-store')
       void queryClient.refetchQueries({ queryKey: ['available-platforms', agencyId] });
