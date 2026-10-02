@@ -1,0 +1,107 @@
+{
+  "info": {
+    "id": "ses_f059040cbffe7xYRc2k4BXXUW1",
+    "slug": "crisp-wolf",
+    "projectID": "c927b59eeed48abf0aba66323a0a796e68b7d53c",
+    "directory": "/Users/jon.high/agency-access",
+    "path": "",
+    "title": "New session - 2026-10-02T02:27:02.581Z",
+    "agent": "build",
+    "model": {
+      "id": "openrouter/free",
+      "providerID": "openrouter",
+      "variant": "default"
+    },
+    "version": "1.18.34",
+    "cost": 0,
+    "tokens": {
+      "input": 0,
+      "output": 0,
+      "reasoning": 0,
+      "cache": {
+        "read": 0,
+        "write": 0
+      }
+    },
+    "permission": [
+      {
+        "permission": "*",
+        "pattern": "*",
+        "action": "allow"
+      },
+      {
+        "permission": "external_directory",
+        "pattern": "*",
+        "action": "allow"
+      }
+    ],
+    "time": {
+      "created": 1790908022581,
+      "updated": 1790908034616
+    }
+  },
+  "messages": [
+    {
+      "info": {
+        "role": "user",
+        "time": {
+          "created": 1790908022944
+        },
+        "agent": "build",
+        "model": {
+          "providerID": "openrouter",
+          "modelID": "openrouter/free"
+        },
+        "system": "<runtime_info>In case you're asked: you are running in T3 Code through the OpenCode harness, as openrouter/openrouter/free. No need to mention this otherwise. You can embed images and videos in your response using Markdown with absolute file paths.</runtime_info>\n\n<pull_request_linking>\nWhen the t3-code MCP server exposes link_pull_request, you must use it to register every pull request you create or work on for this thread. Call link_pull_request with the full PR URL immediately after creating a PR or starting work on an existing PR. For a stack, call it for every layer, not just the current branch or the top PR. This applies when creating or updating PRs through gh, gh stack, another CLI, or the host API: those operations do not register the PRs with this thread. Linking an already-linked PR is safe. Before finishing PR work, call list_thread_pull_requests and link any PR from your work that is missing. Do not link unrelated PRs mentioned only as background. If a linking call fails, report that failure instead of claiming the PR is linked.\n</pull_request_linking>",
+        "id": "msg_0fa6fbf5c001i02V8OMmG2QvRe",
+        "sessionID": "ses_f059040cbffe7xYRc2k4BXXUW1"
+      },
+      "parts": [
+        {
+          "type": "text",
+          "text": "Figure out why Synara isn't able to recognize our droid, pi or omp configs?",
+          "id": "prt_0fa6fc0ae001Y97Hn8bUTBFgnX",
+          "sessionID": "ses_f059040cbffe7xYRc2k4BXXUW1",
+          "messageID": "msg_0fa6fbf5c001i02V8OMmG2QvRe"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_0fa6fbf5c001i02V8OMmG2QvRe",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "read": 0,
+            "write": 0
+          }
+        },
+        "modelID": "openrouter/free",
+        "providerID": "openrouter",
+        "time": {
+          "created": 1790908034630,
+          "completed": 1790908034647
+        },
+        "error": {
+          "name": "MessageAbortedError",
+          "data": {
+            "message": "Aborted"
+          }
+        },
+        "id": "msg_0fa6fee46001VzcjXeMLJP7D4L",
+        "sessionID": "ses_f059040cbffe7xYRc2k4BXXUW1"
+      },
+      "parts": []
+    }
+  ]
+}
