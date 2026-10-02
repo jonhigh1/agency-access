@@ -75,5 +75,9 @@ export default function sitemap(): MetadataRoute.Sitemap {
     entry('/guides/google-ads-access', buildDate, 'monthly', 0.8),
   ];
 
-  return [...staticPages, ...blogUrls, ...compareUrls, ...guideUrls];
+  const featureUrls: MetadataRoute.Sitemap = [
+    entry('/features/white-label', buildDate, 'monthly', 0.8),
+  ];
+
+  return [...staticPages, ...blogUrls, ...compareUrls, ...guideUrls, ...featureUrls];
 }
