@@ -3,7 +3,7 @@
   "checkpoint_id": "01M3X9FC9PSC0T29SYCB8B4TC1",
   "strategy": "manual-commit",
   "branch": "codex/authhub-polish-performance",
-  "checkpoints_count": 1,
+  "checkpoints_count": 3,
   "files_touched": [
     ".githooks/pre-push",
     ".github/workflows/dashboard-perf-gate.yml",
@@ -65,6 +65,13 @@
       "compact_transcript": "/0/transcript.jsonl",
       "content_hash": "/0/content_hash.txt",
       "prompt": ""
+    },
+    {
+      "metadata": "/1/metadata.json",
+      "transcript": "/1/full.jsonl",
+      "compact_transcript": "/1/transcript.jsonl",
+      "content_hash": "/1/content_hash.txt",
+      "prompt": "/1/prompt.txt"
     }
   ],
   "token_usage": {

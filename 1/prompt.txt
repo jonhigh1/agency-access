@@ -1,0 +1,14 @@
+You generate concise chat thread titles.
+Return a JSON object with key: title.
+Respond with only the JSON object, no prose and no code fences.
+Rules:
+- Summarize the user's request in 3-6 words.
+- Never exceed 6 words.
+- Be specific: include distinguishing identifiers from the message when present (PR/issue numbers, branch names, file or feature names, error codes).
+- Two different requests should never produce the same title if the message contains anything that tells them apart.
+- Use a short noun or verb phrase, not a full sentence.
+- Avoid quotes, markdown, emoji, and trailing punctuation.
+- If images are attached, use them as primary context for the title.
+
+User message:
+https://jam.dev/c/de034a36-9cc2-42a0-a346-b3a5373996e8 review, debug, fix, harden
