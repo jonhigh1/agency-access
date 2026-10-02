@@ -1,0 +1,28 @@
+{
+  "cli_version": "0.10.2",
+  "checkpoint_id": "01M3X790M5MCT44TN255YDWPJA",
+  "strategy": "manual-commit",
+  "checkpoints_count": 3,
+  "files_touched": [
+    "apps/web/src/components/client-auth/MetaAssetSelector.tsx",
+    "apps/web/src/components/client-auth/PlatformAuthWizard.tsx",
+    "apps/web/src/components/client-auth/__tests__/MetaAssetSelector.resume-prefill.test.tsx",
+    "apps/web/src/components/client-auth/__tests__/PlatformAuthWizard.test.tsx"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 237022,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 3271168,
+    "output_tokens": 26728,
+    "api_call_count": 3
+  }
+}
