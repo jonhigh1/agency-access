@@ -10,7 +10,7 @@ describe('getCorsOptions', () => {
     );
 
     expect(options.exposedHeaders).toEqual(
-      expect.arrayContaining(['x-cache', 'x-response-time', 'x-cache-hit-rate'])
+      expect.arrayContaining(['x-cache', 'x-response-time', 'x-cache-hit-rate', 'server-timing'])
     );
 
     expect(options.methods).toEqual(

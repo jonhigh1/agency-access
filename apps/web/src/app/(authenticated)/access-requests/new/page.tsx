@@ -14,6 +14,7 @@
 'use client';
 
 import { FormEvent, useEffect, useMemo, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { useAuth } from '@clerk/nextjs';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { Plus, Trash2, Check, Loader2, AlertCircle, Save, Shield, ChevronDown } from 'lucide-react';
@@ -25,7 +26,6 @@ import { Button } from '@/components/ui/button';
 import { ClientSelector } from '@/components/client-selector';
 import { HierarchicalPlatformSelector } from '@/components/hierarchical-platform-selector';
 import { AccessLevelSelector } from '@/components/access-level-selector';
-import { SaveAsTemplateModal } from '@/components/save-as-template-modal';
 import { FlowShell } from '@/components/flow/flow-shell';
 import { SingleSelect } from '@/components/ui/single-select';
 import { MetaAssigneeSelector } from '@/components/access-request/MetaAssigneeSelector';
@@ -42,6 +42,11 @@ import { getPlatformCount } from '@/lib/transform-platforms';
 import { useAuthOrBypass } from '@/lib/dev-auth';
 import { useUserAgency, fetchActiveAgencyPlatformConnections } from '@/hooks/use-user-agency';
 import { ACCESS_LEVEL_DESCRIPTIONS, PLATFORM_NAMES } from '@agency-platform/shared';
+
+const SaveAsTemplateModal = dynamic(() =>
+  import('@/components/save-as-template-modal').then((mod) => mod.SaveAsTemplateModal),
+  { loading: () => <div role="status" className="fixed inset-0 z-50 flex items-center justify-center bg-background/90">Loading template form...</div> }
+);
 
 // ============================================================
 // WIZARD CONTENT (Inner Component)
@@ -71,6 +76,7 @@ function AccessRequestWizardContent() {
 
   // Save as Template modal state
   const [isSaveTemplateModalOpen, setIsSaveTemplateModalOpen] = useState(false);
+  const [hasOpenedSaveTemplateModal, setHasOpenedSaveTemplateModal] = useState(false);
 
   // Customize tab state (for Step 3: Form Fields | Branding)
   const [customizeTab, setCustomizeTab] = useState<'fields' | 'branding'>('fields');
@@ -963,7 +969,10 @@ function AccessRequestWizardContent() {
                       type="button"
                       variant="ghost"
                       className="w-full px-4 py-2.5 text-danger-ink sm:w-auto"
-                      onClick={() => setIsSaveTemplateModalOpen(true)}
+                      onClick={() => {
+                        setHasOpenedSaveTemplateModal(true);
+                        setIsSaveTemplateModalOpen(true);
+                      }}
                       disabled={state.submitting}
                     >
                       <Save className="h-4 w-4" />
@@ -982,16 +991,18 @@ function AccessRequestWizardContent() {
                 </div>
 
                 {/* Save as Template Modal */}
-                <SaveAsTemplateModal
-                  agencyId={agencyId!}
-                  createdBy={userId!}
-                  isOpen={isSaveTemplateModalOpen}
-                  onClose={() => setIsSaveTemplateModalOpen(false)}
-                  onSave={() => {
-                    setIsSaveTemplateModalOpen(false);
-                    // Optionally show success message
-                  }}
-                />
+                {hasOpenedSaveTemplateModal && (
+                  <SaveAsTemplateModal
+                    agencyId={agencyId!}
+                    createdBy={userId!}
+                    isOpen={isSaveTemplateModalOpen}
+                    onClose={() => setIsSaveTemplateModalOpen(false)}
+                    onSave={() => {
+                      setIsSaveTemplateModalOpen(false);
+                      // Optionally show success message
+                    }}
+                  />
+                )}
               </m.div>
             )}
           </AnimatePresence>

@@ -2,15 +2,20 @@ import { render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import MarketingLayout from '../layout';
 
+const { renderAnimationGate } = vi.hoisted(() => ({ renderAnimationGate: vi.fn() }));
+
+vi.mock('@/components/animation-gate', () => ({
+  AnimationGate: () => {
+    renderAnimationGate();
+    return null;
+  },
+}));
+
 vi.mock('framer-motion', () => ({
   LazyMotion: ({ children }: { children: React.ReactNode }) => (
     <div data-testid="marketing-motion-provider">{children}</div>
   ),
   domAnimation: {},
-}));
-
-vi.mock('@/components/marketing/marketing-shell-effects', () => ({
-  MarketingShellEffects: () => <div data-testid="marketing-shell-effects" />,
 }));
 
 vi.mock('@/components/marketing/marketing-nav', () => ({
@@ -30,7 +35,12 @@ describe('MarketingLayout', () => {
     );
 
     expect(screen.getByTestId('marketing-motion-provider')).toBeInTheDocument();
-    expect(screen.getByTestId('marketing-shell-effects')).toBeInTheDocument();
     expect(screen.getByText('Content')).toBeInTheDocument();
+  });
+
+  it('uses the animation gate mounted by the root layout only', () => {
+    renderAnimationGate.mockClear();
+    render(<MarketingLayout>Content</MarketingLayout>);
+    expect(renderAnimationGate).not.toHaveBeenCalled();
   });
 });

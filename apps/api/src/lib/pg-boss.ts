@@ -151,6 +151,7 @@ export async function ensureAllQueues(): Promise<void> {
     'token-refresh-scan',
     'token-refresh',
     'cleanup-expired-requests',
+    'cleanup-agent-operations',
     'trial-expiration-check',
     'notification',
     'webhook-delivery',

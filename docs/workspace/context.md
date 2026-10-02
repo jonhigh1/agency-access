@@ -14,13 +14,13 @@ The user is the workspace owner, product decision-maker, and final approval auth
 
 - Primary customer: digital marketing agency owners and operators managing access across multiple client platforms.
 - Core job: create a request, send one client-facing link, collect authorization or manual access details, and see truthful completion/status information.
-- Current stack: Next.js web app, Fastify API, shared TypeScript package, Prisma/PostgreSQL, Clerk, Infisical, Redis/BullMQ, and Render configuration.
+- Current stack: Next.js web app, Fastify API, shared TypeScript package, Prisma/PostgreSQL, Clerk, Infisical, PostgreSQL-backed pg-boss jobs, process-local caching, and Render configuration.
 - Public product name: AuthHub / authhub.co. The older repository name remains common in code and docs.
 
 ## Non-negotiable constraints
 
 - Never store OAuth tokens in PostgreSQL; store Infisical secret references only.
 - Audit token access with actor, IP, timestamp, action, and relevant metadata.
-- Protect OAuth state against CSRF with the Redis-backed state service.
+- Protect OAuth state against CSRF with the PostgreSQL-backed state service, HMAC signatures, and single-use consumption.
 - Preserve tenant ownership checks and the established API success/error contracts.
 - Treat live behavior and current code as stronger evidence than an old plan or narrative document.

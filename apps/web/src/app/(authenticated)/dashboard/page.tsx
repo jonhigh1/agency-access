@@ -10,6 +10,7 @@
 
 import { Plus, Users, Key, Activity, AlertCircle, ChevronRight, ExternalLink, Loader2 } from 'lucide-react';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@clerk/nextjs';
 import { useAuthOrBypass, DEV_USER_ID } from '@/lib/dev-auth';
@@ -22,13 +23,11 @@ import { toRequestStatusBadgeStatus } from '@/lib/request-status';
 import { LogoSpinner } from '@/components/ui/logo-spinner';
 import { useEffect, useRef, useState } from 'react';
 import { readPerfHarnessContext, startPerfTimer } from '@/lib/perf-harness';
-import { getApiBaseUrl } from '@/lib/api/api-env';
-import { extractApiErrorMessage } from '@/lib/api/extract-error';
+import { authorizedApiFetch } from '@/lib/api/authorized-api-fetch';
 import { capturePosthogEvent } from '@/lib/analytics/capture-posthog';
 import { useUpdateAgencyOnboardingProgress } from '@/lib/query/onboarding';
 import { trackOnboardingEvent } from '@/lib/analytics/onboarding';
 import { usePrefetchQuota, useQuotaCheck, QuotaExceededError } from '@/lib/query/quota';
-import { UpgradeModal } from '@/components/upgrade-modal';
 import { PendingNudgeBanners } from '@/components/pending-nudge-banners';
 import {
   PLATFORM_NAMES,
@@ -39,8 +38,16 @@ import {
   type Platform,
 } from '@agency-platform/shared';
 
+const UpgradeModal = dynamic(() =>
+  import('@/components/upgrade-modal').then((mod) => mod.UpgradeModal),
+  { loading: () => <div role="status" className="fixed inset-0 z-50 flex items-center justify-center bg-background/90">Loading upgrade options...</div> }
+);
+
 const DASHBOARD_PERF_SAMPLE_RATE = 0.2;
 const dashboardSessionSeen = new Set<string>();
+const SERVER_TIMING_METRICS = ['total', 'auth', 'resolveAgency', 'cache', 'dataFetch'] as const;
+
+type ServerTimingMetric = (typeof SERVER_TIMING_METRICS)[number];
 
 interface DashboardApiError {
   code: string;
@@ -67,7 +74,10 @@ interface DashboardPerfMetrics {
   cacheStatus: string;
   isColdSession: boolean;
   principalId: string;
+  serverTimingsMs?: Partial<Record<ServerTimingMetric, number>>;
 }
+
+type DashboardLoadStage = 'token' | 'api' | 'body';
 
 function nowMs(): number {
   if (typeof performance !== 'undefined' && typeof performance.now === 'function') {
@@ -79,6 +89,31 @@ function nowMs(): number {
 
 function shouldSampleDashboardPerf(): boolean {
   return Math.random() < DASHBOARD_PERF_SAMPLE_RATE;
+}
+
+function parseServerTimings(value: string | null): Partial<Record<ServerTimingMetric, number>> | undefined {
+  const timings: Partial<Record<ServerTimingMetric, number>> = {};
+
+  for (const entry of value?.split(',') ?? []) {
+    const [rawName, ...parameters] = entry.split(';');
+    const name = rawName.trim() as ServerTimingMetric;
+    if (!SERVER_TIMING_METRICS.includes(name)) {
+      continue;
+    }
+
+    const durationParameter = parameters.find((parameter) => parameter.trim().toLowerCase().startsWith('dur='));
+    const rawDuration = durationParameter?.split('=', 2)[1]?.trim().replace(/^"|"$/g, '');
+    if (!rawDuration) {
+      continue;
+    }
+
+    const duration = Number(rawDuration);
+    if (Number.isFinite(duration) && duration >= 0) {
+      timings[name] = duration;
+    }
+  }
+
+  return Object.keys(timings).length > 0 ? timings : undefined;
 }
 
 async function captureDashboardLoadPerf(metrics: DashboardPerfMetrics): Promise<void> {
@@ -93,6 +128,18 @@ async function captureDashboardLoadPerf(metrics: DashboardPerfMetrics): Promise<
     cache_status: metrics.cacheStatus,
     is_cold_session: metrics.isColdSession,
     principal_id: metrics.principalId,
+    ...(metrics.serverTimingsMs ? { server_timings_ms: metrics.serverTimingsMs } : {}),
+  });
+}
+
+async function captureDashboardLoadFailure(durationMs: number, stage: DashboardLoadStage): Promise<void> {
+  if (!shouldSampleDashboardPerf()) {
+    return;
+  }
+
+  await capturePosthogEvent('dashboard_load_failed', {
+    duration_ms: Number(durationMs.toFixed(2)),
+    stage,
   });
 }
 
@@ -125,39 +172,48 @@ export default function DashboardPage() {
   // Single unified query that fetches all dashboard data at once.
   const { data: dashboardData, isLoading, error, refetch } = useQuery<DashboardApiResponse>({
     queryKey: ['dashboard', principalId || 'anonymous'],
-    queryFn: async () => {
+    queryFn: async ({ signal }) => {
       const principalKey = principalId || 'anonymous';
       const requestStart = nowMs();
+      let stage: DashboardLoadStage = 'token';
+      let tokenFetchMs = 0;
+      let dashboardApiMs = 0;
+      let apiFetchStart = 0;
+      let cacheStatus = 'UNKNOWN';
+      let serverTimingsMs: Partial<Record<ServerTimingMetric, number>> | undefined;
+      const timers: { stopDataFetch: (() => void) | null } = { stopDataFetch: null };
+      const getDashboardToken = async (): Promise<string> => {
+        const stopTokenTimer = startPerfTimer('dashboard:token-fetch');
+        const tokenFetchStart = nowMs();
 
-      const stopTokenTimer = startPerfTimer('dashboard:token-fetch');
-      const tokenFetchStart = nowMs();
-      const token = perfHarness?.token || await getToken();
-      const tokenFetchMs = nowMs() - tokenFetchStart;
-      stopTokenTimer?.();
+        try {
+          const token = perfHarness?.token || await getToken();
+          if (!token) {
+            throw new Error('AUTH_TOKEN_UNAVAILABLE');
+          }
 
-      if (!token) {
-        throw new Error('AUTH_TOKEN_UNAVAILABLE');
-      }
-
-      const stopTimer = startPerfTimer('dashboard:data-fetch');
+          stage = 'api';
+          apiFetchStart = nowMs();
+          timers.stopDataFetch = startPerfTimer('dashboard:data-fetch');
+          return token;
+        } finally {
+          tokenFetchMs = nowMs() - tokenFetchStart;
+          stopTokenTimer?.();
+        }
+      };
 
       try {
-        const headers: Record<string, string> = {
-          Authorization: `Bearer ${token}`,
-        };
-
-        const apiFetchStart = nowMs();
-        const response = await fetch(`${getApiBaseUrl()}/api/dashboard`, {
-          headers,
+        const data = await authorizedApiFetch<DashboardApiResponse>('/api/dashboard', {
+          cache: 'no-store',
+          getToken: getDashboardToken,
+          onResponse: (response) => {
+            dashboardApiMs = nowMs() - apiFetchStart;
+            cacheStatus = response.headers.get('X-Cache') || 'UNKNOWN';
+            serverTimingsMs = parseServerTimings(response.headers.get('Server-Timing'));
+            stage = 'body';
+          },
+          signal,
         });
-        const dashboardApiMs = nowMs() - apiFetchStart;
-        const cacheStatus = response.headers.get('X-Cache') || 'UNKNOWN';
-
-        if (!response.ok) {
-          throw new Error(await extractApiErrorMessage(response, 'Failed to fetch dashboard data'));
-        }
-
-        const data = await response.json() as DashboardApiResponse;
 
         const isColdSession = !dashboardSessionSeen.has(principalKey);
         dashboardSessionSeen.add(principalKey);
@@ -168,11 +224,17 @@ export default function DashboardPage() {
           cacheStatus,
           isColdSession,
           principalId: principalKey,
+          serverTimingsMs,
         });
 
         return data;
+      } catch (error) {
+        if (!(error instanceof DOMException && error.name === 'AbortError')) {
+          void captureDashboardLoadFailure(nowMs() - requestStart, stage);
+        }
+        throw error;
       } finally {
-        stopTimer?.();
+        timers.stopDataFetch?.();
       }
     },
     enabled: canFetchDashboard,

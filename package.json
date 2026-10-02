@@ -30,7 +30,8 @@
     "perf:browser": "node scripts/perf/benchmark-browser.mjs",
     "perf:report": "node scripts/perf/generate-report.mjs",
     "perf:dashboard:gate": "node scripts/perf/benchmark-api.mjs --enforce-budget true",
-    "perf:web:inp-smoke": "bash scripts/perf/web-inp-smoke.sh"
+    "perf:web:inp-smoke": "bash scripts/perf/web-inp-smoke.sh",
+    "test:run": "npm run test:run --workspace=apps/api -- --maxWorkers=2 && npm run test:run --workspace=apps/web -- --maxWorkers=2 && npm test --workspace=packages/shared -- --runInBand && npm test --workspace=tools/authhub-cli && node --test scripts/tests/pre-push.test.mjs scripts/perf/lib/validation.test.mjs"
   },
   "devDependencies": {
     "@googleworkspace/cli": "^0.11.1",

@@ -5,6 +5,7 @@ import { performance } from 'node:perf_hooks';
 import { fileURLToPath } from 'node:url';
 import { createPerfSessionToken } from './lib/auth.mjs';
 import { summarize, round } from './lib/stats.mjs';
+import { assertPerfResponse, positiveNumber } from './lib/validation.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -27,33 +28,32 @@ function arg(name, fallback) {
 /**
  * @param {string} url
  * @param {RequestInit} init
- * @returns {Promise<{durationMs: number, status: number, bodyBytes: number, etag: string | null, cache: string | null, responseTime: string | null, body: string}>}
+ * @returns {Promise<{durationMs: number, status: number, bodyBytes: number, etag: string | null, cache: string | null, responseTime: string | null}>}
  */
-async function timedFetch(url, init) {
+async function timedFetch(url, init, kind) {
   const startedAt = performance.now();
-  const response = await fetch(url, init);
-  const bodyText = await response.text();
+  const response = await fetch(url, { ...init, signal: AbortSignal.timeout(15000) });
+  const bodyBytes = await assertPerfResponse(response, kind);
   const durationMs = performance.now() - startedAt;
 
   return {
     durationMs,
     status: response.status,
-    bodyBytes: Buffer.byteLength(bodyText),
+    bodyBytes,
     etag: response.headers.get('etag'),
     cache: response.headers.get('x-cache'),
     responseTime: response.headers.get('x-response-time'),
-    body: bodyText,
   };
 }
 
 async function main() {
   const apiBase = arg('--api-base', process.env.PERF_API_BASE || 'http://localhost:3001');
-  const runs = Number(arg('--runs', process.env.PERF_RUNS || '10'));
+  const runs = positiveNumber(arg('--runs', process.env.PERF_RUNS || '10'), '--runs', { integer: true, min: 2 });
   const label = arg('--label', 'baseline');
   const freshTokenPerRun = arg('--fresh-token-per-run', 'false') === 'true';
   const enforceBudget = arg('--enforce-budget', process.env.PERF_ENFORCE_BUDGET || 'false') === 'true';
-  const warmP95BudgetMs = Number(arg('--warm-p95-budget-ms', process.env.PERF_WARM_P95_BUDGET_MS || '400'));
-  const coldMaxBudgetMs = Number(arg('--cold-max-ms', process.env.PERF_COLD_MAX_BUDGET_MS || '2500'));
+  const warmP95BudgetMs = positiveNumber(arg('--warm-p95-budget-ms', process.env.PERF_WARM_P95_BUDGET_MS || '400'), '--warm-p95-budget-ms');
+  const coldMaxBudgetMs = positiveNumber(arg('--cold-max-ms', process.env.PERF_COLD_MAX_BUDGET_MS || '2500'), '--cold-max-ms');
 
   const dashboardUrl = `${apiBase}/api/dashboard`;
 
@@ -69,8 +69,8 @@ async function main() {
     };
     const agenciesUrl = `${apiBase}/api/agencies?clerkUserId=${encodeURIComponent(auth.userId)}&fields=id,name,email,clerkUserId`;
 
-    const agencies = await timedFetch(agenciesUrl, { headers: authHeaders });
-    const dashboard = await timedFetch(dashboardUrl, { headers: authHeaders });
+    const agencies = await timedFetch(agenciesUrl, { headers: authHeaders }, 'agencies');
+    const dashboard = await timedFetch(dashboardUrl, { headers: authHeaders }, 'dashboard');
 
     if (dashboard.etag) {
       latestEtag = dashboard.etag;
@@ -83,7 +83,7 @@ async function main() {
       conditionalHeaders['If-None-Match'] = latestEtag;
     }
 
-    const dashboardConditional = await timedFetch(dashboardUrl, { headers: conditionalHeaders });
+    const dashboardConditional = await timedFetch(dashboardUrl, { headers: conditionalHeaders }, 'dashboard');
 
     samples.push({
       iteration,
@@ -107,9 +107,7 @@ async function main() {
   const conditionalDurations = samples.map((entry) => entry.dashboardConditional.durationMs);
   const criticalDurations = samples.map((entry) => entry.criticalPathMs);
   const warmCriticalDurations = criticalDurations.slice(1);
-  const warmCriticalSummary = summarize(
-    warmCriticalDurations.length > 0 ? warmCriticalDurations : criticalDurations
-  );
+  const warmCriticalSummary = summarize(warmCriticalDurations);
 
   const report = {
     label,

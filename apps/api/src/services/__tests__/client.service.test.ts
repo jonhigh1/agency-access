@@ -399,6 +399,15 @@ describe('Phase 5: Client Service - TDD Tests', () => {
   });
 
   describe('getClientDetail', () => {
+    it('filters by agency before loading nested client history', async () => {
+      vi.mocked(mockPrisma.client.findUnique).mockResolvedValue(null);
+
+      expect(await clientService.getClientDetail({ clientId: 'client-1', agencyId: 'agency-2' })).toBeNull();
+      expect(mockPrisma.client.findUnique).toHaveBeenCalledWith(expect.objectContaining({
+        where: { id: 'client-1', agencyId: 'agency-2' },
+      }));
+    });
+
     it('uses verified Meta grants for catalog-only and Instagram client status', async () => {
       const now = new Date('2026-09-24T12:00:00.000Z');
       const grants = [
@@ -849,7 +858,7 @@ describe('Phase 5: Client Service - TDD Tests', () => {
       });
 
       expect(mockPrisma.client.findUnique).toHaveBeenCalledWith({
-        where: { id: 'client-1' },
+        where: { id: 'client-1', agencyId: 'agency-1' },
         select: {
           id: true,
           agencyId: true,

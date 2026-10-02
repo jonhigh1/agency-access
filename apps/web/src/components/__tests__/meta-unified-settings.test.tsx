@@ -166,6 +166,7 @@ describe('MetaUnifiedSettings', () => {
       expect(String(businessesCall?.[0])).toContain('refresh=true');
       expect(getAuthHeader(businessesCall?.[1])).toBe('Bearer mock-token');
       expect(getAuthHeader(settingsCall?.[1])).toBe('Bearer mock-token');
+      expect(settingsCall?.[1]?.signal).toBeDefined();
     });
   });
 

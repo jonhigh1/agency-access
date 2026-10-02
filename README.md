@@ -35,7 +35,7 @@ agency-access-platform/
 - **Deployment:** Render
 
 ### Backend (apps/api)
-- **Runtime:** Node.js 20+
+- **Runtime:** Node.js 24
 - **Framework:** Fastify
 - **Language:** TypeScript
 - **Database:** PostgreSQL (Neon) + Prisma ORM
@@ -48,7 +48,7 @@ agency-access-platform/
 
 ### Prerequisites
 
-- Node.js 20+
+- Node.js 24
 - npm 10+
 - PostgreSQL database (recommend [Neon](https://neon.tech))
 - Redis instance (recommend [Upstash](https://upstash.com))

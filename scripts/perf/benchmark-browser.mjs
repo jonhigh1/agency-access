@@ -5,9 +5,11 @@ import { performance } from 'node:perf_hooks';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 import { createPerfSessionToken } from './lib/auth.mjs';
+import { assertPerfResponse, redactPerfToken, safeReportUrl } from './lib/validation.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+let tokenToRedact = '';
 
 /**
  * @param {string} name
@@ -37,12 +39,14 @@ async function waitForPerfSessionReady({ apiBase, auth }) {
   while (Date.now() < deadline) {
     try {
       const response = await fetch(readinessUrl, {
+        signal: AbortSignal.timeout(2000),
         headers: {
           Authorization: `Bearer ${auth.token}`,
         },
       });
 
       if (response.ok) {
+        await assertPerfResponse(response, 'agencies');
         return;
       }
     } catch {
@@ -62,6 +66,7 @@ async function main() {
   const captureTrace = arg('--capture-trace', 'false') === 'true';
 
   const auth = await createPerfSessionToken();
+  tokenToRedact = auth.token;
   await waitForPerfSessionReady({ apiBase, auth });
   const bootstrapUrl = new URL('/perf/dashboard-bootstrap', appBase);
   bootstrapUrl.searchParams.set('token', auth.token);
@@ -152,8 +157,13 @@ async function main() {
     });
   }
 
+  const dashboardResponse = page.waitForResponse(
+    (response) => new URL(response.url()).pathname === '/api/dashboard',
+    { timeout: 120000 }
+  );
   const navStartedAt = performance.now();
   await page.goto(url, { waitUntil: 'domcontentloaded', timeout: 120000 });
+  await assertPerfResponse(await dashboardResponse, 'dashboard');
   await page.waitForURL((currentUrl) => currentUrl.pathname === '/dashboard', { timeout: 120000 });
   await page.waitForSelector('h1', { timeout: 120000 });
   const dashboardHeading = page.getByRole('heading', { name: 'Dashboard', level: 1 });
@@ -200,12 +210,14 @@ async function main() {
   let traceFile = null;
   const screenshotFile = path.join(__dirname, 'traces', `dashboard-${label}-${Date.now()}.png`);
   const reportFile = path.join(__dirname, 'results', `browser-${label}-${Date.now()}.json`);
+  await fs.mkdir(path.dirname(screenshotFile), { recursive: true });
+  await fs.mkdir(path.dirname(reportFile), { recursive: true });
 
   if (cdp && tracingDone) {
     await cdp.send('Tracing.end');
     await tracingDone;
     traceFile = path.join(__dirname, 'traces', `dashboard-${label}-${Date.now()}.json`);
-    const traceJson = JSON.stringify({ traceEvents });
+    const traceJson = redactPerfToken(JSON.stringify({ traceEvents }), auth.token);
     await fs.writeFile(traceFile, traceJson);
   }
   await page.screenshot({ path: screenshotFile, fullPage: true });
@@ -213,8 +225,8 @@ async function main() {
   const report = {
     label,
     timestamp: new Date().toISOString(),
-    url,
-    finalUrl: page.url(),
+    url: safeReportUrl(url),
+    finalUrl: safeReportUrl(page.url()),
     userId: auth.userId,
     dashboardReadyDurationMs: Number(navDurationMs.toFixed(2)),
     performanceEntries,
@@ -224,7 +236,7 @@ async function main() {
     screenshotFile,
   };
 
-  await fs.writeFile(reportFile, JSON.stringify(report, null, 2));
+  await fs.writeFile(reportFile, redactPerfToken(JSON.stringify(report, null, 2), auth.token));
 
   await browser.close();
 
@@ -241,6 +253,6 @@ async function main() {
 }
 
 main().catch((error) => {
-  console.error('benchmark-browser failed:', error);
+  console.error('benchmark-browser failed:', redactPerfToken(String(error), tokenToRedact).replace(/([?&]token=)[^&\s]+/g, '$1[REDACTED]'));
   process.exit(1);
 });

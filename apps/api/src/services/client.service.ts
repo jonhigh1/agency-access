@@ -965,7 +965,7 @@ export async function getClientDetail(
 
   // Fetch client with all related data
   const client = await prisma.client.findUnique({
-    where: { id: clientId },
+    where: { id: clientId, agencyId },
     select: {
       id: true,
       agencyId: true,

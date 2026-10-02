@@ -7,13 +7,14 @@
  */
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { registerHandlerMock } = vi.hoisted(() => ({
+const { registerHandlerMock, enqueueJobMock } = vi.hoisted(() => ({
   registerHandlerMock: vi.fn(),
+  enqueueJobMock: vi.fn(),
 }));
 
 vi.mock('@/lib/pg-boss', () => ({
   registerHandler: registerHandlerMock,
-  enqueueJob: vi.fn(),
+  enqueueJob: enqueueJobMock,
 }));
 
 vi.mock('@/lib/prisma', () => ({
@@ -140,10 +141,10 @@ describe('token-refresh handler audit mapping', () => {
   });
 
   it('records FAILED (not reconnect) for REFRESH_RETRYABLE', async () => {
-    await runHandlerWithResult({
+    await expect(runHandlerWithResult({
       data: null,
       error: { code: 'REFRESH_RETRYABLE', message: 'Transient upstream error' },
-    });
+    })).rejects.toThrow('Transient upstream error');
 
     const call = vi.mocked(auditService.createAuditLog).mock.calls[0][0];
     expect(call).toMatchObject({
@@ -153,6 +154,25 @@ describe('token-refresh handler audit mapping', () => {
       action: 'FAILED',
     });
     expect(call.action).not.toBe('REFRESH_RECONNECT_REQUIRED');
+    expect(auditService.createAuditLog).toHaveBeenCalledTimes(1);
+  });
+
+  it('enqueues automatic refreshes with the shared retry and singleton policy', async () => {
+    vi.mocked(prisma.platformAuthorization.findMany).mockResolvedValue([
+      AUTH_FIXTURE,
+      { ...AUTH_FIXTURE, platform: 'shopify' },
+    ] as any);
+    await startTokenRefreshHandlers();
+    const [, handler] = registerHandlerMock.mock.calls.find(([name]) => name === 'token-refresh-scan')!;
+
+    await handler({ data: { type: 'check-expiring-tokens' }, id: 'scan-1' });
+
+    expect(enqueueJobMock).toHaveBeenCalledTimes(1);
+    expect(enqueueJobMock).toHaveBeenCalledWith('token-refresh', {
+      connectionId: 'conn-1', platform: 'google',
+    }, {
+      singletonKey: 'refresh-conn-1-google', priority: 1, retryLimit: 3, retryBackoff: true,
+    });
   });
 
   it('records REFRESHED on success', async () => {

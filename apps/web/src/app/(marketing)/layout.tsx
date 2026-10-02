@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { LazyMotion, domAnimation } from 'framer-motion';
 import { GoogleTagManager } from "@/components/marketing/google-tag-manager";
-import { MarketingShellEffects } from "@/components/marketing/marketing-shell-effects";
 import { MarketingNav } from "@/components/marketing/marketing-nav";
 import { MarketingFooter } from "@/components/marketing/marketing-footer";
 
@@ -28,7 +27,6 @@ export default function MarketingLayout({
         <a href="#main-content" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[200] focus:bg-card focus:px-4 focus:py-3 focus:text-foreground">
           Skip to content
         </a>
-        <MarketingShellEffects />
         <MarketingNav />
         <main id="main-content" tabIndex={-1} className="flex-1">{children}</main>
         <MarketingFooter />

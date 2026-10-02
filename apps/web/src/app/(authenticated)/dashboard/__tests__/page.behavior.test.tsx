@@ -6,6 +6,10 @@ import DashboardPage from '../page';
 const routerPush = vi.fn();
 const quotaMutateAsync = vi.fn();
 const getTokenMock = vi.fn();
+const { authorizedApiFetchMock, capturePosthogEventMock } = vi.hoisted(() => ({
+  authorizedApiFetchMock: vi.fn(),
+  capturePosthogEventMock: vi.fn(),
+}));
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: routerPush }),
@@ -59,6 +63,14 @@ vi.mock('@tanstack/react-query', () => ({
   useQuery: (options: any) => useQueryMock(options),
 }));
 
+vi.mock('@/lib/api/authorized-api-fetch', () => ({
+  authorizedApiFetch: authorizedApiFetchMock,
+}));
+
+vi.mock('@/lib/analytics/capture-posthog', () => ({
+  capturePosthogEvent: capturePosthogEventMock,
+}));
+
 vi.mock('@/lib/query/onboarding', () => ({
   useAgencyOnboardingStatus: (agencyId: string | undefined) => useAgencyOnboardingStatusMock(agencyId),
   useUpdateAgencyOnboardingProgress: () => useUpdateOnboardingProgressMock(),
@@ -104,6 +116,9 @@ describe('DashboardPage behavior', () => {
     vi.clearAllMocks();
     routerPush.mockClear();
     quotaMutateAsync.mockReset();
+    authorizedApiFetchMock.mockReset();
+    capturePosthogEventMock.mockReset();
+    capturePosthogEventMock.mockResolvedValue(undefined);
     quotaMutateAsync.mockResolvedValue({
       allowed: true,
       limit: 100,
@@ -425,58 +440,101 @@ describe('DashboardPage behavior', () => {
     expect(screen.getByText('Loading dashboard...')).toBeInTheDocument();
   });
 
-  it('fetches dashboard data through the normalized API base URL', async () => {
-    const originalApiUrl = process.env.NEXT_PUBLIC_API_URL;
-    process.env.NEXT_PUBLIC_API_URL = 'https://api.example.com/';
-    const fetchMock = vi.fn().mockResolvedValue({
-      ok: true,
-      status: 200,
-      headers: new Headers(),
-      json: async () => ({
-        data: {
-          agency: {
-            id: 'agency_1',
-            name: 'Agency One',
-            email: 'owner@agency.test',
-          },
-          stats: {
-            totalRequests: 0,
-            pendingRequests: 0,
-            activeConnections: 0,
-            totalPlatforms: 0,
-          },
-          requests: [],
-          connections: [],
-        },
-        error: null,
-      }),
+  it('bounds stalled dashboard requests and exposes retry', async () => {
+    const timeoutError = Object.assign(new Error('Request timed out. Please try again.'), {
+      code: 'TIMEOUT',
+      status: 408,
     });
-    const originalFetch = global.fetch;
-    global.fetch = fetchMock as typeof fetch;
+    const refetch = vi.fn();
+    const controller = new AbortController();
+    authorizedApiFetchMock.mockImplementation(async (_endpoint, options) => {
+      await options.getToken();
+      throw timeoutError;
+    });
+    useQueryMock.mockImplementation((options) => ({
+      data: undefined,
+      isLoading: false,
+      error: timeoutError,
+      refetch,
+      options,
+    }));
 
-    try {
-      useQueryMock.mockImplementation((options) => ({
-        data: undefined,
-        isLoading: false,
-        error: null,
-        refetch: vi.fn(),
-        options,
-      }));
+    render(<DashboardPage />);
 
-      render(<DashboardPage />);
+    const queryOptions = useQueryMock.mock.calls[0]?.[0];
+    const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0);
+    await expect(queryOptions.queryFn({ signal: controller.signal })).rejects.toBe(timeoutError);
+    expect(authorizedApiFetchMock).toHaveBeenCalledWith('/api/dashboard', expect.objectContaining({
+      cache: 'no-store',
+      getToken: expect.any(Function),
+      onResponse: expect.any(Function),
+      signal: controller.signal,
+    }));
+    expect(capturePosthogEventMock).toHaveBeenCalledWith('dashboard_load_failed', expect.objectContaining({
+      duration_ms: expect.any(Number),
+      stage: 'api',
+    }));
+    randomSpy.mockRestore();
 
-      const queryOptions = useQueryMock.mock.calls[0]?.[0];
-      await queryOptions.queryFn();
+    await userEvent.setup().click(screen.getByRole('button', { name: 'Retry' }));
+    expect(refetch).toHaveBeenCalledOnce();
+  });
 
-      expect(fetchMock).toHaveBeenCalledWith('https://api.example.com/api/dashboard', {
-        headers: {
-          Authorization: 'Bearer test-token',
-        },
+  it('measures token and dashboard API time separately', async () => {
+    let now = 0;
+    const nowSpy = vi.spyOn(performance, 'now').mockImplementation(() => now);
+    const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0);
+    const dashboardData = {
+      data: {
+        agency: { id: 'agency_1', name: 'Agency One', email: 'owner@agency.test' },
+        stats: { totalRequests: 0, pendingRequests: 0, activeConnections: 0, totalPlatforms: 0 },
+        requests: [],
+        connections: [],
+      },
+      error: null,
+    };
+    getTokenMock.mockImplementation(async () => {
+      now = 200;
+      return 'test-token';
+    });
+    authorizedApiFetchMock.mockImplementation(async (_endpoint, options) => {
+      await options.getToken();
+      now = 250;
+      options.onResponse({
+        headers: new Headers({
+          'X-Cache': 'MISS',
+          'Server-Timing': 'total;dur=50, auth;dur=10, resolveAgency;dur=2, cache;dur=3, dataFetch;dur=20, auth;dur=-1, total;dur=Infinity, cache;dur=nope, unknown;dur=99',
+        }),
       });
-    } finally {
-      process.env.NEXT_PUBLIC_API_URL = originalApiUrl;
-      global.fetch = originalFetch;
-    }
+      return dashboardData;
+    });
+    useQueryMock.mockImplementation((options) => ({
+      data: undefined,
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+      options,
+    }));
+
+    render(<DashboardPage />);
+
+    const queryOptions = useQueryMock.mock.calls[0]?.[0];
+    await queryOptions.queryFn({ signal: new AbortController().signal });
+
+    expect(capturePosthogEventMock).toHaveBeenCalledWith('dashboard_load_perf', expect.objectContaining({
+      token_fetch_ms: 200,
+      dashboard_api_ms: 50,
+      time_to_data_ms: 250,
+      server_timings_ms: {
+        total: 50,
+        auth: 10,
+        resolveAgency: 2,
+        cache: 3,
+        dataFetch: 20,
+      },
+    }));
+    nowSpy.mockRestore();
+    randomSpy.mockRestore();
   });
 
   it('disables Create Request and shows Checking immediately while quota check is pending', async () => {

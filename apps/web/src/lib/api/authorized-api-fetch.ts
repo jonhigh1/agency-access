@@ -26,13 +26,14 @@ interface AuthorizedApiFetchOptions extends Omit<RequestInit, 'headers'> {
   getToken: () => Promise<string | null>;
   headers?: HeadersInit;
   allowMissingToken?: boolean;
+  onResponse?: (response: Response) => void;
 }
 
 export async function authorizedApiFetch<TResponse = any>(
   endpoint: string,
   options: AuthorizedApiFetchOptions
 ): Promise<TResponse> {
-  const { getToken, headers, method = 'GET', signal: callerSignal, allowMissingToken = false, ...rest } = options;
+  const { getToken, headers, method = 'GET', signal: callerSignal, allowMissingToken = false, onResponse, ...rest } = options;
 
   const controller = new AbortController();
   const timeoutError = new AuthorizedApiError({
@@ -78,6 +79,7 @@ export async function authorizedApiFetch<TResponse = any>(
       headers: requestHeaders,
       signal: controller.signal,
     }), timeout, callerAbort]);
+    onResponse?.(response);
 
     let payload: any = null;
     try {

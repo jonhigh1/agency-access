@@ -138,6 +138,7 @@ class InMemoryCache {
 
 // Global cache instance
 const memoryCache = new InMemoryCache();
+const inFlight = new Map<string, { promise: Promise<CachedResult<unknown>> }>();
 
 /**
  * Cache options for getCached function
@@ -187,20 +188,31 @@ export async function getCached<T>({ key, ttl = 300, fetch }: CacheOptions<T>): 
 
   cacheStats.recordMiss();
 
-  // Cache miss - fetch from database/source
-  const result = await fetch();
+  // A joined read is still a cache miss; only the source call is shared.
+  const existing = inFlight.get(key);
+  if (existing) return existing.promise as Promise<CachedResult<T>>;
 
-  // Store in cache if successful and data exists
-  if (result.data && !result.error) {
-    try {
-      memoryCache.set(key, result.data, ttl);
-    } catch (error) {
-      // Cache write failed - non-critical, continue with data
-      console.warn(`Cache write failed for key "${key}":`, error);
+  const entry = {} as { promise: Promise<CachedResult<unknown>> };
+  const pending = (async (): Promise<CachedResult<T>> => {
+    const result = await fetch();
+    // Invalidation detaches old work. It may finish for its original callers,
+    // but cannot overwrite a newer read for this key.
+    if (result.data && !result.error && inFlight.get(key) === entry) {
+      try {
+        memoryCache.set(key, result.data, ttl);
+      } catch (error) {
+        console.warn(`Cache write failed for key "${key}":`, error);
+      }
     }
+    return { ...result, cached: false };
+  })();
+  entry.promise = pending;
+  inFlight.set(key, entry);
+  try {
+    return await pending;
+  } finally {
+    if (inFlight.get(key) === entry) inFlight.delete(key);
   }
-
-  return { ...result, cached: false };
 }
 
 /**
@@ -214,6 +226,10 @@ export async function getCached<T>({ key, ttl = 300, fetch }: CacheOptions<T>): 
 export async function invalidateCache(pattern: string): Promise<{ success: boolean; keysDeleted: number; error?: any }> {
   try {
     const keysDeleted = memoryCache.deleteByPattern(pattern);
+    const prefix = pattern.replace(/\*/g, '');
+    for (const key of inFlight.keys()) {
+      if (key.startsWith(prefix)) inFlight.delete(key);
+    }
     return { success: true, keysDeleted };
   } catch (error) {
     console.error(`Cache invalidation failed for pattern "${pattern}":`, error);
@@ -232,6 +248,7 @@ export async function invalidateCache(pattern: string): Promise<{ success: boole
  */
 export async function deleteCache(key: string): Promise<boolean> {
   try {
+    inFlight.delete(key);
     return memoryCache.delete(key);
   } catch (error) {
     console.warn(`Failed to delete cache key "${key}":`, error);

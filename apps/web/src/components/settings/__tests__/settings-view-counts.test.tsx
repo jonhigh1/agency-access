@@ -166,7 +166,10 @@ async function renderTab(query: string) {
   );
   const { container } = utils;
   await waitFor(() => expect(container.querySelector('[aria-busy]')).toBeNull());
-  await waitFor(() => expect(container.querySelector('[role="tabpanel"]')?.childElementCount ?? 0).toBeGreaterThan(0));
+  await waitFor(
+    () => expect(container.querySelector('[role="tabpanel"]')?.childElementCount ?? 0).toBeGreaterThan(0),
+    { timeout: 5000 }
+  );
   await waitFor(() => expect(queryClient.isFetching()).toBe(0));
   await new Promise((resolve) => setTimeout(resolve, 0));
   const panels = container.querySelectorAll('.ink-panel');

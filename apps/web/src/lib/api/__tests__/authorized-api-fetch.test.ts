@@ -43,6 +43,24 @@ describe('authorizedApiFetch', () => {
     expect(result.data[0].id).toBe('agency-1');
   });
 
+  it('exposes response metadata before parsing the body', async () => {
+    const response = {
+      ok: true,
+      status: 200,
+      headers: new Headers({ 'X-Cache': 'HIT' }),
+      json: async () => ({ data: [], error: null }),
+    } as unknown as Response;
+    const onResponse = vi.fn();
+    fetchMock.mockResolvedValue(response);
+
+    await authorizedApiFetch('/api/agencies', {
+      getToken: async () => 'token-123',
+      onResponse,
+    });
+
+    expect(onResponse).toHaveBeenCalledWith(response);
+  });
+
   it('parses backend error payload for non-2xx responses', async () => {
     fetchMock.mockResolvedValue({
       ok: false,

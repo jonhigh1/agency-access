@@ -13,7 +13,8 @@ import { refreshClientPlatformAuthorization } from '../services/token-lifecycle.
 import { accessRequestService } from '../services/access-request.service.js';
 import { webhookDeliveryService } from '@/services/webhook-delivery.service';
 import { logger } from './logger.js';
-import { registerHandler, enqueueJob, type JobRegistry } from './pg-boss.js';
+import { registerHandler, type JobRegistry } from './pg-boss.js';
+import { queueTokenRefresh } from './queue-helpers.js';
 
 /**
  * Token Refresh Handlers
@@ -50,13 +51,7 @@ export async function startTokenRefreshHandlers(): Promise<void> {
     // Independent singleton jobs (unique connectionId+platform pairs) —
     // enqueue them concurrently instead of one INSERT round-trip each.
     await Promise.all(eligibleAuths.map((auth) =>
-      enqueueJob('token-refresh', {
-        connectionId: auth.connectionId,
-        platform: auth.platform,
-      }, {
-        singletonKey: `refresh-${auth.connectionId}-${auth.platform}`,
-        priority: 1,
-      })
+      queueTokenRefresh(auth.connectionId, auth.platform)
     ));
 
     const queued = eligibleAuths.length;
@@ -83,61 +78,42 @@ export async function startTokenRefreshHandlers(): Promise<void> {
       return;
     }
 
+    let refreshResult: Awaited<ReturnType<typeof refreshClientPlatformAuthorization>>;
     try {
-      const refreshResult = await refreshClientPlatformAuthorization(connectionId, platform as Platform);
-
-      if (refreshResult.error) {
-        // RECONNECT_REQUIRED covers non-refreshable platforms; INVALID_TOKEN is a
-        // terminal refresh failure. Both mean the agency must reconnect, so both
-        // record the reconnect-required audit outcome.
-        const requiresReconnect =
-          refreshResult.error.code === 'RECONNECT_REQUIRED' ||
-          refreshResult.error.code === 'INVALID_TOKEN';
-
-        await auditService.createAuditLog({
-          agencyId: auth.connection.agencyId,
-          resourceId: connectionId,
-          resourceType: 'connection',
-          action: requiresReconnect
-            ? 'REFRESH_RECONNECT_REQUIRED'
-            : 'FAILED',
-          userEmail: auth.connection.clientEmail,
-          details: {
-            platform,
-            jobId: job.id,
-            error: refreshResult.error.message,
-            code: refreshResult.error.code,
-          },
-        });
-        return;
-      }
-
-      await auditService.createAuditLog({
-        agencyId: auth.connection.agencyId,
-        resourceId: connectionId,
-        resourceType: 'connection',
-        action: 'REFRESHED',
-        userEmail: auth.connection.clientEmail,
-        details: {
-          platform,
-          jobId: job.id,
-          outcome: refreshResult.data?.outcome,
-          expiresAt: refreshResult.data?.expiresAt,
-        },
-      });
+      refreshResult = await refreshClientPlatformAuthorization(connectionId, platform as Platform);
     } catch (error) {
       await auditService.createAuditLog({
         resourceId: connectionId,
         resourceType: 'connection',
         action: 'FAILED',
-        details: {
-          platform,
-          jobId: job.id,
-          error: String(error),
-        },
+        details: { platform, jobId: job.id, error: String(error) },
       });
-      throw error; // Re-throw to trigger retry
+      throw error;
     }
+
+    const refreshError = refreshResult.error;
+    const requiresReconnect =
+      refreshError?.code === 'RECONNECT_REQUIRED' || refreshError?.code === 'INVALID_TOKEN';
+    await auditService.createAuditLog({
+      agencyId: auth.connection.agencyId,
+      resourceId: connectionId,
+      resourceType: 'connection',
+      action: refreshError ? (requiresReconnect ? 'REFRESH_RECONNECT_REQUIRED' : 'FAILED') : 'REFRESHED',
+      userEmail: auth.connection.clientEmail,
+      details: {
+        platform,
+        jobId: job.id,
+        ...(refreshError
+          ? { error: refreshError.message, code: refreshError.code }
+          : { outcome: refreshResult.data?.outcome, expiresAt: refreshResult.data?.expiresAt }),
+      },
+    });
+
+    // Retry transient provider failures without duplicating their audit event.
+    if (refreshError?.code === 'REFRESH_RETRYABLE') {
+      throw new Error(refreshError.message);
+    }
+
   }, { teamSize: 1, teamConcurrency: 1 });
 }
 

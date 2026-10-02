@@ -8,20 +8,28 @@
  */
 
 import { useState, Suspense, useEffect } from 'react';
+import dynamic from 'next/dynamic';
 import { useAuth } from '@clerk/nextjs';
 import { useQuery } from '@tanstack/react-query';
 import { Search, AlertCircle, ExternalLink, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
 import { LogoSpinner } from '@/components/ui/logo-spinner';
 import Link from 'next/link';
 import { StatusBadge, PlatformIcon, EmptyState, Button } from '@/components/ui';
-import { CreateClientModal } from '@/components/client-detail/CreateClientModal';
-import { UpgradeModal } from '@/components/upgrade-modal';
 import { useQuotaCheck, QuotaExceededError } from '@/lib/query/quota';
 import { resolveApiUrl } from '@/lib/api/api-env';
 import { authorizedApiFetch } from '@/lib/api/authorized-api-fetch';
 import type { Platform } from '@agency-platform/shared';
 import type { StatusType } from '@/components/ui/status-badge';
 import { useSearchParams } from 'next/navigation';
+
+const CreateClientModal = dynamic(() =>
+  import('@/components/client-detail/CreateClientModal').then((mod) => mod.CreateClientModal),
+  { loading: () => <div role="status" className="fixed inset-0 z-50 flex items-center justify-center bg-background/90">Loading client form...</div> }
+);
+const UpgradeModal = dynamic(() =>
+  import('@/components/upgrade-modal').then((mod) => mod.UpgradeModal),
+  { loading: () => <div role="status" className="fixed inset-0 z-50 flex items-center justify-center bg-background/90">Loading upgrade options...</div> }
+);
 
 interface Client {
   id: string;

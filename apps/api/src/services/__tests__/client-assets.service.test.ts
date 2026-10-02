@@ -167,7 +167,9 @@ describe('ClientAssetsService - Meta', () => {
       } as Response;
     });
 
-    const result = await clientAssetsService.fetchMetaAssets('token-123', 'biz_client_2');
+    const result = await clientAssetsService.fetchMetaAssets('token-123', 'biz_client_2', [
+      'ad_account', 'page', 'instagram_account', 'catalog', 'dataset',
+    ]);
 
     expect(result.businesses).toEqual([
       {

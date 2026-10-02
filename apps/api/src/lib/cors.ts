@@ -19,6 +19,6 @@ export function getCorsOptions(
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'x-agency-id', 'X-Agency-Id'],
-    exposedHeaders: ['x-cache', 'x-response-time', 'x-cache-hit-rate'],
+    exposedHeaders: ['x-cache', 'x-response-time', 'x-cache-hit-rate', 'server-timing'],
   };
 }

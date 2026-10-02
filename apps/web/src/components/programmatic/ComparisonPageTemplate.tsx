@@ -351,7 +351,7 @@ function ClientInvitePricingSection({ page }: ComparisonPageTemplateProps) {
         </div>
 
         {valueCallout && (
-          <div className="mt-8 border-2 border-ink bg-coral/5 px-4 py-4 shadow-[4px_4px_0_0_#000] sm:px-5">
+          <div className="mt-8 border-2 border-ink bg-coral/5 px-4 py-4 sm:px-5">
             <h3 className="font-dela text-base text-ink">{valueCallout.headline}</h3>
             <p className="mt-2 font-mono text-xs leading-relaxed text-muted-foreground">{valueCallout.body}</p>
           </div>
@@ -417,8 +417,8 @@ function ClientInvitePricingSection({ page }: ComparisonPageTemplateProps) {
               Leadsie alternative
             </Link>
             {" · "}
-            <Link href={"/blog/flat-rate-vs-credit-pricing" as Route} className="font-semibold text-ink underline-offset-2 hover:underline">
-              Flat-rate vs credit pricing
+            <Link href={"/compare/leadsie-pricing" as Route} className="font-semibold text-ink underline-offset-2 hover:underline">
+              Leadsie pricing deep-dive
             </Link>
           </p>
           <ComparingAllThreeLink />
@@ -542,8 +542,8 @@ export function ComparisonPageTemplate({ page }: ComparisonPageTemplateProps) {
                   Leadsie alternative
                 </Link>
                 {" · "}
-                <Link href={"/blog/flat-rate-vs-credit-pricing" as Route} className="font-semibold text-ink underline-offset-2 hover:underline">
-                  Flat-rate vs credit pricing
+                <Link href={"/compare/leadsie-pricing" as Route} className="font-semibold text-ink underline-offset-2 hover:underline">
+                  Leadsie pricing deep-dive
                 </Link>
               </p>
             )}
@@ -1135,11 +1135,8 @@ export function ComparisonPageTemplate({ page }: ComparisonPageTemplateProps) {
                   >
                     Best Leadsie alternatives (2026)
                   </Link>
-                  <Link
-                    href={"/blog/flat-rate-vs-credit-pricing" as Route}
-                    className="hover:text-paper hover:underline"
-                  >
-                    Flat-rate vs credit pricing
+                  <Link href={"/compare/leadsie-pricing" as Route} className="hover:text-paper hover:underline">
+                    Leadsie pricing deep-dive
                   </Link>
                   <Link
                     href={"/compare/agencyaccess-alternative" as Route}

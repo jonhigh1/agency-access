@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const { sendMock } = vi.hoisted(() => ({
+const { sendMock, createQueueMock } = vi.hoisted(() => ({
   sendMock: vi.fn(),
+  createQueueMock: vi.fn(),
 }));
 
 vi.mock('pg-boss', () => ({
@@ -10,6 +11,7 @@ vi.mock('pg-boss', () => ({
       on: vi.fn(),
       start: vi.fn().mockResolvedValue(undefined),
       send: sendMock,
+      createQueue: createQueueMock,
     };
   }),
 }));
@@ -29,7 +31,7 @@ vi.mock('@/lib/logger', () => ({
   },
 }));
 
-import { enqueueJob } from '../pg-boss.js';
+import { enqueueJob, ensureAllQueues } from '../pg-boss.js';
 
 describe('enqueueJob', () => {
   beforeEach(() => {
@@ -79,5 +81,10 @@ describe('enqueueJob', () => {
       },
       expect.objectContaining({ priority: 1 })
     );
+  });
+
+  it('creates the retention cleanup queue before workers and schedules start', async () => {
+    await ensureAllQueues();
+    expect(createQueueMock).toHaveBeenCalledWith('cleanup-agent-operations');
   });
 });

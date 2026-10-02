@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, it } from 'vitest';
 import path from 'node:path';
 import nextConfig from '../../next.config';

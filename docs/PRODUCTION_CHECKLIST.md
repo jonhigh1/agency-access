@@ -2,7 +2,7 @@
 
 ## Production Readiness Launch Gates
 
-Run these from a clean Node 20 install before customer launch:
+Run these from a clean Node 24 install before customer launch:
 
 ```bash
 npm install --no-audit

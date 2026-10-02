@@ -9,6 +9,7 @@ import { ManageAssetsSectionCard, ManageAssetsStatusPanel } from './manage-asset
 import { Button } from './ui/button';
 import { SingleSelect } from '@/components/ui/single-select';
 import { resolveApiUrl } from '@/lib/api/api-env';
+import { authorizedApiFetch } from '@/lib/api/authorized-api-fetch';
 import { extractApiErrorMessage } from '@/lib/api/extract-error';
 import { startAgencyMetaOAuth } from '@/lib/agency-meta-oauth';
 import { Loader2, ChevronDown, AlertCircle, Info, AlertTriangle } from 'lucide-react';
@@ -68,18 +69,11 @@ export function MetaUnifiedSettings({ agencyId }: MetaUnifiedSettingsProps) {
   const { data: initialData, isLoading: isLoadingSettings } = useQuery({
     queryKey: ['meta-asset-settings', agencyId],
     queryFn: async () => {
-      const token = await getToken();
-      const response = await fetch(
-        resolveApiUrl(`/agency-platforms/meta/asset-settings?agencyId=${agencyId}`),
-        {
-          headers: {
-            ...(token && { Authorization: `Bearer ${token}` }),
-          },
-        }
+      const json = await authorizedApiFetch<{ data: MetaAssetSettings }>(
+        `/agency-platforms/meta/asset-settings?agencyId=${agencyId}`,
+        { getToken }
       );
-      if (!response.ok) throw new Error('Failed to fetch settings');
-      const json = await response.json();
-      return json.data as MetaAssetSettings;
+      return json.data;
     },
   });
 
