@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MetaAssetSelector } from '../MetaAssetSelector';
 
 vi.mock('posthog-js', () => ({
@@ -12,12 +12,17 @@ vi.mock('@/components/ui/multi-select-combobox', () => ({
   MultiSelectCombobox: ({
     placeholder,
     selectedIds,
+    onSelectionChange,
   }: {
     placeholder: string;
     selectedIds?: Set<string>;
+    onSelectionChange?: (ids: Set<string>) => void;
   }) => (
-    <div data-testid={placeholder} data-selected={[...(selectedIds || [])].join(',')}>
-      {placeholder}
+    <div>
+      <div data-testid={placeholder} data-selected={[...(selectedIds || [])].join(',')}>
+        {placeholder}
+      </div>
+      <button type="button" onClick={() => onSelectionChange?.(new Set())}>Clear {placeholder}</button>
     </div>
   ),
 }));
@@ -140,5 +145,138 @@ describe('MetaAssetSelector resume prefill pruning', () => {
       expect(last.allAdAccounts).toBeDefined();
       expect([...last.adAccounts]).toEqual([]);
     });
+  });
+
+  it('applies a prefill that arrives after its assets are loaded', async () => {
+    mockFetch([{ id: 'act_resume', name: 'Resumed account' }]);
+
+    const onSelectionChange = vi.fn();
+    const { rerender } = render(
+      <MetaAssetSelector
+        sessionId="conn-1"
+        accessRequestToken="token-1"
+        onSelectionChange={onSelectionChange}
+      />
+    );
+
+    await screen.findByText('Sharing from Client One');
+    rerender(
+      <MetaAssetSelector
+        sessionId="conn-1"
+        accessRequestToken="token-1"
+        initialSelection={{ adAccounts: ['act_resume'], pages: [], instagramAccounts: [], catalogs: [], datasets: [] }}
+        onSelectionChange={onSelectionChange}
+      />
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('Select ad accounts...')).toHaveAttribute('data-selected', 'act_resume');
+    });
+  });
+
+  it('applies a prefill that arrives while assets are loading', async () => {
+    let resolveResponse!: (response: Response) => void;
+    const fetchMock = vi.fn(() => new Promise<Response>((resolve) => { resolveResponse = resolve; }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    const onSelectionChange = vi.fn();
+    const { rerender } = render(
+      <MetaAssetSelector sessionId="conn-1" accessRequestToken="token-1" onSelectionChange={onSelectionChange} />
+    );
+    await waitFor(() => expect(fetchMock).toHaveBeenCalled());
+
+    rerender(
+      <MetaAssetSelector
+        sessionId="conn-1"
+        accessRequestToken="token-1"
+        initialSelection={{ adAccounts: ['act_resume'], pages: [], instagramAccounts: [], catalogs: [], datasets: [] }}
+        onSelectionChange={onSelectionChange}
+      />
+    );
+    resolveResponse({
+      ok: true,
+      text: async () => JSON.stringify({ data: { businesses: [{ id: 'biz_1', name: 'Client One' }], selectedBusinessId: 'biz_1', selectedBusinessName: 'Client One', adAccounts: [{ id: 'act_resume', name: 'Resumed account' }], pages: [], instagramAccounts: [] }, error: null }),
+    } as Response);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('Select ad accounts...')).toHaveAttribute('data-selected', 'act_resume');
+    });
+  });
+
+  it('does not restore an already applied prefill after the user clears it', async () => {
+    mockFetch([{ id: 'act_resume', name: 'Resumed account' }]);
+
+    const onSelectionChange = vi.fn();
+    const initialSelection = { adAccounts: ['act_resume'], pages: [], instagramAccounts: [], catalogs: [], datasets: [] };
+    const { rerender } = render(
+      <MetaAssetSelector
+        sessionId="conn-1"
+        accessRequestToken="token-1"
+        initialSelection={initialSelection}
+        onSelectionChange={onSelectionChange}
+      />
+    );
+
+    await screen.findByText('Sharing from Client One');
+    await waitFor(() => expect(screen.getByTestId('Select ad accounts...')).toHaveAttribute('data-selected', 'act_resume'));
+    fireEvent.click(screen.getByRole('button', { name: 'Clear Select ad accounts...' }));
+    expect(screen.getByTestId('Select ad accounts...')).toHaveAttribute('data-selected', '');
+
+    rerender(
+      <MetaAssetSelector
+        sessionId="conn-1"
+        accessRequestToken="token-1"
+        onSelectionChange={onSelectionChange}
+      />
+    );
+    rerender(
+      <MetaAssetSelector
+        sessionId="conn-1"
+        accessRequestToken="token-1"
+        initialSelection={initialSelection}
+        onSelectionChange={onSelectionChange}
+      />
+    );
+
+    expect(screen.getByTestId('Select ad accounts...')).toHaveAttribute('data-selected', '');
+  });
+
+  it('does not carry selected ids into a new session', async () => {
+    const fetchMock = vi.fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () => JSON.stringify({ data: { businesses: [{ id: 'biz_1', name: 'Client One' }], selectedBusinessId: 'biz_1', selectedBusinessName: 'Client One', adAccounts: [{ id: 'act_old', name: 'Old account' }], pages: [], instagramAccounts: [] }, error: null }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        text: async () => JSON.stringify({ data: { businesses: [{ id: 'biz_2', name: 'Client Two' }], selectedBusinessId: 'biz_2', selectedBusinessName: 'Client Two', adAccounts: [{ id: 'act_new', name: 'New account' }], pages: [], instagramAccounts: [] }, error: null }),
+      } as Response);
+    vi.stubGlobal('fetch', fetchMock);
+
+    const onSelectionChange = vi.fn();
+    const { rerender } = render(
+      <MetaAssetSelector
+        sessionId="conn-1"
+        accessRequestToken="token-1"
+        initialSelection={{ adAccounts: ['act_old'], pages: [], instagramAccounts: [], catalogs: [], datasets: [] }}
+        onSelectionChange={onSelectionChange}
+      />
+    );
+
+    await screen.findByText('Sharing from Client One');
+    await waitFor(() => expect(screen.getByTestId('Select ad accounts...')).toHaveAttribute('data-selected', 'act_old'));
+
+    rerender(
+      <MetaAssetSelector
+        sessionId="conn-2"
+        accessRequestToken="token-1"
+        initialSelection={{ adAccounts: ['act_old'], pages: [], instagramAccounts: [], catalogs: [], datasets: [] }}
+        onSelectionChange={onSelectionChange}
+      />
+    );
+
+    await screen.findByText('Sharing from Client Two');
+    expect(fetchMock.mock.calls[1][0]).not.toContain('businessId=biz_1');
+    await waitFor(() => expect(screen.getByTestId('Select ad accounts...')).toHaveAttribute('data-selected', ''));
   });
 });

@@ -114,6 +114,22 @@ function isMetaAssetProduct(product: string): boolean {
   return product === 'meta_ads' || product === 'meta_pages' || product === 'instagram';
 }
 
+function hasRetainedMetaSelection(
+  expected: InviteSelectionPrefill | null,
+  actual: MetaSelectionBlob | undefined
+): boolean {
+  if (!expected || !actual) return false;
+  const matches = (saved: string[], selected: string[]) =>
+    saved.length === selected.length && saved.every((id) => selected.includes(id));
+  return (
+    matches(expected.adAccounts, actual.adAccounts) &&
+    matches(expected.pages, actual.pages) &&
+    matches(expected.instagramAccounts, actual.instagramAccounts) &&
+    matches(expected.catalogs, actual.catalogs) &&
+    matches(expected.datasets, actual.datasets)
+  );
+}
+
 function supportsAssetSelection(product: string): boolean {
   return (
     isMetaAssetProduct(product) ||
@@ -473,7 +489,7 @@ export function PlatformAuthWizard({
     'idle' | 'verified' | 'partial'
   >('idle');
   const [assetsSaved, setAssetsSaved] = useState(false);
-  const [chooseAccountsExpanded, setChooseAccountsExpanded] = useState(() => !hasInitialMetaSelections);
+  const [chooseAccountsExpanded, setChooseAccountsExpanded] = useState(true);
   const [grantAccessExpanded, setGrantAccessExpanded] = useState(true);
   // U7 resume: the server already holds the client's saved selections, so the
   // share step reads as saved once the fresh asset fetch lands — not before
@@ -495,7 +511,6 @@ export function PlatformAuthWizard({
     appliedPrefillKeyRef.current = prefillKey;
     setMetaSelectionPrefill(JSON.parse(prefillKey) as InviteSelectionPrefill);
     resumeSavedPendingRef.current = true;
-    setChooseAccountsExpanded(false);
   }, [prefillKey]);
   const [sharedAccountsExpanded, setSharedAccountsExpanded] = useState(false);
   const [tiktokShareResult, setTikTokShareResult] = useState<TikTokShareResponse | null>(null);
@@ -676,6 +691,7 @@ export function PlatformAuthWizard({
   const handleSelectorError = useCallback((message: string) => {
     setAssetsFetchError(message);
     setError(message);
+    setChooseAccountsExpanded(true);
   }, []);
 
   // Post-save change-selection: re-open selection editing with a clean slate.
@@ -916,16 +932,27 @@ export function PlatformAuthWizard({
   const metaAssetsLoaded =
     !metaNeedsGrantStep || metaSelectionBlob?.assetsLoaded === true;
   const assetsLoading =
-    selectableProducts.some((product) => groupAssets[product.product] === undefined) ||
-    !metaAssetsLoaded;
+    !assetsFetchError && (
+      selectableProducts.some((product) => groupAssets[product.product] === undefined) ||
+      !metaAssetsLoaded
+    );
+  const retainedResumeSelection = hasRetainedMetaSelection(
+    metaSelectionPrefill,
+    metaSelectionBlob
+  );
 
   // U7 resume: mark the share step saved once — when the resumed prefill is
   // pending and the fresh asset fetch has reported its lists.
   useEffect(() => {
     if (!resumeSavedPendingRef.current || !metaAssetsLoaded) return;
     resumeSavedPendingRef.current = false;
-    setAssetsSaved(true);
-  }, [metaAssetsLoaded]);
+    if (retainedResumeSelection) {
+      setAssetsSaved(true);
+      return;
+    }
+    setAssetsSaved(false);
+    setChooseAccountsExpanded(true);
+  }, [metaAssetsLoaded, metaSelectionBlob, retainedResumeSelection]);
   const ctaProductStates = selectableProducts.map((product) =>
     getProductCtaState(product.product, groupAssets[product.product] || {})
   );
@@ -963,6 +990,16 @@ export function PlatformAuthWizard({
           requestAvailability,
         })
       : null;
+
+  useEffect(() => {
+    if (
+      ctaResolution?.reasonKind === 'select_required' ||
+      ctaResolution?.reasonKind === 'create_required' ||
+      ctaResolution?.reasonKind === 'fetch_error'
+    ) {
+      setChooseAccountsExpanded(true);
+    }
+  }, [ctaResolution?.reasonKind]);
 
   // U11 funnel: report each blocked state once per occurrence. The effect runs
   // on the reason-kind transition only — re-renders with an unchanged kind are
@@ -1167,6 +1204,8 @@ export function PlatformAuthWizard({
               <button
                 type="button"
                 onClick={() => setChooseAccountsExpanded(!chooseAccountsExpanded)}
+                aria-expanded={chooseAccountsExpanded}
+                aria-controls="meta-asset-selection"
                 className="w-full px-6 py-4 flex items-center justify-between bg-muted/20 dark:bg-muted/60 hover:bg-muted/30 dark:hover:bg-muted/50 transition-colors"
               >
                 <div className="text-left">
@@ -1187,6 +1226,7 @@ export function PlatformAuthWizard({
 
               <AnimatePresence initial={false}>
                   <m.div
+                    id="meta-asset-selection"
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: chooseAccountsExpanded ? 'auto' : 0, opacity: chooseAccountsExpanded ? 1 : 0 }}
                     transition={{ duration: 0.3, ease: 'easeInOut' }}

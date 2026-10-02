@@ -115,10 +115,13 @@ export function MetaAssetSelector({
   // hosts the existing guided Page prerequisite and business creator.
   const [businessCreationOpen, setBusinessCreationOpen] = useState(false);
 
-  // U7 resume prefill. Held in a ref so it is consumed exactly once, by the
-  // first successful asset fetch; later fetches and resets start from what is
-  // on screen, never from the prefill.
-  const pendingInitialSelection = useRef<InviteSelectionPrefill | null>(initialSelection || null);
+  // A resume prefill can arrive after this component mounts. Consume each
+  // value once for its session after fresh assets are available.
+  const appliedInitialSelectionKey = useRef<string | null>(null);
+  const selectionSessionId = useRef(sessionId);
+  const [resolvedPrefillSessionKey, setResolvedPrefillSessionKey] = useState<string | null>(null);
+  const initialSelectionKey = initialSelection ? JSON.stringify(initialSelection) : null;
+  const initialSelectionSessionKey = initialSelectionKey ? `${sessionId}:${initialSelectionKey}` : null;
 
   // Selection state, seeded from the resume prefill when present.
   const [selectedAdAccounts, setSelectedAdAccounts] = useState<Set<string>>(
@@ -411,27 +414,6 @@ export function MetaAssetSelector({
         });
       }
 
-      // U7 resume prefill: keep only the saved selections the fresh fetch
-      // still shows. One pass — after this the selection is client-owned.
-      // An all-pruned intersection returns null, and that null must CLEAR
-      // the stale mount-seeded selection, not skip the sync (#19).
-      const pendingPrefill = pendingInitialSelection.current;
-      if (pendingPrefill) {
-        pendingInitialSelection.current = null;
-        const prunedPrefill = intersectSelectionPrefill(pendingPrefill, fetchedAssets) ?? {
-          adAccounts: [],
-          pages: [],
-          instagramAccounts: [],
-          catalogs: [],
-          datasets: [],
-        };
-        setSelectedAdAccounts(new Set(prunedPrefill.adAccounts));
-        setSelectedPages(new Set(prunedPrefill.pages));
-        setSelectedInstagram(new Set(prunedPrefill.instagramAccounts));
-        setSelectedCatalogs(new Set(prunedPrefill.catalogs));
-        setSelectedDatasets(new Set(prunedPrefill.datasets));
-      }
-
       return fetchedAssets;
     } catch (err) {
       if (fetchVersion !== assetFetchVersion.current) return null;
@@ -447,10 +429,48 @@ export function MetaAssetSelector({
   // Fetch assets on mount
   useEffect(() => {
     if (sessionId) {
-      fetchAssets(selectedBusinessId || undefined);
+      fetchAssets(selectionSessionId.current === sessionId ? selectedBusinessId || undefined : undefined);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sessionId, accessRequestToken]);
+
+  // A saved fulfillment reaches the wizard after asset discovery on resume.
+  // Prune it against the current session's assets, then never apply it again.
+  useEffect(() => {
+    if (!initialSelection || !initialSelectionKey || !initialSelectionSessionKey) return;
+    if (selectionSessionId.current !== sessionId || !assets) return;
+    if (appliedInitialSelectionKey.current === initialSelectionSessionKey) return;
+
+    appliedInitialSelectionKey.current = initialSelectionSessionKey;
+    const prunedPrefill = intersectSelectionPrefill(initialSelection, assets) ?? {
+      adAccounts: [],
+      pages: [],
+      instagramAccounts: [],
+      catalogs: [],
+      datasets: [],
+    };
+    setSelectedAdAccounts(new Set(prunedPrefill.adAccounts));
+    setSelectedPages(new Set(prunedPrefill.pages));
+    setSelectedInstagram(new Set(prunedPrefill.instagramAccounts));
+    setSelectedCatalogs(new Set(prunedPrefill.catalogs));
+    setSelectedDatasets(new Set(prunedPrefill.datasets));
+    setResolvedPrefillSessionKey(initialSelectionSessionKey);
+  }, [assets, initialSelection, initialSelectionKey, initialSelectionSessionKey, sessionId]);
+
+  // A session change invalidates in-memory ids before its next asset response.
+  useEffect(() => {
+    if (selectionSessionId.current === sessionId) return;
+    selectionSessionId.current = sessionId;
+    setAssets(null);
+    setSelectedBusinessId(null);
+    setSelectedBusinessName(null);
+    setSelectedAdAccounts(new Set());
+    setSelectedPages(new Set());
+    setSelectedInstagram(new Set());
+    setSelectedCatalogs(new Set());
+    setSelectedDatasets(new Set());
+    setResolvedPrefillSessionKey(initialSelectionSessionKey);
+  }, [initialSelectionSessionKey, sessionId]);
 
   // Fetch the client user's own Pages — only needed in the zero-portfolio
   // branch (guided Page prerequisite for Business creation).
@@ -516,6 +536,7 @@ export function MetaAssetSelector({
     (showPixels ? selectedDatasets.size : 0);
 
   useEffect(() => {
+    if (assets && initialSelectionSessionKey && resolvedPrefillSessionKey !== initialSelectionSessionKey) return;
     // Include full asset objects for grant step
     const selectedPagesWithNames = Array.from(selectedPages).map((id) => {
       const page = assets?.pages.find((p) => p.id === id);
@@ -608,7 +629,7 @@ export function MetaAssetSelector({
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedAdAccounts, selectedPages, selectedInstagram, selectedCatalogs, selectedDatasets, assets]);
+  }, [selectedAdAccounts, selectedPages, selectedInstagram, selectedCatalogs, selectedDatasets, assets, initialSelectionSessionKey, resolvedPrefillSessionKey]);
 
   // Loading state
   if (isLoading) {

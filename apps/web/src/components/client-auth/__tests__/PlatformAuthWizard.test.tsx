@@ -36,7 +36,7 @@ vi.mock('@/components/client-auth/PlatformWizardCard', () => ({
 }));
 
 vi.mock('@/components/client-auth/MetaAssetSelector', () => ({
-  MetaAssetSelector: ({ onSelectionChange, onSelectionDerivedStateReset, initialSelection, allowedAssetTypes }: any) => (
+  MetaAssetSelector: ({ onSelectionChange, onSelectionDerivedStateReset, initialSelection, allowedAssetTypes, onError }: any) => (
     <div>
       <div>Meta Asset Selector</div>
       <div>{`Allowed Meta asset types: ${allowedAssetTypes.join(',')}`}</div>
@@ -130,6 +130,24 @@ vi.mock('@/components/client-auth/MetaAssetSelector', () => ({
         type="button"
         onClick={() =>
           onSelectionChange({
+            adAccounts: initialSelection?.adAccounts ?? [],
+            pages: initialSelection?.pages ?? [],
+            instagramAccounts: initialSelection?.instagramAccounts ?? [],
+            catalogs: initialSelection?.catalogs ?? [],
+            datasets: initialSelection?.datasets ?? [],
+            allAdAccounts: (initialSelection?.adAccounts ?? []).map((id: string) => ({ id, name: id })),
+            allPages: (initialSelection?.pages ?? []).map((id: string) => ({ id, name: id })),
+            allInstagramAccounts: (initialSelection?.instagramAccounts ?? []).map((id: string) => ({ id, username: id })),
+            assetsLoaded: true,
+          })
+        }
+      >
+        Emit Resumed Meta Selection
+      </button>
+      <button
+        type="button"
+        onClick={() =>
+          onSelectionChange({
             adAccounts: [],
             pages: [],
             instagramAccounts: [],
@@ -185,6 +203,9 @@ vi.mock('@/components/client-auth/MetaAssetSelector', () => ({
       </button>
       <button type="button" onClick={() => onSelectionDerivedStateReset?.()}>
         Reset Meta Selection Only
+      </button>
+      <button type="button" onClick={() => onError?.('Could not load Meta accounts')}>
+        Emit Meta Selector Error
       </button>
     </div>
   ),
@@ -781,6 +802,108 @@ describe('PlatformAuthWizard', () => {
     expect(JSON.parse(String(vi.mocked(fetch).mock.calls[1][1]?.body))).toEqual(
       expect.objectContaining({ platform: 'ga4' })
     );
+  });
+
+  it('keeps the chooser open and unsaved when fresh Meta assets prune resume selections', async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      text: async () => JSON.stringify({ data: { businessId: 'biz_1' }, error: null }),
+    } as Response);
+
+    render(
+      <PlatformAuthWizard
+        platform="meta"
+        platformName="Meta"
+        products={[{ product: 'meta_ads', accessLevel: 'admin' }]}
+        accessRequestToken="token-1"
+        onComplete={onCompleteMock}
+        initialConnectionId="conn-1"
+        initialStep={2}
+        initialMetaSelections={{
+          adAccounts: ['act_stale'],
+          pages: [],
+          instagramAccounts: [],
+          catalogs: [],
+          datasets: [],
+        }}
+      />
+    );
+
+    const chooser = screen.getByRole('button', { name: /choose accounts to share/i });
+    expect(chooser).toHaveAttribute('aria-expanded', 'true');
+    fireEvent.click(screen.getByRole('button', { name: /emit empty meta selection with available assets/i }));
+
+    expect(await screen.findByText('Select at least one ad account to continue')).toBeInTheDocument();
+    expect(chooser).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByRole('button', { name: /share access/i })).toBeDisabled();
+  });
+
+  it('does not collapse the chooser when resume selections arrive after mount', async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      text: async () => JSON.stringify({ data: { businessId: 'biz_1' }, error: null }),
+    } as Response);
+
+    const { rerender } = render(
+      <PlatformAuthWizard
+        platform="meta"
+        platformName="Meta"
+        products={[{ product: 'meta_ads', accessLevel: 'admin' }]}
+        accessRequestToken="token-1"
+        onComplete={onCompleteMock}
+        initialConnectionId="conn-1"
+        initialStep={2}
+      />
+    );
+
+    rerender(
+      <PlatformAuthWizard
+        platform="meta"
+        platformName="Meta"
+        products={[{ product: 'meta_ads', accessLevel: 'admin' }]}
+        accessRequestToken="token-1"
+        onComplete={onCompleteMock}
+        initialConnectionId="conn-1"
+        initialStep={2}
+        initialMetaSelections={{
+          adAccounts: ['act_1'],
+          pages: [],
+          instagramAccounts: [],
+          catalogs: [],
+          datasets: [],
+        }}
+      />
+    );
+
+    expect(await screen.findByText('Resume prefill: act_1')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /choose accounts to share/i })).toHaveAttribute('aria-expanded', 'true');
+  });
+
+  it('reopens the chooser when Meta asset loading fails', async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      text: async () => JSON.stringify({ data: { businessId: 'biz_1' }, error: null }),
+    } as Response);
+
+    render(
+      <PlatformAuthWizard
+        platform="meta"
+        platformName="Meta"
+        products={[{ product: 'meta_ads', accessLevel: 'admin' }]}
+        accessRequestToken="token-1"
+        onComplete={onCompleteMock}
+        initialConnectionId="conn-1"
+        initialStep={2}
+      />
+    );
+
+    const chooser = screen.getByRole('button', { name: /choose accounts to share/i });
+    fireEvent.click(chooser);
+    expect(chooser).toHaveAttribute('aria-expanded', 'false');
+    fireEvent.click(screen.getByRole('button', { name: /emit meta selector error/i, hidden: true }));
+
+    expect(await screen.findByText("We couldn't load your accounts. Try again.")).toBeInTheDocument();
+    expect(chooser).toHaveAttribute('aria-expanded', 'true');
   });
 
   it('shares Meta selection across ads, pages, and Instagram products', async () => {
@@ -1710,12 +1833,9 @@ describe('PlatformAuthWizard', () => {
       // never an enableable advance (KTD2).
       expect(screen.getByText('Preparing your accounts')).toBeInTheDocument();
 
-      // The chooser accordion starts collapsed on a resumed share step.
-      fireEvent.click(screen.getByRole('button', { name: /choose accounts to share/i }));
-
       // The selector reports the fresh fetch with the client's saved
       // selections (the real selector pre-checks the pruned prefill).
-      fireEvent.click(await screen.findByRole('button', { name: /select meta assets/i }));
+      fireEvent.click(await screen.findByRole('button', { name: /emit resumed meta selection/i }));
 
       // Saved state without a save click: the action becomes the advance
       // action, gated on the pending grant steps (AE5).
@@ -1751,9 +1871,6 @@ describe('PlatformAuthWizard', () => {
         />
       );
 
-      // The resumed share step starts with the chooser accordion collapsed;
-      // opening it is how the client reaches the business switch.
-      fireEvent.click(screen.getByRole('button', { name: /choose accounts to share/i }));
       fireEvent.click(await screen.findByRole('button', { name: /switch meta business/i }));
 
       // Post-reset the resolver is back on the selection rules — the resumed
