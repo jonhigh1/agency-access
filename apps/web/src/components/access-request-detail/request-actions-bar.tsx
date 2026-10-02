@@ -58,16 +58,16 @@ export function RequestActionsBar({
   return (
     <>
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <Link href="/dashboard" className="inline-flex">
-          <Button
-            variant="secondary"
-            size="sm"
-            leftIcon={<ArrowLeft className="h-4 w-4" />}
-            onClick={() => onAction?.('back_to_dashboard')}
-          >
+        <Button
+          asChild
+          variant="secondary"
+          size="sm"
+          leftIcon={<ArrowLeft className="h-4 w-4" />}
+        >
+          <Link href="/dashboard" onClick={() => onAction?.('back_to_dashboard')}>
             Back to Dashboard
-          </Button>
-        </Link>
+          </Link>
+        </Button>
 
         <div className="flex items-center gap-2">
           {revocable && (
@@ -82,27 +82,17 @@ export function RequestActionsBar({
             </Button>
           )}
           {editable ? (
-            <Link
-              href={`/access-requests/${requestId}/edit` as any}
-              className="inline-flex"
-              aria-label="Edit Request"
-              onClick={() => onAction?.('edit_request')}
-            >
-              <Button size="sm" leftIcon={<Edit3 className="h-4 w-4" />}>
+            <Button asChild size="sm" leftIcon={<Edit3 className="h-4 w-4" />}>
+              <Link href={`/access-requests/${requestId}/edit` as any} onClick={() => onAction?.('edit_request')}>
                 Edit Request
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           ) : (
-            <Link
-              href={`/access-requests/new?fromRequest=${encodeURIComponent(requestId)}` as any}
-              className="inline-flex"
-              aria-label="Create New Request From This"
-              onClick={() => onAction?.('create_from_request')}
-            >
-              <Button size="sm" leftIcon={<Plus className="h-4 w-4" />}>
+            <Button asChild size="sm" leftIcon={<Plus className="h-4 w-4" />}>
+              <Link href={`/access-requests/new?fromRequest=${encodeURIComponent(requestId)}` as any} onClick={() => onAction?.('create_from_request')}>
                 Create New Request From This
-              </Button>
-            </Link>
+              </Link>
+            </Button>
           )}
         </div>
       </div>

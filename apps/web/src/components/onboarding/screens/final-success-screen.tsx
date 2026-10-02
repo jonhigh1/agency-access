@@ -7,8 +7,8 @@
 
 'use client';
 
-import { motion } from 'framer-motion';
-import { Clock, ArrowRight } from 'lucide-react';
+import { m } from 'framer-motion';
+import { Clock, ArrowRight, LoaderCircle } from 'lucide-react';
 import { staggerContainer, staggerItem } from '@/lib/animations';
 
 interface FinalSuccessScreenProps {
@@ -16,6 +16,8 @@ interface FinalSuccessScreenProps {
   clientName: string;
   accessRequestId: string;
   teamInvitesSent: number;
+  platforms?: string[];
+  loading?: boolean;
   onComplete: () => void;
 }
 
@@ -24,16 +26,21 @@ export function FinalSuccessScreen({
   clientName,
   accessRequestId,
   teamInvitesSent,
+  platforms = [],
+  loading = false,
   onComplete,
 }: FinalSuccessScreenProps) {
+  const requestedPlatforms = platforms.length === 1
+    ? platforms[0].replaceAll('_', ' ')
+    : 'the requested platforms';
   return (
-    <motion.div
+    <m.div
       className="p-6 md:p-10"
       variants={staggerContainer}
       initial="hidden"
       animate="visible"
     >
-      <motion.div className="text-center mb-8" variants={staggerItem}>
+      <m.div className="text-center mb-8" variants={staggerItem}>
         <div className="inline-flex items-center justify-center w-20 h-20 bg-coral/10 border-2 border-coral/30 rounded-full mb-6">
           <Clock className="w-10 h-10 text-danger-ink" strokeWidth={2} />
         </div>
@@ -42,11 +49,11 @@ export function FinalSuccessScreen({
           Pending — waiting on {clientName}
         </h2>
         <p className="text-xl text-muted-foreground">
-          {agencyName} is set up. Connected when they finish Google.
+          {agencyName} is set up. Your client still needs to authorize {requestedPlatforms}.
         </p>
-      </motion.div>
+      </m.div>
 
-      <motion.div className="max-w-2xl mx-auto mb-8" variants={staggerItem}>
+      <m.div className="max-w-2xl mx-auto mb-8" variants={staggerItem}>
         <div className="rounded-lg border-2 border-black bg-paper p-6">
           <p className="label-micro text-muted-foreground mb-2">Activation status</p>
           <p className="text-lg font-semibold text-ink mb-2">Link ready — client authorization pending</p>
@@ -60,31 +67,34 @@ export function FinalSuccessScreen({
             </p>
           )}
         </div>
-      </motion.div>
+      </m.div>
 
       {accessRequestId && (
-        <motion.div className="max-w-2xl mx-auto mb-8 text-center" variants={staggerItem}>
+        <m.div className="max-w-2xl mx-auto mb-8 text-center" variants={staggerItem}>
           <p className="text-sm text-muted-foreground">
             Track pending status and send reminders from the dashboard while you wait.
           </p>
-        </motion.div>
+        </m.div>
       )}
 
-      <motion.div className="text-center" variants={staggerItem}>
-        <motion.button
+      <m.div className="text-center" variants={staggerItem}>
+        <m.button
+          type="button"
           onClick={onComplete}
+          disabled={loading}
+          aria-busy={loading}
           className="inline-flex items-center gap-2 px-6 py-3 bg-card hover:bg-muted/10 text-ink font-semibold rounded-lg border-2 border-black transition-all"
           whileHover={{ scale: 1.01 }}
           whileTap={{ scale: 0.99 }}
         >
-          Go to Dashboard
-          <ArrowRight className="w-4 h-4" />
-        </motion.button>
+          {loading ? 'Completing setup…' : 'Go to Dashboard'}
+          {loading ? <LoaderCircle className="w-4 h-4 animate-spin" /> : <ArrowRight className="w-4 h-4" />}
+        </m.button>
 
         <p className="mt-4 text-sm text-muted-foreground">
           Your access request stays pending until {clientName} authorizes
         </p>
-      </motion.div>
-    </motion.div>
+      </m.div>
+    </m.div>
   );
 }

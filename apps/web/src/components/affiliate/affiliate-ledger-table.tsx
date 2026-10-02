@@ -23,7 +23,7 @@ export function AffiliateLedgerTable<T extends Record<string, unknown>>({
   emptyState,
 }: AffiliateLedgerTableProps<T>) {
   return (
-    <div className="overflow-hidden rounded-lg border border-border bg-card shadow-sm">
+    <div className="overflow-hidden rounded-none border border-border bg-card">
       <div className="border-b border-border bg-paper px-5 py-4">
         <h3 className="font-display text-lg font-semibold text-ink">{title}</h3>
       </div>

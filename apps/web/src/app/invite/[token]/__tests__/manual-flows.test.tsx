@@ -131,6 +131,16 @@ describe('Manual invite flows', () => {
     expect(backMock).not.toHaveBeenCalled();
   });
 
+  it('shows terminal agency-contact guidance for an expired manual invite', async () => {
+    vi.stubGlobal('fetch', vi.fn(async () => ({
+      ok: false,
+      json: async () => ({ error: { code: 'REQUEST_EXPIRED', message: 'Expired' } }),
+    } as Response)));
+    render(<BeehiivManualPage />);
+    expect(await screen.findByRole('heading', { name: 'This link has expired' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /try again/i })).not.toBeInTheDocument();
+  });
+
   it('Kit flow submits manual connect and redirects', async () => {
     const fetchMock = vi.fn(async (url: string) => {
       if (url.includes('/api/client/token-123/kit/manual-connect')) {

@@ -20,7 +20,7 @@ export const metadata: Metadata = {
 
 export default function ContactPage() {
   return (
-    <main className="relative bg-paper min-h-screen">
+    <div className="relative bg-paper min-h-screen">
       {/* Hero Section */}
       <section className="pt-20 pb-12 px-4 sm:px-6 lg:px-8">
         <div className="max-w-4xl mx-auto text-center">
@@ -125,6 +125,6 @@ export default function ContactPage() {
           </Reveal>
         </div>
       </section>
-    </main>
+    </div>
   );
 }

@@ -18,7 +18,7 @@
 'use client';
 
 import { useEffect, useCallback, ReactNode, useRef, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { m, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 
@@ -163,7 +163,7 @@ export function UnifiedWizard({
   // PROGRESS CALCULATION
   // ============================================================
 
-  const progressPercentage = Math.round(((currentStep + 1) / totalSteps) * 100);
+  const progressPercentage = Math.round((currentStep / totalSteps) * 100);
   return (
     <div
       ref={containerRef}
@@ -184,7 +184,7 @@ export function UnifiedWizard({
 
           {/* Linear Progress Bar */}
           <div className="relative h-2 bg-muted/30 rounded-full overflow-hidden">
-            <motion.div
+            <m.div
               className="absolute inset-y-0 left-0 bg-teal rounded-full"
               initial={{ width: `${((currentStep) / totalSteps) * 100}%` }}
               animate={{ width: `${progressPercentage}%` }}
@@ -226,14 +226,14 @@ export function UnifiedWizard({
 
       {/* Main Content Area */}
       <div className="flex-1 flex items-start justify-center p-4 md:px-6 md:py-8">
-        <motion.div
+        <m.div
           className="w-full max-w-6xl"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
           <AnimatePresence mode="wait" initial={false}>
-            <motion.div
+            <m.div
               key={currentStep}
               custom={direction}
               variants={slideVariants}
@@ -261,9 +261,9 @@ export function UnifiedWizard({
 
                 {children}
               </div>
-            </motion.div>
+            </m.div>
           </AnimatePresence>
-        </motion.div>
+        </m.div>
       </div>
 
       {/* Navigation Footer */}
@@ -299,35 +299,32 @@ export function UnifiedWizard({
             )}
 
             {/* Next/Continue Button */}
-            <Button
-              variant="brutalist"
-              size="md"
-              onClick={handleNext}
-              disabled={!canGoNext || loading}
-              aria-label={currentStep === totalSteps - 1 ? 'Complete onboarding' : 'Continue to next step'}
-            >
-              {loading ? (
-                <>
-                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Processing...
-                </>
-              ) : currentStep === totalSteps - 1 ? (
-                <>
-                  Complete
-                  <ChevronRight className="w-5 h-5" />
-                </>
-              ) : (
-                <>
-                  Continue
-                  <ChevronRight className="w-5 h-5" />
-                </>
-              )}
-            </Button>
+            {currentStep < totalSteps - 1 && (
+              <Button
+                variant="brutalist"
+                size="md"
+                onClick={handleNext}
+                disabled={!canGoNext || loading}
+                aria-label="Continue to next step"
+              >
+                {loading ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    Continue
+                    <ChevronRight className="w-5 h-5" />
+                  </>
+                )}
+              </Button>
+            )}
           </div>
 
           {/* Keyboard Shortcuts Hint */}
           <div className="mt-4 text-center text-xs text-muted-foreground">
-            Press <kbd className="px-1.5 py-0.5 rounded bg-muted/20 border border-border font-mono text-foreground">Enter</kbd> to continue
+            {currentStep < totalSteps - 1 && <>Press <kbd className="px-1.5 py-0.5 rounded bg-muted/20 border border-border font-mono text-foreground">Enter</kbd> to continue</>}
             {canSkip && (
               <>
                 {' • '}

@@ -18,6 +18,8 @@ import { Button } from '@/components/ui';
 import { buildClientInviteConnectViewUrl } from '@/lib/client-invite-platforms';
 import { useInviteRequestLoader } from '@/lib/query/use-invite-request-loader';
 import { resolveApiUrl } from '@/lib/api/api-env';
+import { isTerminalRequestCode, terminalKindFromCode } from '@/lib/invite/landing-state';
+import { InviteTerminalCard } from '@/components/flow/invite-terminal-card';
 
 /** Data every manual invite page needs to render header + rail. */
 export interface ManualInviteFlowData {
@@ -118,12 +120,18 @@ export function renderManualFormFields<TData>(
               value={value}
               onChange={(event) => ctx.setFieldValue(field.name, event.target.value)}
               placeholder={field.placeholder}
+              aria-invalid={showInvalid}
+              aria-describedby={showInvalid ? `manual-invite-${field.name}-error` : undefined}
               className={`w-full rounded-none border border-black dark:border-white bg-paper px-3 py-2 text-sm text-ink${
                 field.mono ? ' font-mono' : ''
               }`}
               inputMode={field.inputMode}
             />
-            {showInvalid ? <p className="mt-1 text-xs text-danger-ink">{field.invalidMessage}</p> : null}
+            {showInvalid ? (
+              <p id={`manual-invite-${field.name}-error`} role="alert" className="mt-1 text-xs text-danger-ink">
+                {field.invalidMessage}
+              </p>
+            ) : null}
           </div>
         );
       })}
@@ -155,7 +163,7 @@ export function ManualInviteFlow<TData extends ManualInviteFlowData>({
     label: 'Continue',
   }));
 
-  const { data, error, phase, retry } = useInviteRequestLoader<TData>({
+  const { data, error, errorCode, phase, retry } = useInviteRequestLoader<TData>({
     endpoint: resolveApiUrl(`/api/client/${token}`),
     source: config.loaderSource,
     parseData: config.parseData,
@@ -331,6 +339,9 @@ export function ManualInviteFlow<TData extends ManualInviteFlowData>({
   );
 
   if (!data) {
+    if (errorCode && isTerminalRequestCode(errorCode)) {
+      return <InviteTerminalCard kind={terminalKindFromCode(errorCode)} />;
+    }
     return (
       <InviteLoadStateCard
         phase={phase === 'ready' ? 'loading' : phase}

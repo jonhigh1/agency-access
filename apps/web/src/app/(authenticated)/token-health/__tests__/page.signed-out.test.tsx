@@ -27,7 +27,7 @@ describe('TokenHealthPage signed-out degradation', () => {
   it('renders without fetching and without an error boundary when signed out', async () => {
     render(<TokenHealthPage />);
 
-    expect(screen.getByText('Token Health')).toBeInTheDocument();
+    expect(screen.getByText('Token health')).toBeInTheDocument();
 
     await waitFor(() => {
       expect(screen.getByText('Loading token health...')).toBeInTheDocument();

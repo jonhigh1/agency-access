@@ -94,6 +94,18 @@ describe('AccessRequestDetailPage', () => {
     expect(screen.getByText(/waiting on client authorization/i)).toBeInTheDocument();
   });
 
+  it('offers retry for a service failure and returns to dashboard for a missing request', async () => {
+    vi.mocked(accessRequestsApi.getAccessRequest)
+      .mockResolvedValueOnce({ error: { code: 'SERVICE_UNAVAILABLE', message: 'Unavailable' } } as any)
+      .mockResolvedValueOnce({ error: { code: 'REQUEST_NOT_FOUND', message: 'Not found' } } as any);
+
+    renderWithProviders(<AccessRequestDetailPage params={Promise.resolve({ id: 'request-1' })} />);
+    expect(await screen.findByRole('heading', { name: 'Could Not Load Request' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Try again' }));
+    expect(await screen.findByRole('heading', { name: 'Request Not Found' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Try again' })).not.toBeInTheDocument();
+  });
+
   it('shows pending cliff banner for stale pending requests', async () => {
     vi.mocked(accessRequestsApi.getAccessRequest).mockResolvedValue({
       data: {
@@ -368,10 +380,8 @@ describe('AccessRequestDetailPage', () => {
 
     renderWithProviders(<AccessRequestDetailPage params={Promise.resolve({ id: 'missing' })} />);
 
-    await waitFor(() => {
-      expect(screen.getByText('Request Not Found')).toBeInTheDocument();
-    });
-    expect(screen.getByText('Access request not found')).toBeInTheDocument();
+    expect(await screen.findByRole('heading', { name: 'Request Not Found' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Try again' })).not.toBeInTheDocument();
   });
 
   it('renders Shopify submission details when client has submitted store info', async () => {

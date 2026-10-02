@@ -19,7 +19,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 import { OpinionatedInput } from '../opinionated-input';
 import { SingleSelect } from '@/components/ui/single-select';
 import { fadeVariants, fadeTransition } from '@/lib/animations';
@@ -33,6 +33,7 @@ interface AgencyProfileScreenProps {
   agencyName: string;
   timezone: string;
   industry: string;
+  agencyNameError?: string | null;
   onUpdate: (data: { name: string; timezone: string; industry: string }) => void;
 }
 
@@ -60,6 +61,7 @@ export function AgencyProfileScreen({
   agencyName,
   timezone,
   industry,
+  agencyNameError,
   onUpdate,
 }: AgencyProfileScreenProps) {
   const [localName, setLocalName] = useState(agencyName);
@@ -76,7 +78,7 @@ export function AgencyProfileScreen({
   }, [localName, localTimezone, localIndustry, onUpdate]);
 
   return (
-    <motion.div
+    <m.div
       className="p-6 md:p-10"
       variants={fadeVariants}
       initial="initial"
@@ -86,7 +88,7 @@ export function AgencyProfileScreen({
     >
       {/* Step Header */}
       <div className="mb-8">
-        <div className="text-sm font-semibold text-danger-ink mb-2">{formatOnboardingStepLabel(1)}</div>
+        <div className="text-sm font-semibold text-muted-foreground mb-2">{formatOnboardingStepLabel(1)}</div>
         <h2 className="text-3xl font-bold text-ink mb-2">Tell us about your agency</h2>
         <p className="text-muted-foreground">We'll get you set up in seconds.</p>
       </div>
@@ -101,9 +103,11 @@ export function AgencyProfileScreen({
           placeholder="e.g., Acme Digital Marketing"
           type="text"
           required
-          helperText="This is how your agency will appear to clients"
+          helperText="Enter at least 2 characters. This is how your agency will appear to clients."
           validationMessage="Please enter your agency name (at least 2 characters)"
-          isValid={localName.trim().length >= 2}
+          errorMessage={agencyNameError || undefined}
+          showError={Boolean(agencyNameError) || localName.trim().length < 2}
+          isValid={localName.trim().length >= 2 && !agencyNameError}
           autoFocus
         />
 
@@ -202,6 +206,6 @@ export function AgencyProfileScreen({
           </div>
         </div>
       </div>
-    </motion.div>
+    </m.div>
   );
 }

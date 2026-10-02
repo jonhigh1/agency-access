@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { ManageAssetsModalShell } from '../manage-assets-modal-shell';
 import { SingleSelect } from '../ui/single-select';
@@ -7,6 +7,7 @@ vi.mock('framer-motion', () => ({
   AnimatePresence: ({ children }: any) => <>{children}</>,
   useReducedMotion: () => false,
   m: {
+    dialog: ({ children, animate, initial, transition, ...props }: any) => <dialog {...props}>{children}</dialog>,
     div: ({ children, animate, initial, exit, transition, ...props }: any) => (
       <div {...props}>{children}</div>
     ),
@@ -20,6 +21,17 @@ const baseProps = {
   title: 'Meta Assets',
   description: 'Manage the Meta assets connected to this client.',
 };
+
+beforeEach(() => {
+  Object.defineProperty(HTMLDialogElement.prototype, 'showModal', {
+    configurable: true,
+    value() { this.setAttribute('open', ''); },
+  });
+  Object.defineProperty(HTMLDialogElement.prototype, 'close', {
+    configurable: true,
+    value() { this.removeAttribute('open'); },
+  });
+});
 
 function renderShell(overrides: Partial<Parameters<typeof ManageAssetsModalShell>[0]> = {}) {
   const onClose = vi.fn();
@@ -60,10 +72,12 @@ describe('ManageAssetsModalShell behavior', () => {
 
   it('closes the modal on Escape', () => {
     const { onClose } = renderShell();
+    const dialog = screen.getByRole('dialog');
 
-    fireEvent.keyDown(document, { key: 'Escape' });
+    fireEvent(dialog, new Event('cancel', { cancelable: true }));
 
     expect(onClose).toHaveBeenCalledTimes(1);
+    expect(dialog).toHaveAttribute('open');
   });
 
   it('does not close the modal when Escape closes an open SingleSelect dropdown from the trigger', () => {

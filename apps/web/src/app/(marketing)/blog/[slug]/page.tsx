@@ -11,6 +11,7 @@ import { BlogCard } from "@/components/blog/blog-card";
 import { Button } from "@/components/ui/button";
 import { getRelatedPosts } from "@/lib/blog-data";
 import { Metadata } from "next";
+import { ArticleScheduleDemo } from "@/components/marketing/article-schedule-demo";
 
 interface BlogPostPageProps {
   params: Promise<{ slug: string }>;
@@ -340,12 +341,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
             <Button variant="brutalist" size="lg" asChild>
               <a href="/pricing">Start Free Trial</a>
             </Button>
-            <a
-              href="#"
-              className="px-8 py-4 bg-transparent text-white font-bold uppercase tracking-wider border-2 border-white rounded-none hover:bg-card hover:text-ink transition-all"
-            >
-              Schedule Demo
-            </a>
+            <ArticleScheduleDemo />
           </div>
         </div>
       </section>

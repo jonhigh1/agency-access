@@ -101,6 +101,23 @@ describe('affiliate query hooks', () => {
     );
   });
 
+  it('preserves HTTP authorization status on portal errors', async () => {
+    let capturedOptions: any;
+    useQueryMock.mockImplementation((options: any) => {
+      capturedOptions = options;
+      return { data: undefined, isLoading: false, error: null };
+    });
+    (global as any).fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      status: 403,
+      json: async () => ({ error: { code: 'FORBIDDEN', message: 'Approved affiliate partner access is required' } }),
+    });
+
+    renderHook(() => useAffiliatePortalOverview());
+
+    await expect(capturedOptions.queryFn()).rejects.toMatchObject({ status: 403, code: 'FORBIDDEN' });
+  });
+
   it('creates an affiliate campaign link variant', async () => {
     useMutationMock.mockImplementation((options: any) => ({
       mutateAsync: options.mutationFn,

@@ -9,6 +9,7 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
+import { Facebook } from 'lucide-react';
 import { PLATFORM_DOMAINS, PLATFORM_NAMES } from '@agency-platform/shared';
 import type { Platform } from '@agency-platform/shared';
 
@@ -42,19 +43,26 @@ export function PlatformIcon({
 }: PlatformIconProps) {
   const [imageError, setImageError] = useState(false);
   const config = SIZE_CONFIG[size];
-  const domain = PLATFORM_DOMAINS[platform as Platform];
+  const domain = platform === 'meta_ads' || platform === 'meta_pages'
+    ? 'facebook.com'
+    : PLATFORM_DOMAINS[platform as Platform];
   const platformName = PLATFORM_NAMES[platform as Platform] ?? formatPlatformFallbackName(platform);
 
   // Fallback: show initial letter if image fails or domain missing
   if (!domain || !BRANDFETCH_CLIENT_ID || imageError) {
     const initial = platformName.charAt(0).toUpperCase() || '?';
+    const isFacebookProduct = platform === 'meta_pages' || platform === 'meta_ads';
     return (
       <div className="inline-flex items-center gap-2">
         <div
           className={'rounded-none flex items-center justify-center bg-muted'}
           style={{ width: config.width, height: config.height }}
         >
-          <span className="text-muted-foreground font-bold">{initial}</span>
+          {isFacebookProduct ? (
+            <Facebook role="img" aria-label="Facebook logo" className="h-1/2 w-1/2 text-foreground" />
+          ) : (
+            <span className="text-muted-foreground font-bold">{initial}</span>
+          )}
         </div>
         {showLabel && (
           <span className={`${config.textSize} font-medium text-foreground`}>

@@ -21,7 +21,8 @@ describe('ApprovalCard', () => {
     expect(screen.getByText('Northstar')).toBeInTheDocument();
     expect(screen.getByText('Acme')).toBeInTheDocument();
     expect(screen.getByText('Chief of Staff')).toBeInTheDocument();
-    expect(screen.getByText('google_ads')).toBeInTheDocument();
+    expect(screen.getByText('Google Ads')).toBeInTheDocument();
+    expect(screen.getByText('Manage')).toBeInTheDocument();
     expect(screen.getByText('Create one request and email one authorization link')).toBeInTheDocument();
     await user.click(screen.getByRole('button', { name: 'Approve and allow execution' }));
     expect(onDecision).toHaveBeenCalledWith('approved');

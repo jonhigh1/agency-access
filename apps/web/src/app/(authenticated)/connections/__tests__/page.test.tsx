@@ -127,6 +127,14 @@ describe('ConnectionsPage', () => {
   let queryClient: QueryClient;
 
   beforeEach(() => {
+    Object.defineProperty(HTMLDialogElement.prototype, 'showModal', {
+      configurable: true,
+      value() { this.setAttribute('open', ''); },
+    });
+    Object.defineProperty(HTMLDialogElement.prototype, 'close', {
+      configurable: true,
+      value() { this.removeAttribute('open'); },
+    });
     queryClient = new QueryClient({
       defaultOptions: {
         queries: { retry: false },

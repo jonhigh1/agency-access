@@ -120,7 +120,7 @@ export default function ClientDetailPage() {
   })();
 
   return (
-    <div className="flex-1 bg-paper p-8">
+    <div className="flex-1 min-w-0 bg-paper p-4 sm:p-8">
       <div className="max-w-7xl mx-auto">
         {/* Breadcrumb navigation */}
         <Link

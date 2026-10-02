@@ -14,7 +14,7 @@ export function AffiliateMetricCard({
   icon,
 }: AffiliateMetricCardProps) {
   return (
-    <article className="clean-card p-4 sm:p-5">
+    <article className="border border-border bg-card p-4 sm:p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="space-y-1">
           <p className="text-xs font-mono uppercase tracking-wide text-muted-foreground">{label}</p>

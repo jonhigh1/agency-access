@@ -69,7 +69,7 @@ describe('Access request success page', () => {
     });
 
     expect(screen.getAllByText(/pending/i).length).toBeGreaterThan(0);
-    expect(screen.getAllByText(/connected when they finish google/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/requested products/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/waiting on acme corp/i).length).toBeGreaterThan(0);
     expect(screen.queryByText(/access request created/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/you're done/i)).not.toBeInTheDocument();
@@ -111,5 +111,21 @@ describe('Access request success page', () => {
       'https://authhub.co/invite/token-abc',
       expect.any(Function)
     );
+  });
+
+  it('renders the persisted completed state without pending authorization copy', async () => {
+    const api = await import('@/lib/api/access-requests');
+    vi.mocked(api.getAccessRequest).mockResolvedValue({
+      data: {
+        id: 'request-123', uniqueToken: 'token-abc', status: 'completed',
+        clientName: 'Acme Corp', clientEmail: 'client@acme.com',
+        expiresAt: '2026-09-14T00:00:00.000Z', platforms: [],
+      } as any,
+    });
+    render(<SuccessPage params={Promise.resolve({ id: 'request-123' })} />);
+    expect(await screen.findByRole('heading', { name: 'Access request completed' })).toBeInTheDocument();
+    expect(screen.getAllByText('Completed').length).toBeGreaterThan(0);
+    expect(screen.queryByText(/waiting on acme corp/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /copy link/i })).not.toBeInTheDocument();
   });
 });

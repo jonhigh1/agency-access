@@ -12,29 +12,29 @@ function CheckoutCancelContent() {
   const agencyId = searchParams.get('agency');
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-amber-50 via-white to-orange-50 flex items-center justify-center px-4">
+    <div className="min-h-screen bg-background flex items-center justify-center px-4">
       <m.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.5 }}
-        className="max-w-md w-full bg-card rounded-2xl shadow-xl p-8 text-center"
+        transition={{ duration: 0.25 }}
+        className="max-w-md w-full bg-card rounded-none border border-border p-8 text-center"
       >
         <div className="mb-6 flex justify-center">
-          <div className="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center">
-            <XCircle className="h-10 w-10 text-amber-600" />
+          <div className="w-20 h-20 bg-warning/10 rounded-full flex items-center justify-center">
+            <XCircle className="h-10 w-10 text-warning" />
           </div>
         </div>
 
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">
-          Payment Cancelled
+        <h1 className="text-3xl font-bold text-ink mb-2">
+          Payment cancelled
         </h1>
-        <p className="text-gray-600 mb-6">
+        <p className="text-muted-foreground mb-6">
           Your account has been created, but the payment was cancelled. You can complete
           your subscription later from Settings.
         </p>
 
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mb-8">
-          <p className="text-sm text-amber-800">
+        <div className="bg-warning/10 border border-warning/30 rounded-none p-4 mb-8">
+          <p className="text-sm text-warning">
             <strong>Don't worry!</strong> Your account is ready to use. You can activate your
             subscription anytime from the Settings page.
           </p>

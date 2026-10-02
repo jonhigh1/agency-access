@@ -21,7 +21,7 @@
 'use client';
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { m, AnimatePresence } from 'framer-motion';
 import { Check, AlertCircle, ChevronDown } from 'lucide-react';
 
 // ============================================================
@@ -40,6 +40,7 @@ export interface OpinionatedInputProps {
   validationMessage?: string;
   isValid?: boolean;
   showError?: boolean;
+  errorMessage?: string;
   disabled?: boolean;
   autoFocus?: boolean;
   onBlur?: () => void;
@@ -80,6 +81,7 @@ export function OpinionatedInput({
   validationMessage,
   isValid: controlledIsValid,
   showError: controlledShowError,
+  errorMessage,
   disabled = false,
   autoFocus = false,
   onBlur,
@@ -227,6 +229,7 @@ export function OpinionatedInput({
           onFocus={handleFocus}
           onBlur={handleBlur}
           placeholder={placeholder}
+          required={required}
           disabled={disabled}
           className={`
             w-full px-4 py-3 pr-10 rounded-lg border-2 text-ink
@@ -250,7 +253,7 @@ export function OpinionatedInput({
         <div className="absolute right-3 top-1/2 -translate-y-1/2">
           <AnimatePresence mode="wait">
             {showError && (
-              <motion.div
+              <m.div
                 key="error"
                 initial={{ scale: 0, rotate: -180 }}
                 animate={{ scale: 1, rotate: 0 }}
@@ -258,10 +261,10 @@ export function OpinionatedInput({
                 transition={{ duration: 0.2 }}
               >
                 <AlertCircle className="w-5 h-5 text-danger-ink" />
-              </motion.div>
+              </m.div>
             )}
             {isValid && value.length > 0 && !showError && (
-              <motion.div
+              <m.div
                 key="success"
                 initial={{ scale: 0, rotate: -180 }}
                 animate={{ scale: 1, rotate: 0 }}
@@ -269,7 +272,7 @@ export function OpinionatedInput({
                 transition={{ duration: 0.2 }}
               >
                 <Check className="w-5 h-5 text-success-ink" />
-              </motion.div>
+              </m.div>
             )}
           </AnimatePresence>
         </div>
@@ -311,8 +314,8 @@ export function OpinionatedInput({
 
       {/* Helper Text or Validation Message */}
       <AnimatePresence mode="wait">
-        {showError && validationMessage ? (
-          <motion.p
+      {showError && (errorMessage || validationMessage) ? (
+          <m.p
             key="error"
             id={`${label}-error`}
             className="mt-1.5 text-sm text-danger-ink flex items-start gap-1.5"
@@ -322,10 +325,10 @@ export function OpinionatedInput({
             role="alert"
           >
             <AlertCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
-            <span>{validationMessage}</span>
-          </motion.p>
+            <span>{errorMessage || validationMessage}</span>
+          </m.p>
         ) : helperText ? (
-          <motion.p
+          <m.p
             key="helper"
             id={`${label}-helper`}
             className="mt-1.5 text-sm text-muted-foreground"
@@ -334,7 +337,7 @@ export function OpinionatedInput({
             exit={{ opacity: 0, y: -5 }}
           >
             {helperText}
-          </motion.p>
+          </m.p>
         ) : null}
       </AnimatePresence>
     </div>

@@ -19,7 +19,7 @@
 'use client';
 
 import { useState, useCallback } from 'react';
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 import { AgencyRole } from '@agency-platform/shared';
 import { OpinionatedInput } from '../opinionated-input';
 import { SingleSelect } from '@/components/ui/single-select';
@@ -96,7 +96,7 @@ export function TeamInviteScreen({
   );
 
   return (
-    <motion.div
+    <m.div
       className="p-6 md:p-10"
       variants={fadeVariants}
       initial="initial"
@@ -141,10 +141,11 @@ export function TeamInviteScreen({
               </label>
               <div className="grid grid-cols-3 gap-3">
                 {ROLE_OPTIONS.map((role) => (
-                  <button
-                    key={role.value}
-                    type="button"
-                    onClick={() => setNewRole(role.value)}
+                    <button
+                      key={role.value}
+                      type="button"
+                      onClick={() => setNewRole(role.value)}
+                      aria-pressed={newRole === role.value}
                     className={`
                       p-3 rounded-none border-2 text-left transition-all
                       ${newRole === role.value
@@ -182,7 +183,7 @@ export function TeamInviteScreen({
               {teamInvites.length} team member{teamInvites.length > 1 ? 's' : ''} to invite
             </h3>
             {teamInvites.map((invite) => (
-              <motion.div
+              <m.div
                 key={invite.email}
                 className="flex items-center justify-between p-4 bg-card border-2 border-border rounded-lg"
                 initial={{ opacity: 0, y: -10 }}
@@ -215,7 +216,7 @@ export function TeamInviteScreen({
                 >
                   <X className="w-5 h-5" />
                 </button>
-              </motion.div>
+              </m.div>
             ))}
           </div>
         )}
@@ -244,10 +245,10 @@ export function TeamInviteScreen({
         {/* What's Next Tease */}
         {teamInvites.length === 0 && (
           <div className="text-center text-sm text-muted-foreground">
-            Click "Continue" to finish onboarding and go to your dashboard
+            Continue to review setup, then go to your dashboard
           </div>
         )}
       </div>
-    </motion.div>
+    </m.div>
   );
 }

@@ -211,6 +211,15 @@ describe('Access Request Wizard', () => {
     expect(field).toHaveAccessibleDescription('Enter a label for this field.');
   });
 
+  it('names the field removal action with the field label', async () => {
+    renderWithProviders(<AccessRequestPage />);
+    await userEvent.click(await screen.findByRole('button', { name: /pick client/i }));
+    await userEvent.click(screen.getByRole('button', { name: /continue to platforms/i }));
+    await userEvent.click(await screen.findByRole('button', { name: /pick platforms/i }));
+    await userEvent.click(screen.getByRole('button', { name: /continue to customize/i }));
+    expect(await screen.findByRole('button', { name: 'Remove Company Website field' })).toBeInTheDocument();
+  });
+
   it('opens branding and focuses an invalid subdomain', async () => {
     renderWithProviders(<AccessRequestPage />);
 
@@ -290,6 +299,21 @@ describe('Access Request Wizard', () => {
     await waitFor(() => {
       expect(screen.getByText(/failed to create access request/i)).toBeInTheDocument();
     });
+  });
+
+  it('keeps the missing-platform failure visible on the platform step', async () => {
+    vi.mocked(accessRequestsApi.createAccessRequest).mockResolvedValue({
+      error: { code: 'PLATFORMS_NOT_CONNECTED', message: 'Missing connection', details: { missingPlatforms: ['google'] } },
+    } as any);
+    renderWithProviders(<AccessRequestPage />);
+    await userEvent.click(await screen.findByRole('button', { name: /pick client/i }));
+    await userEvent.click(screen.getByRole('button', { name: /continue to platforms/i }));
+    await userEvent.click(screen.getByRole('button', { name: /pick platforms/i }));
+    await userEvent.click(screen.getByRole('button', { name: /continue to customize/i }));
+    await userEvent.click(await screen.findByRole('button', { name: /review & create/i }));
+    await userEvent.click(await screen.findByRole('button', { name: /create access request/i }));
+    expect(await screen.findByText(/connect these platforms first: google/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /pick platforms/i })).toBeInTheDocument();
   });
 
   it('routes to connections page when clicking manage platform connections', async () => {

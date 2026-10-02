@@ -3,14 +3,19 @@
 interface WizardClientInvitePreviewProps {
   agencyName?: string;
   accessLink: string;
+  platforms?: string[];
 }
 
 export function WizardClientInvitePreview({
   agencyName,
   accessLink,
+  platforms = [],
 }: WizardClientInvitePreviewProps) {
   const agencyLabel = agencyName?.trim() || 'Your agency';
   const agencyInitial = agencyLabel.slice(0, 1).toUpperCase();
+  const platformLabel = platforms.length === 1
+    ? platforms[0].replaceAll('_', ' ')
+    : 'the requested platforms';
 
   return (
     <section aria-labelledby="wizard-client-preview-heading">
@@ -36,19 +41,19 @@ export function WizardClientInvitePreview({
 
         <div className="rounded-lg border border-border bg-card p-3">
           <div className="flex items-center justify-between gap-3">
-            <span className="text-sm font-semibold text-ink">Google</span>
+            <span className="text-sm font-semibold text-ink">{platformLabel}</span>
             <span className="rounded-none border border-black bg-coral px-3 py-1.5 text-xs font-semibold text-white">
               Connect
             </span>
           </div>
           <p className="mt-2 text-xs text-muted-foreground">
-            Connected when they finish Google
+            Client authorization pending
           </p>
         </div>
       </div>
 
       <p className="mt-3 text-xs text-muted-foreground">
-        They open this link and connect Google. No account required on their side beyond Google.
+        They open this link and authorize {platformLabel}.
       </p>
 
       <div className="mt-3 rounded-lg border border-border bg-card p-3">

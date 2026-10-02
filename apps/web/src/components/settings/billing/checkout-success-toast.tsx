@@ -10,9 +10,9 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Check, X } from 'lucide-react';
+import { Check, Clock3, X } from 'lucide-react';
 
-export function CheckoutSuccessToast() {
+export function CheckoutSuccessToast({ status }: { status: 'processing' | 'confirmed' | 'error' }) {
   const [visible, setVisible] = useState(true);
   const [revealed, setRevealed] = useState(false);
   const router = useRouter();
@@ -25,6 +25,7 @@ export function CheckoutSuccessToast() {
   }, []);
 
   useEffect(() => {
+    if (status !== 'confirmed') return;
     const timer = setTimeout(() => {
       setVisible(false);
       // Clean up URL
@@ -34,7 +35,7 @@ export function CheckoutSuccessToast() {
     }, 5000);
 
     return () => clearTimeout(timer);
-  }, [router, searchParams]);
+  }, [router, searchParams, status]);
 
   if (!visible) return null;
 
@@ -47,12 +48,18 @@ export function CheckoutSuccessToast() {
     >
       <div className="flex items-center gap-3 border border-teal/30 bg-paper px-4 py-3">
         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-teal/20">
-          <Check className="h-5 w-5 text-success-ink" />
+          {status === 'confirmed' ? <Check className="h-5 w-5 text-success-ink" /> : <Clock3 className="h-5 w-5 text-warning" />}
         </div>
         <div className="min-w-0">
-          <p className="text-sm font-medium text-ink">Subscription updated</p>
+          <p className="text-sm font-medium text-ink">
+            {status === 'confirmed' ? 'Subscription updated' : status === 'error' ? 'Subscription not confirmed' : 'Verifying subscription'}
+          </p>
           <p className="text-xs text-muted-foreground">
-            Your plan has been successfully upgraded.
+            {status === 'confirmed'
+              ? 'Your plan has been successfully upgraded.'
+              : status === 'error'
+                ? 'We could not verify the payment yet. Check billing details or try again later.'
+                : 'Payment is processing. This page will update after the subscription is confirmed.'}
           </p>
         </div>
         <button

@@ -8,7 +8,8 @@
 'use client';
 
 import { Copy, Check } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { useState } from 'react';
+import { m } from 'framer-motion';
 import { fadeVariants, fadeTransition } from '@/lib/animations';
 import { formatOnboardingStepLabel } from '@/lib/onboarding-steps';
 import { trackInviteLinkCopyAndSent } from '@/lib/analytics/invite-events';
@@ -21,6 +22,7 @@ interface SuccessLinkScreenProps {
   accessLink: string;
   agencyName?: string;
   accessRequestId?: string;
+  platforms?: string[];
 }
 
 function extractAccessToken(accessLink: string): string {
@@ -32,9 +34,14 @@ export function SuccessLinkScreen({
   accessLink,
   agencyName,
   accessRequestId,
+  platforms = [],
 }: SuccessLinkScreenProps) {
   const { copied, copy } = useCopyToClipboard();
+  const [copyError, setCopyError] = useState(false);
   const accessRequestToken = extractAccessToken(accessLink);
+  const pendingPlatforms = platforms.length === 1
+    ? platforms[0].replaceAll('_', ' ')
+    : 'the requested platforms';
 
   const trackProps = {
     access_request_id: accessRequestId ?? '',
@@ -45,13 +52,14 @@ export function SuccessLinkScreen({
 
   const handleCopyLink = async () => {
     if (!accessRequestId || !accessRequestToken) return;
-    await copy(accessLink, () => {
+    const copied = await copy(accessLink, () => {
       trackInviteLinkCopyAndSent(trackProps);
     });
+    setCopyError(!copied);
   };
 
   return (
-    <motion.div
+    <m.div
       className="p-6 md:p-8"
       variants={fadeVariants}
       initial="initial"
@@ -66,7 +74,7 @@ export function SuccessLinkScreen({
           </p>
           <h2 className="text-3xl font-bold text-ink font-display">Waiting on your client</h2>
           <p className="text-base text-muted-foreground">
-            Your access link is ready. Share it — you&apos;re done when they connect Google.
+            Your access link is ready. Share it so your client can authorize {pendingPlatforms}.
           </p>
         </header>
 
@@ -77,12 +85,13 @@ export function SuccessLinkScreen({
         >
           {copied ? 'Copied' : 'Copy Link'}
         </Button>
+        {copyError && <p role="alert" className="text-sm text-danger-ink">We could not copy the link. Copy it from your browser and try again.</p>}
 
         <div className="grid gap-5 lg:grid-cols-2">
-          <WizardClientInvitePreview agencyName={agencyName} accessLink={accessLink} />
-          <WizardConnectedExample />
+          <WizardClientInvitePreview agencyName={agencyName} accessLink={accessLink} platforms={platforms} />
+          <WizardConnectedExample platforms={platforms} />
         </div>
       </div>
-    </motion.div>
+    </m.div>
   );
 }

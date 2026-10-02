@@ -51,7 +51,7 @@ export function ClientStats({ stats }: ClientStatsProps) {
       {statCards.map((card) => (
         <Card
           key={card.label}
-          className="p-6 border-black/10 shadow-sm hover:shadow-brutalist transition-all"
+          className="p-6 border-black/10"
         >
           <div className="flex items-center justify-between mb-3">
             <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">

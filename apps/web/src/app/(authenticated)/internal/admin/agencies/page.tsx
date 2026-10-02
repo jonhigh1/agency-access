@@ -59,7 +59,7 @@ export default function InternalAdminAgenciesPage() {
           </div>
           <nav className="flex items-center gap-3 text-sm">
             <a href="/internal/admin" className="text-muted-foreground hover:text-foreground">Overview</a>
-            <a href="/internal/admin/agencies" className="text-danger-ink font-semibold">Agencies</a>
+            <a href="/internal/admin/agencies" className="text-ink font-semibold">Agencies</a>
             <a href="/internal/admin/subscriptions" className="text-muted-foreground hover:text-foreground">Subscriptions</a>
             <a href="/internal/admin/webhooks" className="text-muted-foreground hover:text-foreground">Webhooks</a>
             <a href="/internal/admin/affiliates" className="text-muted-foreground hover:text-foreground">Affiliates</a>
@@ -70,15 +70,20 @@ export default function InternalAdminAgenciesPage() {
           title="Agencies"
           description={`${data.total} total`}
           actions={(
-            <input
-              value={search}
-              onChange={(event) => {
-                setSearch(event.target.value);
-                setPage(1);
-              }}
-              placeholder="Search name or email"
-              className="h-10 px-3 rounded-md border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
-            />
+            <div>
+              <label htmlFor="agency-search" className="sr-only">Search agencies by name or email</label>
+              <input
+                id="agency-search"
+                type="search"
+                value={search}
+                onChange={(event) => {
+                  setSearch(event.target.value);
+                  setPage(1);
+                }}
+                placeholder="Search name or email"
+                className="min-h-[44px] px-3 rounded-md border border-border bg-background text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
           )}
         >
           <div className="overflow-x-auto">

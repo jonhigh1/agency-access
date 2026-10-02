@@ -58,7 +58,7 @@ const faqSchema = {
 
 export default function MarketingPage() {
   return (
-    <main className="relative bg-background">
+    <div className="relative bg-background">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
@@ -73,6 +73,6 @@ export default function MarketingPage() {
       <SuccessStoriesSection />
       <HomepageFAQSection />
       <CTASection />
-    </main>
+    </div>
   );
 }

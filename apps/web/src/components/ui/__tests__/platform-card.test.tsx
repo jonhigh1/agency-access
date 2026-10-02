@@ -43,6 +43,7 @@ describe('PlatformCard', () => {
     const button = screen.getByRole('button', { name: /connect/i });
     expect(button).toBeInTheDocument();
     expect(button).not.toBeDisabled();
+    expect(button).not.toHaveClass('shadow-brutalist');
   });
 
   it('should call onConnect with platform when Connect button is clicked', () => {

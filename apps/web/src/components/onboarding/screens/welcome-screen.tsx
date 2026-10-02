@@ -18,7 +18,7 @@
 
 'use client';
 
-import { motion } from 'framer-motion';
+import { m } from 'framer-motion';
 import { ArrowRight } from 'lucide-react';
 import Image from 'next/image';
 import { scaleVariants, scaleTransition } from '@/lib/animations';
@@ -38,7 +38,7 @@ interface WelcomeScreenProps {
 
 export function WelcomeScreen({ onNext, agencyName }: WelcomeScreenProps) {
   return (
-    <motion.div
+    <m.div
       className="p-6 md:p-10"
       variants={scaleVariants}
       initial="initial"
@@ -48,7 +48,7 @@ export function WelcomeScreen({ onNext, agencyName }: WelcomeScreenProps) {
       {/* Content */}
       <div className="text-center space-y-6">
         {/* Logo/Icon */}
-        <motion.div className="mb-4 flex justify-center">
+        <m.div className="mb-4 flex justify-center">
           <Image
             src="/authhub_transparent_2.png"
             alt="AuthHub logo"
@@ -57,7 +57,7 @@ export function WelcomeScreen({ onNext, agencyName }: WelcomeScreenProps) {
             className="h-7 w-7 object-contain"
             priority
           />
-        </motion.div>
+        </m.div>
 
         {/* Headline */}
         <h1 className="text-4xl md:text-5xl font-bold text-ink">
@@ -96,7 +96,7 @@ export function WelcomeScreen({ onNext, agencyName }: WelcomeScreenProps) {
               description: 'Your logo, colors, and custom domain',
             },
           ].map((benefit, index) => (
-            <motion.div
+            <m.div
               key={benefit.title}
               className="p-4 bg-paper border-2 border-black rounded-lg text-left"
               initial={{ opacity: 0, y: 20 }}
@@ -106,13 +106,13 @@ export function WelcomeScreen({ onNext, agencyName }: WelcomeScreenProps) {
               <div className="text-2xl mb-2">{benefit.icon}</div>
               <h3 className="font-semibold text-ink mb-1">{benefit.title}</h3>
               <p className="text-sm text-muted-foreground">{benefit.description}</p>
-            </motion.div>
+            </m.div>
           ))}
         </div>
 
         {/* Personalization (if agency name is available) */}
         {agencyName && (
-          <motion.div
+          <m.div
             className="mt-6 p-4 bg-paper border-2 border-black rounded-lg max-w-2xl mx-auto"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -123,11 +123,11 @@ export function WelcomeScreen({ onNext, agencyName }: WelcomeScreenProps) {
               <span className="font-mono bg-card px-2 py-0.5 rounded">{agencyName}</span>
               <span className="text-foreground ml-2">(you can change this next)</span>
             </p>
-          </motion.div>
+          </m.div>
         )}
 
         {/* Single CTA */}
-        <motion.button
+        <m.button
           onClick={onNext}
           className="inline-flex items-center gap-2 px-8 py-4 bg-coral hover:bg-coral/90 text-white font-bold text-lg rounded-lg shadow-brutalist hover:shadow-brutalist-lg transition-all mt-8 border-2 border-black"
           whileHover={{ scale: 1.02 }}
@@ -135,7 +135,7 @@ export function WelcomeScreen({ onNext, agencyName }: WelcomeScreenProps) {
         >
           Let's set up your agency and create your first link
           <ArrowRight className="w-5 h-5" />
-        </motion.button>
+        </m.button>
 
         {/* Trust Indicators */}
         <div className="flex items-center justify-center gap-6 mt-6 text-sm text-muted-foreground">
@@ -161,6 +161,6 @@ export function WelcomeScreen({ onNext, agencyName }: WelcomeScreenProps) {
           </div>
         </div>
       </div>
-    </motion.div>
+    </m.div>
   );
 }

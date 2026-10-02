@@ -47,8 +47,13 @@ export function BillingTab() {
   const checkoutStatus = searchParams.get('checkout');
   const { orgId, userId } = useAuth();
   const agencyId = orgId ?? userId ?? null;
-  const { data: subscription } = useSubscription();
+  const { data: subscription, isLoading: isSubscriptionLoading, isFetching: isSubscriptionFetching, isError: isSubscriptionError } = useSubscription();
   const lifecycle = resolveBillingLifecycle(subscription);
+  const checkoutConfirmationStatus = isSubscriptionError
+    ? 'error'
+    : !isSubscriptionLoading && !isSubscriptionFetching && (subscription?.status === 'active' || subscription?.status === 'trialing')
+      ? 'confirmed'
+      : 'processing';
   const isBillingV2Enabled = process.env.NEXT_PUBLIC_BILLING_V2_ENABLED !== 'false';
   const billingPath = `${pathname}?tab=billing`;
 
@@ -61,7 +66,7 @@ export function BillingTab() {
   }, [agencyId, billingPath, lifecycle]);
 
   useEffect(() => {
-    if (!checkoutStatus || !subscription?.tier) {
+    if (!checkoutStatus || !subscription?.tier || isSubscriptionLoading || isSubscriptionFetching || isSubscriptionError) {
       return;
     }
 
@@ -72,6 +77,7 @@ export function BillingTab() {
     });
 
     if (checkoutStatus === 'success') {
+      if (subscription.status !== 'active' && subscription.status !== 'trialing') return;
       if (subscription.status === 'trialing') {
         trackTrialStarted(baseProps);
       } else {
@@ -89,12 +95,12 @@ export function BillingTab() {
         reason: 'user_cancelled',
       });
     }
-  }, [agencyId, checkoutStatus, lifecycle, subscription?.status, subscription?.tier]);
+  }, [agencyId, checkoutStatus, isSubscriptionError, isSubscriptionFetching, isSubscriptionLoading, lifecycle, subscription?.status, subscription?.tier]);
 
   if (!isBillingV2Enabled) {
     return (
       <>
-        {checkoutStatus === 'success' && <CheckoutSuccessToast />}
+        {checkoutStatus === 'success' && <CheckoutSuccessToast status={checkoutConfirmationStatus} />}
 
         <div className="space-y-10">
           <CurrentPlanCard />
@@ -113,7 +119,7 @@ export function BillingTab() {
 
   return (
     <>
-      {checkoutStatus === 'success' && <CheckoutSuccessToast />}
+      {checkoutStatus === 'success' && <CheckoutSuccessToast status={checkoutConfirmationStatus} />}
 
       <div className="space-y-10">
         <BillingHero />

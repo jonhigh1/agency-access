@@ -4,7 +4,6 @@
 
 import type { Metadata } from "next";
 import { BlogHeader } from "@/components/blog/blog-header";
-import { Button } from "@/components/ui/button";
 import { BlogCard } from "@/components/blog/blog-card";
 import { getBlogPosts, getBlogPostsByCategory } from "@/lib/blog-data";
 import { BlogCategory } from "@/lib/blog-types";
@@ -92,32 +91,6 @@ export default async function BlogPage({ searchParams }: BlogPageProps) {
           </Suspense>
         </section>
 
-        {/* Newsletter signup */}
-        <section className="mt-20">
-          <div className="border-[3px] border-black bg-coral/10 p-8 md:p-12 rounded-none text-center">
-            <h2 className="font-dela text-3xl md:text-4xl text-ink mb-4">
-              Get Weekly Agency Growth Tips
-            </h2>
-            <p className="font-mono text-gray-700 mb-6 max-w-xl mx-auto">
-              Join 1,000+ agency owners receiving actionable strategies for
-              client onboarding, platform access, and scaling.
-            </p>
-            <form className="max-w-md mx-auto flex flex-col sm:flex-row gap-3">
-              <input
-                type="email"
-                placeholder="your@email.com"
-                className="flex-1 px-4 py-3 border-2 border-black rounded-none font-mono text-sm focus:outline-none focus:ring-2 focus:ring-coral"
-                required
-              />
-              <Button type="submit" variant="secondary">
-                Subscribe
-              </Button>
-            </form>
-            <p className="font-mono text-xs text-gray-500 mt-3">
-              No spam. Unsubscribe anytime.
-            </p>
-          </div>
-        </section>
       </div>
     </div>
   );

@@ -9,6 +9,8 @@ import { CheckCircle2, AlertCircle, XCircle, Clock } from 'lucide-react';
 
 export type StatusType =
   | 'pending'
+  | 'partial'
+  | 'completed'
   | 'authorized'
   | 'expired'
   | 'cancelled'
@@ -46,6 +48,16 @@ const STATUS_CONFIG: Record<
     label: 'Pending',
     className: WARNING_BADGE,
     icon: <Clock className="h-3 w-3" />,
+  },
+  partial: {
+    label: 'Partially Fulfilled',
+    className: WARNING_BADGE,
+    icon: <AlertCircle className="h-3 w-3" />,
+  },
+  completed: {
+    label: 'Completed',
+    className: SUCCESS_BADGE,
+    icon: <CheckCircle2 className="h-3 w-3" />,
   },
   authorized: {
     label: 'Authorized',

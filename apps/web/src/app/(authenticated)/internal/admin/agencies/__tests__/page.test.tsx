@@ -67,4 +67,10 @@ describe('Internal admin agencies page', () => {
     expect(screen.getAllByText('No subscription').length).toBeGreaterThan(0);
     expect(screen.queryByText(/Status: none/i)).not.toBeInTheDocument();
   });
+
+  it('keeps an accessible name on the agency search field', () => {
+    render(<InternalAdminAgenciesPage />);
+
+    expect(screen.getByRole('searchbox', { name: 'Search agencies by name or email' })).toBeInTheDocument();
+  });
 });

@@ -39,7 +39,7 @@ future contributors inherit the *why*.
 1. **Dual ink tokens per ground.** Raw teal (#00A896) as text on white measures
    ~3.0:1 — a WCAG AA failure carried in v1.x. Text now carries `--success-ink`
    (#0F766E, 5.5:1) and `--danger-ink` (#C2410C, 4.8:1); raw teal/coral are
-   fills and borders only. Dark ground uses lightened variants. (source: authored
+   fills and borders only, with ink foreground on coral CTAs. Dark ground uses lightened variants. (source: authored
    decision, verified with measured contrast pairs)
 2. **Tracking inversion.** Display headings pull to −0.02/−0.04em
    (`.tracking-display-*`); mono micro-labels push to +0.10/0.12em
@@ -220,11 +220,11 @@ Unchanged: `cn()` merging, forwardRef, CVA where needed, components in
 
 | Variant | Look | Use |
 |---|---|---|
-| `primary` | Coral fill, 1px ink border, `shadow-brutalist` | Main actions |
+| `primary` | Coral fill, ink text, 1px ink border, `shadow-brutalist` | Main actions |
 | `secondary` | Card fill, 1px ink border, no shadow | Alternative/cancel |
 | `ghost` | Transparent | Tertiary, icon-adjacent |
 | `danger` | `danger-ink` fill, white text | Destructive — never looks like primary |
-| `brutalist` | Uppercase coral, 2px border, diagonal shift hover | **One per view** — the view's primary action, wherever it lives (marketing hero, app page, or modal) |
+| `brutalist` | Uppercase coral with ink text, 2px border, diagonal shift hover | **One per view** — the view's primary action, wherever it lives (marketing hero, app page, or modal) |
 
 - Sizes: `sm | md | lg | xl | icon` — all `rounded-none` except `icon` (circle)
 - Hover: lift 2px (`hover:translate-y-[-2px]`); shadow does not grow
@@ -361,6 +361,7 @@ growth, `scaleUp`, `scroll-left-slow`.
 - **WCAG AA minimum** — 4.5:1 for normal text; AAA target 7:1
 - Ink/paper: 21:1. `--ink-secondary`: 10.4:1. All status ink tokens ≥4.5:1
 - **Raw coral/teal are never body or status text on light ground** (v2.0)
+- Coral primary buttons use `--primary-foreground` ink in both themes; measured contrast exceeds 4.5:1 at rest and hover.
 - Orange-family text on white stays in the ink variants
 
 ### Focus States

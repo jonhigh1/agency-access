@@ -2,14 +2,22 @@
 
 import Link from 'next/link';
 import type { Route } from 'next';
+import { usePathname, useRouter } from 'next/navigation';
 import { getDocsUrl } from '@/lib/docs-url';
 
 export function MarketingFooter() {
+  const pathname = usePathname();
+  const router = useRouter();
   const handleSmoothScroll = (e: React.MouseEvent<HTMLAnchorElement>) => {
     const href = e.currentTarget.getAttribute('href');
-    if (href && href.startsWith('#')) {
+    if (href?.includes('#')) {
       e.preventDefault();
-      const targetId = href.substring(1);
+      const targetId = href.slice(href.indexOf('#') + 1);
+
+      if (pathname !== '/') {
+        router.push(href as Route);
+        return;
+      }
       
       // Use requestAnimationFrame to ensure DOM is ready
       requestAnimationFrame(() => {
@@ -75,8 +83,8 @@ export function MarketingFooter() {
             <div>
               <h4 className="label-micro mb-4 sm:mb-6">Product</h4>
               <ul className="space-y-3 sm:space-y-4 text-sm text-gray-600 font-mono">
-                <li><Link href="#trusted-by-agencies" onClick={handleSmoothScroll} className="hover:text-danger-ink hover:underline decoration-2 underline-offset-2 transition-all">Features</Link></li>
-                <li><Link href="#how-it-works" onClick={handleSmoothScroll} className="hover:text-danger-ink hover:underline decoration-2 underline-offset-2 transition-all">How It Works</Link></li>
+                <li><Link href="/#trusted-by-agencies" onClick={handleSmoothScroll} className="hover:text-danger-ink hover:underline decoration-2 underline-offset-2 transition-all">Features</Link></li>
+                <li><Link href="/#how-it-works" onClick={handleSmoothScroll} className="hover:text-danger-ink hover:underline decoration-2 underline-offset-2 transition-all">How It Works</Link></li>
                 <li><Link href="/pricing" className="hover:text-danger-ink hover:underline decoration-2 underline-offset-2 transition-all">Pricing</Link></li>
                 <li><Link href="/affiliate" className="hover:text-danger-ink hover:underline decoration-2 underline-offset-2 transition-all">Affiliates</Link></li>
                 <li><Link href="/blog" className="hover:text-danger-ink hover:underline decoration-2 underline-offset-2 transition-all">Blog</Link></li>

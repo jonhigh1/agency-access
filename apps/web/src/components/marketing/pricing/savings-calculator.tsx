@@ -6,6 +6,7 @@ import { SignUpButton } from '@/components/lazy-clerk-auth-buttons';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Check, Info } from 'lucide-react';
 import { Reveal } from '../reveal';
+import { useAnimationOrchestrator } from '@/hooks/use-animation-orchestrator';
 
 // Helper to set Growth tier (STARTER in backend) for trial signup
 const handleTrialSignup = () => {
@@ -35,6 +36,7 @@ const clientVolumeOptions = [
 ];
 
 export function SavingsCalculator() {
+  const { shouldAnimate } = useAnimationOrchestrator();
   const [selectedVolume, setSelectedVolume] = useState('1-5');
   const [hoursPerClient, setHoursPerClient] = useState(2);
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(['meta', 'google']);
@@ -98,10 +100,10 @@ export function SavingsCalculator() {
           {/* Input Panel */}
           <Reveal delay={0.1}>
             <m.div
-              initial={{ opacity: 0, x: -20 }}
-              whileInView={{ opacity: 1, x: 0 }}
+              initial={shouldAnimate ? { opacity: 0, x: -20 } : false}
+              whileInView={shouldAnimate ? { opacity: 1, x: 0 } : undefined}
               viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
+              transition={shouldAnimate ? { duration: 0.5 } : undefined}
               className="space-y-6"
             >
               {/* Client Volume */}
@@ -187,10 +189,10 @@ export function SavingsCalculator() {
           {/* Output Panel */}
           <Reveal delay={0.2}>
             <m.div
-              initial={{ opacity: 0, x: 20 }}
-              whileInView={{ opacity: 1, x: 0 }}
+              initial={shouldAnimate ? { opacity: 0, x: 20 } : false}
+              whileInView={shouldAnimate ? { opacity: 1, x: 0 } : undefined}
               viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
+              transition={shouldAnimate ? { duration: 0.5 } : undefined}
             >
               <div className="border-2 border-black bg-card p-6 sm:p-8 shadow-brutalist-lg sticky top-8">
                 {/* Main Savings Display */}

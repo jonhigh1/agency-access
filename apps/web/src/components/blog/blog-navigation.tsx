@@ -6,6 +6,7 @@
 import { BlogPost } from "@/lib/blog-types";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import Link from "next/link";
+import { formatBlogDate } from "@/lib/blog-date";
 
 interface BlogNavigationProps {
   previousPost?: BlogPost;
@@ -32,10 +33,7 @@ export function BlogNavigation({
                   {previousPost.title}
                 </h3>
                 <p className="font-mono text-xs text-gray-500 mt-2">
-                  {new Date(previousPost.publishedAt).toLocaleDateString(
-                    "en-US",
-                    { month: "short", day: "numeric" }
-                  )}
+                  {formatBlogDate(previousPost.publishedAt, { month: "short", day: "numeric" })}
                 </p>
               </div>
             </Link>
@@ -59,7 +57,7 @@ export function BlogNavigation({
                   {nextPost.title}
                 </h3>
                 <p className="font-mono text-xs text-gray-500 mt-2">
-                  {new Date(nextPost.publishedAt).toLocaleDateString("en-US", {
+                  {formatBlogDate(nextPost.publishedAt, {
                     month: "short",
                     day: "numeric",
                   })}

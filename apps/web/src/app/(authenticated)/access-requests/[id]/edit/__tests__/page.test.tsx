@@ -93,6 +93,27 @@ describe('EditAccessRequestPage', () => {
     expect(screen.queryByText('Meta')).not.toBeInTheDocument();
   });
 
+  it('asks before discarding dirty edits from the Back control', async () => {
+    vi.mocked(accessRequestsApi.getAccessRequest).mockResolvedValue({
+      data: {
+        id: 'request-back', agencyId: 'agency-1', clientName: 'Acme', clientEmail: 'owner@acme.com',
+        status: 'pending', uniqueToken: 'token', expiresAt: '2026-10-07T00:00:00Z',
+        createdAt: '2026-09-30T00:00:00Z', updatedAt: '2026-09-30T00:00:00Z', platforms: [],
+        intakeFields: [{ id: 'field-1', label: 'Website', type: 'url', required: true, order: 0 }],
+        branding: { primaryColor: '#FF6B35' },
+      } as any,
+    });
+    render(<EditAccessRequestPage params={Promise.resolve({ id: 'request-back' })} />);
+    await screen.findByText('Edit Access Request');
+    await userEvent.click(screen.getByRole('button', { name: /show advanced settings/i }));
+    await userEvent.type(screen.getByLabelText('External Reference'), 'crm-1');
+    await userEvent.click(screen.getByRole('button', { name: 'Back' }));
+    expect(await screen.findByRole('dialog', { name: 'Discard unsaved changes?' })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole('button', { name: 'Keep editing' }));
+    expect(screen.getByLabelText('External Reference')).toHaveValue('crm-1');
+    expect(pushMock).not.toHaveBeenCalledWith('/access-requests/request-back');
+  });
+
   it('lets an agency repair an existing Meta request by selecting assignees', async () => {
     vi.mocked(accessRequestsApi.getAccessRequest).mockResolvedValue({
       data: {

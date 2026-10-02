@@ -221,6 +221,25 @@ describe('Phase 5: Client Service - TDD Tests', () => {
     });
   });
 
+  describe('getClientsWithConnections', () => {
+    it('counts access requests independently from connections', async () => {
+      vi.mocked(mockPrisma.client.findMany).mockResolvedValue([
+        {
+          id: 'client-1', name: 'Alice', email: 'alice@example.com', company: 'Acme',
+          createdAt: new Date('2026-01-01'), accessRequests: [], _count: { accessRequests: 12 },
+        },
+      ] as any);
+      vi.mocked(mockPrisma.client.count).mockResolvedValue(1);
+
+      const result = await clientService.getClientsWithConnections({ agencyId: 'agency-1' });
+
+      expect(result.data[0]).toMatchObject({ requestCount: 12 });
+      expect(mockPrisma.client.findMany).toHaveBeenCalledWith(expect.objectContaining({
+        include: expect.objectContaining({ _count: { select: { accessRequests: true } } }),
+      }));
+    });
+  });
+
   describe('getClientById', () => {
     it('should return client by id', async () => {
       const mockClient = {

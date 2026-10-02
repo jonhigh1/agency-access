@@ -132,7 +132,7 @@ export function PlatformCard({
             <>
               {/* Not connected - show Connect button */}
               <Button
-                variant="primary"
+                variant="secondary"
                 size="sm"
                 isLoading={isConnecting}
                 onClick={() => onConnect(platform)}

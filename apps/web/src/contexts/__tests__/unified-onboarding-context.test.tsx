@@ -117,6 +117,11 @@ describe('UnifiedOnboardingContext', () => {
         ok: true,
         status: 201,
         json: async () => ({ data: { id: 'req-1', uniqueToken: 'abc123' }, error: null }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ data: { agencyId: 'agency-1' }, error: null }),
       });
 
     const { result } = renderHook(() => useUnifiedOnboarding(), { wrapper });
@@ -170,6 +175,11 @@ describe('UnifiedOnboardingContext', () => {
         ok: true,
         status: 201,
         json: async () => ({ data: { id: 'req-1', uniqueToken: 'abc123' }, error: null }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ data: { agencyId: 'agency-1' }, error: null }),
       });
 
     const { result } = renderHook(() => useUnifiedOnboarding(), { wrapper });
@@ -222,6 +232,11 @@ describe('UnifiedOnboardingContext', () => {
         ok: true,
         status: 201,
         json: async () => ({ data: { id: 'req-1', uniqueToken: 'abc123' }, error: null }),
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        status: 200,
+        json: async () => ({ data: { agencyId: 'agency-1' }, error: null }),
       });
 
     document.cookie = 'ah_aff_click=click_123; path=/';
@@ -538,40 +553,6 @@ describe('UnifiedOnboardingContext', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('ensures agency exists on completion so dashboard does not loop back to onboarding', async () => {
-    mockOrgId = 'org_123';
-
-    fetchMock
-      .mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        json: async () => ({ data: [], error: null }),
-      })
-      .mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        json: async () => ({ data: { id: 'agency-org' }, error: null }),
-      });
-
-    const { result } = renderHook(() => useUnifiedOnboarding(), { wrapper });
-
-    await act(async () => {
-      await result.current.completeOnboarding();
-    });
-
-    expect(fetchMock).toHaveBeenNthCalledWith(
-      1,
-      'https://api.example.com/api/agencies?clerkUserId=org_123',
-      expect.objectContaining({ method: 'GET' })
-    );
-    expect(fetchMock).toHaveBeenNthCalledWith(
-      2,
-      'https://api.example.com/api/agencies',
-      expect.objectContaining({ method: 'POST' })
-    );
-    expect(mockPush).toHaveBeenCalledWith('/dashboard');
-  });
-
   it('hydrates onboarding step from persisted onboarding status when agency already exists', async () => {
     fetchMock
       .mockResolvedValueOnce({
@@ -603,7 +584,7 @@ describe('UnifiedOnboardingContext', () => {
     const { result } = renderHook(() => useUnifiedOnboarding(), { wrapper: hydrationWrapper });
 
     await waitFor(() => {
-      expect(result.current.state.currentStep).toBe(3);
+      expect(result.current.state.currentStep).toBe(2);
       expect(result.current.state.agencyId).toBe('agency-1');
     });
   });

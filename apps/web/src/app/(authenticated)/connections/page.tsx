@@ -17,6 +17,7 @@ import { CheckCircle2, AlertCircle } from 'lucide-react';
 import { capturePosthogEvent } from '@/lib/analytics/capture-posthog';
 import { PlatformCard, Button, EmptyState } from '@/components/ui';
 import { Platform, PlatformInfo } from '@agency-platform/shared';
+import { ManageAssetsModalShell } from '@/components/manage-assets-modal-shell';
 import {
   trackOAuthCallbackFailure,
   trackOAuthCallbackSuccess,
@@ -31,21 +32,11 @@ import { useTransientMessage } from '@/hooks/use-transient-message';
 
 function gatedModalFallback(label: string) {
   return (
-    <div
-      className="min-h-[220px] rounded-xl border border-border bg-muted/25"
-      aria-busy
-      aria-label={label}
-    />
+    <div role="status" className="flex min-h-24 items-center justify-center text-sm text-muted-foreground" aria-busy="true">
+      {label}
+    </div>
   );
 }
-
-const ManageAssetsModalShell = dynamic(
-  () =>
-    import('@/components/manage-assets-modal-shell').then((m) => ({
-      default: m.ManageAssetsModalShell,
-    })),
-  { loading: () => gatedModalFallback('Loading connection settings') }
-);
 
 const MetaUnifiedSettings = dynamic(
   () =>
@@ -70,6 +61,7 @@ const ManualInvitationModal = dynamic(
     })),
   { loading: () => gatedModalFallback('Loading invitation setup') }
 );
+
 
 function ConnectionsPageContent() {
   const router = useRouter();
@@ -177,6 +169,7 @@ function ConnectionsPageContent() {
     data: platforms = [],
     isLoading,
     error,
+    refetch: refetchPlatforms,
   } = useQuery<PlatformInfo[]>({
     queryKey: ['available-platforms', agencyId],
     queryFn: async () => {
@@ -441,6 +434,9 @@ function ConnectionsPageContent() {
             <div>
               <p className="text-foreground font-medium">Failed to load platforms</p>
               <p className="text-muted-foreground text-sm mt-1">{(error as Error).message}</p>
+              <Button type="button" variant="secondary" size="sm" className="mt-3" onClick={() => void refetchPlatforms()}>
+                Try again
+              </Button>
             </div>
           </div>
         )}

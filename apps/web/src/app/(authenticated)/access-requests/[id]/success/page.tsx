@@ -46,6 +46,14 @@ export default function SuccessPage({ params }: SuccessPageProps) {
   }, [params, getToken]);
 
   const authorizationUrl = accessRequest ? getAuthorizationUrl(accessRequest) : '';
+  const statusCopy = accessRequest ? {
+    pending: { title: 'Pending client authorization', label: 'Pending', description: `Waiting on ${accessRequest.clientName} to authorize the requested products.` },
+    partial: { title: 'Partially fulfilled', label: 'Partially Fulfilled', description: 'Some requested products still need access. Review the request and follow up with your client.' },
+    completed: { title: 'Access request completed', label: 'Completed', description: 'All requested products are fulfilled.' },
+    expired: { title: 'Request expired', label: 'Expired', description: 'This request has expired. Create a new request to continue.' },
+    revoked: { title: 'Request revoked', label: 'Revoked', description: 'This request was revoked. Create a new request to continue.' },
+  }[accessRequest.status] : null;
+  const isOpenRequest = accessRequest?.status === 'pending' || accessRequest?.status === 'partial';
 
   const platformCount = useMemo(() => {
     if (!accessRequest) return 0;
@@ -127,8 +135,8 @@ export default function SuccessPage({ params }: SuccessPageProps) {
 
   return (
     <FlowShell
-      title="Pending client authorization"
-      description={`Waiting on ${accessRequest.clientName}. Share the link below — connected when they finish Google.`}
+      title={statusCopy?.title || 'Access request'}
+      description={statusCopy?.description || ''}
       step={3}
       totalSteps={3}
       steps={['Build', 'Review', 'Send']}
@@ -141,21 +149,21 @@ export default function SuccessPage({ params }: SuccessPageProps) {
                 <Clock className="h-6 w-6 text-danger-ink" />
               </div>
               <div>
-                <h2 className="text-lg font-semibold text-ink font-display">Pending</h2>
+                <h2 className="text-lg font-semibold text-ink font-display">{statusCopy?.label}</h2>
                 <p className="text-sm text-muted-foreground">
-                  Waiting on {accessRequest.clientName} to authorize. Connected when they finish Google.
+                  {statusCopy?.description}
                 </p>
               </div>
             </div>
-            <StatusBadge status="pending" />
+            <StatusBadge status={accessRequest.status} />
           </div>
 
-          <div className="mt-5 rounded-lg border border-border bg-paper p-4">
+          {isOpenRequest ? <div className="mt-5 rounded-lg border border-border bg-paper p-4">
             <p className="label-micro mb-2 text-muted-foreground">Authorization link</p>
             <code className="break-all text-xs text-ink">{authorizationUrl}</code>
-          </div>
+          </div> : null}
 
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          {isOpenRequest ? <div className="mt-4 grid gap-3 sm:grid-cols-2">
             <Button onClick={handleCopyLink} leftIcon={<Copy className="h-4 w-4" />}>
               {copied ? 'Copied' : 'Copy Link'}
             </Button>
@@ -166,7 +174,7 @@ export default function SuccessPage({ params }: SuccessPageProps) {
             >
               Email Client
             </Button>
-          </div>
+          </div> : null}
 
           <p className="mt-4 text-center text-sm">
             <button
@@ -176,7 +184,7 @@ export default function SuccessPage({ params }: SuccessPageProps) {
             >
               Go to dashboard
             </button>
-            <span className="text-muted-foreground"> — track status while you wait</span>
+            {isOpenRequest ? <span className="text-muted-foreground"> — track status while you wait</span> : null}
           </p>
         </div>
 

@@ -16,7 +16,7 @@ export function AffiliateSurfaceCard({
   className,
 }: AffiliateSurfaceCardProps) {
   return (
-    <section className={`clean-card overflow-hidden ${className || ''}`.trim()}>
+    <section className={`overflow-hidden border border-border bg-card ${className || ''}`.trim()}>
       <div className="flex flex-col gap-3 border-b border-border bg-paper px-5 py-4 sm:flex-row sm:items-end sm:justify-between">
         <div className="space-y-1">
           <h2 className="font-display text-lg font-semibold text-ink">{title}</h2>

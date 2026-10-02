@@ -7,7 +7,7 @@
  * Switches between Overview and Activity tabs.
  */
 
-import { useState } from 'react';
+import { useRef, useState, type KeyboardEvent } from 'react';
 import { Card } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import type {
@@ -45,68 +45,54 @@ export function ClientTabs({
   googleConnection,
 }: ClientTabsProps) {
   const [activeTab, setActiveTab] = useState<TabValue>('overview');
+  const tabValues: TabValue[] = googleConnection
+    ? ['overview', 'activity', 'offboarding']
+    : ['overview', 'activity'];
+  const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
+  const onTabKeyDown = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
+    const next = event.key === 'ArrowRight' ? index + 1
+      : event.key === 'ArrowLeft' ? index - 1
+        : event.key === 'Home' ? 0
+          : event.key === 'End' ? tabValues.length - 1
+            : null;
+    if (next === null) return;
+    event.preventDefault();
+    tabRefs.current[(next + tabValues.length) % tabValues.length]?.focus();
+  };
 
   return (
     <Card className="border-black/10 shadow-sm">
       {/* Tab Navigation */}
-      <div className="border-b border-border px-6">
-        <nav className="flex gap-8" role="tablist" aria-label="Client detail tabs">
-          <button
-            onClick={() => setActiveTab('overview')}
-            type="button"
-            role="tab"
-            id="client-tab-overview"
-            aria-selected={activeTab === 'overview'}
-            aria-controls="client-tabpanel-overview"
-            className={cn(
-              'py-4 px-1 border-b-2 font-medium text-sm transition-colors min-h-[44px]',
-              activeTab === 'overview'
-                ? 'border-primary text-primary'
-                : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
-            )}
-          >
-            Overview
-          </button>
-          <button
-            onClick={() => setActiveTab('activity')}
-            type="button"
-            role="tab"
-            id="client-tab-activity"
-            aria-selected={activeTab === 'activity'}
-            aria-controls="client-tabpanel-activity"
-            className={cn(
-              'py-4 px-1 border-b-2 font-medium text-sm transition-colors min-h-[44px]',
-              activeTab === 'activity'
-                ? 'border-primary text-primary'
-                : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
-            )}
-          >
-            Activity
-          </button>
-          {googleConnection && (
+      <div className="border-b border-border px-3 sm:px-6">
+        <nav className="flex flex-wrap gap-4 sm:gap-8" role="tablist" aria-label="Client detail tabs">
+          {tabValues.map((tab, index) => (
             <button
-              onClick={() => setActiveTab('offboarding')}
+              key={tab}
+              ref={(element) => { tabRefs.current[index] = element; }}
+              onClick={() => setActiveTab(tab)}
+              onKeyDown={(event) => onTabKeyDown(event, index)}
               type="button"
               role="tab"
-              id="client-tab-offboarding"
-              aria-selected={activeTab === 'offboarding'}
-              aria-controls="client-tabpanel-offboarding"
+              id={`client-tab-${tab}`}
+              aria-selected={activeTab === tab}
+              aria-controls={`client-tabpanel-${tab}`}
+              tabIndex={activeTab === tab ? 0 : -1}
               className={cn(
-                'py-4 px-1 border-b-2 font-medium text-sm transition-colors min-h-[44px]',
-                activeTab === 'offboarding'
+                'min-h-[44px] border-b-2 px-1 py-4 text-sm font-medium transition-colors',
+                activeTab === tab
                   ? 'border-primary text-primary'
-                  : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
+                  : 'border-transparent text-muted-foreground hover:border-border hover:text-foreground'
               )}
             >
-              Offboarding
+              {tab === 'overview' ? 'Overview' : tab === 'activity' ? 'Activity' : 'Offboarding'}
             </button>
-          )}
+          ))}
         </nav>
       </div>
 
       {/* Tab Content */}
       <div
-        className="p-6"
+        className="p-3 sm:p-6"
         role="tabpanel"
         id={
           activeTab === 'overview'

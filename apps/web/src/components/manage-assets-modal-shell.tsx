@@ -1,7 +1,7 @@
 'use client';
 
-import { AnimatePresence, m, useReducedMotion } from 'framer-motion';
-import { useEffect, useRef } from 'react';
+import { useEffect, useId, useRef } from 'react';
+import { m, useReducedMotion } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 
 interface ManageAssetsModalShellProps {
@@ -22,84 +22,76 @@ export function ManageAssetsModalShell({
   children,
 }: ManageAssetsModalShellProps) {
   const shouldReduceMotion = useReducedMotion();
-  // Parents pass inline close handlers; keep the listener subscription stable.
+  const dialogRef = useRef<HTMLDialogElement>(null);
   const onCloseRef = useRef(onClose);
-  useEffect(() => {
-    onCloseRef.current = onClose;
-  });
+  const titleId = useId();
 
   useEffect(() => {
-    if (!isOpen) return;
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onCloseRef.current();
-    };
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    if (isOpen && !dialog.open) dialog.showModal();
+    if (!isOpen && dialog.open) dialog.close();
   }, [isOpen]);
 
   return (
-    <AnimatePresence>
-      {isOpen && (
-        <m.div
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          transition={{ duration: shouldReduceMotion ? 0 : 0.25 }}
-          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4"
-        >
-          <m.button
-            type="button"
-            initial={shouldReduceMotion ? false : { opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: shouldReduceMotion ? 0 : 0.15 }}
-            onClick={onClose}
-            className="absolute inset-0 bg-ink/50 backdrop-blur-sm"
-            aria-label="Close manage assets modal"
-          />
+    <m.dialog
+      ref={dialogRef}
+      onCancel={(event) => {
+        event.preventDefault();
+        onCloseRef.current();
+      }}
+      className="fixed inset-0 m-0 flex h-full w-full max-h-none max-w-none items-center justify-center border-0 bg-transparent p-3 backdrop:bg-ink/50 backdrop:backdrop-blur-sm sm:p-4"
+      initial={shouldReduceMotion ? false : { opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: shouldReduceMotion ? 0 : 0.25 }}
+      aria-labelledby={titleId}
+      aria-modal="true"
+    >
+      <m.button
+        type="button"
+        initial={shouldReduceMotion ? false : { opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: shouldReduceMotion ? 0 : 0.15 }}
+        onClick={() => onCloseRef.current()}
+        className="absolute inset-0 bg-transparent"
+        aria-label="Close manage assets modal"
+      />
 
-          <m.div
-            initial={shouldReduceMotion ? false : { opacity: 0, scale: 0.98, y: 8 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={shouldReduceMotion ? { opacity: 0 } : { opacity: 0, scale: 0.98, y: 4 }}
-            transition={{ duration: shouldReduceMotion ? 0 : 0.25, ease: [0.22, 1, 0.36, 1] }}
-            onClick={(event) => event.stopPropagation()}
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="manage-assets-modal-title"
-            className="relative flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-none border-2 border-black bg-card shadow-brutalist sm:max-h-[90vh]"
-          >
-            <div className="border-b-2 border-black bg-paper px-5 py-4 sm:px-6">
-              <div className="flex items-start justify-between gap-4">
-                <div className="space-y-1">
-                  <p className="font-mono text-[11px] font-bold uppercase tracking-[0.24em] text-muted-foreground">
-                    Manage Assets
-                  </p>
-                  <h2 id="manage-assets-modal-title" className="font-display text-2xl font-semibold text-ink">
-                    {title}
-                  </h2>
-                  <p className="max-w-2xl text-sm text-muted-foreground">{description}</p>
-                </div>
-                <Button
-                  type="button"
-                  variant="brutalist"
-                  size="sm"
-                  onClick={onClose}
-                  className="shrink-0"
-                >
-                  Done
-                </Button>
-              </div>
-              {summary ? (
-                <div className="mt-4 border-t border-border pt-4">
-                  <div className="grid gap-3 sm:grid-cols-3">{summary}</div>
-                </div>
-              ) : null}
+      <m.div
+        initial={shouldReduceMotion ? false : { opacity: 0, scale: 0.98, y: 8 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        transition={{ duration: shouldReduceMotion ? 0 : 0.25, ease: [0.22, 1, 0.36, 1] }}
+        onClick={(event) => event.stopPropagation()}
+        className="relative z-10 flex max-h-[92vh] w-full max-w-5xl flex-col overflow-hidden rounded-none border-2 border-black bg-card shadow-brutalist sm:max-h-[90vh]"
+      >
+        <div className="border-b-2 border-black bg-paper px-5 py-4 sm:px-6">
+          <div className="flex items-start justify-between gap-4">
+            <div className="space-y-1">
+              <p className="font-mono text-[11px] font-bold uppercase tracking-[0.24em] text-muted-foreground">
+                Manage Assets
+              </p>
+              <h2 id={titleId} className="font-display text-2xl font-semibold text-ink">
+                {title}
+              </h2>
+              <p className="max-w-2xl text-sm text-muted-foreground">{description}</p>
             </div>
+            <Button type="button" variant="brutalist" size="sm" onClick={() => onCloseRef.current()} className="shrink-0">
+              Done
+            </Button>
+          </div>
+          {summary ? (
+            <div className="mt-4 border-t border-border pt-4">
+              <div className="grid gap-3 sm:grid-cols-3">{summary}</div>
+            </div>
+          ) : null}
+        </div>
 
-            <div className="flex-1 overflow-y-auto bg-card px-5 py-5 sm:px-6">{children}</div>
-          </m.div>
-        </m.div>
-      )}
-    </AnimatePresence>
+        <div className="flex-1 overflow-y-auto bg-card px-5 py-5 sm:px-6">{isOpen ? children : null}</div>
+      </m.div>
+    </m.dialog>
   );
 }

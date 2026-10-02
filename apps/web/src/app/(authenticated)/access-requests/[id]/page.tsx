@@ -2,7 +2,9 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { AlertCircle } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { LogoSpinner } from '@/components/ui/logo-spinner';
+import { Button } from '@/components/ui';
 import { useAuth } from '@clerk/nextjs';
 import { useAuthOrBypass } from '@/lib/dev-auth';
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard';
@@ -29,12 +31,15 @@ interface AccessRequestDetailPageProps {
 }
 
 export default function AccessRequestDetailPage({ params }: AccessRequestDetailPageProps) {
+  const router = useRouter();
   const clerkAuth = useAuth();
   const { getToken } = clerkAuth;
   const { isDevelopmentBypass } = useAuthOrBypass(clerkAuth);
   const [accessRequest, setAccessRequest] = useState<AccessRequest | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadAttempt, setLoadAttempt] = useState(0);
   const [error, setError] = useState<string | null>(null);
+  const [errorCode, setErrorCode] = useState<string | null>(null);
   const { copied, copy } = useCopyToClipboard();
   const { copied: reminderCopied, copy: copyReminderLink } = useCopyToClipboard();
   const [reminderLoading, setReminderLoading] = useState(false);
@@ -53,17 +58,22 @@ export default function AccessRequestDetailPage({ params }: AccessRequestDetailP
 
   useEffect(() => {
     async function load() {
+      setLoading(true);
+      setError(null);
+      setErrorCode(null);
       const resolved = await params;
       const result = await getAccessRequest(resolved.id, resolveApiToken);
 
       if (result.error) {
         setError(result.error.message);
+        setErrorCode(result.error.code);
         setLoading(false);
         return;
       }
 
       if (!result.data) {
         setError('Could not load access request.');
+        setErrorCode('REQUEST_NOT_FOUND');
         setLoading(false);
         return;
       }
@@ -73,7 +83,7 @@ export default function AccessRequestDetailPage({ params }: AccessRequestDetailP
     }
 
     load();
-  }, [params, resolveApiToken]);
+  }, [params, resolveApiToken, loadAttempt]);
 
   useEffect(() => {
     if (!accessRequest) {
@@ -227,12 +237,30 @@ export default function AccessRequestDetailPage({ params }: AccessRequestDetailP
   }
 
   if (!accessRequest || error) {
+    const terminal = ['NOT_FOUND', 'REQUEST_NOT_FOUND', 'ACCESS_REQUEST_NOT_FOUND', 'REQUEST_EXPIRED', 'REQUEST_REVOKED'].includes(errorCode || '');
+    const unauthorized = ['UNAUTHORIZED', 'FORBIDDEN', 'AUTHENTICATION_REQUIRED'].includes(errorCode || '');
     return (
       <div className="min-h-screen bg-paper flex items-center justify-center px-4">
         <div className="w-full max-w-md rounded-lg border border-coral/40 bg-card p-8 text-center shadow-sm">
           <AlertCircle className="h-8 w-8 text-danger-ink mx-auto mb-3" />
-          <h1 className="text-2xl font-semibold font-display text-ink">Request Not Found</h1>
-          <p className="mt-2 text-sm text-muted-foreground">{error || 'Could not load request.'}</p>
+          <h1 className="text-2xl font-semibold font-display text-ink">
+            {terminal ? 'Request Not Found' : unauthorized ? 'Request Access Denied' : 'Could Not Load Request'}
+          </h1>
+          <p className="mt-2 text-sm text-muted-foreground">
+            {terminal
+              ? 'This request is unavailable. Return to the dashboard to review your requests.'
+              : unauthorized
+                ? 'Your account cannot view this request. Return to the dashboard or contact your agency administrator.'
+                : 'The request service did not respond. Try again to reload this request.'}
+          </p>
+          {!terminal && !unauthorized ? (
+            <Button className="mt-5" onClick={() => setLoadAttempt((attempt) => attempt + 1)}>
+              Try again
+            </Button>
+          ) : null}
+          <Button className="mt-5" variant="secondary" onClick={() => router.push('/dashboard')}>
+            Back to Dashboard
+          </Button>
         </div>
       </div>
     );
