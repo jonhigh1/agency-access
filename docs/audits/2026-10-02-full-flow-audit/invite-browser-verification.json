@@ -1,0 +1,26 @@
+{
+  "environment": "http://localhost:3100 with isolated real API routes and PostgreSQL at loopback 3101/55439",
+  "production_tab_preserved": "https://authhub.co/internal/admin/affiliates, authenticated Jon session",
+  "pending_google": {
+    "blank_required_submit": "Blocked, input focused",
+    "saved_answers": {
+      "contact_name": "Fixture Contact",
+      "project_url": "https://project.fixture.invalid"
+    },
+    "persistence": "API readback and browser reload confirmed",
+    "provider_authorization": "Not exercised"
+  },
+  "expired": "Expired terminal heading; no retry or connection controls",
+  "revoked": "Revoked terminal heading; no retry or connection controls",
+  "completed": "Settled completed screen and Beehiiv Done checklist",
+  "manual_beehiiv": "Checklist final confirmation reached with disposable fixture; no provider action or submission yet",
+  "fixture_repair": "Mounted real intake/manual routes under /api; retained API process with live exec handle",
+  "manual_multi": {
+    "beehiiv_report": "Browser saved local self-report; PostgreSQL pending evidence; no completedPlatforms",
+    "concurrent_reports": "Beehiiv and Zapier HTTP200; PostgreSQL lost Zapier record. Repair in progress.",
+    "zapier_route": "Rendered native Team/Enterprise membership and separate App Connections sharing instructions",
+    "manual_brand_color": "Computed border rgb(37,99,235)",
+    "provider_actions": "None; only fake local acknowledgments and local API writes"
+  },
+  "intake_whitespace_focus": "Whitespace-only answer rejected; focused intake-contact_name with readable alert"
+}

@@ -1,0 +1,454 @@
+diff --git a/apps/api/src/lib/__tests__/cors.test.ts b/apps/api/src/lib/__tests__/cors.test.ts
+index 71217dd1..d2ce312e 100644
+--- a/apps/api/src/lib/__tests__/cors.test.ts
++++ b/apps/api/src/lib/__tests__/cors.test.ts
+@@ -10,7 +10,7 @@ describe('getCorsOptions', () => {
+     );
+ 
+     expect(options.exposedHeaders).toEqual(
+-      expect.arrayContaining(['x-cache', 'x-response-time', 'x-cache-hit-rate'])
++      expect.arrayContaining(['x-cache', 'x-response-time', 'x-cache-hit-rate', 'server-timing'])
+     );
+ 
+     expect(options.methods).toEqual(
+diff --git a/apps/api/src/lib/cors.ts b/apps/api/src/lib/cors.ts
+index 738d8b27..483adb89 100644
+--- a/apps/api/src/lib/cors.ts
++++ b/apps/api/src/lib/cors.ts
+@@ -19,6 +19,6 @@ export function getCorsOptions(
+     credentials: true,
+     methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+     allowedHeaders: ['Content-Type', 'Authorization', 'x-agency-id', 'X-Agency-Id'],
+-    exposedHeaders: ['x-cache', 'x-response-time', 'x-cache-hit-rate'],
++    exposedHeaders: ['x-cache', 'x-response-time', 'x-cache-hit-rate', 'server-timing'],
+   };
+ }
+diff --git a/apps/web/src/app/(authenticated)/dashboard/__tests__/page.behavior.test.tsx b/apps/web/src/app/(authenticated)/dashboard/__tests__/page.behavior.test.tsx
+index 0f7d47f1..6cb0542e 100644
+--- a/apps/web/src/app/(authenticated)/dashboard/__tests__/page.behavior.test.tsx
++++ b/apps/web/src/app/(authenticated)/dashboard/__tests__/page.behavior.test.tsx
+@@ -6,6 +6,10 @@ import DashboardPage from '../page';
+ const routerPush = vi.fn();
+ const quotaMutateAsync = vi.fn();
+ const getTokenMock = vi.fn();
++const { authorizedApiFetchMock, capturePosthogEventMock } = vi.hoisted(() => ({
++  authorizedApiFetchMock: vi.fn(),
++  capturePosthogEventMock: vi.fn(),
++}));
+ 
+ vi.mock('next/navigation', () => ({
+   useRouter: () => ({ push: routerPush }),
+@@ -59,6 +63,14 @@ vi.mock('@tanstack/react-query', () => ({
+   useQuery: (options: any) => useQueryMock(options),
+ }));
+ 
++vi.mock('@/lib/api/authorized-api-fetch', () => ({
++  authorizedApiFetch: authorizedApiFetchMock,
++}));
++
++vi.mock('@/lib/analytics/capture-posthog', () => ({
++  capturePosthogEvent: capturePosthogEventMock,
++}));
++
+ vi.mock('@/lib/query/onboarding', () => ({
+   useAgencyOnboardingStatus: (agencyId: string | undefined) => useAgencyOnboardingStatusMock(agencyId),
+   useUpdateAgencyOnboardingProgress: () => useUpdateOnboardingProgressMock(),
+@@ -104,6 +116,9 @@ describe('DashboardPage behavior', () => {
+     vi.clearAllMocks();
+     routerPush.mockClear();
+     quotaMutateAsync.mockReset();
++    authorizedApiFetchMock.mockReset();
++    capturePosthogEventMock.mockReset();
++    capturePosthogEventMock.mockResolvedValue(undefined);
+     quotaMutateAsync.mockResolvedValue({
+       allowed: true,
+       limit: 100,
+@@ -425,58 +440,101 @@ describe('DashboardPage behavior', () => {
+     expect(screen.getByText('Loading dashboard...')).toBeInTheDocument();
+   });
+ 
+-  it('fetches dashboard data through the normalized API base URL', async () => {
+-    const originalApiUrl = process.env.NEXT_PUBLIC_API_URL;
+-    process.env.NEXT_PUBLIC_API_URL = 'https://api.example.com/';
+-    const fetchMock = vi.fn().mockResolvedValue({
+-      ok: true,
+-      status: 200,
+-      headers: new Headers(),
+-      json: async () => ({
+-        data: {
+-          agency: {
+-            id: 'agency_1',
+-            name: 'Agency One',
+-            email: 'owner@agency.test',
+-          },
+-          stats: {
+-            totalRequests: 0,
+-            pendingRequests: 0,
+-            activeConnections: 0,
+-            totalPlatforms: 0,
+-          },
+-          requests: [],
+-          connections: [],
+-        },
+-        error: null,
+-      }),
++  it('bounds stalled dashboard requests and exposes retry', async () => {
++    const timeoutError = Object.assign(new Error('Request timed out. Please try again.'), {
++      code: 'TIMEOUT',
++      status: 408,
+     });
+-    const originalFetch = global.fetch;
+-    global.fetch = fetchMock as typeof fetch;
+-
+-    try {
+-      useQueryMock.mockImplementation((options) => ({
+-        data: undefined,
+-        isLoading: false,
+-        error: null,
+-        refetch: vi.fn(),
+-        options,
+-      }));
++    const refetch = vi.fn();
++    const controller = new AbortController();
++    authorizedApiFetchMock.mockImplementation(async (_endpoint, options) => {
++      await options.getToken();
++      throw timeoutError;
++    });
++    useQueryMock.mockImplementation((options) => ({
++      data: undefined,
++      isLoading: false,
++      error: timeoutError,
++      refetch,
++      options,
++    }));
+ 
+-      render(<DashboardPage />);
++    render(<DashboardPage />);
+ 
+-      const queryOptions = useQueryMock.mock.calls[0]?.[0];
+-      await queryOptions.queryFn();
++    const queryOptions = useQueryMock.mock.calls[0]?.[0];
++    const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0);
++    await expect(queryOptions.queryFn({ signal: controller.signal })).rejects.toBe(timeoutError);
++    expect(authorizedApiFetchMock).toHaveBeenCalledWith('/api/dashboard', expect.objectContaining({
++      cache: 'no-store',
++      getToken: expect.any(Function),
++      onResponse: expect.any(Function),
++      signal: controller.signal,
++    }));
++    expect(capturePosthogEventMock).toHaveBeenCalledWith('dashboard_load_failed', expect.objectContaining({
++      duration_ms: expect.any(Number),
++      stage: 'api',
++    }));
++    randomSpy.mockRestore();
++
++    await userEvent.setup().click(screen.getByRole('button', { name: 'Retry' }));
++    expect(refetch).toHaveBeenCalledOnce();
++  });
+ 
+-      expect(fetchMock).toHaveBeenCalledWith('https://api.example.com/api/dashboard', {
+-        headers: {
+-          Authorization: 'Bearer test-token',
+-        },
++  it('measures token and dashboard API time separately', async () => {
++    let now = 0;
++    const nowSpy = vi.spyOn(performance, 'now').mockImplementation(() => now);
++    const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0);
++    const dashboardData = {
++      data: {
++        agency: { id: 'agency_1', name: 'Agency One', email: 'owner@agency.test' },
++        stats: { totalRequests: 0, pendingRequests: 0, activeConnections: 0, totalPlatforms: 0 },
++        requests: [],
++        connections: [],
++      },
++      error: null,
++    };
++    getTokenMock.mockImplementation(async () => {
++      now = 200;
++      return 'test-token';
++    });
++    authorizedApiFetchMock.mockImplementation(async (_endpoint, options) => {
++      await options.getToken();
++      now = 250;
++      options.onResponse({
++        headers: new Headers({
++          'X-Cache': 'MISS',
++          'Server-Timing': 'total;dur=50, auth;dur=10, resolveAgency;dur=2, cache;dur=3, dataFetch;dur=20, auth;dur=-1, total;dur=Infinity, cache;dur=nope, unknown;dur=99',
++        }),
+       });
+-    } finally {
+-      process.env.NEXT_PUBLIC_API_URL = originalApiUrl;
+-      global.fetch = originalFetch;
+-    }
++      return dashboardData;
++    });
++    useQueryMock.mockImplementation((options) => ({
++      data: undefined,
++      isLoading: false,
++      error: null,
++      refetch: vi.fn(),
++      options,
++    }));
++
++    render(<DashboardPage />);
++
++    const queryOptions = useQueryMock.mock.calls[0]?.[0];
++    await queryOptions.queryFn({ signal: new AbortController().signal });
++
++    expect(capturePosthogEventMock).toHaveBeenCalledWith('dashboard_load_perf', expect.objectContaining({
++      token_fetch_ms: 200,
++      dashboard_api_ms: 50,
++      time_to_data_ms: 250,
++      server_timings_ms: {
++        total: 50,
++        auth: 10,
++        resolveAgency: 2,
++        cache: 3,
++        dataFetch: 20,
++      },
++    }));
++    nowSpy.mockRestore();
++    randomSpy.mockRestore();
+   });
+ 
+   it('disables Create Request and shows Checking immediately while quota check is pending', async () => {
+diff --git a/apps/web/src/app/(authenticated)/dashboard/page.tsx b/apps/web/src/app/(authenticated)/dashboard/page.tsx
+index 5086b562..25dad5b5 100644
+--- a/apps/web/src/app/(authenticated)/dashboard/page.tsx
++++ b/apps/web/src/app/(authenticated)/dashboard/page.tsx
+@@ -21,8 +21,7 @@ import { cn } from '@/lib/utils';
+ import { LogoSpinner } from '@/components/ui/logo-spinner';
+ import { useEffect, useRef, useState } from 'react';
+ import { readPerfHarnessContext, startPerfTimer } from '@/lib/perf-harness';
+-import { getApiBaseUrl } from '@/lib/api/api-env';
+-import { extractApiErrorMessage } from '@/lib/api/extract-error';
++import { authorizedApiFetch } from '@/lib/api/authorized-api-fetch';
+ import { capturePosthogEvent } from '@/lib/analytics/capture-posthog';
+ import { useUpdateAgencyOnboardingProgress } from '@/lib/query/onboarding';
+ import { trackOnboardingEvent } from '@/lib/analytics/onboarding';
+@@ -40,6 +39,9 @@ import {
+ 
+ const DASHBOARD_PERF_SAMPLE_RATE = 0.2;
+ const dashboardSessionSeen = new Set<string>();
++const SERVER_TIMING_METRICS = ['total', 'auth', 'resolveAgency', 'cache', 'dataFetch'] as const;
++
++type ServerTimingMetric = (typeof SERVER_TIMING_METRICS)[number];
+ 
+ interface DashboardApiError {
+   code: string;
+@@ -66,8 +68,11 @@ interface DashboardPerfMetrics {
+   cacheStatus: string;
+   isColdSession: boolean;
+   principalId: string;
++  serverTimingsMs?: Partial<Record<ServerTimingMetric, number>>;
+ }
+ 
++type DashboardLoadStage = 'token' | 'api' | 'body';
++
+ function nowMs(): number {
+   if (typeof performance !== 'undefined' && typeof performance.now === 'function') {
+     return performance.now();
+@@ -80,6 +85,31 @@ function shouldSampleDashboardPerf(): boolean {
+   return Math.random() < DASHBOARD_PERF_SAMPLE_RATE;
+ }
+ 
++function parseServerTimings(value: string | null): Partial<Record<ServerTimingMetric, number>> | undefined {
++  const timings: Partial<Record<ServerTimingMetric, number>> = {};
++
++  for (const entry of value?.split(',') ?? []) {
++    const [rawName, ...parameters] = entry.split(';');
++    const name = rawName.trim() as ServerTimingMetric;
++    if (!SERVER_TIMING_METRICS.includes(name)) {
++      continue;
++    }
++
++    const durationParameter = parameters.find((parameter) => parameter.trim().toLowerCase().startsWith('dur='));
++    const rawDuration = durationParameter?.split('=', 2)[1]?.trim().replace(/^"|"$/g, '');
++    if (!rawDuration) {
++      continue;
++    }
++
++    const duration = Number(rawDuration);
++    if (Number.isFinite(duration) && duration >= 0) {
++      timings[name] = duration;
++    }
++  }
++
++  return Object.keys(timings).length > 0 ? timings : undefined;
++}
++
+ async function captureDashboardLoadPerf(metrics: DashboardPerfMetrics): Promise<void> {
+   if (!shouldSampleDashboardPerf()) {
+     return;
+@@ -92,6 +122,18 @@ async function captureDashboardLoadPerf(metrics: DashboardPerfMetrics): Promise<
+     cache_status: metrics.cacheStatus,
+     is_cold_session: metrics.isColdSession,
+     principal_id: metrics.principalId,
++    ...(metrics.serverTimingsMs ? { server_timings_ms: metrics.serverTimingsMs } : {}),
++  });
++}
++
++async function captureDashboardLoadFailure(durationMs: number, stage: DashboardLoadStage): Promise<void> {
++  if (!shouldSampleDashboardPerf()) {
++    return;
++  }
++
++  await capturePosthogEvent('dashboard_load_failed', {
++    duration_ms: Number(durationMs.toFixed(2)),
++    stage,
+   });
+ }
+ 
+@@ -124,39 +166,48 @@ export default function DashboardPage() {
+   // Single unified query that fetches all dashboard data at once.
+   const { data: dashboardData, isLoading, error, refetch } = useQuery<DashboardApiResponse>({
+     queryKey: ['dashboard', principalId || 'anonymous'],
+-    queryFn: async () => {
++    queryFn: async ({ signal }) => {
+       const principalKey = principalId || 'anonymous';
+       const requestStart = nowMs();
+-
+-      const stopTokenTimer = startPerfTimer('dashboard:token-fetch');
+-      const tokenFetchStart = nowMs();
+-      const token = perfHarness?.token || await getToken();
+-      const tokenFetchMs = nowMs() - tokenFetchStart;
+-      stopTokenTimer?.();
+-
+-      if (!token) {
+-        throw new Error('AUTH_TOKEN_UNAVAILABLE');
+-      }
+-
+-      const stopTimer = startPerfTimer('dashboard:data-fetch');
++      let stage: DashboardLoadStage = 'token';
++      let tokenFetchMs = 0;
++      let dashboardApiMs = 0;
++      let apiFetchStart = 0;
++      let cacheStatus = 'UNKNOWN';
++      let serverTimingsMs: Partial<Record<ServerTimingMetric, number>> | undefined;
++      const timers: { stopDataFetch: (() => void) | null } = { stopDataFetch: null };
++      const getDashboardToken = async (): Promise<string> => {
++        const stopTokenTimer = startPerfTimer('dashboard:token-fetch');
++        const tokenFetchStart = nowMs();
++
++        try {
++          const token = perfHarness?.token || await getToken();
++          if (!token) {
++            throw new Error('AUTH_TOKEN_UNAVAILABLE');
++          }
++
++          stage = 'api';
++          apiFetchStart = nowMs();
++          timers.stopDataFetch = startPerfTimer('dashboard:data-fetch');
++          return token;
++        } finally {
++          tokenFetchMs = nowMs() - tokenFetchStart;
++          stopTokenTimer?.();
++        }
++      };
+ 
+       try {
+-        const headers: Record<string, string> = {
+-          Authorization: `Bearer ${token}`,
+-        };
+-
+-        const apiFetchStart = nowMs();
+-        const response = await fetch(`${getApiBaseUrl()}/api/dashboard`, {
+-          headers,
++        const data = await authorizedApiFetch<DashboardApiResponse>('/api/dashboard', {
++          cache: 'no-store',
++          getToken: getDashboardToken,
++          onResponse: (response) => {
++            dashboardApiMs = nowMs() - apiFetchStart;
++            cacheStatus = response.headers.get('X-Cache') || 'UNKNOWN';
++            serverTimingsMs = parseServerTimings(response.headers.get('Server-Timing'));
++            stage = 'body';
++          },
++          signal,
+         });
+-        const dashboardApiMs = nowMs() - apiFetchStart;
+-        const cacheStatus = response.headers.get('X-Cache') || 'UNKNOWN';
+-
+-        if (!response.ok) {
+-          throw new Error(await extractApiErrorMessage(response, 'Failed to fetch dashboard data'));
+-        }
+-
+-        const data = await response.json() as DashboardApiResponse;
+ 
+         const isColdSession = !dashboardSessionSeen.has(principalKey);
+         dashboardSessionSeen.add(principalKey);
+@@ -167,11 +218,17 @@ export default function DashboardPage() {
+           cacheStatus,
+           isColdSession,
+           principalId: principalKey,
++          serverTimingsMs,
+         });
+ 
+         return data;
++      } catch (error) {
++        if (!(error instanceof DOMException && error.name === 'AbortError')) {
++          void captureDashboardLoadFailure(nowMs() - requestStart, stage);
++        }
++        throw error;
+       } finally {
+-        stopTimer?.();
++        timers.stopDataFetch?.();
+       }
+     },
+     enabled: canFetchDashboard,
+diff --git a/apps/web/src/lib/api/__tests__/authorized-api-fetch.test.ts b/apps/web/src/lib/api/__tests__/authorized-api-fetch.test.ts
+index 6dfa2773..61ea11e4 100644
+--- a/apps/web/src/lib/api/__tests__/authorized-api-fetch.test.ts
++++ b/apps/web/src/lib/api/__tests__/authorized-api-fetch.test.ts
+@@ -43,6 +43,24 @@ describe('authorizedApiFetch', () => {
+     expect(result.data[0].id).toBe('agency-1');
+   });
+ 
++  it('exposes response metadata before parsing the body', async () => {
++    const response = {
++      ok: true,
++      status: 200,
++      headers: new Headers({ 'X-Cache': 'HIT' }),
++      json: async () => ({ data: [], error: null }),
++    } as unknown as Response;
++    const onResponse = vi.fn();
++    fetchMock.mockResolvedValue(response);
++
++    await authorizedApiFetch('/api/agencies', {
++      getToken: async () => 'token-123',
++      onResponse,
++    });
++
++    expect(onResponse).toHaveBeenCalledWith(response);
++  });
++
+   it('parses backend error payload for non-2xx responses', async () => {
+     fetchMock.mockResolvedValue({
+       ok: false,
+diff --git a/apps/web/src/lib/api/authorized-api-fetch.ts b/apps/web/src/lib/api/authorized-api-fetch.ts
+index 01db3467..4a4fd378 100644
+--- a/apps/web/src/lib/api/authorized-api-fetch.ts
++++ b/apps/web/src/lib/api/authorized-api-fetch.ts
+@@ -26,13 +26,14 @@ interface AuthorizedApiFetchOptions extends Omit<RequestInit, 'headers'> {
+   getToken: () => Promise<string | null>;
+   headers?: HeadersInit;
+   allowMissingToken?: boolean;
++  onResponse?: (response: Response) => void;
+ }
+ 
+ export async function authorizedApiFetch<TResponse = any>(
+   endpoint: string,
+   options: AuthorizedApiFetchOptions
+ ): Promise<TResponse> {
+-  const { getToken, headers, method = 'GET', signal: callerSignal, allowMissingToken = false, ...rest } = options;
++  const { getToken, headers, method = 'GET', signal: callerSignal, allowMissingToken = false, onResponse, ...rest } = options;
+ 
+   const controller = new AbortController();
+   const timeoutError = new AuthorizedApiError({
+@@ -78,6 +79,7 @@ export async function authorizedApiFetch<TResponse = any>(
+       headers: requestHeaders,
+       signal: controller.signal,
+     }), timeout, callerAbort]);
++    onResponse?.(response);
+ 
+     let payload: any = null;
+     try {

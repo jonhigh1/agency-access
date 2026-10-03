@@ -1,0 +1,53 @@
+{
+  "date": "2026-10-01",
+  "browser": "Codex in-app browser",
+  "app": "https://authhub.co/dashboard",
+  "observedApi": "https://agency-access.onrender.com/api/dashboard",
+  "identity": "existing owner session; fresh Google sign-in completed through UI",
+  "initialObservation": {
+    "authShellVisible": true,
+    "dashboardSpinnerPersisted": "several minutes; exact interval not instrumented",
+    "clientsSpinnerAlsoObserved": true,
+    "rootCauseConfirmed": true,
+    "rootCauseScope": "Live free instance and repeat startup delays verified; no claim that every loading failure has this cause."
+  },
+  "freshSignIn": {
+    "dataReadyObservedWithinMs": 10436,
+    "timing": "wall clock from Google click to subsequent ready observation; upper bound, includes observation delay; backend already potentially warmed"
+  },
+  "warmReloadSamplesMs": [
+    1004,
+    1526,
+    1198
+  ],
+  "method": "Wall-clock around browser reload and waiting for visible Dashboard heading. Three warm samples only; real authenticated browser, no API mocks or token extraction. Reload observations include driver overhead; sample one excludes snapshot overhead, samples two and three include it.",
+  "limitations": [
+    "No isolated auth/token/API timing from this browser API",
+    "No Server-Timing or Network trace available through current documented browser capabilities",
+    "Direct health navigation rejected with ERR_BLOCKED_BY_CLIENT; not bypassed"
+  ],
+  "localRepair": {
+    "reuse": "existing authorizedApiFetch timeout/cancellation/error validation",
+    "perAttemptTimeoutMs": 15000,
+    "existingAutomaticRetries": 1,
+    "timeoutIsLatencyFix": false,
+    "deployed": false
+  },
+  "externalMutations": "Routine authorized sign-out/sign-in only; no account/business data, hosting plan or production configuration changed",
+  "hosting": {
+    "service": "agency-access",
+    "serviceId": "srv-d5r8nr4oud1c73eig0m0",
+    "plan": "free",
+    "instances": 1,
+    "region": "virginia",
+    "deployedCommit": "2a789c6c6e7be514f2fe2f3fd95ef9309fdd830e",
+    "verification": "authenticated business Render CLI"
+  },
+  "secondColdLogin": "Another Google sign-in at 21:30:50 UTC remained loading beyond 50 seconds; logs show migrations 21:32:10 and listener 21:32:29 before first Dashboard GET. Then 401 followed by 200. Exact ready time not continuously observed.",
+  "proposal": {
+    "computePlan": "0.5c-512mb",
+    "monthlyUSD": 7,
+    "status": "approval required; not applied",
+    "validation": "Repeat first-login after at least 16 minutes without application traffic, then warm reloads; compare usable Dashboard and server processing separately."
+  }
+}

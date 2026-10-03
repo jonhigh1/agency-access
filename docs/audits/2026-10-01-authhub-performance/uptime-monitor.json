@@ -1,0 +1,11 @@
+{
+  "verifiedAt": "2026-10-02T02:43:25.573015+00:00",
+  "provider": "UptimeRobot",
+  "monitorId": "804150491",
+  "target": "https://agency-access.onrender.com/health",
+  "intervalSeconds": 600,
+  "state": "active; detail page exposes Pause",
+  "verification": "Saved edit returned to detail showing API URL and Checked every 10m. Previous frontend check status is not proof of first API check.",
+  "paidHostingChange": false,
+  "latencyImprovementVerified": false
+}

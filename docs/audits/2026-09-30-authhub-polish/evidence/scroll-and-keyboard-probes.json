@@ -1,0 +1,292 @@
+[
+  {
+    "width": 320,
+    "surface": "token-health-bottom",
+    "url": "/token-health",
+    "file": "320-token-health-bottom.png",
+    "metrics": {
+      "scrollWidth": 320,
+      "viewport": 320,
+      "mainCount": 0,
+      "scroller": {
+        "clientWidth": 318,
+        "scrollWidth": 318,
+        "scrollHeight": 1149
+      }
+    }
+  },
+  {
+    "width": 320,
+    "surface": "client-detail-actual",
+    "url": "/clients/audit-client",
+    "file": "320-client-detail-actual.png",
+    "metrics": {
+      "scrollWidth": 320,
+      "viewport": 320,
+      "mainCount": 0,
+      "scroller": {
+        "clientWidth": 318,
+        "scrollWidth": 402,
+        "scrollHeight": 2076
+      }
+    }
+  },
+  {
+    "width": 320,
+    "surface": "settings-billing-bottom",
+    "url": "/settings?tab=billing",
+    "file": "320-settings-billing-bottom.png",
+    "metrics": {
+      "scrollWidth": 320,
+      "viewport": 320,
+      "mainCount": 0,
+      "scroller": {
+        "clientWidth": 318,
+        "scrollWidth": 318,
+        "scrollHeight": 3564
+      }
+    }
+  },
+  {
+    "width": 320,
+    "surface": "settings-webhooks-bottom",
+    "url": "/settings?tab=webhooks",
+    "file": "320-settings-webhooks-bottom.png",
+    "metrics": {
+      "scrollWidth": 320,
+      "viewport": 320,
+      "mainCount": 0,
+      "scroller": {
+        "clientWidth": 318,
+        "scrollWidth": 318,
+        "scrollHeight": 2968
+      }
+    }
+  },
+  {
+    "width": 320,
+    "surface": "request-detail-bottom",
+    "url": "/access-requests/audit-request",
+    "file": "320-request-detail-bottom.png",
+    "metrics": {
+      "scrollWidth": 320,
+      "viewport": 320,
+      "mainCount": 0,
+      "scroller": {
+        "clientWidth": 318,
+        "scrollWidth": 318,
+        "scrollHeight": 1545
+      }
+    }
+  },
+  {
+    "width": 320,
+    "surface": "clients-keyboard",
+    "url": "/clients",
+    "file": "320-clients-keyboard.png",
+    "keyboard": {
+      "beforeEscape": 1,
+      "afterEscape": 1,
+      "nextFocus": {
+        "tag": "A",
+        "label": "Settings",
+        "text": "Settings"
+      }
+    },
+    "metrics": {
+      "scrollWidth": 320,
+      "viewport": 320,
+      "mainCount": 0,
+      "scroller": null
+    }
+  },
+  {
+    "width": 390,
+    "surface": "token-health-bottom",
+    "url": "/token-health",
+    "file": "390-token-health-bottom.png",
+    "metrics": {
+      "scrollWidth": 390,
+      "viewport": 390,
+      "mainCount": 0,
+      "scroller": {
+        "clientWidth": 388,
+        "scrollWidth": 388,
+        "scrollHeight": 1109
+      }
+    }
+  },
+  {
+    "width": 390,
+    "surface": "client-detail-actual",
+    "url": "/clients/audit-client",
+    "file": "390-client-detail-actual.png",
+    "metrics": {
+      "scrollWidth": 390,
+      "viewport": 390,
+      "mainCount": 0,
+      "scroller": {
+        "clientWidth": 388,
+        "scrollWidth": 402,
+        "scrollHeight": 1960
+      }
+    }
+  },
+  {
+    "width": 390,
+    "surface": "settings-billing-bottom",
+    "url": "/settings?tab=billing",
+    "file": "390-settings-billing-bottom.png",
+    "metrics": {
+      "scrollWidth": 390,
+      "viewport": 390,
+      "mainCount": 0,
+      "scroller": {
+        "clientWidth": 388,
+        "scrollWidth": 388,
+        "scrollHeight": 3528
+      }
+    }
+  },
+  {
+    "width": 390,
+    "surface": "settings-webhooks-bottom",
+    "url": "/settings?tab=webhooks",
+    "file": "390-settings-webhooks-bottom.png",
+    "metrics": {
+      "scrollWidth": 390,
+      "viewport": 390,
+      "mainCount": 0,
+      "scroller": {
+        "clientWidth": 388,
+        "scrollWidth": 388,
+        "scrollHeight": 2712
+      }
+    }
+  },
+  {
+    "width": 390,
+    "surface": "request-detail-bottom",
+    "url": "/access-requests/audit-request",
+    "file": "390-request-detail-bottom.png",
+    "metrics": {
+      "scrollWidth": 390,
+      "viewport": 390,
+      "mainCount": 0,
+      "scroller": {
+        "clientWidth": 388,
+        "scrollWidth": 388,
+        "scrollHeight": 1317
+      }
+    }
+  },
+  {
+    "width": 390,
+    "surface": "clients-keyboard",
+    "url": "/clients",
+    "file": "390-clients-keyboard.png",
+    "keyboard": {
+      "beforeEscape": 1,
+      "afterEscape": 1,
+      "nextFocus": {
+        "tag": "A",
+        "label": "Settings",
+        "text": "Settings"
+      }
+    },
+    "metrics": {
+      "scrollWidth": 390,
+      "viewport": 390,
+      "mainCount": 0,
+      "scroller": null
+    }
+  },
+  {
+    "width": 1440,
+    "surface": "token-health-bottom",
+    "url": "/token-health",
+    "file": "1440-token-health-bottom.png",
+    "metrics": {
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "mainCount": 0,
+      "scroller": null
+    }
+  },
+  {
+    "width": 1440,
+    "surface": "client-detail-actual",
+    "url": "/clients/audit-client",
+    "file": "1440-client-detail-actual.png",
+    "metrics": {
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "mainCount": 0,
+      "scroller": {
+        "clientWidth": 1188,
+        "scrollWidth": 1188,
+        "scrollHeight": 1144
+      }
+    }
+  },
+  {
+    "width": 1440,
+    "surface": "settings-billing-bottom",
+    "url": "/settings?tab=billing",
+    "file": "1440-settings-billing-bottom.png",
+    "metrics": {
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "mainCount": 0,
+      "scroller": {
+        "clientWidth": 1188,
+        "scrollWidth": 1188,
+        "scrollHeight": 2567
+      }
+    }
+  },
+  {
+    "width": 1440,
+    "surface": "settings-webhooks-bottom",
+    "url": "/settings?tab=webhooks",
+    "file": "1440-settings-webhooks-bottom.png",
+    "metrics": {
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "mainCount": 0,
+      "scroller": {
+        "clientWidth": 1188,
+        "scrollWidth": 1188,
+        "scrollHeight": 2032
+      }
+    }
+  },
+  {
+    "width": 1440,
+    "surface": "request-detail-bottom",
+    "url": "/access-requests/audit-request",
+    "file": "1440-request-detail-bottom.png",
+    "metrics": {
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "mainCount": 0,
+      "scroller": {
+        "clientWidth": 1188,
+        "scrollWidth": 1188,
+        "scrollHeight": 983
+      }
+    }
+  },
+  {
+    "width": 1440,
+    "surface": "clients-keyboard",
+    "url": "/clients",
+    "file": "1440-clients-keyboard.png",
+    "metrics": {
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "mainCount": 0,
+      "scroller": null
+    }
+  }
+]

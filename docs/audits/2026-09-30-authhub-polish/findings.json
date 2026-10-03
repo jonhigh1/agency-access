@@ -1,0 +1,1767 @@
+[
+  {
+    "id": "S01",
+    "priority": "P2",
+    "group": "Shared system",
+    "title": "Facebook Pages uses a typed f instead of its logo",
+    "observed": "The exact grant component renders <span>f</span>. Shared meta_pages mapping separately resolves to meta.com, mixing product and corporate identity.",
+    "recommendation": "Use an existing local Facebook product asset through one shared icon mapping. Keep Meta corporate identity where appropriate.",
+    "acceptance": "Pages, Ads and Meta labels each show the intended asset at 16\u201348px, including fallback.",
+    "sources": [
+      {
+        "path": "apps/web/src/components/client-auth/AutomaticPagesGrant.tsx",
+        "line": 214
+      },
+      {
+        "path": "apps/web/src/components/ui/platform-icon.tsx",
+        "line": 45
+      },
+      {
+        "path": "packages/shared/src/types.ts",
+        "line": 619
+      }
+    ],
+    "evidence": [
+      "SOURCE",
+      "USER_SCREENSHOT",
+      "LOCAL_PREVIEW"
+    ],
+    "screenshots": [
+      "1440-facebook-grant.png",
+      "320-facebook-grant.png"
+    ],
+    "status": "Open"
+  },
+  {
+    "id": "S02",
+    "priority": "P1",
+    "group": "Shared system",
+    "title": "Primary button text fails contrast",
+    "observed": "Grant Access computes white text on rgb(255,107,53), 18px/600: contrast 2.835:1. Shared primary/brutalist variants repeat this combination. This also exposes a contradiction in the documented button contract.",
+    "recommendation": "Correct the shared foreground/fill pair and document the accessible pairing. Ink text on coral is a candidate; verify before choosing.",
+    "acceptance": "All enabled shared variants pass 4.5:1 for ordinary text, or 3:1 where text meets the large-text definition, including hover.",
+    "sources": [
+      {
+        "path": "apps/web/src/components/ui/button.tsx",
+        "line": 58
+      },
+      {
+        "path": "apps/web/src/app/globals.css",
+        "line": 38
+      }
+    ],
+    "evidence": [
+      "SOURCE",
+      "LOCAL_PREVIEW",
+      "LIVE_AUTHENTICATED"
+    ],
+    "screenshots": [
+      "1440-facebook-grant.png"
+    ],
+    "status": "Open"
+  },
+  {
+    "id": "S03",
+    "priority": "P1",
+    "group": "Shared system",
+    "title": "Button asChild discards the styled interactive element",
+    "observed": "Button passes a Fragment containing a span into Radix Slot. Callback links render as adjacent unstyled anchors, each only 24px high. Source consumers include marketing, comparison and callback controls.",
+    "recommendation": "Pass the actual interactive child to Slot. Preserve icon/loading content inside that child using the existing dependency.",
+    "acceptance": "Each asChild consumer has one styled, focusable anchor. Its full visible area activates navigation and retains a 44px target.",
+    "sources": [
+      {
+        "path": "apps/web/src/components/ui/button.tsx",
+        "line": 78
+      },
+      {
+        "path": "apps/web/src/app/platforms/callback/page.tsx",
+        "line": 394
+      }
+    ],
+    "evidence": [
+      "SOURCE",
+      "LOCAL_PREVIEW"
+    ],
+    "screenshots": [
+      "1440-platform-callback-error.png"
+    ],
+    "status": "Open"
+  },
+  {
+    "id": "S04",
+    "priority": "P1",
+    "group": "Shared system",
+    "title": "Mobile navigation covers each page on first load",
+    "observed": "The authenticated layout initializes open=true for desktop and mobile. At 320/390px a full-screen navigation dialog obscures the destination until dismissed.",
+    "recommendation": "Keep desktop expansion independent from mobile menu visibility. Start the mobile menu closed.",
+    "acceptance": "Direct visits and navigation show page content first; the menu opens only from its trigger.",
+    "sources": [
+      {
+        "path": "apps/web/src/app/(authenticated)/layout.tsx",
+        "line": 90
+      },
+      {
+        "path": "apps/web/src/components/ui/sidebar.tsx",
+        "line": 124
+      }
+    ],
+    "evidence": [
+      "SOURCE",
+      "LOCAL_PREVIEW",
+      "LIVE_AUTHENTICATED"
+    ],
+    "screenshots": [
+      "390-mobile-menu-initially-open.png"
+    ],
+    "status": "Open"
+  },
+  {
+    "id": "S05",
+    "priority": "P2",
+    "group": "Shared system",
+    "title": "Mobile menu lacks complete keyboard behavior",
+    "observed": "The panel declares a modal dialog without focus containment, return focus or Escape handling. Local Escape testing leaves the dialog open at both mobile widths.",
+    "recommendation": "Use native dialog behavior or a verified accessible primitive for keyboard handling. Restore focus to the menu trigger.",
+    "acceptance": "Escape closes the panel, Tab stays inside it, background controls cannot receive focus, and focus returns to the opener.",
+    "sources": [
+      {
+        "path": "apps/web/src/components/ui/sidebar.tsx",
+        "line": 150
+      }
+    ],
+    "evidence": [
+      "SOURCE",
+      "LOCAL_PREVIEW"
+    ],
+    "screenshots": [],
+    "status": "Open"
+  },
+  {
+    "id": "S06",
+    "priority": "P2",
+    "group": "Shared system",
+    "title": "Primary content landmarks are inconsistent",
+    "observed": "Core authenticated previews expose no main landmark. Live home/pricing/about/contact expose two nested main elements; live home also exposes two h1 headings.",
+    "recommendation": "Give each page one main region and one clear primary heading. Correct ownership at shared layout boundaries.",
+    "acceptance": "Landmark navigation exposes one named main region on every route; headings reflect the document hierarchy.",
+    "sources": [
+      {
+        "path": "apps/web/src/app/(authenticated)/layout.tsx",
+        "line": 296
+      },
+      {
+        "path": "apps/web/src/app/(marketing)/layout.tsx",
+        "line": 30
+      },
+      {
+        "path": "apps/web/src/app/(marketing)/page.tsx",
+        "line": 61
+      }
+    ],
+    "evidence": [
+      "SOURCE",
+      "LOCAL_PREVIEW",
+      "LIVE_PUBLIC",
+      "LIVE_AUTHENTICATED"
+    ],
+    "screenshots": [],
+    "status": "Open"
+  },
+  {
+    "id": "S07",
+    "priority": "P2",
+    "group": "Shared system",
+    "title": "Recurring navigation has no skip-to-content route",
+    "observed": "Marketing and authenticated shells have no first-focus skip link. Keyboard users traverse recurring navigation before reaching each destination.",
+    "recommendation": "Add a visible-on-focus skip link to the unique main region.",
+    "acceptance": "The first Tab exposes Skip to content; activation moves keyboard focus to the content.",
+    "sources": [
+      {
+        "path": "apps/web/src/app/(marketing)/layout.tsx",
+        "line": 25
+      },
+      {
+        "path": "apps/web/src/app/(authenticated)/layout.tsx",
+        "line": 296
+      }
+    ],
+    "evidence": [
+      "SOURCE"
+    ],
+    "screenshots": [],
+    "status": "Open"
+  },
+  {
+    "id": "S08",
+    "priority": "P2",
+    "group": "Shared system",
+    "title": "Small icon targets remain outside shared sizing",
+    "observed": "Selected Facebook page removal targets measure 16\u00d716px. Token refresh controls and desktop sidebar collapse use undersized hit areas. Internal filters use 40px heights.",
+    "recommendation": "Apply the documented 44px hit area through shared icon/button patterns. Preserve visual icon size.",
+    "acceptance": "Pointer targets meet the project 44px contract without overlapping adjacent controls.",
+    "sources": [
+      {
+        "path": "apps/web/src/components/client-auth/AutomaticPagesGrant.tsx",
+        "line": 240
+      },
+      {
+        "path": "apps/web/src/components/ui/sidebar.tsx",
+        "line": 100
+      },
+      {
+        "path": "apps/web/src/app/(authenticated)/token-health/page.tsx",
+        "line": 208
+      },
+      {
+        "path": "apps/web/src/app/(authenticated)/internal/admin/agencies/page.tsx",
+        "line": 80
+      }
+    ],
+    "evidence": [
+      "SOURCE",
+      "LOCAL_PREVIEW"
+    ],
+    "screenshots": [],
+    "status": "Open"
+  },
+  {
+    "id": "S09",
+    "priority": "P2",
+    "group": "Shared system",
+    "title": "Explicit corner radii bypass the square-or-circle rule",
+    "observed": "Provider groups use rounded-[1rem]. Clerk CSS specifies 8px, .5rem and .75rem. Ordinary rounded-lg/xl utilities already resolve to zero and are excluded.",
+    "recommendation": "Replace explicit rectangular radii with zero; retain circles for avatars and circular icon controls.",
+    "acceptance": "Computed styles follow the binary radius contract in provider dialogs and real Clerk widgets.",
+    "sources": [
+      {
+        "path": "apps/web/src/components/meta-unified-settings.tsx",
+        "line": 272
+      },
+      {
+        "path": "apps/web/src/components/google-unified-settings.tsx",
+        "line": 491
+      },
+      {
+        "path": "apps/web/src/app/globals.css",
+        "line": 707
+      }
+    ],
+    "evidence": [
+      "SOURCE",
+      "LIVE_AUTHENTICATED"
+    ],
+    "screenshots": [],
+    "status": "Open"
+  },
+  {
+    "id": "S10",
+    "priority": "P2",
+    "group": "Shared system",
+    "title": "Static cards retain excessive or misleading elevation",
+    "observed": "Client statistics, headers, request edit cards, partner tables and manual dialogs retain resting soft/hard shadows. Several non-clickable cards gain hover elevation. Live Connections also shows more than three resting filled Connect action shadows in one view.",
+    "recommendation": "Use existing border-led surfaces. Reserve the three-shadow budget for intentional emphasis and interactive affordances.",
+    "acceptance": "Review full views, not individual components: <=3 intended shadows; static cards do not imply click behavior.",
+    "sources": [
+      {
+        "path": "apps/web/src/components/client-detail/ClientStats.tsx",
+        "line": 54
+      },
+      {
+        "path": "apps/web/src/app/(authenticated)/access-requests/[id]/edit/page.tsx",
+        "line": 379
+      },
+      {
+        "path": "apps/web/src/components/affiliate/affiliate-ledger-table.tsx",
+        "line": 26
+      },
+      {
+        "path": "apps/web/src/components/manual-invitation-modal.tsx",
+        "line": 146
+      }
+    ],
+    "evidence": [
+      "SOURCE",
+      "LOCAL_PREVIEW",
+      "LIVE_AUTHENTICATED"
+    ],
+    "screenshots": [],
+    "status": "Open"
+  },
+  {
+    "id": "S11",
+    "priority": "P2",
+    "group": "Shared system",
+    "title": "Danger color appears on neutral operations",
+    "observed": "Onboarding section headings, partner links, admin navigation and ordinary token refresh actions use danger-ink. Warning meaning becomes inconsistent.",
+    "recommendation": "Use neutral ink for routine operations. Keep danger ink for destructive actions and actual errors.",
+    "acceptance": "Normal headings/links/refresh actions do not resemble failures; semantic status colors remain consistent.",
+    "sources": [
+      {
+        "path": "apps/web/src/components/onboarding/screens/agency-profile-screen.tsx",
+        "line": 87
+      },
+      {
+        "path": "apps/web/src/app/(partner)/partners/page.tsx",
+        "line": 99
+      },
+      {
+        "path": "apps/web/src/app/(authenticated)/token-health/page.tsx",
+        "line": 391
+      }
+    ],
+    "evidence": [
+      "SOURCE"
+    ],
+    "screenshots": [],
+    "status": "Open"
+  },
+  {
+    "id": "S12",
+    "priority": "P2",
+    "group": "Shared system",
+    "title": "Strict LazyMotion rejects raw motion components in development",
+    "observed": "The actual AppProviders uses LazyMotion strict. Onboarding and the Clients error branch render raw motion components, causing a development runtime error in the source preview. The development error is not proof of a production outage.",
+    "recommendation": "Use the existing m primitives inside LazyMotion. Apply existing app motion durations and reduced-motion behavior.",
+    "acceptance": "Native development routes and error states render without the strict-mode exception; reduced motion remains functional.",
+    "sources": [
+      {
+        "path": "apps/web/src/app/app-providers.tsx",
+        "line": 24
+      },
+      {
+        "path": "apps/web/src/components/onboarding/unified-wizard.tsx",
+        "line": 228
+      },
+      {
+        "path": "apps/web/src/app/(authenticated)/clients/page.tsx",
+        "line": 130
+      }
+    ],
+    "evidence": [
+      "SOURCE",
+      "LOCAL_PREVIEW"
+    ],
+    "screenshots": [],
+    "status": "Open"
+  },
+  {
+    "id": "O01",
+    "priority": "P1",
+    "group": "Onboarding",
+    "title": "Go to Dashboard repeats agency creation/update",
+    "observed": "Final navigation invokes completeOnboarding, which calls resolveAgency again. That helper can POST or PATCH an agency. Agency resolution can encounter duplicate-name rejection; the API create path returns the exact duplicate-name error in the user screenshot. The failing production branch remains unverified.",
+    "recommendation": "Use the persisted agencyId from link creation for final completion/navigation. Recover missing state explicitly rather than repeating agency mutation.",
+    "acceptance": "Existing agency, duplicate name, reload/resume and repeated-click cases reach the dashboard once. Confirm the actual failing production network request.",
+    "sources": [
+      {
+        "path": "apps/web/src/components/onboarding/screens/final-success-screen.tsx",
+        "line": 73
+      },
+      {
+        "path": "apps/web/src/contexts/unified-onboarding-context.tsx",
+        "line": 942
+      },
+      {
+        "path": "apps/web/src/contexts/unified-onboarding-context.tsx",
+        "line": 623
+      },
+      {
+        "path": "apps/api/src/services/agency.service.ts",
+        "line": 149
+      }
+    ],
+    "evidence": [
+      "SOURCE",
+      "USER_SCREENSHOT"
+    ],
+    "screenshots": [],
+    "status": "Open"
+  },
+  {
+    "id": "O02",
+    "priority": "P1",
+    "group": "Onboarding",
+    "title": "Resume restores the step without required request data",
+    "observed": "Hydration restores agencyId and currentStep but leaves link, request, client, platform and invite data at in-memory defaults. Lifecycle can resume directly at steps 4\u20136.",
+    "recommendation": "Hydrate data required by the resumed step from persisted state, or resume at an existing stable request/dashboard destination.",
+    "acceptance": "Refreshing each post-link step retains the exact request/link/client and truthful invitation state.",
+    "sources": [
+      {
+        "path": "apps/web/src/contexts/unified-onboarding-context.tsx",
+        "line": 1036
+      },
+      {
+        "path": "apps/web/src/contexts/unified-onboarding-context.tsx",
+        "line": 287
+      },
+      {
+        "path": "apps/web/src/lib/query/onboarding.ts",
+        "line": 44
+      }
+    ],
+    "evidence": [
+      "SOURCE"
+    ],
+    "screenshots": [],
+    "status": "Open"
+  },
+  {
+    "id": "O03",
+    "priority": "P2",
+    "group": "Onboarding",
+    "title": "Final screen shows competing completion controls",
+    "observed": "The final screen offers Go to Dashboard while the shared footer renders a disabled Complete button. The screenshot confirms the contradiction.",
+    "recommendation": "Use one completion action. Remove the duplicate final footer control.",
+    "acceptance": "The final screen presents one enabled, clear completion path on pointer and keyboard.",
+    "sources": [
+      {
+        "path": "apps/web/src/components/onboarding/unified-wizard.tsx",
+        "line": 301
+      },
+      {
+        "path": "apps/web/src/contexts/unified-onboarding-context.tsx",
+        "line": 458
+      }
+    ],
+    "evidence": [
+      "SOURCE",
+      "USER_SCREENSHOT"
+    ],
+    "screenshots": [],
+    "status": "Open"
+  },
+  {
+    "id": "O04",
+    "priority": "P2",
+    "group": "Onboarding",
+    "title": "100% Complete appears before persistence succeeds",
+    "observed": "Percentage depends on step index, reaching 100% at the final screen before completion API calls succeed.",
+    "recommendation": "Show Step 7 of 7 until completion is confirmed, or calculate completion from persisted lifecycle.",
+    "acceptance": "Failed finalization never displays a completed state.",
+    "sources": [
+      {
+        "path": "apps/web/src/components/onboarding/unified-wizard.tsx",
+        "line": 166
+      },
+      {
+        "path": "apps/web/src/contexts/unified-onboarding-context.tsx",
+        "line": 942
+      }
+    ],
+    "evidence": [
+      "SOURCE",
+      "USER_SCREENSHOT"
+    ],
+    "screenshots": [],
+    "status": "Open"
+  },
+  {
+    "id": "O05",
+    "priority": "P2",
+    "group": "Onboarding",
+    "title": "Final completion lacks busy state and duplicate-click guard",
+    "observed": "The raw final button has no disabled/loading state, and the completion handler does not set loading before resolve/persist.",
+    "recommendation": "Guard the shared completion handler and reflect its pending state in the one final button.",
+    "acceptance": "Two rapid activations produce one completion operation and an announced pending state.",
+    "sources": [
+      {
+        "path": "apps/web/src/components/onboarding/screens/final-success-screen.tsx",
+        "line": 73
+      },
+      {
+        "path": "apps/web/src/contexts/unified-onboarding-context.tsx",
+        "line": 942
+      }
+    ],
+    "evidence": [
+      "SOURCE"
+    ],
+    "screenshots": [],
+    "status": "Open"
+  },
+  {
+    "id": "O06",
+    "priority": "P2",
+    "group": "Onboarding",
+    "title": "Pending copy assumes Google for every request",
+    "observed": "Platform selection permits Meta-only and other selections, but generated-link/final/request-success copy says the client must finish Google.",
+    "recommendation": "Derive copy from requested platforms and actual completion status. Use neutral wording for multi-platform requests.",
+    "acceptance": "Meta-only, Google-only and multi-platform requests all show accurate next-step instructions.",
+    "sources": [
+      {
+        "path": "apps/web/src/components/onboarding/screens/success-link-screen.tsx",
+        "line": 63
+      },
+      {
+        "path": "apps/web/src/components/onboarding/screens/final-success-screen.tsx",
+        "line": 41
+      },
+      {
+        "path": "apps/web/src/app/(authenticated)/access-requests/[id]/success/page.tsx",
+        "line": 128
+      }
+    ],
+    "evidence": [
+      "SOURCE"
+    ],
+    "screenshots": [],
+    "status": "Open"
+  },
+  {
+    "id": "O07",
+    "priority": "P3",
+    "group": "Onboarding",
+    "title": "Clipboard promise does not match the action",
+    "observed": "Platform selection promises automatic clipboard copying. The following screen copies only after explicit activation.",
+    "recommendation": "Change the promise to match the existing Copy link action; show its actual success/failure.",
+    "acceptance": "Visible instructions and clipboard behavior match when permissions allow and when copying fails.",
+    "sources": [
+      {
+        "path": "apps/web/src/components/onboarding/screens/platform-selection-screen.tsx",
+        "line": 137
+      },
+      {
+        "path": "apps/web/src/components/onboarding/screens/success-link-screen.tsx",
+        "line": 46
+      }
+    ],
+    "evidence": [
+      "SOURCE"
+    ],
+    "screenshots": [],
+    "status": "Open"
+  },
+  {
+    "id": "O08",
+    "priority": "P2",
+    "group": "Onboarding",
+    "title": "Team invitations allow duplicate addresses",
+    "observed": "The context appends without normalization/deduplication. UI keys rows by email. Role buttons also lack selected-state semantics.",
+    "recommendation": "Normalize and reject duplicate addresses. Use native radios or explicit selected-state semantics for roles.",
+    "acceptance": "Repeated case-variant email produces one invitation; keyboard/screen reader announces the selected role.",
+    "sources": [
+      {
+        "path": "apps/web/src/contexts/unified-onboarding-context.tsx",
+        "line": 518
+      },
+      {
+        "path": "apps/web/src/components/onboarding/screens/team-invite-screen.tsx",
+        "line": 137
+      }
+    ],
+    "evidence": [
+      "SOURCE"
+    ],
+    "screenshots": [],
+    "status": "Open"
+  },
+  {
+    "id": "O09",
+    "priority": "P2",
+    "group": "Onboarding",
+    "title": "Agency validation waits until later steps",
+    "observed": "The profile permits any nonempty name despite a two-character hint. Server collision errors arrive at create/update, including final navigation.",
+    "recommendation": "Apply the agreed local name rule at the profile field. Attach server collision feedback to that field at the initial agency operation.",
+    "acceptance": "Short/duplicate names produce a clear field error with preserved data, before link generation.",
+    "sources": [
+      {
+        "path": "apps/web/src/contexts/unified-onboarding-context.tsx",
+        "line": 458
+      },
+      {
+        "path": "apps/web/src/components/onboarding/screens/agency-profile-screen.tsx",
+        "line": 96
+      },
+      {
+        "path": "apps/api/src/services/agency.service.ts",
+        "line": 149
+      }
+    ],
+    "evidence": [
+      "SOURCE"
+    ],
+    "screenshots": [],
+    "status": "Open"
+  },
+  {
+    "id": "O10",
+    "priority": "P3",
+    "group": "Onboarding",
+    "title": "Team completion wording and counts are unverified",
+    "observed": "The displayed sent count uses invite-list length. Team-screen copy promises dashboard navigation, but Continue advances to another final screen.",
+    "recommendation": "Use confirmed invitation results for sent counts and describe the actual next destination.",
+    "acceptance": "Skip, successful invite, partial failure and resume each display accurate counts and destination copy.",
+    "sources": [
+      {
+        "path": "apps/web/src/app/onboarding/unified/page.tsx",
+        "line": 258
+      },
+      {
+        "path": "apps/web/src/components/onboarding/screens/team-invite-screen.tsx",
+        "line": 244
+      }
+    ],
+    "evidence": [
+      "SOURCE"
+    ],
+    "screenshots": [],
+    "status": "Open"
+  },
+  {
+    "id": "R01",
+    "priority": "P2",
+    "group": "Requests and invites",
+    "title": "Missing request and service failure share one dead end",
+    "observed": "Request detail labels every fetch failure Request Not Found, without retry/back actions. Success route has a different recovery pattern.",
+    "recommendation": "Distinguish missing/expired data from transient failures. Reuse one recovery pattern with retry or a clear destination.",
+    "acceptance": "404 and 503 produce different guidance; a recovered service can reload the same request.",
+    "sources": [
+      {
+        "path": "apps/web/src/app/(authenticated)/access-requests/[id]/page.tsx",
+        "line": 229
+      },
+      {
+        "path": "apps/web/src/app/(authenticated)/access-requests/[id]/success/page.tsx",
+        "line": 114
+      }
+    ],
+    "evidence": [
+      "SOURCE"
+    ],
+    "screenshots": [],
+    "status": "Open"
+  },
+  {
+    "id": "R02",
+    "priority": "P2",
+    "group": "Requests and invites",
+    "title": "Missing-platform submission error disappears",
+    "observed": "The context moves PLATFORMS_NOT_CONNECTED failures back to step 2; the page only displays state.error in step 4.",
+    "recommendation": "Render the error at the shared wizard level or at the destination step, with the required connection action.",
+    "acceptance": "Simulated missing-platform response shows an explanation on Platforms, preserves the draft and allows recovery.",
+    "sources": [
+      {
+        "path": "apps/web/src/contexts/access-request-context.tsx",
+        "line": 544
+      },
+      {
+        "path": "apps/web/src/app/(authenticated)/access-requests/new/page.tsx",
+        "line": 932
+      }
+    ],
+    "evidence": [
+      "SOURCE"
+    ],
+    "screenshots": [],
+    "status": "Open"
+  },
+  {
+    "id": "R03",
+    "priority": "P1",
+    "group": "Requests and invites",
+    "title": "Edit Back bypasses the discard confirmation",
+    "observed": "The prominent Back control calls router.back. Only beforeunload is guarded; footer discard already uses a confirmation.",
+    "recommendation": "Route the Back control through the existing discard dialog.",
+    "acceptance": "Dirty form + Back offers Keep editing/Discard; keeping retains every value. Clean forms navigate directly.",
+    "sources": [
+      {
+        "path": "apps/web/src/app/(authenticated)/access-requests/[id]/edit/page.tsx",
+        "line": 200
+      },
+      {
+        "path": "apps/web/src/app/(authenticated)/access-requests/[id]/edit/page.tsx",
+        "line": 365
+      }
+    ],
+    "evidence": [
+      "SOURCE"
+    ],
+    "screenshots": [],
+    "status": "Open"
+  },
+  {
+    "id": "R04",
+    "priority": "P2",
+    "group": "Requests and invites",
+    "title": "Cancel request failure has no user feedback",
+    "observed": "The cancellation handler has try/finally without catch. A rejected mutation cannot show a useful recovery message in the dialog.",
+    "recommendation": "Display the error in the existing confirmation and allow retry. Preserve the active request when cancellation fails.",
+    "acceptance": "A simulated 503 keeps request state accurate and presents a clear retry path.",
+    "sources": [
+      {
+        "path": "apps/web/src/components/access-request-detail/request-actions-bar.tsx",
+        "line": 42
+      }
+    ],
+    "evidence": [
+      "SOURCE"
+    ],
+    "screenshots": [],
+    "status": "Open"
+  },
+  {
+    "id": "R05",
+    "priority": "P2",
+    "group": "Requests and invites",
+    "title": "Request actions nest buttons inside links",
+    "observed": "Action-bar Link elements wrap Button components, creating nested interactive controls.",
+    "recommendation": "Use a single styled link after fixing S03, or the established link styling.",
+    "acceptance": "Each action exposes exactly one keyboard focus target and one accessible role.",
+    "sources": [
+      {
+        "path": "apps/web/src/components/access-request-detail/request-actions-bar.tsx",
+        "line": 60
+      }
+    ],
+    "evidence": [
+      "SOURCE"
+    ],
+    "screenshots": [],
+    "status": "Open"
+  },
+  {
+    "id": "R06",
+    "priority": "P3",
+    "group": "Requests and invites",
+    "title": "Request review exposes raw platform group identifiers",
+    "observed": "The new-request summary renders raw group keys such as google instead of shared display names. Live Review confirms google (6).",
+    "recommendation": "Use PLATFORM_NAMES consistently in review and related approval views.",
+    "acceptance": "Google, Meta and LinkedIn group labels use consistent display names; product selections remain understandable.",
+    "sources": [
+      {
+        "path": "apps/web/src/app/(authenticated)/access-requests/new/page.tsx",
+        "line": 783
+      }
+    ],
+    "evidence": [
+      "SOURCE",
+      "LIVE_AUTHENTICATED"
+    ],
+    "screenshots": [],
+    "status": "Open"
+  },
+  {
+    "id": "R07",
+    "priority": "P2",
+    "group": "Requests and invites",
+    "title": "Success page permanently labels a request pending",
+    "observed": "The success route uses fixed pending copy despite loading current request data. Revisiting a completed request can contradict its detail view.",
+    "recommendation": "Render the current persisted status and matching next action.",
+    "acceptance": "Revisit pending, partial, completed, revoked and expired requests; success/detail views agree.",
+    "sources": [
+      {
+        "path": "apps/web/src/app/(authenticated)/access-requests/[id]/success/page.tsx",
+        "line": 128
+      }
+    ],
+    "evidence": [
+      "SOURCE"
+    ],
+    "screenshots": [],
+    "status": "Open"
+  },
+  {
+    "id": "R08",
+    "priority": "P2",
+    "group": "Requests and invites",
+    "title": "Manual flows retry expired or revoked invitations",
+    "observed": "Main invite uses a terminal card for dead links. Manual flow maps every load error to a retry card.",
+    "recommendation": "Reuse the existing terminal classifier/card in all six manual flows.",
+    "acceptance": "Expired/revoked links show agency-contact guidance; transient failures offer retry.",
+    "sources": [
+      {
+        "path": "apps/web/src/components/flow/manual-invite-flow.tsx",
+        "line": 333
+      },
+      {
+        "path": "apps/web/src/app/invite/[token]/client-invite-page.tsx",
+        "line": 602
+      }
+    ],
+    "evidence": [
+      "SOURCE"
+    ],
+    "screenshots": [],
+    "status": "Open"
+  },
+  {
+    "id": "R09",
+    "priority": "P2",
+    "group": "Requests and invites",
+    "title": "Manual validation is disconnected from its field",
+    "observed": "Manual form errors are visually present without aria-invalid or aria-describedby.",
+    "recommendation": "Associate errors with their inputs and announce submission outcomes using existing form patterns.",
+    "acceptance": "Invalid manual input has an announced error and a stable association; valid submission clears it.",
+    "sources": [
+      {
+        "path": "apps/web/src/components/flow/manual-invite-flow.tsx",
+        "line": 107
+      }
+    ],
+    "evidence": [
+      "SOURCE"
+    ],
+    "screenshots": [],
+    "status": "Open"
+  },
+  {
+    "id": "C01",
+    "priority": "P2",
+    "group": "Clients",
+    "title": "Filters changes tint but does not filter",
+    "observed": "Click only toggles showFilters. No filter panel or query change consumes that state.",
+    "recommendation": "Remove the unsupported control, or wire the filters required by the current product using existing query inputs.",
+    "acceptance": "Every visible filter changes results and provides a clear reset state.",
+    "sources": [
+      {
+        "path": "apps/web/src/app/(authenticated)/clients/page.tsx",
+        "line": 53
+      },
+      {
+        "path": "apps/web/src/app/(authenticated)/clients/page.tsx",
+        "line": 173
+      }
+    ],
+    "evidence": [
+      "SOURCE",
+      "LOCAL_PREVIEW",
+      "LIVE_AUTHENTICATED"
+    ],
+    "screenshots": [],
+    "status": "Open"
+  },
+  {
+    "id": "C02",
+    "priority": "P1",
+    "group": "Clients",
+    "title": "Clients after the first page cannot be reached",
+    "observed": "The query omits pagination, backend defaults to a finite page, and UI reports total without pagination/load-more controls. The synthetic fixture displays one of 61.",
+    "recommendation": "Use the existing paginated API contract to expose subsequent records.",
+    "acceptance": "An account with more clients than one API page can reach/search the last record and correctly reports current results versus total.",
+    "sources": [
+      {
+        "path": "apps/web/src/app/(authenticated)/clients/page.tsx",
+        "line": 83
+      },
+      {
+        "path": "apps/web/src/app/(authenticated)/clients/page.tsx",
+        "line": 285
+      },
+      {
+        "path": "apps/api/src/routes/clients.ts",
+        "line": 133
+      }
+    ],
+    "evidence": [
+      "SOURCE",
+      "LOCAL_PREVIEW"
+    ],
+    "screenshots": [],
+    "status": "Open"
+  },
+  {
+    "id": "C03",
+    "priority": "P2",
+    "group": "Clients",
+    "title": "Client identifiers truncate without inspection",
+    "observed": "List name/company/email use truncate without title/details reveal. Search has only a placeholder label; no-result copy offers no reset.",
+    "recommendation": "Allow full identifier inspection, name the search input and provide Clear search in the filtered empty state.",
+    "acceptance": "Long names/emails remain distinguishable at 320px; search has a name; reset restores results.",
+    "sources": [
+      {
+        "path": "apps/web/src/app/(authenticated)/clients/page.tsx",
+        "line": 164
+      },
+      {
+        "path": "apps/web/src/app/(authenticated)/clients/page.tsx",
+        "line": 199
+      },
+      {
+        "path": "apps/web/src/app/(authenticated)/clients/page.tsx",
+        "line": 226
+      }
+    ],
+    "evidence": [
+      "SOURCE"
+    ],
+    "screenshots": [],
+    "status": "Open"
+  },
+  {
+    "id": "C04",
+    "priority": "P1",
+    "group": "Clients",
+    "title": "Client detail exceeds its mobile container",
+    "observed": "Actual route preview with a long client name/email has a 402px scroll area inside a 318px container at 320px. Header badge/email and fixed padding force horizontal scrolling. The existing mixed-Google harness also shows collisions.",
+    "recommendation": "Reduce narrow padding, wrap the heading/status/actions and break long identifiers. Keep dates aligned without overlap.",
+    "acceptance": "At 320px/390px and 200% zoom, long client data produces no unintended horizontal scrolling or overlapping labels.",
+    "sources": [
+      {
+        "path": "apps/web/src/app/(authenticated)/clients/[id]/page.tsx",
+        "line": 129
+      },
+      {
+        "path": "apps/web/src/components/client-detail/ClientDetailHeader.tsx",
+        "line": 72
+      },
+      {
+        "path": "apps/web/src/components/client-detail/OverviewTab.tsx",
+        "line": 117
+      }
+    ],
+    "evidence": [
+      "SOURCE",
+      "LOCAL_PREVIEW"
+    ],
+    "screenshots": [
+      "320-client-detail-preview.png"
+    ],
+    "status": "Open"
+  },
+  {
+    "id": "C05",
+    "priority": "P2",
+    "group": "Clients",
+    "title": "Client tabs use a different keyboard model",
+    "observed": "Client tabs declare role=tab but keep all tabs in sequence and omit Arrow/Home/End handlers. Settings already implements the correct reusable behavior.",
+    "recommendation": "Reuse the existing settings tab keyboard behavior.",
+    "acceptance": "Arrow/Home/End moves selected focus correctly; one tab is in the tab sequence and its panel is associated.",
+    "sources": [
+      {
+        "path": "apps/web/src/components/client-detail/ClientTabs.tsx",
+        "line": 53
+      },
+      {
+        "path": "apps/web/src/components/settings/settings-tabs.tsx",
+        "line": 57
+      }
+    ],
+    "evidence": [
+      "SOURCE"
+    ],
+    "screenshots": [],
+    "status": "Open"
+  },
+  {
+    "id": "C06",
+    "priority": "P3",
+    "group": "Clients",
+    "title": "Filtered empty state asks to create another request",
+    "observed": "Overview reuses a create-request message when existing requests simply do not match a status filter.",
+    "recommendation": "Show filter-specific copy and a Clear filter action. Keep creation guidance for genuinely empty clients.",
+    "acceptance": "Every status filter distinguishes no matching results from no requests.",
+    "sources": [
+      {
+        "path": "apps/web/src/components/client-detail/OverviewTab.tsx",
+        "line": 91
+      }
+    ],
+    "evidence": [
+      "SOURCE"
+    ],
+    "screenshots": [],
+    "status": "Open"
+  },
+  {
+    "id": "C07",
+    "priority": "P2",
+    "group": "Clients",
+    "title": "Client overlays lack the common dialog contract",
+    "observed": "Create Client, Delete Client and Create Request use generic motion containers without complete dialog/focus behavior. Create labels lack htmlFor/IDs and the close icon has no name. Live Create Client exposes zero dialog roles, four fields without associated labels, and one unnamed close button. Edit Client has dialog/Escape semantics but still lacks focus containment.",
+    "recommendation": "Use one accessible dialog shell with native dialog behavior or a verified installed primitive. Associate labels and name the close action.",
+    "acceptance": "All overlays have a name, initial/return focus, Tab containment and Escape; fields expose labels and failures.",
+    "sources": [
+      {
+        "path": "apps/web/src/components/client-detail/CreateClientModal.tsx",
+        "line": 120
+      },
+      {
+        "path": "apps/web/src/components/client-detail/CreateClientModal.tsx",
+        "line": 143
+      },
+      {
+        "path": "apps/web/src/components/client-detail/DeleteClientModal.tsx",
+        "line": 138
+      },
+      {
+        "path": "apps/web/src/components/client-detail/CreateRequestModal.tsx",
+        "line": 275
+      },
+      {
+        "path": "apps/web/src/components/client-detail/EditClientModal.tsx",
+        "line": 78
+      }
+    ],
+    "evidence": [
+      "SOURCE",
+      "LIVE_AUTHENTICATED"
+    ],
+    "screenshots": [],
+    "status": "Open"
+  },
+  {
+    "id": "T01",
+    "priority": "P1",
+    "group": "Settings and connections",
+    "title": "Token Health columns overlap and clip on mobile",
+    "observed": "The fixed twelve-column grid compresses five desktop columns into 320px. The local bottom-of-page capture shows client text, Healthy badge, expiry and action header colliding; overflow-hidden masks the defect. The 320px production view independently confirms overlap between real client email, Healthy badge and expiry.",
+    "recommendation": "Use labeled stacked rows at narrow widths, or an intentional accessible scroll table.",
+    "acceptance": "Long identifiers/status/expiry/actions remain readable at 320px and 200% zoom; every row action remains reachable.",
+    "sources": [
+      {
+        "path": "apps/web/src/app/(authenticated)/token-health/page.tsx",
+        "line": 326
+      }
+    ],
+    "evidence": [
+      "SOURCE",
+      "LOCAL_PREVIEW",
+      "LIVE_AUTHENTICATED"
+    ],
+    "screenshots": [
+      "320-token-health-bottom.png"
+    ],
+    "status": "Open"
+  },
+  {
+    "id": "T02",
+    "priority": "P2",
+    "group": "Settings and connections",
+    "title": "Refresh token health has no accessible name",
+    "observed": "The page-header refresh button contains only an icon and has no aria-label. Browser DOM inspection confirms an unnamed control.",
+    "recommendation": "Name the control and announce loading/result state. Apply S08 sizing.",
+    "acceptance": "Accessibility tree exposes Refresh token health and loading does not erase its name.",
+    "sources": [
+      {
+        "path": "apps/web/src/app/(authenticated)/token-health/page.tsx",
+        "line": 208
+      }
+    ],
+    "evidence": [
+      "SOURCE",
+      "LOCAL_PREVIEW",
+      "LIVE_AUTHENTICATED"
+    ],
+    "screenshots": [
+      "1440-token-health.png"
+    ],
+    "status": "Open"
+  },
+  {
+    "id": "T03",
+    "priority": "P1",
+    "group": "Settings and connections",
+    "title": "Checkout reports activation without server confirmation",
+    "observed": "Checkout success says the subscription is active without fetching current subscription. Billing toast says upgraded whenever checkout=success is present.",
+    "recommendation": "Reuse the billing query and show a verification/pending state until persisted subscription status confirms activation.",
+    "acceptance": "Delayed webhook, failed checkout, stale/bookmarked and edited query URLs never falsely assert upgrade.",
+    "sources": [
+      {
+        "path": "apps/web/src/app/checkout/success/page.tsx",
+        "line": 12
+      },
+      {
+        "path": "apps/web/src/components/settings/billing/billing-tab.tsx",
+        "line": 94
+      },
+      {
+        "path": "apps/web/src/components/settings/billing/checkout-success-toast.tsx",
+        "line": 43
+      }
+    ],
+    "evidence": [
+      "SOURCE"
+    ],
+    "screenshots": [],
+    "status": "Open"
+  },
+  {
+    "id": "T04",
+    "priority": "P2",
+    "group": "Settings and connections",
+    "title": "Billing details save has no result feedback",
+    "observed": "The handler awaits mutateAsync without local error handling or visible success. The mutation only invalidates data. Existing pending/disabled behavior is present and is not counted as missing.",
+    "recommendation": "Use existing inline feedback/toast patterns for success and failure; preserve edited values on failure.",
+    "acceptance": "A failed save shows an actionable error; a successful save confirms persistence without losing focus.",
+    "sources": [
+      {
+        "path": "apps/web/src/components/settings/billing/billing-details-card.tsx",
+        "line": 58
+      },
+      {
+        "path": "apps/web/src/lib/query/billing.ts",
+        "line": 296
+      }
+    ],
+    "evidence": [
+      "SOURCE"
+    ],
+    "screenshots": [],
+    "status": "Open"
+  },
+  {
+    "id": "T05",
+    "priority": "P2",
+    "group": "Settings and connections",
+    "title": "Several load failures have no recovery action",
+    "observed": "Clients, connections, webhooks, token health and unavailable agent approvals render errors without a consistent retry or destination. Partner approval misclassification is tracked separately.",
+    "recommendation": "Apply the existing recovery card pattern with error-specific copy and retry/back actions.",
+    "acceptance": "503\u2192200 recovery works in place on each surface. True missing/unavailable records offer a clear next destination.",
+    "sources": [
+      {
+        "path": "apps/web/src/app/(authenticated)/clients/page.tsx",
+        "line": 128
+      },
+      {
+        "path": "apps/web/src/app/(authenticated)/connections/page.tsx",
+        "line": 435
+      },
+      {
+        "path": "apps/web/src/components/settings/webhooks/webhook-settings-tab.tsx",
+        "line": 317
+      },
+      {
+        "path": "apps/web/src/app/(authenticated)/agent-operations/[id]/page.tsx",
+        "line": 26
+      }
+    ],
+    "evidence": [
+      "SOURCE"
+    ],
+    "screenshots": [],
+    "status": "Open"
+  },
+  {
+    "id": "T06",
+    "priority": "P2",
+    "group": "Settings and connections",
+    "title": "Dialog code loading uses a page-card fallback",
+    "observed": "Connections dynamic imports render a page-width min-height placeholder before the real provider overlay. Slow code loading changes the visual shell.",
+    "recommendation": "Keep the existing dialog shell while loading its body, or show pending state on the initiating control.",
+    "acceptance": "Throttled code loading does not move the page or present an unrelated card before the overlay.",
+    "sources": [
+      {
+        "path": "apps/web/src/app/(authenticated)/connections/page.tsx",
+        "line": 32
+      }
+    ],
+    "evidence": [
+      "SOURCE"
+    ],
+    "screenshots": [],
+    "status": "Open"
+  },
+  {
+    "id": "T07",
+    "priority": "P2",
+    "group": "Settings and connections",
+    "title": "Diagnostic and checkout pages use legacy visual tokens",
+    "observed": "Token Health uses slate/indigo. Checkout results use green/amber gradients, large blurred shadows and a 500ms entrance. Client detail boundaries also use legacy slate/shadows. Redirecting settings/platforms uses indigo.",
+    "recommendation": "Use existing paper/ink/semantic status tokens, shared loading shells and app motion tokens.",
+    "acceptance": "Loading\u2192loaded\u2192error transitions preserve visual hierarchy and work with reduced motion and dark theme.",
+    "sources": [
+      {
+        "path": "apps/web/src/app/(authenticated)/token-health/page.tsx",
+        "line": 203
+      },
+      {
+        "path": "apps/web/src/app/checkout/success/page.tsx",
+        "line": 17
+      },
+      {
+        "path": "apps/web/src/app/checkout/cancel/page.tsx",
+        "line": 16
+      },
+      {
+        "path": "apps/web/src/app/(authenticated)/clients/[id]/loading.tsx",
+        "line": 10
+      },
+      {
+        "path": "apps/web/src/app/settings/platforms/page.tsx",
+        "line": 27
+      }
+    ],
+    "evidence": [
+      "SOURCE",
+      "LOCAL_PREVIEW"
+    ],
+    "screenshots": [],
+    "status": "Open"
+  },
+  {
+    "id": "T08",
+    "priority": "P2",
+    "group": "Settings and connections",
+    "title": "Agent approvals expose machine names",
+    "observed": "Approval platform and permission chips print raw values. Current status already replaces underscores, so status itself is not counted as an underscore defect.",
+    "recommendation": "Use shared product names and readable permission labels without weakening the precise effect preview.",
+    "acceptance": "Pending/terminal approvals show clear platform, permission, target and effect labels, including long values.",
+    "sources": [
+      {
+        "path": "apps/web/src/components/agent-operations/approval-card.tsx",
+        "line": 36
+      }
+    ],
+    "evidence": [
+      "SOURCE"
+    ],
+    "screenshots": [],
+    "status": "Open"
+  },
+  {
+    "id": "T09",
+    "priority": "P3",
+    "group": "Settings and connections",
+    "title": "Settings labels mix capitalization conventions",
+    "observed": "General, billing and webhooks mix Title Case with sentence-case sections and controls.",
+    "recommendation": "Apply one existing sentence-case convention consistently to labels/actions.",
+    "acceptance": "All four tabs use consistent section, field and action casing.",
+    "sources": [
+      {
+        "path": "apps/web/src/components/settings/general/agency-profile-card.tsx",
+        "line": 104
+      },
+      {
+        "path": "apps/web/src/components/settings/webhooks/webhook-settings-tab.tsx",
+        "line": 404
+      },
+      {
+        "path": "apps/web/src/components/settings/billing/billing-details-card.tsx",
+        "line": 94
+      }
+    ],
+    "evidence": [
+      "SOURCE"
+    ],
+    "screenshots": [],
+    "status": "Open"
+  },
+  {
+    "id": "T10",
+    "priority": "P3",
+    "group": "Settings and connections",
+    "title": "Dashboard repeats filled Create request actions",
+    "observed": "Header and recent-request section both expose filled create actions. Checklist variants add further prominence.",
+    "recommendation": "Keep one primary visible create action and make the repeated contextual action secondary.",
+    "acceptance": "Populated/checklist/empty views each retain an obvious creation path without competing emphasis.",
+    "sources": [
+      {
+        "path": "apps/web/src/app/(authenticated)/dashboard/page.tsx",
+        "line": 422
+      },
+      {
+        "path": "apps/web/src/app/(authenticated)/dashboard/page.tsx",
+        "line": 515
+      }
+    ],
+    "evidence": [
+      "SOURCE",
+      "LOCAL_PREVIEW",
+      "LIVE_AUTHENTICATED"
+    ],
+    "screenshots": [
+      "1440-dashboard.png"
+    ],
+    "status": "Open"
+  },
+  {
+    "id": "M01",
+    "priority": "P2",
+    "group": "Public pages",
+    "title": "Footer section links stay on the wrong page",
+    "observed": "Live pricing footer Features leaves the URL and scroll position unchanged after activation. Handler prevents default and only searches the current DOM. Live home does contain both section IDs; the nav already supports cross-route hashes.",
+    "recommendation": "Route footer links to the homepage sections, reusing the nav behavior.",
+    "acceptance": "Features and How it works reach the named home sections from pricing, blog and contact using pointer and keyboard.",
+    "sources": [
+      {
+        "path": "apps/web/src/components/marketing/marketing-footer.tsx",
+        "line": 8
+      },
+      {
+        "path": "apps/web/src/components/marketing/marketing-nav.tsx",
+        "line": 94
+      }
+    ],
+    "evidence": [
+      "SOURCE",
+      "LIVE_PUBLIC"
+    ],
+    "screenshots": [],
+    "status": "Open"
+  },
+  {
+    "id": "M02",
+    "priority": "P1",
+    "group": "Public pages",
+    "title": "Blog subscription form has no subscription action",
+    "observed": "The newsletter form has no action/onSubmit, input name or integration. It promises weekly tips but cannot create a subscription.",
+    "recommendation": "Connect to an existing supported list endpoint, or remove the unsupported form/promise. Give the email field a persistent label.",
+    "acceptance": "Submission creates a real subscription and reports success/failure, or the nonfunctional form is absent.",
+    "sources": [
+      {
+        "path": "apps/web/src/app/(marketing)/blog/page.tsx",
+        "line": 95
+      }
+    ],
+    "evidence": [
+      "SOURCE",
+      "LIVE_PUBLIC"
+    ],
+    "screenshots": [],
+    "status": "Open"
+  },
+  {
+    "id": "M03",
+    "priority": "P2",
+    "group": "Public pages",
+    "title": "Article Schedule Demo points to #",
+    "observed": "The article CTA is an anchor with href=# and no scheduling handler.",
+    "recommendation": "Use the existing scheduling modal or contact destination.",
+    "acceptance": "Mouse and keyboard activation opens a real scheduling path.",
+    "sources": [
+      {
+        "path": "apps/web/src/app/(marketing)/blog/[slug]/page.tsx",
+        "line": 343
+      }
+    ],
+    "evidence": [
+      "SOURCE",
+      "LIVE_PUBLIC"
+    ],
+    "screenshots": [],
+    "status": "Open"
+  },
+  {
+    "id": "M04",
+    "priority": "P2",
+    "group": "Public pages",
+    "title": "Comparison template uses a second visual system",
+    "observed": "The general comparison template uses teal accents/text, custom colors and blurred resting shadows. This affects all slugs routed through that template; other comparison templates need separate checks.",
+    "recommendation": "Update the shared template to existing tokens and border-led surfaces once.",
+    "acceptance": "Representative pages from each template match the documented palette and pass measured contrast.",
+    "sources": [
+      {
+        "path": "apps/web/src/components/programmatic/ComparisonPageTemplate.tsx",
+        "line": 441
+      },
+      {
+        "path": "apps/web/src/app/(marketing)/compare/[slug]/page.tsx",
+        "line": 87
+      }
+    ],
+    "evidence": [
+      "SOURCE",
+      "LIVE_PUBLIC"
+    ],
+    "screenshots": [
+      "live-1440-compare.png"
+    ],
+    "status": "Open"
+  },
+  {
+    "id": "M05",
+    "priority": "P1",
+    "group": "Public pages",
+    "title": "Desktop marquee moves under reduced motion",
+    "observed": "Live home with reducedMotion=reduce still changes both inline and computed transforms across 1.2 seconds. CSS and Framer Motion both animate the track.",
+    "recommendation": "Use the existing static grid when reduced motion is requested, and suppress both animation paths.",
+    "acceptance": "Reduced-motion desktop/mobile show static readable content with no transform changes over time.",
+    "sources": [
+      {
+        "path": "apps/web/src/components/marketing/social-proof-section.tsx",
+        "line": 42
+      },
+      {
+        "path": "apps/web/src/app/globals.css",
+        "line": 654
+      }
+    ],
+    "evidence": [
+      "SOURCE",
+      "LIVE_PUBLIC"
+    ],
+    "screenshots": [],
+    "status": "Open"
+  },
+  {
+    "id": "M06",
+    "priority": "P1",
+    "group": "Public pages",
+    "title": "Public guide routes unexpectedly require authentication",
+    "observed": "Both published guides navigate signed-out visitors to accounts.authhub.co instead of rendering content. The proxy public allowlist omits /guides and protects everything else.",
+    "recommendation": "Include the published guide route family in the public routing contract, with a focused regression check.",
+    "acceptance": "Signed-out visits to both canonical guides return their content without the login/security challenge.",
+    "sources": [
+      {
+        "path": "apps/web/src/proxy.ts",
+        "line": 12
+      },
+      {
+        "path": "apps/web/src/proxy.ts",
+        "line": 89
+      },
+      {
+        "path": "apps/web/src/app/(marketing)/guides/google-ads-access/page.tsx",
+        "line": 13
+      }
+    ],
+    "evidence": [
+      "SOURCE",
+      "LIVE_PUBLIC"
+    ],
+    "screenshots": [],
+    "status": "Open"
+  },
+  {
+    "id": "M07",
+    "priority": "P2",
+    "group": "Public pages",
+    "title": "Article raises a hydration mismatch in production",
+    "observed": "The Google Ads article consistently emits React error #418 at 1440, 390 and 320px. Cause is unconfirmed. Locale-dependent date formatting is one candidate, not a proven diagnosis.",
+    "recommendation": "Locate the exact mismatched markup/text and make server/client output deterministic.",
+    "acceptance": "The article renders without hydration errors across locale/timezone and narrow/wide viewports.",
+    "sources": [
+      {
+        "path": "apps/web/src/components/blog/blog-content.tsx",
+        "line": 205
+      }
+    ],
+    "evidence": [
+      "LIVE_PUBLIC"
+    ],
+    "screenshots": [],
+    "status": "Open"
+  },
+  {
+    "id": "M08",
+    "priority": "P2",
+    "group": "Public pages",
+    "title": "Pricing reveal causes temporary horizontal overflow under reduced motion",
+    "observed": "Before viewport reveals settle, live pricing measures 324px at 320px and 394px at 390px. The offscreen savings panel starts at x:+20. After scrolling through the page, width returns to 320/390px. This is a reveal-state defect, not settled grid overflow.",
+    "recommendation": "Suppress reveal transforms under reduced motion; ensure hidden/offscreen panels cannot widen the document.",
+    "acceptance": "At 320/390px with reduced motion, initial and scrolled states stay inside the viewport without horizontal movement.",
+    "sources": [
+      {
+        "path": "apps/web/src/components/marketing/pricing/savings-calculator.tsx",
+        "line": 97
+      },
+      {
+        "path": "apps/web/src/components/marketing/pricing/savings-calculator.tsx",
+        "line": 195
+      }
+    ],
+    "evidence": [
+      "SOURCE",
+      "LIVE_PUBLIC"
+    ],
+    "screenshots": [
+      "live-320-pricing.png"
+    ],
+    "status": "Open"
+  },
+  {
+    "id": "A01",
+    "priority": "P2",
+    "group": "Partner and admin",
+    "title": "Partner load failures claim approval is pending",
+    "observed": "Any error or absent data produces Access pending approval, including service/network failures.",
+    "recommendation": "Distinguish approval state from load failure and provide retry for the latter.",
+    "acceptance": "A network 503 never changes the displayed account approval status.",
+    "sources": [
+      {
+        "path": "apps/web/src/app/(partner)/partners/page.tsx",
+        "line": 124
+      }
+    ],
+    "evidence": [
+      "SOURCE"
+    ],
+    "screenshots": [],
+    "status": "Open"
+  },
+  {
+    "id": "A02",
+    "priority": "P2",
+    "group": "Partner and admin",
+    "title": "Campaign errors lack field and announcement associations",
+    "observed": "The campaign error renders after submit without field association or live announcement. Referral URL also truncates without full visual inspection, although Copy already works.",
+    "recommendation": "Associate campaign feedback with its field. Provide full referral URL inspection on keyboard/pointer without removing Copy.",
+    "acceptance": "Invalid campaign feedback is announced; full referral URL is inspectable at narrow widths.",
+    "sources": [
+      {
+        "path": "apps/web/src/app/(partner)/partners/page.tsx",
+        "line": 237
+      },
+      {
+        "path": "apps/web/src/app/(partner)/partners/page.tsx",
+        "line": 377
+      }
+    ],
+    "evidence": [
+      "SOURCE"
+    ],
+    "screenshots": [],
+    "status": "Open"
+  },
+  {
+    "id": "A03",
+    "priority": "P2",
+    "group": "Partner and admin",
+    "title": "Admin search inputs rely on placeholders",
+    "observed": "Agencies and webhooks search controls lack associated visible/accessible labels and use 40px height.",
+    "recommendation": "Use named search fields and the documented target sizing. Keep existing server filters.",
+    "acceptance": "Admin searches expose names and retain usable focus/targets at narrow widths and zoom.",
+    "sources": [
+      {
+        "path": "apps/web/src/app/(authenticated)/internal/admin/agencies/page.tsx",
+        "line": 79
+      },
+      {
+        "path": "apps/web/src/app/(authenticated)/internal/admin/webhooks/page.tsx",
+        "line": 126
+      }
+    ],
+    "evidence": [
+      "SOURCE"
+    ],
+    "screenshots": [],
+    "status": "Open"
+  },
+  {
+    "id": "S13",
+    "priority": "P1",
+    "group": "Shared system",
+    "title": "Provider dialogs allow focus behind the overlay",
+    "observed": "ManageAssetsModalShell supplies dialog semantics and Escape but no initial/return focus or Tab containment. In live Google settings, Shift+Tab from Done twice focuses the background Connect button.",
+    "recommendation": "Use native dialog behavior or a verified installed accessible primitive for the shared shell. Keep the existing provider bodies.",
+    "acceptance": "Tab/Shift+Tab remain in the modal; background controls cannot activate; dismissal restores the Manage assets opener.",
+    "sources": [
+      {
+        "path": "apps/web/src/components/manage-assets-modal-shell.tsx",
+        "line": 31
+      },
+      {
+        "path": "apps/web/src/components/manage-assets-modal-shell.tsx",
+        "line": 69
+      }
+    ],
+    "evidence": [
+      "SOURCE",
+      "LIVE_AUTHENTICATED"
+    ],
+    "screenshots": [],
+    "status": "Open"
+  },
+  {
+    "id": "S14",
+    "priority": "P1",
+    "group": "Shared system",
+    "title": "Meta asset toggles have no accessible names",
+    "observed": "Five top-level Meta asset checkboxes expose no label in the live dialog. Source renders inputs beside paragraph labels without association. Google already names its equivalent toggles.",
+    "recommendation": "Associate each checkbox with its asset name/description and use the existing named checkbox pattern.",
+    "acceptance": "Screen readers announce Enable Ad Account, Page, Catalog, Dataset and Instagram Account, plus checked state.",
+    "sources": [
+      {
+        "path": "apps/web/src/components/meta-unified-settings.tsx",
+        "line": 474
+      },
+      {
+        "path": "apps/web/src/components/google-unified-settings.tsx",
+        "line": 501
+      }
+    ],
+    "evidence": [
+      "SOURCE",
+      "LIVE_AUTHENTICATED"
+    ],
+    "screenshots": [],
+    "status": "Open"
+  },
+  {
+    "id": "O11",
+    "priority": "P1",
+    "group": "Onboarding",
+    "title": "An established workspace intermittently opens first-time setup",
+    "observed": "From a live dashboard with 12 requests and 12 active connections, the first Clients navigation redirected to onboarding Step 1. Later Clients/Settings visits loaded the existing agency. The triggering lookup/cache/guard branch is unconfirmed.",
+    "recommendation": "Trace the cold-navigation agency/status lookup and redirect cache. Keep transient lookup failure distinct from a confirmed absent/incomplete agency.",
+    "acceptance": "Cold and warm navigation to every protected route consistently preserves the existing workspace; genuine new agencies still enter onboarding.",
+    "sources": [
+      {
+        "path": "apps/web/src/app/(authenticated)/layout.tsx",
+        "line": 141
+      },
+      {
+        "path": "apps/web/src/hooks/use-user-agency.ts",
+        "line": 45
+      }
+    ],
+    "evidence": [
+      "SOURCE",
+      "LIVE_AUTHENTICATED"
+    ],
+    "screenshots": [],
+    "status": "Open"
+  },
+  {
+    "id": "R10",
+    "priority": "P1",
+    "group": "Requests and invites",
+    "title": "Valid request statuses fall back to Unknown",
+    "observed": "Live dashboard request rows and request detail show Unknown. Their callers cast request status as any; shared StatusBadge has no completed or partial configurations. These are valid request lifecycle values.",
+    "recommendation": "Add explicit supported request lifecycle presentations or a typed request-status adapter. Remove the casts that bypass the contract.",
+    "acceptance": "Pending, partial, completed, expired and revoked each render a clear, accurate label on dashboard/detail/success.",
+    "sources": [
+      {
+        "path": "apps/web/src/components/ui/status-badge.tsx",
+        "line": 10
+      },
+      {
+        "path": "apps/web/src/components/ui/status-badge.tsx",
+        "line": 146
+      },
+      {
+        "path": "apps/web/src/app/(authenticated)/dashboard/page.tsx",
+        "line": 569
+      },
+      {
+        "path": "apps/web/src/components/access-request-detail/request-overview-card.tsx",
+        "line": 50
+      }
+    ],
+    "evidence": [
+      "SOURCE",
+      "LIVE_AUTHENTICATED"
+    ],
+    "screenshots": [],
+    "status": "Open"
+  },
+  {
+    "id": "R11",
+    "priority": "P2",
+    "group": "Requests and invites",
+    "title": "Request, connection and platform statuses lack clear domain labels",
+    "observed": "For one live request, the platform board says Revoked, its history row says Active, and detail says Unknown plus Waiting on client authorization. Some statuses describe different domains; the UI does not explain that distinction.",
+    "recommendation": "Label request lifecycle and connection/asset health separately. Use typed shared mappings without forcing distinct domain states into one generic badge.",
+    "acceptance": "A request with an active connection but unfinished/revoked asset requirements shows both facts accurately, with clear next action and agreement across views.",
+    "sources": [
+      {
+        "path": "apps/web/src/components/client-detail/OverviewTab.tsx",
+        "line": 111
+      },
+      {
+        "path": "apps/web/src/components/client-detail/RequestedAccessBoard.tsx",
+        "line": 90
+      },
+      {
+        "path": "apps/web/src/components/access-request-detail/request-overview-card.tsx",
+        "line": 50
+      }
+    ],
+    "evidence": [
+      "SOURCE",
+      "LIVE_AUTHENTICATED"
+    ],
+    "screenshots": [],
+    "status": "Open"
+  },
+  {
+    "id": "C08",
+    "priority": "P2",
+    "group": "Clients",
+    "title": "Total Requests on the client list counts connections",
+    "observed": "Live list reports Total Requests:1, while the same client detail reports 12. Source binds the Total Requests label to client.connectionCount.",
+    "recommendation": "Render the actual request count, or relabel the existing metric accurately if the list contract intentionally exposes only connection count.",
+    "acceptance": "List/detail use the same request-count definition; connection count has its own label.",
+    "sources": [
+      {
+        "path": "apps/web/src/app/(authenticated)/clients/page.tsx",
+        "line": 256
+      },
+      {
+        "path": "apps/api/src/services/client.service.ts",
+        "line": 353
+      },
+      {
+        "path": "apps/api/src/services/client.service.ts",
+        "line": 1080
+      }
+    ],
+    "evidence": [
+      "SOURCE",
+      "LIVE_AUTHENTICATED"
+    ],
+    "screenshots": [],
+    "status": "Open"
+  },
+  {
+    "id": "T11",
+    "priority": "P2",
+    "group": "Settings and connections",
+    "title": "Mobile billing withholds plan details and tier actions",
+    "observed": "Below md, comparison shows only tier name/persona/price and Full plan details available on larger screens. Features and tier actions exist only in the desktop grid. Live 758px billing confirms this restriction.",
+    "recommendation": "Provide an existing stacked/expandable comparison at narrow widths, or a clear link to complete accessible plan details.",
+    "acceptance": "Mobile users can compare included capabilities and select the intended tier without changing devices.",
+    "sources": [
+      {
+        "path": "apps/web/src/components/settings/billing/plan-comparison.tsx",
+        "line": 223
+      },
+      {
+        "path": "apps/web/src/components/settings/billing/plan-comparison.tsx",
+        "line": 255
+      }
+    ],
+    "evidence": [
+      "SOURCE",
+      "LIVE_AUTHENTICATED"
+    ],
+    "screenshots": [],
+    "status": "Open"
+  },
+  {
+    "id": "T12",
+    "priority": "P2",
+    "group": "Settings and connections",
+    "title": "Connected Google empty states give no useful recovery",
+    "observed": "Live connected Google settings show No accounts available for Business Profile/Merchant Center, followed by Connect your account first. Those product sections have no direct recovery action or explanation of missing access versus missing assets.",
+    "recommendation": "Use product-specific empty-state guidance and expose an appropriate existing reload/account-management path. Do not imply the whole Google connection is absent.",
+    "acceptance": "Connected-but-empty, permission failure and disconnected cases show distinct guidance and an actionable next step.",
+    "sources": [
+      {
+        "path": "apps/web/src/components/google-unified-settings.tsx",
+        "line": 517
+      }
+    ],
+    "evidence": [
+      "SOURCE",
+      "LIVE_AUTHENTICATED"
+    ],
+    "screenshots": [],
+    "status": "Open"
+  },
+  {
+    "id": "S15",
+    "priority": "P2",
+    "group": "Shared system",
+    "title": "Request customization has an unnamed removal action",
+    "observed": "Live Customize exposes an icon-only field removal button with no accessible name. Source confirms the Trash2 button has no aria-label or text. Repeated Review Edit buttons also lack section-specific names.",
+    "recommendation": "Name removal with its field label and each edit action with its section. Use the existing shared icon-button sizing contract.",
+    "acceptance": "Screen readers distinguish Remove Company Website, Edit client, Edit platforms, Edit access level and Edit form fields; removal has a 44px target.",
+    "sources": [
+      {
+        "path": "apps/web/src/app/(authenticated)/access-requests/new/page.tsx",
+        "line": 566
+      },
+      {
+        "path": "apps/web/src/app/(authenticated)/access-requests/new/page.tsx",
+        "line": 767
+      }
+    ],
+    "evidence": [
+      "SOURCE",
+      "LIVE_AUTHENTICATED"
+    ],
+    "screenshots": [],
+    "status": "Open"
+  }
+]

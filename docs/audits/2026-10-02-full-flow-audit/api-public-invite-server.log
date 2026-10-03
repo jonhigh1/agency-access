@@ -1,0 +1,9 @@
+prisma:error 
+Invalid `prisma.clientConnection.create()` invocation in
+/Users/jon.high/agency-access/apps/api/src/routes/client-auth/manual.routes.ts:53:56
+
+  50 const updated = await updateExisting();
+  51 if (updated[0]) return { connection: updated[0], existed: true };
+  52 try {
+→ 53   const connection = await prisma.clientConnection.create(
+Unique constraint failed on the fields: (`access_request_id`)

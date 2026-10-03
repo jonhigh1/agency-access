@@ -1,0 +1,27 @@
+{
+  "host": "127.0.0.1",
+  "port": 3101,
+  "corsOrigin": "http://localhost:3100",
+  "routes": [
+    "GET /api/client/:token",
+    "POST /api/client/:token/intake",
+    "POST /api/client/:token/{beehiiv|kit|mailchimp|klaviyo}/manual-connect",
+    "POST /api/client/:token/{pinterest|shopify}/manual-connect"
+  ],
+  "fixtureUrls": {
+    "pendingGoogle": "http://127.0.0.1:3101/api/client/local-pending-google-intake",
+    "expired": "http://127.0.0.1:3101/api/client/local-expired-invite",
+    "revoked": "http://127.0.0.1:3101/api/client/local-revoked-invite",
+    "fulfilled": "http://127.0.0.1:3101/api/client/local-fulfilled-invite",
+    "manualBeehiiv": "http://127.0.0.1:3101/api/client/local-manual-beehiiv",
+    "manualMulti": "http://127.0.0.1:3101/api/client/local-manual-multi"
+  },
+  "manuallySeededStates": {
+    "pendingGoogle": "pending invitation with intake fields and branding sample",
+    "expired": "expired by timestamp",
+    "revoked": "cancelled invitation represented by revoked status",
+    "fulfilled": "completed invitation with local active Beehiiv authorization",
+    "manualBeehiiv": "pending Beehiiv invitation with local agency identity email"
+  },
+  "providerBoundary": "No OAuth, asset, provider, email, Infisical, Clerk, or worker routes are registered."
+}

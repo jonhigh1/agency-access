@@ -1,0 +1,327 @@
+[
+  {
+    "id": "F-001",
+    "severity": "high",
+    "flow": "Client OAuth state",
+    "expected": "Reject OAuth state for platforms outside the invitation",
+    "observed": "Schema-valid unrequested platform returned 200 and durable state",
+    "root_cause": "oauth-state route lacked isPlatformRequested guard",
+    "status": "fixed locally",
+    "evidence": [
+      "Failing-first client-auth.routes.test.ts regression",
+      "19 focused API tests passed",
+      "1696 API tests passed, 19 skipped"
+    ],
+    "verification_boundary": "Mocked/local API contracts; not deployed"
+  },
+  {
+    "id": "F-002",
+    "severity": "medium",
+    "flow": "Meta agency settings accessibility",
+    "expected": "Asset toggles have accessible names",
+    "observed": "Five unnamed checkboxes in production Meta connection settings",
+    "root_cause": "Visible asset names not associated with checkbox inputs",
+    "status": "fixed locally",
+    "evidence": [
+      "Production Codex tab DOM snapshot",
+      "Web agent focused regression passed"
+    ],
+    "verification_boundary": "Production reproduction; local browser verification pending"
+  },
+  {
+    "id": "F-003",
+    "severity": "high",
+    "flow": "Quota checks for personal accounts",
+    "expected": "Signed-in personal agency can check quota before creation",
+    "observed": "Create Client and Create access request logged No organization ID and entered creation anyway",
+    "root_cause": "Quota hooks required Clerk organization rather than orgId or userId",
+    "status": "fixed locally",
+    "evidence": [
+      "Production browser console on both creation entry points",
+      "Personal-account quota regression passed"
+    ],
+    "verification_boundary": "Local regression only; deployed behavior unchanged"
+  },
+  {
+    "id": "F-004",
+    "severity": "medium",
+    "flow": "Create client modal accessibility",
+    "expected": "Named modal and controls, associated field labels",
+    "observed": "No dialog role, unnamed close button, fields named only by placeholder",
+    "root_cause": "Modal omitted role/name and label associations",
+    "status": "fixed locally",
+    "evidence": [
+      "Production browser DOM snapshot",
+      "Web focused regression passed"
+    ],
+    "verification_boundary": "Local browser verification pending"
+  },
+  {
+    "id": "F-005",
+    "severity": "high",
+    "flow": "Client platform summary truthfulness",
+    "expected": "Newest request for each product determines that product status; historical products remain represented",
+    "observed": "Latest Meta request partially fulfilled while group says 0/3 revoked",
+    "root_cause": "Older revoked same-product status won severity aggregation and group metadata stayed stale",
+    "status": "fixed locally",
+    "evidence": [
+      "Production client detail Overview and Meta expansion",
+      "Current client.service.ts aggregation inspected by web agent",
+      "Newest-per-product client service regression and API suite passed"
+    ],
+    "verification_boundary": "API mocked regression passed; production and browser persistence not verified"
+  },
+  {
+    "id": "F-006",
+    "severity": "high",
+    "flow": "Anonymous client invitation alias",
+    "expected": "Existing /client/:token redirects anonymous clients to invitation",
+    "observed": "Proxy forces agency sign-in before redirect",
+    "root_cause": "/client route omitted public matcher",
+    "status": "verified in browser",
+    "evidence": [
+      "Regression failed first for /client/audit-token",
+      "31 proxy tests passed after matcher correction",
+      "Anonymous local Codex browser navigated /client/audit-invalid-token to /invite/audit-invalid-token without login"
+    ],
+    "verification_boundary": "Local alias redirect verified; invitation API intentionally unavailable; not deployed"
+  },
+  {
+    "id": "F-007",
+    "severity": "medium",
+    "flow": "Release checks",
+    "expected": "Existing pre-push regression tests pass",
+    "observed": "Four pre-push tests fail: Entire invoked twice and expected build failure not propagated",
+    "root_cause": "Preexisting dirty hook invokes Entire twice and consumes stdin before release gate",
+    "status": "blocked",
+    "evidence": [
+      "node --test scripts/tests/pre-push.test.mjs scripts/perf/lib/validation.test.mjs: 5 pass,4 fail",
+      "Concrete pre-push-proposal.patch prepared without editing dirty hook; isolated fixture4/4 pass"
+    ],
+    "verification_boundary": "Unrelated preexisting hook edits preserved; no publication attempted"
+  },
+  {
+    "id": "F-008",
+    "severity": "high",
+    "flow": "Unproven verification endpoint",
+    "expected": "Verification must require provider evidence",
+    "observed": "Unused PUT verification endpoint marked connections verified without provider proof",
+    "root_cause": "Removed obsolete route and its unused service updater",
+    "status": "fixed locally",
+    "evidence": [
+      "Security regression failed first: endpoint200, expected404; security+identity tests20/20 passed"
+    ],
+    "verification_boundary": "Not deployed"
+  },
+  {
+    "id": "F-009",
+    "severity": "medium",
+    "flow": "Request branding validation",
+    "expected": "Invalid color blocks submission and receives focus",
+    "observed": "First invalid color focused subdomain; restored review draft bypassed validation",
+    "root_cause": "Validate all prior steps at submit boundary; focus from returned validation",
+    "status": "fixed locally",
+    "evidence": [
+      "Wizard focus regression14/14; context/page47/47 passed; restored invalid review draft rejected before API"
+    ],
+    "verification_boundary": "Authenticated local browser verification pending"
+  },
+  {
+    "id": "F-010",
+    "severity": "high",
+    "flow": "Request submission completion",
+    "expected": "One creation per successful submission; failure supports retry",
+    "observed": "Successful submit guard released before navigation; empty response left pending state",
+    "root_cause": "Retain guard after creation and reject missing response id",
+    "status": "fixed locally",
+    "evidence": [
+      "Failing-first duplicate-after-success and empty-response regressions; context/page47/47 passed"
+    ],
+    "verification_boundary": "Mocked API; real browser persistence pending"
+  },
+  {
+    "id": "F-011",
+    "severity": "medium",
+    "flow": "Demo dialog keyboard and mobile calendar",
+    "expected": "Named modal closes with Escape and calendar remains reachable on mobile",
+    "observed": "Production Escape did not close; mobile local calendar height2234px clipped in646px container",
+    "root_cause": "Native dialog and scrollable embedded-calendar container",
+    "status": "verified in browser",
+    "evidence": [
+      "Native dialog tests4/4; local browser Escape closed and restored Schedule a Demo focus",
+      "390x844 local browser:646px scroll area,2227px content; October30 selected with scrollTop664.5 and available times visible"
+    ],
+    "verification_boundary": "Local only; no booking submitted; production unchanged"
+  },
+  {
+    "id": "F-012",
+    "severity": "medium",
+    "flow": "Marketing mobile navigation",
+    "expected": "Escape closes menu and focus stays in modal until dismissal",
+    "observed": "390x844 local browser Escape on Close menu left navigation open; no dialog semantics",
+    "root_cause": "Overlay lacked native modal behavior and Escape handler",
+    "status": "verified in browser",
+    "evidence": [
+      "Local contact menu keyboard reproduction",
+      "Native dialog regression13/13",
+      "Local browser: dialog open with Close menu focus; Escape closes and restores Open navigation menu; Pricing navigation completes"
+    ],
+    "verification_boundary": "Local390x844 browser; production unchanged"
+  },
+  {
+    "id": "F-013",
+    "severity": "medium",
+    "flow": "Identity actor resolution",
+    "expected": "Verified Clerk actor resolves even when JWT lacks email",
+    "observed": "JWT-only guard rejected valid Clerk token without email",
+    "root_cause": "Use verified Clerk lookup while ignoring request body connectedBy",
+    "status": "fixed locally",
+    "evidence": [
+      "Failing-first missing-email claim regression; authorization/security15/15 pass; API typecheck pass"
+    ],
+    "verification_boundary": "Local mocked Clerk lookup; not provider/live verified"
+  },
+  {
+    "id": "F-014",
+    "severity": "medium",
+    "flow": "Contact validation and duplicate requests",
+    "expected": "Focus first invalid input and submit one message per attempt",
+    "observed": "Blank submit leaves focus on button; synchronous repeat submits post twice",
+    "root_cause": "First invalid field focus; synchronous guard; normalized payload",
+    "status": "verified in browser",
+    "evidence": [
+      "Failing-first contact regressions2/2 pass",
+      "Local blank form: focused name;3 required alerts; no message sent"
+    ],
+    "verification_boundary": "Local invalid-input browser proof; duplicate/API proof mocked; no external messages"
+  },
+  {
+    "id": "F-015",
+    "severity": "medium",
+    "flow": "Pricing calculator accessibility",
+    "expected": "Hours slider has an accessible name and works by keyboard",
+    "observed": "Unnamed slider in localpricingDOM",
+    "root_cause": "Associated label using useId",
+    "status": "verified in browser",
+    "evidence": [
+      "Failing-first accessible slider regression2/2 pass",
+      "Local browser named slider End key changes2to8;8hours rendered; monthly prices29/79/149 shown"
+    ],
+    "verification_boundary": "Local only; no subscription started"
+  },
+  {
+    "id": "F-016",
+    "severity": "medium",
+    "flow": "Marketing promises match implemented branding",
+    "expected": "Copy describes currently supported branding",
+    "observed": "Your domain and never sees AuthHub claims conflict with fixedFRONTEND_URL, missinghostrouting and AuthHub in Meta UI",
+    "root_cause": "Under scoped copy repair",
+    "status": "failed",
+    "evidence": [
+      "Source review ofsocial-proof,proxy,inviterenderer,linkgenerators;wizard says customdomain routing unavailable"
+    ],
+    "verification_boundary": "Sourceverified;tierfeature decisions require separate approval"
+  },
+  {
+    "id": "F-017",
+    "severity": "high",
+    "flow": "Fresh invitation intake",
+    "expected": "Required intake precedes authorization",
+    "observed": "Intake briefly appears, then hydration skips to Google without answers",
+    "root_cause": "Landing mapper treats authorization_required as recorded progress",
+    "status": "verified in browser",
+    "evidence": [
+      "Failing-first landing-state regression; 18 mapper tests passed",
+      "Local fixture blank submission stays at intake and focuses required input",
+      "Local fixture valid answers saved through real intake route and PostgreSQL; readback and reload preserved both answers"
+    ],
+    "verification_boundary": "Local isolated database and browser; no provider authorization or deployment"
+  },
+  {
+    "id": "F-018",
+    "severity": "medium",
+    "flow": "Terminal invitation copy",
+    "expected": "No unsupported assertion about historical access",
+    "observed": "Expired and revoked screens assert nothing has been shared",
+    "root_cause": "Unconditional copy has no evidence about prior grants",
+    "status": "verified in browser",
+    "evidence": [
+      "Three failing-first terminal regressions; 21 focused tests passed",
+      "Revoked and unknown local tokens retested in browser; unsupported prior-access claim removed",
+      "Sibling timeout recovery also removed unsupported historical-sharing claim; failing-first regression passed"
+    ],
+    "verification_boundary": "Local repair; not deployed"
+  },
+  {
+    "id": "F-019",
+    "severity": "medium",
+    "flow": "Invitation custom brand color",
+    "expected": "Saved primary color appears on actual invitation",
+    "observed": "Wizard preview shows custom color, actual invitations ignore it",
+    "root_cause": "Invitation frame did not receive branding.primaryColor",
+    "status": "verified in browser",
+    "evidence": [
+      "Shell regression checks valid hex, fallback, and semantic text",
+      "Local browser computed decorative border rgb(37,99,235), 4px; saved #2563EB fixture",
+      "Main and manual invite callers pass primaryColor; main browser verified"
+    ],
+    "verification_boundary": "Main invitation verified locally; manual color verification pending; not deployed"
+  },
+  {
+    "id": "F-020",
+    "severity": "medium",
+    "flow": "Invitation intake accessibility",
+    "expected": "Text controls have labels and invalid required answers receive focus",
+    "observed": "Unnamed text controls; whitespace validation leaves focus on Continue",
+    "root_cause": "Missing label htmlFor/input id and invalid-field focus",
+    "status": "verified in browser",
+    "evidence": [
+      "Invite page regressions pass",
+      "Local browser names Contact name and Project URL",
+      "Whitespace submission focuses intake-contact_name and announces required error"
+    ],
+    "verification_boundary": "Local browser and isolated API; not deployed"
+  },
+  {
+    "id": "F-021",
+    "severity": "high",
+    "flow": "Manual platform evidence and completion",
+    "expected": "Each manual report persists separately and remains pending until verified",
+    "observed": "Root evidence overwrote siblings and read as fulfilled; Zapier manual route missing",
+    "root_cause": "Single root grantedAssets representation, missing platform route and guard, optimistic browser callback",
+    "status": "fixed locally",
+    "evidence": [
+      "125 focused API and 17 focused web checks passed",
+      "Real Beehiiv report persists pending; API progress returns pending and no completedPlatforms",
+      "Browser returned pending checklist instead of completion"
+    ],
+    "verification_boundary": "Additional concurrent loss and platform queue blocker discovered; complete multi-platform verification not yet passed"
+  },
+  {
+    "id": "F-022",
+    "severity": "high",
+    "flow": "Manual platform persistence under concurrency",
+    "expected": "Concurrent reports for two requested platforms both persist",
+    "observed": "Concurrent Beehiiv and Zapier POSTs both200 with same connection ID; PostgreSQL retained only Beehiiv",
+    "root_cause": "Read/merge/update on one JSON document loses concurrent writes",
+    "status": "failed",
+    "evidence": [
+      "Real isolated Fastify routes and PostgreSQL, ThreadPoolExecutor(2), reserved invalid fixture identities",
+      "SQL granted_assets readback after both responses shows only beehiiv"
+    ],
+    "verification_boundary": "Local real persistence defect; repair delegated"
+  },
+  {
+    "id": "F-023",
+    "severity": "high",
+    "flow": "Pending manual platform navigation",
+    "expected": "Pending report allows remaining actionable platforms without false completion",
+    "observed": "Beehiiv pending keeps Resume Beehiiv active; no way to advance to Zapier",
+    "root_cause": "Queue chooses first unfinished platform even when waiting on verification",
+    "status": "failed",
+    "evidence": [
+      "Local two-platform fixture after Beehiiv report; browser shows Waiting Beehiiv and Connect Zapier but only Beehiiv action"
+    ],
+    "verification_boundary": "Local browser defect; repair delegated"
+  }
+]

@@ -1,0 +1,3371 @@
+{
+  "fixture": "private synthetic authhub_perf database; one request per four clients, one connection/authorization per eight clients; 101 requests on one heavy client, 1000 on another",
+  "methodology": "Local service calls only. Clerk authentication, HTTP transport, production network, and browser rendering excluded. Five warmups precede 30 timed reads per case. Prisma query event durations are integer milliseconds; wall time is more precise.",
+  "sizes": [
+    50,
+    500,
+    5000
+  ],
+  "runsPerCase": 30,
+  "measurements": [
+    {
+      "size": 50,
+      "runs": [
+        {
+          "name": "list-first-page",
+          "warmups": 5,
+          "samples": [
+            {
+              "wallMs": 4.43,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 50
+            },
+            {
+              "wallMs": 2.73,
+              "queries": 5,
+              "summedQueryMs": 0,
+              "returned": 50
+            },
+            {
+              "wallMs": 4.03,
+              "queries": 5,
+              "summedQueryMs": 0,
+              "returned": 50
+            },
+            {
+              "wallMs": 3.64,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 50
+            },
+            {
+              "wallMs": 2.96,
+              "queries": 5,
+              "summedQueryMs": 0,
+              "returned": 50
+            },
+            {
+              "wallMs": 3.05,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 50
+            },
+            {
+              "wallMs": 3.38,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 50
+            },
+            {
+              "wallMs": 2.39,
+              "queries": 5,
+              "summedQueryMs": 0,
+              "returned": 50
+            },
+            {
+              "wallMs": 2.13,
+              "queries": 5,
+              "summedQueryMs": 0,
+              "returned": 50
+            },
+            {
+              "wallMs": 2.52,
+              "queries": 5,
+              "summedQueryMs": 0,
+              "returned": 50
+            },
+            {
+              "wallMs": 2.03,
+              "queries": 5,
+              "summedQueryMs": 0,
+              "returned": 50
+            },
+            {
+              "wallMs": 1.97,
+              "queries": 5,
+              "summedQueryMs": 0,
+              "returned": 50
+            },
+            {
+              "wallMs": 2.06,
+              "queries": 5,
+              "summedQueryMs": 0,
+              "returned": 50
+            },
+            {
+              "wallMs": 2.08,
+              "queries": 5,
+              "summedQueryMs": 0,
+              "returned": 50
+            },
+            {
+              "wallMs": 2.51,
+              "queries": 5,
+              "summedQueryMs": 0,
+              "returned": 50
+            },
+            {
+              "wallMs": 2.05,
+              "queries": 5,
+              "summedQueryMs": 0,
+              "returned": 50
+            },
+            {
+              "wallMs": 2.03,
+              "queries": 5,
+              "summedQueryMs": 0,
+              "returned": 50
+            },
+            {
+              "wallMs": 2.22,
+              "queries": 5,
+              "summedQueryMs": 0,
+              "returned": 50
+            },
+            {
+              "wallMs": 3.04,
+              "queries": 5,
+              "summedQueryMs": 0,
+              "returned": 50
+            },
+            {
+              "wallMs": 2.75,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 50
+            },
+            {
+              "wallMs": 2.45,
+              "queries": 5,
+              "summedQueryMs": 0,
+              "returned": 50
+            },
+            {
+              "wallMs": 2.49,
+              "queries": 5,
+              "summedQueryMs": 0,
+              "returned": 50
+            },
+            {
+              "wallMs": 3.06,
+              "queries": 5,
+              "summedQueryMs": 0,
+              "returned": 50
+            },
+            {
+              "wallMs": 3.52,
+              "queries": 5,
+              "summedQueryMs": 0,
+              "returned": 50
+            },
+            {
+              "wallMs": 3.21,
+              "queries": 5,
+              "summedQueryMs": 0,
+              "returned": 50
+            },
+            {
+              "wallMs": 3.38,
+              "queries": 5,
+              "summedQueryMs": 0,
+              "returned": 50
+            },
+            {
+              "wallMs": 2.8,
+              "queries": 5,
+              "summedQueryMs": 0,
+              "returned": 50
+            },
+            {
+              "wallMs": 2.37,
+              "queries": 5,
+              "summedQueryMs": 0,
+              "returned": 50
+            },
+            {
+              "wallMs": 2.1,
+              "queries": 5,
+              "summedQueryMs": 0,
+              "returned": 50
+            },
+            {
+              "wallMs": 2.19,
+              "queries": 5,
+              "summedQueryMs": 0,
+              "returned": 50
+            }
+          ],
+          "p50WallMs": 2.51,
+          "p95WallMs": 4.03
+        },
+        {
+          "name": "search-selective",
+          "warmups": 5,
+          "samples": [
+            {
+              "wallMs": 2.78,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 1
+            },
+            {
+              "wallMs": 1.98,
+              "queries": 5,
+              "summedQueryMs": 0,
+              "returned": 1
+            },
+            {
+              "wallMs": 2.33,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 1
+            },
+            {
+              "wallMs": 3.15,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 1
+            },
+            {
+              "wallMs": 2.26,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 1
+            },
+            {
+              "wallMs": 2.19,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 1
+            },
+            {
+              "wallMs": 2.34,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 1
+            },
+            {
+              "wallMs": 2.08,
+              "queries": 5,
+              "summedQueryMs": 0,
+              "returned": 1
+            },
+            {
+              "wallMs": 2.9,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 1
+            },
+            {
+              "wallMs": 2.23,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 1
+            },
+            {
+              "wallMs": 2.26,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 1
+            },
+            {
+              "wallMs": 2.31,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 1
+            },
+            {
+              "wallMs": 2.3,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 1
+            },
+            {
+              "wallMs": 2.47,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 1
+            },
+            {
+              "wallMs": 2.27,
+              "queries": 5,
+              "summedQueryMs": 0,
+              "returned": 1
+            },
+            {
+              "wallMs": 1.99,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 1
+            },
+            {
+              "wallMs": 2.35,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 1
+            },
+            {
+              "wallMs": 2.27,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 1
+            },
+            {
+              "wallMs": 2.55,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 1
+            },
+            {
+              "wallMs": 1.96,
+              "queries": 5,
+              "summedQueryMs": 0,
+              "returned": 1
+            },
+            {
+              "wallMs": 1.74,
+              "queries": 5,
+              "summedQueryMs": 0,
+              "returned": 1
+            },
+            {
+              "wallMs": 1.63,
+              "queries": 5,
+              "summedQueryMs": 0,
+              "returned": 1
+            },
+            {
+              "wallMs": 1.83,
+              "queries": 5,
+              "summedQueryMs": 0,
+              "returned": 1
+            },
+            {
+              "wallMs": 2.47,
+              "queries": 5,
+              "summedQueryMs": 0,
+              "returned": 1
+            },
+            {
+              "wallMs": 2.79,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 1
+            },
+            {
+              "wallMs": 2.85,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 1
+            },
+            {
+              "wallMs": 2.69,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 1
+            },
+            {
+              "wallMs": 2.16,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 1
+            },
+            {
+              "wallMs": 2.23,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 1
+            },
+            {
+              "wallMs": 2.86,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 1
+            }
+          ],
+          "p50WallMs": 2.27,
+          "p95WallMs": 2.9
+        },
+        {
+          "name": "search-no-match",
+          "warmups": 5,
+          "samples": [
+            {
+              "wallMs": 0.97,
+              "queries": 2,
+              "summedQueryMs": 0,
+              "returned": 0
+            },
+            {
+              "wallMs": 1.62,
+              "queries": 2,
+              "summedQueryMs": 0,
+              "returned": 0
+            },
+            {
+              "wallMs": 1.54,
+              "queries": 2,
+              "summedQueryMs": 0,
+              "returned": 0
+            },
+            {
+              "wallMs": 1.03,
+              "queries": 2,
+              "summedQueryMs": 0,
+              "returned": 0
+            },
+            {
+              "wallMs": 0.9,
+              "queries": 2,
+              "summedQueryMs": 0,
+              "returned": 0
+            },
+            {
+              "wallMs": 0.95,
+              "queries": 2,
+              "summedQueryMs": 0,
+              "returned": 0
+            },
+            {
+              "wallMs": 1.02,
+              "queries": 2,
+              "summedQueryMs": 0,
+              "returned": 0
+            },
+            {
+              "wallMs": 1.23,
+              "queries": 2,
+              "summedQueryMs": 0,
+              "returned": 0
+            },
+            {
+              "wallMs": 1.22,
+              "queries": 2,
+              "summedQueryMs": 0,
+              "returned": 0
+            },
+            {
+              "wallMs": 2.24,
+              "queries": 2,
+              "summedQueryMs": 0,
+              "returned": 0
+            },
+            {
+              "wallMs": 1.02,
+              "queries": 2,
+              "summedQueryMs": 0,
+              "returned": 0
+            },
+            {
+              "wallMs": 0.95,
+              "queries": 2,
+              "summedQueryMs": 0,
+              "returned": 0
+            },
+            {
+              "wallMs": 0.86,
+              "queries": 2,
+              "summedQueryMs": 0,
+              "returned": 0
+            },
+            {
+              "wallMs": 1.16,
+              "queries": 2,
+              "summedQueryMs": 0,
+              "returned": 0
+            },
+            {
+              "wallMs": 1.52,
+              "queries": 2,
+              "summedQueryMs": 0,
+              "returned": 0
+            },
+            {
+              "wallMs": 1.47,
+              "queries": 2,
+              "summedQueryMs": 0,
+              "returned": 0
+            },
+            {
+              "wallMs": 0.98,
+              "queries": 2,
+              "summedQueryMs": 0,
+              "returned": 0
+            },
+            {
+              "wallMs": 0.97,
+              "queries": 2,
+              "summedQueryMs": 0,
+              "returned": 0
+            },
+            {
+              "wallMs": 0.86,
+              "queries": 2,
+              "summedQueryMs": 0,
+              "returned": 0
+            },
+            {
+              "wallMs": 1.11,
+              "queries": 2,
+              "summedQueryMs": 0,
+              "returned": 0
+            },
+            {
+              "wallMs": 0.92,
+              "queries": 2,
+              "summedQueryMs": 0,
+              "returned": 0
+            },
+            {
+              "wallMs": 1.01,
+              "queries": 2,
+              "summedQueryMs": 0,
+              "returned": 0
+            },
+            {
+              "wallMs": 0.98,
+              "queries": 2,
+              "summedQueryMs": 0,
+              "returned": 0
+            },
+            {
+              "wallMs": 0.81,
+              "queries": 2,
+              "summedQueryMs": 0,
+              "returned": 0
+            },
+            {
+              "wallMs": 0.96,
+              "queries": 2,
+              "summedQueryMs": 0,
+              "returned": 0
+            },
+            {
+              "wallMs": 1.07,
+              "queries": 2,
+              "summedQueryMs": 0,
+              "returned": 0
+            },
+            {
+              "wallMs": 1.09,
+              "queries": 2,
+              "summedQueryMs": 0,
+              "returned": 0
+            },
+            {
+              "wallMs": 0.91,
+              "queries": 2,
+              "summedQueryMs": 0,
+              "returned": 0
+            },
+            {
+              "wallMs": 0.91,
+              "queries": 2,
+              "summedQueryMs": 0,
+              "returned": 0
+            },
+            {
+              "wallMs": 0.98,
+              "queries": 2,
+              "summedQueryMs": 0,
+              "returned": 0
+            }
+          ],
+          "p50WallMs": 0.98,
+          "p95WallMs": 1.62
+        },
+        {
+          "name": "detail-one-client",
+          "warmups": 5,
+          "samples": [
+            {
+              "wallMs": 1.89,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 1.29,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 1.53,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 1.83,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 1.47,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 1.54,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 1.08,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 1.2,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.9,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 2.02,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 1.68,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 1.35,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 1.05,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 1.2,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 1.88,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 1.89,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 2.27,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 1.73,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 1.02,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.89,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.91,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 1.09,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 1.02,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 1.19,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 1.26,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.8,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.68,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.81,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.73,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.72,
+              "queries": 3,
+              "summedQueryMs": 0
+            }
+          ],
+          "p50WallMs": 1.2,
+          "p95WallMs": 2.02
+        }
+      ]
+    },
+    {
+      "size": 500,
+      "runs": [
+        {
+          "name": "list-first-page",
+          "warmups": 5,
+          "samples": [
+            {
+              "wallMs": 2.64,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 50
+            },
+            {
+              "wallMs": 3.15,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 50
+            },
+            {
+              "wallMs": 3.43,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 50
+            },
+            {
+              "wallMs": 3.07,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 50
+            },
+            {
+              "wallMs": 2.78,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 50
+            },
+            {
+              "wallMs": 3.35,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 50
+            },
+            {
+              "wallMs": 3.15,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 50
+            },
+            {
+              "wallMs": 2.92,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 50
+            },
+            {
+              "wallMs": 3.41,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 50
+            },
+            {
+              "wallMs": 3.08,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 50
+            },
+            {
+              "wallMs": 2.81,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 50
+            },
+            {
+              "wallMs": 3.39,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 50
+            },
+            {
+              "wallMs": 3.51,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 50
+            },
+            {
+              "wallMs": 2.89,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 50
+            },
+            {
+              "wallMs": 2.72,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 50
+            },
+            {
+              "wallMs": 3.44,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 50
+            },
+            {
+              "wallMs": 3.35,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 50
+            },
+            {
+              "wallMs": 3.55,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 50
+            },
+            {
+              "wallMs": 8.06,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 50
+            },
+            {
+              "wallMs": 5.95,
+              "queries": 5,
+              "summedQueryMs": 2,
+              "returned": 50
+            },
+            {
+              "wallMs": 4.65,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 50
+            },
+            {
+              "wallMs": 4.15,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 50
+            },
+            {
+              "wallMs": 5,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 50
+            },
+            {
+              "wallMs": 5.24,
+              "queries": 5,
+              "summedQueryMs": 2,
+              "returned": 50
+            },
+            {
+              "wallMs": 3.8,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 50
+            },
+            {
+              "wallMs": 4.46,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 50
+            },
+            {
+              "wallMs": 3.58,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 50
+            },
+            {
+              "wallMs": 4.53,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 50
+            },
+            {
+              "wallMs": 4.9,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 50
+            },
+            {
+              "wallMs": 4.61,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 50
+            }
+          ],
+          "p50WallMs": 3.43,
+          "p95WallMs": 5.95
+        },
+        {
+          "name": "search-selective",
+          "warmups": 5,
+          "samples": [
+            {
+              "wallMs": 6.38,
+              "queries": 5,
+              "summedQueryMs": 4,
+              "returned": 5
+            },
+            {
+              "wallMs": 4.31,
+              "queries": 5,
+              "summedQueryMs": 2,
+              "returned": 5
+            },
+            {
+              "wallMs": 3.18,
+              "queries": 5,
+              "summedQueryMs": 2,
+              "returned": 5
+            },
+            {
+              "wallMs": 2.65,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 5
+            },
+            {
+              "wallMs": 3.22,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 5
+            },
+            {
+              "wallMs": 3.46,
+              "queries": 5,
+              "summedQueryMs": 2,
+              "returned": 5
+            },
+            {
+              "wallMs": 2.74,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 5
+            },
+            {
+              "wallMs": 2.56,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 5
+            },
+            {
+              "wallMs": 2.36,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 5
+            },
+            {
+              "wallMs": 2.65,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 5
+            },
+            {
+              "wallMs": 2.57,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 5
+            },
+            {
+              "wallMs": 2.62,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 5
+            },
+            {
+              "wallMs": 2.71,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 5
+            },
+            {
+              "wallMs": 2.95,
+              "queries": 5,
+              "summedQueryMs": 2,
+              "returned": 5
+            },
+            {
+              "wallMs": 2.31,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 5
+            },
+            {
+              "wallMs": 2.36,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 5
+            },
+            {
+              "wallMs": 2.31,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 5
+            },
+            {
+              "wallMs": 2.16,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 5
+            },
+            {
+              "wallMs": 2.46,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 5
+            },
+            {
+              "wallMs": 2.08,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 5
+            },
+            {
+              "wallMs": 1.98,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 5
+            },
+            {
+              "wallMs": 2.68,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 5
+            },
+            {
+              "wallMs": 2.1,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 5
+            },
+            {
+              "wallMs": 1.99,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 5
+            },
+            {
+              "wallMs": 1.98,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 5
+            },
+            {
+              "wallMs": 2.06,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 5
+            },
+            {
+              "wallMs": 2.93,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 5
+            },
+            {
+              "wallMs": 2.29,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 5
+            },
+            {
+              "wallMs": 2.11,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 5
+            },
+            {
+              "wallMs": 2.17,
+              "queries": 5,
+              "summedQueryMs": 1,
+              "returned": 5
+            }
+          ],
+          "p50WallMs": 2.46,
+          "p95WallMs": 4.31
+        },
+        {
+          "name": "search-no-match",
+          "warmups": 5,
+          "samples": [
+            {
+              "wallMs": 1.75,
+              "queries": 2,
+              "summedQueryMs": 1,
+              "returned": 0
+            },
+            {
+              "wallMs": 3.09,
+              "queries": 2,
+              "summedQueryMs": 2,
+              "returned": 0
+            },
+            {
+              "wallMs": 3.38,
+              "queries": 2,
+              "summedQueryMs": 2,
+              "returned": 0
+            },
+            {
+              "wallMs": 2.73,
+              "queries": 2,
+              "summedQueryMs": 0,
+              "returned": 0
+            },
+            {
+              "wallMs": 2.31,
+              "queries": 2,
+              "summedQueryMs": 2,
+              "returned": 0
+            },
+            {
+              "wallMs": 1.64,
+              "queries": 2,
+              "summedQueryMs": 0,
+              "returned": 0
+            },
+            {
+              "wallMs": 1.49,
+              "queries": 2,
+              "summedQueryMs": 0,
+              "returned": 0
+            },
+            {
+              "wallMs": 1.34,
+              "queries": 2,
+              "summedQueryMs": 0,
+              "returned": 0
+            },
+            {
+              "wallMs": 1.89,
+              "queries": 2,
+              "summedQueryMs": 2,
+              "returned": 0
+            },
+            {
+              "wallMs": 1.53,
+              "queries": 2,
+              "summedQueryMs": 1,
+              "returned": 0
+            },
+            {
+              "wallMs": 1.54,
+              "queries": 2,
+              "summedQueryMs": 1,
+              "returned": 0
+            },
+            {
+              "wallMs": 1.75,
+              "queries": 2,
+              "summedQueryMs": 1,
+              "returned": 0
+            },
+            {
+              "wallMs": 2.15,
+              "queries": 2,
+              "summedQueryMs": 2,
+              "returned": 0
+            },
+            {
+              "wallMs": 2.06,
+              "queries": 2,
+              "summedQueryMs": 1,
+              "returned": 0
+            },
+            {
+              "wallMs": 2.09,
+              "queries": 2,
+              "summedQueryMs": 1,
+              "returned": 0
+            },
+            {
+              "wallMs": 1.63,
+              "queries": 2,
+              "summedQueryMs": 0,
+              "returned": 0
+            },
+            {
+              "wallMs": 1.9,
+              "queries": 2,
+              "summedQueryMs": 2,
+              "returned": 0
+            },
+            {
+              "wallMs": 1.88,
+              "queries": 2,
+              "summedQueryMs": 1,
+              "returned": 0
+            },
+            {
+              "wallMs": 1.62,
+              "queries": 2,
+              "summedQueryMs": 0,
+              "returned": 0
+            },
+            {
+              "wallMs": 3.22,
+              "queries": 2,
+              "summedQueryMs": 2,
+              "returned": 0
+            },
+            {
+              "wallMs": 3.78,
+              "queries": 2,
+              "summedQueryMs": 2,
+              "returned": 0
+            },
+            {
+              "wallMs": 1.63,
+              "queries": 2,
+              "summedQueryMs": 0,
+              "returned": 0
+            },
+            {
+              "wallMs": 2.04,
+              "queries": 2,
+              "summedQueryMs": 1,
+              "returned": 0
+            },
+            {
+              "wallMs": 2.55,
+              "queries": 2,
+              "summedQueryMs": 2,
+              "returned": 0
+            },
+            {
+              "wallMs": 2.14,
+              "queries": 2,
+              "summedQueryMs": 1,
+              "returned": 0
+            },
+            {
+              "wallMs": 2.75,
+              "queries": 2,
+              "summedQueryMs": 1,
+              "returned": 0
+            },
+            {
+              "wallMs": 1.88,
+              "queries": 2,
+              "summedQueryMs": 2,
+              "returned": 0
+            },
+            {
+              "wallMs": 1.81,
+              "queries": 2,
+              "summedQueryMs": 1,
+              "returned": 0
+            },
+            {
+              "wallMs": 1.95,
+              "queries": 2,
+              "summedQueryMs": 1,
+              "returned": 0
+            },
+            {
+              "wallMs": 1.81,
+              "queries": 2,
+              "summedQueryMs": 1,
+              "returned": 0
+            }
+          ],
+          "p50WallMs": 1.89,
+          "p95WallMs": 3.38
+        },
+        {
+          "name": "detail-one-client",
+          "warmups": 5,
+          "samples": [
+            {
+              "wallMs": 2.4,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 1.63,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.98,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 1.17,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.95,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 1.26,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.81,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.86,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.8,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.83,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.8,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.98,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.82,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 1.22,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 1.57,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 1.54,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 2.86,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 2.05,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 1.13,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.73,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.66,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.74,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.6,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.64,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.64,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.58,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.69,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.66,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.58,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 1.22,
+              "queries": 3,
+              "summedQueryMs": 0
+            }
+          ],
+          "p50WallMs": 0.83,
+          "p95WallMs": 2.4
+        }
+      ]
+    },
+    {
+      "size": 5000,
+      "runs": [
+        {
+          "name": "list-first-page",
+          "warmups": 5,
+          "samples": [
+            {
+              "wallMs": 8.22,
+              "queries": 5,
+              "summedQueryMs": 3,
+              "returned": 50
+            },
+            {
+              "wallMs": 8.84,
+              "queries": 5,
+              "summedQueryMs": 4,
+              "returned": 50
+            },
+            {
+              "wallMs": 9.14,
+              "queries": 5,
+              "summedQueryMs": 5,
+              "returned": 50
+            },
+            {
+              "wallMs": 8.63,
+              "queries": 5,
+              "summedQueryMs": 4,
+              "returned": 50
+            },
+            {
+              "wallMs": 8.84,
+              "queries": 5,
+              "summedQueryMs": 4,
+              "returned": 50
+            },
+            {
+              "wallMs": 8.55,
+              "queries": 5,
+              "summedQueryMs": 4,
+              "returned": 50
+            },
+            {
+              "wallMs": 8.61,
+              "queries": 5,
+              "summedQueryMs": 4,
+              "returned": 50
+            },
+            {
+              "wallMs": 8.34,
+              "queries": 5,
+              "summedQueryMs": 3,
+              "returned": 50
+            },
+            {
+              "wallMs": 8.14,
+              "queries": 5,
+              "summedQueryMs": 3,
+              "returned": 50
+            },
+            {
+              "wallMs": 8.94,
+              "queries": 5,
+              "summedQueryMs": 4,
+              "returned": 50
+            },
+            {
+              "wallMs": 8.21,
+              "queries": 5,
+              "summedQueryMs": 3,
+              "returned": 50
+            },
+            {
+              "wallMs": 8.18,
+              "queries": 5,
+              "summedQueryMs": 3,
+              "returned": 50
+            },
+            {
+              "wallMs": 8.92,
+              "queries": 5,
+              "summedQueryMs": 3,
+              "returned": 50
+            },
+            {
+              "wallMs": 8.35,
+              "queries": 5,
+              "summedQueryMs": 4,
+              "returned": 50
+            },
+            {
+              "wallMs": 8.62,
+              "queries": 5,
+              "summedQueryMs": 4,
+              "returned": 50
+            },
+            {
+              "wallMs": 8.09,
+              "queries": 5,
+              "summedQueryMs": 3,
+              "returned": 50
+            },
+            {
+              "wallMs": 8.58,
+              "queries": 5,
+              "summedQueryMs": 4,
+              "returned": 50
+            },
+            {
+              "wallMs": 8.2,
+              "queries": 5,
+              "summedQueryMs": 3,
+              "returned": 50
+            },
+            {
+              "wallMs": 8.06,
+              "queries": 5,
+              "summedQueryMs": 3,
+              "returned": 50
+            },
+            {
+              "wallMs": 7.64,
+              "queries": 5,
+              "summedQueryMs": 3,
+              "returned": 50
+            },
+            {
+              "wallMs": 7.82,
+              "queries": 5,
+              "summedQueryMs": 3,
+              "returned": 50
+            },
+            {
+              "wallMs": 7.94,
+              "queries": 5,
+              "summedQueryMs": 3,
+              "returned": 50
+            },
+            {
+              "wallMs": 7.91,
+              "queries": 5,
+              "summedQueryMs": 3,
+              "returned": 50
+            },
+            {
+              "wallMs": 7.84,
+              "queries": 5,
+              "summedQueryMs": 3,
+              "returned": 50
+            },
+            {
+              "wallMs": 7.64,
+              "queries": 5,
+              "summedQueryMs": 3,
+              "returned": 50
+            },
+            {
+              "wallMs": 7.55,
+              "queries": 5,
+              "summedQueryMs": 3,
+              "returned": 50
+            },
+            {
+              "wallMs": 7.93,
+              "queries": 5,
+              "summedQueryMs": 4,
+              "returned": 50
+            },
+            {
+              "wallMs": 7.83,
+              "queries": 5,
+              "summedQueryMs": 3,
+              "returned": 50
+            },
+            {
+              "wallMs": 8.06,
+              "queries": 5,
+              "summedQueryMs": 3,
+              "returned": 50
+            },
+            {
+              "wallMs": 8.19,
+              "queries": 5,
+              "summedQueryMs": 4,
+              "returned": 50
+            }
+          ],
+          "p50WallMs": 8.19,
+          "p95WallMs": 8.94
+        },
+        {
+          "name": "search-selective",
+          "warmups": 5,
+          "samples": [
+            {
+              "wallMs": 9.82,
+              "queries": 5,
+              "summedQueryMs": 11,
+              "returned": 50
+            },
+            {
+              "wallMs": 14.8,
+              "queries": 5,
+              "summedQueryMs": 12,
+              "returned": 50
+            },
+            {
+              "wallMs": 16.84,
+              "queries": 5,
+              "summedQueryMs": 21,
+              "returned": 50
+            },
+            {
+              "wallMs": 11.1,
+              "queries": 5,
+              "summedQueryMs": 12,
+              "returned": 50
+            },
+            {
+              "wallMs": 12.73,
+              "queries": 5,
+              "summedQueryMs": 15,
+              "returned": 50
+            },
+            {
+              "wallMs": 10.85,
+              "queries": 5,
+              "summedQueryMs": 12,
+              "returned": 50
+            },
+            {
+              "wallMs": 11.14,
+              "queries": 5,
+              "summedQueryMs": 12,
+              "returned": 50
+            },
+            {
+              "wallMs": 11.59,
+              "queries": 5,
+              "summedQueryMs": 13,
+              "returned": 50
+            },
+            {
+              "wallMs": 12.43,
+              "queries": 5,
+              "summedQueryMs": 13,
+              "returned": 50
+            },
+            {
+              "wallMs": 11.53,
+              "queries": 5,
+              "summedQueryMs": 13,
+              "returned": 50
+            },
+            {
+              "wallMs": 12.15,
+              "queries": 5,
+              "summedQueryMs": 13,
+              "returned": 50
+            },
+            {
+              "wallMs": 12.53,
+              "queries": 5,
+              "summedQueryMs": 14,
+              "returned": 50
+            },
+            {
+              "wallMs": 12.51,
+              "queries": 5,
+              "summedQueryMs": 13,
+              "returned": 50
+            },
+            {
+              "wallMs": 12.32,
+              "queries": 5,
+              "summedQueryMs": 13,
+              "returned": 50
+            },
+            {
+              "wallMs": 12.31,
+              "queries": 5,
+              "summedQueryMs": 14,
+              "returned": 50
+            },
+            {
+              "wallMs": 12.67,
+              "queries": 5,
+              "summedQueryMs": 17,
+              "returned": 50
+            },
+            {
+              "wallMs": 9.83,
+              "queries": 5,
+              "summedQueryMs": 11,
+              "returned": 50
+            },
+            {
+              "wallMs": 11.16,
+              "queries": 5,
+              "summedQueryMs": 13,
+              "returned": 50
+            },
+            {
+              "wallMs": 14,
+              "queries": 5,
+              "summedQueryMs": 15,
+              "returned": 50
+            },
+            {
+              "wallMs": 9.65,
+              "queries": 5,
+              "summedQueryMs": 11,
+              "returned": 50
+            },
+            {
+              "wallMs": 10.96,
+              "queries": 5,
+              "summedQueryMs": 13,
+              "returned": 50
+            },
+            {
+              "wallMs": 9.58,
+              "queries": 5,
+              "summedQueryMs": 11,
+              "returned": 50
+            },
+            {
+              "wallMs": 9.88,
+              "queries": 5,
+              "summedQueryMs": 11,
+              "returned": 50
+            },
+            {
+              "wallMs": 11,
+              "queries": 5,
+              "summedQueryMs": 13,
+              "returned": 50
+            },
+            {
+              "wallMs": 10.11,
+              "queries": 5,
+              "summedQueryMs": 10,
+              "returned": 50
+            },
+            {
+              "wallMs": 11.19,
+              "queries": 5,
+              "summedQueryMs": 13,
+              "returned": 50
+            },
+            {
+              "wallMs": 12.14,
+              "queries": 5,
+              "summedQueryMs": 15,
+              "returned": 50
+            },
+            {
+              "wallMs": 11.25,
+              "queries": 5,
+              "summedQueryMs": 11,
+              "returned": 50
+            },
+            {
+              "wallMs": 11.28,
+              "queries": 5,
+              "summedQueryMs": 13,
+              "returned": 50
+            },
+            {
+              "wallMs": 10.13,
+              "queries": 5,
+              "summedQueryMs": 11,
+              "returned": 50
+            }
+          ],
+          "p50WallMs": 11.25,
+          "p95WallMs": 14.8
+        },
+        {
+          "name": "search-no-match",
+          "warmups": 5,
+          "samples": [
+            {
+              "wallMs": 7.17,
+              "queries": 2,
+              "summedQueryMs": 12,
+              "returned": 0
+            },
+            {
+              "wallMs": 6.87,
+              "queries": 2,
+              "summedQueryMs": 11,
+              "returned": 0
+            },
+            {
+              "wallMs": 7.81,
+              "queries": 2,
+              "summedQueryMs": 13,
+              "returned": 0
+            },
+            {
+              "wallMs": 6.92,
+              "queries": 2,
+              "summedQueryMs": 11,
+              "returned": 0
+            },
+            {
+              "wallMs": 7.6,
+              "queries": 2,
+              "summedQueryMs": 13,
+              "returned": 0
+            },
+            {
+              "wallMs": 6.8,
+              "queries": 2,
+              "summedQueryMs": 11,
+              "returned": 0
+            },
+            {
+              "wallMs": 6.55,
+              "queries": 2,
+              "summedQueryMs": 10,
+              "returned": 0
+            },
+            {
+              "wallMs": 8.39,
+              "queries": 2,
+              "summedQueryMs": 14,
+              "returned": 0
+            },
+            {
+              "wallMs": 7.64,
+              "queries": 2,
+              "summedQueryMs": 12,
+              "returned": 0
+            },
+            {
+              "wallMs": 7.21,
+              "queries": 2,
+              "summedQueryMs": 12,
+              "returned": 0
+            },
+            {
+              "wallMs": 8.2,
+              "queries": 2,
+              "summedQueryMs": 13,
+              "returned": 0
+            },
+            {
+              "wallMs": 7.33,
+              "queries": 2,
+              "summedQueryMs": 12,
+              "returned": 0
+            },
+            {
+              "wallMs": 7.68,
+              "queries": 2,
+              "summedQueryMs": 12,
+              "returned": 0
+            },
+            {
+              "wallMs": 7.8,
+              "queries": 2,
+              "summedQueryMs": 12,
+              "returned": 0
+            },
+            {
+              "wallMs": 7.91,
+              "queries": 2,
+              "summedQueryMs": 13,
+              "returned": 0
+            },
+            {
+              "wallMs": 8.77,
+              "queries": 2,
+              "summedQueryMs": 14,
+              "returned": 0
+            },
+            {
+              "wallMs": 7.46,
+              "queries": 2,
+              "summedQueryMs": 12,
+              "returned": 0
+            },
+            {
+              "wallMs": 7.21,
+              "queries": 2,
+              "summedQueryMs": 12,
+              "returned": 0
+            },
+            {
+              "wallMs": 7.7,
+              "queries": 2,
+              "summedQueryMs": 12,
+              "returned": 0
+            },
+            {
+              "wallMs": 7.99,
+              "queries": 2,
+              "summedQueryMs": 13,
+              "returned": 0
+            },
+            {
+              "wallMs": 7.68,
+              "queries": 2,
+              "summedQueryMs": 13,
+              "returned": 0
+            },
+            {
+              "wallMs": 7.45,
+              "queries": 2,
+              "summedQueryMs": 12,
+              "returned": 0
+            },
+            {
+              "wallMs": 8.03,
+              "queries": 2,
+              "summedQueryMs": 14,
+              "returned": 0
+            },
+            {
+              "wallMs": 6.72,
+              "queries": 2,
+              "summedQueryMs": 11,
+              "returned": 0
+            },
+            {
+              "wallMs": 6.63,
+              "queries": 2,
+              "summedQueryMs": 11,
+              "returned": 0
+            },
+            {
+              "wallMs": 7.5,
+              "queries": 2,
+              "summedQueryMs": 12,
+              "returned": 0
+            },
+            {
+              "wallMs": 7.43,
+              "queries": 2,
+              "summedQueryMs": 12,
+              "returned": 0
+            },
+            {
+              "wallMs": 8.2,
+              "queries": 2,
+              "summedQueryMs": 14,
+              "returned": 0
+            },
+            {
+              "wallMs": 8.25,
+              "queries": 2,
+              "summedQueryMs": 14,
+              "returned": 0
+            },
+            {
+              "wallMs": 7.62,
+              "queries": 2,
+              "summedQueryMs": 12,
+              "returned": 0
+            }
+          ],
+          "p50WallMs": 7.6,
+          "p95WallMs": 8.39
+        },
+        {
+          "name": "detail-one-client",
+          "warmups": 5,
+          "samples": [
+            {
+              "wallMs": 0.97,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.69,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 1.45,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 1.39,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.83,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.84,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 1.06,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.79,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.84,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.83,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.72,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.8,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.79,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 1.52,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 1.41,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.95,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.8,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 1.09,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 1.03,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 1.27,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 2.24,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 1.63,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 1.52,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 1.32,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 1.38,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 1.47,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 1.69,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 1.64,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 1.21,
+              "queries": 3,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.83,
+              "queries": 3,
+              "summedQueryMs": 0
+            }
+          ],
+          "p50WallMs": 1.06,
+          "p95WallMs": 1.69
+        },
+        {
+          "name": "detail-101-requests",
+          "warmups": 5,
+          "samples": [
+            {
+              "wallMs": 5.79,
+              "queries": 5,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 6.69,
+              "queries": 5,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 5.46,
+              "queries": 5,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 6.24,
+              "queries": 5,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 4.7,
+              "queries": 5,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 4.96,
+              "queries": 5,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 4.87,
+              "queries": 5,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 5,
+              "queries": 5,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 4.81,
+              "queries": 5,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 5,
+              "queries": 5,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 4.98,
+              "queries": 5,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 4.92,
+              "queries": 5,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 4.82,
+              "queries": 5,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 4.39,
+              "queries": 5,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 4.93,
+              "queries": 5,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 7.75,
+              "queries": 5,
+              "summedQueryMs": 1
+            },
+            {
+              "wallMs": 4.76,
+              "queries": 5,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 4.34,
+              "queries": 5,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 14.02,
+              "queries": 5,
+              "summedQueryMs": 5
+            },
+            {
+              "wallMs": 6.68,
+              "queries": 5,
+              "summedQueryMs": 1
+            },
+            {
+              "wallMs": 5.32,
+              "queries": 5,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 5.74,
+              "queries": 5,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 5.71,
+              "queries": 5,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 3.9,
+              "queries": 5,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 4.99,
+              "queries": 5,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 4.61,
+              "queries": 5,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 3.35,
+              "queries": 5,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 3.07,
+              "queries": 5,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 3.85,
+              "queries": 5,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 3.82,
+              "queries": 5,
+              "summedQueryMs": 0
+            }
+          ],
+          "p50WallMs": 4.93,
+          "p95WallMs": 7.75
+        },
+        {
+          "name": "detail-foreign-101-requests",
+          "warmups": 5,
+          "samples": [
+            {
+              "wallMs": 0.6,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.54,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.62,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.55,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.86,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.54,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.48,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.5,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.48,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.45,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.47,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.43,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.51,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.5,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.48,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.49,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.45,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.45,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.43,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.43,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.45,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.5,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.42,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.43,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.44,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.45,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.65,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.47,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.43,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.41,
+              "queries": 1,
+              "summedQueryMs": 0
+            }
+          ],
+          "p50WallMs": 0.47,
+          "p95WallMs": 0.65
+        },
+        {
+          "name": "detail-1000-requests",
+          "warmups": 5,
+          "samples": [
+            {
+              "wallMs": 31.72,
+              "queries": 5,
+              "summedQueryMs": 2
+            },
+            {
+              "wallMs": 31.28,
+              "queries": 5,
+              "summedQueryMs": 2
+            },
+            {
+              "wallMs": 29.85,
+              "queries": 5,
+              "summedQueryMs": 2
+            },
+            {
+              "wallMs": 28.12,
+              "queries": 5,
+              "summedQueryMs": 2
+            },
+            {
+              "wallMs": 29.89,
+              "queries": 5,
+              "summedQueryMs": 2
+            },
+            {
+              "wallMs": 28.89,
+              "queries": 5,
+              "summedQueryMs": 1
+            },
+            {
+              "wallMs": 27.14,
+              "queries": 5,
+              "summedQueryMs": 1
+            },
+            {
+              "wallMs": 28.18,
+              "queries": 5,
+              "summedQueryMs": 2
+            },
+            {
+              "wallMs": 30.48,
+              "queries": 5,
+              "summedQueryMs": 3
+            },
+            {
+              "wallMs": 28.6,
+              "queries": 5,
+              "summedQueryMs": 2
+            },
+            {
+              "wallMs": 30.34,
+              "queries": 5,
+              "summedQueryMs": 1
+            },
+            {
+              "wallMs": 30.99,
+              "queries": 5,
+              "summedQueryMs": 1
+            },
+            {
+              "wallMs": 28.66,
+              "queries": 5,
+              "summedQueryMs": 4
+            },
+            {
+              "wallMs": 26.01,
+              "queries": 5,
+              "summedQueryMs": 3
+            },
+            {
+              "wallMs": 26.95,
+              "queries": 5,
+              "summedQueryMs": 2
+            },
+            {
+              "wallMs": 27.51,
+              "queries": 5,
+              "summedQueryMs": 2
+            },
+            {
+              "wallMs": 33.74,
+              "queries": 5,
+              "summedQueryMs": 2
+            },
+            {
+              "wallMs": 35.05,
+              "queries": 5,
+              "summedQueryMs": 4
+            },
+            {
+              "wallMs": 28.17,
+              "queries": 5,
+              "summedQueryMs": 3
+            },
+            {
+              "wallMs": 27.6,
+              "queries": 5,
+              "summedQueryMs": 3
+            },
+            {
+              "wallMs": 26.16,
+              "queries": 5,
+              "summedQueryMs": 2
+            },
+            {
+              "wallMs": 23.15,
+              "queries": 5,
+              "summedQueryMs": 1
+            },
+            {
+              "wallMs": 24.32,
+              "queries": 5,
+              "summedQueryMs": 1
+            },
+            {
+              "wallMs": 31.64,
+              "queries": 5,
+              "summedQueryMs": 3
+            },
+            {
+              "wallMs": 26.58,
+              "queries": 5,
+              "summedQueryMs": 2
+            },
+            {
+              "wallMs": 23.07,
+              "queries": 5,
+              "summedQueryMs": 1
+            },
+            {
+              "wallMs": 33.95,
+              "queries": 5,
+              "summedQueryMs": 1
+            },
+            {
+              "wallMs": 34.83,
+              "queries": 5,
+              "summedQueryMs": 3
+            },
+            {
+              "wallMs": 28.95,
+              "queries": 5,
+              "summedQueryMs": 2
+            },
+            {
+              "wallMs": 28.56,
+              "queries": 5,
+              "summedQueryMs": 1
+            }
+          ],
+          "p50WallMs": 28.6,
+          "p95WallMs": 34.83
+        },
+        {
+          "name": "detail-foreign-1000-requests",
+          "warmups": 5,
+          "samples": [
+            {
+              "wallMs": 0.75,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.8,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 1.06,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 1,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 1.37,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 1.29,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 1.08,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.73,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.7,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.81,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.61,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.78,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.65,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.57,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.52,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.5,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.54,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.68,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.57,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.93,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.61,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.73,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.98,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.83,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.57,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.55,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.49,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.63,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 1.33,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.74,
+              "queries": 1,
+              "summedQueryMs": 0
+            }
+          ],
+          "p50WallMs": 0.73,
+          "p95WallMs": 1.33
+        },
+        {
+          "name": "detail-missing",
+          "warmups": 5,
+          "samples": [
+            {
+              "wallMs": 0.59,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.52,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.42,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.51,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.58,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.49,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.42,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.41,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.48,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.45,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.42,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.45,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.4,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.51,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.43,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.41,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.48,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 1.32,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.69,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.49,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.45,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.41,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.55,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 1.52,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 1.51,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.98,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.77,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.65,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.6,
+              "queries": 1,
+              "summedQueryMs": 0
+            },
+            {
+              "wallMs": 0.51,
+              "queries": 1,
+              "summedQueryMs": 0
+            }
+          ],
+          "p50WallMs": 0.49,
+          "p95WallMs": 1.51
+        }
+      ]
+    }
+  ],
+  "explain": {
+    "firstPage": [
+      {
+        "Plan": {
+          "Node Type": "Limit",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Startup Cost": 890.85,
+          "Total Cost": 890.98,
+          "Plan Rows": 50,
+          "Plan Width": 29,
+          "Actual Startup Time": 1.092,
+          "Actual Total Time": 1.097,
+          "Actual Rows": 50,
+          "Actual Loops": 1,
+          "Shared Hit Blocks": 421,
+          "Shared Read Blocks": 0,
+          "Shared Dirtied Blocks": 0,
+          "Shared Written Blocks": 0,
+          "Local Hit Blocks": 0,
+          "Local Read Blocks": 0,
+          "Local Dirtied Blocks": 0,
+          "Local Written Blocks": 0,
+          "Temp Read Blocks": 0,
+          "Temp Written Blocks": 0,
+          "Plans": [
+            {
+              "Node Type": "Sort",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Startup Cost": 890.85,
+              "Total Cost": 915.8,
+              "Plan Rows": 9977,
+              "Plan Width": 29,
+              "Actual Startup Time": 1.092,
+              "Actual Total Time": 1.094,
+              "Actual Rows": 50,
+              "Actual Loops": 1,
+              "Sort Key": [
+                "created_at DESC"
+              ],
+              "Sort Method": "top-N heapsort",
+              "Sort Space Used": 28,
+              "Sort Space Type": "Memory",
+              "Shared Hit Blocks": 421,
+              "Shared Read Blocks": 0,
+              "Shared Dirtied Blocks": 0,
+              "Shared Written Blocks": 0,
+              "Local Hit Blocks": 0,
+              "Local Read Blocks": 0,
+              "Local Dirtied Blocks": 0,
+              "Local Written Blocks": 0,
+              "Temp Read Blocks": 0,
+              "Temp Written Blocks": 0,
+              "Plans": [
+                {
+                  "Node Type": "Seq Scan",
+                  "Parent Relationship": "Outer",
+                  "Parallel Aware": false,
+                  "Async Capable": false,
+                  "Relation Name": "clients",
+                  "Alias": "clients",
+                  "Startup Cost": 0,
+                  "Total Cost": 559.42,
+                  "Plan Rows": 9977,
+                  "Plan Width": 29,
+                  "Actual Startup Time": 0.154,
+                  "Actual Total Time": 0.758,
+                  "Actual Rows": 5000,
+                  "Actual Loops": 1,
+                  "Filter": "(agency_id = 'perf-agency-5000'::text)",
+                  "Rows Removed by Filter": 550,
+                  "Shared Hit Blocks": 421,
+                  "Shared Read Blocks": 0,
+                  "Shared Dirtied Blocks": 0,
+                  "Shared Written Blocks": 0,
+                  "Local Hit Blocks": 0,
+                  "Local Read Blocks": 0,
+                  "Local Dirtied Blocks": 0,
+                  "Local Written Blocks": 0,
+                  "Temp Read Blocks": 0,
+                  "Temp Written Blocks": 0
+                }
+              ]
+            }
+          ]
+        },
+        "Planning": {
+          "Shared Hit Blocks": 0,
+          "Shared Read Blocks": 0,
+          "Shared Dirtied Blocks": 0,
+          "Shared Written Blocks": 0,
+          "Local Hit Blocks": 0,
+          "Local Read Blocks": 0,
+          "Local Dirtied Blocks": 0,
+          "Local Written Blocks": 0,
+          "Temp Read Blocks": 0,
+          "Temp Written Blocks": 0
+        },
+        "Planning Time": 0.027,
+        "Triggers": [],
+        "Execution Time": 1.106
+      }
+    ],
+    "selectiveSearch": [
+      {
+        "Plan": {
+          "Node Type": "Limit",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Startup Cost": 642.6,
+          "Total Cost": 642.62,
+          "Plan Rows": 8,
+          "Plan Width": 29,
+          "Actual Startup Time": 5.141,
+          "Actual Total Time": 5.16,
+          "Actual Rows": 50,
+          "Actual Loops": 1,
+          "Shared Hit Blocks": 421,
+          "Shared Read Blocks": 0,
+          "Shared Dirtied Blocks": 0,
+          "Shared Written Blocks": 0,
+          "Local Hit Blocks": 0,
+          "Local Read Blocks": 0,
+          "Local Dirtied Blocks": 0,
+          "Local Written Blocks": 0,
+          "Temp Read Blocks": 0,
+          "Temp Written Blocks": 0,
+          "Plans": [
+            {
+              "Node Type": "Sort",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Startup Cost": 642.6,
+              "Total Cost": 642.62,
+              "Plan Rows": 8,
+              "Plan Width": 29,
+              "Actual Startup Time": 5.14,
+              "Actual Total Time": 5.155,
+              "Actual Rows": 50,
+              "Actual Loops": 1,
+              "Sort Key": [
+                "created_at DESC"
+              ],
+              "Sort Method": "quicksort",
+              "Sort Space Used": 28,
+              "Sort Space Type": "Memory",
+              "Shared Hit Blocks": 421,
+              "Shared Read Blocks": 0,
+              "Shared Dirtied Blocks": 0,
+              "Shared Written Blocks": 0,
+              "Local Hit Blocks": 0,
+              "Local Read Blocks": 0,
+              "Local Dirtied Blocks": 0,
+              "Local Written Blocks": 0,
+              "Temp Read Blocks": 0,
+              "Temp Written Blocks": 0,
+              "Plans": [
+                {
+                  "Node Type": "Seq Scan",
+                  "Parent Relationship": "Outer",
+                  "Parallel Aware": false,
+                  "Async Capable": false,
+                  "Relation Name": "clients",
+                  "Alias": "clients",
+                  "Startup Cost": 0,
+                  "Total Cost": 642.48,
+                  "Plan Rows": 8,
+                  "Plan Width": 29,
+                  "Actual Startup Time": 0.105,
+                  "Actual Total Time": 5.126,
+                  "Actual Rows": 50,
+                  "Actual Loops": 1,
+                  "Filter": "((agency_id = 'perf-agency-5000'::text) AND ((name ~~* '%Needle%'::text) OR (company ~~* '%Needle%'::text) OR (email ~~* '%Needle%'::text)))",
+                  "Rows Removed by Filter": 5500,
+                  "Shared Hit Blocks": 421,
+                  "Shared Read Blocks": 0,
+                  "Shared Dirtied Blocks": 0,
+                  "Shared Written Blocks": 0,
+                  "Local Hit Blocks": 0,
+                  "Local Read Blocks": 0,
+                  "Local Dirtied Blocks": 0,
+                  "Local Written Blocks": 0,
+                  "Temp Read Blocks": 0,
+                  "Temp Written Blocks": 0
+                }
+              ]
+            }
+          ]
+        },
+        "Planning": {
+          "Shared Hit Blocks": 0,
+          "Shared Read Blocks": 0,
+          "Shared Dirtied Blocks": 0,
+          "Shared Written Blocks": 0,
+          "Local Hit Blocks": 0,
+          "Local Read Blocks": 0,
+          "Local Dirtied Blocks": 0,
+          "Local Written Blocks": 0,
+          "Temp Read Blocks": 0,
+          "Temp Written Blocks": 0
+        },
+        "Planning Time": 0.195,
+        "Triggers": [],
+        "Execution Time": 5.174
+      }
+    ],
+    "noMatchSearch": [
+      {
+        "Plan": {
+          "Node Type": "Limit",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Startup Cost": 642.5,
+          "Total Cost": 642.51,
+          "Plan Rows": 3,
+          "Plan Width": 29,
+          "Actual Startup Time": 6.209,
+          "Actual Total Time": 6.21,
+          "Actual Rows": 0,
+          "Actual Loops": 1,
+          "Shared Hit Blocks": 421,
+          "Shared Read Blocks": 0,
+          "Shared Dirtied Blocks": 0,
+          "Shared Written Blocks": 0,
+          "Local Hit Blocks": 0,
+          "Local Read Blocks": 0,
+          "Local Dirtied Blocks": 0,
+          "Local Written Blocks": 0,
+          "Temp Read Blocks": 0,
+          "Temp Written Blocks": 0,
+          "Plans": [
+            {
+              "Node Type": "Sort",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Startup Cost": 642.5,
+              "Total Cost": 642.51,
+              "Plan Rows": 3,
+              "Plan Width": 29,
+              "Actual Startup Time": 6.208,
+              "Actual Total Time": 6.208,
+              "Actual Rows": 0,
+              "Actual Loops": 1,
+              "Sort Key": [
+                "created_at DESC"
+              ],
+              "Sort Method": "quicksort",
+              "Sort Space Used": 25,
+              "Sort Space Type": "Memory",
+              "Shared Hit Blocks": 421,
+              "Shared Read Blocks": 0,
+              "Shared Dirtied Blocks": 0,
+              "Shared Written Blocks": 0,
+              "Local Hit Blocks": 0,
+              "Local Read Blocks": 0,
+              "Local Dirtied Blocks": 0,
+              "Local Written Blocks": 0,
+              "Temp Read Blocks": 0,
+              "Temp Written Blocks": 0,
+              "Plans": [
+                {
+                  "Node Type": "Seq Scan",
+                  "Parent Relationship": "Outer",
+                  "Parallel Aware": false,
+                  "Async Capable": false,
+                  "Relation Name": "clients",
+                  "Alias": "clients",
+                  "Startup Cost": 0,
+                  "Total Cost": 642.48,
+                  "Plan Rows": 3,
+                  "Plan Width": 29,
+                  "Actual Startup Time": 6.205,
+                  "Actual Total Time": 6.206,
+                  "Actual Rows": 0,
+                  "Actual Loops": 1,
+                  "Filter": "((agency_id = 'perf-agency-5000'::text) AND ((name ~~* '%NeverPresent%'::text) OR (company ~~* '%NeverPresent%'::text) OR (email ~~* '%NeverPresent%'::text)))",
+                  "Rows Removed by Filter": 5550,
+                  "Shared Hit Blocks": 421,
+                  "Shared Read Blocks": 0,
+                  "Shared Dirtied Blocks": 0,
+                  "Shared Written Blocks": 0,
+                  "Local Hit Blocks": 0,
+                  "Local Read Blocks": 0,
+                  "Local Dirtied Blocks": 0,
+                  "Local Written Blocks": 0,
+                  "Temp Read Blocks": 0,
+                  "Temp Written Blocks": 0
+                }
+              ]
+            }
+          ]
+        },
+        "Planning": {
+          "Shared Hit Blocks": 0,
+          "Shared Read Blocks": 0,
+          "Shared Dirtied Blocks": 0,
+          "Shared Written Blocks": 0,
+          "Local Hit Blocks": 0,
+          "Local Read Blocks": 0,
+          "Local Dirtied Blocks": 0,
+          "Local Written Blocks": 0,
+          "Temp Read Blocks": 0,
+          "Temp Written Blocks": 0
+        },
+        "Planning Time": 0.211,
+        "Triggers": [],
+        "Execution Time": 6.218
+      }
+    ],
+    "selectiveCount": [
+      {
+        "Plan": {
+          "Node Type": "Aggregate",
+          "Strategy": "Plain",
+          "Partial Mode": "Simple",
+          "Parallel Aware": false,
+          "Async Capable": false,
+          "Startup Cost": 642.5,
+          "Total Cost": 642.51,
+          "Plan Rows": 1,
+          "Plan Width": 8,
+          "Actual Startup Time": 5.678,
+          "Actual Total Time": 5.679,
+          "Actual Rows": 1,
+          "Actual Loops": 1,
+          "Shared Hit Blocks": 421,
+          "Shared Read Blocks": 0,
+          "Shared Dirtied Blocks": 0,
+          "Shared Written Blocks": 0,
+          "Local Hit Blocks": 0,
+          "Local Read Blocks": 0,
+          "Local Dirtied Blocks": 0,
+          "Local Written Blocks": 0,
+          "Temp Read Blocks": 0,
+          "Temp Written Blocks": 0,
+          "Plans": [
+            {
+              "Node Type": "Seq Scan",
+              "Parent Relationship": "Outer",
+              "Parallel Aware": false,
+              "Async Capable": false,
+              "Relation Name": "clients",
+              "Alias": "clients",
+              "Startup Cost": 0,
+              "Total Cost": 642.48,
+              "Plan Rows": 8,
+              "Plan Width": 0,
+              "Actual Startup Time": 0.21,
+              "Actual Total Time": 5.668,
+              "Actual Rows": 50,
+              "Actual Loops": 1,
+              "Filter": "((agency_id = 'perf-agency-5000'::text) AND ((name ~~* '%Needle%'::text) OR (company ~~* '%Needle%'::text) OR (email ~~* '%Needle%'::text)))",
+              "Rows Removed by Filter": 5500,
+              "Shared Hit Blocks": 421,
+              "Shared Read Blocks": 0,
+              "Shared Dirtied Blocks": 0,
+              "Shared Written Blocks": 0,
+              "Local Hit Blocks": 0,
+              "Local Read Blocks": 0,
+              "Local Dirtied Blocks": 0,
+              "Local Written Blocks": 0,
+              "Temp Read Blocks": 0,
+              "Temp Written Blocks": 0
+            }
+          ]
+        },
+        "Planning": {
+          "Shared Hit Blocks": 0,
+          "Shared Read Blocks": 0,
+          "Shared Dirtied Blocks": 0,
+          "Shared Written Blocks": 0,
+          "Local Hit Blocks": 0,
+          "Local Read Blocks": 0,
+          "Local Dirtied Blocks": 0,
+          "Local Written Blocks": 0,
+          "Temp Read Blocks": 0,
+          "Temp Written Blocks": 0
+        },
+        "Planning Time": 0.241,
+        "Triggers": [],
+        "Execution Time": 5.695
+      }
+    ]
+  }
+}

@@ -1,0 +1,180 @@
+{
+  "date": "2026-09-30",
+  "origin": "https://authhub.co",
+  "browser": "Signed-in Codex in-app browser",
+  "method": "Manual read-only UI observations and DOM probes via computer-use tools",
+  "evidence_boundary": "Sanitized transcript-derived receipts. Screenshots were displayed in the conversation, not exported as local files. These records do not prove unvisited branches.",
+  "production_mutations_submitted": false,
+  "checks": [
+    {
+      "route": "/dashboard",
+      "widths": [
+        758,
+        1440
+      ],
+      "observed": [
+        "Populated: 12 requests, 12 active connections, 3 platforms",
+        "No main landmark",
+        "Two filled primary creation actions",
+        "Recent rows include Unknown status"
+      ],
+      "findings": [
+        "S02",
+        "S06",
+        "T10",
+        "R10"
+      ]
+    },
+    {
+      "route": "/clients -> /onboarding/unified",
+      "widths": [
+        758
+      ],
+      "observed": [
+        "One cold Clients navigation for established agency reached Step 1 welcome",
+        "Later Clients visits worked after dashboard/settings",
+        "Cause not established; onboarding was not advanced"
+      ],
+      "findings": [
+        "O11"
+      ]
+    },
+    {
+      "route": "/settings",
+      "widths": [
+        758,
+        1440
+      ],
+      "observed": [
+        "General, Billing, Webhooks and Agents tabs inspected",
+        "Initial General placeholders settled; not filed as defect",
+        "Free billing state with no subscription",
+        "Narrow billing hides complete plan features/actions",
+        "Webhooks unconfigured; Agents empty; no changes submitted"
+      ],
+      "findings": [
+        "T11"
+      ]
+    },
+    {
+      "route": "/clients",
+      "widths": [
+        1440
+      ],
+      "observed": [
+        "One populated client",
+        "Filters changes styling without exposing filters",
+        "List Total Requests:1; detail Total Requests:12",
+        "Create Client form has zero dialog roles, four fields without associated labels, one unnamed close",
+        "Create form dismissed without saving"
+      ],
+      "findings": [
+        "C01",
+        "C07",
+        "C08"
+      ]
+    },
+    {
+      "route": "/clients/[id]",
+      "widths": [
+        1440
+      ],
+      "observed": [
+        "Overview and request history inspected",
+        "Platform requirements show Revoked while latest request history shows Active",
+        "Different domain statuses are not explained"
+      ],
+      "findings": [
+        "R11"
+      ]
+    },
+    {
+      "route": "/access-requests/[id]",
+      "widths": [
+        1440,
+        320
+      ],
+      "observed": [
+        "Latest Meta request shows Unknown and Waiting on client authorization",
+        "Requested asset requirements and recipient cards inspected",
+        "320px detail remained readable in inspected state",
+        "Exclude Requirement and other mutations not invoked"
+      ],
+      "findings": [
+        "R10",
+        "R11"
+      ]
+    },
+    {
+      "route": "/token-health",
+      "widths": [
+        1440,
+        320
+      ],
+      "observed": [
+        "13 connections:8 healthy,4 expired,1 Unknown",
+        "Refresh action unnamed",
+        "320px real email/status/expiry columns collide",
+        "Refresh not invoked"
+      ],
+      "findings": [
+        "T01",
+        "T02"
+      ]
+    },
+    {
+      "route": "/connections",
+      "widths": [
+        1440
+      ],
+      "observed": [
+        "Populated connected and manual platform cards",
+        "Several resting filled Connect button shadows visible",
+        "Google Manage Assets dialog opened",
+        "Explicit provider groups compute 16px radius",
+        "Connected Google Business Profile/Merchant Center empty guidance says connect account first without recovery action",
+        "Shift+Tab from Done twice focuses background Connect; focus outside dialog",
+        "Escape closes dialog; no configuration changes"
+      ],
+      "findings": [
+        "S09",
+        "S10",
+        "S13",
+        "T12"
+      ]
+    },
+    {
+      "route": "/connections",
+      "widths": [
+        1440,
+        320
+      ],
+      "observed": [
+        "Meta Manage Assets dialog opened",
+        "Five top-level checkboxes have no accessible names",
+        "320px dialog scrollWidth equals clientWidth:292px",
+        "Escape closes dialog; no selection changes"
+      ],
+      "findings": [
+        "S14"
+      ]
+    },
+    {
+      "route": "/access-requests/new",
+      "widths": [
+        1440
+      ],
+      "observed": [
+        "Fundamentals, Platforms, Customize and Review walked using existing client and Google products",
+        "Draft only; Create Access Request and Save as Template not invoked",
+        "Customize exposes unnamed icon-only field removal",
+        "Review renders google (6) and repeated unspecific Edit actions",
+        "Local draft selection may persist; no server request created"
+      ],
+      "findings": [
+        "R06",
+        "S15"
+      ]
+    }
+  ]
+}

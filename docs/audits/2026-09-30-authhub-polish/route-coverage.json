@@ -1,0 +1,458 @@
+[
+  {
+    "route": "/sign-in/[[...sign-in]]",
+    "source": "apps/web/src/app/(auth)/sign-in/[[...sign-in]]/page.tsx",
+    "source_review": "Inspected route and relevant shared source",
+    "rendered": "Not rendered",
+    "states": "Source only; runtime cases pending",
+    "remaining": "Actual Clerk sign-in/up/social/validation/recovery and user menu; auth mock does not verify widgets"
+  },
+  {
+    "route": "/sign-up/[[...sign-up]]",
+    "source": "apps/web/src/app/(auth)/sign-up/[[...sign-up]]/page.tsx",
+    "source_review": "Inspected route and relevant shared source",
+    "rendered": "Not rendered",
+    "states": "Source only; runtime cases pending",
+    "remaining": "Actual Clerk sign-in/up/social/validation/recovery and user menu; auth mock does not verify widgets"
+  },
+  {
+    "route": "/access-requests/[id]/edit",
+    "source": "apps/web/src/app/(authenticated)/access-requests/[id]/edit/page.tsx",
+    "source_review": "Inspected route and relevant shared source",
+    "rendered": "LOCAL_PREVIEW at 1440/390/320; mocked auth/API/router",
+    "states": "request-edit",
+    "remaining": "Actual Next runtime and authenticated production; mutations/provider endpoints not exercised"
+  },
+  {
+    "route": "/access-requests/[id]",
+    "source": "apps/web/src/app/(authenticated)/access-requests/[id]/page.tsx",
+    "source_review": "Inspected route and relevant shared source",
+    "rendered": "LOCAL_PREVIEW at 1440/390/320; mocked auth/API/router; LIVE_AUTHENTICATED read-only inspection",
+    "states": "request-detail",
+    "remaining": "Full native keyboard/screen reader/zoom/dark coverage; all mutation, failure/retry, permission and role-specific cases not exercised"
+  },
+  {
+    "route": "/access-requests/[id]/success",
+    "source": "apps/web/src/app/(authenticated)/access-requests/[id]/success/page.tsx",
+    "source_review": "Inspected route and relevant shared source",
+    "rendered": "LOCAL_PREVIEW at 1440/390/320; mocked auth/API/router",
+    "states": "request-success",
+    "remaining": "Actual Next runtime and authenticated production; mutations/provider endpoints not exercised"
+  },
+  {
+    "route": "/access-requests/new",
+    "source": "apps/web/src/app/(authenticated)/access-requests/new/page.tsx",
+    "source_review": "Inspected route and relevant shared source",
+    "rendered": "LOCAL_PREVIEW at 1440/390/320; mocked auth/API/router; LIVE_AUTHENTICATED read-only inspection",
+    "states": "request-create; all four live draft steps; no submission",
+    "remaining": "Full native keyboard/screen reader/zoom/dark coverage; all mutation, failure/retry, permission and role-specific cases not exercised"
+  },
+  {
+    "route": "/agent-operations/[id]",
+    "source": "apps/web/src/app/(authenticated)/agent-operations/[id]/page.tsx",
+    "source_review": "Inspected route and relevant shared source",
+    "rendered": "Not rendered",
+    "states": "Source only; runtime cases pending",
+    "remaining": "Authenticated production, keyboard, screen reader, zoom and dark theme where relevant"
+  },
+  {
+    "route": "/clients/[id]",
+    "source": "apps/web/src/app/(authenticated)/clients/[id]/page.tsx",
+    "source_review": "Inspected route and relevant shared source",
+    "rendered": "LOCAL_PREVIEW at 1440/390/320; mocked auth/API/router; LIVE_AUTHENTICATED read-only inspection",
+    "states": "client-detail-actual, client-detail-preview",
+    "remaining": "Full native keyboard/screen reader/zoom/dark coverage; all mutation, failure/retry, permission and role-specific cases not exercised"
+  },
+  {
+    "route": "/clients",
+    "source": "apps/web/src/app/(authenticated)/clients/page.tsx",
+    "source_review": "Inspected route and relevant shared source",
+    "rendered": "LOCAL_PREVIEW at 1440/390/320; mocked auth/API/router; LIVE_AUTHENTICATED read-only inspection",
+    "states": "clients, clients-empty, clients-error",
+    "remaining": "Full native keyboard/screen reader/zoom/dark coverage; all mutation, failure/retry, permission and role-specific cases not exercised"
+  },
+  {
+    "route": "/connections",
+    "source": "apps/web/src/app/(authenticated)/connections/page.tsx",
+    "source_review": "Inspected route and relevant shared source",
+    "rendered": "LOCAL_PREVIEW at 1440/390/320; mocked auth/API/router; LIVE_AUTHENTICATED read-only inspection",
+    "states": "connections, connections-empty; live Google/Meta asset dialogs, Escape, keyboard focus, 320px Meta dialog",
+    "remaining": "Full native keyboard/screen reader/zoom/dark coverage; all mutation, failure/retry, permission and role-specific cases not exercised"
+  },
+  {
+    "route": "/dashboard",
+    "source": "apps/web/src/app/(authenticated)/dashboard/page.tsx",
+    "source_review": "Inspected route and relevant shared source",
+    "rendered": "LOCAL_PREVIEW at 1440/390/320; mocked auth/API/router; LIVE_AUTHENTICATED read-only inspection",
+    "states": "dashboard, dashboard-empty, dashboard-error",
+    "remaining": "Full native keyboard/screen reader/zoom/dark coverage; all mutation, failure/retry, permission and role-specific cases not exercised"
+  },
+  {
+    "route": "/internal/admin/affiliates",
+    "source": "apps/web/src/app/(authenticated)/internal/admin/affiliates/page.tsx",
+    "source_review": "Route/navigation and selected control/error source inspected; full data branches pending",
+    "rendered": "Not rendered",
+    "states": "Source only; runtime cases pending",
+    "remaining": "Authorized admin account: populated/empty/denied/error, filters, subscription changes, webhook details, affiliate approval/payout paths"
+  },
+  {
+    "route": "/internal/admin/agencies",
+    "source": "apps/web/src/app/(authenticated)/internal/admin/agencies/page.tsx",
+    "source_review": "Route/navigation and selected control/error source inspected; full data branches pending",
+    "rendered": "Not rendered",
+    "states": "Source only; runtime cases pending",
+    "remaining": "Authorized admin account: populated/empty/denied/error, filters, subscription changes, webhook details, affiliate approval/payout paths"
+  },
+  {
+    "route": "/internal/admin",
+    "source": "apps/web/src/app/(authenticated)/internal/admin/page.tsx",
+    "source_review": "Route/navigation and selected control/error source inspected; full data branches pending",
+    "rendered": "Not rendered",
+    "states": "Source only; runtime cases pending",
+    "remaining": "Authorized admin account: populated/empty/denied/error, filters, subscription changes, webhook details, affiliate approval/payout paths"
+  },
+  {
+    "route": "/internal/admin/subscriptions",
+    "source": "apps/web/src/app/(authenticated)/internal/admin/subscriptions/page.tsx",
+    "source_review": "Route/navigation and selected control/error source inspected; full data branches pending",
+    "rendered": "Not rendered",
+    "states": "Source only; runtime cases pending",
+    "remaining": "Authorized admin account: populated/empty/denied/error, filters, subscription changes, webhook details, affiliate approval/payout paths"
+  },
+  {
+    "route": "/internal/admin/webhooks",
+    "source": "apps/web/src/app/(authenticated)/internal/admin/webhooks/page.tsx",
+    "source_review": "Route/navigation and selected control/error source inspected; full data branches pending",
+    "rendered": "Not rendered",
+    "states": "Source only; runtime cases pending",
+    "remaining": "Authorized admin account: populated/empty/denied/error, filters, subscription changes, webhook details, affiliate approval/payout paths"
+  },
+  {
+    "route": "/settings",
+    "source": "apps/web/src/app/(authenticated)/settings/page.tsx",
+    "source_review": "Inspected route and relevant shared source",
+    "rendered": "LOCAL_PREVIEW at 1440/390/320; mocked auth/API/router; LIVE_AUTHENTICATED read-only inspection",
+    "states": "settings-general, settings-billing, settings-webhooks, settings-agents; General/Billing/Webhooks/Agents live; narrow billing",
+    "remaining": "Full native keyboard/screen reader/zoom/dark coverage; all mutation, failure/retry, permission and role-specific cases not exercised"
+  },
+  {
+    "route": "/token-health",
+    "source": "apps/web/src/app/(authenticated)/token-health/page.tsx",
+    "source_review": "Inspected route and relevant shared source",
+    "rendered": "LOCAL_PREVIEW at 1440/390/320; mocked auth/API/router; LIVE_AUTHENTICATED read-only inspection",
+    "states": "token-health, token-health-empty",
+    "remaining": "Full native keyboard/screen reader/zoom/dark coverage; all mutation, failure/retry, permission and role-specific cases not exercised"
+  },
+  {
+    "route": "/about",
+    "source": "apps/web/src/app/(marketing)/about/page.tsx",
+    "source_review": "Inspected route and relevant shared source",
+    "rendered": "LIVE_PUBLIC at 1440/390/320",
+    "states": "about",
+    "remaining": "All generated slugs, full keyboard/zoom, normal-motion variants"
+  },
+  {
+    "route": "/affiliate",
+    "source": "apps/web/src/app/(marketing)/affiliate/page.tsx",
+    "source_review": "Inspected route and relevant shared source",
+    "rendered": "LIVE_PUBLIC at 1440/390/320",
+    "states": "affiliate",
+    "remaining": "All generated slugs, full keyboard/zoom, normal-motion variants"
+  },
+  {
+    "route": "/blog/[slug]",
+    "source": "apps/web/src/app/(marketing)/blog/[slug]/page.tsx",
+    "source_review": "Inspected route and relevant shared source",
+    "rendered": "LIVE_PUBLIC at 1440/390/320",
+    "states": "article",
+    "remaining": "All generated slugs, full keyboard/zoom, normal-motion variants"
+  },
+  {
+    "route": "/blog",
+    "source": "apps/web/src/app/(marketing)/blog/page.tsx",
+    "source_review": "Inspected route and relevant shared source",
+    "rendered": "LIVE_PUBLIC at 1440/390/320",
+    "states": "blog",
+    "remaining": "All generated slugs, full keyboard/zoom, normal-motion variants"
+  },
+  {
+    "route": "/compare/[slug]",
+    "source": "apps/web/src/app/(marketing)/compare/[slug]/page.tsx",
+    "source_review": "Inspected route and relevant shared source",
+    "rendered": "LIVE_PUBLIC at 1440/390/320",
+    "states": "compare / compare-three-way",
+    "remaining": "All generated slugs, full keyboard/zoom, normal-motion variants"
+  },
+  {
+    "route": "/contact",
+    "source": "apps/web/src/app/(marketing)/contact/page.tsx",
+    "source_review": "Inspected route and relevant shared source",
+    "rendered": "LIVE_PUBLIC at 1440/390/320",
+    "states": "contact",
+    "remaining": "All generated slugs, full keyboard/zoom, normal-motion variants"
+  },
+  {
+    "route": "/guides/google-ads-access",
+    "source": "apps/web/src/app/(marketing)/guides/google-ads-access/page.tsx",
+    "source_review": "Inspected route and relevant shared source",
+    "rendered": "LIVE_PUBLIC attempt redirected to authentication",
+    "states": "Signed-out canonical visit",
+    "remaining": "Guide content, links and layout after public-route repair"
+  },
+  {
+    "route": "/guides/meta-ads-access",
+    "source": "apps/web/src/app/(marketing)/guides/meta-ads-access/page.tsx",
+    "source_review": "Inspected route and relevant shared source",
+    "rendered": "LIVE_PUBLIC attempt redirected to authentication",
+    "states": "Signed-out canonical visit",
+    "remaining": "Guide content, links and layout after public-route repair"
+  },
+  {
+    "route": "/hero-copy-rewrite",
+    "source": "apps/web/src/app/(marketing)/hero-copy-rewrite/page.tsx",
+    "source_review": "Engineering route and production guard inventory",
+    "rendered": "Not rendered; production proxy returns 404",
+    "states": "Internal/dev utility",
+    "remaining": "Engineering utility only; do not prioritize as customer screen. Keep redirect/guard behavior verified."
+  },
+  {
+    "route": "/",
+    "source": "apps/web/src/app/(marketing)/page.tsx",
+    "source_review": "Inspected route and relevant shared source",
+    "rendered": "LIVE_PUBLIC at 1440/390/320",
+    "states": "home",
+    "remaining": "All generated slugs, full keyboard/zoom, normal-motion variants"
+  },
+  {
+    "route": "/pricing",
+    "source": "apps/web/src/app/(marketing)/pricing/page.tsx",
+    "source_review": "Inspected route and relevant shared source",
+    "rendered": "LIVE_PUBLIC at 1440/390/320",
+    "states": "pricing",
+    "remaining": "All generated slugs, full keyboard/zoom, normal-motion variants"
+  },
+  {
+    "route": "/privacy-policy",
+    "source": "apps/web/src/app/(marketing)/privacy-policy/page.tsx",
+    "source_review": "Inspected route and relevant shared source",
+    "rendered": "LIVE_PUBLIC at 1440/390/320",
+    "states": "privacy",
+    "remaining": "All generated slugs, full keyboard/zoom, normal-motion variants"
+  },
+  {
+    "route": "/terms",
+    "source": "apps/web/src/app/(marketing)/terms/page.tsx",
+    "source_review": "Inspected route and relevant shared source",
+    "rendered": "LIVE_PUBLIC at 1440/390/320",
+    "states": "terms",
+    "remaining": "All generated slugs, full keyboard/zoom, normal-motion variants"
+  },
+  {
+    "route": "/partners",
+    "source": "apps/web/src/app/(partner)/partners/page.tsx",
+    "source_review": "Inspected route and relevant shared source",
+    "rendered": "Not rendered",
+    "states": "Source only; runtime cases pending",
+    "remaining": "Partner account: approval/loading, real ledgers, campaign creation, promo kit/copy and payout states"
+  },
+  {
+    "route": "/authorize/[token]",
+    "source": "apps/web/src/app/authorize/[token]/page.tsx",
+    "source_review": "Inspected route and relevant shared source",
+    "rendered": "Source redirect reviewed",
+    "states": "Redirect to /invite/[token]",
+    "remaining": "Live redirect preserves token/tier and destination"
+  },
+  {
+    "route": "/checkout/cancel",
+    "source": "apps/web/src/app/checkout/cancel/page.tsx",
+    "source_review": "Inspected route and relevant shared source",
+    "rendered": "LOCAL_PREVIEW at 1440/390/320; mocked auth/API/router",
+    "states": "checkout-cancel",
+    "remaining": "Actual Next runtime and authenticated production; mutations/provider endpoints not exercised"
+  },
+  {
+    "route": "/checkout/success",
+    "source": "apps/web/src/app/checkout/success/page.tsx",
+    "source_review": "Inspected route and relevant shared source",
+    "rendered": "LOCAL_PREVIEW at 1440/390/320; mocked auth/API/router",
+    "states": "checkout-success",
+    "remaining": "Actual Next runtime and authenticated production; mutations/provider endpoints not exercised"
+  },
+  {
+    "route": "/client/[token]",
+    "source": "apps/web/src/app/client/[token]/page.tsx",
+    "source_review": "Inspected route and relevant shared source",
+    "rendered": "Source redirect reviewed",
+    "states": "Redirect to /invite/[token]",
+    "remaining": "Live redirect preserves token/tier and destination"
+  },
+  {
+    "route": "/design-system",
+    "source": "apps/web/src/app/design-system/page.tsx",
+    "source_review": "Engineering route and production guard inventory",
+    "rendered": "Not rendered; production proxy returns 404",
+    "states": "Internal/dev utility",
+    "remaining": "Engineering utility only; do not prioritize as customer screen. Keep redirect/guard behavior verified."
+  },
+  {
+    "route": "/dev/client-detail",
+    "source": "apps/web/src/app/dev/client-detail/page.tsx",
+    "source_review": "Engineering route and production guard inventory",
+    "rendered": "LOCAL_PREVIEW at 1440/390/320; mocked auth/API/router",
+    "states": "client-detail-preview",
+    "remaining": "Engineering utility only; do not prioritize as customer screen. Keep redirect/guard behavior verified."
+  },
+  {
+    "route": "/dev/offboarding-preview",
+    "source": "apps/web/src/app/dev/offboarding-preview/page.tsx",
+    "source_review": "Engineering route and production guard inventory",
+    "rendered": "LOCAL_PREVIEW at 1440/390/320; mocked auth/API/router",
+    "states": "offboarding-preview",
+    "remaining": "Engineering utility only; do not prioritize as customer screen. Keep redirect/guard behavior verified."
+  },
+  {
+    "route": "/dev",
+    "source": "apps/web/src/app/dev/page.tsx",
+    "source_review": "Engineering route and production guard inventory",
+    "rendered": "Not rendered; production proxy returns 404",
+    "states": "Internal/dev utility",
+    "remaining": "Engineering utility only; do not prioritize as customer screen. Keep redirect/guard behavior verified."
+  },
+  {
+    "route": "/dev/redesign-prototype",
+    "source": "apps/web/src/app/dev/redesign-prototype/page.tsx",
+    "source_review": "Engineering route and production guard inventory",
+    "rendered": "Not rendered; production proxy returns 404",
+    "states": "Internal/dev utility",
+    "remaining": "Engineering utility only; do not prioritize as customer screen. Keep redirect/guard behavior verified."
+  },
+  {
+    "route": "/invite/[token]/beehiiv/manual",
+    "source": "apps/web/src/app/invite/[token]/beehiiv/manual/page.tsx",
+    "source_review": "Inspected route and relevant shared source",
+    "rendered": "LOCAL_PREVIEW at 1440/390/320; mocked auth/API/router",
+    "states": "manual-beehiiv",
+    "remaining": "Actual Next runtime and authenticated production; mutations/provider endpoints not exercised"
+  },
+  {
+    "route": "/invite/[token]/kit/manual",
+    "source": "apps/web/src/app/invite/[token]/kit/manual/page.tsx",
+    "source_review": "Inspected route and relevant shared source",
+    "rendered": "LOCAL_PREVIEW at 1440/390/320; mocked auth/API/router",
+    "states": "manual-kit",
+    "remaining": "Actual Next runtime and authenticated production; mutations/provider endpoints not exercised"
+  },
+  {
+    "route": "/invite/[token]/klaviyo/manual",
+    "source": "apps/web/src/app/invite/[token]/klaviyo/manual/page.tsx",
+    "source_review": "Inspected route and relevant shared source",
+    "rendered": "LOCAL_PREVIEW at 1440/390/320; mocked auth/API/router",
+    "states": "manual-klaviyo",
+    "remaining": "Actual Next runtime and authenticated production; mutations/provider endpoints not exercised"
+  },
+  {
+    "route": "/invite/[token]/mailchimp/manual",
+    "source": "apps/web/src/app/invite/[token]/mailchimp/manual/page.tsx",
+    "source_review": "Inspected route and relevant shared source",
+    "rendered": "LOCAL_PREVIEW at 1440/390/320; mocked auth/API/router",
+    "states": "manual-mailchimp",
+    "remaining": "Actual Next runtime and authenticated production; mutations/provider endpoints not exercised"
+  },
+  {
+    "route": "/invite/[token]",
+    "source": "apps/web/src/app/invite/[token]/page.tsx",
+    "source_review": "Inspected route and relevant shared source",
+    "rendered": "LOCAL_PREVIEW at 1440/390/320; mocked auth/API/router",
+    "states": "invite, invite-expired",
+    "remaining": "Actual Next runtime and authenticated production; mutations/provider endpoints not exercised"
+  },
+  {
+    "route": "/invite/[token]/pinterest/manual",
+    "source": "apps/web/src/app/invite/[token]/pinterest/manual/page.tsx",
+    "source_review": "Inspected route and relevant shared source",
+    "rendered": "LOCAL_PREVIEW at 1440/390/320; mocked auth/API/router",
+    "states": "manual-pinterest",
+    "remaining": "Actual Next runtime and authenticated production; mutations/provider endpoints not exercised"
+  },
+  {
+    "route": "/invite/[token]/shopify/manual",
+    "source": "apps/web/src/app/invite/[token]/shopify/manual/page.tsx",
+    "source_review": "Inspected route and relevant shared source",
+    "rendered": "LOCAL_PREVIEW at 1440/390/320; mocked auth/API/router",
+    "states": "manual-shopify",
+    "remaining": "Actual Next runtime and authenticated production; mutations/provider endpoints not exercised"
+  },
+  {
+    "route": "/invite/oauth-callback",
+    "source": "apps/web/src/app/invite/oauth-callback/page.tsx",
+    "source_review": "Inspected route and relevant shared source",
+    "rendered": "LOCAL_PREVIEW at 1440/390/320; mocked auth/API/router",
+    "states": "invite-callback-error",
+    "remaining": "Actual Next runtime and authenticated production; mutations/provider endpoints not exercised"
+  },
+  {
+    "route": "/onboarding/agency",
+    "source": "apps/web/src/app/onboarding/agency/page.tsx",
+    "source_review": "Inspected route and relevant shared source",
+    "rendered": "Source redirect reviewed",
+    "states": "Redirect to /onboarding/unified (tier preserved)",
+    "remaining": "Live redirect preserves token/tier and destination"
+  },
+  {
+    "route": "/onboarding/platforms",
+    "source": "apps/web/src/app/onboarding/platforms/page.tsx",
+    "source_review": "Inspected route and relevant shared source",
+    "rendered": "Not rendered",
+    "states": "Source only; runtime cases pending",
+    "remaining": "Legacy connector route: Google account hierarchy, Meta portfolio selection, all manual settings and errors; reachability/product retirement decision"
+  },
+  {
+    "route": "/onboarding/unified",
+    "source": "apps/web/src/app/onboarding/unified/page.tsx",
+    "source_review": "Inspected route and relevant shared source",
+    "rendered": "Local render blocked by strict LazyMotion; user final-screen screenshot available; LIVE_AUTHENTICATED cold navigation reached welcome",
+    "states": "All seven screens reviewed in source; resume/final completion not walked",
+    "remaining": "Render all seven stages in native app; final request trace, validation, refresh/resume and keyboard"
+  },
+  {
+    "route": "/perf/dashboard-bootstrap",
+    "source": "apps/web/src/app/perf/dashboard-bootstrap/page.tsx",
+    "source_review": "Engineering route and production guard inventory",
+    "rendered": "Not rendered; production proxy returns 404",
+    "states": "Internal/dev utility",
+    "remaining": "Engineering utility only; do not prioritize as customer screen. Keep redirect/guard behavior verified."
+  },
+  {
+    "route": "/platforms/callback",
+    "source": "apps/web/src/app/platforms/callback/page.tsx",
+    "source_review": "Inspected route and relevant shared source",
+    "rendered": "LOCAL_PREVIEW at 1440/390/320; mocked auth/API/router",
+    "states": "platform-callback-error",
+    "remaining": "Actual Next runtime and authenticated production; mutations/provider endpoints not exercised"
+  },
+  {
+    "route": "/settings/platforms",
+    "source": "apps/web/src/app/settings/platforms/page.tsx",
+    "source_review": "Inspected route and relevant shared source",
+    "rendered": "Source redirect reviewed",
+    "states": "Redirect to /connections",
+    "remaining": "Live redirect preserves token/tier and destination"
+  },
+  {
+    "route": "/test/access-request",
+    "source": "apps/web/src/app/test/access-request/page.tsx",
+    "source_review": "Engineering route and production guard inventory",
+    "rendered": "Not rendered; production proxy returns 404",
+    "states": "Internal/dev utility",
+    "remaining": "Engineering utility only; do not prioritize as customer screen. Keep redirect/guard behavior verified."
+  },
+  {
+    "route": "/test/asset-creation",
+    "source": "apps/web/src/app/test/asset-creation/page.tsx",
+    "source_review": "Engineering route and production guard inventory",
+    "rendered": "Not rendered; production proxy returns 404",
+    "states": "Internal/dev utility",
+    "remaining": "Engineering utility only; do not prioritize as customer screen. Keep redirect/guard behavior verified."
+  }
+]

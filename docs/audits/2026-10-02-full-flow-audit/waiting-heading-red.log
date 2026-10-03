@@ -1,0 +1,416 @@
+
+> @agency-platform/web@0.1.0 test:run
+> vitest run src/app/invite/[token]/__tests__/page.test.tsx
+
+
+ RUN  v4.0.16 /Users/jon.high/agency-access/apps/web
+
+ ❯ src/app/invite/[token]/__tests__/page.test.tsx (41 tests | 1 failed) 4488ms
+     ✓ renders explicit error state for invalid token 101ms
+     ✓ shows delayed then timeout state and can recover with retry  305ms
+     ✓ treats null intake fields as an empty review step instead of crashing 54ms
+     ✓ shows the security badge only once in the setup hero 20ms
+     ✓ calls completion endpoint when all platforms are complete 222ms
+     ✓ shows a definitive done state without sending the user back to connect 167ms
+     ✓ does not show success until delayed finalization confirms it 215ms
+     ✓ submits finalization once when the platform completion callback fires twice 101ms
+     ✓ keeps intake answers on save failure and continues only after saved readback 228ms
+     ✓ labels text and long-answer intake controls 170ms
+     ✓ advances without an intake POST when no intake fields are configured 60ms
+     ✓ applies saved primary color and records color-only branding 39ms
+     ✓ skips intake for a returning visitor who already completed a platform 43ms
+     ✓ shows completion failure instead of success and retries directly 217ms
+     ✓ does not show verified access while completion is still pending 156ms
+     ✓ renders the finalize fallback error when the completion body is not JSON 117ms
+     ✓ keeps the connect step visible until a platform is completed 69ms
+     ✓ shows only one active platform at a time and collapses the rest of the request 117ms
+     ✓ passes an explicit next-platform handoff label to the active platform 76ms
+     ✓ remounts the platform wizard when advancing to the next queued platform 108ms
+     ✓ supports a direct return to the connect step and focuses the requested platform 19ms
+     ✓ restores the returning oauth platform as the active stage 45ms
+     ✓ submits completion without JSON content-type header 91ms
+     ✓ keeps a manual Beehiiv report pending until the agency verifies it 51ms
+     ✓ keeps a manual Shopify report pending until the agency verifies it 47ms
+     ✓ keeps a manual Mailchimp report pending until the agency verifies it 37ms
+     ✓ does not skip a manually reported platform in the queue 50ms
+     ✓ advances to Zapier while a reported Beehiiv invite awaits agency verification 15ms
+     × shows a verification state when every remaining platform is waiting 574ms
+       ✓ shows the truthful checklist as the only progress surface for a fresh request 42ms
+       ✓ lists the requested platform on the checklist and in the request summary 71ms
+       ✓ refreshes post-OAuth pre-save into the share step with the prior connection intact 47ms
+       ✓ refreshes post-save mid-sharing with Meta selections prefilled from server fulfillment 45ms
+       ✓ lands a fresh visit with nothing done on the intake phase 55ms
+       ✓ lands a revisited completed request on the done screen 39ms
+       ✓ resumes a non-Meta asset selection without prefill 23ms
+       ✓ renders the terminal card for an expired request with no retry affordance 28ms
+       ✓ renders the terminal card for a revoked request with no retry affordance 19ms
+       ✓ surfaces the terminal card when a mid-flow intake save hits an expired request 143ms
+       ✓ surfaces the terminal card when finalization hits an expired request 198ms
+       ✓ surfaces the terminal card when check-again reports the request expired 259ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/app/invite/[token]/__tests__/page.test.tsx > Invite Flow Page > shows a verification state when every remaining platform is waiting
+TestingLibraryElementError: Unable to find an accessible element with the role "heading" and name "Awaiting agency verification"
+
+Here are the accessible roles:
+
+  banner:
+
+  Name "":
+  [36m<header[39m
+    [33mclass[39m=[32m"mb-8"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  heading:
+
+  Name "Complete account access":
+  [36m<h1[39m
+    [33mclass[39m=[32m"text-2xl font-bold leading-tight tracking-tight text-ink font-display"[39m
+  [36m/>[39m
+
+  Name "Access verification is in progress":
+  [36m<h2[39m
+    [33mclass[39m=[32m"text-xl font-semibold text-ink font-display"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  paragraph:
+
+  Name "":
+  [36m<p[39m
+    [33mclass[39m=[32m"mt-2 text-sm leading-6 text-muted-foreground"[39m
+  [36m/>[39m
+
+  Name "":
+  [36m<p[39m
+    [33mclass[39m=[32m"mt-3 flex items-start gap-2 text-sm leading-6 text-ink"[39m
+  [36m/>[39m
+
+  Name "":
+  [36m<p[39m
+    [33mclass[39m=[32m"label-micro"[39m
+  [36m/>[39m
+
+  Name "":
+  [36m<p[39m
+    [33mclass[39m=[32m"text-sm font-semibold text-ink"[39m
+  [36m/>[39m
+
+  Name "":
+  [36m<p[39m
+    [33mclass[39m=[32m"label-nano mt-0.5"[39m
+  [36m/>[39m
+
+  Name "":
+  [36m<p[39m
+    [33mclass[39m=[32m"mt-2 text-sm text-muted-foreground"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  button:
+
+  Name "Check again":
+  [36m<button[39m
+    [33mclass[39m=[32m"relative inline-flex items-center justify-center gap-2 font-semibold transition-[background-color,border-color,color,opacity,transform] duration-[var(--motion-hover)] disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] touch-feedback focus-visible:outline-[3px] focus-visible:outline-coral/25 focus-visible:outline-offset-0 focus-visible:[box-shadow:0_0_0_6px_rgb(var(--primary)/0.08)] bg-transparent text-muted-foreground hover:bg-muted/10 active:scale-95 px-4 py-3 text-sm rounded-none min-h-[44px] "[39m
+  [36m/>[39m
+
+  Name "Check again":
+  [36m<button[39m
+    [33mclass[39m=[32m"relative inline-flex items-center justify-center gap-2 font-semibold transition-[background-color,border-color,color,opacity,transform] duration-[var(--motion-hover)] disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] touch-feedback focus-visible:outline-[3px] focus-visible:outline-coral/25 focus-visible:outline-offset-0 focus-visible:[box-shadow:0_0_0_6px_rgb(var(--primary)/0.08)] border border-black dark:border-white bg-card text-foreground hover:border-coral hover:text-ink hover:translate-y-[-2px] active:scale-95 px-6 py-3 text-base rounded-none min-h-[48px] mt-4"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  list:
+
+  Name "Request progress":
+  [36m<ul[39m
+    [33maria-label[39m=[32m"Request progress"[39m
+    [33maria-live[39m=[32m"polite"[39m
+    [33mclass[39m=[32m"mt-1"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+  listitem:
+
+  Name "":
+  [36m<li />[39m
+
+  --------------------------------------------------
+  status:
+
+  Name "":
+  [36m<div[39m
+    [33maria-live[39m=[32m"polite"[39m
+    [33mclass[39m=[32m"border-2 border-black bg-card p-6 text-center"[39m
+    [33mrole[39m=[32m"status"[39m
+  [36m/>[39m
+
+  --------------------------------------------------
+
+Ignored nodes: comments, script, style
+[36m<body>[39m
+  [36m<div>[39m
+    [36m<div[39m
+      [33mclass[39m=[32m"min-h-screen bg-paper"[39m
+    [36m>[39m
+      [36m<div[39m
+        [33mclass[39m=[32m"mx-auto max-w-4xl border-t-4 border-transparent px-4 py-8 sm:px-6 lg:px-8"[39m
+        [33mdata-testid[39m=[32m"invite-brand-accent"[39m
+        [33mstyle[39m=[32m"border-top-color: rgb(255, 107, 53);"[39m
+      [36m>[39m
+        [36m<header[39m
+          [33mclass[39m=[32m"mb-8"[39m
+        [36m>[39m
+          [36m<div>[39m
+            [36m<h1[39m
+              [33mclass[39m=[32m"text-2xl font-bold leading-tight tracking-tight text-ink font-display"[39m
+            [36m>[39m
+              [0mComplete account access[0m
+            [36m</h1>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"mt-2 text-sm leading-6 text-muted-foreground"[39m
+            [36m>[39m
+              [0mFinish the remaining platform connection steps.[0m
+            [36m</p>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"mt-3 flex items-start gap-2 text-sm leading-6 text-ink"[39m
+            [36m>[39m
+              [36m<svg[39m
+                [33maria-hidden[39m=[32m"true"[39m
+                [33mclass[39m=[32m"lucide lucide-shield-check mt-0.5 h-4 w-4 shrink-0 text-success-ink"[39m
+                [33mfill[39m=[32m"none"[39m
+                [33mheight[39m=[32m"24"[39m
+                [33mstroke[39m=[32m"currentColor"[39m
+                [33mstroke-linecap[39m=[32m"round"[39m
+                [33mstroke-linejoin[39m=[32m"round"[39m
+                [33mstroke-width[39m=[32m"2"[39m
+                [33mviewBox[39m=[32m"0 0 24 24"[39m
+                [33mwidth[39m=[32m"24"[39m
+                [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+              [36m>[39m
+                [36m<path[39m
+                  [33md[39m=[32m"M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"[39m
+                [36m/>[39m
+                [36m<path[39m
+                  [33md[39m=[32m"m9 12 2 2 4-4"[39m
+                [36m/>[39m
+              [36m</svg>[39m
+              [36m<span>[39m
+                [0mYou stay in control. Approve only what you want to share.[0m
+                [0m [0m
+                [36m<span[39m
+                  [33mclass[39m=[32m"inline-flex items-center gap-1"[39m
+                [36m>[39m
+                  [36m<svg[39m
+                    [33maria-hidden[39m=[32m"true"[39m
+                    [33mclass[39m=[32m"lucide lucide-lock h-3.5 w-3.5"[39m
+                    [33mfill[39m=[32m"none"[39m
+                    [33mheight[39m=[32m"24"[39m
+                    [33mstroke[39m=[32m"currentColor"[39m
+                    [33mstroke-linecap[39m=[32m"round"[39m
+                    [33mstroke-linejoin[39m=[32m"round"[39m
+                    [33mstroke-width[39m=[32m"2"[39m
+                    [33mviewBox[39m=[32m"0 0 24 24"[39m
+                    [33mwidth[39m=[32m"24"[39m
+                    [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+                  [36m>[39m
+                    [36m<rect[39m
+                      [33mheight[39m=[32m"11"[39m
+                      [33mrx[39m=[32m"2"[39m
+                      [33mry[39m=[32m"2"[39m
+                      [33mwidth[39m=[32m"18"[39m
+                      [33mx[39m=[32m"3"[39m
+                      [33my[39m=[32m"11"[39m
+                    [36m/>[39m
+                    [36m<path[39m
+                      [33md[39m=[32m"M7 11V7a5 5 0 0 1 10 0v4"[39m
+                    [36m/>[39m
+                  [36m</svg>[39m
+                  [0mPasswords are never requested.[0m
+                [36m</span>[39m
+              [36m</span>[39m
+            [36m</p>[39m
+          [36m</div>[39m
+          [36m<div[39m
+            [33mclass[39m=[32m"mt-5 border-t-2 border-black pt-3"[39m
+          [36m>[39m
+            [36m<div[39m
+              [33mclass[39m=[32m"flex items-center justify-between gap-3"[39m
+            [36m>[39m
+              [36m<p[39m
+                [33mclass[39m=[32m"label-micro"[39m
+              [36m>[39m
+                [0mYour progress[0m
+              [36m</p>[39m
+              [36m<button[39m
+                [33mclass[39m=[32m"relative inline-flex items-center justify-center gap-2 font-semibold transition-[background-color,border-color,color,opacity,transform] duration-[var(--motion-hover)] disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] touch-feedback focus-visible:outline-[3px] focus-visible:outline-coral/25 focus-visible:outline-offset-0 focus-visible:[box-shadow:0_0_0_6px_rgb(var(--primary)/0.08)] bg-transparent text-muted-foreground hover:bg-muted/10 active:scale-95 px-4 py-3 text-sm rounded-none min-h-[44px] "[39m
+              [36m>[39m
+                [36m<span[39m
+                  [33mclass[39m=[32m"inline-flex items-center gap-2"[39m
+                [36m>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"flex-shrink-0"[39m
+                  [36m>[39m
+                    [36m<svg[39m
+                      [33maria-hidden[39m=[32m"true"[39m
+                      [33mclass[39m=[32m"lucide lucide-refresh-cw h-3.5 w-3.5"[39m
+                      [33mfill[39m=[32m"none"[39m
+                      [33mheight[39m=[32m"24"[39m
+                      [33mstroke[39m=[32m"currentColor"[39m
+                      [33mstroke-linecap[39m=[32m"round"[39m
+                      [33mstroke-linejoin[39m=[32m"round"[39m
+                      [33mstroke-width[39m=[32m"2"[39m
+                      [33mviewBox[39m=[32m"0 0 24 24"[39m
+                      [33mwidth[39m=[32m"24"[39m
+                      [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+                    [36m>[39m
+                      [36m<path[39m
+                        [33md[39m=[32m"M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"[39m
+                      [36m/>[39m
+                      [36m<path[39m
+                        [33md[39m=[32m"M21 3v5h-5"[39m
+                      [36m/>[39m
+                      [36m<path[39m
+                        [33md[39m=[32m"M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"[39m
+                      [36m/>[39m
+                      [36m<path[39m
+                        [33md[39m=[32m"M8 16H3v5"[39m
+                      [36m/>[39m
+                    [36m</svg>[39m
+                  [36m</span>[39m
+                  [0mCheck again[0m
+                [36m</span>[39m
+              [36m</button>[39m
+            [36m</div>[39m
+            [36m<ul[39m
+              [33maria-label[39m=[32m"Request progress"[39m
+              [33maria-live[39m=[32m"polite"[39m
+              [33mclass[39m=[32m"mt-1"[39m
+            [36m>[39m
+              [36m<li>[39m
+                [36m<div[39m
+                  [33mclass[39m=[32m"flex min-h-[44px] items-center gap-3 border-b border-black/20 py-2.5 last:border-0"[39m
+                [36m>[39m
+                  [36m<div[39m
+                    [33mclass[39m=[32m"inline-flex items-center gap-2"[39m
+                  [36m>[39m
+                    [36m<div[39m
+                      [33mclass[39m=[32m"rounded-none flex items-center justify-center bg-muted"[39m
+                      [33mstyle[39m=[32m"width: 24px; height: 24px;"[39m
+                    [36m>[39m
+                      [36m<span[39m
+                        [33mclass[39m=[32m"text-muted-foreground font-bold"[39m
+                      [36m>[39m
+                        [0mB[0m
+                      [36m</span>[39m
+                    [36m</div>[39m
+                  [36m</div>[39m
+                  [36m<div[39m
+                    [33mclass[39m=[32m"min-w-0 flex-1"[39m
+                  [36m>[39m
+                    [36m<p[39m
+                      [33mclass[39m=[32m"text-sm font-semibold text-ink"[39m
+                    [36m>[39m
+                      [0mBeehiiv[0m
+                    [36m</p>[39m
+                    [36m<p[39m
+                      [33mclass[39m=[32m"label-nano mt-0.5"[39m
+                    [36m>[39m
+                      [0mYour Beehiiv access request was recorded. Your agency will verify it before this request can finish.[0m
+                    [36m</p>[39m
+                  [36m</div>[39m
+                  [36m<span[39m
+                    [33mclass[39m=[32m"inline-flex shrink-0 items-center gap-1.5 text-muted-foreground"[39m
+                  [36m>[39m
+                    [36m<svg[39m
+                      [33maria-hidden[39m=[32m"true"[39m
+                      [33mclass[39m=[32m"lucide lucide-circle h-3 w-3"[39m
+                      [33mfill[39m=[32m"none"[39m
+                      [33mheight[39m=[32m"24"[39m
+                      [33mstroke[39m=[32m"currentColor"[39m
+                      [33mstroke-linecap[39m=[32m"round"[39m
+                      [33mstroke-linejoin[39m=[32m"round"[39m
+                      [33mstroke-width[39m=[32m"2"[39m
+                      [33mviewBox[39m=[32m"0 0 24 24"[39m
+                      [33mwidth[39m=[32m"24"[39m
+                      [33mxmlns[39m=[32m"http://www.w3.org/2000/svg"[39m
+                    [36m>[39m
+                      [36m<circle[39m
+                        [33mcx[39m=[32m"12"[39m
+                        [33mcy[39m=[32m"12"[39m
+                        [33mr[39m=[32m"10"[39m
+                      [36m/>[39m
+                    [36m</svg>[39m
+                    [36m<span[39m
+                      [33mclass[39m=[32m"label-micro"[39m
+                    [36m>[39m
+                      [0mWaiting[0m
+                    [36m</span>[39m
+                  [36m</span>[39m
+                [36m</div>[39m
+              [36m</li>[39m
+            [36m</ul>[39m
+          [36m</div>[39m
+        [36m</header>[39m
+        [36m<div[39m
+          [33mclass[39m=[32m"space-y-4"[39m
+        [36m>[39m
+          [36m<div[39m
+            [33maria-live[39m=[32m"polite"[39m
+            [33mclass[39m=[32m"border-2 border-black bg-card p-6 text-center"[39m
+            [33mrole[39m=[32m"status"[39m
+          [36m>[39m
+            [36m<h2[39m
+              [33mclass[39m=[32m"text-xl font-semibold text-ink font-display"[39m
+            [36m>[39m
+              [0mAccess verification is in progress[0m
+            [36m</h2>[39m
+            [36m<p[39m
+              [33mclass[39m=[32m"mt-2 text-sm text-muted-foreground"[39m
+            [36m>[39m
+              [0mYour agency is verifying the reported access. Check again after they confirm it.[0m
+            [36m</p>[39m
+            [36m<button[39m
+              [33mclass[39m=[32m"relative inline-flex items-center justify-center gap-2 font-semibold transition-[background-color,border-color,color,opacity,transform] duration-[var(--motion-hover)] disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] touch-feedback focus-visible:outline-[3px] focus-visible:outline-coral/25 focus-visible:outline-offset-0 focus-visible:[box-shadow:0_0_0_6px_rgb(var(--primary)/0.08)] border border-black dark:border-white bg-card text-foreground hover:border-coral hover:text-ink hover:translate-y-[-2px] active:scale-95 px-6 py-3 text-base rounded-none min-h-[48px] mt-4"[39m
+            [36m>[39m
+              [36m<span[39m
+                [33mclass[39m=[32m"inline-flex items-center gap-2"[39m
+              [36m>[39m
+                [0mCheck again[0m
+              [36m</span>[39m
+            [36m</button>[39m
+          [36m</div>[39m
+        [36m</div>[39m
+      [36m</div>[39m
+    [36m</div>[39m
+  [36m</div>[39m
+[36m</body>[39m
+ ❯ Object.getElementError ../../node_modules/@testing-library/dom/dist/config.js:37:19
+ ❯ ../../node_modules/@testing-library/dom/dist/query-helpers.js:76:38
+ ❯ ../../node_modules/@testing-library/dom/dist/query-helpers.js:52:17
+ ❯ ../../node_modules/@testing-library/dom/dist/query-helpers.js:95:19
+ ❯ src/app/invite/[token]/__tests__/page.test.tsx:1444:19
+    1442| 
+    1443|     expect(await screen.findByRole('heading', { name: 'Access verifica…
+    1444|     expect(screen.getByRole('heading', { name: 'Awaiting agency verifi…
+       |                   ^
+    1445|     expect(screen.getByText(/agency is verifying the reported access/i…
+    1446|     expect(screen.queryByRole('button', { name: /complete platform/i }…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 40 passed (41)
+   Start at  13:24:46
+   Duration  18.81s (transform 1.37s, setup 1.08s, import 5.68s, tests 4.49s, environment 6.92s)
+
+npm error Lifecycle script `test:run` failed with error:
+npm error code 1
+npm error path /Users/jon.high/agency-access/apps/web
+npm error workspace @agency-platform/web@0.1.0
+npm error location /Users/jon.high/agency-access/apps/web
+npm error command failed
+npm error command sh -c vitest run src/app/invite/[token]/__tests__/page.test.tsx

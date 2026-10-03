@@ -1,0 +1,25 @@
+{
+  "baseCommit": "2a789c6c6e7be514f2fe2f3fd95ef9309fdd830e",
+  "runtime": "Node 24.21.0",
+  "install": "npm ci --ignore-scripts passed; shared build and Prisma generation passed",
+  "tests": {
+    "web": 22,
+    "apiCors": 3,
+    "passed": true
+  },
+  "typechecks": {
+    "web": "passed",
+    "api": "passed"
+  },
+  "diffCheck": "passed",
+  "webBuild": "passed with non-secret test Clerk key and localhost API URL",
+  "deployment": "not performed",
+  "hostingChange": "not performed",
+  "notes": [
+    "Current main UI/status/CTA and Node24 dependency configuration retained.",
+    "Only six files changed for bounded Dashboard fetch and timing collection."
+  ],
+  "warnings": [
+    "Existing Sentry navigation instrumentation warning; no build failure."
+  ]
+}

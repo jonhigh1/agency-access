@@ -1,0 +1,556 @@
+
+> @agency-platform/web@0.1.0 test:run
+> vitest run --maxWorkers=2
+
+
+ RUN  v4.0.16 /Users/jon.high/agency-access/apps/web
+
+stderr | src/components/client-auth/__tests__/PlatformAuthWizard.test.tsx > PlatformAuthWizard > keeps the current Meta selection flow for the same invite
+An update to PlatformAuthWizard inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+Failed to fetch Business Manager ID: TypeError: Cannot read properties of undefined (reading 'text')
+    at parseJsonResponse (/Users/jon.high/agency-access/apps/web/src/lib/api/parse-json-response.ts:24:34)
+    at fetchBusinessId (/Users/jon.high/agency-access/apps/web/src/components/client-auth/PlatformAuthWizard.tsx:715:30)
+An update to PlatformAuthWizard inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+ ✓ src/components/__tests__/client-selector.test.tsx (21 tests) 4654ms
+       ✓ waits for Clerk to load before requesting clients  595ms
+       ✓ should filter clients by search query  567ms
+       ✓ should show empty state when no clients match search  316ms
+       ✓ should show error state on API failure  351ms
+       ✓ should be keyboard navigable  317ms
+stderr | src/components/client-auth/__tests__/PlatformAuthWizard.test.tsx > PlatformAuthWizard > always-rendered primary action footer > ignores further clicks while the save request is in flight
+An update to PlatformAuthWizard inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to PlatformAuthWizard inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to PlatformAuthWizard inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+ ✓ src/components/client-auth/__tests__/PlatformAuthWizard.test.tsx (42 tests) 6039ms
+     ✓ clears the Instagram alias when Meta selection state resets  307ms
+     ✓ stays on the grant step when any selected Page grant fails  314ms
+     ✓ returns the save CTA after a post-save change-selection and completes a second save  376ms
+     ✓ clears saved and Instagram verification state when the selector resets after a switch  719ms
+       ✓ switches the footer to a disabled advance action with a grant-progress reason after save  308ms
+ ✓ src/app/onboarding/unified/__tests__/page.test.tsx (13 tests) 2177ms
+     ✓ loads onboarding screen for step 0  307ms
+     ✓ loads onboarding screen for step 1  306ms
+     ✓ loads onboarding screen for step 2  305ms
+     ✓ loads onboarding screen for step 4  305ms
+     ✓ loads onboarding screen for step 5  306ms
+     ✓ loads onboarding screen for step 6  304ms
+stderr | src/app/(authenticated)/connections/__tests__/page.test.tsx > ConnectionsPage > should categorize platforms correctly
+Received `true` for a non-boolean attribute `priority`.
+
+If you want to write it to the DOM, pass a string instead: priority="true" or priority={value.toString()}.
+
+ ✓ src/app/(authenticated)/access-requests/new/__tests__/page.test.tsx (13 tests) 3636ms
+     ✓ blocks continue on step 1 until a client is selected  416ms
+     ✓ keeps focus on an invalid custom field instead of advancing to review  348ms
+     ✓ opens branding and focuses an invalid subdomain  379ms
+     ✓ names the primary-color hex value field  301ms
+     ✓ submits successfully and routes to success page  496ms
+     ✓ shows API error message when creation fails  324ms
+     ✓ keeps the missing-platform failure visible on the platform step  360ms
+ ✓ src/app/(authenticated)/connections/__tests__/page.test.tsx (19 tests | 2 skipped) 2292ms
+     ✓ should show Connect button for unconnected platforms  462ms
+     ✓ loads Google connection settings when Manage Assets is opened  476ms
+     ✓ loads the manual invitation modal when connecting a manual-invite platform  397ms
+ ✓ src/components/client-auth/__tests__/MetaAssetSelector.interaction.test.tsx (16 tests) 2614ms
+     ✓ confirms with the selection count before a confirmed business switch and declines without changing anything  403ms
+     ✓ clears Pixel verification results on a confirmed switch after partial verification  417ms
+ ✓ src/app/invite/[token]/__tests__/page.test.tsx (37 tests) 2884ms
+ ✓ src/components/settings/__tests__/settings-view-counts.test.tsx (8 tests) 1330ms
+     ✓ Billing v2 PAID: one ink-panel, one brutalist button outside it, ≤3 shadows  321ms
+     ✓ Webhooks: one ink-panel, one brutalist button outside it, ≤3 shadows  331ms
+     ✓ Agents without connect=: one ink-panel, no brutalist button  311ms
+ ✓ src/components/__tests__/hierarchical-platform-selector.test.tsx (24 tests) 2800ms
+       ✓ should render all platform groups  453ms
+ ✓ src/app/(authenticated)/settings/__tests__/page.test.tsx (4 tests) 968ms
+     ✓ loads billing settings when the billing tab is selected  311ms
+     ✓ loads webhook settings when the webhooks tab is selected  306ms
+     ✓ loads agent settings when the agents tab is selected  310ms
+stderr | src/app/invite/[token]/__tests__/manual-flows.test.tsx > Manual invite flows > Beehiiv flow gates completion and redirects on successful manual connect
+Each child in a list should have a unique "key" prop.
+
+Check the render method of `ManualInviteFlow`. See https://react.dev/link/warning-keys for more information.
+
+ ✓ src/components/settings/webhooks/__tests__/webhook-settings-tab.test.tsx (16 tests) 1955ms
+     ✓ renders an active endpoint and recent deliveries  353ms
+     ✓ creates an endpoint and reveals the signing secret handoff  452ms
+     ✓ updates an existing endpoint without showing the signing secret again  387ms
+ ✓ src/app/invite/[token]/__tests__/manual-flows.test.tsx (8 tests) 2155ms
+     ✓ Beehiiv flow gates completion and redirects on successful manual connect  681ms
+     ✓ Kit flow submits manual connect and redirects  302ms
+     ✓ Mailchimp flow submits manual connect and redirects  332ms
+     ✓ Klaviyo flow submits manual connect and redirects  305ms
+     ✓ Shopify flow submits collaborator details and redirects  302ms
+ ✓ src/app/(authenticated)/clients/__tests__/page.behavior.test.tsx (2 tests) 899ms
+     ✓ omits unsupported filters and exposes every API page  307ms
+     ✓ clears a search when it produces no clients  591ms
+ ✓ src/app/invite/[token]/__tests__/shopify-manual-validation.test.tsx (7 tests) 1805ms
+     ✓ shows no validation message before the user types  352ms
+     ✓ renders the shop domain validation message for an invalid domain  333ms
+     ✓ accepts a normalized valid domain and re-enables progression once the code is valid  386ms
+ ✓ src/app/(authenticated)/access-requests/[id]/__tests__/page.test.tsx (13 tests) 1406ms
+     ✓ renders editable actions for pending requests  374ms
+     ✓ shows per-recipient Meta results and lets the agency owner exclude one requirement  401ms
+ ✓ src/app/(authenticated)/access-requests/[id]/edit/__tests__/page.test.tsx (6 tests) 1230ms
+     ✓ renders request-configuration fields and client profile guidance  413ms
+     ✓ asks before discarding dirty edits from the Back control  361ms
+ ✓ src/components/__tests__/google-unified-settings.test.tsx (8 tests) 1562ms
+     ✓ can select all and deselect all Google products  893ms
+ ✓ src/components/client-auth/__tests__/AdAccountSharingInstructions.test.tsx (10 tests) 1716ms
+     ✓ toggles a row on click and restores the check state on remount in the same session  433ms
+     ✓ scopes the check state to the request token and business, so another business starts unchecked  340ms
+stderr | src/app/platforms/callback/__tests__/page.test.tsx > OAuth Callback Page > shows success state for Google and auto-redirects to /connections with query params
+An update to ForwardRef(LinkComponent) inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+stderr | src/app/platforms/callback/__tests__/page.test.tsx > OAuth Callback Page > shows success state for Google and auto-redirects to /connections with query params
+An update to ForwardRef(LinkComponent) inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+stderr | src/app/platforms/callback/__tests__/page.test.tsx > OAuth Callback Page > shows success state for Google and auto-redirects to /connections with query params
+An update to CallbackPageContent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+stderr | src/app/platforms/callback/__tests__/page.test.tsx > OAuth Callback Page > shows success state for Google and auto-redirects to /connections with query params
+An update to CallbackPageContent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+stderr | src/app/platforms/callback/__tests__/page.test.tsx > OAuth Callback Page > shows success state for Google and auto-redirects to /connections with query params
+An update to CallbackPageContent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+stderr | src/app/platforms/callback/__tests__/page.test.tsx > OAuth Callback Page > shows success state for Google and auto-redirects to /connections with query params
+An update to CallbackPageContent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+stderr | src/app/platforms/callback/__tests__/page.test.tsx > OAuth Callback Page > shows success state for Google and auto-redirects to /connections with query params
+An update to CallbackPageContent inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+stderr | src/app/platforms/callback/__tests__/page.test.tsx > OAuth Callback Page > shows error state and does not auto-redirect
+An update to ForwardRef(LinkComponent) inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+An update to ForwardRef(LinkComponent) inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+ ✓ src/app/platforms/callback/__tests__/page.test.tsx (9 tests) 874ms
+ ✓ src/components/client-auth/__tests__/MetaAssetSelector.business-creation.test.tsx (13 tests) 1269ms
+Not implemented: Window's scrollTo() method
+Not implemented: Window's scrollTo() method
+ ✓ src/components/marketing/__tests__/marketing-nav.test.tsx (12 tests) 1108ms
+       ✓ should toggle mobile menu when hamburger button is clicked  433ms
+ ✓ src/app/onboarding/platforms/__tests__/page.test.tsx (18 tests) 1471ms
+ ✓ src/components/client-auth/__tests__/PortfolioSelector.test.tsx (15 tests) 1078ms
+ ✓ src/components/settings/agents/__tests__/agents-settings-tab.test.tsx (8 tests) 989ms
+     ✓ shows the MCP endpoint, grant permissions, activity, and explicit revoke confirmation  325ms
+     ✓ lets the owner name and constrain the agent capability set  446ms
+ ✓ src/components/settings/billing/__tests__/manage-subscription-card.test.tsx (6 tests) 953ms
+ ✓ src/components/client-detail/__tests__/google-offboarding-panel.test.tsx (6 tests) 797ms
+ ✓ src/components/__tests__/manage-assets-modal-shell.test.tsx (6 tests) 651ms
+ ✓ src/__tests__/client-component-directives.test.ts (1 test) 679ms
+     ✓ keeps 'use client' inside the file's directive prologue  678ms
+ ✓ src/app/(partner)/__tests__/page.promo-kit.test.tsx (8 tests) 683ms
+ ✓ src/components/client-auth/__tests__/MetaAssetSelector.test.tsx (4 tests) 855ms
+ ✓ src/components/__tests__/meta-unified-settings.test.tsx (6 tests) 619ms
+ ✓ src/components/__tests__/pinterest-business-id-input.test.tsx (7 tests) 631ms
+ ✓ src/components/settings/billing/__tests__/plan-comparison.test.tsx (7 tests) 849ms
+ ✓ src/components/access-request-detail/__tests__/meta-fulfillment-card.test.tsx (3 tests) 553ms
+     ✓ clears confirmation and reason when an exclusion is cancelled before another grant is opened  343ms
+ ✓ src/components/ui/__tests__/single-select.test.tsx (13 tests) 542ms
+ ✓ src/components/access-request/__tests__/MetaAssigneeSelector.test.tsx (3 tests) 631ms
+     ✓ defaults to one human and one system user and supports keyboard task selection  423ms
+ ✓ src/components/settings/billing/__tests__/cancel-subscription-modal.test.tsx (7 tests) 515ms
+ ✓ src/components/__tests__/hierarchical-platform-selector.supported-products.test.tsx (1 test) 522ms
+     ✓ shows the aligned Google and Meta products for access requests  521ms
+ ✓ src/app/(authenticated)/token-health/__tests__/page.refresh-gating.test.tsx (6 tests) 438ms
+ ✓ src/app/(authenticated)/access-requests/[id]/success/__tests__/page.test.tsx (4 tests) 476ms
+ ✓ src/components/marketing/__tests__/help-center-links.test.tsx (2 tests) 386ms
+     ✓ renders the marketing footer help center and affiliate links  339ms
+ ✓ src/components/client-auth/__tests__/MetaBusinessCreator.test.tsx (4 tests) 513ms
+     ✓ posts the creation payload and calls onSuccess  316ms
+ ✓ src/app/(authenticated)/dashboard/__tests__/page.behavior.test.tsx (10 tests) 481ms
+ ✓ src/app/(authenticated)/__tests__/layout.onboarding-gate.test.tsx (5 tests) 358ms
+ ✓ src/components/client-auth/__tests__/MetaAssetSelector.resume-prefill.test.tsx (6 tests) 402ms
+ ✓ src/app/(authenticated)/internal/admin/affiliates/__tests__/page.payouts.test.tsx (3 tests) 506ms
+     ✓ renders payout operations with batch export controls  324ms
+ ✓ src/components/__tests__/pending-nudge-banner.test.tsx (6 tests) 368ms
+stderr | src/components/ui/__tests__/sidebar.test.tsx
+
+warn - The class `duration-[var(--motion-hover)]` is ambiguous and matches multiple utilities.
+warn - If this is content and not a class, replace it with `duration-&lsqb;var(--motion-hover)&rsqb;` to silence this warning.
+
+ ✓ src/components/ui/__tests__/sidebar.test.tsx (4 tests) 689ms
+     ✓ renders mobile menu controls as accessible buttons with proper labels and state  365ms
+ ✓ src/app/(authenticated)/token-health/__tests__/page.filter.test.tsx (3 tests) 441ms
+ ✓ src/components/client-auth/__tests__/PlatformAuthWizard.tiktok.test.tsx (3 tests) 702ms
+     ✓ runs TikTok share automation after save and progresses to Step 3 on success  360ms
+ ✓ src/components/client-auth/__tests__/TikTokAssetSelector.test.tsx (2 tests) 388ms
+ ✓ src/components/client-detail/__tests__/delete-client-modal.test.tsx (1 test) 260ms
+ ✓ src/components/client-auth/__tests__/MetaCreationRecovery.test.tsx (2 tests) 260ms
+ ✓ src/components/__tests__/lazy-clerk-auth-buttons.test.tsx (2 tests) 270ms
+ ✓ src/components/__tests__/access-level-selector.test.tsx (3 tests) 379ms
+ ✓ src/components/settings/billing/__tests__/billing-details-card.test.tsx (2 tests) 371ms
+     ✓ keeps edited values and gives actionable feedback when save fails  319ms
+ ✓ src/components/onboarding/screens/__tests__/success-link-screen.test.tsx (4 tests) 358ms
+ ✓ src/components/settings/general/__tests__/agency-profile-card.test.tsx (5 tests) 289ms
+ ✓ src/app/invite/oauth-callback/__tests__/page.test.tsx (7 tests) 238ms
+ ✓ src/app/(authenticated)/internal/admin/agencies/__tests__/page.test.tsx (3 tests) 283ms
+ ✓ src/components/flow/__tests__/invite-flow-shell.test.tsx (7 tests) 373ms
+ ✓ src/components/marketing/__tests__/marketing-footer.test.tsx (3 tests) 439ms
+ ✓ src/components/ui/__tests__/platform-card.test.tsx (16 tests) 376ms
+ ✓ src/components/__tests__/pending-nudge-banners.test.tsx (3 tests) 346ms
+ ✓ src/components/flow/__tests__/manual-checklist-wizard.test.tsx (4 tests) 502ms
+ ✓ src/components/__tests__/agency-meta-asset-selector.test.tsx (3 tests) 311ms
+ ✓ src/app/(marketing)/features/white-label/__tests__/page.public.test.tsx (1 test) 326ms
+     ✓ renders title, plan gates, and AEO FAQs  325ms
+ ✓ src/components/settings/billing/__tests__/current-plan-card.test.tsx (3 tests) 239ms
+ ✓ src/components/onboarding/__tests__/completion.rendered.test.tsx (2 tests) 340ms
+stderr | src/app/(marketing)/blog/__tests__/page.public-content.test.tsx > BlogPage public content > does not render a newsletter promise without a subscription endpoint
+[blog-data] Invalid category "undefined" in leadsie-vs-authhub-comparison.md, defaulting to "tutorials"
+[blog-data] Invalid stage "undefined" in leadsie-vs-authhub-comparison.md, defaulting to "consideration"
+
+ ✓ src/components/client-detail/__tests__/requested-access-board.test.tsx (2 tests) 220ms
+ ✓ src/app/(marketing)/blog/__tests__/page.public-content.test.tsx (1 test) 242ms
+ ✓ src/components/settings/__tests__/settings-tabs.test.tsx (15 tests) 393ms
+ ✓ src/components/client-detail/__tests__/overview-tab.test.tsx (2 tests) 310ms
+ ✓ src/app/(marketing)/guides/__tests__/pages.public.test.tsx (2 tests) 314ms
+ ✓ src/components/settings/billing/__tests__/usage-limits-card.test.tsx (2 tests) 217ms
+ ✓ src/components/client-auth/__tests__/AutomaticPagesGrant.test.tsx (5 tests) 349ms
+ ✓ src/components/ui/__tests__/platform-icon.test.tsx (6 tests) 285ms
+ ✓ src/components/client-auth/__tests__/MetaPageEngagementProof.test.tsx (4 tests) 320ms
+ ✓ src/components/settings/billing/__tests__/billing-hero.test.tsx (7 tests) 357ms
+ ✓ src/components/client-auth/__tests__/CatalogAccessGrant.test.tsx (4 tests) 258ms
+ ✓ src/app/dev/client-detail/__tests__/page.test.tsx (3 tests) 341ms
+     ✓ falls back to the mixed-google preset and honors expand query params  304ms
+ ✓ src/app/(authenticated)/dashboard/__tests__/pending-nudge.test.tsx (1 test) 304ms
+     ✓ shows a pending cliff banner for stale pending requests  303ms
+ ✓ src/contexts/__tests__/unified-onboarding-context.test.tsx (20 tests) 320ms
+ ✓ src/components/__tests__/manual-invitation-modal.shopify.test.tsx (2 tests) 322ms
+ ✓ src/components/client-detail/__tests__/create-client-modal.test.tsx (1 test) 329ms
+     ✓ exposes a named dialog, close control, and fields  327ms
+stderr | src/components/ui/__tests__/comparison-table.test.tsx > ComparisonTable > should render children
+In HTML, <div> cannot be a child of <table>.
+This will cause a hydration error.
+
+  <ComparisonTable>
+    <div className="relative o...">
+>     <table className="relative w-full text-sm border-collapse">
+>       <div>
+
+<table> cannot contain a nested <div>.
+See this log for the ancestor stack trace.
+
+ ✓ src/components/ui/__tests__/comparison-table.test.tsx (10 tests) 305ms
+ ✓ src/components/onboarding/__tests__/platform-selector-grid.test.tsx (3 tests) 285ms
+ ✓ src/components/ui/__tests__/multi-select-combobox.test.tsx (1 test) 287ms
+ ✓ src/components/client-auth/__tests__/AssetGroup.test.tsx (2 tests) 272ms
+ ✓ src/components/client-auth/__tests__/MetaAssetSelector.manual-grant-reset.test.tsx (1 test) 223ms
+ ✓ src/components/access-request-detail/__tests__/cancel-request-modal.test.tsx (1 test) 276ms
+ ✓ src/components/client-auth/__tests__/StepHelpText.test.tsx (2 tests) 217ms
+ ✓ src/components/flow/__tests__/invite-hero-header.test.tsx (1 test) 136ms
+ ✓ src/app/(authenticated)/internal/admin/webhooks/__tests__/page.test.tsx (1 test) 169ms
+ ✓ src/components/agent-operations/__tests__/approval-card.test.tsx (2 tests) 236ms
+ ✓ src/components/onboarding/screens/__tests__/client-selection-screen.test.tsx (4 tests) 198ms
+ ✓ src/components/client-detail/__tests__/client-tabs.keyboard.test.tsx (1 test) 180ms
+ ✓ src/__tests__/frontend-perf-contracts.test.ts (7 tests) 156ms
+ ✓ src/components/ui/__tests__/button.design.test.tsx (11 tests) 169ms
+ ✓ src/components/ui/__tests__/theme-toggle.test.tsx (5 tests) 221ms
+ ✓ src/components/flow/__tests__/invite-load-state-card.test.tsx (1 test) 250ms
+ ✓ src/app/(authenticated)/__tests__/layout.agency-check-fail-open.test.tsx (2 tests) 155ms
+ ✓ src/components/client-auth/__tests__/InstagramAccessGrant.test.tsx (2 tests) 241ms
+stderr | src/components/onboarding/screens/__tests__/final-success-screen.test.tsx > FinalSuccessScreen > shows pending activation framing instead of setup complete copy
+React does not recognize the `whileHover` prop on a DOM element. If you intentionally want it to appear in the DOM as a custom attribute, spell it as lowercase `whilehover` instead. If you accidentally passed it from a parent component, remove it from the DOM element.
+React does not recognize the `whileTap` prop on a DOM element. If you intentionally want it to appear in the DOM as a custom attribute, spell it as lowercase `whiletap` instead. If you accidentally passed it from a parent component, remove it from the DOM element.
+
+ ✓ src/components/onboarding/screens/__tests__/final-success-screen.test.tsx (2 tests) 209ms
+ ✓ src/components/__tests__/pinterest-business-settings.test.tsx (3 tests) 174ms
+ ✓ src/components/settings/__tests__/usage-overview-card.test.tsx (6 tests) 200ms
+ ✓ src/components/onboarding/__tests__/unified-wizard.keyboard.test.tsx (4 tests) 202ms
+ ✓ src/app/checkout/success/__tests__/page.test.tsx (2 tests) 168ms
+ ✓ src/lib/api/__tests__/api-url-usage.test.ts (1 test) 129ms
+ ✓ src/components/flow/__tests__/manual-invite-header.test.tsx (1 test) 159ms
+ ✓ src/components/client-detail/__tests__/client-detail-header.mobile.test.tsx (1 test) 184ms
+ ✓ src/components/__tests__/trial-banner.test.tsx (1 test) 166ms
+stderr | src/contexts/__tests__/access-request-context.test.tsx > AccessRequestContext > submitRequest > submits one request when invoked twice before the first response
+An update to AccessRequestProvider inside a test was not wrapped in act(...).
+
+When testing, code that causes React state updates should be wrapped into act(...):
+
+act(() => {
+  /* fire events that update state */
+});
+/* assert on the output */
+
+This ensures that you're testing the behavior the user would see in the browser. Learn more at https://react.dev/link/wrap-tests-with-act
+
+ ✓ src/contexts/__tests__/access-request-context.test.tsx (30 tests) 110ms
+ ✓ src/components/settings/__tests__/status-bar.test.tsx (4 tests) 154ms
+ ✓ src/hooks/__tests__/use-user-agency.test.tsx (8 tests) 187ms
+ ✓ src/components/marketing/__tests__/article-schedule-demo.test.tsx (1 test) 145ms
+ ✓ src/components/settings/__tests__/settings-row.test.tsx (6 tests) 163ms
+ ✓ src/components/__tests__/help-scout-beacon.test.tsx (5 tests) 103ms
+stderr | src/components/__tests__/theme-provider.test.tsx > ThemeProvider > should toggle theme when toggleTheme called
+`ReactDOMTestUtils.act` is deprecated in favor of `React.act`. Import `act` from `react` instead of `react-dom/test-utils`. See https://react.dev/warnings/react-dom-test-utils for more info.
+
+ ✓ src/components/__tests__/theme-provider.test.tsx (8 tests) 69ms
+stderr | src/components/ui/__tests__/logo-spinner.test.tsx > LogoSpinner > renders the AuthHub logo image
+Received `true` for a non-boolean attribute `priority`.
+
+If you want to write it to the DOM, pass a string instead: priority="true" or priority={value.toString()}.
+
+ ✓ src/components/ui/__tests__/logo-spinner.test.tsx (8 tests) 68ms
+ ✓ src/lib/query/__tests__/quota.test.tsx (1 test) 72ms
+ ✓ src/app/(authenticated)/token-health/__tests__/page.signed-out.test.tsx (2 tests) 93ms
+ ✓ src/components/settings/general/__tests__/plan-strip.test.tsx (6 tests) 73ms
+ ✓ src/components/marketing/pricing/__tests__/savings-calculator-motion.test.tsx (1 test) 62ms
+ ✓ src/lib/query/__tests__/use-invite-request-loader.test.tsx (3 tests) 62ms
+ ✓ src/components/ui/__tests__/status-badge.test.tsx (13 tests) 57ms
+ ✓ src/components/client-auth/__tests__/GoogleAssetSelector.test.tsx (5 tests) 118ms
+ ✓ src/components/settings/billing/__tests__/checkout-success-toast.test.tsx (2 tests) 51ms
+ ✓ src/app/perf/dashboard-bootstrap/__tests__/page.test.tsx (1 test) 54ms
+stderr | src/lib/__tests__/blog-data.test.ts > blog-data > sorts posts newest first and filters by category
+[blog-data] Invalid category "undefined" in leadsie-vs-authhub-comparison.md, defaulting to "tutorials"
+[blog-data] Invalid stage "undefined" in leadsie-vs-authhub-comparison.md, defaulting to "consideration"
+
+ ✓ src/lib/__tests__/blog-data.test.ts (2 tests) 40ms
+ ✓ src/components/affiliate/__tests__/affiliate-primitives.test.tsx (6 tests) 64ms
+ ✓ src/app/(authenticated)/agent-operations/[id]/__tests__/page.test.tsx (1 test) 49ms
+ ✓ src/components/flow/__tests__/invite-platform-stage.test.tsx (2 tests) 44ms
+ ✓ src/components/client-auth/__tests__/PlatformWizardCard.test.tsx (2 tests) 43ms
+ ✓ src/app/invite/[token]/__tests__/invite.design.test.ts (510 tests) 35ms
+ ✓ src/components/marketing/__tests__/social-proof-motion.test.tsx (1 test) 45ms
+ ✓ src/app/__tests__/root-providers.test.tsx (2 tests) 42ms
+ ✓ src/components/settings/billing/__tests__/billing-tab.lifecycle-layout.test.tsx (3 tests) 46ms
+ ✓ src/lib/query/__tests__/internal-admin.test.tsx (13 tests) 40ms
+ ✓ src/app/(marketing)/__tests__/layout.motion.test.tsx (2 tests) 38ms
+ ✓ src/app/settings/platforms/__tests__/page.test.tsx (1 test) 25ms
+ ✓ src/hooks/__tests__/use-animation-orchestrator.test.tsx (2 tests) 37ms
+ ✓ src/app/__tests__/button-contract.design.test.ts (4 tests) 19ms
+ ✓ src/components/access-request-detail/__tests__/request-platforms-card.test.tsx (1 test) 32ms
+ ✓ src/lib/query/__tests__/affiliate.test.tsx (5 tests) 26ms
+ ✓ src/app/__tests__/app-providers.test.tsx (1 test) 27ms
+ ✓ src/lib/query/__tests__/billing.test.tsx (2 tests) 26ms
+ ✓ src/__tests__/proxy.test.ts (31 tests) 24ms
+ ✓ src/components/settings/__tests__/settings.design.test.ts (261 tests) 26ms
+ ✓ src/app/invite/[token]/__tests__/page-route.test.tsx (1 test) 26ms
+ ✓ src/components/marketing/__tests__/pricing-copy.claims.test.ts (2 tests) 5ms
+ ✓ src/lib/__tests__/format.test.ts (4 tests) 18ms
+ ✓ src/lib/analytics/__tests__/onboarding.test.ts (3 tests) 4ms
+ ✓ src/lib/__tests__/invite-reminder.test.ts (3 tests) 19ms
+ ✓ src/lib/__tests__/comparison-data.claims.test.ts (15 tests) 12ms
+ ✓ src/lib/api/__tests__/authorized-api-fetch.test.ts (9 tests) 12ms
+ ✓ src/components/onboarding/screens/__tests__/onboarding-screens.design.test.tsx (54 tests) 16ms
+ ✓ src/lib/__tests__/blog-date.test.ts (1 test) 17ms
+ ✓ src/components/__tests__/animation-gate.test.tsx (3 tests) 22ms
+ ✓ src/app/__tests__/u8-visual-contract.design.test.ts (5 tests) 27ms
+ ✓ src/lib/invite/__tests__/platform-status.test.ts (10 tests) 9ms
+ ✓ src/components/marketing/__tests__/marketing-honesty.claims.test.ts (13 tests) 11ms
+ ✓ src/lib/analytics/__tests__/billing.test.ts (7 tests) 6ms
+ ✓ src/components/client-detail/__tests__/client-detail-surface.design.test.tsx (20 tests) 10ms
+ ✓ src/lib/analytics/__tests__/capture-posthog.test.ts (4 tests) 10ms
+ ✓ src/app/r/[code]/route.test.ts (2 tests) 7ms
+ ✓ src/test/utils/__tests__/design-system.test.ts (41 tests) 17ms
+ ✓ src/lib/invite/__tests__/cta-reason.test.ts (31 tests) 8ms
+ ✓ src/components/programmatic/__tests__/ComparisonPageTemplate.claims.test.ts (8 tests) 8ms
+ ✓ src/lib/analytics/__tests__/invite-events.test.ts (15 tests) 10ms
+ ✓ src/lib/__tests__/transform-platforms.test.ts (21 tests) 7ms
+ ✓ src/app/(authenticated)/dashboard/__tests__/page.design.test.tsx (14 tests) 9ms
+ ✓ src/app/__tests__/client-request-flow.design.test.ts (2 tests) 8ms
+ ✓ src/app/__tests__/form-base.design.test.ts (2 tests) 3ms
+ ✓ src/components/onboarding/__tests__/unified-wizard.design.test.tsx (10 tests) 5ms
+ ✓ src/components/marketing/__tests__/hero-copy-rewrite-copy.claims.test.ts (3 tests) 7ms
+ ✓ src/lib/api/__tests__/access-requests.test.ts (5 tests) 6ms
+ ✓ src/lib/__tests__/client-invite-platforms.test.ts (8 tests) 5ms
+ ✓ src/lib/__tests__/client-invite-oauth.test.ts (3 tests) 6ms
+ ✓ src/lib/analytics/__tests__/invite-events.helpers.test.ts (3 tests) 4ms
+ ✓ src/lib/__tests__/docs-url.test.ts (2 tests) 5ms
+ ✓ src/components/ui/__tests__/platform-icon.design.test.tsx (3 tests) 6ms
+ ✓ src/components/client-detail/__tests__/create-client-modal.design.test.tsx (7 tests) 5ms
+ ✓ src/lib/invite/__tests__/manual-grant-checklist-storage.test.ts (6 tests) 4ms
+ ✓ src/components/settings/billing/__tests__/plan-comparison-layout.test.tsx (4 tests) 3ms
+ ✓ src/components/marketing/__tests__/marketing-copy.claims.test.ts (2 tests) 5ms
+ ✓ src/components/__tests__/hierarchical-platform-selector.design.test.tsx (3 tests) 3ms
+ ✓ src/lib/api/__tests__/templates.test.ts (5 tests) 6ms
+ ✓ src/lib/server/__tests__/fetch-client-invite-payload.test.ts (2 tests) 5ms
+ ✓ src/lib/__tests__/best-client-onboarding-blog.claims.test.ts (4 tests) 3ms
+ ✓ src/components/settings/billing/__tests__/cancel-subscription-modal.design.test.tsx (7 tests) 5ms
+ ✓ src/components/ui/__tests__/multi-select-combobox.design.test.tsx (5 tests) 4ms
+ ✓ src/app/onboarding/__tests__/route-targets.test.ts (5 tests) 4ms
+ ✓ src/lib/__tests__/best-leadsie-alternatives-blog.claims.test.ts (4 tests) 3ms
+ ✓ src/lib/__tests__/deployment-skew.test.ts (9 tests) 7ms
+ ✓ src/lib/content/__tests__/meta-ad-account-instructions.test.ts (2 tests) 3ms
+ ✓ src/components/__tests__/google-unified-settings.design.test.tsx (8 tests) 5ms
+ ✓ src/lib/__tests__/agency-meta-oauth.test.ts (1 test) 6ms
+ ✓ src/lib/invite/__tests__/landing-state.test.ts (17 tests) 5ms
+ ✓ src/lib/analytics/__tests__/sanitize-invite-token-properties.test.ts (14 tests) 6ms
+ ✓ src/components/__tests__/manage-assets-modal-shell.design.test.tsx (8 tests) 5ms
+ ✓ src/components/__tests__/meta-page-permissions-modal.design.test.tsx (9 tests) 6ms
+ ✓ src/lib/__tests__/token-health.test.ts (13 tests) 5ms
+ ✓ src/lib/analytics/__tests__/affiliate.test.ts (2 tests) 4ms
+ ✓ src/lib/__tests__/three-way-comparison.claims.test.ts (5 tests) 4ms
+ ✓ src/lib/analytics/__tests__/oauth-events.test.ts (4 tests) 5ms
+ ✓ src/lib/__tests__/leadsie-pricing-page.test.ts (4 tests) 5ms
+ ✓ src/components/__tests__/trial-banner.design.test.tsx (3 tests) 3ms
+ ✓ src/app/(marketing)/__tests__/hero-copy-rewrite.page.test.ts (2 tests) 4ms
+ ✓ src/components/__tests__/upgrade-modal.design.test.tsx (4 tests) 4ms
+ ✓ src/lib/__tests__/perf-harness.test.ts (7 tests) 5ms
+ ✓ src/app/(authenticated)/internal/admin/__tests__/design.test.ts (1 test) 6ms
+ ✓ src/components/client-detail/__tests__/edit-client-modal.design.test.tsx (7 tests) 5ms
+ ✓ src/lib/__tests__/invite-platform-queue.test.ts (4 tests) 3ms
+ ✓ src/components/marketing/__tests__/hero-section.auth-cta.test.tsx (2 tests) 3ms
+ ✓ src/lib/__tests__/dev-auth.test.ts (5 tests) 3ms
+ ✓ src/components/ui/__tests__/stat-card.design.test.tsx (5 tests) 6ms
+ ✓ src/app/__tests__/access-request-editing.design.test.ts (1 test) 5ms
+ ✓ src/lib/api/__tests__/api-env.test.ts (5 tests) 3ms
+ ✓ src/lib/pending-cliff/__tests__/pending-cliff.test.ts (9 tests) 4ms
+ ✓ src/components/ui/__tests__/sidebar-nav.design.test.ts (2 tests) 3ms
+ ✓ src/lib/analytics/__tests__/sentry-invite-scrub.test.ts (6 tests) 5ms
+ ✓ src/app/(authenticated)/clients/__tests__/page.design.test.tsx (3 tests) 3ms
+ ✓ src/lib/analytics/__tests__/pending-nudge-events.test.ts (2 tests) 5ms
+ ✓ src/components/client-detail/__tests__/delete-client-modal.design.test.tsx (6 tests) 5ms
+ ✓ src/components/client-detail/__tests__/status-presentation.test.ts (3 tests) 3ms
+ ✓ src/components/__tests__/meta-unified-settings.design.test.tsx (4 tests) 5ms
+ ✓ src/lib/__tests__/display-name.test.ts (8 tests) 2ms
+ ✓ src/app/(authenticated)/dashboard/__tests__/usage-overview-location.test.ts (3 tests) 3ms
+ ✓ src/lib/api/__tests__/parse-json-response.test.ts (1 test) 2ms
+ ✓ src/lib/__tests__/mcp-oauth-client-access-agencies-blog.claims.test.ts (4 tests) 3ms
+ ✓ src/lib/__tests__/request-status.test.ts (6 tests) 2ms
+ ✓ src/app/onboarding/agency/__tests__/page.test.ts (2 tests) 4ms
+ ✓ src/components/marketing/__tests__/schedule-demo-modal.design.test.tsx (2 tests) 5ms
+ ✓ src/components/marketing/__tests__/trial-cta-sections.auth-cta.test.tsx (2 tests) 3ms
+ ✓ src/lib/__tests__/onboarding-steps.test.ts (2 tests) 2ms
+ ✓ src/components/client-detail/__tests__/client-detail-harness-fixtures.test.ts (2 tests) 2ms
+ ✓ src/lib/__tests__/app-url.test.ts (3 tests) 3ms
+ ✓ src/lib/analytics/__tests__/omit-sensitive-token-properties.test.ts (2 tests) 5ms
+ ✓ src/__tests__/sentry-config.test.ts (1 test) 2ms
+ ✓ src/__tests__/app-directory-structure.test.ts (1 test) 2ms
+ ✓ src/app/(authenticated)/access-requests/new/__tests__/page.design.test.tsx (2 tests) 4ms
+ ✓ src/app/invite/__tests__/layout.test.ts (1 test) 1ms
+stderr | src/__tests__/next-config.test.ts
+[@sentry/nextjs] ACTION REQUIRED: To instrument navigations, the Sentry SDK requires you to export an `onRouterTransitionStart` hook from your `instrumentation-client.(js|ts)` file. You can do so by adding `export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;` to the file.
+
+ ✓ src/__tests__/next-config.test.ts (1 test) 1ms
+
+ Test Files  244 passed (244)
+      Tests  2259 passed | 2 skipped (2261)
+   Start at  07:49:54
+   Duration  147.67s (transform 5.25s, setup 18.11s, import 45.78s, tests 83.91s, environment 114.63s)
+

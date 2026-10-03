@@ -1,0 +1,117 @@
+{
+  "first_create_race": {
+    "responses": [
+      {
+        "platform": "beehiiv",
+        "status": 200,
+        "response": {
+          "data": {
+            "connectionId": "e036bfcc-4276-4152-aeae-e97f5025452a",
+            "status": "pending_verification",
+            "agencyEmail": "team@fixture-agency.invalid",
+            "message": "Manual invitation initiated. Waiting for agency to accept Beehiiv team invite."
+          },
+          "error": null
+        }
+      },
+      {
+        "platform": "zapier",
+        "status": 200,
+        "response": {
+          "data": {
+            "connectionId": "e036bfcc-4276-4152-aeae-e97f5025452a",
+            "status": "pending_verification",
+            "agencyEmail": "team@fixture-agency.invalid",
+            "message": "Manual invitation initiated. Waiting for agency to accept Zapier team invite."
+          },
+          "error": null
+        }
+      }
+    ],
+    "persisted": {
+      "zapier": {
+        "platform": "zapier",
+        "authMethod": "manual_team_invitation",
+        "agencyEmail": "team@fixture-agency.invalid",
+        "clientEmail": "client@fixture-client.invalid",
+        "invitationSentAt": "2026-10-03T20:23:14.647Z",
+        "verificationStatus": "pending"
+      },
+      "beehiiv": {
+        "platform": "beehiiv",
+        "authMethod": "manual_team_invitation",
+        "agencyEmail": "team@fixture-agency.invalid",
+        "clientEmail": "client@fixture-client.invalid",
+        "invitationSentAt": "2026-10-03T20:23:14.650Z",
+        "verificationStatus": "pending"
+      }
+    }
+  },
+  "existing_update_race": {
+    "responses": [
+      {
+        "platform": "beehiiv",
+        "status": 200,
+        "response": {
+          "data": {
+            "connectionId": "e036bfcc-4276-4152-aeae-e97f5025452a",
+            "status": "pending_verification",
+            "agencyEmail": "team@fixture-agency.invalid",
+            "message": "Manual invitation initiated. Waiting for agency to accept Beehiiv team invite."
+          },
+          "error": null
+        }
+      },
+      {
+        "platform": "zapier",
+        "status": 200,
+        "response": {
+          "data": {
+            "connectionId": "e036bfcc-4276-4152-aeae-e97f5025452a",
+            "status": "pending_verification",
+            "agencyEmail": "team@fixture-agency.invalid",
+            "message": "Manual invitation initiated. Waiting for agency to accept Zapier team invite."
+          },
+          "error": null
+        }
+      }
+    ],
+    "persisted": {
+      "zapier": {
+        "platform": "zapier",
+        "authMethod": "manual_team_invitation",
+        "agencyEmail": "team@fixture-agency.invalid",
+        "clientEmail": "client@fixture-client.invalid",
+        "invitationSentAt": "2026-10-03T20:23:14.892Z",
+        "verificationStatus": "pending"
+      },
+      "beehiiv": {
+        "platform": "beehiiv",
+        "authMethod": "manual_team_invitation",
+        "agencyEmail": "team@fixture-agency.invalid",
+        "clientEmail": "client@fixture-client.invalid",
+        "invitationSentAt": "2026-10-03T20:23:14.890Z",
+        "verificationStatus": "pending"
+      }
+    }
+  },
+  "authorizationProgress": {
+    "fulfilledProducts": [],
+    "unresolvedProducts": [
+      {
+        "product": "beehiiv",
+        "platformGroup": "beehiiv",
+        "reason": "pending"
+      },
+      {
+        "product": "zapier",
+        "platformGroup": "zapier",
+        "reason": "pending"
+      }
+    ],
+    "googleProductFulfillment": [],
+    "completedPlatforms": [],
+    "isComplete": false
+  },
+  "environment": "Isolated loopback fixture PostgreSQL; no provider actions"
+}

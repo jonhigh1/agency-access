@@ -1,0 +1,34 @@
+TAP version 13
+# Subtest: main ref reaches build gate after Entire consumes stdin, and Entire runs once
+ok 1 - main ref reaches build gate after Entire consumes stdin, and Entire runs once
+  ---
+  duration_ms: 1009.915292
+  type: 'test'
+  ...
+# Subtest: Entire failure stops gate and preserves exit code
+ok 2 - Entire failure stops gate and preserves exit code
+  ---
+  duration_ms: 603.4185
+  type: 'test'
+  ...
+# Subtest: build failure stops push
+ok 3 - build failure stops push
+  ---
+  duration_ms: 927.928541
+  type: 'test'
+  ...
+# Subtest: feature branch and main deletion skip build
+ok 4 - feature branch and main deletion skip build
+  ---
+  duration_ms: 990.775833
+  type: 'test'
+  ...
+1..4
+# tests 4
+# suites 0
+# pass 4
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 3587.23325

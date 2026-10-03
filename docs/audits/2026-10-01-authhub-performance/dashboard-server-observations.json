@@ -1,0 +1,56 @@
+{
+  "source": "Render logs via existing authenticated CLI; request IDs used only in memory for correlation",
+  "window": "2026-10-01T21:00:00Z to 21:22:00Z",
+  "dashboardRequests": [
+    {
+      "startedAt": "2026-10-01T21:07:39.69942204Z",
+      "completed": true,
+      "responseTimeMs": 418.07256800000323,
+      "statusCode": 401
+    },
+    {
+      "startedAt": "2026-10-01T21:07:41.244854515Z",
+      "completed": true,
+      "responseTimeMs": 470.80027100000007,
+      "statusCode": 200
+    },
+    {
+      "startedAt": "2026-10-01T21:10:40.755375649Z",
+      "completed": true,
+      "responseTimeMs": 4.328294000006281,
+      "statusCode": 200
+    },
+    {
+      "startedAt": "2026-10-01T21:11:30.81984654Z",
+      "completed": true,
+      "responseTimeMs": 3.3194749999966007,
+      "statusCode": 200
+    },
+    {
+      "startedAt": "2026-10-01T21:12:00.907018451Z",
+      "completed": true,
+      "responseTimeMs": 12.40602900000522,
+      "statusCode": 200
+    },
+    {
+      "startedAt": "2026-10-01T21:12:01.9259516Z",
+      "completed": true,
+      "responseTimeMs": 97.24022599996533,
+      "statusCode": 200
+    }
+  ],
+  "startupMarkers": [
+    {
+      "timestamp": "2026-10-01T21:07:16.28586253Z",
+      "kind": "migration"
+    },
+    {
+      "timestamp": "2026-10-01T21:07:17.17314536Z",
+      "kind": "migration"
+    },
+    {
+      "timestamp": "2026-10-01T21:07:34.929331866Z",
+      "kind": "listening"
+    }
+  ]
+}

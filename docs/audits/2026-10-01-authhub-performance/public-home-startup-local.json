@@ -1,0 +1,708 @@
+{
+  "target": "http://127.0.0.1:3310/",
+  "buildId": "_n1JaZnWCpQuConlT5QUQ",
+  "setup": "Local production prerendered HTML fulfilled by Playwright, local Next server for assets, desktop 1365x768, Chrome headless, five fresh contexts, all external requests aborted, three-second observation window",
+  "median": {
+    "domContentLoadedMs": 106,
+    "loadEventMs": 381.5,
+    "fcpMs": 204,
+    "lcpMs": 204,
+    "longTaskCount": 0,
+    "longTaskTotalMs": 0,
+    "scriptResourceCount": 24,
+    "scriptTransferBytes": 388141,
+    "scriptEncodedBytes": 380941
+  },
+  "runs": [
+    {
+      "run": 1,
+      "status": 200,
+      "elapsedMs": 3168,
+      "domContentLoadedMs": 136.70000004768372,
+      "loadEventMs": 429.5,
+      "fcpMs": 1172,
+      "lcpMs": 1172,
+      "longTaskCount": 0,
+      "longTaskTotalMs": 0,
+      "scriptResourceCount": 24,
+      "scriptTransferBytes": 388141,
+      "scriptEncodedBytes": 380941,
+      "heading": "Send one link. Your client is live in 5 minutes.",
+      "scripts": [
+        {
+          "path": "/_next/static/chunks/0vs8bzyvd2y89.js",
+          "bytes": 20307,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/2-urkx3cuhmdn.js",
+          "bytes": 26811,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/0owlldew15mwh.js",
+          "bytes": 35445,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/turbopack-0f9x4h21115c4.js",
+          "bytes": 9788,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/1g_6tov717535.js",
+          "bytes": 114841,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/39g1udtndv-cb.js",
+          "bytes": 16876,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/0fhbihn6gfqku.js",
+          "bytes": 129824,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/32evues-0_nx2.js",
+          "bytes": 236968,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/3zz3a7w07k2ss.js",
+          "bytes": 211300,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/33t46atd3n2zd.js",
+          "bytes": 14434,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/0dlelpcu8obcu.js",
+          "bytes": 12354,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/19krd_6917xxk.js",
+          "bytes": 97832,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/2lp-bhlq4y7wm.js",
+          "bytes": 20131,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/3vlu83--2q3tz.js",
+          "bytes": 20509,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/2lqdj41cowhmp.js",
+          "bytes": 14861,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/2jzhy1urx2loq.js",
+          "bytes": 19892,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/2_8iw6r597y_1.js",
+          "bytes": 29765,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/3kus3sb46fw4v.js",
+          "bytes": 42836,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/056n9x3na1m72.js",
+          "bytes": 33505,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/1x74lde8qkmxx.js",
+          "bytes": 55313,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/1ywxbix2kklm3.js",
+          "bytes": 97414,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/1jqwgbdot6wjs.js",
+          "bytes": 2064,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/049gsplfqct7o.js",
+          "bytes": 3064,
+          "status": 200
+        },
+        {
+          "path": "/_vercel/insights/script.js",
+          "bytes": 0,
+          "status": 404
+        }
+      ],
+      "failures": []
+    },
+    {
+      "run": 2,
+      "status": 200,
+      "elapsedMs": 3106,
+      "domContentLoadedMs": 58.200000047683716,
+      "loadEventMs": 381.5,
+      "fcpMs": 196,
+      "lcpMs": 196,
+      "longTaskCount": 0,
+      "longTaskTotalMs": 0,
+      "scriptResourceCount": 24,
+      "scriptTransferBytes": 388141,
+      "scriptEncodedBytes": 380941,
+      "heading": "Send one link. Your client is live in 5 minutes.",
+      "scripts": [
+        {
+          "path": "/_next/static/chunks/0vs8bzyvd2y89.js",
+          "bytes": 20307,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/0owlldew15mwh.js",
+          "bytes": 35445,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/2-urkx3cuhmdn.js",
+          "bytes": 26811,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/turbopack-0f9x4h21115c4.js",
+          "bytes": 9788,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/39g1udtndv-cb.js",
+          "bytes": 16876,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/32evues-0_nx2.js",
+          "bytes": 236968,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/1g_6tov717535.js",
+          "bytes": 114841,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/3zz3a7w07k2ss.js",
+          "bytes": 211300,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/33t46atd3n2zd.js",
+          "bytes": 14434,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/0fhbihn6gfqku.js",
+          "bytes": 129824,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/0dlelpcu8obcu.js",
+          "bytes": 12354,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/19krd_6917xxk.js",
+          "bytes": 97832,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/2lqdj41cowhmp.js",
+          "bytes": 14861,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/3vlu83--2q3tz.js",
+          "bytes": 20509,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/2lp-bhlq4y7wm.js",
+          "bytes": 20131,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/2_8iw6r597y_1.js",
+          "bytes": 29765,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/2jzhy1urx2loq.js",
+          "bytes": 19892,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/3kus3sb46fw4v.js",
+          "bytes": 42836,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/056n9x3na1m72.js",
+          "bytes": 33505,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/1x74lde8qkmxx.js",
+          "bytes": 55313,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/1ywxbix2kklm3.js",
+          "bytes": 97414,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/1jqwgbdot6wjs.js",
+          "bytes": 2064,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/049gsplfqct7o.js",
+          "bytes": 3064,
+          "status": 200
+        },
+        {
+          "path": "/_vercel/insights/script.js",
+          "bytes": 0,
+          "status": 404
+        }
+      ],
+      "failures": []
+    },
+    {
+      "run": 3,
+      "status": 200,
+      "elapsedMs": 3206,
+      "domContentLoadedMs": 173.89999997615814,
+      "loadEventMs": 521.6000000238419,
+      "fcpMs": 340,
+      "lcpMs": 340,
+      "longTaskCount": 0,
+      "longTaskTotalMs": 0,
+      "scriptResourceCount": 24,
+      "scriptTransferBytes": 388141,
+      "scriptEncodedBytes": 380941,
+      "heading": "Send one link. Your client is live in 5 minutes.",
+      "scripts": [
+        {
+          "path": "/_next/static/chunks/0vs8bzyvd2y89.js",
+          "bytes": 20307,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/2-urkx3cuhmdn.js",
+          "bytes": 26811,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/0owlldew15mwh.js",
+          "bytes": 35445,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/1g_6tov717535.js",
+          "bytes": 114841,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/turbopack-0f9x4h21115c4.js",
+          "bytes": 9788,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/39g1udtndv-cb.js",
+          "bytes": 16876,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/32evues-0_nx2.js",
+          "bytes": 236968,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/3zz3a7w07k2ss.js",
+          "bytes": 211300,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/0fhbihn6gfqku.js",
+          "bytes": 129824,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/33t46atd3n2zd.js",
+          "bytes": 14434,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/0dlelpcu8obcu.js",
+          "bytes": 12354,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/19krd_6917xxk.js",
+          "bytes": 97832,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/3vlu83--2q3tz.js",
+          "bytes": 20509,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/2lqdj41cowhmp.js",
+          "bytes": 14861,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/2jzhy1urx2loq.js",
+          "bytes": 19892,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/2lp-bhlq4y7wm.js",
+          "bytes": 20131,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/2_8iw6r597y_1.js",
+          "bytes": 29765,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/1x74lde8qkmxx.js",
+          "bytes": 55313,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/056n9x3na1m72.js",
+          "bytes": 33505,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/3kus3sb46fw4v.js",
+          "bytes": 42836,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/1ywxbix2kklm3.js",
+          "bytes": 97414,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/1jqwgbdot6wjs.js",
+          "bytes": 2064,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/049gsplfqct7o.js",
+          "bytes": 3064,
+          "status": 200
+        },
+        {
+          "path": "/_vercel/insights/script.js",
+          "bytes": 0,
+          "status": 404
+        }
+      ],
+      "failures": []
+    },
+    {
+      "run": 4,
+      "status": 200,
+      "elapsedMs": 3118,
+      "domContentLoadedMs": 106,
+      "loadEventMs": 369.7999999523163,
+      "fcpMs": 204,
+      "lcpMs": 204,
+      "longTaskCount": 0,
+      "longTaskTotalMs": 0,
+      "scriptResourceCount": 24,
+      "scriptTransferBytes": 388141,
+      "scriptEncodedBytes": 380941,
+      "heading": "Send one link. Your client is live in 5 minutes.",
+      "scripts": [
+        {
+          "path": "/_next/static/chunks/0vs8bzyvd2y89.js",
+          "bytes": 20307,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/0owlldew15mwh.js",
+          "bytes": 35445,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/2-urkx3cuhmdn.js",
+          "bytes": 26811,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/1g_6tov717535.js",
+          "bytes": 114841,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/turbopack-0f9x4h21115c4.js",
+          "bytes": 9788,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/39g1udtndv-cb.js",
+          "bytes": 16876,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/32evues-0_nx2.js",
+          "bytes": 236968,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/3zz3a7w07k2ss.js",
+          "bytes": 211300,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/0fhbihn6gfqku.js",
+          "bytes": 129824,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/33t46atd3n2zd.js",
+          "bytes": 14434,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/0dlelpcu8obcu.js",
+          "bytes": 12354,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/19krd_6917xxk.js",
+          "bytes": 97832,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/2lqdj41cowhmp.js",
+          "bytes": 14861,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/3vlu83--2q3tz.js",
+          "bytes": 20509,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/2jzhy1urx2loq.js",
+          "bytes": 19892,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/2lp-bhlq4y7wm.js",
+          "bytes": 20131,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/2_8iw6r597y_1.js",
+          "bytes": 29765,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/056n9x3na1m72.js",
+          "bytes": 33505,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/3kus3sb46fw4v.js",
+          "bytes": 42836,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/1x74lde8qkmxx.js",
+          "bytes": 55313,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/1ywxbix2kklm3.js",
+          "bytes": 97414,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/1jqwgbdot6wjs.js",
+          "bytes": 2064,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/049gsplfqct7o.js",
+          "bytes": 3064,
+          "status": 200
+        },
+        {
+          "path": "/_vercel/insights/script.js",
+          "bytes": 0,
+          "status": 404
+        }
+      ],
+      "failures": []
+    },
+    {
+      "run": 5,
+      "status": 200,
+      "elapsedMs": 3099,
+      "domContentLoadedMs": 68.19999992847443,
+      "loadEventMs": 333.5,
+      "fcpMs": 172,
+      "lcpMs": 172,
+      "longTaskCount": 0,
+      "longTaskTotalMs": 0,
+      "scriptResourceCount": 24,
+      "scriptTransferBytes": 388141,
+      "scriptEncodedBytes": 380941,
+      "heading": "Send one link. Your client is live in 5 minutes.",
+      "scripts": [
+        {
+          "path": "/_next/static/chunks/0vs8bzyvd2y89.js",
+          "bytes": 20307,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/0owlldew15mwh.js",
+          "bytes": 35445,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/2-urkx3cuhmdn.js",
+          "bytes": 26811,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/turbopack-0f9x4h21115c4.js",
+          "bytes": 9788,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/39g1udtndv-cb.js",
+          "bytes": 16876,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/1g_6tov717535.js",
+          "bytes": 114841,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/32evues-0_nx2.js",
+          "bytes": 236968,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/0fhbihn6gfqku.js",
+          "bytes": 129824,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/3zz3a7w07k2ss.js",
+          "bytes": 211300,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/33t46atd3n2zd.js",
+          "bytes": 14434,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/0dlelpcu8obcu.js",
+          "bytes": 12354,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/19krd_6917xxk.js",
+          "bytes": 97832,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/2lqdj41cowhmp.js",
+          "bytes": 14861,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/3vlu83--2q3tz.js",
+          "bytes": 20509,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/2jzhy1urx2loq.js",
+          "bytes": 19892,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/2lp-bhlq4y7wm.js",
+          "bytes": 20131,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/2_8iw6r597y_1.js",
+          "bytes": 29765,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/056n9x3na1m72.js",
+          "bytes": 33505,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/3kus3sb46fw4v.js",
+          "bytes": 42836,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/1ywxbix2kklm3.js",
+          "bytes": 97414,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/1x74lde8qkmxx.js",
+          "bytes": 55313,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/1jqwgbdot6wjs.js",
+          "bytes": 2064,
+          "status": 200
+        },
+        {
+          "path": "/_next/static/chunks/049gsplfqct7o.js",
+          "bytes": 3064,
+          "status": 200
+        },
+        {
+          "path": "/_vercel/insights/script.js",
+          "bytes": 0,
+          "status": 404
+        }
+      ],
+      "failures": []
+    }
+  ]
+}

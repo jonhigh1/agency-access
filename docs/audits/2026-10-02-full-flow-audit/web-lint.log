@@ -1,0 +1,165 @@
+
+> @agency-platform/web@0.1.0 lint
+> eslint .
+
+
+/Users/jon.high/agency-access/apps/web/evidence/next-image-shim.tsx
+  13:5  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/Users/jon.high/agency-access/apps/web/evidence/next-navigation-shim.ts
+  37:26  warning  '_href' is defined but never used  @typescript-eslint/no-unused-vars
+  37:41  warning  '_type' is defined but never used  @typescript-eslint/no-unused-vars
+  41:35  warning  '_href' is defined but never used  @typescript-eslint/no-unused-vars
+  41:50  warning  '_type' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/web/sentry.edge.config.ts
+  18:21  warning  'hint' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/web/sentry.server.config.ts
+  14:21  warning  'hint' is defined but never used                    @typescript-eslint/no-unused-vars
+  22:15  warning  'authorization' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  22:30  warning  'cookie' is assigned a value but never used         @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/web/src/app/(authenticated)/access-requests/[id]/edit/page.tsx
+  89:32  warning  'setPlatformAccessLevels' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/web/src/app/(authenticated)/access-requests/new/page.tsx
+  693:25  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  912:29  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  941:31  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/Users/jon.high/agency-access/apps/web/src/app/(marketing)/blog/[slug]/page.tsx
+  7:10  warning  'BLOG_CATEGORIES' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/web/src/app/(marketing)/blog/page.tsx
+  41:9  warning  'regularPosts' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/web/src/app/checkout/cancel/page.tsx
+  12:9  warning  'agencyId' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/web/src/app/checkout/success/page.tsx
+  12:9  warning  'searchParams' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/web/src/app/invite/[token]/client-invite-page.tsx
+   15:10  warning  'InviteSupportCard' is defined but never used                                                                                          @typescript-eslint/no-unused-vars
+   36:8   warning  'InviteTerminalKind' is defined but never used                                                                                         @typescript-eslint/no-unused-vars
+  395:6   warning  React Hook useLayoutEffect has a missing dependency: 'platformQueue.activePlatform'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  454:6   warning  React Hook useEffect has a missing dependency: 'finalizeCompletion'. Either include it or remove the dependency array                  react-hooks/exhaustive-deps
+
+/Users/jon.high/agency-access/apps/web/src/app/invite/[token]/manual-invite.config.tsx
+  5:43  warning  'Platform' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/web/src/app/onboarding/platforms/page.tsx
+  318:44  warning  'platformType' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/web/src/app/platforms/callback/page.tsx
+  134:9  warning  The 'portfolioBusinesses' logical expression could make the dependencies of useEffect Hook (at line 166) change on every render. To fix this, wrap the initialization of 'portfolioBusinesses' in its own useMemo() Hook  react-hooks/exhaustive-deps
+  139:9  warning  The 'handlePortfolioSelect' function makes the dependencies of useEffect Hook (at line 166) change on every render. To fix this, wrap the definition of 'handlePortfolioSelect' in its own useCallback() Hook             react-hooks/exhaustive-deps
+
+/Users/jon.high/agency-access/apps/web/src/app/test/asset-creation/page.tsx
+  23:16  warning  'ExternalLink' is defined but never used  @typescript-eslint/no-unused-vars
+  23:39  warning  'Moon' is defined but never used          @typescript-eslint/no-unused-vars
+  23:45  warning  'Sun' is defined but never used           @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/web/src/components/client-auth/AdAccountSharingInstructions.tsx
+  264:6   warning  React Hook useEffect has a missing dependency: 'checklistRowIds'. Either include it or remove the dependency array                        react-hooks/exhaustive-deps
+  264:39  warning  React Hook useEffect has a complex expression in the dependency array. Extract it to a separate variable so it can be statically checked  react-hooks/exhaustive-deps
+
+/Users/jon.high/agency-access/apps/web/src/components/client-auth/GoogleAssetSelector.tsx
+  172:6  warning  React Hook useEffect has a missing dependency: 'fetchAssets'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+  246:9  warning  'totalSelected' is assigned a value but never used                                                              @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/web/src/components/client-auth/LinkedInAssetSelector.tsx
+  90:6  warning  React Hook useEffect has a missing dependency: 'fetchAssets'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/jon.high/agency-access/apps/web/src/components/client-auth/PlatformAuthWizard.tsx
+  738:6  warning  React Hook useEffect has a missing dependency: 'apiBaseUrl'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/jon.high/agency-access/apps/web/src/components/client-detail/CreateRequestModal.tsx
+  100:6  warning  React Hook useEffect has a missing dependency: 'isProductSelected'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/jon.high/agency-access/apps/web/src/components/client-selector.tsx
+  263:19  warning  The attribute aria-selected is not supported by the role button  jsx-a11y/role-supports-aria-props
+
+/Users/jon.high/agency-access/apps/web/src/components/flow/manual-invite-flow.tsx
+  198:6  warning  React Hook useEffect has a missing dependency: 'config'. Either include it or remove the dependency array                react-hooks/exhaustive-deps
+  306:6  warning  React Hook useMemo has a missing dependency: 'submitManualConnection'. Either include it or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/jon.high/agency-access/apps/web/src/components/hierarchical-platform-selector.tsx
+  16:43  warning  'ACCESS_LEVEL_DESCRIPTIONS' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/web/src/components/marketing/marketing-footer.tsx
+  68:17  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/Users/jon.high/agency-access/apps/web/src/components/marketing/marketing-nav.tsx
+  155:13  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/Users/jon.high/agency-access/apps/web/src/components/marketing/pricing/pricing-tiers.tsx
+  12:11  warning  'Feature' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/web/src/components/marketing/success-stories-section.tsx
+  120:17  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/Users/jon.high/agency-access/apps/web/src/components/meta-unified-settings.tsx
+   15:19  warning  'ChevronDown' is defined but never used                                                                                                                                                                                                                                                  @typescript-eslint/no-unused-vars
+  319:19  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  327:19  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  360:19  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  368:19  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  399:19  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/Users/jon.high/agency-access/apps/web/src/components/onboarding/screens/agency-profile-screen.tsx
+  68:25  warning  'setLocalTimezone' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/web/src/components/onboarding/screens/team-invite-screen.tsx
+  67:3  warning  'canSendInvites' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/web/src/components/pinterest-business-id-input.tsx
+  27:3  warning  'agencyId' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/web/src/components/pinterest-business-settings.tsx
+  20:3  warning  'agencyId' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/web/src/components/programmatic/BlogPostTemplate.tsx
+  273:11   warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+  349:130  warning  'keywords' is assigned a value but never used                                                                                                                                                                                                                                            @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/web/src/components/settings/billing/billing-hero.tsx
+  43:70  warning  'surface' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/web/src/components/settings/billing/cancel-subscription-modal.tsx
+  30:11  warning  'orgId' is assigned a value but never used        @typescript-eslint/no-unused-vars
+  31:9   warning  'queryClient' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/web/src/components/template-selector.tsx
+  88:17  warning  'groupCount' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/web/src/components/ui/combined-featured-section.tsx
+  59:85  warning  'i' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/web/src/contexts/unified-onboarding-context.tsx
+   865:6  warning  React Hook useCallback has a missing dependency: 'getToken'. Either include it or remove the dependency array                                           react-hooks/exhaustive-deps
+  1111:6  warning  React Hook useEffect has missing dependencies: 'router', 'state.agencyId', and 'state.currentStep'. Either include them or remove the dependency array  react-hooks/exhaustive-deps
+
+/Users/jon.high/agency-access/apps/web/src/evidence/next-image-shim.tsx
+  13:5  warning  Using `<img>` could result in slower LCP and higher bandwidth. Consider using `<Image />` from `next/image` or a custom image loader to automatically optimize images. This may incur additional usage or cost from your provider. See: https://nextjs.org/docs/messages/no-img-element  @next/next/no-img-element
+
+/Users/jon.high/agency-access/apps/web/src/evidence/next-navigation-shim.ts
+  37:26  warning  '_href' is defined but never used  @typescript-eslint/no-unused-vars
+  37:41  warning  '_type' is defined but never used  @typescript-eslint/no-unused-vars
+  41:35  warning  '_href' is defined but never used  @typescript-eslint/no-unused-vars
+  41:50  warning  '_type' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/web/src/lib/analytics/oauth-events.ts
+  37:26  warning  '_errorMessage' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/web/src/lib/analytics/omit-sensitive-token-properties.ts
+  6:18  warning  '_token' is assigned a value but never used        @typescript-eslint/no-unused-vars
+  6:48  warning  '_inviteToken' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/web/src/lib/transform-platforms.ts
+  62:15  warning  '_' is defined but never used  @typescript-eslint/no-unused-vars
+  92:45  warning  '_' is defined but never used  @typescript-eslint/no-unused-vars
+
+✖ 72 problems (0 errors, 72 warnings)
+

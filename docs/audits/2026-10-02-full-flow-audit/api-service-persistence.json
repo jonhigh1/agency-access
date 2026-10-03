@@ -1,0 +1,19 @@
+{
+  "cases": [
+    {
+      "name": "client_service_crud_search_update_and_duplicate_policy",
+      "passed": true
+    },
+    {
+      "name": "template_service_crud_and_single_default_policy",
+      "passed": true
+    },
+    {
+      "name": "access_request_service_create_read_transform_and_update",
+      "passed": true
+    }
+  ],
+  "externalDependenciesMocked": [],
+  "externalDependenciesInvoked": [],
+  "passed": true
+}

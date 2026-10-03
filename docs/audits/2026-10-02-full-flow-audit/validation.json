@@ -1,0 +1,91 @@
+{
+  "shared": {
+    "passed": 165,
+    "suites": 9
+  },
+  "cli": {
+    "passed": 7
+  },
+  "scripts": {
+    "passed": 5,
+    "failed": 4
+  },
+  "proxy": {
+    "red": "client alias protected",
+    "green": 31,
+    "browser": "local anonymous alias redirect verified"
+  },
+  "api_initial": {
+    "passed": 1696,
+    "skipped": 19
+  },
+  "completion": false,
+  "api_latest": {
+    "passed": 1703,
+    "skipped": 19,
+    "suites": 157
+  },
+  "web_latest_full": {
+    "passed": 2268,
+    "skipped": 2,
+    "suites": 245,
+    "boundary": "Before new contact and slider tests; those passed focused afterward"
+  },
+  "web_build": {
+    "exit_code": 0
+  },
+  "web_typecheck": {
+    "exit_code": 0
+  },
+  "api_typecheck": {
+    "exit_code": 0
+  },
+  "web_lint": {
+    "errors": 0,
+    "warnings": 72
+  },
+  "api_lint": {
+    "errors": 0,
+    "warnings": 110
+  },
+  "wizard": {
+    "passed": 47,
+    "suites": 2
+  },
+  "new_contact": {
+    "passed": 2
+  },
+  "pricing_slider": {
+    "passed": 2
+  },
+  "demo": {
+    "passed": 4
+  },
+  "mobile_nav": {
+    "passed": 13
+  },
+  "client_modal": {
+    "passed": 4
+  },
+  "isolated_postgres": {
+    "direct_orm": true,
+    "actual_services": true,
+    "evidence": [
+      "api-persistence.json",
+      "api-service-persistence.json"
+    ]
+  },
+  "pre_push_proposal": {
+    "passed": 4,
+    "applied": false
+  },
+  "invite_landing_terminal_load": {
+    "passed": 22,
+    "suites": 3
+  },
+  "branding_invite_focused": {
+    "passed": 64,
+    "suites": 4,
+    "boundary": "Agent reports shell 8, manual 9, invite page 39, capability 8; full suite and current build pending"
+  }
+}

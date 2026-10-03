@@ -1,0 +1,2414 @@
+[
+  {
+    "surface": "dashboard",
+    "url": "/dashboard",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 1440,
+    "file": "1440-dashboard.png",
+    "text": "AuthHub\nWorkspace\nDashboard\nConnections\nToken Health\nClients\nAccount\nSettings\nHelp Center\nAA\nAccount\nDashboard\n\nManage client access requests\n\nCREATE REQUEST\nTOTAL REQUESTS\n\n2\n\nPENDING\n\n1\n\nACTIVE CONNECTIONS\n\n1\n\nPLATFORMS CONNECTED\n\n2\n\nRecent Access Requests\n\nShowing latest 1 of 2 requests\n\nCreate Request\nAcme Growth — international partnerships\n\nmarketing.partnerships@example.com\n\nG\nM\n9/30/2026\nPENDING\nACTIVE CONNECTIONS\nMANAGE CLIENTS\nmarketing.partnerships@example.com\n\nConnected on 9/30/2026\n\nG\nView Details",
+    "metrics": {
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "dashboard-empty",
+    "url": "/dashboard",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 1440,
+    "file": "1440-dashboard-empty.png",
+    "text": "AuthHub\nWorkspace\nDashboard\nConnections\nToken Health\nClients\nAccount\nSettings\nHelp Center\nAA\nAccount\nDashboard\n\nManage client access requests\n\nCREATE REQUEST\nTOTAL REQUESTS\n\n0\n\nPENDING\n\n0\n\nACTIVE CONNECTIONS\n\n0\n\nPLATFORMS CONNECTED\n\n0\n\nRecent Access Requests\n\nShowing latest 1 of 2 requests\n\nCreate Request\nNo access requests yet\n\nCreate your first access request to start onboarding clients.\n\nACTIVE CONNECTIONS\nMANAGE CLIENTS\nNo client connections yet\n\nConnections will appear here after clients authorize access.",
+    "metrics": {
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "dashboard-error",
+    "url": "/dashboard",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 1440,
+    "file": "1440-dashboard-error.png",
+    "text": "AuthHub\nWorkspace\nDashboard\nConnections\nToken Health\nClients\nAccount\nSettings\nHelp Center\nAA\nAccount\nFailed to Load Dashboard\n\nService temporarily unavailable. Please try again.\n\nRETRY",
+    "metrics": {
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "mainCount": 0,
+      "h1Count": 0,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "clients",
+    "url": "/clients",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 1440,
+    "file": "1440-clients.png",
+    "text": "AuthHub\nWorkspace\nDashboard\nConnections\nToken Health\nClients\nAccount\nSettings\nHelp Center\nAA\nAccount\nClients\n\nManage client connections and platform authorizations\n\nCREATE CLIENT\nFilters\nAcme Growth — international partnerships\n\nmarketing.partnerships@example.com\n\nAcme Growth\n\nPENDING\n\nConnected Platforms (2)\n\nG\nM\nTotal Requests:\n2\nLast Activity:\n9/30/2026\nView Details\nShowing 1 of 61 clients",
+    "metrics": {
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": [
+        {
+          "name": "Search clients by name, email, or company...",
+          "size": "16px",
+          "labels": 0
+        }
+      ]
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "clients-empty",
+    "url": "/clients",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 1440,
+    "file": "1440-clients-empty.png",
+    "text": "AuthHub\nWorkspace\nDashboard\nConnections\nToken Health\nClients\nAccount\nSettings\nHelp Center\nAA\nAccount\nClients\n\nManage client connections and platform authorizations\n\nCREATE CLIENT\nFilters\nNo clients yet\n\nClients will appear here once they authorize their platforms through access requests.\n\nCreate Client",
+    "metrics": {
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": [
+        {
+          "name": "Search clients by name, email, or company...",
+          "size": "16px",
+          "labels": 0
+        }
+      ]
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "clients-error",
+    "url": "/clients",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 1440,
+    "file": "1440-clients-error.png",
+    "text": "You have rendered a `motion` component within a `LazyMotion` component. This will break tree shaking. Import and render a `m` component instead.. For more information and steps for solving, visit https://motion.dev/troubleshooting/lazy-strict-mode",
+    "metrics": {
+      "scrollWidth": 2371,
+      "viewport": 1440,
+      "mainCount": 0,
+      "h1Count": 0,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "connections",
+    "url": "/connections",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 1440,
+    "file": "1440-connections.png",
+    "text": "AuthHub\nWorkspace\nDashboard\nConnections\nToken Health\nClients\nAccount\nSettings\nHelp Center\nAA\nAccount\nConnect your accounts\n\nTo create a link, you'll need to connect your accounts\n\nRecommended\n\nBased on your agency's requirements\n\nG\nGoogle\n\nConnected\n\nManage Assets\nDisconnect\nM\nMeta\n\nConnected\n\nManage Assets\nDisconnect\nL\nLinkedIn\n\nConnected\n\nDisconnect\nT\nTikTok Ads\n\nConnected\n\nDisconnect\nOther\nS\nSnapchat Ads\n\nConnected\n\nDisconnect\nB\nBeehiiv\n\nConnected\n\nDisconnect\nK\nKit\n\nConnected\n\nDisconnect\nM\nMailchimp\n\nConnected\n\nDisconnect\nP\nPinterest\n\nConnected\n\nDisconnect\nS\nShopify\n\nConnected\n\nDisconnect\nK\nKlaviyo\n\nConnected\n\nDisconnect",
+    "metrics": {
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "connections-empty",
+    "url": "/connections",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 1440,
+    "file": "1440-connections-empty.png",
+    "text": "AuthHub\nWorkspace\nDashboard\nConnections\nToken Health\nClients\nAccount\nSettings\nHelp Center\nAA\nAccount\nConnect your accounts\n\nTo create a link, you'll need to connect your accounts\n\nNo platforms available\n\nNo platforms are currently configured. Please contact support.",
+    "metrics": {
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "settings-general",
+    "url": "/settings",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 1440,
+    "file": "1440-settings-general.png",
+    "text": "AuthHub\nWorkspace\nDashboard\nConnections\nToken Health\nClients\nAccount\nSettings\nHelp Center\nAA\nAccount\nSettings\n\nNorthstar Growth · Growth · agency-123\n\nGeneral\nBilling\nWebhooks\nAgents\nPLAN\nTier\nGrowth\nStatus\nActive · Renews Oct 30, 2026\nLimits\n100 clients · 100 requests · 100 members\nUsage\n\nWhat this agency has used against its plan.\n\nManage billing\n\nClients\n\nClient profiles you can create.\n\n2 of 100\n\nRequests\n\nAccess requests this period.\n\n2 of 100\n\nMembers\n\nTeam members on this agency.\n\n2 of 100\n\nTemplates\n\nSaved access request templates.\n\n2 of 100\n\nAgency Profile\n\nWhat clients see on your request pages.\n\nAgency Name\n\nShown on every access request you send.\n\nCompany Website\n\nLinked from client-facing pages.\n\nLogo URL\n\nUsed for client-facing pages and branding.\n\nSave\n\nChanges apply to new and existing request links.\n\nSAVE CHANGES",
+    "metrics": {
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": [
+        {
+          "name": "agency-name",
+          "size": "16px",
+          "labels": 1
+        },
+        {
+          "name": "company-website",
+          "size": "16px",
+          "labels": 1
+        },
+        {
+          "name": "agency-logo-url",
+          "size": "16px",
+          "labels": 1
+        }
+      ]
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "settings-billing",
+    "url": "/settings?tab=billing",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 1440,
+    "file": "1440-settings-billing.png",
+    "text": "AuthHub\nWorkspace\nDashboard\nConnections\nToken Health\nClients\nAccount\nSettings\nHelp Center\nAA\nAccount\nSettings\n\nNorthstar Growth · Growth · agency-123\n\nGeneral\nBilling\nWebhooks\nAgents\nSUBSCRIPTION\nPlan\nGrowth\nStatus\nActive\nNext bill\nOctober 30, 2026\n\nScale When You’re Ready\n\nUpgrade to the next tier for more capacity and premium features.\n\nUPGRADE\nCurrent plan\n\nYour subscription details\n\nACTIVE\n\nPlan\n\nAgencies scaling their client operations\n\nGrowth Plan\n\n$79 /month\n\nNext billing\n\nThe date your next invoice is issued.\n\nOctober 30, 2026\n\nBilling portal\n\nUpdate payment details, view invoices, and manage your plan.\n\nManage in Billing Portal\nUsage this month\n\nTrack your plan usage\n\nAccess requests\n\n2 / 100\n\nClients\n\n2 / 100\n\nTeam members\n\n2 / 100\n\nTemplates\n\n2 / 100\n\nManage subscription\n\nUpgrade, downgrade, or cancel your plan\n\nChange plan\n\nChange your subscription plan at any time. Prorated charges or credits will apply.\n\nChange Plan\n\nCancel subscription\n\nCancel at the end of the billing period or immediately. You can reactivate later.\n\nCancel Subscription\nPayment methods\n\nManage your payment options\n\nNo payment methods saved\n\nAdd a card so your plan renews without interruption.\n\nAdd a payment method\nInvoices\n\nYour billing history\n\nNo invoices yet\n\nInvoices appear here after your first payment, with a PDF for your records.\n\n—\n\nBilling details\n\nInvoice and billing address\n\nCompany name\n\nShown on every invoice.\n\nBilling email\n\nWhere invoices and receipts are sent.\n\nAddress\n\nUsed for tax and invoice compliance.\n\nAddress line 1\nAddress line 2\nCity\nState\nPostal code\nCountry\n\nSave details\n\nChanges apply to your next invoice.\n\nSave Details",
+    "metrics": {
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": [
+        {
+          "name": "billing-company-name",
+          "size": "16px",
+          "labels": 1
+        },
+        {
+          "name": "billing-email",
+          "size": "16px",
+          "labels": 1
+        },
+        {
+          "name": "billing-address-line1",
+          "size": "16px",
+          "labels": 1
+        },
+        {
+          "name": "billing-address-line2",
+          "size": "16px",
+          "labels": 1
+        },
+        {
+          "name": "billing-address-city",
+          "size": "16px",
+          "labels": 1
+        },
+        {
+          "name": "billing-address-state",
+          "size": "16px",
+          "labels": 1
+        },
+        {
+          "name": "billing-address-postal-code",
+          "size": "16px",
+          "labels": 1
+        },
+        {
+          "name": "billing-address-country",
+          "size": "16px",
+          "labels": 1
+        }
+      ]
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "settings-webhooks",
+    "url": "/settings?tab=webhooks",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 1440,
+    "file": "1440-settings-webhooks.png",
+    "text": "AuthHub\nWorkspace\nDashboard\nConnections\nToken Health\nClients\nAccount\nSettings\nHelp Center\nAA\nAccount\nSettings\n\nNorthstar Growth · Growth · agency-123\n\nGeneral\nBilling\nWebhooks\nAgents\nENDPOINT\nURL\nNo endpoint is configured yet. Add a destination URL, choose the events you want, and create the endpoint to start receiving signed notifications.\nStatus\n—\nLast delivery\n—\nFailures\n—\nWebhook Endpoint\n\nSend signed lifecycle events from AuthHub into your CRM, automation, or warehouse.\n\nDestination URL\n\nWe sign each request with `svix-like` headers: timestamp plus HMAC SHA-256 signature.\n\nPayload version\n\nV1 payloads include connection-level summaries. Upgrade to V2 for granular asset data.\n\nStandard (V1) — connection-level summary\nEnhanced (V2) — per-asset detail\n\nSubscribed events\n\nChoose which lifecycle events this endpoint receives.\n\nTest event\nwebhook.test\n\nUse this event to verify your endpoint and signing implementation.\n\nPartial completion\naccess_request.partial\n\nFires when a client has connected part of the requested stack.\n\nCompleted access request\naccess_request.completed\n\nFires when the access request is fully completed.\n\nRevoked access request\naccess_request.revoked\n\nFires when an agency cancels or revokes a pending or completed request.\n\nExpired access request\naccess_request.expired\n\nFires when a pending request passes its expiration date without being completed.\n\nConnection status changed\nconnection.status_changed\n\nFires when a platform authorization status changes (e.g., active → invalid).\n\nCreate endpoint\n\nCreating the endpoint reveals its signing secret once.\n\nCREATE ENDPOINT\nSecret and delivery controls\n\nRotate the signing secret, send a test event, or pause deliveries.\n\nSecret rotation\n\nIssues a new signing secret and shows it once. Update your receiver before sending more events.\n\nRotate secret\n\nTest delivery\n\nQueues a test event to the active endpoint so you can verify signatures end to end.\n\nSend test event\n\nPause deliveries\n\nDisabling stops deliveries until you save the endpoint again.\n\nDisable endpoint\nRecent Deliveries\n\nInspect the most recent attempts sent to this endpoint.\n\nDelivery history appears here after your first test send or lifecycle event.",
+    "metrics": {
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": [
+        {
+          "name": "webhook-destination-url",
+          "size": "14px",
+          "labels": 1
+        },
+        {
+          "name": "",
+          "size": "16px",
+          "labels": 1
+        },
+        {
+          "name": "",
+          "size": "16px",
+          "labels": 1
+        },
+        {
+          "name": "",
+          "size": "16px",
+          "labels": 1
+        },
+        {
+          "name": "",
+          "size": "16px",
+          "labels": 1
+        },
+        {
+          "name": "",
+          "size": "16px",
+          "labels": 1
+        },
+        {
+          "name": "",
+          "size": "16px",
+          "labels": 1
+        }
+      ]
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "settings-agents",
+    "url": "/settings?tab=agents",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 1440,
+    "file": "1440-settings-agents.png",
+    "text": "AuthHub\nWorkspace\nDashboard\nConnections\nToken Health\nClients\nAccount\nSettings\nHelp Center\nAA\nAccount\nSettings\n\nNorthstar Growth · Growth · agency-123\n\nGeneral\nBilling\nWebhooks\nAgents\nMCP ENDPOINT\nURL\nhttp://127.0.0.1:3101/mcp\nCOPY ENDPOINT\nProvider sign-in and client authorization always remain human-only.\nConnected agents\n\nPoint a compatible personal agent at the endpoint above. You will sign in and approve its agency permissions before it can read anything.\n\nNo agents connected\n\nUntil you approve one, no agent can read or prepare anything for this workspace.\n\nHow to connect an agent",
+    "metrics": {
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "token-health",
+    "url": "/token-health",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 1440,
+    "file": "1440-token-health.png",
+    "text": "AuthHub\nWorkspace\nDashboard\nConnections\nToken Health\nClients\nAccount\nSettings\nHelp Center\nAA\nAccount\nToken Health\n\nMonitor and manage client connection tokens\n\nTOTAL CONNECTIONS\n\n1\n\nHEALTHY\n\n1\n\nEXPIRING SOON\n\n0\n\nEXPIRED\n\n0\n\nAll Tokens\nClient / Platform\nStatus\nExpires In\nLast Refreshed\nActions\nAcme Growth — international partnerships\nG\nGoogle Ads\nHealthy\n29 days remaining\n16h ago",
+    "metrics": {
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [
+        "<button class=\"p-2 text-muted-foreground hover:bg-muted/10 rounded-none transition-colors\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap="
+      ],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "token-health-empty",
+    "url": "/token-health",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 1440,
+    "file": "1440-token-health-empty.png",
+    "text": "AuthHub\nWorkspace\nDashboard\nConnections\nToken Health\nClients\nAccount\nSettings\nHelp Center\nAA\nAccount\nToken Health\n\nMonitor and manage client connection tokens\n\nTOTAL CONNECTIONS\n\n0\n\nHEALTHY\n\n0\n\nEXPIRING SOON\n\n0\n\nEXPIRED\n\n0\n\nAll Tokens\nNo connections yet\n\nTokens will appear here after clients authorize access.",
+    "metrics": {
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [
+        "<button class=\"p-2 text-muted-foreground hover:bg-muted/10 rounded-none transition-colors\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap="
+      ],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "request-create",
+    "url": "/access-requests/new",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 1440,
+    "file": "1440-request-create.png",
+    "text": "AuthHub\nWorkspace\nDashboard\nConnections\nToken Health\nClients\nAccount\nSettings\nHelp Center\nAA\nAccount\nNew Access Request\n\nCreate a request for client authorization\n\nStep 1 of 4\n25% complete\nFUNDAMENTALS\nPLATFORMS\nCUSTOMIZE\nREVIEW\nFundamentals\n\nSet up the basics for your access request\n\nSelect Client *\n\nWho is this access request for?\n\nExisting Clients\nCreate New\n\nAcme Growth — international partnerships\n\nAcme Growth\n\nmarketing.partnerships@example.com\n\nAdvanced Settings (Optional)\n\nReveal optional fields for CRM matching and downstream automation\n\nNeed to connect platforms?\n\nConnect your agency's platform accounts to use delegated access\n\nManage Platform Connections\nContinue to Platforms",
+    "metrics": {
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": [
+        {
+          "name": "Search clients...",
+          "size": "16px",
+          "labels": 0
+        }
+      ]
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "request-detail",
+    "url": "/access-requests/audit-request",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 1440,
+    "file": "1440-request-detail.png",
+    "text": "AuthHub\nWorkspace\nDashboard\nConnections\nToken Health\nClients\nAccount\nSettings\nHelp Center\nAA\nAccount\nAccess Request Details\n\nReview request configuration and lifecycle status before taking action.\n\nBack to Dashboard\nCancel Request\nEdit Request\nRequest Overview\n\nClient and request lifecycle details\n\nPENDING\n\nWaiting on client authorization\n\nYour client authorizes when they are ready. Access tokens are stored only after they complete authorization — not when the link is sent.\n\nCLIENT\n\nAcme Growth — international partnerships\n\nEMAIL\n\nmarketing.partnerships@example.com\n\nCREATED\n\n9/30/2026\n\nEXPIRES\n\n10/29/2026\n\nAUTHORIZATION LINK\n\nhttps://authhub.co/invite/audit-token\nCopy Link\nPreview Link\nSend Reminder\nEmail Client\nRequested Platforms\n\nProducts and requested access levels\n\nGOOGLE\n\nGoogle Ads · admin\n\nMETA\n\nMeta Pages · admin",
+    "metrics": {
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "request-edit",
+    "url": "/access-requests/audit-request/edit",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 1440,
+    "file": "1440-request-edit.png",
+    "text": "AuthHub\nWorkspace\nDashboard\nConnections\nToken Health\nClients\nAccount\nSettings\nHelp Center\nAA\nAccount\nEdit Access Request\n\nUpdate settings while the authorization link is still pending.\n\nBack\nPlatforms\nDefault Access Level\nAdmin Access — Full control over the account\n\nPermissions included:\n\n•\nCreate campaigns\n•\nEdit settings\n•\nDelete content\n•\nManage billing\n•\nAdd/remove users\nG\nGoogle1 of 6 selected\n1 selected\nM\nMeta1 of 3 selected\n1 selected\nL\nLinkedIn2 products\nT\nTikTok1 products\nS\nSnapchat1 products\nM\nMailchimp1 products\nP\nPinterest1 products\nK\nKlaviyo1 products\nS\nShopify1 products\nK\nKit1 products\nB\nBeehiiv1 products\nMeta access recipients\n\nChoose the person who must use the client assets. A system user is optional for server automation.\n\nPeople\n\nNone available in the selected Business Portfolio.\n\nSystem users\n\nNone available in the selected Business Portfolio.\n\nFull control for selected Meta assets\nPage tasks\n\nRecommended tasks follow the selected Meta products. Full control adds every task.\n\nManage settings\nCreate content\nModerate\nAdvertise\nView insights\nManage Leads Access\nAdvanced\nShow\nCustomize\nAdd Field\nLogo URL\nPrimary Color\nSubdomain\nDiscard Changes\nSave Changes",
+    "metrics": {
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": [
+        {
+          "name": "",
+          "size": "14px",
+          "labels": 1
+        },
+        {
+          "name": "",
+          "size": "14px",
+          "labels": 1
+        },
+        {
+          "name": "",
+          "size": "14px",
+          "labels": 1
+        },
+        {
+          "name": "",
+          "size": "14px",
+          "labels": 1
+        },
+        {
+          "name": "",
+          "size": "14px",
+          "labels": 1
+        },
+        {
+          "name": "",
+          "size": "14px",
+          "labels": 1
+        },
+        {
+          "name": "",
+          "size": "14px",
+          "labels": 1
+        },
+        {
+          "name": "logoUrl",
+          "size": "16px",
+          "labels": 1
+        },
+        {
+          "name": "primaryColor",
+          "size": "16px",
+          "labels": 1
+        },
+        {
+          "name": "subdomain",
+          "size": "16px",
+          "labels": 1
+        }
+      ]
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "request-success",
+    "url": "/access-requests/audit-request/success",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 1440,
+    "file": "1440-request-success.png",
+    "text": "AuthHub\nWorkspace\nDashboard\nConnections\nToken Health\nClients\nAccount\nSettings\nHelp Center\nAA\nAccount\nPending client authorization\n\nWaiting on Acme Growth — international partnerships. Share the link below — connected when they finish Google.\n\nStep 3 of 3\n100% complete\nBUILD\nREVIEW\nSEND\nPending\n\nWaiting on Acme Growth — international partnerships to authorize. Connected when they finish Google.\n\nPENDING\n\nAUTHORIZATION LINK\n\nhttps://authhub.co/invite/audit-token\nCopy Link\nEmail Client\n\nGo to dashboard — track status while you wait\n\nREQUEST DETAILS\n\nClient\n\nAcme Growth — international partnerships\n\nEmail\n\nmarketing.partnerships@example.com\n\nProducts\n\n2\n\nExpires\n\nThursday, October 29, 2026\n\nLink validity window is 7 days. Expiration date shown above.\n\nCreate Another Request",
+    "metrics": {
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "invite",
+    "url": "/invite/audit-token",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 1440,
+    "file": "1440-invite.png",
+    "text": "Northstar Growth needs access to finish setup\n\nNorthstar Growth requested access to Google, Meta. Confirm which accounts to share below.\n\nYou stay in control. Approve only what you want to share. \nPasswords are never requested.\n\nYOUR PROGRESS\n\nCheck again\nG\n\nGoogle\n\nConnect Google to continue.\n\nM\n\nMeta\n\nConnect Meta to continue.\n\nIN PROGRESS\n\nREQUESTED PLATFORMS\n\nG\n\nGoogle\n\nGoogle Ads · Admin Access\nM\n\nMeta\n\nMeta Pages · Admin Access\n\nApprove only what you want to share\n\nYour agency receives access only to the accounts you explicitly approve in the next step.\n\nPasswords are never requested\nContinue to connect",
+    "metrics": {
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "invite-expired",
+    "url": "/invite/invalid",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 1440,
+    "file": "1440-invite-expired.png",
+    "text": "This link has expired\n\nThis access request expired, so access cannot be granted. Contact your agency to get a new link.\n\nNothing has been shared yet. You can safely close this page.\n\nNeed a new link?\n\nContact your agency or support and they will send a fresh authorization link.\n\nContact support",
+    "metrics": {
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": [
+      "/api/client/invalid"
+    ]
+  },
+  {
+    "surface": "manual-beehiiv",
+    "url": "/invite/audit-token/beehiiv/manual",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 1440,
+    "file": "1440-manual-beehiiv.png",
+    "text": "Back\nComplete Beehiiv access\n\nNorthstar Growth asked for Beehiiv access. Use only Beehiiv-native invite screens. Never share credentials. Use Beehiiv's native invite flow, finish the checklist, and return to the request.\n\nYou stay in control. Approve only what you want to share. \nPasswords are never requested.Manual invite\n\nBEEHIIV CHECKLIST\n\nCopy invite email\n\nUse this email when adding your agency as a Beehiiv teammate.\n\nStep 1 of 4\n0 of 4 completed\n\nInvite email\n\nCopy\nBack\nI copied this\nCredentials are never requested in this flow.",
+    "metrics": {
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": [
+        {
+          "name": "",
+          "size": "14px",
+          "labels": 0
+        }
+      ]
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "manual-kit",
+    "url": "/invite/audit-token/kit/manual",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 1440,
+    "file": "1440-manual-kit.png",
+    "text": "Back\nComplete Kit access\n\nNorthstar Growth asked for Kit access. Use only Kit-native invite screens. Never share credentials. Use Kit's native invite flow, finish the checklist, and return to the request.\n\nYou stay in control. Approve only what you want to share. \nPasswords are never requested.Manual invite\n\nKIT CHECKLIST\n\nCopy invite email\n\nUse this email when inviting your agency into Kit.\n\nStep 1 of 4\n0 of 4 completed\n\nInvite email\n\nCopy\nBack\nI copied this\nCredentials are never requested in this flow.",
+    "metrics": {
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": [
+        {
+          "name": "",
+          "size": "14px",
+          "labels": 0
+        }
+      ]
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "manual-shopify",
+    "url": "/invite/audit-token/shopify/manual",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 1440,
+    "file": "1440-manual-shopify.png",
+    "text": "Back\nComplete Shopify access\n\nNorthstar Growth asked for Shopify access. Use only Shopify-native collaborator screens. Never share credentials. Use Shopify's native invite flow, finish the checklist, and return to the request.\n\nYou stay in control. Approve only what you want to share. \nPasswords are never requested.Manual invite\n\nSHOPIFY CHECKLIST\n\nConnect Shopify\n\nOpen Shopify admin and navigate to Users and permissions.\n\nStep 1 of 3\n0 of 3 completed\nOpen Shopify Admin\nOpen Shopify Help\nBack\nConnect Shopify\nCredentials are never requested in this flow.",
+    "metrics": {
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "manual-klaviyo",
+    "url": "/invite/audit-token/klaviyo/manual",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 1440,
+    "file": "1440-manual-klaviyo.png",
+    "text": "Back\nComplete Klaviyo access\n\nNorthstar Growth asked for Klaviyo access. Use only Klaviyo-native invite screens. Never share credentials. Use Klaviyo's native invite flow, finish the checklist, and return to the request.\n\nYou stay in control. Approve only what you want to share. \nPasswords are never requested.Manual invite\n\nKLAVIYO CHECKLIST\n\nCopy invite email\n\nUse this email when inviting your agency into Klaviyo.\n\nStep 1 of 4\n0 of 4 completed\n\nInvite email\n\nCopy\nBack\nI copied this\nCredentials are never requested in this flow.",
+    "metrics": {
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": [
+        {
+          "name": "",
+          "size": "14px",
+          "labels": 0
+        }
+      ]
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "manual-mailchimp",
+    "url": "/invite/audit-token/mailchimp/manual",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 1440,
+    "file": "1440-manual-mailchimp.png",
+    "text": "Back\nComplete Mailchimp access\n\nNorthstar Growth asked for Mailchimp access. Use only Mailchimp-native invite screens. Never share credentials. Use Mailchimp's native invite flow, finish the checklist, and return to the request.\n\nYou stay in control. Approve only what you want to share. \nPasswords are never requested.Manual invite\n\nMAILCHIMP CHECKLIST\n\nCopy invite email\n\nUse this email when inviting your agency into Mailchimp.\n\nStep 1 of 4\n0 of 4 completed\n\nInvite email\n\nCopy\nBack\nI copied this\nCredentials are never requested in this flow.",
+    "metrics": {
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": [
+        {
+          "name": "",
+          "size": "14px",
+          "labels": 0
+        }
+      ]
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "manual-pinterest",
+    "url": "/invite/audit-token/pinterest/manual",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 1440,
+    "file": "1440-manual-pinterest.png",
+    "text": "Back\nComplete Pinterest access\n\nNorthstar Growth asked for Pinterest access. Use only Pinterest-native invite screens. Never share credentials. Use Pinterest's native invite flow, finish the checklist, and return to the request.\n\nYou stay in control. Approve only what you want to share. \nPasswords are never requested.Manual invite\n\nPINTEREST CHECKLIST\n\nOpen Pinterest Business Manager\n\nSign in to Pinterest Business and open your business manager account.\n\nStep 1 of 4\n0 of 4 completed\nOpen Business Manager\nBack\nI opened Pinterest\nCredentials are never requested in this flow.",
+    "metrics": {
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "invite-callback-error",
+    "url": "/invite/oauth-callback?error=access_denied&platform=meta",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 1440,
+    "file": "1440-invite-callback-error.png",
+    "text": "Authorization Failed\n\nYou declined or cancelled access. Return to the request to try again.\n\nReturn Home",
+    "metrics": {
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "platform-callback-error",
+    "url": "/platforms/callback?error=access_denied&platform=google",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 1440,
+    "file": "1440-platform-callback-error.png",
+    "text": "Connection Failed\n\nSomething went wrong. Please try again.\n\nError code: access_denied\n\nTry Again\nGo to Dashboard",
+    "metrics": {
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "onboarding",
+    "url": "/onboarding/unified",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 1440,
+    "file": "1440-onboarding.png",
+    "text": "You have rendered a `motion` component within a `LazyMotion` component. This will break tree shaking. Import and render a `m` component instead.. For more information and steps for solving, visit https://motion.dev/troubleshooting/lazy-strict-mode",
+    "metrics": {
+      "scrollWidth": 2371,
+      "viewport": 1440,
+      "mainCount": 0,
+      "h1Count": 0,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "checkout-success",
+    "url": "/checkout/success?tier=GROWTH",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 1440,
+    "file": "1440-checkout-success.png",
+    "text": "Payment Successful!\n\nYour subscription is now active.\n\nYou can now start inviting team members and creating access requests.\n\nGo to Connections\nGo to Dashboard",
+    "metrics": {
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "checkout-cancel",
+    "url": "/checkout/cancel",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 1440,
+    "file": "1440-checkout-cancel.png",
+    "text": "Payment Cancelled\n\nYour account has been created, but the payment was cancelled. You can complete your subscription later from Settings.\n\nDon't worry! Your account is ready to use. You can activate your subscription anytime from the Settings page.\n\nComplete Subscription\nGo to Dashboard",
+    "metrics": {
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "client-detail-preview",
+    "url": "/dev/client-detail?preset=mixed-google",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 1440,
+    "file": "1440-client-detail-preview.png",
+    "text": "All clients\n\nDEV HARNESS\n\nPreset: mixed-google\n\nBD\nBrightland Dental\nACTIVE\nBrightland Dental Studio\nhello@brightlanddental.com\nClient since January 12, 2026\nCreate Request\nEdit\nDelete\nTOTAL REQUESTS\n\n3\n\nACTIVE CONNECTIONS\n\n1\n\nPENDING\n\n1\n\nEXPIRED\n\n0\n\nOverview\nActivity\nRequested Access\n\nReview platform-group progress before digging into request history.\n\nG\n\nGoogle\n\nLast requested Mar 8, 2026\n\n4/5 connected\n\nNEEDS FOLLOW-UP\nView request\nDetails\nM\n\nMeta\n\nLast requested Mar 10, 2026\n\n0/1 connected\n\nPENDING\nView request\nDetails\nAccess Requests\nAll Status\nQ1 performance access\nACTIVE\nG\nG\nG\nCreated: Mar 8, 2026\nAuthorized: Mar 8, 2026\nView details\nSpring launch setup\nPENDING\nM\nCreated: Mar 10, 2026\nView details\nLegacy reconnect\nACTIVE\nG\nCreated: Feb 1, 2026\nAuthorized: Feb 1, 2026\nView details",
+    "metrics": {
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "offboarding-preview",
+    "url": "/dev/offboarding-preview",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 1440,
+    "file": "1440-offboarding-preview.png",
+    "text": "← Dev Tools\nGoogle Offboarding Panel — State Preview\n\nVisual reference for every panel state. No auth or API required.\n\n1. Selection State\nGoogle Offboarding\n\nRevoke access and clean up secrets for this Google connection (google-analytics-4 (GA4)).\n\nBegin Offboarding\n2. Preview State\nOffboarding Preview — google-analytics-4 (GA4)\n\nReview all items before confirming. This action is irreversible.\n\nGoogle Analytics 4\n\nRevoke OAuth token and remove data stream access\n\nAUTOMATIC\n\nGoogle Search Console\n\nManual property removal required via GSC UI\n\nMANUAL ACTION REQUIRED\n\nGoogle Ads\n\nConnection expired — must reconnect to revoke\n\nRECONNECT REQUIRED\n\nGoogle Merchant Center\n\nFeeds linked to external accounts; removal may break them\n\nNOT SAFELY REVERSIBLE\nCancel\nConfirm Offboarding\n3. Confirmation State\nConfirm Offboarding — google-analytics-4 (GA4)\n\nThis will permanently revoke access and clean up secrets for all items listed below. This action cannot be undone.\n\nGoogle Analytics 4\nAUTOMATIC\nGoogle Search Console\nMANUAL ACTION REQUIRED\nGoogle Ads\nRECONNECT REQUIRED\nGoogle Merchant Center\nNOT SAFELY REVERSIBLE\nGo back\nConfirm Offboarding\n4. Progress State\nOffboarding in Progress — google-analytics-4 (GA4)\n\nRun ID: run_abc123\n\nGoogle Analytics 4\nCOMPLETED\nGoogle Ads API\nIN PROGRESS\nGoogle Search Console\nPENDING APPROVAL\n\nPending external approval\n\nGoogle Merchant Center\nFAILED (RETRYABLE)\nRetry\n5. Receipt — Completed\nOffboarding Complete — google-analytics-4 (GA4)\n\nCompleted at 7/30/2026, 2:45:00 PM\n\nGoogle Analytics 4\nCOMPLETED\n\nOAuth token revoked successfully\n\nSecret cleanup: Deleted\n\nGoogle Ads API\nCOMPLETED\n\nAPI access revoked\n\nSecret cleanup: Deleted\n\nGoogle Search Console\nCOMPLETED\n\nProperty removed from account\n\nSecret cleanup: Already absent\n\nStart new offboarding\n6. Receipt — Manual Follow-up\nOffboarding Complete — Follow-up Required — google-analytics-4 (GA4)\n\nCompleted at 7/30/2026, 2:50:00 PM\n\nGoogle Analytics 4\nCOMPLETED\n\nOAuth token revoked\n\nSecret cleanup: Deleted\n\nGoogle Search Console\nNEEDS FOLLOW-UP\nHUMAN-REPORTED\n\nToken revoked; property removal requires manual action in GSC UI\n\nNext: Remove property manually from Google Search Console settings\n\nAttest\nStart new offboarding\n7. Receipt — Incomplete\nOffboarding Incomplete — google-analytics-4 (GA4)\n\nCompleted at 7/30/2026, 2:55:00 PM\n\nGoogle Analytics 4\nCOMPLETED\n\nOAuth token revoked\n\nSecret cleanup: Deleted\n\nGoogle Ads API\nFAILED (RETRYABLE)\n\nAPI returned 503 — service temporarily unavailable\n\nRetry\nGoogle Merchant Center\nPENDING\n\nBlocked by upstream failure\n\nStart new offboarding\n8. Error State\n\nSomething went wrong\n\nFailed to fetch offboarding run: Network request failed (ECONNREFUSED). The API server may be temporarily unavailable. Please try again.\n\nTry again",
+    "metrics": {
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "facebook-grant",
+    "url": "/audit/facebook-grant",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 1440,
+    "file": "1440-facebook-grant.png",
+    "text": "Automatic\n\nThese services can be granted access to automatically\n\nf\nFacebook Pages\nAdmin\nSelect Accounts\nAcme Growth (331506...)\nExample Studio (106593...)\nGrant Access",
+    "metrics": {
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "mainCount": 1,
+      "h1Count": 0,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "dashboard",
+    "url": "/dashboard",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 390,
+    "file": "390-dashboard.png",
+    "text": "Dashboard\n\nManage client access requests\n\nCREATE REQUEST\nTOTAL REQUESTS\n\n2\n\nPENDING\n\n1\n\nACTIVE CONNECTIONS\n\n1\n\nPLATFORMS CONNECTED\n\n2\n\nRecent Access Requests\n\nShowing latest 1 of 2 requests\n\nCreate Request\nAcme Growth — international partnerships\n\nmarketing.partnerships@example.com\n\nG\nM\n9/30/2026\nPENDING\nACTIVE CONNECTIONS\nMANAGE CLIENTS\nmarketing.partnerships@example.com\n\nConnected on 9/30/2026\n\nG\nView Details",
+    "metrics": {
+      "scrollWidth": 390,
+      "viewport": 390,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "dashboard-empty",
+    "url": "/dashboard",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 390,
+    "file": "390-dashboard-empty.png",
+    "text": "Dashboard\n\nManage client access requests\n\nCREATE REQUEST\nTOTAL REQUESTS\n\n0\n\nPENDING\n\n0\n\nACTIVE CONNECTIONS\n\n0\n\nPLATFORMS CONNECTED\n\n0\n\nRecent Access Requests\n\nShowing latest 1 of 2 requests\n\nCreate Request\nNo access requests yet\n\nCreate your first access request to start onboarding clients.\n\nACTIVE CONNECTIONS\nMANAGE CLIENTS\nNo client connections yet\n\nConnections will appear here after clients authorize access.",
+    "metrics": {
+      "scrollWidth": 390,
+      "viewport": 390,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "dashboard-error",
+    "url": "/dashboard",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 390,
+    "file": "390-dashboard-error.png",
+    "text": "Failed to Load Dashboard\n\nService temporarily unavailable. Please try again.\n\nRETRY",
+    "metrics": {
+      "scrollWidth": 390,
+      "viewport": 390,
+      "mainCount": 0,
+      "h1Count": 0,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "clients",
+    "url": "/clients",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 390,
+    "file": "390-clients.png",
+    "text": "Clients\n\nManage client connections and platform authorizations\n\nCREATE CLIENT\nFilters\nAcme Growth — international partnerships\n\nmarketing.partnerships@example.com\n\nAcme Growth\n\nPENDING\n\nConnected Platforms (2)\n\nG\nM\nTotal Requests:\n2\nLast Activity:\n9/30/2026\nView Details\nShowing 1 of 61 clients",
+    "metrics": {
+      "scrollWidth": 390,
+      "viewport": 390,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": [
+        {
+          "name": "Search clients by name, email, or company...",
+          "size": "16px",
+          "labels": 0
+        }
+      ]
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "clients-empty",
+    "url": "/clients",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 390,
+    "file": "390-clients-empty.png",
+    "text": "Clients\n\nManage client connections and platform authorizations\n\nCREATE CLIENT\nFilters\nNo clients yet\n\nClients will appear here once they authorize their platforms through access requests.\n\nCreate Client",
+    "metrics": {
+      "scrollWidth": 390,
+      "viewport": 390,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": [
+        {
+          "name": "Search clients by name, email, or company...",
+          "size": "16px",
+          "labels": 0
+        }
+      ]
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "clients-error",
+    "url": "/clients",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 390,
+    "file": "390-clients-error.png",
+    "text": "You have rendered a `motion` component within a `LazyMotion` component. This will break tree shaking. Import and render a `m` component instead.. For more information and steps for solving, visit https://motion.dev/troubleshooting/lazy-strict-mode",
+    "metrics": {
+      "scrollWidth": 2371,
+      "viewport": 390,
+      "mainCount": 0,
+      "h1Count": 0,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "connections",
+    "url": "/connections",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 390,
+    "file": "390-connections.png",
+    "text": "Connect your accounts\n\nTo create a link, you'll need to connect your accounts\n\nRecommended\n\nBased on your agency's requirements\n\nG\nGoogle\n\nConnected\n\nManage Assets\nDisconnect\nM\nMeta\n\nConnected\n\nManage Assets\nDisconnect\nL\nLinkedIn\n\nConnected\n\nDisconnect\nT\nTikTok Ads\n\nConnected\n\nDisconnect\nOther\nS\nSnapchat Ads\n\nConnected\n\nDisconnect\nB\nBeehiiv\n\nConnected\n\nDisconnect\nK\nKit\n\nConnected\n\nDisconnect\nM\nMailchimp\n\nConnected\n\nDisconnect\nP\nPinterest\n\nConnected\n\nDisconnect\nS\nShopify\n\nConnected\n\nDisconnect\nK\nKlaviyo\n\nConnected\n\nDisconnect",
+    "metrics": {
+      "scrollWidth": 390,
+      "viewport": 390,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "connections-empty",
+    "url": "/connections",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 390,
+    "file": "390-connections-empty.png",
+    "text": "Connect your accounts\n\nTo create a link, you'll need to connect your accounts\n\nNo platforms available\n\nNo platforms are currently configured. Please contact support.",
+    "metrics": {
+      "scrollWidth": 390,
+      "viewport": 390,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "settings-general",
+    "url": "/settings",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 390,
+    "file": "390-settings-general.png",
+    "text": "Settings\n\nNorthstar Growth · Growth · agency-123\n\nGeneral\nBilling\nWebhooks\nAgents\nPLAN\nTier\nGrowth\nStatus\nActive · Renews Oct 30, 2026\nLimits\n100 clients · 100 requests · 100 members\nUsage\n\nWhat this agency has used against its plan.\n\nManage billing\n\nClients\n\nClient profiles you can create.\n\n2 of 100\n\nRequests\n\nAccess requests this period.\n\n2 of 100\n\nMembers\n\nTeam members on this agency.\n\n2 of 100\n\nTemplates\n\nSaved access request templates.\n\n2 of 100\n\nAgency Profile\n\nWhat clients see on your request pages.\n\nAgency Name\n\nShown on every access request you send.\n\nCompany Website\n\nLinked from client-facing pages.\n\nLogo URL\n\nUsed for client-facing pages and branding.\n\nSave\n\nChanges apply to new and existing request links.\n\nSAVE CHANGES",
+    "metrics": {
+      "scrollWidth": 390,
+      "viewport": 390,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": [
+        {
+          "name": "agency-name",
+          "size": "16px",
+          "labels": 1
+        },
+        {
+          "name": "company-website",
+          "size": "16px",
+          "labels": 1
+        },
+        {
+          "name": "agency-logo-url",
+          "size": "16px",
+          "labels": 1
+        }
+      ]
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "settings-billing",
+    "url": "/settings?tab=billing",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 390,
+    "file": "390-settings-billing.png",
+    "text": "Settings\n\nNorthstar Growth · Growth · agency-123\n\nGeneral\nBilling\nWebhooks\nAgents\nSUBSCRIPTION\nPlan\nGrowth\nStatus\nActive\nNext bill\nOctober 30, 2026\n\nScale When You’re Ready\n\nUpgrade to the next tier for more capacity and premium features.\n\nUPGRADE\nCurrent plan\n\nYour subscription details\n\nACTIVE\n\nPlan\n\nAgencies scaling their client operations\n\nGrowth Plan\n\n$79 /month\n\nNext billing\n\nThe date your next invoice is issued.\n\nOctober 30, 2026\n\nBilling portal\n\nUpdate payment details, view invoices, and manage your plan.\n\nManage in Billing Portal\nUsage this month\n\nTrack your plan usage\n\nAccess requests\n\n2 / 100\n\nClients\n\n2 / 100\n\nTeam members\n\n2 / 100\n\nTemplates\n\n2 / 100\n\nManage subscription\n\nUpgrade, downgrade, or cancel your plan\n\nChange plan\n\nChange your subscription plan at any time. Prorated charges or credits will apply.\n\nChange Plan\n\nCancel subscription\n\nCancel at the end of the billing period or immediately. You can reactivate later.\n\nCancel Subscription\nPayment methods\n\nManage your payment options\n\nNo payment methods saved\n\nAdd a card so your plan renews without interruption.\n\nAdd a payment method\nInvoices\n\nYour billing history\n\nNo invoices yet\n\nInvoices appear here after your first payment, with a PDF for your records.\n\n—\n\nBilling details\n\nInvoice and billing address\n\nCompany name\n\nShown on every invoice.\n\nBilling email\n\nWhere invoices and receipts are sent.\n\nAddress\n\nUsed for tax and invoice compliance.\n\nAddress line 1\nAddress line 2\nCity\nState\nPostal code\nCountry\n\nSave details\n\nChanges apply to your next invoice.\n\nSave Details",
+    "metrics": {
+      "scrollWidth": 390,
+      "viewport": 390,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": [
+        {
+          "name": "billing-company-name",
+          "size": "16px",
+          "labels": 1
+        },
+        {
+          "name": "billing-email",
+          "size": "16px",
+          "labels": 1
+        },
+        {
+          "name": "billing-address-line1",
+          "size": "16px",
+          "labels": 1
+        },
+        {
+          "name": "billing-address-line2",
+          "size": "16px",
+          "labels": 1
+        },
+        {
+          "name": "billing-address-city",
+          "size": "16px",
+          "labels": 1
+        },
+        {
+          "name": "billing-address-state",
+          "size": "16px",
+          "labels": 1
+        },
+        {
+          "name": "billing-address-postal-code",
+          "size": "16px",
+          "labels": 1
+        },
+        {
+          "name": "billing-address-country",
+          "size": "16px",
+          "labels": 1
+        }
+      ]
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "settings-webhooks",
+    "url": "/settings?tab=webhooks",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 390,
+    "file": "390-settings-webhooks.png",
+    "text": "Settings\n\nNorthstar Growth · Growth · agency-123\n\nGeneral\nBilling\nWebhooks\nAgents\nENDPOINT\nURL\nNo endpoint is configured yet. Add a destination URL, choose the events you want, and create the endpoint to start receiving signed notifications.\nStatus\n—\nLast delivery\n—\nFailures\n—\nWebhook Endpoint\n\nSend signed lifecycle events from AuthHub into your CRM, automation, or warehouse.\n\nDestination URL\n\nWe sign each request with `svix-like` headers: timestamp plus HMAC SHA-256 signature.\n\nPayload version\n\nV1 payloads include connection-level summaries. Upgrade to V2 for granular asset data.\n\nStandard (V1) — connection-level summary\nEnhanced (V2) — per-asset detail\n\nSubscribed events\n\nChoose which lifecycle events this endpoint receives.\n\nTest event\nwebhook.test\n\nUse this event to verify your endpoint and signing implementation.\n\nPartial completion\naccess_request.partial\n\nFires when a client has connected part of the requested stack.\n\nCompleted access request\naccess_request.completed\n\nFires when the access request is fully completed.\n\nRevoked access request\naccess_request.revoked\n\nFires when an agency cancels or revokes a pending or completed request.\n\nExpired access request\naccess_request.expired\n\nFires when a pending request passes its expiration date without being completed.\n\nConnection status changed\nconnection.status_changed\n\nFires when a platform authorization status changes (e.g., active → invalid).\n\nCreate endpoint\n\nCreating the endpoint reveals its signing secret once.\n\nCREATE ENDPOINT\nSecret and delivery controls\n\nRotate the signing secret, send a test event, or pause deliveries.\n\nSecret rotation\n\nIssues a new signing secret and shows it once. Update your receiver before sending more events.\n\nRotate secret\n\nTest delivery\n\nQueues a test event to the active endpoint so you can verify signatures end to end.\n\nSend test event\n\nPause deliveries\n\nDisabling stops deliveries until you save the endpoint again.\n\nDisable endpoint\nRecent Deliveries\n\nInspect the most recent attempts sent to this endpoint.\n\nDelivery history appears here after your first test send or lifecycle event.",
+    "metrics": {
+      "scrollWidth": 390,
+      "viewport": 390,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": [
+        {
+          "name": "webhook-destination-url",
+          "size": "14px",
+          "labels": 1
+        },
+        {
+          "name": "",
+          "size": "16px",
+          "labels": 1
+        },
+        {
+          "name": "",
+          "size": "16px",
+          "labels": 1
+        },
+        {
+          "name": "",
+          "size": "16px",
+          "labels": 1
+        },
+        {
+          "name": "",
+          "size": "16px",
+          "labels": 1
+        },
+        {
+          "name": "",
+          "size": "16px",
+          "labels": 1
+        },
+        {
+          "name": "",
+          "size": "16px",
+          "labels": 1
+        }
+      ]
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "settings-agents",
+    "url": "/settings?tab=agents",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 390,
+    "file": "390-settings-agents.png",
+    "text": "Settings\n\nNorthstar Growth · Growth · agency-123\n\nGeneral\nBilling\nWebhooks\nAgents\nMCP ENDPOINT\nURL\nhttp://127.0.0.1:3101/mcp\nCOPY ENDPOINT\nProvider sign-in and client authorization always remain human-only.\nConnected agents\n\nPoint a compatible personal agent at the endpoint above. You will sign in and approve its agency permissions before it can read anything.\n\nNo agents connected\n\nUntil you approve one, no agent can read or prepare anything for this workspace.\n\nHow to connect an agent",
+    "metrics": {
+      "scrollWidth": 390,
+      "viewport": 390,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "token-health",
+    "url": "/token-health",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 390,
+    "file": "390-token-health.png",
+    "text": "Token Health\n\nMonitor and manage client connection tokens\n\nTOTAL CONNECTIONS\n\n1\n\nHEALTHY\n\n1\n\nEXPIRING SOON\n\n0\n\nEXPIRED\n\n0\n\nAll Tokens\nClient / Platform\nStatus\nExpires In\nLast Refreshed\nActions\nAcme Growth — international partnerships\nG\nGoogle Ads\nHealthy\n29 days remaining\n16h ago",
+    "metrics": {
+      "scrollWidth": 390,
+      "viewport": 390,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [
+        "<button class=\"p-2 text-muted-foreground hover:bg-muted/10 rounded-none transition-colors\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap="
+      ],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "token-health-empty",
+    "url": "/token-health",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 390,
+    "file": "390-token-health-empty.png",
+    "text": "Token Health\n\nMonitor and manage client connection tokens\n\nTOTAL CONNECTIONS\n\n0\n\nHEALTHY\n\n0\n\nEXPIRING SOON\n\n0\n\nEXPIRED\n\n0\n\nAll Tokens\nNo connections yet\n\nTokens will appear here after clients authorize access.",
+    "metrics": {
+      "scrollWidth": 390,
+      "viewport": 390,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [
+        "<button class=\"p-2 text-muted-foreground hover:bg-muted/10 rounded-none transition-colors\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap="
+      ],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "request-create",
+    "url": "/access-requests/new",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 390,
+    "file": "390-request-create.png",
+    "text": "New Access Request\n\nCreate a request for client authorization\n\nStep 1 of 4\n25% complete\nFUNDAMENTALS\nPLATFORMS\nCUSTOMIZE\nREVIEW\nFundamentals\n\nSet up the basics for your access request\n\nSelect Client *\n\nWho is this access request for?\n\nExisting Clients\nCreate New\n\nAcme Growth — international partnerships\n\nAcme Growth\n\nmarketing.partnerships@example.com\n\nAdvanced Settings (Optional)\n\nReveal optional fields for CRM matching and downstream automation\n\nNeed to connect platforms?\n\nConnect your agency's platform accounts to use delegated access\n\nManage Platform Connections\nContinue to Platforms",
+    "metrics": {
+      "scrollWidth": 390,
+      "viewport": 390,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": [
+        {
+          "name": "Search clients...",
+          "size": "16px",
+          "labels": 0
+        }
+      ]
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "request-detail",
+    "url": "/access-requests/audit-request",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 390,
+    "file": "390-request-detail.png",
+    "text": "Access Request Details\n\nReview request configuration and lifecycle status before taking action.\n\nBack to Dashboard\nCancel Request\nEdit Request\nRequest Overview\n\nClient and request lifecycle details\n\nPENDING\n\nWaiting on client authorization\n\nYour client authorizes when they are ready. Access tokens are stored only after they complete authorization — not when the link is sent.\n\nCLIENT\n\nAcme Growth — international partnerships\n\nEMAIL\n\nmarketing.partnerships@example.com\n\nCREATED\n\n9/30/2026\n\nEXPIRES\n\n10/29/2026\n\nAUTHORIZATION LINK\n\nhttps://authhub.co/invite/audit-token\nCopy Link\nPreview Link\nSend Reminder\nEmail Client\nRequested Platforms\n\nProducts and requested access levels\n\nGOOGLE\n\nGoogle Ads · admin\n\nMETA\n\nMeta Pages · admin",
+    "metrics": {
+      "scrollWidth": 390,
+      "viewport": 390,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "request-edit",
+    "url": "/access-requests/audit-request/edit",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 390,
+    "file": "390-request-edit.png",
+    "text": "Edit Access Request\n\nUpdate settings while the authorization link is still pending.\n\nBack\nPlatforms\nDefault Access Level\nAdmin Access — Full control over the account\n\nPermissions included:\n\n•\nCreate campaigns\n•\nEdit settings\n•\nDelete content\n•\nManage billing\n•\nAdd/remove users\nG\nGoogle1 of 6 selected\n1 selected\nM\nMeta1 of 3 selected\n1 selected\nL\nLinkedIn2 products\nT\nTikTok1 products\nS\nSnapchat1 products\nM\nMailchimp1 products\nP\nPinterest1 products\nK\nKlaviyo1 products\nS\nShopify1 products\nK\nKit1 products\nB\nBeehiiv1 products\nMeta access recipients\n\nChoose the person who must use the client assets. A system user is optional for server automation.\n\nPeople\n\nNone available in the selected Business Portfolio.\n\nSystem users\n\nNone available in the selected Business Portfolio.\n\nFull control for selected Meta assets\nPage tasks\n\nRecommended tasks follow the selected Meta products. Full control adds every task.\n\nManage settings\nCreate content\nModerate\nAdvertise\nView insights\nManage Leads Access\nAdvanced\nShow\nCustomize\nAdd Field\nLogo URL\nPrimary Color\nSubdomain\nDiscard Changes\nSave Changes",
+    "metrics": {
+      "scrollWidth": 390,
+      "viewport": 390,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": [
+        {
+          "name": "",
+          "size": "14px",
+          "labels": 1
+        },
+        {
+          "name": "",
+          "size": "14px",
+          "labels": 1
+        },
+        {
+          "name": "",
+          "size": "14px",
+          "labels": 1
+        },
+        {
+          "name": "",
+          "size": "14px",
+          "labels": 1
+        },
+        {
+          "name": "",
+          "size": "14px",
+          "labels": 1
+        },
+        {
+          "name": "",
+          "size": "14px",
+          "labels": 1
+        },
+        {
+          "name": "",
+          "size": "14px",
+          "labels": 1
+        },
+        {
+          "name": "logoUrl",
+          "size": "16px",
+          "labels": 1
+        },
+        {
+          "name": "primaryColor",
+          "size": "16px",
+          "labels": 1
+        },
+        {
+          "name": "subdomain",
+          "size": "16px",
+          "labels": 1
+        }
+      ]
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "request-success",
+    "url": "/access-requests/audit-request/success",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 390,
+    "file": "390-request-success.png",
+    "text": "Pending client authorization\n\nWaiting on Acme Growth — international partnerships. Share the link below — connected when they finish Google.\n\nStep 3 of 3\n100% complete\nBUILD\nREVIEW\nSEND\nPending\n\nWaiting on Acme Growth — international partnerships to authorize. Connected when they finish Google.\n\nPENDING\n\nAUTHORIZATION LINK\n\nhttps://authhub.co/invite/audit-token\nCopy Link\nEmail Client\n\nGo to dashboard — track status while you wait\n\nREQUEST DETAILS\n\nClient\n\nAcme Growth — international partnerships\n\nEmail\n\nmarketing.partnerships@example.com\n\nProducts\n\n2\n\nExpires\n\nThursday, October 29, 2026\n\nLink validity window is 7 days. Expiration date shown above.\n\nCreate Another Request",
+    "metrics": {
+      "scrollWidth": 390,
+      "viewport": 390,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "invite",
+    "url": "/invite/audit-token",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 390,
+    "file": "390-invite.png",
+    "text": "Northstar Growth needs access to finish setup\n\nNorthstar Growth requested access to Google, Meta. Confirm which accounts to share below.\n\nYou stay in control. Approve only what you want to share. \nPasswords are never requested.\n\nYOUR PROGRESS\n\nCheck again\nG\n\nGoogle\n\nConnect Google to continue.\n\nM\n\nMeta\n\nConnect Meta to continue.\n\nIN PROGRESS\n\nREQUESTED PLATFORMS\n\nG\n\nGoogle\n\nGoogle Ads · Admin Access\nM\n\nMeta\n\nMeta Pages · Admin Access\n\nApprove only what you want to share\n\nYour agency receives access only to the accounts you explicitly approve in the next step.\n\nPasswords are never requested\nContinue to connect",
+    "metrics": {
+      "scrollWidth": 390,
+      "viewport": 390,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "invite-expired",
+    "url": "/invite/invalid",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 390,
+    "file": "390-invite-expired.png",
+    "text": "This link has expired\n\nThis access request expired, so access cannot be granted. Contact your agency to get a new link.\n\nNothing has been shared yet. You can safely close this page.\n\nNeed a new link?\n\nContact your agency or support and they will send a fresh authorization link.\n\nContact support",
+    "metrics": {
+      "scrollWidth": 390,
+      "viewport": 390,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": [
+      "/api/client/invalid"
+    ]
+  },
+  {
+    "surface": "manual-beehiiv",
+    "url": "/invite/audit-token/beehiiv/manual",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 390,
+    "file": "390-manual-beehiiv.png",
+    "text": "Back\nComplete Beehiiv access\n\nNorthstar Growth asked for Beehiiv access. Use only Beehiiv-native invite screens. Never share credentials. Use Beehiiv's native invite flow, finish the checklist, and return to the request.\n\nYou stay in control. Approve only what you want to share. \nPasswords are never requested.Manual invite\n\nBEEHIIV CHECKLIST\n\nCopy invite email\nStep 1 of 4\n0 of 4 completed\n\nInvite email\n\nCopy\nBack\nI copied this\nCredentials are never requested in this flow.",
+    "metrics": {
+      "scrollWidth": 390,
+      "viewport": 390,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": [
+        {
+          "name": "",
+          "size": "14px",
+          "labels": 0
+        }
+      ]
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "manual-kit",
+    "url": "/invite/audit-token/kit/manual",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 390,
+    "file": "390-manual-kit.png",
+    "text": "Back\nComplete Kit access\n\nNorthstar Growth asked for Kit access. Use only Kit-native invite screens. Never share credentials. Use Kit's native invite flow, finish the checklist, and return to the request.\n\nYou stay in control. Approve only what you want to share. \nPasswords are never requested.Manual invite\n\nKIT CHECKLIST\n\nCopy invite email\nStep 1 of 4\n0 of 4 completed\n\nInvite email\n\nCopy\nBack\nI copied this\nCredentials are never requested in this flow.",
+    "metrics": {
+      "scrollWidth": 390,
+      "viewport": 390,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": [
+        {
+          "name": "",
+          "size": "14px",
+          "labels": 0
+        }
+      ]
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "manual-shopify",
+    "url": "/invite/audit-token/shopify/manual",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 390,
+    "file": "390-manual-shopify.png",
+    "text": "Back\nComplete Shopify access\n\nNorthstar Growth asked for Shopify access. Use only Shopify-native collaborator screens. Never share credentials. Use Shopify's native invite flow, finish the checklist, and return to the request.\n\nYou stay in control. Approve only what you want to share. \nPasswords are never requested.Manual invite\n\nSHOPIFY CHECKLIST\n\nConnect Shopify\nStep 1 of 3\n0 of 3 completed\nOpen Shopify Admin\nOpen Shopify Help\nBack\nConnect Shopify\nCredentials are never requested in this flow.",
+    "metrics": {
+      "scrollWidth": 390,
+      "viewport": 390,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "manual-klaviyo",
+    "url": "/invite/audit-token/klaviyo/manual",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 390,
+    "file": "390-manual-klaviyo.png",
+    "text": "Back\nComplete Klaviyo access\n\nNorthstar Growth asked for Klaviyo access. Use only Klaviyo-native invite screens. Never share credentials. Use Klaviyo's native invite flow, finish the checklist, and return to the request.\n\nYou stay in control. Approve only what you want to share. \nPasswords are never requested.Manual invite\n\nKLAVIYO CHECKLIST\n\nCopy invite email\nStep 1 of 4\n0 of 4 completed\n\nInvite email\n\nCopy\nBack\nI copied this\nCredentials are never requested in this flow.",
+    "metrics": {
+      "scrollWidth": 390,
+      "viewport": 390,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": [
+        {
+          "name": "",
+          "size": "14px",
+          "labels": 0
+        }
+      ]
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "manual-mailchimp",
+    "url": "/invite/audit-token/mailchimp/manual",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 390,
+    "file": "390-manual-mailchimp.png",
+    "text": "Back\nComplete Mailchimp access\n\nNorthstar Growth asked for Mailchimp access. Use only Mailchimp-native invite screens. Never share credentials. Use Mailchimp's native invite flow, finish the checklist, and return to the request.\n\nYou stay in control. Approve only what you want to share. \nPasswords are never requested.Manual invite\n\nMAILCHIMP CHECKLIST\n\nCopy invite email\nStep 1 of 4\n0 of 4 completed\n\nInvite email\n\nCopy\nBack\nI copied this\nCredentials are never requested in this flow.",
+    "metrics": {
+      "scrollWidth": 390,
+      "viewport": 390,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": [
+        {
+          "name": "",
+          "size": "14px",
+          "labels": 0
+        }
+      ]
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "manual-pinterest",
+    "url": "/invite/audit-token/pinterest/manual",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 390,
+    "file": "390-manual-pinterest.png",
+    "text": "Back\nComplete Pinterest access\n\nNorthstar Growth asked for Pinterest access. Use only Pinterest-native invite screens. Never share credentials. Use Pinterest's native invite flow, finish the checklist, and return to the request.\n\nYou stay in control. Approve only what you want to share. \nPasswords are never requested.Manual invite\n\nPINTEREST CHECKLIST\n\nOpen Pinterest Business Manager\nStep 1 of 4\n0 of 4 completed\nOpen Business Manager\nBack\nI opened Pinterest\nCredentials are never requested in this flow.",
+    "metrics": {
+      "scrollWidth": 390,
+      "viewport": 390,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "invite-callback-error",
+    "url": "/invite/oauth-callback?error=access_denied&platform=meta",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 390,
+    "file": "390-invite-callback-error.png",
+    "text": "Authorization Failed\n\nYou declined or cancelled access. Return to the request to try again.\n\nReturn Home",
+    "metrics": {
+      "scrollWidth": 390,
+      "viewport": 390,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "platform-callback-error",
+    "url": "/platforms/callback?error=access_denied&platform=google",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 390,
+    "file": "390-platform-callback-error.png",
+    "text": "Connection Failed\n\nSomething went wrong. Please try again.\n\nError code: access_denied\n\nTry Again\nGo to Dashboard",
+    "metrics": {
+      "scrollWidth": 390,
+      "viewport": 390,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "onboarding",
+    "url": "/onboarding/unified",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 390,
+    "file": "390-onboarding.png",
+    "text": "You have rendered a `motion` component within a `LazyMotion` component. This will break tree shaking. Import and render a `m` component instead.. For more information and steps for solving, visit https://motion.dev/troubleshooting/lazy-strict-mode",
+    "metrics": {
+      "scrollWidth": 2371,
+      "viewport": 390,
+      "mainCount": 0,
+      "h1Count": 0,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "checkout-success",
+    "url": "/checkout/success?tier=GROWTH",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 390,
+    "file": "390-checkout-success.png",
+    "text": "Payment Successful!\n\nYour subscription is now active.\n\nYou can now start inviting team members and creating access requests.\n\nGo to Connections\nGo to Dashboard",
+    "metrics": {
+      "scrollWidth": 390,
+      "viewport": 390,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "checkout-cancel",
+    "url": "/checkout/cancel",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 390,
+    "file": "390-checkout-cancel.png",
+    "text": "Payment Cancelled\n\nYour account has been created, but the payment was cancelled. You can complete your subscription later from Settings.\n\nDon't worry! Your account is ready to use. You can activate your subscription anytime from the Settings page.\n\nComplete Subscription\nGo to Dashboard",
+    "metrics": {
+      "scrollWidth": 390,
+      "viewport": 390,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "client-detail-preview",
+    "url": "/dev/client-detail?preset=mixed-google",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 390,
+    "file": "390-client-detail-preview.png",
+    "text": "All clients\n\nDEV HARNESS\n\nPreset: mixed-google\n\nBD\nBrightland Dental\nACTIVE\nBrightland Dental Studio\nhello@brightlanddental.com\nClient since January 12, 2026\nCreate Request\nEdit\nDelete\nTOTAL REQUESTS\n\n3\n\nACTIVE CONNECTIONS\n\n1\n\nPENDING\n\n1\n\nEXPIRED\n\n0\n\nOverview\nActivity\nRequested Access\n\nReview platform-group progress before digging into request history.\n\nG\n\nGoogle\n\nLast requested Mar 8, 2026\n\n4/5 connected\n\nNEEDS FOLLOW-UP\nView request\nDetails\nM\n\nMeta\n\nLast requested Mar 10, 2026\n\n0/1 connected\n\nPENDING\nView request\nDetails\nAccess Requests\nAll Status\nQ1 performance access\nACTIVE\nG\nG\nG\nCreated: Mar 8, 2026\nAuthorized: Mar 8, 2026\nView details\nSpring launch setup\nPENDING\nM\nCreated: Mar 10, 2026\nView details\nLegacy reconnect\nACTIVE\nG\nCreated: Feb 1, 2026\nAuthorized: Feb 1, 2026\nView details",
+    "metrics": {
+      "scrollWidth": 390,
+      "viewport": 390,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "offboarding-preview",
+    "url": "/dev/offboarding-preview",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 390,
+    "file": "390-offboarding-preview.png",
+    "text": "← Dev Tools\nGoogle Offboarding Panel — State Preview\n\nVisual reference for every panel state. No auth or API required.\n\n1. Selection State\nGoogle Offboarding\n\nRevoke access and clean up secrets for this Google connection (google-analytics-4 (GA4)).\n\nBegin Offboarding\n2. Preview State\nOffboarding Preview — google-analytics-4 (GA4)\n\nReview all items before confirming. This action is irreversible.\n\nGoogle Analytics 4\n\nRevoke OAuth token and remove data stream access\n\nAUTOMATIC\n\nGoogle Search Console\n\nManual property removal required via GSC UI\n\nMANUAL ACTION REQUIRED\n\nGoogle Ads\n\nConnection expired — must reconnect to revoke\n\nRECONNECT REQUIRED\n\nGoogle Merchant Center\n\nFeeds linked to external accounts; removal may break them\n\nNOT SAFELY REVERSIBLE\nCancel\nConfirm Offboarding\n3. Confirmation State\nConfirm Offboarding — google-analytics-4 (GA4)\n\nThis will permanently revoke access and clean up secrets for all items listed below. This action cannot be undone.\n\nGoogle Analytics 4\nAUTOMATIC\nGoogle Search Console\nMANUAL ACTION REQUIRED\nGoogle Ads\nRECONNECT REQUIRED\nGoogle Merchant Center\nNOT SAFELY REVERSIBLE\nGo back\nConfirm Offboarding\n4. Progress State\nOffboarding in Progress — google-analytics-4 (GA4)\n\nRun ID: run_abc123\n\nGoogle Analytics 4\nCOMPLETED\nGoogle Ads API\nIN PROGRESS\nGoogle Search Console\nPENDING APPROVAL\n\nPending external approval\n\nGoogle Merchant Center\nFAILED (RETRYABLE)\nRetry\n5. Receipt — Completed\nOffboarding Complete — google-analytics-4 (GA4)\n\nCompleted at 7/30/2026, 2:45:00 PM\n\nGoogle Analytics 4\nCOMPLETED\n\nOAuth token revoked successfully\n\nSecret cleanup: Deleted\n\nGoogle Ads API\nCOMPLETED\n\nAPI access revoked\n\nSecret cleanup: Deleted\n\nGoogle Search Console\nCOMPLETED\n\nProperty removed from account\n\nSecret cleanup: Already absent\n\nStart new offboarding\n6. Receipt — Manual Follow-up\nOffboarding Complete — Follow-up Required — google-analytics-4 (GA4)\n\nCompleted at 7/30/2026, 2:50:00 PM\n\nGoogle Analytics 4\nCOMPLETED\n\nOAuth token revoked\n\nSecret cleanup: Deleted\n\nGoogle Search Console\nNEEDS FOLLOW-UP\nHUMAN-REPORTED\n\nToken revoked; property removal requires manual action in GSC UI\n\nNext: Remove property manually from Google Search Console settings\n\nAttest\nStart new offboarding\n7. Receipt — Incomplete\nOffboarding Incomplete — google-analytics-4 (GA4)\n\nCompleted at 7/30/2026, 2:55:00 PM\n\nGoogle Analytics 4\nCOMPLETED\n\nOAuth token revoked\n\nSecret cleanup: Deleted\n\nGoogle Ads API\nFAILED (RETRYABLE)\n\nAPI returned 503 — service temporarily unavailable\n\nRetry\nGoogle Merchant Center\nPENDING\n\nBlocked by upstream failure\n\nStart new offboarding\n8. Error State\n\nSomething went wrong\n\nFailed to fetch offboarding run: Network request failed (ECONNREFUSED). The API server may be temporarily unavailable. Please try again.\n\nTry again",
+    "metrics": {
+      "scrollWidth": 390,
+      "viewport": 390,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "facebook-grant",
+    "url": "/audit/facebook-grant",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 390,
+    "file": "390-facebook-grant.png",
+    "text": "Automatic\n\nThese services can be granted access to automatically\n\nf\nFacebook Pages\nAdmin\nSelect Accounts\nAcme Growth (331506...)\nExample Studio (106593...)\nGrant Access",
+    "metrics": {
+      "scrollWidth": 390,
+      "viewport": 390,
+      "mainCount": 1,
+      "h1Count": 0,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "dashboard",
+    "url": "/dashboard",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 320,
+    "file": "320-dashboard.png",
+    "text": "Dashboard\n\nManage client access requests\n\nCREATE REQUEST\nTOTAL REQUESTS\n\n2\n\nPENDING\n\n1\n\nACTIVE CONNECTIONS\n\n1\n\nPLATFORMS CONNECTED\n\n2\n\nRecent Access Requests\n\nShowing latest 1 of 2 requests\n\nCreate Request\nAcme Growth — international partnerships\n\nmarketing.partnerships@example.com\n\nG\nM\n9/30/2026\nPENDING\nACTIVE CONNECTIONS\nMANAGE CLIENTS\nmarketing.partnerships@example.com\n\nConnected on 9/30/2026\n\nG\nView Details",
+    "metrics": {
+      "scrollWidth": 320,
+      "viewport": 320,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "dashboard-empty",
+    "url": "/dashboard",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 320,
+    "file": "320-dashboard-empty.png",
+    "text": "Dashboard\n\nManage client access requests\n\nCREATE REQUEST\nTOTAL REQUESTS\n\n0\n\nPENDING\n\n0\n\nACTIVE CONNECTIONS\n\n0\n\nPLATFORMS CONNECTED\n\n0\n\nRecent Access Requests\n\nShowing latest 1 of 2 requests\n\nCreate Request\nNo access requests yet\n\nCreate your first access request to start onboarding clients.\n\nACTIVE CONNECTIONS\nMANAGE CLIENTS\nNo client connections yet\n\nConnections will appear here after clients authorize access.",
+    "metrics": {
+      "scrollWidth": 320,
+      "viewport": 320,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "dashboard-error",
+    "url": "/dashboard",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 320,
+    "file": "320-dashboard-error.png",
+    "text": "Failed to Load Dashboard\n\nService temporarily unavailable. Please try again.\n\nRETRY",
+    "metrics": {
+      "scrollWidth": 320,
+      "viewport": 320,
+      "mainCount": 0,
+      "h1Count": 0,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "clients",
+    "url": "/clients",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 320,
+    "file": "320-clients.png",
+    "text": "Clients\n\nManage client connections and platform authorizations\n\nCREATE CLIENT\nFilters\nAcme Growth — international partnerships\n\nmarketing.partnerships@example.com\n\nAcme Growth\n\nPENDING\n\nConnected Platforms (2)\n\nG\nM\nTotal Requests:\n2\nLast Activity:\n9/30/2026\nView Details\nShowing 1 of 61 clients",
+    "metrics": {
+      "scrollWidth": 320,
+      "viewport": 320,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": [
+        {
+          "name": "Search clients by name, email, or company...",
+          "size": "16px",
+          "labels": 0
+        }
+      ]
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "clients-empty",
+    "url": "/clients",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 320,
+    "file": "320-clients-empty.png",
+    "text": "Clients\n\nManage client connections and platform authorizations\n\nCREATE CLIENT\nFilters\nNo clients yet\n\nClients will appear here once they authorize their platforms through access requests.\n\nCreate Client",
+    "metrics": {
+      "scrollWidth": 320,
+      "viewport": 320,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": [
+        {
+          "name": "Search clients by name, email, or company...",
+          "size": "16px",
+          "labels": 0
+        }
+      ]
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "clients-error",
+    "url": "/clients",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 320,
+    "file": "320-clients-error.png",
+    "text": "",
+    "metrics": {
+      "scrollWidth": 2372,
+      "viewport": 320,
+      "mainCount": 0,
+      "h1Count": 0,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "connections",
+    "url": "/connections",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 320,
+    "file": "320-connections.png",
+    "text": "Connect your accounts\n\nTo create a link, you'll need to connect your accounts\n\nRecommended\n\nBased on your agency's requirements\n\nG\nGoogle\n\nConnected\n\nManage Assets\nDisconnect\nM\nMeta\n\nConnected\n\nManage Assets\nDisconnect\nL\nLinkedIn\n\nConnected\n\nDisconnect\nT\nTikTok Ads\n\nConnected\n\nDisconnect\nOther\nS\nSnapchat Ads\n\nConnected\n\nDisconnect\nB\nBeehiiv\n\nConnected\n\nDisconnect\nK\nKit\n\nConnected\n\nDisconnect\nM\nMailchimp\n\nConnected\n\nDisconnect\nP\nPinterest\n\nConnected\n\nDisconnect\nS\nShopify\n\nConnected\n\nDisconnect\nK\nKlaviyo\n\nConnected\n\nDisconnect",
+    "metrics": {
+      "scrollWidth": 320,
+      "viewport": 320,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "connections-empty",
+    "url": "/connections",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 320,
+    "file": "320-connections-empty.png",
+    "text": "Connect your accounts\n\nTo create a link, you'll need to connect your accounts\n\nNo platforms available\n\nNo platforms are currently configured. Please contact support.",
+    "metrics": {
+      "scrollWidth": 320,
+      "viewport": 320,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "settings-general",
+    "url": "/settings",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 320,
+    "file": "320-settings-general.png",
+    "text": "Settings\n\nNorthstar Growth · Growth · agency-123\n\nGeneral\nBilling\nWebhooks\nAgents\nPLAN\nTier\nGrowth\nStatus\nActive · Renews Oct 30, 2026\nLimits\n100 clients · 100 requests · 100 members\nUsage\n\nWhat this agency has used against its plan.\n\nManage billing\n\nClients\n\nClient profiles you can create.\n\n2 of 100\n\nRequests\n\nAccess requests this period.\n\n2 of 100\n\nMembers\n\nTeam members on this agency.\n\n2 of 100\n\nTemplates\n\nSaved access request templates.\n\n2 of 100\n\nAgency Profile\n\nWhat clients see on your request pages.\n\nAgency Name\n\nShown on every access request you send.\n\nCompany Website\n\nLinked from client-facing pages.\n\nLogo URL\n\nUsed for client-facing pages and branding.\n\nSave\n\nChanges apply to new and existing request links.\n\nSAVE CHANGES",
+    "metrics": {
+      "scrollWidth": 320,
+      "viewport": 320,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": [
+        {
+          "name": "agency-name",
+          "size": "16px",
+          "labels": 1
+        },
+        {
+          "name": "company-website",
+          "size": "16px",
+          "labels": 1
+        },
+        {
+          "name": "agency-logo-url",
+          "size": "16px",
+          "labels": 1
+        }
+      ]
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "settings-billing",
+    "url": "/settings?tab=billing",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 320,
+    "file": "320-settings-billing.png",
+    "text": "Settings\n\nNorthstar Growth · Growth · agency-123\n\nGeneral\nBilling\nWebhooks\nAgents\nSUBSCRIPTION\nPlan\nGrowth\nStatus\nActive\nNext bill\nOctober 30, 2026\n\nScale When You’re Ready\n\nUpgrade to the next tier for more capacity and premium features.\n\nUPGRADE\nCurrent plan\n\nYour subscription details\n\nACTIVE\n\nPlan\n\nAgencies scaling their client operations\n\nGrowth Plan\n\n$79 /month\n\nNext billing\n\nThe date your next invoice is issued.\n\nOctober 30, 2026\n\nBilling portal\n\nUpdate payment details, view invoices, and manage your plan.\n\nManage in Billing Portal\nUsage this month\n\nTrack your plan usage\n\nAccess requests\n\n2 / 100\n\nClients\n\n2 / 100\n\nTeam members\n\n2 / 100\n\nTemplates\n\n2 / 100\n\nManage subscription\n\nUpgrade, downgrade, or cancel your plan\n\nChange plan\n\nChange your subscription plan at any time. Prorated charges or credits will apply.\n\nChange Plan\n\nCancel subscription\n\nCancel at the end of the billing period or immediately. You can reactivate later.\n\nCancel Subscription\nPayment methods\n\nManage your payment options\n\nNo payment methods saved\n\nAdd a card so your plan renews without interruption.\n\nAdd a payment method\nInvoices\n\nYour billing history\n\nNo invoices yet\n\nInvoices appear here after your first payment, with a PDF for your records.\n\n—\n\nBilling details\n\nInvoice and billing address\n\nCompany name\n\nShown on every invoice.\n\nBilling email\n\nWhere invoices and receipts are sent.\n\nAddress\n\nUsed for tax and invoice compliance.\n\nAddress line 1\nAddress line 2\nCity\nState\nPostal code\nCountry\n\nSave details\n\nChanges apply to your next invoice.\n\nSave Details",
+    "metrics": {
+      "scrollWidth": 320,
+      "viewport": 320,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": [
+        {
+          "name": "billing-company-name",
+          "size": "16px",
+          "labels": 1
+        },
+        {
+          "name": "billing-email",
+          "size": "16px",
+          "labels": 1
+        },
+        {
+          "name": "billing-address-line1",
+          "size": "16px",
+          "labels": 1
+        },
+        {
+          "name": "billing-address-line2",
+          "size": "16px",
+          "labels": 1
+        },
+        {
+          "name": "billing-address-city",
+          "size": "16px",
+          "labels": 1
+        },
+        {
+          "name": "billing-address-state",
+          "size": "16px",
+          "labels": 1
+        },
+        {
+          "name": "billing-address-postal-code",
+          "size": "16px",
+          "labels": 1
+        },
+        {
+          "name": "billing-address-country",
+          "size": "16px",
+          "labels": 1
+        }
+      ]
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "settings-webhooks",
+    "url": "/settings?tab=webhooks",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 320,
+    "file": "320-settings-webhooks.png",
+    "text": "Settings\n\nNorthstar Growth · Growth · agency-123\n\nGeneral\nBilling\nWebhooks\nAgents\nENDPOINT\nURL\nNo endpoint is configured yet. Add a destination URL, choose the events you want, and create the endpoint to start receiving signed notifications.\nStatus\n—\nLast delivery\n—\nFailures\n—\nWebhook Endpoint\n\nSend signed lifecycle events from AuthHub into your CRM, automation, or warehouse.\n\nDestination URL\n\nWe sign each request with `svix-like` headers: timestamp plus HMAC SHA-256 signature.\n\nPayload version\n\nV1 payloads include connection-level summaries. Upgrade to V2 for granular asset data.\n\nStandard (V1) — connection-level summary\nEnhanced (V2) — per-asset detail\n\nSubscribed events\n\nChoose which lifecycle events this endpoint receives.\n\nTest event\nwebhook.test\n\nUse this event to verify your endpoint and signing implementation.\n\nPartial completion\naccess_request.partial\n\nFires when a client has connected part of the requested stack.\n\nCompleted access request\naccess_request.completed\n\nFires when the access request is fully completed.\n\nRevoked access request\naccess_request.revoked\n\nFires when an agency cancels or revokes a pending or completed request.\n\nExpired access request\naccess_request.expired\n\nFires when a pending request passes its expiration date without being completed.\n\nConnection status changed\nconnection.status_changed\n\nFires when a platform authorization status changes (e.g., active → invalid).\n\nCreate endpoint\n\nCreating the endpoint reveals its signing secret once.\n\nCREATE ENDPOINT\nSecret and delivery controls\n\nRotate the signing secret, send a test event, or pause deliveries.\n\nSecret rotation\n\nIssues a new signing secret and shows it once. Update your receiver before sending more events.\n\nRotate secret\n\nTest delivery\n\nQueues a test event to the active endpoint so you can verify signatures end to end.\n\nSend test event\n\nPause deliveries\n\nDisabling stops deliveries until you save the endpoint again.\n\nDisable endpoint\nRecent Deliveries\n\nInspect the most recent attempts sent to this endpoint.\n\nDelivery history appears here after your first test send or lifecycle event.",
+    "metrics": {
+      "scrollWidth": 320,
+      "viewport": 320,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": [
+        {
+          "name": "webhook-destination-url",
+          "size": "14px",
+          "labels": 1
+        },
+        {
+          "name": "",
+          "size": "16px",
+          "labels": 1
+        },
+        {
+          "name": "",
+          "size": "16px",
+          "labels": 1
+        },
+        {
+          "name": "",
+          "size": "16px",
+          "labels": 1
+        },
+        {
+          "name": "",
+          "size": "16px",
+          "labels": 1
+        },
+        {
+          "name": "",
+          "size": "16px",
+          "labels": 1
+        },
+        {
+          "name": "",
+          "size": "16px",
+          "labels": 1
+        }
+      ]
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "settings-agents",
+    "url": "/settings?tab=agents",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 320,
+    "file": "320-settings-agents.png",
+    "text": "Settings\n\nNorthstar Growth · Growth · agency-123\n\nGeneral\nBilling\nWebhooks\nAgents\nMCP ENDPOINT\nURL\nhttp://127.0.0.1:3101/mcp\nCOPY ENDPOINT\nProvider sign-in and client authorization always remain human-only.\nConnected agents\n\nPoint a compatible personal agent at the endpoint above. You will sign in and approve its agency permissions before it can read anything.\n\nNo agents connected\n\nUntil you approve one, no agent can read or prepare anything for this workspace.\n\nHow to connect an agent",
+    "metrics": {
+      "scrollWidth": 320,
+      "viewport": 320,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "token-health",
+    "url": "/token-health",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 320,
+    "file": "320-token-health.png",
+    "text": "Token Health\n\nMonitor and manage client connection tokens\n\nTOTAL CONNECTIONS\n\n1\n\nHEALTHY\n\n1\n\nEXPIRING SOON\n\n0\n\nEXPIRED\n\n0\n\nAll Tokens\nClient / Platform\nStatus\nExpires In\nLast Refreshed\nActions\nAcme Growth — international partnerships\nG\nGoogle Ads\nHealthy\n29 days remaining\n16h ago",
+    "metrics": {
+      "scrollWidth": 320,
+      "viewport": 320,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [
+        "<button class=\"p-2 text-muted-foreground hover:bg-muted/10 rounded-none transition-colors\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap="
+      ],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "token-health-empty",
+    "url": "/token-health",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 320,
+    "file": "320-token-health-empty.png",
+    "text": "Token Health\n\nMonitor and manage client connection tokens\n\nTOTAL CONNECTIONS\n\n0\n\nHEALTHY\n\n0\n\nEXPIRING SOON\n\n0\n\nEXPIRED\n\n0\n\nAll Tokens\nNo connections yet\n\nTokens will appear here after clients authorize access.",
+    "metrics": {
+      "scrollWidth": 320,
+      "viewport": 320,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [
+        "<button class=\"p-2 text-muted-foreground hover:bg-muted/10 rounded-none transition-colors\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap="
+      ],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "request-create",
+    "url": "/access-requests/new",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 320,
+    "file": "320-request-create.png",
+    "text": "New Access Request\n\nCreate a request for client authorization\n\nStep 1 of 4\n25% complete\nFUNDAMENTALS\nPLATFORMS\nCUSTOMIZE\nREVIEW\nFundamentals\n\nSet up the basics for your access request\n\nSelect Client *\n\nWho is this access request for?\n\nExisting Clients\nCreate New\n\nAcme Growth — international partnerships\n\nAcme Growth\n\nmarketing.partnerships@example.com\n\nAdvanced Settings (Optional)\n\nReveal optional fields for CRM matching and downstream automation\n\nNeed to connect platforms?\n\nConnect your agency's platform accounts to use delegated access\n\nManage Platform Connections\nContinue to Platforms",
+    "metrics": {
+      "scrollWidth": 320,
+      "viewport": 320,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": [
+        {
+          "name": "Search clients...",
+          "size": "16px",
+          "labels": 0
+        }
+      ]
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "request-detail",
+    "url": "/access-requests/audit-request",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 320,
+    "file": "320-request-detail.png",
+    "text": "Access Request Details\n\nReview request configuration and lifecycle status before taking action.\n\nBack to Dashboard\nCancel Request\nEdit Request\nRequest Overview\n\nClient and request lifecycle details\n\nPENDING\n\nWaiting on client authorization\n\nYour client authorizes when they are ready. Access tokens are stored only after they complete authorization — not when the link is sent.\n\nCLIENT\n\nAcme Growth — international partnerships\n\nEMAIL\n\nmarketing.partnerships@example.com\n\nCREATED\n\n9/30/2026\n\nEXPIRES\n\n10/29/2026\n\nAUTHORIZATION LINK\n\nhttps://authhub.co/invite/audit-token\nCopy Link\nPreview Link\nSend Reminder\nEmail Client\nRequested Platforms\n\nProducts and requested access levels\n\nGOOGLE\n\nGoogle Ads · admin\n\nMETA\n\nMeta Pages · admin",
+    "metrics": {
+      "scrollWidth": 320,
+      "viewport": 320,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "request-edit",
+    "url": "/access-requests/audit-request/edit",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 320,
+    "file": "320-request-edit.png",
+    "text": "Edit Access Request\n\nUpdate settings while the authorization link is still pending.\n\nBack\nPlatforms\nDefault Access Level\nAdmin Access — Full control over the account\n\nPermissions included:\n\n•\nCreate campaigns\n•\nEdit settings\n•\nDelete content\n•\nManage billing\n•\nAdd/remove users\nG\nGoogle1 of 6 selected\n1 selected\nM\nMeta1 of 3 selected\n1 selected\nL\nLinkedIn2 products\nT\nTikTok1 products\nS\nSnapchat1 products\nM\nMailchimp1 products\nP\nPinterest1 products\nK\nKlaviyo1 products\nS\nShopify1 products\nK\nKit1 products\nB\nBeehiiv1 products\nMeta access recipients\n\nChoose the person who must use the client assets. A system user is optional for server automation.\n\nPeople\n\nNone available in the selected Business Portfolio.\n\nSystem users\n\nNone available in the selected Business Portfolio.\n\nFull control for selected Meta assets\nPage tasks\n\nRecommended tasks follow the selected Meta products. Full control adds every task.\n\nManage settings\nCreate content\nModerate\nAdvertise\nView insights\nManage Leads Access\nAdvanced\nShow\nCustomize\nAdd Field\nLogo URL\nPrimary Color\nSubdomain\nDiscard Changes\nSave Changes",
+    "metrics": {
+      "scrollWidth": 320,
+      "viewport": 320,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": [
+        {
+          "name": "",
+          "size": "14px",
+          "labels": 1
+        },
+        {
+          "name": "",
+          "size": "14px",
+          "labels": 1
+        },
+        {
+          "name": "",
+          "size": "14px",
+          "labels": 1
+        },
+        {
+          "name": "",
+          "size": "14px",
+          "labels": 1
+        },
+        {
+          "name": "",
+          "size": "14px",
+          "labels": 1
+        },
+        {
+          "name": "",
+          "size": "14px",
+          "labels": 1
+        },
+        {
+          "name": "",
+          "size": "14px",
+          "labels": 1
+        },
+        {
+          "name": "logoUrl",
+          "size": "16px",
+          "labels": 1
+        },
+        {
+          "name": "primaryColor",
+          "size": "16px",
+          "labels": 1
+        },
+        {
+          "name": "subdomain",
+          "size": "16px",
+          "labels": 1
+        }
+      ]
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "request-success",
+    "url": "/access-requests/audit-request/success",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 320,
+    "file": "320-request-success.png",
+    "text": "Pending client authorization\n\nWaiting on Acme Growth — international partnerships. Share the link below — connected when they finish Google.\n\nStep 3 of 3\n100% complete\nBUILD\nREVIEW\nSEND\nPending\n\nWaiting on Acme Growth — international partnerships to authorize. Connected when they finish Google.\n\nPENDING\n\nAUTHORIZATION LINK\n\nhttps://authhub.co/invite/audit-token\nCopy Link\nEmail Client\n\nGo to dashboard — track status while you wait\n\nREQUEST DETAILS\n\nClient\n\nAcme Growth — international partnerships\n\nEmail\n\nmarketing.partnerships@example.com\n\nProducts\n\n2\n\nExpires\n\nThursday, October 29, 2026\n\nLink validity window is 7 days. Expiration date shown above.\n\nCreate Another Request",
+    "metrics": {
+      "scrollWidth": 320,
+      "viewport": 320,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "invite",
+    "url": "/invite/audit-token",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 320,
+    "file": "320-invite.png",
+    "text": "Northstar Growth needs access to finish setup\n\nNorthstar Growth requested access to Google, Meta. Confirm which accounts to share below.\n\nYou stay in control. Approve only what you want to share. \nPasswords are never requested.\n\nYOUR PROGRESS\n\nCheck again\nG\n\nGoogle\n\nConnect Google to continue.\n\nM\n\nMeta\n\nConnect Meta to continue.\n\nIN PROGRESS\n\nREQUESTED PLATFORMS\n\nG\n\nGoogle\n\nGoogle Ads · Admin Access\nM\n\nMeta\n\nMeta Pages · Admin Access\n\nApprove only what you want to share\n\nYour agency receives access only to the accounts you explicitly approve in the next step.\n\nPasswords are never requested\nContinue to connect",
+    "metrics": {
+      "scrollWidth": 320,
+      "viewport": 320,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "invite-expired",
+    "url": "/invite/invalid",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 320,
+    "file": "320-invite-expired.png",
+    "text": "This link has expired\n\nThis access request expired, so access cannot be granted. Contact your agency to get a new link.\n\nNothing has been shared yet. You can safely close this page.\n\nNeed a new link?\n\nContact your agency or support and they will send a fresh authorization link.\n\nContact support",
+    "metrics": {
+      "scrollWidth": 320,
+      "viewport": 320,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": [
+      "/api/client/invalid"
+    ]
+  },
+  {
+    "surface": "manual-beehiiv",
+    "url": "/invite/audit-token/beehiiv/manual",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 320,
+    "file": "320-manual-beehiiv.png",
+    "text": "Back\nComplete Beehiiv access\n\nNorthstar Growth asked for Beehiiv access. Use only Beehiiv-native invite screens. Never share credentials. Use Beehiiv's native invite flow, finish the checklist, and return to the request.\n\nYou stay in control. Approve only what you want to share. \nPasswords are never requested.Manual invite\n\nBEEHIIV CHECKLIST\n\nCopy invite email\nStep 1 of 4\n0 of 4 completed\n\nInvite email\n\nCopy\nBack\nI copied this\nCredentials are never requested in this flow.",
+    "metrics": {
+      "scrollWidth": 320,
+      "viewport": 320,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": [
+        {
+          "name": "",
+          "size": "14px",
+          "labels": 0
+        }
+      ]
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "manual-kit",
+    "url": "/invite/audit-token/kit/manual",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 320,
+    "file": "320-manual-kit.png",
+    "text": "Back\nComplete Kit access\n\nNorthstar Growth asked for Kit access. Use only Kit-native invite screens. Never share credentials. Use Kit's native invite flow, finish the checklist, and return to the request.\n\nYou stay in control. Approve only what you want to share. \nPasswords are never requested.Manual invite\n\nKIT CHECKLIST\n\nCopy invite email\nStep 1 of 4\n0 of 4 completed\n\nInvite email\n\nCopy\nBack\nI copied this\nCredentials are never requested in this flow.",
+    "metrics": {
+      "scrollWidth": 320,
+      "viewport": 320,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": [
+        {
+          "name": "",
+          "size": "14px",
+          "labels": 0
+        }
+      ]
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "manual-shopify",
+    "url": "/invite/audit-token/shopify/manual",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 320,
+    "file": "320-manual-shopify.png",
+    "text": "Back\nComplete Shopify access\n\nNorthstar Growth asked for Shopify access. Use only Shopify-native collaborator screens. Never share credentials. Use Shopify's native invite flow, finish the checklist, and return to the request.\n\nYou stay in control. Approve only what you want to share. \nPasswords are never requested.Manual invite\n\nSHOPIFY CHECKLIST\n\nConnect Shopify\nStep 1 of 3\n0 of 3 completed\nOpen Shopify Admin\nOpen Shopify Help\nBack\nConnect Shopify\nCredentials are never requested in this flow.",
+    "metrics": {
+      "scrollWidth": 320,
+      "viewport": 320,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "manual-klaviyo",
+    "url": "/invite/audit-token/klaviyo/manual",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 320,
+    "file": "320-manual-klaviyo.png",
+    "text": "Back\nComplete Klaviyo access\n\nNorthstar Growth asked for Klaviyo access. Use only Klaviyo-native invite screens. Never share credentials. Use Klaviyo's native invite flow, finish the checklist, and return to the request.\n\nYou stay in control. Approve only what you want to share. \nPasswords are never requested.Manual invite\n\nKLAVIYO CHECKLIST\n\nCopy invite email\nStep 1 of 4\n0 of 4 completed\n\nInvite email\n\nCopy\nBack\nI copied this\nCredentials are never requested in this flow.",
+    "metrics": {
+      "scrollWidth": 320,
+      "viewport": 320,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": [
+        {
+          "name": "",
+          "size": "14px",
+          "labels": 0
+        }
+      ]
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "manual-mailchimp",
+    "url": "/invite/audit-token/mailchimp/manual",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 320,
+    "file": "320-manual-mailchimp.png",
+    "text": "Back\nComplete Mailchimp access\n\nNorthstar Growth asked for Mailchimp access. Use only Mailchimp-native invite screens. Never share credentials. Use Mailchimp's native invite flow, finish the checklist, and return to the request.\n\nYou stay in control. Approve only what you want to share. \nPasswords are never requested.Manual invite\n\nMAILCHIMP CHECKLIST\n\nCopy invite email\nStep 1 of 4\n0 of 4 completed\n\nInvite email\n\nCopy\nBack\nI copied this\nCredentials are never requested in this flow.",
+    "metrics": {
+      "scrollWidth": 320,
+      "viewport": 320,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": [
+        {
+          "name": "",
+          "size": "14px",
+          "labels": 0
+        }
+      ]
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "manual-pinterest",
+    "url": "/invite/audit-token/pinterest/manual",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 320,
+    "file": "320-manual-pinterest.png",
+    "text": "Back\nComplete Pinterest access\n\nNorthstar Growth asked for Pinterest access. Use only Pinterest-native invite screens. Never share credentials. Use Pinterest's native invite flow, finish the checklist, and return to the request.\n\nYou stay in control. Approve only what you want to share. \nPasswords are never requested.Manual invite\n\nPINTEREST CHECKLIST\n\nOpen Pinterest Business Manager\nStep 1 of 4\n0 of 4 completed\nOpen Business Manager\nBack\nI opened Pinterest\nCredentials are never requested in this flow.",
+    "metrics": {
+      "scrollWidth": 320,
+      "viewport": 320,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "invite-callback-error",
+    "url": "/invite/oauth-callback?error=access_denied&platform=meta",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 320,
+    "file": "320-invite-callback-error.png",
+    "text": "Authorization Failed\n\nYou declined or cancelled access. Return to the request to try again.\n\nReturn Home",
+    "metrics": {
+      "scrollWidth": 320,
+      "viewport": 320,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "platform-callback-error",
+    "url": "/platforms/callback?error=access_denied&platform=google",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 320,
+    "file": "320-platform-callback-error.png",
+    "text": "Connection Failed\n\nSomething went wrong. Please try again.\n\nError code: access_denied\n\nTry Again\nGo to Dashboard",
+    "metrics": {
+      "scrollWidth": 320,
+      "viewport": 320,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "onboarding",
+    "url": "/onboarding/unified",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 320,
+    "file": "320-onboarding.png",
+    "text": "You have rendered a `motion` component within a `LazyMotion` component. This will break tree shaking. Import and render a `m` component instead.. For more information and steps for solving, visit https://motion.dev/troubleshooting/lazy-strict-mode",
+    "metrics": {
+      "scrollWidth": 2371,
+      "viewport": 320,
+      "mainCount": 0,
+      "h1Count": 0,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "checkout-success",
+    "url": "/checkout/success?tier=GROWTH",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 320,
+    "file": "320-checkout-success.png",
+    "text": "Payment Successful!\n\nYour subscription is now active.\n\nYou can now start inviting team members and creating access requests.\n\nGo to Connections\nGo to Dashboard",
+    "metrics": {
+      "scrollWidth": 320,
+      "viewport": 320,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "checkout-cancel",
+    "url": "/checkout/cancel",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 320,
+    "file": "320-checkout-cancel.png",
+    "text": "Payment Cancelled\n\nYour account has been created, but the payment was cancelled. You can complete your subscription later from Settings.\n\nDon't worry! Your account is ready to use. You can activate your subscription anytime from the Settings page.\n\nComplete Subscription\nGo to Dashboard",
+    "metrics": {
+      "scrollWidth": 320,
+      "viewport": 320,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "client-detail-preview",
+    "url": "/dev/client-detail?preset=mixed-google",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 320,
+    "file": "320-client-detail-preview.png",
+    "text": "All clients\n\nDEV HARNESS\n\nPreset: mixed-google\n\nBD\nBrightland Dental\nACTIVE\nBrightland Dental Studio\nhello@brightlanddental.com\nClient since January 12, 2026\nCreate Request\nEdit\nDelete\nTOTAL REQUESTS\n\n3\n\nACTIVE CONNECTIONS\n\n1\n\nPENDING\n\n1\n\nEXPIRED\n\n0\n\nOverview\nActivity\nRequested Access\n\nReview platform-group progress before digging into request history.\n\nG\n\nGoogle\n\nLast requested Mar 8, 2026\n\n4/5 connected\n\nNEEDS FOLLOW-UP\nView request\nDetails\nM\n\nMeta\n\nLast requested Mar 10, 2026\n\n0/1 connected\n\nPENDING\nView request\nDetails\nAccess Requests\nAll Status\nQ1 performance access\nACTIVE\nG\nG\nG\nCreated: Mar 8, 2026\nAuthorized: Mar 8, 2026\nView details\nSpring launch setup\nPENDING\nM\nCreated: Mar 10, 2026\nView details\nLegacy reconnect\nACTIVE\nG\nCreated: Feb 1, 2026\nAuthorized: Feb 1, 2026\nView details",
+    "metrics": {
+      "scrollWidth": 346,
+      "viewport": 320,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "offboarding-preview",
+    "url": "/dev/offboarding-preview",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 320,
+    "file": "320-offboarding-preview.png",
+    "text": "← Dev Tools\nGoogle Offboarding Panel — State Preview\n\nVisual reference for every panel state. No auth or API required.\n\n1. Selection State\nGoogle Offboarding\n\nRevoke access and clean up secrets for this Google connection (google-analytics-4 (GA4)).\n\nBegin Offboarding\n2. Preview State\nOffboarding Preview — google-analytics-4 (GA4)\n\nReview all items before confirming. This action is irreversible.\n\nGoogle Analytics 4\n\nRevoke OAuth token and remove data stream access\n\nAUTOMATIC\n\nGoogle Search Console\n\nManual property removal required via GSC UI\n\nMANUAL ACTION REQUIRED\n\nGoogle Ads\n\nConnection expired — must reconnect to revoke\n\nRECONNECT REQUIRED\n\nGoogle Merchant Center\n\nFeeds linked to external accounts; removal may break them\n\nNOT SAFELY REVERSIBLE\nCancel\nConfirm Offboarding\n3. Confirmation State\nConfirm Offboarding — google-analytics-4 (GA4)\n\nThis will permanently revoke access and clean up secrets for all items listed below. This action cannot be undone.\n\nGoogle Analytics 4\nAUTOMATIC\nGoogle Search Console\nMANUAL ACTION REQUIRED\nGoogle Ads\nRECONNECT REQUIRED\nGoogle Merchant Center\nNOT SAFELY REVERSIBLE\nGo back\nConfirm Offboarding\n4. Progress State\nOffboarding in Progress — google-analytics-4 (GA4)\n\nRun ID: run_abc123\n\nGoogle Analytics 4\nCOMPLETED\nGoogle Ads API\nIN PROGRESS\nGoogle Search Console\nPENDING APPROVAL\n\nPending external approval\n\nGoogle Merchant Center\nFAILED (RETRYABLE)\nRetry\n5. Receipt — Completed\nOffboarding Complete — google-analytics-4 (GA4)\n\nCompleted at 7/30/2026, 2:45:00 PM\n\nGoogle Analytics 4\nCOMPLETED\n\nOAuth token revoked successfully\n\nSecret cleanup: Deleted\n\nGoogle Ads API\nCOMPLETED\n\nAPI access revoked\n\nSecret cleanup: Deleted\n\nGoogle Search Console\nCOMPLETED\n\nProperty removed from account\n\nSecret cleanup: Already absent\n\nStart new offboarding\n6. Receipt — Manual Follow-up\nOffboarding Complete — Follow-up Required — google-analytics-4 (GA4)\n\nCompleted at 7/30/2026, 2:50:00 PM\n\nGoogle Analytics 4\nCOMPLETED\n\nOAuth token revoked\n\nSecret cleanup: Deleted\n\nGoogle Search Console\nNEEDS FOLLOW-UP\nHUMAN-REPORTED\n\nToken revoked; property removal requires manual action in GSC UI\n\nNext: Remove property manually from Google Search Console settings\n\nAttest\nStart new offboarding\n7. Receipt — Incomplete\nOffboarding Incomplete — google-analytics-4 (GA4)\n\nCompleted at 7/30/2026, 2:55:00 PM\n\nGoogle Analytics 4\nCOMPLETED\n\nOAuth token revoked\n\nSecret cleanup: Deleted\n\nGoogle Ads API\nFAILED (RETRYABLE)\n\nAPI returned 503 — service temporarily unavailable\n\nRetry\nGoogle Merchant Center\nPENDING\n\nBlocked by upstream failure\n\nStart new offboarding\n8. Error State\n\nSomething went wrong\n\nFailed to fetch offboarding run: Network request failed (ECONNREFUSED). The API server may be temporarily unavailable. Please try again.\n\nTry again",
+    "metrics": {
+      "scrollWidth": 320,
+      "viewport": 320,
+      "mainCount": 0,
+      "h1Count": 1,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  },
+  {
+    "surface": "facebook-grant",
+    "url": "/audit/facebook-grant",
+    "evidence": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "width": 320,
+    "file": "320-facebook-grant.png",
+    "text": "Automatic\n\nThese services can be granted access to automatically\n\nf\nFacebook Pages\nAdmin\nSelect Accounts\nAcme Growth (331506...)\nExample Studio (106593...)\nGrant Access",
+    "metrics": {
+      "scrollWidth": 320,
+      "viewport": 320,
+      "mainCount": 1,
+      "h1Count": 0,
+      "unnamedButtons": [],
+      "inputs": []
+    },
+    "errors": [],
+    "unfixed": []
+  }
+]

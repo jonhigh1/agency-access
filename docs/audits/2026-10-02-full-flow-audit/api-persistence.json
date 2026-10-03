@@ -1,0 +1,21 @@
+{
+  "database": {
+    "host": "127.0.0.1",
+    "port": 55439
+  },
+  "cases": [
+    {
+      "name": "client_crud_and_unique_constraint",
+      "passed": true
+    },
+    {
+      "name": "template_crud_and_default_query",
+      "passed": true
+    },
+    {
+      "name": "access_request_create_read_update_status",
+      "passed": true
+    }
+  ],
+  "passed": true
+}

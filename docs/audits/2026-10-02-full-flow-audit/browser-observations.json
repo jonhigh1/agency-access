@@ -1,0 +1,39 @@
+{
+  "environment": "production",
+  "date": "2026-10-02",
+  "browser_tab": "1",
+  "viewport": [
+    934,
+    977
+  ],
+  "checks": [
+    {
+      "flow": "Dashboard",
+      "result": "loaded populated state; pending 0 contradicts followup banner; investigation ongoing"
+    },
+    {
+      "flow": "Connections",
+      "result": "connected and manual provider cards render; Google and Meta settings load; Done closes and focus returns; no settings saved"
+    },
+    {
+      "flow": "Token health",
+      "result": "13 rows; 8 healthy,4 expired,1 unknown; expired filter yields 4 rows; refresh not invoked"
+    },
+    {
+      "flow": "Clients",
+      "result": "list populated; Create Client opens/cancels; quota error and modal defects reproduced"
+    },
+    {
+      "flow": "Client detail",
+      "result": "Overview, Activity, Offboarding tabs render; Meta expansion shows stale revoked status; offboarding not invoked"
+    },
+    {
+      "flow": "Settings",
+      "result": "General,Billing,Webhooks,Agents panels render; no mutation; free tier currently at client/request limits"
+    },
+    {
+      "flow": "Request creation",
+      "result": "Existing-client selection, Meta selection, customization, branding, review traversed; no creation/submission"
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "date": "2026-10-03",
+  "production": [
+    "Clientsearch no-match shows No clients found;Clear search restores1record",
+    "InternalAdmin overviewtable rendered",
+    "Agencymonitoring20rows;no-matchqueryreturnsNo agencies found",
+    "Subscriptionmonitoring5rows",
+    "Webhookscreens render0endpointrows",
+    "Affiliatequeues empty with explicit empty states"
+  ],
+  "local": [
+    "Mobilepublicpagewidth390;scrollWidth382forabout/privacy/terms/blog/compare/googleguide/home",
+    "PricingnamedsliderEnd changes2to8",
+    "Monthlypricing29/79/149",
+    "MobilemenunativeEscape/focus andPricingnavigationpass",
+    "Contactblanksubmissionfocusnameand3errors"
+  ],
+  "mutations": "Only transient selections/searches; no external messages/bookings/production writes"
+}

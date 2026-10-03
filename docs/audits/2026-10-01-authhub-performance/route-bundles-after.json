@@ -1,0 +1,68 @@
+[
+  {
+    "route": "/clients",
+    "initialChunks": 13,
+    "rawBytes": 584964,
+    "gzipBytes": 175592,
+    "files": [
+      "static/chunks/0facadu0cf8w0.js",
+      "static/chunks/0fhbihn6gfqku.js",
+      "static/chunks/0xevdzc1xulpa.js",
+      "static/chunks/18k7y3h74-jh5.js",
+      "static/chunks/1_jw6xn10cc-u.js",
+      "static/chunks/1ywxbix2kklm3.js",
+      "static/chunks/258wfa-mdluik.js",
+      "static/chunks/2jzhy1urx2loq.js",
+      "static/chunks/2lp-bhlq4y7wm.js",
+      "static/chunks/334y1okvcyziv.js",
+      "static/chunks/39dviw_pthw1i.js",
+      "static/chunks/3kus3sb46fw4v.js",
+      "static/chunks/3vlu83--2q3tz.js"
+    ]
+  },
+  {
+    "route": "/dashboard",
+    "initialChunks": 14,
+    "rawBytes": 605235,
+    "gzipBytes": 181634,
+    "files": [
+      "static/chunks/0facadu0cf8w0.js",
+      "static/chunks/0fhbihn6gfqku.js",
+      "static/chunks/13iq6xib0y53-.js",
+      "static/chunks/18k7y3h74-jh5.js",
+      "static/chunks/1_jw6xn10cc-u.js",
+      "static/chunks/1ywxbix2kklm3.js",
+      "static/chunks/258wfa-mdluik.js",
+      "static/chunks/26i4_f-kqfsyx.js",
+      "static/chunks/2jzhy1urx2loq.js",
+      "static/chunks/2lp-bhlq4y7wm.js",
+      "static/chunks/334y1okvcyziv.js",
+      "static/chunks/39dviw_pthw1i.js",
+      "static/chunks/3kus3sb46fw4v.js",
+      "static/chunks/3vlu83--2q3tz.js"
+    ]
+  },
+  {
+    "route": "/access-requests/new",
+    "initialChunks": 15,
+    "rawBytes": 654864,
+    "gzipBytes": 193755,
+    "files": [
+      "static/chunks/0facadu0cf8w0.js",
+      "static/chunks/0fhbihn6gfqku.js",
+      "static/chunks/0r7mqee9s85-v.js",
+      "static/chunks/18k7y3h74-jh5.js",
+      "static/chunks/1_jw6xn10cc-u.js",
+      "static/chunks/1ywxbix2kklm3.js",
+      "static/chunks/2-so03r3axe2w.js",
+      "static/chunks/258wfa-mdluik.js",
+      "static/chunks/2jzhy1urx2loq.js",
+      "static/chunks/2lp-bhlq4y7wm.js",
+      "static/chunks/334y1okvcyziv.js",
+      "static/chunks/39dviw_pthw1i.js",
+      "static/chunks/3kus3sb46fw4v.js",
+      "static/chunks/3vlu83--2q3tz.js",
+      "static/chunks/429i6rmnutov0.js"
+    ]
+  }
+]

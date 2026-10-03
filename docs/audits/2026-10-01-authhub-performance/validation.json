@@ -1,0 +1,117 @@
+{
+  "date": "2026-10-01",
+  "scope": "first local implementation wave plus measured second local iteration",
+  "runtime": {
+    "local": "22.22.3",
+    "policy": ">=22.12.0 <23",
+    "buildComparison": "20.20.2"
+  },
+  "checks": {
+    "test:run": {
+      "exitCode": 0,
+      "passed": 4104,
+      "skipped": 21,
+      "apiPassed": 1694,
+      "webPassed": 2229,
+      "sharedPassed": 165,
+      "cliPassed": 7,
+      "toolingPassed": 9,
+      "scope": "full aggregate before second iteration; affected suites checked after second iteration"
+    },
+    "typecheck": {
+      "exitCode": 0,
+      "workspaces": "all five"
+    },
+    "lint": {
+      "exitCode": 0,
+      "errors": 0,
+      "warnings": 184
+    },
+    "builds": {
+      "api": 0,
+      "web": 0,
+      "shared": 0,
+      "cli": 0
+    },
+    "workflowYaml": "parsed",
+    "diffCheck": 0,
+    "cleanInstall": 0
+  },
+  "measurements": {
+    "cache": {
+      "concurrentColdReads": 20,
+      "sourceCallsBefore": 20,
+      "sourceCallsAfter": 1,
+      "sourceWorkReductionPercent": 95,
+      "latencyImprovementProven": false
+    },
+    "routeBundleGzipReductionPercent": {
+      "clients": 2.32,
+      "dashboard": 1.49,
+      "accessRequestsNew": 7.34
+    }
+  },
+  "unverified": [
+    "production latency",
+    "real-provider OAuth",
+    "live hosting runtime",
+    "remote GitHub workflow execution",
+    "field Core Web Vitals"
+  ],
+  "externalWrites": [],
+  "publication": {
+    "committed": false,
+    "pushed": false,
+    "deployed": false
+  },
+  "secondIteration": {
+    "webTestEnvironment": {
+      "suites": 12,
+      "passed": 40,
+      "jsdomSmokePassed": 13,
+      "matchedWorkers": 4,
+      "beforeWallSeconds": [
+        3.87,
+        5.34
+      ],
+      "afterWallSeconds": [
+        2.07,
+        1.94,
+        1.92
+      ],
+      "fullSuiteSpeedupProven": false
+    },
+    "browserStartup": {
+      "setup": "prerendered document fulfilled locally; localhost assets; external browser requests blocked",
+      "samples": 5,
+      "scripts": 24,
+      "transferredScriptBytes": 388141,
+      "encodedScriptBytes": 380941,
+      "decodedScriptBytes": 1266134,
+      "actualMiddlewareOrAuthMeasured": false,
+      "providerChangeMade": false,
+      "ownedServerStopped": true
+    },
+    "benchmarkDatabaseGuard": "missing and non-fixture URLs rejected before DB access",
+    "clientQueries": {
+      "syntheticClients": [
+        50,
+        500,
+        5000
+      ],
+      "historySizes": [
+        101,
+        1000
+      ],
+      "samplesPerCase": 30,
+      "warmupsPerCase": 5,
+      "foreignDetailQueriesBefore": 5,
+      "foreignDetailQueriesAfter": 1,
+      "focusedTestsPassed": 51,
+      "apiTypecheck": 0,
+      "latencyRatioProven": false,
+      "schemaChangeMade": false,
+      "privateDatabaseStopped": true
+    }
+  }
+}

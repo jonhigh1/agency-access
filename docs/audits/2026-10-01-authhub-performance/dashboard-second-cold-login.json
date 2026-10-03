@@ -1,0 +1,64 @@
+{
+  "window": "2026-10-01T21:30:00Z to 21:33:00Z",
+  "startupMarkers": [
+    {
+      "timestamp": "2026-10-01T21:32:10.386473574Z",
+      "kind": "migration"
+    },
+    {
+      "timestamp": "2026-10-01T21:32:11.312485265Z",
+      "kind": "migration"
+    },
+    {
+      "timestamp": "2026-10-01T21:32:29.963601894Z",
+      "kind": "listening"
+    },
+    {
+      "timestamp": "2026-10-01T21:32:29.963605804Z",
+      "kind": "listening"
+    },
+    {
+      "timestamp": "2026-10-01T21:32:29.963608864Z",
+      "kind": "listening"
+    }
+  ],
+  "dashboardRequests": [
+    {
+      "timestamp": "2026-10-01T21:32:33.155088423Z",
+      "kind": "incoming request",
+      "statusCode": null,
+      "responseTimeMs": null
+    },
+    {
+      "timestamp": "2026-10-01T21:32:33.156669097Z",
+      "kind": "request completed",
+      "statusCode": 204,
+      "responseTimeMs": 1.3496070000001055
+    },
+    {
+      "timestamp": "2026-10-01T21:32:33.28450065Z",
+      "kind": "incoming request",
+      "statusCode": null,
+      "responseTimeMs": null
+    },
+    {
+      "timestamp": "2026-10-01T21:32:34.358991058Z",
+      "kind": "request completed",
+      "statusCode": 401,
+      "responseTimeMs": 1073.0939590000016
+    },
+    {
+      "timestamp": "2026-10-01T21:32:35.468624423Z",
+      "kind": "incoming request",
+      "statusCode": null,
+      "responseTimeMs": null
+    },
+    {
+      "timestamp": "2026-10-01T21:32:36.160383621Z",
+      "kind": "request completed",
+      "statusCode": 200,
+      "responseTimeMs": 690.6762369999997
+    }
+  ],
+  "note": "Second sign-in encountered another startup. Exact ready time was not observed continuously; no precise end-to-end cold-login duration claimed."
+}

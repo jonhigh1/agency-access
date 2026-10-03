@@ -1,0 +1,21 @@
+{
+  "date": "2026-10-02",
+  "head": "5b81d5cd01c7c09b1a4da1e0624ad474b7b161de",
+  "branch": "main",
+  "browser": {
+    "tab": "1",
+    "url": "https://authhub.co/dashboard",
+    "environment": "production",
+    "authenticated": true,
+    "viewport": {
+      "width": 934,
+      "height": 977
+    }
+  },
+  "boundaries": [
+    "Existing production login preserved",
+    "Production mutations require explicit approval",
+    "Local changes are not deployed verification"
+  ],
+  "preexisting_worktree": " M .githooks/pre-push\n M apps/api/.env.example\n M apps/api/package.json\n M apps/api/src/lib/env.ts\n M apps/web/package.json\n?? .impeccable/config.json\n?? apps/api/src/lib/drex.ts\n?? apps/web/AGENTS.md\n?? apps/web/CLAUDE.md\n?? docs/audits/2026-09-30-authhub-polish/\n?? docs/audits/2026-10-01-authhub-performance/client-query-measurements-after.json\n?? docs/audits/2026-10-01-authhub-performance/client-query-measurements-before.json\n?? docs/audits/2026-10-01-authhub-performance/client-query-measurements.md\n?? docs/audits/2026-10-01-authhub-performance/current-main-dashboard-repair.patch\n?? docs/audits/2026-10-01-authhub-performance/current-main-dashboard-validation.json\n?? docs/audits/2026-10-01-authhub-performance/dashboard-first-login-live.json\n?? docs/audits/2026-10-01-authhub-performance/dashboard-live-ready.jpg\n?? docs/audits/2026-10-01-authhub-performance/dashboard-second-cold-login.json\n?? docs/audits/2026-10-01-authhub-performance/dashboard-server-observations.json\n?? docs/audits/2026-10-01-authhub-performance/hosting-proposal.md\n?? docs/audits/2026-10-01-authhub-performance/public-api-health-observation.json\n?? docs/audits/2026-10-01-authhub-performance/public-api-health-recheck.json\n?? docs/audits/2026-10-01-authhub-performance/public-client-origins.json\n?? docs/audits/2026-10-01-authhub-performance/public-home-observation.json\n?? docs/audits/2026-10-01-authhub-performance/public-home-startup-local.json\n?? docs/audits/2026-10-01-authhub-performance/report.md\n?? docs/audits/2026-10-01-authhub-performance/route-bundles-after.json\n?? docs/audits/2026-10-01-authhub-performance/route-bundles-before.json\n?? docs/audits/2026-10-01-authhub-performance/uptime-monitor.json\n?? docs/audits/2026-10-01-authhub-performance/uptimerobot-login.jpg\n?? docs/audits/2026-10-01-authhub-performance/uptimerobot-ten-minute-monitor.jpg\n?? docs/audits/2026-10-01-authhub-performance/validation.json\n?? docs/audits/2026-10-01-authhub-performance/web-test-environment.md\n?? docs/plans/2026-09-30-2150-fix-authhub-product-polish-plan.md\n?? docs/plans/2026-10-01-authhub-performance-codebase-plan.md\n?? videos/\n"
+}

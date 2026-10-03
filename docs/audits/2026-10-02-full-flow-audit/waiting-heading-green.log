@@ -1,0 +1,15 @@
+
+> @agency-platform/web@0.1.0 test:run
+> vitest run src/app/invite/[token]/__tests__/page.test.tsx
+
+
+ RUN  v4.0.16 /Users/jon.high/agency-access/apps/web
+
+ ✓ src/app/invite/[token]/__tests__/page.test.tsx (41 tests) 4184ms
+     ✓ shows delayed then timeout state and can recover with retry  344ms
+
+ Test Files  1 passed (1)
+      Tests  41 passed (41)
+   Start at  13:25:32
+   Duration  20.23s (transform 1.90s, setup 1.02s, import 7.09s, tests 4.18s, environment 7.43s)
+

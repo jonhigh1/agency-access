@@ -1,0 +1,25 @@
+{
+  "environment": "http://localhost:3100/contact",
+  "production_changed": false,
+  "checks": [
+    {
+      "flow": "demo keyboard",
+      "result": "pass",
+      "evidence": "dialog open true; Close modal initial focus; Escape closed and restored opener"
+    },
+    {
+      "flow": "mobile demo calendar",
+      "viewport": {
+        "width": 390,
+        "height": 844
+      },
+      "result": "pass after fix",
+      "evidence": "content646px, scrollHeight2227px; clicked October30 date; scrollTop664.5, available times rendered; no booking sent"
+    },
+    {
+      "flow": "mobile navigation Escape",
+      "result": "fail",
+      "evidence": "Close menu remains visible after Escape; no dialog role"
+    }
+  ]
+}

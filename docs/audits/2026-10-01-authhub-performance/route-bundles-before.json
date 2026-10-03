@@ -1,0 +1,66 @@
+[
+  {
+    "route": "/clients",
+    "initialChunks": 13,
+    "rawBytes": 599395,
+    "gzipBytes": 179770,
+    "files": [
+      "static/chunks/0fhbihn6gfqku.js",
+      "static/chunks/0o7gde71x88qj.js",
+      "static/chunks/12di201tmj8ax.js",
+      "static/chunks/18k7y3h74-jh5.js",
+      "static/chunks/1_jw6xn10cc-u.js",
+      "static/chunks/1x5hup2aigi6a.js",
+      "static/chunks/1ywxbix2kklm3.js",
+      "static/chunks/2-ahi_qg4dug0.js",
+      "static/chunks/2jzhy1urx2loq.js",
+      "static/chunks/2lp-bhlq4y7wm.js",
+      "static/chunks/32r2p666saqdo.js",
+      "static/chunks/39dviw_pthw1i.js",
+      "static/chunks/3kus3sb46fw4v.js"
+    ]
+  },
+  {
+    "route": "/dashboard",
+    "initialChunks": 13,
+    "rawBytes": 614170,
+    "gzipBytes": 184372,
+    "files": [
+      "static/chunks/0fhbihn6gfqku.js",
+      "static/chunks/0o7gde71x88qj.js",
+      "static/chunks/12di201tmj8ax.js",
+      "static/chunks/18k7y3h74-jh5.js",
+      "static/chunks/1_jw6xn10cc-u.js",
+      "static/chunks/1x5hup2aigi6a.js",
+      "static/chunks/1ywxbix2kklm3.js",
+      "static/chunks/2jzhy1urx2loq.js",
+      "static/chunks/2lp-bhlq4y7wm.js",
+      "static/chunks/32r2p666saqdo.js",
+      "static/chunks/39dviw_pthw1i.js",
+      "static/chunks/3kus3sb46fw4v.js",
+      "static/chunks/3lee9nbu2r9m3.js"
+    ]
+  },
+  {
+    "route": "/access-requests/new",
+    "initialChunks": 14,
+    "rawBytes": 708799,
+    "gzipBytes": 209097,
+    "files": [
+      "static/chunks/0fhbihn6gfqku.js",
+      "static/chunks/0o7gde71x88qj.js",
+      "static/chunks/12di201tmj8ax.js",
+      "static/chunks/18k7y3h74-jh5.js",
+      "static/chunks/1_jw6xn10cc-u.js",
+      "static/chunks/1x5hup2aigi6a.js",
+      "static/chunks/1ywxbix2kklm3.js",
+      "static/chunks/2jzhy1urx2loq.js",
+      "static/chunks/2lp-bhlq4y7wm.js",
+      "static/chunks/327dhicin3n02.js",
+      "static/chunks/32r2p666saqdo.js",
+      "static/chunks/39dviw_pthw1i.js",
+      "static/chunks/3kus3sb46fw4v.js",
+      "static/chunks/44hlwuowy0992.js"
+    ]
+  }
+]

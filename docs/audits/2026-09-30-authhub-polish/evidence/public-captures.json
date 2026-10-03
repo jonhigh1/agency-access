@@ -1,0 +1,904 @@
+[
+  {
+    "surface": "home",
+    "path": "/",
+    "finalPath": "/",
+    "width": 1440,
+    "file": "live-1440-home.png",
+    "evidence": "LIVE_PUBLIC",
+    "metrics": {
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "mains": 2,
+      "h1s": 2,
+      "brokenImages": [],
+      "unnamedButtons": [],
+      "marquee": [
+        {
+          "transform": "matrix(1, 0, 0, 1, -46.3998, 0)",
+          "animation": "marquee",
+          "duration": "30s"
+        },
+        {
+          "transform": "matrix(1, 0, 0, 1, -39.182, 0)",
+          "animation": "marquee",
+          "duration": "30s"
+        }
+      ]
+    },
+    "errors": [],
+    "links": {
+      "featuresTargetExists": true,
+      "howTargetExists": true,
+      "footerLinks": [
+        {
+          "label": "Features",
+          "href": "#trusted-by-agencies"
+        },
+        {
+          "label": "How It Works",
+          "href": "#how-it-works"
+        }
+      ],
+      "featuresScroll": {
+        "before": 0,
+        "after": 0,
+        "url": "/"
+      }
+    },
+    "text": "AuthHub\nFeatures\nHow It Works\nPricing\nBlog\nSIGN IN\nGET STARTED\nCLIENT ACCESS PLATFORM\nSend one link. Your client is live in 5 minutes.\n\nYour client authorizes Meta, Google, GA4, LinkedIn, and more through one link. Your team and your AI agents start work the same day.\n\nSTART FREE TRIAL\nSchedule Demo\nTRUSTED BY MARKETING AGENCIES\n/\nPillar AI\nELITE EDGE MEDIA\nDigital One\nClient Activation\nLive in 5 Minutes\nBuilt for Humans + Agents\nClient Access Request\n\nAuthHub is requesting access to:\n\nMeta Ads\nGoogle Ads\nGA4\nLinkedIn Ads\nGRANT ACCESS\n\nBUILT FOR FASTER ONBOARDING. CLEANER HANDOFFS. NO EXCEPTIONS.\n\n01\n\nOne Link\n\nOne link replaces 47 emails across Meta, Google, LinkedIn, and more.\n\n02\n\nBuilt-In Token Refresh\n\nAccess never drops. Tokens auto-refresh before expiration.\n\n03\n\nWhite-Label\n\nYour logo. Your domain. Your client never sees AuthHub.\n\n04\n\nAudit Logs Included\n\nTrack who accessed what, when, and from where.\n\n05\n\n5-Minute Setup\n\nReplace a full day of onboarding with a 5-minute flow.\n\n06\n\nPlatform Coverage\n\nMeta Ads, Google Ads, GA4, LinkedIn, TikTok — one flow, all platforms.\n\n01\n\nOne Link\n\nOne link replaces 47 emails across Meta, Google, LinkedIn, and more.\n\n02\n\nBuilt-In Token Refresh\n\nAccess never drops. Tokens auto-refresh before expiration.\n\n03\n\nWhite-Label\n\nYour logo. Your domain. Your client never sees AuthHub.\n\n04\n\nAudit Logs Included\n\nTrack who accessed what, when, and from where.\n\n05\n\n5-Minute Setup\n\nReplace a full day of onboarding with a 5-minute flow.\n\n06\n\nPlatform Coverage\n\nMeta Ads, Google Ads, GA4, LinkedIn, TikTok — one flow, all platforms.\n\n01\n\nOne Link\n\nOne link replaces 47 emails across Meta, Google, LinkedIn, and more.\n\n02\n\nBuilt-In Token Refresh\n\nAccess never drops. Tokens auto-refresh before expiration.\n\n03\n\nWhite-Label\n\nYour logo. Your domain. Your client never sees AuthHub.\n\n04\n\nAudit Logs Included\n\nTrack who accessed what, when, and from where.\n\n05\n\n5-Minute Setup\n\nReplace a full day of onboarding with a 5-minute flow.\n\n06\n\nPlatform Coverage\n\nMeta Ads, Google Ads, GA4, LinkedIn, TikTok — one flow, all platforms.\n\n⚠️\nTHE REALITY\n⚠️\nCLIENT\nONBOARDING\nIS BROKEN\n\nStop the insanity. Send one link. Get full client access.\n\nCan you send access to your GA4 and Meta Business Manager?\n\nAGENCY\n9:47 AM\n\nWhat's a Business Manager?\n\nCLIENT\n10:23 AM\n\nI think I added you but it says 'pending'\n\nCLIENT\n2:15 PM\n\nI haven't seen any access emails come through\n\nAGENCY\n3:42 PM\n\nI have no idea how to add you to these accounts. Can we jump on a zoom?\n\nCLIENT\nDAY 2\nDay 2\n\nStill waiting on that access. Can we get this sorted today?\n\nAGENCY\nDAY 3\nDay 3\nDAYS LOST\n0\nPer client onboarding\nEMAIL EXCHANGES\n0\nAverage per client\nREVENUE LOST\n$600+\nPer client onboarding\nOne Link.\nAll Your Clients.\n\nDrag the slider to see the transformation from email chaos to streamlined client onboarding.\n\n←\nDrag to compare\n→\nCHAOS\nCurrent State\n\n47 emails • 3 days lost • $600+ wasted\n\n47\nEMAILS\n3\nDAYS\n$600\nWASTED\n✓ SOLVED\nWith AuthHub\n\n1 link • 5 minutes • $0 cost\n\nYOUR "
+  },
+  {
+    "surface": "pricing",
+    "path": "/pricing",
+    "finalPath": "/pricing",
+    "width": 1440,
+    "file": "live-1440-pricing.png",
+    "evidence": "LIVE_PUBLIC",
+    "metrics": {
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "mains": 2,
+      "h1s": 1,
+      "brokenImages": [],
+      "unnamedButtons": [],
+      "marquee": [
+        {
+          "transform": "matrix(1, 0, 0, 1, -67.9983, 0)",
+          "animation": "marquee",
+          "duration": "30s"
+        }
+      ]
+    },
+    "errors": [],
+    "links": {
+      "featuresTargetExists": false,
+      "howTargetExists": false,
+      "footerLinks": [
+        {
+          "label": "Features",
+          "href": "#trusted-by-agencies"
+        },
+        {
+          "label": "How It Works",
+          "href": "#how-it-works"
+        }
+      ],
+      "featuresScroll": {
+        "before": 0,
+        "after": 0,
+        "url": "/pricing"
+      }
+    },
+    "text": "AuthHub\nFeatures\nHow It Works\nPricing\nBlog\nSIGN IN\nGET STARTED\nSIMPLE PRICING\nAuthHub Pricing: Automate OAuth Client Onboarding in 5 Minutes\n\nReplace 2-3 days of manual client onboarding with a 5-minute automated flow.\nTransparent pricing. No hidden fees. Cancel anytime.\n\nSTART 14-DAY FREE TRIAL\nCALCULATE YOUR SAVINGS\n\nBUILT FOR FASTER ONBOARDING. CLEANER HANDOFFS. NO EXCEPTIONS.\n\n01\n\nOne Link\n\nOne link replaces 47 emails across Meta, Google, LinkedIn, and more.\n\n02\n\nBuilt-In Token Refresh\n\nAccess never drops. Tokens auto-refresh before expiration.\n\n03\n\nWhite-Label\n\nYour logo. Your domain. Your client never sees AuthHub.\n\n04\n\nAudit Logs Included\n\nTrack who accessed what, when, and from where.\n\n05\n\n5-Minute Setup\n\nReplace a full day of onboarding with a 5-minute flow.\n\n06\n\nPlatform Coverage\n\nMeta Ads, Google Ads, GA4, LinkedIn, TikTok — one flow, all platforms.\n\n01\n\nOne Link\n\nOne link replaces 47 emails across Meta, Google, LinkedIn, and more.\n\n02\n\nBuilt-In Token Refresh\n\nAccess never drops. Tokens auto-refresh before expiration.\n\n03\n\nWhite-Label\n\nYour logo. Your domain. Your client never sees AuthHub.\n\n04\n\nAudit Logs Included\n\nTrack who accessed what, when, and from where.\n\n05\n\n5-Minute Setup\n\nReplace a full day of onboarding with a 5-minute flow.\n\n06\n\nPlatform Coverage\n\nMeta Ads, Google Ads, GA4, LinkedIn, TikTok — one flow, all platforms.\n\n01\n\nOne Link\n\nOne link replaces 47 emails across Meta, Google, LinkedIn, and more.\n\n02\n\nBuilt-In Token Refresh\n\nAccess never drops. Tokens auto-refresh before expiration.\n\n03\n\nWhite-Label\n\nYour logo. Your domain. Your client never sees AuthHub.\n\n04\n\nAudit Logs Included\n\nTrack who accessed what, when, and from where.\n\n05\n\n5-Minute Setup\n\nReplace a full day of onboarding with a 5-minute flow.\n\n06\n\nPlatform Coverage\n\nMeta Ads, Google Ads, GA4, LinkedIn, TikTok — one flow, all platforms.\n\nINTERACTIVE CALCULATOR\nCalculate your annual savings\n\nSee how much time and money your team could save by automating client OAuth onboarding.\n\nHOW MANY CLIENTS DO YOU ONBOARD PER MONTH?\n1-5 CLIENTS\n6-20 CLIENTS\n21-50 CLIENTS\n50+ CLIENTS\nAVG. HOURS SPENT PER CLIENT ONBOARDING?\n1 hour\n2 hours\n8 hours\nPLATFORMS PER CLIENT?\n📘\nMETA ADS\n🔍\nGOOGLE ADS\n📊\nGA4\n💼\nLINKEDIN\n🎵\nTIKTOK\n\nYOUR ANNUAL SAVINGS\n\n$7,099\n\nsaved per year\n\nTIME RECLAIMED\n\nHours saved:\n84h\nWeeks of work:\n≈ 2 weeks\n\nBREAKDOWN\n\n•\nEmail threads: 25h\n•\nOAuth setup: 42h\n•\nFollow-ups: 17h\nSTART FREE TRIAL\n\n*Conservative estimates based on platform setup time only. Your actual savings may vary.\n\nConservative baseline calculation. Actual savings often 2-3× higher when accounting for full onboarding overhead.\nSIMPLE PRICING\nChoose the plan that fits your team\n\nAll plans include a 14-day free trial. Choose the plan that fits your agency's needs.\n\nMONTHLY\nYEARLY\nSAVE ~17%\n\nSave ~17% with annual billing (pay for 10, get 12). Cancel anytime.\n\nFOR SMALL AGENCIES\nStarter\n\nAgencies getting started with access automation\n\n$24\n/mo equiv.\n$29/mo billed monthly · $290/yr billed yearly\nS"
+  },
+  {
+    "surface": "about",
+    "path": "/about",
+    "finalPath": "/about",
+    "width": 1440,
+    "file": "live-1440-about.png",
+    "evidence": "LIVE_PUBLIC",
+    "metrics": {
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "mains": 2,
+      "h1s": 1,
+      "brokenImages": [],
+      "unnamedButtons": [],
+      "marquee": []
+    },
+    "errors": [],
+    "text": "AuthHub\nFeatures\nHow It Works\nPricing\nBlog\nSIGN IN\nGET STARTED\nAbout AuthHub\nClient Access in 5 Minutes,\nNot 5 Days\n\nAuthHub replaces the fragmented emails, confused clients, and expired tokens of manual OAuth setup with one guided link and a clear status view.\n\nThe Problem We Solve\n\nMarketing agencies need client access to advertising, analytics, and marketing platforms — Meta Ads, Google Ads, GA4, LinkedIn, and more. Getting that access means walking non-technical clients through OAuth flows they don't understand, over email, with screenshots, and follow-up messages that take days.\n\nThe result: stalled onboarding, frustrated clients, and agencies spending more time on access logistics than on actual campaign work.\n\nHow It Works\n01\nCreate a Request\n\nSelect the platforms and permission levels you need. One request, multiple platforms.\n\n02\nSend a Link\n\nYour client gets one simple link — no screenshots, no confusion, no back-and-forth.\n\n03\nGet Access\n\nClient authorizes through a guided flow. You see real-time status — done, pending, or blocked.\n\nWhat We Believe\nStatus Should Be Truthful\n\nComplete, partial, pending, revoked, failed — never smooth uncertainty into false success.\n\nThe Next Action Should Be Obvious\n\nEvery screen makes clear what happened, who needs to act, and what to do next.\n\nTrust Through Clarity\n\nExplain access, permissions, and errors in plain language while preserving diagnostic detail.\n\nSecurity Is Not Optional\n\nTokens stored in enterprise-grade secrets management. Every access logged. Expiration enforced.\n\nStop Wasting Time on OAuth\n\nStart your 14-day free trial. No credit card required.\n\nGet Started Free\nAuthHub\n\nThe easy button for client account access. Replace weeks of back-and-forth with one link.\n\nPRODUCT\nFeatures\nHow It Works\nPricing\nAffiliates\nBlog\nHelp Center\nCOMPARE\nLeadsie Alternative\nAgencyAccess Alternative\nCOMPANY\nAbout\nContact\nLEGAL\nPrivacy Policy\nTerms of Service\n\n© 2026 High Enterprises LLC. All rights reserved. AuthHub is owned and operated by High Enterprises LLC.\n\nPrivacy\nTerms"
+  },
+  {
+    "surface": "contact",
+    "path": "/contact",
+    "finalPath": "/contact",
+    "width": 1440,
+    "file": "live-1440-contact.png",
+    "evidence": "LIVE_PUBLIC",
+    "metrics": {
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "mains": 2,
+      "h1s": 1,
+      "brokenImages": [],
+      "unnamedButtons": [],
+      "marquee": []
+    },
+    "errors": [],
+    "text": "AuthHub\nFeatures\nHow It Works\nPricing\nBlog\nSIGN IN\nGET STARTED\nWe'd love to hear from you\nGet in Touch\n\nHave a question about AuthHub? Want to see a demo? We're here to help. Fill out the form below and we'll get back to you within 24 hours.\n\nSend us a message\nName *\nEmail *\nCompany (optional)\nMessage *\nSEND MESSAGE\nContact Information\n\nEmail us\n\nsupport [at] authhub.co\n\nTalk to us\n\nSchedule a Demo\n\nResponse time\n\nWithin 24 hours\n\nFollow us\n\nLooking for quick answers?\n\nVisit the Help Center →\nFrequently Asked Questions\nHow does the pricing work?\n\nWe offer simple tiered pricing based on the number of clients you onboard per month. Check out our pricing page for details.\n\nWhich platforms do you support?\n\nWe support Meta (Facebook/Instagram), Google Ads, GA4, LinkedIn, TikTok, Snapchat, and more. New platforms are added regularly.\n\nIs there a free trial?\n\nYes! Start your 14-day free trial on any paid plan—Starter, Growth, or Agency. No credit card required.\n\nVisit the Help Center\n→\nAuthHub\n\nThe easy button for client account access. Replace weeks of back-and-forth with one link.\n\nPRODUCT\nFeatures\nHow It Works\nPricing\nAffiliates\nBlog\nHelp Center\nCOMPARE\nLeadsie Alternative\nAgencyAccess Alternative\nCOMPANY\nAbout\nContact\nLEGAL\nPrivacy Policy\nTerms of Service\n\n© 2026 High Enterprises LLC. All rights reserved. AuthHub is owned and operated by High Enterprises LLC.\n\nPrivacy\nTerms"
+  },
+  {
+    "surface": "affiliate",
+    "path": "/affiliate",
+    "finalPath": "/affiliate",
+    "width": 1440,
+    "file": "live-1440-affiliate.png",
+    "evidence": "LIVE_PUBLIC",
+    "metrics": {
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "mains": 1,
+      "h1s": 1,
+      "brokenImages": [],
+      "unnamedButtons": [],
+      "marquee": []
+    },
+    "errors": [],
+    "text": "AuthHub\nFeatures\nHow It Works\nPricing\nBlog\nSIGN IN\nGET STARTED\nAFFILIATE PROGRAM\nRefer agencies that need faster client access onboarding.\n\nAuthHub replaces slow, manual client access requests with one branded link. We want partners with trust in the agency ecosystem, not anonymous coupon traffic.\n\nDEFAULT COMMISSION\n\n50% -> 30%\n\n50% for the first 6 months, then 30% for the next 6 months of collected revenue.\n\nCOOKIE WINDOW\n\n90 days\n\nLong enough for considered B2B buying cycles.\n\nPAYOUT CADENCE\n\nMonthly\n\nTracked ledger, manual review, predictable batch payouts.\n\nWho we want\n\nThe first cohort is approval-based and biased toward audience fit.\n\nAgency operators with an audience\nConsultants, coaches, and educators\nAdjacent SaaS and service partners\nExisting customers referring peers\nHow it works\n\nApproved partners get a link, a portal, and tracked commissions.\n\nApply for the program\nGet reviewed and approved manually\nReceive your referral link and promo kit\nTrack signups, customers, and commission status\nApply for the pilot cohort\n\nTell us who you reach and how you would promote AuthHub.\n\nName\nEmail\nCompany\nWebsite\nHow will you promote AuthHub?\n\nBy applying, you agree to a manual review and approval process.\n\nApply to the program\nAuthHub\n\nThe easy button for client account access. Replace weeks of back-and-forth with one link.\n\nPRODUCT\nFeatures\nHow It Works\nPricing\nAffiliates\nBlog\nHelp Center\nCOMPARE\nLeadsie Alternative\nAgencyAccess Alternative\nCOMPANY\nAbout\nContact\nLEGAL\nPrivacy Policy\nTerms of Service\n\n© 2026 High Enterprises LLC. All rights reserved. AuthHub is owned and operated by High Enterprises LLC.\n\nPrivacy\nTerms"
+  },
+  {
+    "surface": "blog",
+    "path": "/blog",
+    "finalPath": "/blog",
+    "width": 1440,
+    "file": "live-1440-blog.png",
+    "evidence": "LIVE_PUBLIC",
+    "metrics": {
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "mains": 1,
+      "h1s": 1,
+      "brokenImages": [],
+      "unnamedButtons": [],
+      "marquee": []
+    },
+    "errors": [],
+    "text": "AuthHub\nFeatures\nHow It Works\nPricing\nBlog\nSIGN IN\nGET STARTED\nAgency Growth Resources\n\nExpert guides, tutorials, and strategies for marketing agencies\n\nFeatured Posts\n⚙️ AGENCY OPERATIONS\nM\nMCP OAuth for Agencies: Give AI Agents Client Ad Access Without Password Sharing\n\nMCP guides assume you already have client OAuth. Learn how agencies collect Meta, Google, and GA4 access in one link so humans and AI agents can work the same day—without password sharing.\n\nJon High\nSep 28, 2026\n15 min read\n#mcp oauth\n#ai agents\n#client access management\n⚖️ COMPARISONS\nB\nBest Leadsie Alternatives (2026): Fair Comparison for Agencies\n\nMost \"Leadsie alternative\" pages are binary ads for one peer. This 2026 shortlist maps ClientInvite, AgencyAccess, AuthHub, ClientFuse, and others—with pick-X-if gates, pricing-model math, and when to stay on Leadsie.\n\nJon High\nSep 25, 2026\n16 min read\n#leadsie alternatives\n#leadsie alternative\n#leadsie competitors\n⚖️ COMPARISONS\nL\nLeadsie vs AgencyAccess: Which Client Onboarding Tool Wins in 2026?\n\nA neutral comparison of Leadsie and AgencyAccess on pricing, intake forms, branding, integrations, and security — including the details neither vendor puts on its pricing page. Written by a third option, with its own bias stated up front.\n\nJon High\nSep 13, 2026\n9 min read\n#leadsie vs agencyaccess\n#leadsie\n#agencyaccess\nAll Posts\n⚙️ AGENCY OPERATIONS\nMCP OAuth for Agencies: Give AI Agents Client Ad Access Without Password Sharing\n\nMCP guides assume you already have client OAuth. Learn how agencies collect Meta, Google, and GA4 access in one link so humans and AI agents can work the same day—without password sharing.\n\nJon High\nSep 28\n15m\n⚖️ COMPARISONS\nBest Leadsie Alternatives (2026): Fair Comparison for Agencies\n\nMost \"Leadsie alternative\" pages are binary ads for one peer. This 2026 shortlist maps ClientInvite, AgencyAccess, AuthHub, ClientFuse, and others—with pick-X-if gates, pricing-model math, and when to stay on Leadsie.\n\nJon High\nSep 25\n16m\n⚖️ COMPARISONS\nLeadsie vs AgencyAccess: Which Client Onboarding Tool Wins in 2026?\n\nA neutral comparison of Leadsie and AgencyAccess on pricing, intake forms, branding, integrations, and security — including the details neither vendor puts on its pricing page. Written by a third option, with its own bias stated up front.\n\nJon High\nSep 13\n9m\n📖 PLATFORM TUTORIALS\nSnapchat Business Manager Access for Agencies: Roles & Permissions (2026)\n\nSnapchat Business Manager has no access-request system. Your client must add you. Learn the Organization and Ad Account role levels, Public Profile requirements, and the invite flow that gets your agency running campaigns without shared logins.\n\nJon High\nSep 11\n10m\n⚙️ AGENCY OPERATIONS\nOAuth Token Refresh for Agencies: Stop Friday-Night Meta Token Deaths\n\nAgency guide to OAuth token refresh: what auto-renews, what needs a client click, and how Infisical-backed auto-refresh plus 14-day reauth requests stop Friday-night outages.\n\nJon High\nMay 6\n15m\n🚀 CLIENT ONBOAR"
+  },
+  {
+    "surface": "article",
+    "path": "/blog/google-ads-access-agency",
+    "finalPath": "/blog/google-ads-access-agency",
+    "width": 1440,
+    "file": "live-1440-article.png",
+    "evidence": "LIVE_PUBLIC",
+    "metrics": {
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "mains": 1,
+      "h1s": 1,
+      "brokenImages": [],
+      "unnamedButtons": [],
+      "marquee": []
+    },
+    "errors": [
+      "Minified React error #418; visit https://react.dev/errors/418?args[]=text&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    ],
+    "text": "AuthHub\nFeatures\nHow It Works\nPricing\nBlog\nSIGN IN\nGET STARTED\n📖 PLATFORM TUTORIALS\nGoogle Ads Access Guide: How Clients Grant Agency Permissions (2026)\n\nThe complete guide to getting Google Ads manager account access. Learn the difference between MCC, manager accounts, and direct access—plus how to avoid the most common permission errors.\n\nJon High\n· Founder\nJanuary 15, 2026\n10 min read\nShare\n#Google Ads\n#MCC\n#manager account\n#permissions\n#Google Ads access for agencies\nGoogle's Unique Multi-Product Challenge\n\nGoogle isn't just one platform—it's an entire ecosystem. When you need client access, you're often dealing with:\n\nGoogle Ads (formerly AdWords)\nGoogle Analytics 4 (GA4)\nGoogle Tag Manager (GTM)\nGoogle Merchant Center\nGoogle Search Console\nYouTube Ads\n\nEach has its own access system, and clients often confuse them. This guide focuses specifically on Google Ads, but we'll also cover how the Google ecosystem connects.\n\nUnderstanding Google Ads Account Structure\n\nBefore requesting access, understand the hierarchy:\n\nMCC (Manager Account) ├── Client Account 1 ├── Client Account 2 └── Client Account 3\n\nMCC (My Client Center): Also called a Manager Account, this lets agencies manage multiple client accounts from one dashboard\nClient Account: The individual Google Ads account containing campaigns, ad groups, and ads\n\nPro Tip: As an agency, you should have your own MCC. All client accounts are then linked under your manager account for centralized management.\n\nThe Manual Way: Step-by-Step Client Instructions\nOption 1: Linking to Your Agency's MCC (Recommended)\n\nThis is the cleanest approach. The client links their account to your manager account, and you manage everything from one dashboard.\n\nStep 1: Get Your Agency's MCC ID\nLog into your Google Ads account\nClick the account selector (top right, shows your account ID)\nYour 10-digit MCC ID is displayed (e.g., 123-456-7890)\nStep 2: Send Your Client These Instructions\n\nHave your client follow these exact steps:\n\nLog into Google Ads\nClick Tools & Settings (wrench icon, top right)\nUnder Setup, click Account link → Manager account\nEnter your agency's 10-digit MCC ID (include hyphens: 123-456-7890)\nSelect Account Admin or Standard access level\nClick Send request\nOption 2: Direct Email Invitation\n\nIf your client prefers, you can send an email invitation:\n\nIn your MCC, click Tools & Settings → Account link → Manager account\nClick the + button → Link existing account\nEnter the client's Customer ID (10 digits, found in their account URL)\nSelect access level\nClick Send invitation\nGoogle Ads Permission Levels Explained\n\nGoogle Ads has more granular permissions than most platforms:\n\nAccess Level\tCan Create\tCan Edit\tCan Delete\tCan View Billing\tEmail Notifications\tBest For\nAdmin\t✅\t✅\t✅\t✅\t✅\tFull account management\nStandard\t✅\t✅\t❌\t❌\t✅\tCampaign management (recommended)\nRead-only\t❌\t❌\t❌\t❌\t✅\tReporting and monitoring\nEmail-only\t❌\t❌\t❌\t❌\t✅\tNotifications only\nCommon Google Ads Access Issues (And Fixes)\nIssue 1: \"Account Alrea"
+  },
+  {
+    "surface": "compare",
+    "path": "/compare/leadsie-alternative",
+    "finalPath": "/compare/leadsie-alternative",
+    "width": 1440,
+    "file": "live-1440-compare.png",
+    "evidence": "LIVE_PUBLIC",
+    "metrics": {
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "mains": 1,
+      "h1s": 1,
+      "brokenImages": [],
+      "unnamedButtons": [],
+      "marquee": []
+    },
+    "errors": [],
+    "text": "AuthHub\nFeatures\nHow It Works\nPricing\nBlog\nSIGN IN\nGET STARTED\n2026 COMPARISON GUIDE\nAuthHub vs Leadsie\n\nAuthHub is a Leadsie alternative for agencies that need client OAuth plus intake in one link, predictable monthly tiers ($29 / $79 / $149 with 5 / 20 / 50 active-client caps), and token-health monitoring with Infisical-backed audit trails. Leadsie still wins for 31+ integrations and specialized Meta or influencer workflows. Compare current pricing, platforms, and how to dual-run a switch without breaking live platform permissions.\n\nStart 14 Day Free Trial\nAuthHub Pricing\n\nComparing all three? Leadsie vs AgencyAccess vs AuthHub\n\n14-DAY FREE TRIAL\nNO CREDIT CARD\nCANCEL ANYTIME\nWhy Agencies Switch to AuthHub\nAccess + Intake in One Link\n\nOne link handles OAuth and collects client info—no separate forms needed.\n\nPredictable tiered pricing (no credits)\n\nMonthly tiers at $29 / $79 / $149 with 5 / 20 / 50 client caps.\n\nToken Health + Infisical Audit\n\nToken-health monitoring, provider-supported refresh, and audit events.\n\nWhy Agencies Look for Leadsie Alternatives\n\nGrowing agencies hit these walls with Leadsie. Sound familiar?\n\nCredit Anxiety\n\n“I never know what my bill will be each month.”\n\nLeadsie charges one onboarding credit per new client with manager/admin access. Busy months can require $50 overage packs. Fixed tiers make the monthly bill easier to forecast.\n\nTwo-Step Onboarding\n\n“I look unprofessional sending multiple links to new clients.”\n\nLeadsie collects platform access. AuthHub request templates can include custom intake fields, so authorization and client context arrive in the same flow.\n\nToken Operations\n\n“I need to know which connections are healthy before a campaign launch.”\n\nExpired or revoked access can stop work. AuthHub monitors token health, uses provider-supported refresh where the provider allows it, stores token references in Infisical, and records audit events.\n\nSupport Hours\n\n“My team and clients need coverage during US business hours.”\n\nLeadsie's team and many of its customers are strongest in UK/EU hours. AuthHub offers US-based support only — no published guaranteed response-time SLA.\n\nLEADSIE PRICING\n\nLeadsie pricing explained\nLeadsie\n\n$59/month\n\n$59 · $129 · $299 (3 / 10 / 50 client credits)\n\n31+\nPlatform Count\nClient Intake Forms\nEnterprise\nAPI & Webhooks\nCredits + overages\nPricing Model\n$59/mo\nStarting Price\nCHOOSE PLAN\nBEST VALUE\nAuthHub\n\n$29/month\n\nFrom $29/mo · 5/20/50 clients by tier\n\n$360/yr (~$30/mo) at 10 clients: Growth $79 vs Leadsie Agency yearly effective ~$107/mo\n\n15+\nPlatform Count\nClient Intake Forms\n(Exclusive)\nGrowth+\nAPI & Webhooks\nFixed monthly tiers\nPricing Model\n$29/mo\nStarting Price\nSTART FREE TRIAL\nHow Leadsie credits work\n\nOne onboarding credit is used when a new client grants manager or admin access (one client = one credit). View-only audits use separate audit credits. Unused credits typically roll for about three months. Overage packs cost $50 and add onboarding + view-only credits by tier (co"
+  },
+  {
+    "surface": "compare-three-way",
+    "path": "/compare/leadsie-vs-agencyaccess-vs-authhub",
+    "finalPath": "/compare/leadsie-vs-agencyaccess-vs-authhub",
+    "width": 1440,
+    "file": "live-1440-compare-three-way.png",
+    "evidence": "LIVE_PUBLIC",
+    "metrics": {
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "mains": 1,
+      "h1s": 1,
+      "brokenImages": [],
+      "unnamedButtons": [],
+      "marquee": []
+    },
+    "errors": [],
+    "text": "AuthHub\nFeatures\nHow It Works\nPricing\nBlog\nSIGN IN\nGET STARTED\n2026 THREE-WAY BUYER GUIDE\nLeadsie vs AgencyAccess vs AuthHub (2026): Credits, Caps, and Token Refresh\n\nLeadsie, AgencyAccess, and AuthHub all help agencies collect client ad- and analytics-platform access through a branded link. This three-way ranks them on pricing model (credits vs invite caps vs active-client tiers), token refresh, security & audit, intake + branding, and platforms + automation—with honest “pick X if…” gates and worked monthly math. Prices are pre-tax from public list pages, checked September 24, 2026 (PT). Verify all three vendors live before you buy.\n\nStart 14 Day Free Trial\nAuthHub Pricing\nAuthHub vs Leadsie\n·\nAuthHub vs AgencyAccess\n·\nLeadsie pricing deep-dive\nShared job: one-link client OAuth / access for agencies\n\nAgency founders and ops leads share the same pain: chasing Meta Business Manager invites, Google Ads access, GA4, LinkedIn, TikTok, and the rest across email threads that stall campaigns.\n\nAll three tools replace password-chasing with a client-facing authorization link that uses each platform’s official permission flow. None invented one-link access alone. The shared job is access onboarding. Decide on what happens after the first grant: how you pay when volume spikes, whether tokens stay healthy, what vaulting and audit look like for vendor review, whether intake lives in the same link, and how API/webhooks fit your stack.\n\nDecision frame: five axes\n\n1. Pricing model & caps\n\nLeadsie onboarding credits + overages; AgencyAccess clients/invites per month; AuthHub active-client flat tiers (5 / 20 / 50).\n\n2. Token ops / refresh\n\nAuthHub automatic refresh where providers support it; competitors do not advertise the same primary story (no invented expiry SLAs).\n\n3. Security & audit\n\nAuthHub: Infisical-backed token references + audit logs. No SOC 2 claim. Competitors: GDPR / secure-OAuth framing without Infisical packaging.\n\n4. Intake + branding\n\nAuthHub and AgencyAccess both include intake in the access flow (parity — no exclusive-intake). Leadsie is access-first; intake is often separate.\n\n5. Platforms + automation\n\nAuthHub honest 15+ core connectors. Leadsie and AgencyAccess are broader on niches. All three offer automation paths—compare depth and token lifecycle, not “who has an API.”\n\nWhat is the difference between Leadsie, AgencyAccess, and AuthHub?\n\nAll three help marketing agencies collect client platform access through a branded link. Leadsie is the established credit-based access tool with broad platform coverage and audit-oriented workflows. AgencyAccess competes with built-in intake, deeper branding, invite-based plans, and a longer trial. AuthHub competes on automatic OAuth token refresh, Infisical-backed token storage with audit logs, in-link intake, and flat active-client tiers at $29 / $79 / $149 for 5 / 20 / 50 clients, with API and webhooks from Growth up.\n\nDoes AgencyAccess have an API?\n\nYes. AgencyAccess documents a public API for creat"
+  },
+  {
+    "surface": "guide-google",
+    "path": "/guides/google-ads-access",
+    "finalPath": "/sign-in",
+    "width": 1440,
+    "file": "live-1440-guide-google.png",
+    "evidence": "LIVE_PUBLIC",
+    "metrics": {
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "mains": 0,
+      "h1s": 1,
+      "brokenImages": [
+        "Icon for accounts.authhub.co"
+      ],
+      "unnamedButtons": [],
+      "marquee": []
+    },
+    "errors": [],
+    "text": "accounts.authhub.co\nPerforming security verification\n\nThis website uses a security service to protect against malicious bots. This page is displayed while the website verifies you are not a bot.\n\nRay ID: a438099e5b5c7669\nPerformance and Security by Cloudflare\nPrivacy"
+  },
+  {
+    "surface": "guide-meta",
+    "path": "/guides/meta-ads-access",
+    "finalPath": "/sign-in",
+    "width": 1440,
+    "file": "live-1440-guide-meta.png",
+    "evidence": "LIVE_PUBLIC",
+    "metrics": {
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "mains": 0,
+      "h1s": 1,
+      "brokenImages": [
+        "Icon for accounts.authhub.co"
+      ],
+      "unnamedButtons": [],
+      "marquee": []
+    },
+    "errors": [],
+    "text": "accounts.authhub.co\nPerforming security verification\n\nThis website uses a security service to protect against malicious bots. This page is displayed while the website verifies you are not a bot.\n\nRay ID: a43809b70ea67669\nPerformance and Security by Cloudflare\nPrivacy"
+  },
+  {
+    "surface": "terms",
+    "path": "/terms",
+    "finalPath": "/terms",
+    "width": 1440,
+    "file": "live-1440-terms.png",
+    "evidence": "LIVE_PUBLIC",
+    "metrics": {
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "mains": 1,
+      "h1s": 1,
+      "brokenImages": [],
+      "unnamedButtons": [],
+      "marquee": []
+    },
+    "errors": [],
+    "text": "AuthHub\nFeatures\nHow It Works\nPricing\nBlog\nSIGN IN\nGET STARTED\nTerms of Service\n\nLast updated: September 3, 2026\n\n1. Acceptance of Terms\n\nAuthHub is owned and operated by High Enterprises LLC, a Wyoming limited liability company. By accessing or using AuthHub (\"Service\"), you agree to be bound by these Terms of Service (\"Terms\"). If you do not agree to these Terms, you may not use the Service. These Terms apply to all users, including agencies and their clients who authorize platform access.\n\n2. Description of Service\n\nAuthHub is an OAuth aggregation platform that enables marketing agencies to streamline client onboarding by collecting platform authorizations (Meta, Google Ads, GA4, LinkedIn, and others) through a single branded link. The Service securely stores and manages OAuth tokens on behalf of agencies and their clients.\n\n3. Account Registration\n\nTo use the Service, you must create an account and provide accurate, complete information. You are responsible for:\n\nMaintaining the confidentiality of your account credentials\nAll activities that occur under your account\nNotifying us immediately of any unauthorized use\nEnsuring your account information remains current and accurate\n4. Acceptable Use\n\nYou agree not to:\n\nUse the Service for any unlawful purpose or in violation of any laws\nAccess or attempt to access accounts or data belonging to others without authorization\nInterfere with or disrupt the Service or servers connected to the Service\nAttempt to gain unauthorized access to any part of the Service\nUse the Service to collect, store, or process data in violation of applicable privacy laws\nResell, sublicense, or redistribute the Service without our written consent\nUse automated means to access the Service except through our provided APIs\n5. OAuth Token Management\n\nToken Storage: We securely store OAuth tokens using industry-standard encryption and secret management practices. Tokens are stored only for the duration necessary to provide the Service.\n\nToken Usage: You agree to use OAuth tokens only for legitimate business purposes related to managing advertising campaigns and analytics on behalf of your clients.\n\nClient Authorization: You are responsible for obtaining proper authorization from your clients before requesting access to their advertising and analytics platforms.\n\nToken Revocation: Clients may revoke access at any time through the Service or directly through the respective platform. AuthHub tries to remove recorded Meta asset access and revoke the Meta app permission before it deletes the related tokens. If a provider or secret-store request fails, AuthHub blocks the authorization and keeps the required token so an administrator can retry cleanup. Other platform tokens are also deleted when their authorization is revoked; if deletion fails, AuthHub blocks that authorization and records a retryable cleanup failure.\n\n6. Client Responsibilities\n\nWhen your clients authorize platform access through AuthHub, they acknowledge that they ar"
+  },
+  {
+    "surface": "privacy",
+    "path": "/privacy-policy",
+    "finalPath": "/privacy-policy",
+    "width": 1440,
+    "file": "live-1440-privacy.png",
+    "evidence": "LIVE_PUBLIC",
+    "metrics": {
+      "scrollWidth": 1440,
+      "viewport": 1440,
+      "mains": 1,
+      "h1s": 1,
+      "brokenImages": [],
+      "unnamedButtons": [],
+      "marquee": []
+    },
+    "errors": [],
+    "text": "AuthHub\nFeatures\nHow It Works\nPricing\nBlog\nSIGN IN\nGET STARTED\nPrivacy Policy\n\nLast updated: September 3, 2026\n\n1. Introduction\n\nAuthHub is owned and operated by High Enterprises LLC, a Wyoming limited liability company (\"AuthHub,\" \"we,\" \"our,\" or \"us\"). We are committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our OAuth aggregation platform and related services.\n\n2. Information We Collect\n\nAccount Information: When you create an account, we collect your name, email address, company name, and billing information.\n\nOAuth Tokens: We securely store OAuth access tokens and refresh tokens that your clients authorize to enable platform integrations. These tokens are encrypted and stored using industry-standard security practices.\n\nUsage Data: We collect information about how you interact with our service, including access request history, platform connections, and feature usage.\n\nClient Information: When your clients authorize access, we collect their email addresses and the platform permissions they grant.\n\n3. How We Use Your Information\nTo provide and maintain our OAuth aggregation services\nTo process and manage platform authorizations on your behalf\nTo send you service-related notifications and updates\nTo respond to your inquiries and provide customer support\nTo improve and optimize our platform\nTo detect and prevent fraud or unauthorized access\nTo comply with legal obligations\n4. Data Sharing and Disclosure\n\nWe do not sell your personal information. We may share your information with:\n\nService Providers: Third-party vendors who assist in operating our platform (e.g., cloud hosting, payment processing).\nAdvertising Platforms: OAuth tokens are used solely to authenticate with the platforms your clients authorize (Meta, Google Ads, LinkedIn, etc.).\nLegal Requirements: When required by law or to protect our rights and safety.\n5. Data Security\n\nWe implement industry-standard security measures to protect your data, including:\n\nEncryption of OAuth tokens at rest and in transit\nOAuth tokens stored in Infisical, never in our database\nRegular security audits and monitoring\nAccess controls and audit logging\nGDPR-ready data handling, including deletion on request\n6. Data Retention\n\nWe keep information while your account is active or while we need it to provide the Service, meet legal duties, and protect the Service. We store OAuth tokens in Infisical. When you disconnect a Meta authorization, AuthHub tries to remove the recorded Meta asset access and revoke the app permission before it deletes the tokens. If Meta or Infisical does not confirm cleanup, AuthHub blocks the authorization and keeps the required token so an administrator can retry. We record cleanup failures. You may request deletion by contacting us.\n\n7. Your Rights\n\nDepending on your location, you may have the right to:\n\nAccess the personal information we hold about you\nRequest correction of inaccurate data\n"
+  },
+  {
+    "surface": "home",
+    "path": "/",
+    "finalPath": "/",
+    "width": 390,
+    "file": "live-390-home.png",
+    "evidence": "LIVE_PUBLIC",
+    "metrics": {
+      "scrollWidth": 390,
+      "viewport": 390,
+      "mains": 2,
+      "h1s": 2,
+      "brokenImages": [],
+      "unnamedButtons": [],
+      "marquee": [
+        {
+          "transform": "matrix(1, 0, 0, 1, -19.2914, 0)",
+          "animation": "marquee",
+          "duration": "30s"
+        }
+      ]
+    },
+    "errors": [],
+    "links": {
+      "featuresTargetExists": true,
+      "howTargetExists": true,
+      "footerLinks": [
+        {
+          "label": "Features",
+          "href": "#trusted-by-agencies"
+        },
+        {
+          "label": "How It Works",
+          "href": "#how-it-works"
+        }
+      ],
+      "featuresScroll": {
+        "before": 0,
+        "after": 12241,
+        "url": "/"
+      }
+    },
+    "text": "AuthHub\nCLIENT ACCESS PLATFORM\nSend one link. Your client is live in 5 minutes.\n\nYour client authorizes Meta, Google, GA4, LinkedIn, and more through one link. Your team and your AI agents start work the same day.\n\nSTART FREE TRIAL\nSchedule Demo\nTRUSTED BY MARKETING AGENCIES\n/\nPillar AI\nELITE EDGE MEDIA\nDigital One\n\nBUILT FOR FASTER ONBOARDING. CLEANER HANDOFFS. NO EXCEPTIONS.\n\n01\n\nOne Link\n\nOne link replaces 47 emails across Meta, Google, LinkedIn, and more.\n\n02\n\nBuilt-In Token Refresh\n\nAccess never drops. Tokens auto-refresh before expiration.\n\n03\n\nWhite-Label\n\nYour logo. Your domain. Your client never sees AuthHub.\n\n04\n\nAudit Logs Included\n\nTrack who accessed what, when, and from where.\n\n05\n\n5-Minute Setup\n\nReplace a full day of onboarding with a 5-minute flow.\n\n06\n\nPlatform Coverage\n\nMeta Ads, Google Ads, GA4, LinkedIn, TikTok — one flow, all platforms.\n\n⚠️\nTHE REALITY\n⚠️\nCLIENT\nONBOARDING\nIS BROKEN\n\nStop the insanity. Send one link. Get full client access.\n\nCan you send access to your GA4 and Meta Business Manager?\n\nAGENCY\n9:47 AM\n\nWhat's a Business Manager?\n\nCLIENT\n10:23 AM\n\nI think I added you but it says 'pending'\n\nCLIENT\n2:15 PM\n\nI haven't seen any access emails come through\n\nAGENCY\n3:42 PM\n\nI have no idea how to add you to these accounts. Can we jump on a zoom?\n\nCLIENT\nDAY 2\nDay 2\n\nStill waiting on that access. Can we get this sorted today?\n\nAGENCY\nDAY 3\nDay 3\nDAYS LOST\n2\nPer client onboarding\nEMAIL EXCHANGES\n37\nAverage per client\nREVENUE LOST\n$600+\nPer client onboarding\nOne Link.\nAll Your Clients.\n\nDrag the slider to see the transformation from email chaos to streamlined client onboarding.\n\n←\nDrag to compare\n→\nCHAOS\nCurrent State\n\n47 emails • 3 days lost • $600+ wasted\n\n47\nEMAILS\n3\nDAYS\n$600\nWASTED\n✓ SOLVED\nWith AuthHub\n\n1 link • 5 minutes • $0 cost\n\nYOUR AUTHORIZATION LINK\nauthhub.co/agency/xyz123\nSETUP TIME\n5 min\nCOST SAVED\n$0\nPLATFORMS\n8+\n3 days down to 5 minutes\nStart Free Trial\nREAL RESULTS\nTrusted by Growing Agencies\n\nSee how agencies are transforming client onboarding from a 3-day bottleneck to a 5-minute flow.\n\nSIMPLIFIED ONBOARDING\nOne Link. Every Platform.\n\nSend clients a single branded authorization link. They connect Meta, Google, TikTok, and LinkedIn in one 5-minute flow.\n\nMeta Ads\nGoogle Ads\nGA4\nTikTok\nLinkedIn\nFewer\nEMAIL THREADS\n5 min\nSETUP TIME\nOne\nBRANDED LINK\nLIVE ACTIVITY FEED\nReal-Time OAuth Events\n\nWatch agencies onboard clients in minutes. Token refreshes, new connections, platform integrations — all visible instantly.\n\n📘\nMeta Ads Authorized\n1m ago\n🔍\nGoogle Connected\n3m ago\n🔄\nToken Auto-Refresh\n6m ago\nOAUTH ANALYTICS\nTYPICAL RESULT\nSame-day live\nClient Onboarding Accelerated\n\nScale from 5 to 50 clients/month with tiered plans that match your volume. Token health monitoring and automatic refresh keep access active.\n\nACTIVE CONNECTIONS\nYour clients\nNEW AUTHORIZATIONS\nThis month\nTOKEN HEALTH\nAuto-refresh enabled\nAUDIT LOGS\nEvery access logged\nENTERPRISE SECURITY\nInfisical-Backed Token Storage\n\nOAuth tokens encryp"
+  },
+  {
+    "surface": "pricing",
+    "path": "/pricing",
+    "finalPath": "/pricing",
+    "width": 390,
+    "file": "live-390-pricing.png",
+    "evidence": "LIVE_PUBLIC",
+    "metrics": {
+      "scrollWidth": 390,
+      "viewport": 390,
+      "mains": 2,
+      "h1s": 1,
+      "brokenImages": [],
+      "unnamedButtons": [],
+      "marquee": []
+    },
+    "errors": [],
+    "links": {
+      "featuresTargetExists": false,
+      "howTargetExists": false,
+      "footerLinks": [
+        {
+          "label": "Features",
+          "href": "#trusted-by-agencies"
+        },
+        {
+          "label": "How It Works",
+          "href": "#how-it-works"
+        }
+      ],
+      "featuresScroll": {
+        "before": 0,
+        "after": 11658,
+        "url": "/pricing"
+      }
+    },
+    "text": "AuthHub\nSIMPLE PRICING\nAuthHub Pricing: Automate OAuth Client Onboarding in 5 Minutes\n\nReplace 2-3 days of manual client onboarding with a 5-minute automated flow.\nTransparent pricing. No hidden fees. Cancel anytime.\n\nSTART 14-DAY FREE TRIAL\nCALCULATE YOUR SAVINGS\n\nBUILT FOR FASTER ONBOARDING. CLEANER HANDOFFS. NO EXCEPTIONS.\n\n01\n\nOne Link\n\nOne link replaces 47 emails across Meta, Google, LinkedIn, and more.\n\n02\n\nBuilt-In Token Refresh\n\nAccess never drops. Tokens auto-refresh before expiration.\n\n03\n\nWhite-Label\n\nYour logo. Your domain. Your client never sees AuthHub.\n\n04\n\nAudit Logs Included\n\nTrack who accessed what, when, and from where.\n\n05\n\n5-Minute Setup\n\nReplace a full day of onboarding with a 5-minute flow.\n\n06\n\nPlatform Coverage\n\nMeta Ads, Google Ads, GA4, LinkedIn, TikTok — one flow, all platforms.\n\nINTERACTIVE CALCULATOR\nCalculate your annual savings\n\nSee how much time and money your team could save by automating client OAuth onboarding.\n\nHOW MANY CLIENTS DO YOU ONBOARD PER MONTH?\n1-5 CLIENTS\n6-20 CLIENTS\n21-50 CLIENTS\n50+ CLIENTS\nAVG. HOURS SPENT PER CLIENT ONBOARDING?\n1 hour\n2 hours\n8 hours\nPLATFORMS PER CLIENT?\n📘\nMETA ADS\n🔍\nGOOGLE ADS\n📊\nGA4\n💼\nLINKEDIN\n🎵\nTIKTOK\n\nYOUR ANNUAL SAVINGS\n\n$7,099\n\nsaved per year\n\nTIME RECLAIMED\n\nHours saved:\n84h\nWeeks of work:\n≈ 2 weeks\n\nBREAKDOWN\n\n•\nEmail threads: 25h\n•\nOAuth setup: 42h\n•\nFollow-ups: 17h\nSTART FREE TRIAL\n\n*Conservative estimates based on platform setup time only. Your actual savings may vary.\n\nConservative baseline calculation. Actual savings often 2-3× higher when accounting for full onboarding overhead.\nSIMPLE PRICING\nChoose the plan that fits your team\n\nAll plans include a 14-day free trial. Choose the plan that fits your agency's needs.\n\nMONTHLY\nYEARLY\nSAVE ~17%\n\nSave ~17% with annual billing (pay for 10, get 12). Cancel anytime.\n\nStarter\n$24/mo\nGrowth → Most Popular\n$66/mo\nScale\n$124/mo\n\nScroll down for full comparison →\n\nFOR SMALL AGENCIES\nStarter\n\nAgencies getting started with access automation\n\n$24\n/mo equiv.\n$29/mo billed monthly · $290/yr billed yearly\nSTART FREE TRIAL\n5 active clients\nAdd/remove anytime\nAll platform integrations\nMeta, Google, LinkedIn, TikTok, more\nOne-link onboarding\nShare single link\nToken auto-refresh\nNo expired tokens\nAudit logs\nFull activity history\nUnlimited team seats\nShare the work\nAuthHub-branded client link\nBuilt-in branding\nWhite-label branding\nCustom domain\nWebhooks & API\nPriority support\nToken health monitoring dashboard\nMulti-brand management\nCustom integrations\n14-day free trial\nCancel anytime\nNo credit card required\nMOST POPULAR\nFOR GROWING AGENCIES\nGrowth\n\nAgencies scaling their client operations\n\n$66\n/mo equiv.\n$79/mo billed monthly · $790/yr billed yearly\nSTART FREE TRIAL\n20 active clients\nAdd/remove anytime\nAll platform integrations\nMeta, Google, LinkedIn, TikTok, more\nOne-link onboarding\nShare single link\nToken auto-refresh\nNo expired tokens\nAudit logs\nFull activity history\nUnlimited team seats\nShare the work\nAuthHub-branded client link\nB"
+  },
+  {
+    "surface": "about",
+    "path": "/about",
+    "finalPath": "/about",
+    "width": 390,
+    "file": "live-390-about.png",
+    "evidence": "LIVE_PUBLIC",
+    "metrics": {
+      "scrollWidth": 390,
+      "viewport": 390,
+      "mains": 2,
+      "h1s": 1,
+      "brokenImages": [],
+      "unnamedButtons": [],
+      "marquee": []
+    },
+    "errors": [],
+    "text": "AuthHub\nAbout AuthHub\nClient Access in 5 Minutes,\nNot 5 Days\n\nAuthHub replaces the fragmented emails, confused clients, and expired tokens of manual OAuth setup with one guided link and a clear status view.\n\nThe Problem We Solve\n\nMarketing agencies need client access to advertising, analytics, and marketing platforms — Meta Ads, Google Ads, GA4, LinkedIn, and more. Getting that access means walking non-technical clients through OAuth flows they don't understand, over email, with screenshots, and follow-up messages that take days.\n\nThe result: stalled onboarding, frustrated clients, and agencies spending more time on access logistics than on actual campaign work.\n\nHow It Works\n01\nCreate a Request\n\nSelect the platforms and permission levels you need. One request, multiple platforms.\n\n02\nSend a Link\n\nYour client gets one simple link — no screenshots, no confusion, no back-and-forth.\n\n03\nGet Access\n\nClient authorizes through a guided flow. You see real-time status — done, pending, or blocked.\n\nWhat We Believe\nStatus Should Be Truthful\n\nComplete, partial, pending, revoked, failed — never smooth uncertainty into false success.\n\nThe Next Action Should Be Obvious\n\nEvery screen makes clear what happened, who needs to act, and what to do next.\n\nTrust Through Clarity\n\nExplain access, permissions, and errors in plain language while preserving diagnostic detail.\n\nSecurity Is Not Optional\n\nTokens stored in enterprise-grade secrets management. Every access logged. Expiration enforced.\n\nStop Wasting Time on OAuth\n\nStart your 14-day free trial. No credit card required.\n\nGet Started Free\nAuthHub\n\nThe easy button for client account access. Replace weeks of back-and-forth with one link.\n\nPRODUCT\nFeatures\nHow It Works\nPricing\nAffiliates\nBlog\nHelp Center\nCOMPARE\nLeadsie Alternative\nAgencyAccess Alternative\nCOMPANY\nAbout\nContact\nLEGAL\nPrivacy Policy\nTerms of Service\n\n© 2026 High Enterprises LLC. All rights reserved. AuthHub is owned and operated by High Enterprises LLC.\n\nPrivacy\nTerms"
+  },
+  {
+    "surface": "contact",
+    "path": "/contact",
+    "finalPath": "/contact",
+    "width": 390,
+    "file": "live-390-contact.png",
+    "evidence": "LIVE_PUBLIC",
+    "metrics": {
+      "scrollWidth": 390,
+      "viewport": 390,
+      "mains": 2,
+      "h1s": 1,
+      "brokenImages": [],
+      "unnamedButtons": [],
+      "marquee": []
+    },
+    "errors": [],
+    "text": "AuthHub\nWe'd love to hear from you\nGet in Touch\n\nHave a question about AuthHub? Want to see a demo? We're here to help. Fill out the form below and we'll get back to you within 24 hours.\n\nSend us a message\nName *\nEmail *\nCompany (optional)\nMessage *\nSEND MESSAGE\nContact Information\n\nEmail us\n\nsupport [at] authhub.co\n\nTalk to us\n\nSchedule a Demo\n\nResponse time\n\nWithin 24 hours\n\nFollow us\n\nLooking for quick answers?\n\nVisit the Help Center →\nFrequently Asked Questions\nHow does the pricing work?\n\nWe offer simple tiered pricing based on the number of clients you onboard per month. Check out our pricing page for details.\n\nWhich platforms do you support?\n\nWe support Meta (Facebook/Instagram), Google Ads, GA4, LinkedIn, TikTok, Snapchat, and more. New platforms are added regularly.\n\nIs there a free trial?\n\nYes! Start your 14-day free trial on any paid plan—Starter, Growth, or Agency. No credit card required.\n\nVisit the Help Center\n→\nAuthHub\n\nThe easy button for client account access. Replace weeks of back-and-forth with one link.\n\nPRODUCT\nFeatures\nHow It Works\nPricing\nAffiliates\nBlog\nHelp Center\nCOMPARE\nLeadsie Alternative\nAgencyAccess Alternative\nCOMPANY\nAbout\nContact\nLEGAL\nPrivacy Policy\nTerms of Service\n\n© 2026 High Enterprises LLC. All rights reserved. AuthHub is owned and operated by High Enterprises LLC.\n\nPrivacy\nTerms"
+  },
+  {
+    "surface": "affiliate",
+    "path": "/affiliate",
+    "finalPath": "/affiliate",
+    "width": 390,
+    "file": "live-390-affiliate.png",
+    "evidence": "LIVE_PUBLIC",
+    "metrics": {
+      "scrollWidth": 390,
+      "viewport": 390,
+      "mains": 1,
+      "h1s": 1,
+      "brokenImages": [],
+      "unnamedButtons": [],
+      "marquee": []
+    },
+    "errors": [],
+    "text": "AuthHub\nAFFILIATE PROGRAM\nRefer agencies that need faster client access onboarding.\n\nAuthHub replaces slow, manual client access requests with one branded link. We want partners with trust in the agency ecosystem, not anonymous coupon traffic.\n\nDEFAULT COMMISSION\n\n50% -> 30%\n\n50% for the first 6 months, then 30% for the next 6 months of collected revenue.\n\nCOOKIE WINDOW\n\n90 days\n\nLong enough for considered B2B buying cycles.\n\nPAYOUT CADENCE\n\nMonthly\n\nTracked ledger, manual review, predictable batch payouts.\n\nWho we want\n\nThe first cohort is approval-based and biased toward audience fit.\n\nAgency operators with an audience\nConsultants, coaches, and educators\nAdjacent SaaS and service partners\nExisting customers referring peers\nHow it works\n\nApproved partners get a link, a portal, and tracked commissions.\n\nApply for the program\nGet reviewed and approved manually\nReceive your referral link and promo kit\nTrack signups, customers, and commission status\nApply for the pilot cohort\n\nTell us who you reach and how you would promote AuthHub.\n\nName\nEmail\nCompany\nWebsite\nHow will you promote AuthHub?\n\nBy applying, you agree to a manual review and approval process.\n\nApply to the program\nAuthHub\n\nThe easy button for client account access. Replace weeks of back-and-forth with one link.\n\nPRODUCT\nFeatures\nHow It Works\nPricing\nAffiliates\nBlog\nHelp Center\nCOMPARE\nLeadsie Alternative\nAgencyAccess Alternative\nCOMPANY\nAbout\nContact\nLEGAL\nPrivacy Policy\nTerms of Service\n\n© 2026 High Enterprises LLC. All rights reserved. AuthHub is owned and operated by High Enterprises LLC.\n\nPrivacy\nTerms"
+  },
+  {
+    "surface": "blog",
+    "path": "/blog",
+    "finalPath": "/blog",
+    "width": 390,
+    "file": "live-390-blog.png",
+    "evidence": "LIVE_PUBLIC",
+    "metrics": {
+      "scrollWidth": 390,
+      "viewport": 390,
+      "mains": 1,
+      "h1s": 1,
+      "brokenImages": [],
+      "unnamedButtons": [],
+      "marquee": []
+    },
+    "errors": [],
+    "text": "AuthHub\nAgency Growth Resources\n\nExpert guides, tutorials, and strategies for marketing agencies\n\nFeatured Posts\n⚙️ AGENCY OPERATIONS\nM\nMCP OAuth for Agencies: Give AI Agents Client Ad Access Without Password Sharing\n\nMCP guides assume you already have client OAuth. Learn how agencies collect Meta, Google, and GA4 access in one link so humans and AI agents can work the same day—without password sharing.\n\nJon High\nSep 28, 2026\n15 min read\n#mcp oauth\n#ai agents\n#client access management\n⚖️ COMPARISONS\nB\nBest Leadsie Alternatives (2026): Fair Comparison for Agencies\n\nMost \"Leadsie alternative\" pages are binary ads for one peer. This 2026 shortlist maps ClientInvite, AgencyAccess, AuthHub, ClientFuse, and others—with pick-X-if gates, pricing-model math, and when to stay on Leadsie.\n\nJon High\nSep 25, 2026\n16 min read\n#leadsie alternatives\n#leadsie alternative\n#leadsie competitors\n⚖️ COMPARISONS\nL\nLeadsie vs AgencyAccess: Which Client Onboarding Tool Wins in 2026?\n\nA neutral comparison of Leadsie and AgencyAccess on pricing, intake forms, branding, integrations, and security — including the details neither vendor puts on its pricing page. Written by a third option, with its own bias stated up front.\n\nJon High\nSep 13, 2026\n9 min read\n#leadsie vs agencyaccess\n#leadsie\n#agencyaccess\nAll Posts\n⚙️ AGENCY OPERATIONS\nMCP OAuth for Agencies: Give AI Agents Client Ad Access Without Password Sharing\n\nMCP guides assume you already have client OAuth. Learn how agencies collect Meta, Google, and GA4 access in one link so humans and AI agents can work the same day—without password sharing.\n\nJon High\nSep 28\n15m\n⚖️ COMPARISONS\nBest Leadsie Alternatives (2026): Fair Comparison for Agencies\n\nMost \"Leadsie alternative\" pages are binary ads for one peer. This 2026 shortlist maps ClientInvite, AgencyAccess, AuthHub, ClientFuse, and others—with pick-X-if gates, pricing-model math, and when to stay on Leadsie.\n\nJon High\nSep 25\n16m\n⚖️ COMPARISONS\nLeadsie vs AgencyAccess: Which Client Onboarding Tool Wins in 2026?\n\nA neutral comparison of Leadsie and AgencyAccess on pricing, intake forms, branding, integrations, and security — including the details neither vendor puts on its pricing page. Written by a third option, with its own bias stated up front.\n\nJon High\nSep 13\n9m\n📖 PLATFORM TUTORIALS\nSnapchat Business Manager Access for Agencies: Roles & Permissions (2026)\n\nSnapchat Business Manager has no access-request system. Your client must add you. Learn the Organization and Ad Account role levels, Public Profile requirements, and the invite flow that gets your agency running campaigns without shared logins.\n\nJon High\nSep 11\n10m\n⚙️ AGENCY OPERATIONS\nOAuth Token Refresh for Agencies: Stop Friday-Night Meta Token Deaths\n\nAgency guide to OAuth token refresh: what auto-renews, what needs a client click, and how Infisical-backed auto-refresh plus 14-day reauth requests stop Friday-night outages.\n\nJon High\nMay 6\n15m\n🚀 CLIENT ONBOARDING\nAgency Onboarding Best Practices (And 7 Mistakes T"
+  },
+  {
+    "surface": "article",
+    "path": "/blog/google-ads-access-agency",
+    "finalPath": "/blog/google-ads-access-agency",
+    "width": 390,
+    "file": "live-390-article.png",
+    "evidence": "LIVE_PUBLIC",
+    "metrics": {
+      "scrollWidth": 390,
+      "viewport": 390,
+      "mains": 1,
+      "h1s": 1,
+      "brokenImages": [],
+      "unnamedButtons": [],
+      "marquee": []
+    },
+    "errors": [
+      "Minified React error #418; visit https://react.dev/errors/418?args[]=text&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    ],
+    "text": "AuthHub\n📖 PLATFORM TUTORIALS\nGoogle Ads Access Guide: How Clients Grant Agency Permissions (2026)\n\nThe complete guide to getting Google Ads manager account access. Learn the difference between MCC, manager accounts, and direct access—plus how to avoid the most common permission errors.\n\nJon High\n· Founder\nJanuary 15, 2026\n10 min read\nShare\n#Google Ads\n#MCC\n#manager account\n#permissions\n#Google Ads access for agencies\nGoogle's Unique Multi-Product Challenge\n\nGoogle isn't just one platform—it's an entire ecosystem. When you need client access, you're often dealing with:\n\nGoogle Ads (formerly AdWords)\nGoogle Analytics 4 (GA4)\nGoogle Tag Manager (GTM)\nGoogle Merchant Center\nGoogle Search Console\nYouTube Ads\n\nEach has its own access system, and clients often confuse them. This guide focuses specifically on Google Ads, but we'll also cover how the Google ecosystem connects.\n\nUnderstanding Google Ads Account Structure\n\nBefore requesting access, understand the hierarchy:\n\nMCC (Manager Account) ├── Client Account 1 ├── Client Account 2 └── Client Account 3\n\nMCC (My Client Center): Also called a Manager Account, this lets agencies manage multiple client accounts from one dashboard\nClient Account: The individual Google Ads account containing campaigns, ad groups, and ads\n\nPro Tip: As an agency, you should have your own MCC. All client accounts are then linked under your manager account for centralized management.\n\nThe Manual Way: Step-by-Step Client Instructions\nOption 1: Linking to Your Agency's MCC (Recommended)\n\nThis is the cleanest approach. The client links their account to your manager account, and you manage everything from one dashboard.\n\nStep 1: Get Your Agency's MCC ID\nLog into your Google Ads account\nClick the account selector (top right, shows your account ID)\nYour 10-digit MCC ID is displayed (e.g., 123-456-7890)\nStep 2: Send Your Client These Instructions\n\nHave your client follow these exact steps:\n\nLog into Google Ads\nClick Tools & Settings (wrench icon, top right)\nUnder Setup, click Account link → Manager account\nEnter your agency's 10-digit MCC ID (include hyphens: 123-456-7890)\nSelect Account Admin or Standard access level\nClick Send request\nOption 2: Direct Email Invitation\n\nIf your client prefers, you can send an email invitation:\n\nIn your MCC, click Tools & Settings → Account link → Manager account\nClick the + button → Link existing account\nEnter the client's Customer ID (10 digits, found in their account URL)\nSelect access level\nClick Send invitation\nGoogle Ads Permission Levels Explained\n\nGoogle Ads has more granular permissions than most platforms:\n\nAccess Level\tCan Create\tCan Edit\tCan Delete\tCan View Billing\tEmail Notifications\tBest For\nAdmin\t✅\t✅\t✅\t✅\t✅\tFull account management\nStandard\t✅\t✅\t❌\t❌\t✅\tCampaign management (recommended)\nRead-only\t❌\t❌\t❌\t❌\t✅\tReporting and monitoring\nEmail-only\t❌\t❌\t❌\t❌\t✅\tNotifications only\nCommon Google Ads Access Issues (And Fixes)\nIssue 1: \"Account Already Linked to Another Manager\"\n\nThe Problem: Google allo"
+  },
+  {
+    "surface": "compare",
+    "path": "/compare/leadsie-alternative",
+    "finalPath": "/compare/leadsie-alternative",
+    "width": 390,
+    "file": "live-390-compare.png",
+    "evidence": "LIVE_PUBLIC",
+    "metrics": {
+      "scrollWidth": 390,
+      "viewport": 390,
+      "mains": 1,
+      "h1s": 1,
+      "brokenImages": [],
+      "unnamedButtons": [],
+      "marquee": []
+    },
+    "errors": [],
+    "text": "AuthHub\n2026 COMPARISON GUIDE\nAuthHub vs Leadsie\n\nAuthHub is a Leadsie alternative for agencies that need client OAuth plus intake in one link, predictable monthly tiers ($29 / $79 / $149 with 5 / 20 / 50 active-client caps), and token-health monitoring with Infisical-backed audit trails. Leadsie still wins for 31+ integrations and specialized Meta or influencer workflows. Compare current pricing, platforms, and how to dual-run a switch without breaking live platform permissions.\n\nStart 14 Day Free Trial\nAuthHub Pricing\n\nComparing all three? Leadsie vs AgencyAccess vs AuthHub\n\n14-DAY FREE TRIAL\nNO CREDIT CARD\nCANCEL ANYTIME\nWhy Agencies Switch to AuthHub\nAccess + Intake in One Link\n\nOne link handles OAuth and collects client info—no separate forms needed.\n\nPredictable tiered pricing (no credits)\n\nMonthly tiers at $29 / $79 / $149 with 5 / 20 / 50 client caps.\n\nToken Health + Infisical Audit\n\nToken-health monitoring, provider-supported refresh, and audit events.\n\nWhy Agencies Look for Leadsie Alternatives\n\nGrowing agencies hit these walls with Leadsie. Sound familiar?\n\nCredit Anxiety\n\n“I never know what my bill will be each month.”\n\nLeadsie charges one onboarding credit per new client with manager/admin access. Busy months can require $50 overage packs. Fixed tiers make the monthly bill easier to forecast.\n\nTwo-Step Onboarding\n\n“I look unprofessional sending multiple links to new clients.”\n\nLeadsie collects platform access. AuthHub request templates can include custom intake fields, so authorization and client context arrive in the same flow.\n\nToken Operations\n\n“I need to know which connections are healthy before a campaign launch.”\n\nExpired or revoked access can stop work. AuthHub monitors token health, uses provider-supported refresh where the provider allows it, stores token references in Infisical, and records audit events.\n\nSupport Hours\n\n“My team and clients need coverage during US business hours.”\n\nLeadsie's team and many of its customers are strongest in UK/EU hours. AuthHub offers US-based support only — no published guaranteed response-time SLA.\n\nLEADSIE PRICING\n\nLeadsie pricing explained\nLeadsie\n\n$59/month\n\n$59 · $129 · $299 (3 / 10 / 50 client credits)\n\n31+\nPlatform Count\nClient Intake Forms\nEnterprise\nAPI & Webhooks\nCredits + overages\nPricing Model\n$59/mo\nStarting Price\nCHOOSE PLAN\nBEST VALUE\nAuthHub\n\n$29/month\n\nFrom $29/mo · 5/20/50 clients by tier\n\n$360/yr (~$30/mo) at 10 clients: Growth $79 vs Leadsie Agency yearly effective ~$107/mo\n\n15+\nPlatform Count\nClient Intake Forms\n(Exclusive)\nGrowth+\nAPI & Webhooks\nFixed monthly tiers\nPricing Model\n$29/mo\nStarting Price\nSTART FREE TRIAL\nHow Leadsie credits work\n\nOne onboarding credit is used when a new client grants manager or admin access (one client = one credit). View-only audits use separate audit credits. Unused credits typically roll for about three months. Overage packs cost $50 and add onboarding + view-only credits by tier (commonly 3 / 5 / 10 onboarding credits on Starter / Agenc"
+  },
+  {
+    "surface": "compare-three-way",
+    "path": "/compare/leadsie-vs-agencyaccess-vs-authhub",
+    "finalPath": "/compare/leadsie-vs-agencyaccess-vs-authhub",
+    "width": 390,
+    "file": "live-390-compare-three-way.png",
+    "evidence": "LIVE_PUBLIC",
+    "metrics": {
+      "scrollWidth": 390,
+      "viewport": 390,
+      "mains": 1,
+      "h1s": 1,
+      "brokenImages": [],
+      "unnamedButtons": [],
+      "marquee": []
+    },
+    "errors": [],
+    "text": "AuthHub\n2026 THREE-WAY BUYER GUIDE\nLeadsie vs AgencyAccess vs AuthHub (2026): Credits, Caps, and Token Refresh\n\nLeadsie, AgencyAccess, and AuthHub all help agencies collect client ad- and analytics-platform access through a branded link. This three-way ranks them on pricing model (credits vs invite caps vs active-client tiers), token refresh, security & audit, intake + branding, and platforms + automation—with honest “pick X if…” gates and worked monthly math. Prices are pre-tax from public list pages, checked September 24, 2026 (PT). Verify all three vendors live before you buy.\n\nStart 14 Day Free Trial\nAuthHub Pricing\nAuthHub vs Leadsie\n·\nAuthHub vs AgencyAccess\n·\nLeadsie pricing deep-dive\nShared job: one-link client OAuth / access for agencies\n\nAgency founders and ops leads share the same pain: chasing Meta Business Manager invites, Google Ads access, GA4, LinkedIn, TikTok, and the rest across email threads that stall campaigns.\n\nAll three tools replace password-chasing with a client-facing authorization link that uses each platform’s official permission flow. None invented one-link access alone. The shared job is access onboarding. Decide on what happens after the first grant: how you pay when volume spikes, whether tokens stay healthy, what vaulting and audit look like for vendor review, whether intake lives in the same link, and how API/webhooks fit your stack.\n\nDecision frame: five axes\n\n1. Pricing model & caps\n\nLeadsie onboarding credits + overages; AgencyAccess clients/invites per month; AuthHub active-client flat tiers (5 / 20 / 50).\n\n2. Token ops / refresh\n\nAuthHub automatic refresh where providers support it; competitors do not advertise the same primary story (no invented expiry SLAs).\n\n3. Security & audit\n\nAuthHub: Infisical-backed token references + audit logs. No SOC 2 claim. Competitors: GDPR / secure-OAuth framing without Infisical packaging.\n\n4. Intake + branding\n\nAuthHub and AgencyAccess both include intake in the access flow (parity — no exclusive-intake). Leadsie is access-first; intake is often separate.\n\n5. Platforms + automation\n\nAuthHub honest 15+ core connectors. Leadsie and AgencyAccess are broader on niches. All three offer automation paths—compare depth and token lifecycle, not “who has an API.”\n\nWhat is the difference between Leadsie, AgencyAccess, and AuthHub?\n\nAll three help marketing agencies collect client platform access through a branded link. Leadsie is the established credit-based access tool with broad platform coverage and audit-oriented workflows. AgencyAccess competes with built-in intake, deeper branding, invite-based plans, and a longer trial. AuthHub competes on automatic OAuth token refresh, Infisical-backed token storage with audit logs, in-link intake, and flat active-client tiers at $29 / $79 / $149 for 5 / 20 / 50 clients, with API and webhooks from Growth up.\n\nDoes AgencyAccess have an API?\n\nYes. AgencyAccess documents a public API for creating and managing clients and access requests (API key v"
+  },
+  {
+    "surface": "guide-google",
+    "path": "/guides/google-ads-access",
+    "finalPath": "/sign-in",
+    "width": 390,
+    "file": "live-390-guide-google.png",
+    "evidence": "LIVE_PUBLIC",
+    "metrics": {
+      "scrollWidth": 396,
+      "viewport": 390,
+      "mains": 0,
+      "h1s": 1,
+      "brokenImages": [
+        "Icon for accounts.authhub.co"
+      ],
+      "unnamedButtons": [],
+      "marquee": []
+    },
+    "errors": [],
+    "text": "accounts.authhub.co\nPerforming security verification\n\nThis website uses a security service to protect against malicious bots. This page is displayed while the website verifies you are not a bot.\n\nRay ID: a4380ab80ba130bd\nPerformance and Security by Cloudflare\nPrivacy"
+  },
+  {
+    "surface": "guide-meta",
+    "path": "/guides/meta-ads-access",
+    "finalPath": "/sign-in",
+    "width": 390,
+    "file": "live-390-guide-meta.png",
+    "evidence": "LIVE_PUBLIC",
+    "metrics": {
+      "scrollWidth": 396,
+      "viewport": 390,
+      "mains": 0,
+      "h1s": 1,
+      "brokenImages": [
+        "Icon for accounts.authhub.co"
+      ],
+      "unnamedButtons": [],
+      "marquee": []
+    },
+    "errors": [],
+    "text": "accounts.authhub.co\nPerforming security verification\n\nThis website uses a security service to protect against malicious bots. This page is displayed while the website verifies you are not a bot.\n\nRay ID: a4380ac5edcc30bd\nPerformance and Security by Cloudflare\nPrivacy"
+  },
+  {
+    "surface": "terms",
+    "path": "/terms",
+    "finalPath": "/terms",
+    "width": 390,
+    "file": "live-390-terms.png",
+    "evidence": "LIVE_PUBLIC",
+    "metrics": {
+      "scrollWidth": 390,
+      "viewport": 390,
+      "mains": 1,
+      "h1s": 1,
+      "brokenImages": [],
+      "unnamedButtons": [],
+      "marquee": []
+    },
+    "errors": [],
+    "text": "AuthHub\nTerms of Service\n\nLast updated: September 3, 2026\n\n1. Acceptance of Terms\n\nAuthHub is owned and operated by High Enterprises LLC, a Wyoming limited liability company. By accessing or using AuthHub (\"Service\"), you agree to be bound by these Terms of Service (\"Terms\"). If you do not agree to these Terms, you may not use the Service. These Terms apply to all users, including agencies and their clients who authorize platform access.\n\n2. Description of Service\n\nAuthHub is an OAuth aggregation platform that enables marketing agencies to streamline client onboarding by collecting platform authorizations (Meta, Google Ads, GA4, LinkedIn, and others) through a single branded link. The Service securely stores and manages OAuth tokens on behalf of agencies and their clients.\n\n3. Account Registration\n\nTo use the Service, you must create an account and provide accurate, complete information. You are responsible for:\n\nMaintaining the confidentiality of your account credentials\nAll activities that occur under your account\nNotifying us immediately of any unauthorized use\nEnsuring your account information remains current and accurate\n4. Acceptable Use\n\nYou agree not to:\n\nUse the Service for any unlawful purpose or in violation of any laws\nAccess or attempt to access accounts or data belonging to others without authorization\nInterfere with or disrupt the Service or servers connected to the Service\nAttempt to gain unauthorized access to any part of the Service\nUse the Service to collect, store, or process data in violation of applicable privacy laws\nResell, sublicense, or redistribute the Service without our written consent\nUse automated means to access the Service except through our provided APIs\n5. OAuth Token Management\n\nToken Storage: We securely store OAuth tokens using industry-standard encryption and secret management practices. Tokens are stored only for the duration necessary to provide the Service.\n\nToken Usage: You agree to use OAuth tokens only for legitimate business purposes related to managing advertising campaigns and analytics on behalf of your clients.\n\nClient Authorization: You are responsible for obtaining proper authorization from your clients before requesting access to their advertising and analytics platforms.\n\nToken Revocation: Clients may revoke access at any time through the Service or directly through the respective platform. AuthHub tries to remove recorded Meta asset access and revoke the Meta app permission before it deletes the related tokens. If a provider or secret-store request fails, AuthHub blocks the authorization and keeps the required token so an administrator can retry cleanup. Other platform tokens are also deleted when their authorization is revoked; if deletion fails, AuthHub blocks that authorization and records a retryable cleanup failure.\n\n6. Client Responsibilities\n\nWhen your clients authorize platform access through AuthHub, they acknowledge that they are granting your team account access to their advertisin"
+  },
+  {
+    "surface": "privacy",
+    "path": "/privacy-policy",
+    "finalPath": "/privacy-policy",
+    "width": 390,
+    "file": "live-390-privacy.png",
+    "evidence": "LIVE_PUBLIC",
+    "metrics": {
+      "scrollWidth": 390,
+      "viewport": 390,
+      "mains": 1,
+      "h1s": 1,
+      "brokenImages": [],
+      "unnamedButtons": [],
+      "marquee": []
+    },
+    "errors": [],
+    "text": "AuthHub\nPrivacy Policy\n\nLast updated: September 3, 2026\n\n1. Introduction\n\nAuthHub is owned and operated by High Enterprises LLC, a Wyoming limited liability company (\"AuthHub,\" \"we,\" \"our,\" or \"us\"). We are committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our OAuth aggregation platform and related services.\n\n2. Information We Collect\n\nAccount Information: When you create an account, we collect your name, email address, company name, and billing information.\n\nOAuth Tokens: We securely store OAuth access tokens and refresh tokens that your clients authorize to enable platform integrations. These tokens are encrypted and stored using industry-standard security practices.\n\nUsage Data: We collect information about how you interact with our service, including access request history, platform connections, and feature usage.\n\nClient Information: When your clients authorize access, we collect their email addresses and the platform permissions they grant.\n\n3. How We Use Your Information\nTo provide and maintain our OAuth aggregation services\nTo process and manage platform authorizations on your behalf\nTo send you service-related notifications and updates\nTo respond to your inquiries and provide customer support\nTo improve and optimize our platform\nTo detect and prevent fraud or unauthorized access\nTo comply with legal obligations\n4. Data Sharing and Disclosure\n\nWe do not sell your personal information. We may share your information with:\n\nService Providers: Third-party vendors who assist in operating our platform (e.g., cloud hosting, payment processing).\nAdvertising Platforms: OAuth tokens are used solely to authenticate with the platforms your clients authorize (Meta, Google Ads, LinkedIn, etc.).\nLegal Requirements: When required by law or to protect our rights and safety.\n5. Data Security\n\nWe implement industry-standard security measures to protect your data, including:\n\nEncryption of OAuth tokens at rest and in transit\nOAuth tokens stored in Infisical, never in our database\nRegular security audits and monitoring\nAccess controls and audit logging\nGDPR-ready data handling, including deletion on request\n6. Data Retention\n\nWe keep information while your account is active or while we need it to provide the Service, meet legal duties, and protect the Service. We store OAuth tokens in Infisical. When you disconnect a Meta authorization, AuthHub tries to remove the recorded Meta asset access and revoke the app permission before it deletes the tokens. If Meta or Infisical does not confirm cleanup, AuthHub blocks the authorization and keeps the required token so an administrator can retry. We record cleanup failures. You may request deletion by contacting us.\n\n7. Your Rights\n\nDepending on your location, you may have the right to:\n\nAccess the personal information we hold about you\nRequest correction of inaccurate data\nRequest deletion of your data\nObject to or restrict cer"
+  },
+  {
+    "surface": "home",
+    "path": "/",
+    "finalPath": "/",
+    "width": 320,
+    "file": "live-320-home.png",
+    "evidence": "LIVE_PUBLIC",
+    "metrics": {
+      "scrollWidth": 320,
+      "viewport": 320,
+      "mains": 2,
+      "h1s": 2,
+      "brokenImages": [],
+      "unnamedButtons": [],
+      "marquee": [
+        {
+          "transform": "matrix(1, 0, 0, 1, -17.1196, 0)",
+          "animation": "marquee",
+          "duration": "30s"
+        }
+      ]
+    },
+    "errors": [],
+    "links": {
+      "featuresTargetExists": true,
+      "howTargetExists": true,
+      "footerLinks": [
+        {
+          "label": "Features",
+          "href": "#trusted-by-agencies"
+        },
+        {
+          "label": "How It Works",
+          "href": "#how-it-works"
+        }
+      ],
+      "featuresScroll": {
+        "before": 0,
+        "after": 13362,
+        "url": "/"
+      }
+    },
+    "text": "AuthHub\nCLIENT ACCESS PLATFORM\nSend one link. Your client is live in 5 minutes.\n\nYour client authorizes Meta, Google, GA4, LinkedIn, and more through one link. Your team and your AI agents start work the same day.\n\nSTART FREE TRIAL\nSchedule Demo\nTRUSTED BY MARKETING AGENCIES\n/\nPillar AI\nELITE EDGE MEDIA\nDigital One\n\nBUILT FOR FASTER ONBOARDING. CLEANER HANDOFFS. NO EXCEPTIONS.\n\n01\n\nOne Link\n\nOne link replaces 47 emails across Meta, Google, LinkedIn, and more.\n\n02\n\nBuilt-In Token Refresh\n\nAccess never drops. Tokens auto-refresh before expiration.\n\n03\n\nWhite-Label\n\nYour logo. Your domain. Your client never sees AuthHub.\n\n04\n\nAudit Logs Included\n\nTrack who accessed what, when, and from where.\n\n05\n\n5-Minute Setup\n\nReplace a full day of onboarding with a 5-minute flow.\n\n06\n\nPlatform Coverage\n\nMeta Ads, Google Ads, GA4, LinkedIn, TikTok — one flow, all platforms.\n\n⚠️\nTHE REALITY\n⚠️\nCLIENT\nONBOARDING\nIS BROKEN\n\nStop the insanity. Send one link. Get full client access.\n\nCan you send access to your GA4 and Meta Business Manager?\n\nAGENCY\n9:47 AM\n\nWhat's a Business Manager?\n\nCLIENT\n10:23 AM\n\nI think I added you but it says 'pending'\n\nCLIENT\n2:15 PM\n\nI haven't seen any access emails come through\n\nAGENCY\n3:42 PM\n\nI have no idea how to add you to these accounts. Can we jump on a zoom?\n\nCLIENT\nDAY 2\nDay 2\n\nStill waiting on that access. Can we get this sorted today?\n\nAGENCY\nDAY 3\nDay 3\nDAYS LOST\n2\nPer client onboarding\nEMAIL EXCHANGES\n42\nAverage per client\nREVENUE LOST\n$600+\nPer client onboarding\nOne Link.\nAll Your Clients.\n\nDrag the slider to see the transformation from email chaos to streamlined client onboarding.\n\n←\nDrag to compare\n→\nCHAOS\nCurrent State\n\n47 emails • 3 days lost • $600+ wasted\n\n47\nEMAILS\n3\nDAYS\n$600\nWASTED\n✓ SOLVED\nWith AuthHub\n\n1 link • 5 minutes • $0 cost\n\nYOUR AUTHORIZATION LINK\nauthhub.co/agency/xyz123\nSETUP TIME\n5 min\nCOST SAVED\n$0\nPLATFORMS\n8+\n3 days down to 5 minutes\nStart Free Trial\nREAL RESULTS\nTrusted by Growing Agencies\n\nSee how agencies are transforming client onboarding from a 3-day bottleneck to a 5-minute flow.\n\nSIMPLIFIED ONBOARDING\nOne Link. Every Platform.\n\nSend clients a single branded authorization link. They connect Meta, Google, TikTok, and LinkedIn in one 5-minute flow.\n\nMeta Ads\nGoogle Ads\nGA4\nTikTok\nLinkedIn\nFewer\nEMAIL THREADS\n5 min\nSETUP TIME\nOne\nBRANDED LINK\nLIVE ACTIVITY FEED\nReal-Time OAuth Events\n\nWatch agencies onboard clients in minutes. Token refreshes, new connections, platform integrations — all visible instantly.\n\n📘\nMeta Ads Authorized\n1m ago\n🔍\nGoogle Connected\n3m ago\n🔄\nToken Auto-Refresh\n6m ago\nOAUTH ANALYTICS\nTYPICAL RESULT\nSame-day live\nClient Onboarding Accelerated\n\nScale from 5 to 50 clients/month with tiered plans that match your volume. Token health monitoring and automatic refresh keep access active.\n\nACTIVE CONNECTIONS\nYour clients\nNEW AUTHORIZATIONS\nThis month\nTOKEN HEALTH\nAuto-refresh enabled\nAUDIT LOGS\nEvery access logged\nENTERPRISE SECURITY\nInfisical-Backed Token Storage\n\nOAuth tokens encryp"
+  },
+  {
+    "surface": "pricing",
+    "path": "/pricing",
+    "finalPath": "/pricing",
+    "width": 320,
+    "file": "live-320-pricing.png",
+    "evidence": "LIVE_PUBLIC",
+    "metrics": {
+      "scrollWidth": 320,
+      "viewport": 320,
+      "mains": 2,
+      "h1s": 1,
+      "brokenImages": [],
+      "unnamedButtons": [],
+      "marquee": []
+    },
+    "errors": [],
+    "links": {
+      "featuresTargetExists": false,
+      "howTargetExists": false,
+      "footerLinks": [
+        {
+          "label": "Features",
+          "href": "#trusted-by-agencies"
+        },
+        {
+          "label": "How It Works",
+          "href": "#how-it-works"
+        }
+      ],
+      "featuresScroll": {
+        "before": 0,
+        "after": 12451,
+        "url": "/pricing"
+      }
+    },
+    "text": "AuthHub\nSIMPLE PRICING\nAuthHub Pricing: Automate OAuth Client Onboarding in 5 Minutes\n\nReplace 2-3 days of manual client onboarding with a 5-minute automated flow.\nTransparent pricing. No hidden fees. Cancel anytime.\n\nSTART 14-DAY FREE TRIAL\nCALCULATE YOUR SAVINGS\n\nBUILT FOR FASTER ONBOARDING. CLEANER HANDOFFS. NO EXCEPTIONS.\n\n01\n\nOne Link\n\nOne link replaces 47 emails across Meta, Google, LinkedIn, and more.\n\n02\n\nBuilt-In Token Refresh\n\nAccess never drops. Tokens auto-refresh before expiration.\n\n03\n\nWhite-Label\n\nYour logo. Your domain. Your client never sees AuthHub.\n\n04\n\nAudit Logs Included\n\nTrack who accessed what, when, and from where.\n\n05\n\n5-Minute Setup\n\nReplace a full day of onboarding with a 5-minute flow.\n\n06\n\nPlatform Coverage\n\nMeta Ads, Google Ads, GA4, LinkedIn, TikTok — one flow, all platforms.\n\nINTERACTIVE CALCULATOR\nCalculate your annual savings\n\nSee how much time and money your team could save by automating client OAuth onboarding.\n\nHOW MANY CLIENTS DO YOU ONBOARD PER MONTH?\n1-5 CLIENTS\n6-20 CLIENTS\n21-50 CLIENTS\n50+ CLIENTS\nAVG. HOURS SPENT PER CLIENT ONBOARDING?\n1 hour\n2 hours\n8 hours\nPLATFORMS PER CLIENT?\n📘\nMETA ADS\n🔍\nGOOGLE ADS\n📊\nGA4\n💼\nLINKEDIN\n🎵\nTIKTOK\n\nYOUR ANNUAL SAVINGS\n\n$7,099\n\nsaved per year\n\nTIME RECLAIMED\n\nHours saved:\n84h\nWeeks of work:\n≈ 2 weeks\n\nBREAKDOWN\n\n•\nEmail threads: 25h\n•\nOAuth setup: 42h\n•\nFollow-ups: 17h\nSTART FREE TRIAL\n\n*Conservative estimates based on platform setup time only. Your actual savings may vary.\n\nConservative baseline calculation. Actual savings often 2-3× higher when accounting for full onboarding overhead.\nSIMPLE PRICING\nChoose the plan that fits your team\n\nAll plans include a 14-day free trial. Choose the plan that fits your agency's needs.\n\nMONTHLY\nYEARLY\nSAVE ~17%\n\nSave ~17% with annual billing (pay for 10, get 12). Cancel anytime.\n\nStarter\n$24/mo\nGrowth → Most Popular\n$66/mo\nScale\n$124/mo\n\nScroll down for full comparison →\n\nFOR SMALL AGENCIES\nStarter\n\nAgencies getting started with access automation\n\n$24\n/mo equiv.\n$29/mo billed monthly · $290/yr billed yearly\nSTART FREE TRIAL\n5 active clients\nAdd/remove anytime\nAll platform integrations\nMeta, Google, LinkedIn, TikTok, more\nOne-link onboarding\nShare single link\nToken auto-refresh\nNo expired tokens\nAudit logs\nFull activity history\nUnlimited team seats\nShare the work\nAuthHub-branded client link\nBuilt-in branding\nWhite-label branding\nCustom domain\nWebhooks & API\nPriority support\nToken health monitoring dashboard\nMulti-brand management\nCustom integrations\n14-day free trial\nCancel anytime\nNo credit card required\nMOST POPULAR\nFOR GROWING AGENCIES\nGrowth\n\nAgencies scaling their client operations\n\n$66\n/mo equiv.\n$79/mo billed monthly · $790/yr billed yearly\nSTART FREE TRIAL\n20 active clients\nAdd/remove anytime\nAll platform integrations\nMeta, Google, LinkedIn, TikTok, more\nOne-link onboarding\nShare single link\nToken auto-refresh\nNo expired tokens\nAudit logs\nFull activity history\nUnlimited team seats\nShare the work\nAuthHub-branded client link\nB"
+  },
+  {
+    "surface": "about",
+    "path": "/about",
+    "finalPath": "/about",
+    "width": 320,
+    "file": "live-320-about.png",
+    "evidence": "LIVE_PUBLIC",
+    "metrics": {
+      "scrollWidth": 320,
+      "viewport": 320,
+      "mains": 2,
+      "h1s": 1,
+      "brokenImages": [],
+      "unnamedButtons": [],
+      "marquee": []
+    },
+    "errors": [],
+    "text": "AuthHub\nAbout AuthHub\nClient Access in 5 Minutes,\nNot 5 Days\n\nAuthHub replaces the fragmented emails, confused clients, and expired tokens of manual OAuth setup with one guided link and a clear status view.\n\nThe Problem We Solve\n\nMarketing agencies need client access to advertising, analytics, and marketing platforms — Meta Ads, Google Ads, GA4, LinkedIn, and more. Getting that access means walking non-technical clients through OAuth flows they don't understand, over email, with screenshots, and follow-up messages that take days.\n\nThe result: stalled onboarding, frustrated clients, and agencies spending more time on access logistics than on actual campaign work.\n\nHow It Works\n01\nCreate a Request\n\nSelect the platforms and permission levels you need. One request, multiple platforms.\n\n02\nSend a Link\n\nYour client gets one simple link — no screenshots, no confusion, no back-and-forth.\n\n03\nGet Access\n\nClient authorizes through a guided flow. You see real-time status — done, pending, or blocked.\n\nWhat We Believe\nStatus Should Be Truthful\n\nComplete, partial, pending, revoked, failed — never smooth uncertainty into false success.\n\nThe Next Action Should Be Obvious\n\nEvery screen makes clear what happened, who needs to act, and what to do next.\n\nTrust Through Clarity\n\nExplain access, permissions, and errors in plain language while preserving diagnostic detail.\n\nSecurity Is Not Optional\n\nTokens stored in enterprise-grade secrets management. Every access logged. Expiration enforced.\n\nStop Wasting Time on OAuth\n\nStart your 14-day free trial. No credit card required.\n\nGet Started Free\nAuthHub\n\nThe easy button for client account access. Replace weeks of back-and-forth with one link.\n\nPRODUCT\nFeatures\nHow It Works\nPricing\nAffiliates\nBlog\nHelp Center\nCOMPARE\nLeadsie Alternative\nAgencyAccess Alternative\nCOMPANY\nAbout\nContact\nLEGAL\nPrivacy Policy\nTerms of Service\n\n© 2026 High Enterprises LLC. All rights reserved. AuthHub is owned and operated by High Enterprises LLC.\n\nPrivacy\nTerms"
+  },
+  {
+    "surface": "contact",
+    "path": "/contact",
+    "finalPath": "/contact",
+    "width": 320,
+    "file": "live-320-contact.png",
+    "evidence": "LIVE_PUBLIC",
+    "metrics": {
+      "scrollWidth": 320,
+      "viewport": 320,
+      "mains": 2,
+      "h1s": 1,
+      "brokenImages": [],
+      "unnamedButtons": [],
+      "marquee": []
+    },
+    "errors": [],
+    "text": "AuthHub\nWe'd love to hear from you\nGet in Touch\n\nHave a question about AuthHub? Want to see a demo? We're here to help. Fill out the form below and we'll get back to you within 24 hours.\n\nSend us a message\nName *\nEmail *\nCompany (optional)\nMessage *\nSEND MESSAGE\nContact Information\n\nEmail us\n\nsupport [at] authhub.co\n\nTalk to us\n\nSchedule a Demo\n\nResponse time\n\nWithin 24 hours\n\nFollow us\n\nLooking for quick answers?\n\nVisit the Help Center →\nFrequently Asked Questions\nHow does the pricing work?\n\nWe offer simple tiered pricing based on the number of clients you onboard per month. Check out our pricing page for details.\n\nWhich platforms do you support?\n\nWe support Meta (Facebook/Instagram), Google Ads, GA4, LinkedIn, TikTok, Snapchat, and more. New platforms are added regularly.\n\nIs there a free trial?\n\nYes! Start your 14-day free trial on any paid plan—Starter, Growth, or Agency. No credit card required.\n\nVisit the Help Center\n→\nAuthHub\n\nThe easy button for client account access. Replace weeks of back-and-forth with one link.\n\nPRODUCT\nFeatures\nHow It Works\nPricing\nAffiliates\nBlog\nHelp Center\nCOMPARE\nLeadsie Alternative\nAgencyAccess Alternative\nCOMPANY\nAbout\nContact\nLEGAL\nPrivacy Policy\nTerms of Service\n\n© 2026 High Enterprises LLC. All rights reserved. AuthHub is owned and operated by High Enterprises LLC.\n\nPrivacy\nTerms"
+  },
+  {
+    "surface": "affiliate",
+    "path": "/affiliate",
+    "finalPath": "/affiliate",
+    "width": 320,
+    "file": "live-320-affiliate.png",
+    "evidence": "LIVE_PUBLIC",
+    "metrics": {
+      "scrollWidth": 320,
+      "viewport": 320,
+      "mains": 1,
+      "h1s": 1,
+      "brokenImages": [],
+      "unnamedButtons": [],
+      "marquee": []
+    },
+    "errors": [],
+    "text": "AuthHub\nAFFILIATE PROGRAM\nRefer agencies that need faster client access onboarding.\n\nAuthHub replaces slow, manual client access requests with one branded link. We want partners with trust in the agency ecosystem, not anonymous coupon traffic.\n\nDEFAULT COMMISSION\n\n50% -> 30%\n\n50% for the first 6 months, then 30% for the next 6 months of collected revenue.\n\nCOOKIE WINDOW\n\n90 days\n\nLong enough for considered B2B buying cycles.\n\nPAYOUT CADENCE\n\nMonthly\n\nTracked ledger, manual review, predictable batch payouts.\n\nWho we want\n\nThe first cohort is approval-based and biased toward audience fit.\n\nAgency operators with an audience\nConsultants, coaches, and educators\nAdjacent SaaS and service partners\nExisting customers referring peers\nHow it works\n\nApproved partners get a link, a portal, and tracked commissions.\n\nApply for the program\nGet reviewed and approved manually\nReceive your referral link and promo kit\nTrack signups, customers, and commission status\nApply for the pilot cohort\n\nTell us who you reach and how you would promote AuthHub.\n\nName\nEmail\nCompany\nWebsite\nHow will you promote AuthHub?\n\nBy applying, you agree to a manual review and approval process.\n\nApply to the program\nAuthHub\n\nThe easy button for client account access. Replace weeks of back-and-forth with one link.\n\nPRODUCT\nFeatures\nHow It Works\nPricing\nAffiliates\nBlog\nHelp Center\nCOMPARE\nLeadsie Alternative\nAgencyAccess Alternative\nCOMPANY\nAbout\nContact\nLEGAL\nPrivacy Policy\nTerms of Service\n\n© 2026 High Enterprises LLC. All rights reserved. AuthHub is owned and operated by High Enterprises LLC.\n\nPrivacy\nTerms"
+  },
+  {
+    "surface": "blog",
+    "path": "/blog",
+    "finalPath": "/blog",
+    "width": 320,
+    "file": "live-320-blog.png",
+    "evidence": "LIVE_PUBLIC",
+    "metrics": {
+      "scrollWidth": 320,
+      "viewport": 320,
+      "mains": 1,
+      "h1s": 1,
+      "brokenImages": [],
+      "unnamedButtons": [],
+      "marquee": []
+    },
+    "errors": [],
+    "text": "AuthHub\nAgency Growth Resources\n\nExpert guides, tutorials, and strategies for marketing agencies\n\nFeatured Posts\n⚙️ AGENCY OPERATIONS\nM\nMCP OAuth for Agencies: Give AI Agents Client Ad Access Without Password Sharing\n\nMCP guides assume you already have client OAuth. Learn how agencies collect Meta, Google, and GA4 access in one link so humans and AI agents can work the same day—without password sharing.\n\nJon High\nSep 28, 2026\n15 min read\n#mcp oauth\n#ai agents\n#client access management\n⚖️ COMPARISONS\nB\nBest Leadsie Alternatives (2026): Fair Comparison for Agencies\n\nMost \"Leadsie alternative\" pages are binary ads for one peer. This 2026 shortlist maps ClientInvite, AgencyAccess, AuthHub, ClientFuse, and others—with pick-X-if gates, pricing-model math, and when to stay on Leadsie.\n\nJon High\nSep 25, 2026\n16 min read\n#leadsie alternatives\n#leadsie alternative\n#leadsie competitors\n⚖️ COMPARISONS\nL\nLeadsie vs AgencyAccess: Which Client Onboarding Tool Wins in 2026?\n\nA neutral comparison of Leadsie and AgencyAccess on pricing, intake forms, branding, integrations, and security — including the details neither vendor puts on its pricing page. Written by a third option, with its own bias stated up front.\n\nJon High\nSep 13, 2026\n9 min read\n#leadsie vs agencyaccess\n#leadsie\n#agencyaccess\nAll Posts\n⚙️ AGENCY OPERATIONS\nMCP OAuth for Agencies: Give AI Agents Client Ad Access Without Password Sharing\n\nMCP guides assume you already have client OAuth. Learn how agencies collect Meta, Google, and GA4 access in one link so humans and AI agents can work the same day—without password sharing.\n\nJon High\nSep 28\n15m\n⚖️ COMPARISONS\nBest Leadsie Alternatives (2026): Fair Comparison for Agencies\n\nMost \"Leadsie alternative\" pages are binary ads for one peer. This 2026 shortlist maps ClientInvite, AgencyAccess, AuthHub, ClientFuse, and others—with pick-X-if gates, pricing-model math, and when to stay on Leadsie.\n\nJon High\nSep 25\n16m\n⚖️ COMPARISONS\nLeadsie vs AgencyAccess: Which Client Onboarding Tool Wins in 2026?\n\nA neutral comparison of Leadsie and AgencyAccess on pricing, intake forms, branding, integrations, and security — including the details neither vendor puts on its pricing page. Written by a third option, with its own bias stated up front.\n\nJon High\nSep 13\n9m\n📖 PLATFORM TUTORIALS\nSnapchat Business Manager Access for Agencies: Roles & Permissions (2026)\n\nSnapchat Business Manager has no access-request system. Your client must add you. Learn the Organization and Ad Account role levels, Public Profile requirements, and the invite flow that gets your agency running campaigns without shared logins.\n\nJon High\nSep 11\n10m\n⚙️ AGENCY OPERATIONS\nOAuth Token Refresh for Agencies: Stop Friday-Night Meta Token Deaths\n\nAgency guide to OAuth token refresh: what auto-renews, what needs a client click, and how Infisical-backed auto-refresh plus 14-day reauth requests stop Friday-night outages.\n\nJon High\nMay 6\n15m\n🚀 CLIENT ONBOARDING\nAgency Onboarding Best Practices (And 7 Mistakes T"
+  },
+  {
+    "surface": "article",
+    "path": "/blog/google-ads-access-agency",
+    "finalPath": "/blog/google-ads-access-agency",
+    "width": 320,
+    "file": "live-320-article.png",
+    "evidence": "LIVE_PUBLIC",
+    "metrics": {
+      "scrollWidth": 346,
+      "viewport": 320,
+      "mains": 1,
+      "h1s": 1,
+      "brokenImages": [],
+      "unnamedButtons": [],
+      "marquee": []
+    },
+    "errors": [
+      "Minified React error #418; visit https://react.dev/errors/418?args[]=text&args[]= for the full message or use the non-minified dev environment for full errors and additional helpful warnings."
+    ],
+    "text": "AuthHub\n📖 PLATFORM TUTORIALS\nGoogle Ads Access Guide: How Clients Grant Agency Permissions (2026)\n\nThe complete guide to getting Google Ads manager account access. Learn the difference between MCC, manager accounts, and direct access—plus how to avoid the most common permission errors.\n\nJon High\n· Founder\nJanuary 15, 2026\n10 min read\nShare\n#Google Ads\n#MCC\n#manager account\n#permissions\n#Google Ads access for agencies\nGoogle's Unique Multi-Product Challenge\n\nGoogle isn't just one platform—it's an entire ecosystem. When you need client access, you're often dealing with:\n\nGoogle Ads (formerly AdWords)\nGoogle Analytics 4 (GA4)\nGoogle Tag Manager (GTM)\nGoogle Merchant Center\nGoogle Search Console\nYouTube Ads\n\nEach has its own access system, and clients often confuse them. This guide focuses specifically on Google Ads, but we'll also cover how the Google ecosystem connects.\n\nUnderstanding Google Ads Account Structure\n\nBefore requesting access, understand the hierarchy:\n\nMCC (Manager Account) ├── Client Account 1 ├── Client Account 2 └── Client Account 3\n\nMCC (My Client Center): Also called a Manager Account, this lets agencies manage multiple client accounts from one dashboard\nClient Account: The individual Google Ads account containing campaigns, ad groups, and ads\n\nPro Tip: As an agency, you should have your own MCC. All client accounts are then linked under your manager account for centralized management.\n\nThe Manual Way: Step-by-Step Client Instructions\nOption 1: Linking to Your Agency's MCC (Recommended)\n\nThis is the cleanest approach. The client links their account to your manager account, and you manage everything from one dashboard.\n\nStep 1: Get Your Agency's MCC ID\nLog into your Google Ads account\nClick the account selector (top right, shows your account ID)\nYour 10-digit MCC ID is displayed (e.g., 123-456-7890)\nStep 2: Send Your Client These Instructions\n\nHave your client follow these exact steps:\n\nLog into Google Ads\nClick Tools & Settings (wrench icon, top right)\nUnder Setup, click Account link → Manager account\nEnter your agency's 10-digit MCC ID (include hyphens: 123-456-7890)\nSelect Account Admin or Standard access level\nClick Send request\nOption 2: Direct Email Invitation\n\nIf your client prefers, you can send an email invitation:\n\nIn your MCC, click Tools & Settings → Account link → Manager account\nClick the + button → Link existing account\nEnter the client's Customer ID (10 digits, found in their account URL)\nSelect access level\nClick Send invitation\nGoogle Ads Permission Levels Explained\n\nGoogle Ads has more granular permissions than most platforms:\n\nAccess Level\tCan Create\tCan Edit\tCan Delete\tCan View Billing\tEmail Notifications\tBest For\nAdmin\t✅\t✅\t✅\t✅\t✅\tFull account management\nStandard\t✅\t✅\t❌\t❌\t✅\tCampaign management (recommended)\nRead-only\t❌\t❌\t❌\t❌\t✅\tReporting and monitoring\nEmail-only\t❌\t❌\t❌\t❌\t✅\tNotifications only\nCommon Google Ads Access Issues (And Fixes)\nIssue 1: \"Account Already Linked to Another Manager\"\n\nThe Problem: Google allo"
+  },
+  {
+    "surface": "compare",
+    "path": "/compare/leadsie-alternative",
+    "finalPath": "/compare/leadsie-alternative",
+    "width": 320,
+    "file": "live-320-compare.png",
+    "evidence": "LIVE_PUBLIC",
+    "metrics": {
+      "scrollWidth": 320,
+      "viewport": 320,
+      "mains": 1,
+      "h1s": 1,
+      "brokenImages": [],
+      "unnamedButtons": [],
+      "marquee": []
+    },
+    "errors": [],
+    "text": "AuthHub\n2026 COMPARISON GUIDE\nAuthHub vs Leadsie\n\nAuthHub is a Leadsie alternative for agencies that need client OAuth plus intake in one link, predictable monthly tiers ($29 / $79 / $149 with 5 / 20 / 50 active-client caps), and token-health monitoring with Infisical-backed audit trails. Leadsie still wins for 31+ integrations and specialized Meta or influencer workflows. Compare current pricing, platforms, and how to dual-run a switch without breaking live platform permissions.\n\nStart 14 Day Free Trial\nAuthHub Pricing\n\nComparing all three? Leadsie vs AgencyAccess vs AuthHub\n\n14-DAY FREE TRIAL\nNO CREDIT CARD\nCANCEL ANYTIME\nWhy Agencies Switch to AuthHub\nAccess + Intake in One Link\n\nOne link handles OAuth and collects client info—no separate forms needed.\n\nPredictable tiered pricing (no credits)\n\nMonthly tiers at $29 / $79 / $149 with 5 / 20 / 50 client caps.\n\nToken Health + Infisical Audit\n\nToken-health monitoring, provider-supported refresh, and audit events.\n\nWhy Agencies Look for Leadsie Alternatives\n\nGrowing agencies hit these walls with Leadsie. Sound familiar?\n\nCredit Anxiety\n\n“I never know what my bill will be each month.”\n\nLeadsie charges one onboarding credit per new client with manager/admin access. Busy months can require $50 overage packs. Fixed tiers make the monthly bill easier to forecast.\n\nTwo-Step Onboarding\n\n“I look unprofessional sending multiple links to new clients.”\n\nLeadsie collects platform access. AuthHub request templates can include custom intake fields, so authorization and client context arrive in the same flow.\n\nToken Operations\n\n“I need to know which connections are healthy before a campaign launch.”\n\nExpired or revoked access can stop work. AuthHub monitors token health, uses provider-supported refresh where the provider allows it, stores token references in Infisical, and records audit events.\n\nSupport Hours\n\n“My team and clients need coverage during US business hours.”\n\nLeadsie's team and many of its customers are strongest in UK/EU hours. AuthHub offers US-based support only — no published guaranteed response-time SLA.\n\nLEADSIE PRICING\n\nLeadsie pricing explained\nLeadsie\n\n$59/month\n\n$59 · $129 · $299 (3 / 10 / 50 client credits)\n\n31+\nPlatform Count\nClient Intake Forms\nEnterprise\nAPI & Webhooks\nCredits + overages\nPricing Model\n$59/mo\nStarting Price\nCHOOSE PLAN\nBEST VALUE\nAuthHub\n\n$29/month\n\nFrom $29/mo · 5/20/50 clients by tier\n\n$360/yr (~$30/mo) at 10 clients: Growth $79 vs Leadsie Agency yearly effective ~$107/mo\n\n15+\nPlatform Count\nClient Intake Forms\n(Exclusive)\nGrowth+\nAPI & Webhooks\nFixed monthly tiers\nPricing Model\n$29/mo\nStarting Price\nSTART FREE TRIAL\nHow Leadsie credits work\n\nOne onboarding credit is used when a new client grants manager or admin access (one client = one credit). View-only audits use separate audit credits. Unused credits typically roll for about three months. Overage packs cost $50 and add onboarding + view-only credits by tier (commonly 3 / 5 / 10 onboarding credits on Starter / Agenc"
+  },
+  {
+    "surface": "compare-three-way",
+    "path": "/compare/leadsie-vs-agencyaccess-vs-authhub",
+    "finalPath": "/compare/leadsie-vs-agencyaccess-vs-authhub",
+    "width": 320,
+    "file": "live-320-compare-three-way.png",
+    "evidence": "LIVE_PUBLIC",
+    "metrics": {
+      "scrollWidth": 320,
+      "viewport": 320,
+      "mains": 1,
+      "h1s": 1,
+      "brokenImages": [],
+      "unnamedButtons": [],
+      "marquee": []
+    },
+    "errors": [],
+    "text": "AuthHub\n2026 THREE-WAY BUYER GUIDE\nLeadsie vs AgencyAccess vs AuthHub (2026): Credits, Caps, and Token Refresh\n\nLeadsie, AgencyAccess, and AuthHub all help agencies collect client ad- and analytics-platform access through a branded link. This three-way ranks them on pricing model (credits vs invite caps vs active-client tiers), token refresh, security & audit, intake + branding, and platforms + automation—with honest “pick X if…” gates and worked monthly math. Prices are pre-tax from public list pages, checked September 24, 2026 (PT). Verify all three vendors live before you buy.\n\nStart 14 Day Free Trial\nAuthHub Pricing\nAuthHub vs Leadsie\n·\nAuthHub vs AgencyAccess\n·\nLeadsie pricing deep-dive\nShared job: one-link client OAuth / access for agencies\n\nAgency founders and ops leads share the same pain: chasing Meta Business Manager invites, Google Ads access, GA4, LinkedIn, TikTok, and the rest across email threads that stall campaigns.\n\nAll three tools replace password-chasing with a client-facing authorization link that uses each platform’s official permission flow. None invented one-link access alone. The shared job is access onboarding. Decide on what happens after the first grant: how you pay when volume spikes, whether tokens stay healthy, what vaulting and audit look like for vendor review, whether intake lives in the same link, and how API/webhooks fit your stack.\n\nDecision frame: five axes\n\n1. Pricing model & caps\n\nLeadsie onboarding credits + overages; AgencyAccess clients/invites per month; AuthHub active-client flat tiers (5 / 20 / 50).\n\n2. Token ops / refresh\n\nAuthHub automatic refresh where providers support it; competitors do not advertise the same primary story (no invented expiry SLAs).\n\n3. Security & audit\n\nAuthHub: Infisical-backed token references + audit logs. No SOC 2 claim. Competitors: GDPR / secure-OAuth framing without Infisical packaging.\n\n4. Intake + branding\n\nAuthHub and AgencyAccess both include intake in the access flow (parity — no exclusive-intake). Leadsie is access-first; intake is often separate.\n\n5. Platforms + automation\n\nAuthHub honest 15+ core connectors. Leadsie and AgencyAccess are broader on niches. All three offer automation paths—compare depth and token lifecycle, not “who has an API.”\n\nWhat is the difference between Leadsie, AgencyAccess, and AuthHub?\n\nAll three help marketing agencies collect client platform access through a branded link. Leadsie is the established credit-based access tool with broad platform coverage and audit-oriented workflows. AgencyAccess competes with built-in intake, deeper branding, invite-based plans, and a longer trial. AuthHub competes on automatic OAuth token refresh, Infisical-backed token storage with audit logs, in-link intake, and flat active-client tiers at $29 / $79 / $149 for 5 / 20 / 50 clients, with API and webhooks from Growth up.\n\nDoes AgencyAccess have an API?\n\nYes. AgencyAccess documents a public API for creating and managing clients and access requests (API key v"
+  },
+  {
+    "surface": "guide-google",
+    "path": "/guides/google-ads-access",
+    "finalPath": "/sign-in",
+    "width": 320,
+    "file": "live-320-guide-google.png",
+    "evidence": "LIVE_PUBLIC",
+    "metrics": {
+      "scrollWidth": 396,
+      "viewport": 320,
+      "mains": 0,
+      "h1s": 1,
+      "brokenImages": [
+        "Icon for accounts.authhub.co"
+      ],
+      "unnamedButtons": [],
+      "marquee": []
+    },
+    "errors": [],
+    "text": "accounts.authhub.co\nPerforming security verification\n\nThis website uses a security service to protect against malicious bots. This page is displayed while the website verifies you are not a bot.\n\nRay ID: a4380bc4a81655d1\nPerformance and Security by Cloudflare\nPrivacy"
+  },
+  {
+    "surface": "guide-meta",
+    "path": "/guides/meta-ads-access",
+    "finalPath": "/sign-in",
+    "width": 320,
+    "file": "live-320-guide-meta.png",
+    "evidence": "LIVE_PUBLIC",
+    "metrics": {
+      "scrollWidth": 396,
+      "viewport": 320,
+      "mains": 0,
+      "h1s": 1,
+      "brokenImages": [
+        "Icon for accounts.authhub.co"
+      ],
+      "unnamedButtons": [],
+      "marquee": []
+    },
+    "errors": [],
+    "text": "accounts.authhub.co\nPerforming security verification\n\nThis website uses a security service to protect against malicious bots. This page is displayed while the website verifies you are not a bot.\n\nRay ID: a4380bd1ff4455d1\nPerformance and Security by Cloudflare\nPrivacy"
+  },
+  {
+    "surface": "terms",
+    "path": "/terms",
+    "finalPath": "/terms",
+    "width": 320,
+    "file": "live-320-terms.png",
+    "evidence": "LIVE_PUBLIC",
+    "metrics": {
+      "scrollWidth": 320,
+      "viewport": 320,
+      "mains": 1,
+      "h1s": 1,
+      "brokenImages": [],
+      "unnamedButtons": [],
+      "marquee": []
+    },
+    "errors": [],
+    "text": "AuthHub\nTerms of Service\n\nLast updated: September 3, 2026\n\n1. Acceptance of Terms\n\nAuthHub is owned and operated by High Enterprises LLC, a Wyoming limited liability company. By accessing or using AuthHub (\"Service\"), you agree to be bound by these Terms of Service (\"Terms\"). If you do not agree to these Terms, you may not use the Service. These Terms apply to all users, including agencies and their clients who authorize platform access.\n\n2. Description of Service\n\nAuthHub is an OAuth aggregation platform that enables marketing agencies to streamline client onboarding by collecting platform authorizations (Meta, Google Ads, GA4, LinkedIn, and others) through a single branded link. The Service securely stores and manages OAuth tokens on behalf of agencies and their clients.\n\n3. Account Registration\n\nTo use the Service, you must create an account and provide accurate, complete information. You are responsible for:\n\nMaintaining the confidentiality of your account credentials\nAll activities that occur under your account\nNotifying us immediately of any unauthorized use\nEnsuring your account information remains current and accurate\n4. Acceptable Use\n\nYou agree not to:\n\nUse the Service for any unlawful purpose or in violation of any laws\nAccess or attempt to access accounts or data belonging to others without authorization\nInterfere with or disrupt the Service or servers connected to the Service\nAttempt to gain unauthorized access to any part of the Service\nUse the Service to collect, store, or process data in violation of applicable privacy laws\nResell, sublicense, or redistribute the Service without our written consent\nUse automated means to access the Service except through our provided APIs\n5. OAuth Token Management\n\nToken Storage: We securely store OAuth tokens using industry-standard encryption and secret management practices. Tokens are stored only for the duration necessary to provide the Service.\n\nToken Usage: You agree to use OAuth tokens only for legitimate business purposes related to managing advertising campaigns and analytics on behalf of your clients.\n\nClient Authorization: You are responsible for obtaining proper authorization from your clients before requesting access to their advertising and analytics platforms.\n\nToken Revocation: Clients may revoke access at any time through the Service or directly through the respective platform. AuthHub tries to remove recorded Meta asset access and revoke the Meta app permission before it deletes the related tokens. If a provider or secret-store request fails, AuthHub blocks the authorization and keeps the required token so an administrator can retry cleanup. Other platform tokens are also deleted when their authorization is revoked; if deletion fails, AuthHub blocks that authorization and records a retryable cleanup failure.\n\n6. Client Responsibilities\n\nWhen your clients authorize platform access through AuthHub, they acknowledge that they are granting your team account access to their advertisin"
+  },
+  {
+    "surface": "privacy",
+    "path": "/privacy-policy",
+    "finalPath": "/privacy-policy",
+    "width": 320,
+    "file": "live-320-privacy.png",
+    "evidence": "LIVE_PUBLIC",
+    "metrics": {
+      "scrollWidth": 320,
+      "viewport": 320,
+      "mains": 1,
+      "h1s": 1,
+      "brokenImages": [],
+      "unnamedButtons": [],
+      "marquee": []
+    },
+    "errors": [],
+    "text": "AuthHub\nPrivacy Policy\n\nLast updated: September 3, 2026\n\n1. Introduction\n\nAuthHub is owned and operated by High Enterprises LLC, a Wyoming limited liability company (\"AuthHub,\" \"we,\" \"our,\" or \"us\"). We are committed to protecting your privacy. This Privacy Policy explains how we collect, use, disclose, and safeguard your information when you use our OAuth aggregation platform and related services.\n\n2. Information We Collect\n\nAccount Information: When you create an account, we collect your name, email address, company name, and billing information.\n\nOAuth Tokens: We securely store OAuth access tokens and refresh tokens that your clients authorize to enable platform integrations. These tokens are encrypted and stored using industry-standard security practices.\n\nUsage Data: We collect information about how you interact with our service, including access request history, platform connections, and feature usage.\n\nClient Information: When your clients authorize access, we collect their email addresses and the platform permissions they grant.\n\n3. How We Use Your Information\nTo provide and maintain our OAuth aggregation services\nTo process and manage platform authorizations on your behalf\nTo send you service-related notifications and updates\nTo respond to your inquiries and provide customer support\nTo improve and optimize our platform\nTo detect and prevent fraud or unauthorized access\nTo comply with legal obligations\n4. Data Sharing and Disclosure\n\nWe do not sell your personal information. We may share your information with:\n\nService Providers: Third-party vendors who assist in operating our platform (e.g., cloud hosting, payment processing).\nAdvertising Platforms: OAuth tokens are used solely to authenticate with the platforms your clients authorize (Meta, Google Ads, LinkedIn, etc.).\nLegal Requirements: When required by law or to protect our rights and safety.\n5. Data Security\n\nWe implement industry-standard security measures to protect your data, including:\n\nEncryption of OAuth tokens at rest and in transit\nOAuth tokens stored in Infisical, never in our database\nRegular security audits and monitoring\nAccess controls and audit logging\nGDPR-ready data handling, including deletion on request\n6. Data Retention\n\nWe keep information while your account is active or while we need it to provide the Service, meet legal duties, and protect the Service. We store OAuth tokens in Infisical. When you disconnect a Meta authorization, AuthHub tries to remove the recorded Meta asset access and revoke the app permission before it deletes the tokens. If Meta or Infisical does not confirm cleanup, AuthHub blocks the authorization and keeps the required token so an administrator can retry. We record cleanup failures. You may request deletion by contacting us.\n\n7. Your Rights\n\nDepending on your location, you may have the right to:\n\nAccess the personal information we hold about you\nRequest correction of inaccurate data\nRequest deletion of your data\nObject to or restrict cer"
+  }
+]

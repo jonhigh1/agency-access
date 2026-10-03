@@ -1,0 +1,350 @@
+[
+  {
+    "scope": "LIVE_PUBLIC",
+    "route": "/pricing",
+    "width": 320,
+    "overflow": [
+      {
+        "tag": "DIV",
+        "cls": "",
+        "text": "Your Annual Savings$7,099saved per yearTime ReclaimedHours saved:84hWe",
+        "left": 36,
+        "right": 324,
+        "width": 288
+      },
+      {
+        "tag": "DIV",
+        "cls": "border-2 border-black bg-card p-6 sm:p-8 shadow-brutalist-lg sticky top-8",
+        "text": "Your Annual Savings$7,099saved per yearTime ReclaimedHours saved:84hWe",
+        "left": 36,
+        "right": 324,
+        "width": 288
+      },
+      {
+        "tag": "DIV",
+        "cls": "absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-coral/5 rounded-full blur-3xl -z-0",
+        "text": "",
+        "left": -85,
+        "right": 405,
+        "width": 490
+      }
+    ],
+    "before": {
+      "path": "/pricing",
+      "y": 12411
+    },
+    "after": {
+      "path": "/pricing",
+      "y": 12411
+    }
+  },
+  {
+    "scope": "LIVE_PUBLIC",
+    "route": "/blog/google-ads-access-agency",
+    "width": 320,
+    "overflow": [
+      {
+        "tag": "TABLE",
+        "cls": "w-full border-collapse text-sm font-mono",
+        "text": "Access LevelCan CreateCan EditCan DeleteCan View BillingEmail Notifica",
+        "left": 18,
+        "right": 726.78125,
+        "width": 708.78125
+      },
+      {
+        "tag": "THEAD",
+        "cls": "bg-gray-100 border-b-2 border-black",
+        "text": "Access LevelCan CreateCan EditCan DeleteCan View BillingEmail Notifica",
+        "left": 18,
+        "right": 726.78125,
+        "width": 708.78125
+      },
+      {
+        "tag": "TR",
+        "cls": "border-b border-gray-300 last:border-b-0",
+        "text": "Access LevelCan CreateCan EditCan DeleteCan View BillingEmail Notifica",
+        "left": 18,
+        "right": 726.78125,
+        "width": 708.78125
+      },
+      {
+        "tag": "TH",
+        "cls": "px-4 py-3 text-left font-bold text-ink border-r border-black last:border-r-0",
+        "text": "Can Delete",
+        "left": 267.6875,
+        "right": 351.078125,
+        "width": 83.390625
+      },
+      {
+        "tag": "TH",
+        "cls": "px-4 py-3 text-left font-bold text-ink border-r border-black last:border-r-0",
+        "text": "Can View Billing",
+        "left": 351.078125,
+        "right": 442.875,
+        "width": 91.796875
+      },
+      {
+        "tag": "TH",
+        "cls": "px-4 py-3 text-left font-bold text-ink border-r border-black last:border-r-0",
+        "text": "Email Notifications",
+        "left": 442.875,
+        "right": 585.078125,
+        "width": 142.203125
+      },
+      {
+        "tag": "TH",
+        "cls": "px-4 py-3 text-left font-bold text-ink border-r border-black last:border-r-0",
+        "text": "Best For",
+        "left": 585.078125,
+        "right": 726.78125,
+        "width": 141.703125
+      },
+      {
+        "tag": "TBODY",
+        "cls": "divide-y border-black",
+        "text": "Admin✅✅✅✅✅Full account managementStandard✅✅❌❌✅Campaign management (rec",
+        "left": 18,
+        "right": 726.78125,
+        "width": 708.78125
+      },
+      {
+        "tag": "TR",
+        "cls": "border-b border-gray-300 last:border-b-0",
+        "text": "Admin✅✅✅✅✅Full account management",
+        "left": 18,
+        "right": 726.78125,
+        "width": 708.78125
+      },
+      {
+        "tag": "TD",
+        "cls": "px-4 py-3 text-ink border-r border-gray-300 last:border-r-0",
+        "text": "✅",
+        "left": 267.6875,
+        "right": 351.078125,
+        "width": 83.390625
+      },
+      {
+        "tag": "TD",
+        "cls": "px-4 py-3 text-ink border-r border-gray-300 last:border-r-0",
+        "text": "✅",
+        "left": 351.078125,
+        "right": 442.875,
+        "width": 91.796875
+      },
+      {
+        "tag": "TD",
+        "cls": "px-4 py-3 text-ink border-r border-gray-300 last:border-r-0",
+        "text": "✅",
+        "left": 442.875,
+        "right": 585.078125,
+        "width": 142.203125
+      }
+    ]
+  },
+  {
+    "scope": "LIVE_PUBLIC",
+    "route": "/",
+    "width": 1440,
+    "overflow": [
+      {
+        "tag": "DIV",
+        "cls": "flex items-center gap-4 px-6 py-4 border-2 border-black bg-card shadow-[4px_4px_0px_#000] rounded-none hover:shadow-[6px_6px_0px_#000] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200 cursor-default touch-feedback flex-shrink-0 min-w-[420px]",
+        "text": "03White-LabelYour logo. Your domain. Your client never sees AuthHub.",
+        "left": 1343.609619140625,
+        "right": 1913.609619140625,
+        "width": 570
+      },
+      {
+        "tag": "DIV",
+        "cls": "min-w-0",
+        "text": "White-LabelYour logo. Your domain. Your client never sees AuthHub.",
+        "left": 1425.609619140625,
+        "right": 1887.609619140625,
+        "width": 462
+      },
+      {
+        "tag": "P",
+        "cls": "font-dela text-lg tracking-tight font-bold text-ink truncate",
+        "text": "White-Label",
+        "left": 1425.609619140625,
+        "right": 1887.609619140625,
+        "width": 462
+      },
+      {
+        "tag": "P",
+        "cls": "font-mono text-xs sm:text-sm text-gray-600 leading-relaxed",
+        "text": "Your logo. Your domain. Your client never sees AuthHub.",
+        "left": 1425.609619140625,
+        "right": 1887.609619140625,
+        "width": 462
+      },
+      {
+        "tag": "DIV",
+        "cls": "flex items-center gap-4 px-6 py-4 border-2 border-black bg-card shadow-[4px_4px_0px_#000] rounded-none hover:shadow-[6px_6px_0px_#000] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200 cursor-default touch-feedback flex-shrink-0 min-w-[420px]",
+        "text": "04Audit Logs IncludedTrack who accessed what, when, and from where.",
+        "left": 1961.609619140625,
+        "right": 2456.015869140625,
+        "width": 494.40625
+      },
+      {
+        "tag": "DIV",
+        "cls": "w-10 h-10 border-2 border-black bg-coral flex items-center justify-center font-black text-sm text-white rounded-none flex-shrink-0",
+        "text": "04",
+        "left": 1987.609619140625,
+        "right": 2027.609619140625,
+        "width": 40
+      },
+      {
+        "tag": "DIV",
+        "cls": "min-w-0",
+        "text": "Audit Logs IncludedTrack who accessed what, when, and from where.",
+        "left": 2043.609619140625,
+        "right": 2430.015869140625,
+        "width": 386.40625
+      },
+      {
+        "tag": "P",
+        "cls": "font-dela text-lg tracking-tight font-bold text-ink truncate",
+        "text": "Audit Logs Included",
+        "left": 2043.609619140625,
+        "right": 2430.015869140625,
+        "width": 386.40625
+      },
+      {
+        "tag": "P",
+        "cls": "font-mono text-xs sm:text-sm text-gray-600 leading-relaxed",
+        "text": "Track who accessed what, when, and from where.",
+        "left": 2043.609619140625,
+        "right": 2430.015869140625,
+        "width": 386.40625
+      },
+      {
+        "tag": "DIV",
+        "cls": "flex items-center gap-4 px-6 py-4 border-2 border-black bg-card shadow-[4px_4px_0px_#000] rounded-none hover:shadow-[6px_6px_0px_#000] hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200 cursor-default touch-feedback flex-shrink-0 min-w-[420px]",
+        "text": "055-Minute SetupReplace a full day of onboarding with a 5-minute flow.",
+        "left": 2504.015869140625,
+        "right": 3065.625244140625,
+        "width": 561.609375
+      },
+      {
+        "tag": "DIV",
+        "cls": "w-10 h-10 border-2 border-black bg-coral flex items-center justify-center font-black text-sm text-white rounded-none flex-shrink-0",
+        "text": "05",
+        "left": 2530.015869140625,
+        "right": 2570.015869140625,
+        "width": 40
+      },
+      {
+        "tag": "DIV",
+        "cls": "min-w-0",
+        "text": "5-Minute SetupReplace a full day of onboarding with a 5-minute flow.",
+        "left": 2586.015869140625,
+        "right": 3039.625244140625,
+        "width": 453.609375
+      }
+    ],
+    "marqueeBefore": {
+      "style": "translateX(-2.12333%)",
+      "computed": "matrix(1, 0, 0, 1, -27.5982, 0)",
+      "animation": "marquee"
+    },
+    "marqueeAfter": {
+      "style": "translateX(-4.14833%)",
+      "computed": "matrix(1, 0, 0, 1, -56.799, 0)",
+      "animation": "marquee"
+    },
+    "images": []
+  },
+  {
+    "scope": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "route": "/platforms/callback?error=access_denied&platform=google",
+    "controls": [
+      {
+        "tag": "A",
+        "text": "Try Again",
+        "cls": "",
+        "html": "<a href=\"/onboarding/platforms\">Try Again</a>",
+        "box": {
+          "width": 67.265625,
+          "height": 24
+        },
+        "parentTag": "SPAN",
+        "parentClass": "inline-flex items-center gap-2",
+        "fg": "rgb(10, 10, 10)",
+        "bg": "rgba(0, 0, 0, 0)",
+        "font": "16px",
+        "weight": "400"
+      },
+      {
+        "tag": "A",
+        "text": "Go to Dashboard",
+        "cls": "",
+        "html": "<a href=\"/dashboard\">Go to Dashboard</a>",
+        "box": {
+          "width": 122.640625,
+          "height": 24
+        },
+        "parentTag": "SPAN",
+        "parentClass": "inline-flex items-center gap-2",
+        "fg": "rgb(10, 10, 10)",
+        "bg": "rgba(0, 0, 0, 0)",
+        "font": "16px",
+        "weight": "400"
+      }
+    ]
+  },
+  {
+    "scope": "LOCAL_COMPONENT_PREVIEW_MOCKED",
+    "route": "/audit/facebook-grant",
+    "controls": [
+      {
+        "tag": "BUTTON",
+        "text": "",
+        "cls": "text-muted-foreground hover:text-muted-foreground",
+        "html": "<button class=\"text-muted-foreground hover:text-muted-foreground\" aria-label=\"Remove page\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-x w-4 h-4\" aria-hidden=\"true\"><path d=\"M18 6 6 18\"></path><path d=\"m6 6 12 12\"></path></svg></button>",
+        "box": {
+          "width": 16,
+          "height": 16
+        },
+        "parentTag": "DIV",
+        "parentClass": "inline-flex items-center gap-2 px-3 py-1.5 rounded-none border-2 bg-muted/20 border-black/10 dark:border-white/10",
+        "fg": "rgb(115, 115, 115)",
+        "bg": "rgba(0, 0, 0, 0)",
+        "font": "16px",
+        "weight": "400"
+      },
+      {
+        "tag": "BUTTON",
+        "text": "",
+        "cls": "text-muted-foreground hover:text-muted-foreground",
+        "html": "<button class=\"text-muted-foreground hover:text-muted-foreground\" aria-label=\"Remove page\"><svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"lucide lucide-x w-4 h-4\" aria-hidden=\"true\"><path d=\"M18 6 6 18\"></path><path d=\"m6 6 12 12\"></path></svg></button>",
+        "box": {
+          "width": 16,
+          "height": 16
+        },
+        "parentTag": "DIV",
+        "parentClass": "inline-flex items-center gap-2 px-3 py-1.5 rounded-none border-2 bg-muted/20 border-black/10 dark:border-white/10",
+        "fg": "rgb(115, 115, 115)",
+        "bg": "rgba(0, 0, 0, 0)",
+        "font": "16px",
+        "weight": "400"
+      },
+      {
+        "tag": "BUTTON",
+        "text": "Grant Access",
+        "cls": "relative inline-flex items-center justify-center gap-2 font-semibold transition-[background-color,border-color,color,opacity,transform] duration-[var(--motion-hover)] disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] touch-feedback focus-visible:outline-[3px] focus-visible:outline-coral/25 focus-visible:outline-offset-0 focus-visible:[box-shadow:0_0_0_6px_rgb(var(--primary)/0.08)] border border-black dark:border-white bg-primary text-primary-foreground hover:bg-primary/90 hover:translate-y-[-2px] active:scale-95 shadow-brutalist px-8 py-4 text-lg rounded-none min-h-[52px] w-full px-6 py-3",
+        "html": "<button class=\"relative inline-flex items-center justify-center gap-2 font-semibold transition-[background-color,border-color,color,opacity,transform] duration-[var(--motion-hover)] disabled:opacity-50 disabled:cursor-not-allowed min-h-[44px] touch-feedback focus-visible:outline-[3px] focus-visible:outline-coral/25 focus-visible:outline-offset-0 focus-visible:[box-shadow:0_0_0_6px_rgb(var(--primary)/0.08)] border border-black dark:border-white bg-primary text-primary-foreground hover:bg-primary/90 hover:translate-y-[-2px] active:scale-95 shadow-brutalist px-8 py-4 text-lg rounded-none min-h-[52px] w-full px-6 py-3\"><span class=\"inline-flex it",
+        "box": {
+          "width": 672,
+          "height": 62
+        },
+        "parentTag": "DIV",
+        "parentClass": "p-6",
+        "fg": "rgb(255, 255, 255)",
+        "bg": "rgb(255, 107, 53)",
+        "font": "18px",
+        "weight": "600"
+      }
+    ]
+  }
+]
