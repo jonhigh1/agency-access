@@ -1,0 +1,127 @@
+{
+  "info": {
+    "id": "ses_efd642343ffe1ZZwGAKPcm1SVS",
+    "slug": "shiny-meadow",
+    "projectID": "c927b59eeed48abf0aba66323a0a796e68b7d53c",
+    "directory": "/Users/jon.high/agency-access",
+    "path": "",
+    "title": "T3 Code generateThreadTitle",
+    "agent": "build",
+    "model": {
+      "id": "muse-spark-1.3-contributor-free",
+      "providerID": "opencode",
+      "variant": "low"
+    },
+    "version": "1.18.34",
+    "summary": {
+      "additions": 0,
+      "deletions": 0,
+      "files": 0
+    },
+    "cost": 0,
+    "tokens": {
+      "input": 0,
+      "output": 0,
+      "reasoning": 0,
+      "cache": {
+        "read": 0,
+        "write": 0
+      }
+    },
+    "permission": [
+      {
+        "permission": "*",
+        "pattern": "*",
+        "action": "deny"
+      }
+    ],
+    "time": {
+      "created": 1791045131453,
+      "updated": 1791045135212
+    }
+  },
+  "messages": [
+    {
+      "info": {
+        "role": "user",
+        "time": {
+          "created": 1791045131529
+        },
+        "agent": "build",
+        "model": {
+          "providerID": "opencode",
+          "modelID": "muse-spark-1.3-contributor-free",
+          "variant": "low"
+        },
+        "summary": {
+          "diffs": []
+        },
+        "id": "msg_1029bdd090018u088PEJciZ65v",
+        "sessionID": "ses_efd642343ffe1ZZwGAKPcm1SVS"
+      },
+      "parts": [
+        {
+          "type": "text",
+          "text": "Generate a title that will help the user recognize this T3 Code thread weeks later.\nReturn JSON with keys title and needsRefinement.\nSet needsRefinement to true only if the subject is still unknown, such as an unresolved link, \"fix this\", or an unexplained attachment. Otherwise set it to false.\n\nBefore answering, silently reduce the request to:\n- Subject: What system, feature, or problem is this really about?\n- Outcome: What does the user ultimately want to understand or change?\n- Incidental instructions: What only describes how the agent should do the work?\n\nTitle the subject and outcome. Discard incidental instructions.\n\nEditorial rules:\n- 3-8 words, fewer than 40 characters.\n- Use a compact noun phrase or clear action phrase.\n- Capture the umbrella goal when the request lists several symptoms or steps.\n- Name the product change, not the mock, plan, report, branch, or PR used to produce it.\n- Models, subagents, tools, output formats, and monitoring instructions do not belong in the title unless they are themselves the topic.\n- For reviews, name what is being reviewed and the relevant concern. Avoid generic titles such as \"Review PR 123\" when linked or attached context reveals the subject.\n- For research, name the question domain rather than the requested research process.\n- Do not claim the work is complete.\n- Do not copy and truncate the user's message.\n- Avoid project names already visible in the UI, quotes, labels, filler, and trailing punctuation.\n- Use attached images as primary context for UI issues.\n- When a URL or attachment is the only source of the subject, use available tools to inspect it directly.\n- Local git history is not evidence of what a linked PR or issue is about. Never title the thread after branch names, commit messages, or merged commits found in the checkout.\n- If a linked PR or issue cannot be read, fall back to the user's stated action plus its number, such as \"Take Over PR 8588\". This is the one case where a PR or issue number belongs in the title.\n\nUser message:\nReview this bug report and video then debug, fix, test, validate, harden https://jam.dev/c/76b5f94c-8b3a-4a56-8f85-fcea957bb14f",
+          "id": "prt_1029bdd17001ZeKl3LujS2X5ND",
+          "sessionID": "ses_efd642343ffe1ZZwGAKPcm1SVS",
+          "messageID": "msg_1029bdd090018u088PEJciZ65v"
+        }
+      ]
+    },
+    {
+      "info": {
+        "parentID": "msg_1029bdd090018u088PEJciZ65v",
+        "role": "assistant",
+        "mode": "build",
+        "agent": "build",
+        "variant": "low",
+        "path": {
+          "cwd": "/Users/jon.high/agency-access",
+          "root": "/Users/jon.high/agency-access"
+        },
+        "cost": 0,
+        "tokens": {
+          "input": 0,
+          "output": 0,
+          "reasoning": 0,
+          "cache": {
+            "read": 0,
+            "write": 0
+          }
+        },
+        "modelID": "muse-spark-1.3-contributor-free",
+        "providerID": "opencode",
+        "time": {
+          "created": 1791045134067,
+          "completed": 1791045142237
+        },
+        "error": {
+          "name": "APIError",
+          "data": {
+            "message": "Error from provider (Console): OpenCode's free tier can only be used from within OpenCode",
+            "statusCode": 403,
+            "isRetryable": false,
+            "responseHeaders": {
+              "cf-placement": "remote-ORD",
+              "cf-ray": "a44d578b693a1421-SEA",
+              "connection": "keep-alive",
+              "content-encoding": "br",
+              "content-type": "application/json",
+              "date": "Sat, 03 Oct 2026 16:32:17 GMT",
+              "server": "cloudflare",
+              "transfer-encoding": "chunked"
+            },
+            "responseBody": "{\"type\":\"error\",\"error\":{\"type\":\"FreeTierError\",\"message\":\"Error from provider (Console): OpenCode's free tier can only be used from within OpenCode\"}}",
+            "metadata": {
+              "url": "https://opencode.ai/zen/v1/responses"
+            }
+          }
+        },
+        "id": "msg_1029be6f2001P119ynaKdsxz5v",
+        "sessionID": "ses_efd642343ffe1ZZwGAKPcm1SVS"
+      },
+      "parts": []
+    }
+  ]
+}
