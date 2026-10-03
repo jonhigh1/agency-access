@@ -44,7 +44,7 @@ export function ManageAssetsModalShell({
         event.preventDefault();
         onCloseRef.current();
       }}
-      className="fixed inset-0 m-0 flex h-full w-full max-h-none max-w-none items-center justify-center border-0 bg-transparent p-3 backdrop:bg-ink/50 backdrop:backdrop-blur-sm sm:p-4"
+      className="fixed inset-0 m-0 hidden h-full w-full max-h-none max-w-none items-center justify-center border-0 bg-transparent p-3 open:flex backdrop:bg-ink/50 backdrop:backdrop-blur-sm sm:p-4"
       initial={shouldReduceMotion ? false : { opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: shouldReduceMotion ? 0 : 0.25 }}
