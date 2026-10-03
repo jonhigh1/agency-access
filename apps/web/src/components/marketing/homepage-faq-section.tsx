@@ -29,7 +29,7 @@ const faqs = [
   {
     question: 'Is AuthHub white-label?',
     answer:
-      'Yes. Agencies can add their own logo, brand colors, and custom domain so clients see a consistent, agency-branded experience throughout the OAuth flow.',
+      'Agencies can customize their logo and brand colors for the client authorization experience. Authorization links use an AuthHub URL, and clients complete permissions on the official platform surfaces.',
   },
 ];
 

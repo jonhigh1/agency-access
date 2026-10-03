@@ -1,8 +1,8 @@
 'use client';
 
-import { m, AnimatePresence } from 'framer-motion';
+import { m, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { X } from 'lucide-react';
-import { useEffect, useRef } from 'react';
+import { useEffect, useId, useRef } from 'react';
 
 interface ScheduleDemoModalProps {
   isOpen: boolean;
@@ -11,6 +11,15 @@ interface ScheduleDemoModalProps {
 
 export function ScheduleDemoModal({ isOpen, onClose }: ScheduleDemoModalProps) {
   const embedRef = useRef<HTMLDivElement>(null);
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const titleId = useId();
+  const reducedMotion = useReducedMotion();
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (isOpen && dialog && !dialog.open) dialog.showModal();
+    if (!isOpen && dialog?.open) dialog.close();
+  }, [isOpen]);
 
   useEffect(() => {
     if (!isOpen || typeof window === 'undefined') return;
@@ -102,25 +111,18 @@ export function ScheduleDemoModal({ isOpen, onClose }: ScheduleDemoModalProps) {
   return (
     <AnimatePresence>
       {isOpen && (
-        <>
-          {/* Backdrop */}
-          <m.div
-            key="schedule-demo-backdrop"
-            initial={{ opacity: 0 }}
+          <m.dialog
+            ref={dialogRef}
+            key="schedule-demo-content"
+            aria-modal="true"
+            aria-labelledby={titleId}
+            onCancel={(event) => { event.preventDefault(); onClose(); }}
+            onClick={onClose}
+            initial={reducedMotion ? false : { opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm"
-          />
-
-          {/* Modal */}
-          <m.div
-            key="schedule-demo-content"
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            transition={{ type: 'spring', duration: 0.3 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
+            transition={{ duration: reducedMotion ? 0 : 0.25 }}
+            className="fixed inset-0 m-0 hidden h-full w-full max-h-none max-w-none items-center justify-center border-0 bg-transparent p-4 open:flex backdrop:bg-ink/50"
           >
             <div
               className="relative bg-card rounded-lg shadow-brutalist-lg w-full max-w-6xl max-h-[90vh] flex flex-col pointer-events-auto border-2 border-black"
@@ -129,14 +131,15 @@ export function ScheduleDemoModal({ isOpen, onClose }: ScheduleDemoModalProps) {
               {/* Header */}
               <div className="flex-shrink-0 flex items-center justify-between px-6 py-4 border-b-2 border-black bg-paper">
                 <div>
-                  <h2 className="font-dela text-2xl font-black text-ink">Schedule a Demo</h2>
+                  <h2 id={titleId} className="font-dela text-2xl font-black text-ink">Schedule a Demo</h2>
                   <p className="text-sm text-gray-600 mt-1 font-mono">
                     Book a time to see AuthHub in action
                   </p>
                 </div>
                 <button
                   onClick={onClose}
-                  className="p-2 rounded-none border-2 border-black hover:bg-muted/10 transition-colors"
+                  type="button"
+                  className="min-h-[44px] min-w-[44px] p-2 rounded-none border-2 border-black hover:bg-muted/10 transition-colors"
                   aria-label="Close modal"
                 >
                   <X className="h-5 w-5 text-ink" />
@@ -144,7 +147,7 @@ export function ScheduleDemoModal({ isOpen, onClose }: ScheduleDemoModalProps) {
               </div>
 
               {/* Content - Cal.com Inline Embed */}
-              <div className="flex-1 overflow-hidden bg-paper min-h-0">
+              <div className="flex-1 overflow-y-auto bg-paper min-h-0">
                 <div
                   ref={embedRef}
                   id="my-cal-inline-authhub-demo"
@@ -153,8 +156,7 @@ export function ScheduleDemoModal({ isOpen, onClose }: ScheduleDemoModalProps) {
                 />
               </div>
             </div>
-          </m.div>
-        </>
+          </m.dialog>
       )}
     </AnimatePresence>
   );

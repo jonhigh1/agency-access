@@ -1,4 +1,4 @@
-import { render } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { SavingsCalculator } from '../savings-calculator';
 
@@ -8,6 +8,14 @@ vi.mock('@/hooks/use-animation-orchestrator', () => ({ useAnimationOrchestrator:
 vi.mock('../../reveal', () => ({ Reveal: ({ children }: any) => <div>{children}</div> }));
 
 describe('SavingsCalculator motion preference', () => {
+  it('names the hours slider and updates its value', () => {
+    render(<SavingsCalculator />);
+    const slider = screen.getByRole('slider', { name: 'Avg. hours spent per client onboarding?' });
+    fireEvent.change(slider, { target: { value: '8' } });
+    expect(slider).toHaveValue('8');
+    expect(screen.getAllByText('8 hours').length).toBeGreaterThan(0);
+  });
+
   it('keeps calculator panels at rest when animations are disabled', () => {
     const { container } = render(<SavingsCalculator />);
     const panels = Array.from(container.querySelectorAll('[data-initial]')).slice(0, 2);

@@ -10,7 +10,7 @@ import { Button } from "@/components/ui/button";
 
 const PAGE_TITLE = "White-Label Client Access: Branded OAuth Links for Agencies";
 const META_DESCRIPTION =
-  "White-label client access for agencies: branded OAuth links with your logo and domain — not a project portal. See plan gates, peers, and token ops.";
+  "White-label client access for agencies: branded OAuth links with your logo and colors — not a project portal. See plan gates, peers, and token ops.";
 
 export const metadata: Metadata = {
   title: PAGE_TITLE,
@@ -30,7 +30,7 @@ const faqPlainText = [
   {
     question: "What is AuthHub white-label client access?",
     answer:
-      "AuthHub white-label lets marketing agencies send a branded client authorization link—logo and custom domain—so clients grant access to ad and analytics platforms through official OAuth flows without seeing AuthHub branding and without sharing passwords. It is not a white-label project portal (files/tickets/billing); it is a branded access-collection experience. AuthHub prices by active clients ($29 / $79 / $149 for 5 / 20 / 50 on public monthly tiers as of 2026-10-02 ~09:34 PT) and stores tokens with Infisical plus audit logs; AuthHub is not SOC2-certified. Full white-label + custom domain unlocks on Growth+; Starter uses an AuthHub-branded link. Confirm gates on authhub.co/pricing before you buy.",
+      "AuthHub white-label lets marketing agencies customize the logo and colors on a client authorization experience. Clients grant access to ad and analytics platforms through official OAuth flows without sharing passwords. Authorization links use an AuthHub URL, and provider authorization screens retain their official platform branding. It is not a white-label project portal (files/tickets/billing); it is a branded access-collection experience. AuthHub prices by active clients ($29 / $79 / $149 for 5 / 20 / 50 on public monthly tiers as of 2026-10-02 ~09:34 PT) and stores tokens with Infisical plus audit logs; AuthHub is not SOC2-certified. Growth+ includes logo and color customization; Starter uses AuthHub branding. Confirm gates on authhub.co/pricing before you buy.",
   },
   {
     question: "How is a white-label client access link different from a white-label client portal?",
@@ -40,7 +40,7 @@ const faqPlainText = [
   {
     question: "AuthHub white-label vs Leadsie branding — which should agencies pick?",
     answer:
-      "Both let you customize the client-facing access experience. Leadsie's public pricing emphasizes white-label & embed unlocked on Agency ($129/mo as of 2026-10-02) and multi-brand on Pro ($299), with Starter at $59 and $50 overage packs. AuthHub emphasizes logo + custom domain so clients never see AuthHub (from Growth $79 up), plus automatic token refresh and Infisical/audit logs, with capacity priced by active clients rather than Leadsie credits. Pick Leadsie if you need its credit/audit workflow and embed story; pick AuthHub when token health, auditability, and broader platform coverage (honest 15+, no Leadsie parity claim) matter more. Re-fetch both pricing pages on the day you decide.",
+      "Both let you customize the client-facing access experience. Leadsie's public pricing emphasizes white-label & embed unlocked on Agency ($129/mo as of 2026-10-02) and multi-brand on Pro ($299), with Starter at $59 and $50 overage packs. AuthHub provides logo and color customization on its client authorization experience, plus automatic token refresh and Infisical/audit logs, with capacity priced by active clients rather than Leadsie credits. AuthHub authorization links use an AuthHub URL. Pick Leadsie if you need its credit/audit workflow and embed story; pick AuthHub when token health, auditability, and broader platform coverage (honest 15+, no Leadsie parity claim) matter more. Re-fetch both pricing pages on the day you decide.",
   },
 ] as const;
 
@@ -49,15 +49,16 @@ const faqs = [
     question: faqPlainText[0].question,
     answer: (
       <>
-        AuthHub white-label lets marketing agencies send a branded client authorization link—logo and
-        custom domain—so clients grant access to ad and analytics platforms through official OAuth flows
-        without seeing AuthHub branding and without sharing passwords. It is <strong>not</strong> a
+        AuthHub white-label lets marketing agencies customize the logo and colors on a client authorization
+        experience. Clients grant access to ad and analytics platforms through official OAuth flows without
+        sharing passwords. Authorization links use an AuthHub URL, and provider authorization screens retain
+        their official platform branding. It is <strong>not</strong> a
         white-label project portal (files/tickets/billing); it is a branded{" "}
         <strong>access-collection</strong> experience. AuthHub prices by active clients (
         <strong>$29 / $79 / $149</strong> for <strong>5 / 20 / 50</strong> on public monthly tiers as of{" "}
         <strong>2026-10-02 ~09:34 PT</strong>) and stores tokens with <strong>Infisical</strong> plus{" "}
-        <strong>audit logs</strong>; AuthHub is <strong>not SOC2-certified</strong>. Full white-label +
-        custom domain unlocks on <strong>Growth+</strong>; Starter uses an AuthHub-branded link. Confirm
+        <strong>audit logs</strong>; AuthHub is <strong>not SOC2-certified</strong>. Logo and color
+        customization unlocks on <strong>Growth+</strong>; Starter uses AuthHub branding. Confirm
         gates on{" "}
         <a
           href="https://authhub.co/pricing"
@@ -90,9 +91,9 @@ const faqs = [
         <strong>white-label &amp; embed</strong> unlocked on <strong>Agency</strong> (
         <strong>$129</strong>/mo as of <strong>2026-10-02</strong>) and multi-brand on <strong>Pro</strong> (
         <strong>$299</strong>), with Starter at <strong>$59</strong> and <strong>$50</strong> overage packs.
-        AuthHub emphasizes logo + <strong>custom domain</strong> so clients never see AuthHub (from{" "}
-        <strong>Growth $79</strong> up), plus automatic token refresh and Infisical/audit logs, with capacity
-        priced by <strong>active clients</strong> rather than Leadsie credits. Pick Leadsie if you need its
+        AuthHub provides <strong>logo and color customization</strong> on its client authorization experience,
+        plus automatic token refresh and Infisical/audit logs, with capacity priced by <strong>active clients</strong>
+        rather than Leadsie credits. Authorization links use an AuthHub URL. Pick Leadsie if you need its
         credit/audit workflow and embed story; pick AuthHub when token health, auditability, and broader
         platform coverage (honest <strong>15+</strong>, no Leadsie parity claim) matter more. Re-fetch both
         pricing pages on the day you decide.
@@ -163,8 +164,8 @@ export default function WhiteLabelFeaturePage() {
               Most results for &ldquo;white label client portal&rdquo; are <strong>project hubs</strong>
               —files, tickets, messaging, and billing under your domain (SuiteDash, ManyRequests, Assembly,
               and similar). AuthHub&apos;s job is different: a <strong>branded OAuth access link</strong> so
-              clients grant Meta, Google, GA4, LinkedIn, TikTok, and more under <strong>your logo and domain</strong>
-              —without sharing passwords.
+              clients grant Meta, Google, GA4, LinkedIn, TikTok, and more through official OAuth—without sharing
+              passwords. Branding controls can show <strong>your logo and colors</strong> in the AuthHub experience.
             </p>
             <p className="font-mono text-sm text-foreground mb-8">
               This page explains what AuthHub white-label includes, <strong>which plans unlock full branding vs an AuthHub-branded link</strong>, how peers (Leadsie, ClientInvite) gate branding, and what sits behind the link (token refresh + Infisical/audit). Prices and plan gates checked{" "}
@@ -241,8 +242,8 @@ export default function WhiteLabelFeaturePage() {
             </p>
             <h3 className="font-display text-lg font-semibold text-ink mb-3">One-line AuthHub promise</h3>
             <p className="font-mono text-sm text-foreground">
-              <strong>Your logo. Your domain. Official platform OAuth—clients never see AuthHub</strong> (on plans
-              that unlock full white-label). Soft-link the product overview on the{" "}
+              <strong>Your logo and colors. Official platform OAuth. AuthHub authorization links.</strong> Soft-link
+              the product overview on the{" "}
               <Link href="/" className="text-danger-ink font-bold hover:underline">
                 homepage
               </Link>{" "}
@@ -270,15 +271,15 @@ export default function WhiteLabelFeaturePage() {
                 <strong>Your logo and brand colors</strong> on the client authorization experience
               </li>
               <li>
-                <strong>Custom domain / URL</strong> so the link reads as your agency, not AuthHub
+                Authorization links use an <strong>AuthHub URL</strong>; custom-domain routing is not currently available
               </li>
               <li>
-                Clients complete Meta, Google, and other platform permissions <strong>without AuthHub chrome</strong>
+                Clients complete Meta, Google, and other platform permissions on the <strong>official platform screens</strong>
               </li>
             </ul>
             <p className="font-mono text-sm text-foreground mb-6">
-              <strong>Starter</strong> ships an <strong>AuthHub-branded client link</strong>—same one-link OAuth job,
-              vendor branding visible. That is intentional plan honesty, not a hidden upsell surprise. Confirm bullets on{" "}
+              <strong>Starter</strong> ships an <strong>AuthHub-branded client link</strong>. Growth and Scale add logo
+              and color customization. All authorization links use an AuthHub URL. Confirm bullets on{" "}
               <a href="https://authhub.co/pricing" className="text-danger-ink font-bold hover:underline">
                 authhub.co/pricing
               </a>{" "}
@@ -366,7 +367,7 @@ export default function WhiteLabelFeaturePage() {
                       <strong>20</strong>
                     </td>
                     <td className={tdClass}>
-                      <strong>Full white-label branding + custom domain</strong>
+                      <strong>Logo and color customization</strong>
                     </td>
                     <td className={tdClass}>Webhooks &amp; API, priority support, token health monitoring</td>
                   </tr>
@@ -391,8 +392,9 @@ export default function WhiteLabelFeaturePage() {
               /mo equiv. ($290 / $790 / $1,490/yr). <strong>14-day free trial</strong>, no credit card.
             </p>
             <p className="font-mono text-sm text-foreground mt-4">
-              <strong>Do not invent &ldquo;white-label on every plan.&rdquo;</strong> Starter is AuthHub-branded; full
-              logo + custom domain starts at <strong>Growth</strong>; multi-brand is <strong>Scale</strong>. Live
+              <strong>Do not invent &ldquo;white-label on every plan.&rdquo;</strong> Starter is AuthHub-branded; logo and
+              color customization starts at <strong>Growth</strong>; multi-brand is <strong>Scale</strong>. Custom-domain
+              routing is not currently available. Live
               source: AuthHub `/pricing` SoftwareApplication JSON-LD + plan cards, checked{" "}
               <strong>2026-10-02 ~09:34 PT</strong>.
             </p>
@@ -422,7 +424,7 @@ export default function WhiteLabelFeaturePage() {
                     <td className={tdClass}>
                       <strong>What you brand</strong>
                     </td>
-                    <td className={tdClass}>Access authorization link (logo / domain)</td>
+                    <td className={tdClass}>Access authorization link (logo / colors)</td>
                     <td className={tdClass}>Access requests (slug, logo, fonts, colors, embed)</td>
                     <td className={tdClass}>Access link (&ldquo;customize your branding&rdquo;)</td>
                     <td className={tdClass}>Project workspace (files, tickets, billing)</td>
@@ -432,8 +434,8 @@ export default function WhiteLabelFeaturePage() {
                       <strong>When branding unlocks</strong>
                     </td>
                     <td className={tdClass}>
-                      Full white-label + custom domain on <strong>Growth+</strong> ($79); AuthHub-branded on Starter
-                      ($29); multi-brand on Scale ($149)
+                      Logo and color customization on <strong>Growth+</strong> ($79); AuthHub-branded on Starter
+                      ($29); multi-brand on Scale ($149). Custom-domain routing is not currently available.
                     </td>
                     <td className={tdClass}>
                       <strong>White-label &amp; embed</strong> on <strong>Agency+</strong> ($129); multi-brand on{" "}
@@ -496,7 +498,7 @@ export default function WhiteLabelFeaturePage() {
             <h3 className="font-display text-lg font-semibold text-ink mb-3">When AuthHub white-label wins</h3>
             <ul className="list-disc list-inside space-y-2 font-mono text-sm text-foreground mb-6 marker:text-coral">
               <li>
-                You need clients to authorize under <strong>your</strong> brand (logo + custom domain), not a vendor URL
+                You need logo and color customization in the AuthHub authorization experience
               </li>
               <li>
                 You want <strong>broader ad/analytics stack coverage</strong> (honest <strong>15+</strong>) plus{" "}

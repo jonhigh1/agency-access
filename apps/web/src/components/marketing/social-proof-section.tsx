@@ -17,7 +17,7 @@ const valueHighlights = [
   {
     badge: '03',
     title: 'White-Label',
-    detail: 'Your logo. Your domain. Your client never sees AuthHub.',
+    detail: 'Your logo and colors, with official platform authorization.',
   },
   {
     badge: '04',

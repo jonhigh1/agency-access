@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useId } from 'react';
 import { m } from 'framer-motion';
 import { SignUpButton } from '@/components/lazy-clerk-auth-buttons';
 import { Button } from '@/components/ui/button';
@@ -36,6 +36,7 @@ const clientVolumeOptions = [
 ];
 
 export function SavingsCalculator() {
+  const hoursInputId = useId();
   const { shouldAnimate } = useAnimationOrchestrator();
   const [selectedVolume, setSelectedVolume] = useState('1-5');
   const [hoursPerClient, setHoursPerClient] = useState(2);
@@ -130,12 +131,13 @@ export function SavingsCalculator() {
 
               {/* Hours Per Client */}
               <div className="border-2 border-black bg-paper p-6 shadow-brutalist">
-                <label className="block font-bold text-sm uppercase tracking-wider mb-4 text-ink">
+                <label htmlFor={hoursInputId} className="block font-bold text-sm uppercase tracking-wider mb-4 text-ink">
                   Avg. hours spent per client onboarding?
                 </label>
                 <div className="space-y-3">
                   <input
                     type="range"
+                    id={hoursInputId}
                     min="1"
                     max="8"
                     value={hoursPerClient}

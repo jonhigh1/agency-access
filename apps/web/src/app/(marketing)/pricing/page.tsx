@@ -32,7 +32,7 @@ const pricingSchema = {
       priceCurrency: 'USD',
       billingIncrement: 'P1M',
       description:
-        'Up to 20 active clients, everything in Starter plus full white-label branding, custom domain, webhooks & API, priority support, token health monitoring dashboard. Yearly: $790/yr (~$66/mo, pay for 10 get 12).',
+        'Up to 20 active clients, everything in Starter plus logo and brand-color customization, webhooks & API, priority support, token health monitoring dashboard. Yearly: $790/yr (~$66/mo, pay for 10 get 12).',
       url: 'https://authhub.co/pricing',
     },
     {

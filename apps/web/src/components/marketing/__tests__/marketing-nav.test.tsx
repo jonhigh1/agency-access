@@ -41,6 +41,19 @@ vi.mock('framer-motion', () => ({
 }));
 
 beforeEach(() => {
+  Object.defineProperty(HTMLDialogElement.prototype, 'showModal', {
+    configurable: true,
+    value() {
+      this.setAttribute('open', '');
+    },
+  });
+  Object.defineProperty(HTMLDialogElement.prototype, 'close', {
+    configurable: true,
+    value() {
+      this.removeAttribute('open');
+    },
+  });
+
   // Reset body overflow before each test
   document.body.style.overflow = '';
   mockUsePathname.mockReturnValue('/');
@@ -83,9 +96,7 @@ describe('MarketingNav', () => {
       const menuButton = screen.getByLabelText('Open navigation menu');
       await user.click(menuButton);
 
-      // Click backdrop (first motion-div is the backdrop)
-      const backdrop = screen.getAllByTestId('motion-div')[0];
-      await user.click(backdrop);
+      fireEvent.click(screen.getByRole('dialog', { name: 'Navigation menu' }));
 
       await waitFor(() => {
         expect(featuresLinks()).toHaveLength(1);
@@ -163,13 +174,8 @@ describe('MarketingNav', () => {
       const menuButton = screen.getByLabelText('Open navigation menu');
       fireEvent.click(menuButton);
       
-      // Backdrop should be z-[45]
-      const backdrop = screen.getAllByTestId('motion-div')[0];
-      expect(backdrop).toHaveClass('z-[9998]');
-      
-      // Menu panel should have highest z-index z-[50]
-      const menuPanel = screen.getAllByTestId('motion-div')[1];
-      expect(menuPanel).toHaveClass('z-[9999]');
+      const dialog = screen.getByRole('dialog', { name: 'Navigation menu' });
+      expect(dialog).toHaveClass('z-[9999]');
     });
 
     it('should have adequate touch target sizes (44px minimum)', () => {
@@ -214,6 +220,25 @@ describe('MarketingNav', () => {
         expect(featuresLinks()).toHaveLength(1);
         expect(screen.getByLabelText('Open navigation menu')).toBeInTheDocument();
       });
+    });
+
+    it('uses a native dialog and restores focus after Escape closes the menu', async () => {
+      const user = userEvent.setup();
+      render(<MarketingNav />);
+
+      const menuButton = screen.getByLabelText('Open navigation menu');
+      menuButton.focus();
+      await user.click(menuButton);
+
+      const dialog = screen.getByRole('dialog', { name: 'Navigation menu' });
+      expect(dialog.tagName).toBe('DIALOG');
+      expect(dialog).toHaveAttribute('open');
+
+      screen.getByLabelText('Close menu').focus();
+      fireEvent(dialog, new Event('cancel', { cancelable: true }));
+
+      await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument());
+      expect(menuButton).toHaveFocus();
     });
   });
 

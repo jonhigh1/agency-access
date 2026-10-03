@@ -19,7 +19,7 @@ const faqs: FAQItem[] = [
   },
   {
     question: "What's the difference between Starter, Growth, and Scale?",
-    answer: `Starter ($29/mo, $24/mo yearly) is for small agencies with up to 5 active clients, unlimited team seats, and all ${SUPPORTED_PLATFORM_COUNT} platform integrations. Growth ($79/mo, $66/mo yearly) adds full white-label branding, custom domain, webhooks & API access, priority support, and token health monitoring for up to 20 active clients. Scale ($149/mo, $124/mo yearly) includes everything in Growth plus multi-brand management (up to 3 brands) and custom integrations for up to 50 active clients. All plans bill by active client count (not monthly onboards) with no rollover—add or remove clients anytime.`,
+    answer: `Starter ($29/mo, $24/mo yearly) is for small agencies with up to 5 active clients, unlimited team seats, and all ${SUPPORTED_PLATFORM_COUNT} platform integrations. Growth ($79/mo, $66/mo yearly) adds white-label logo and color customization, webhooks & API access, priority support, and token health monitoring for up to 20 active clients. Scale ($149/mo, $124/mo yearly) includes everything in Growth plus multi-brand management (up to 3 brands) and custom integrations for up to 50 active clients. All plans bill by active client count (not monthly onboards) with no rollover—add or remove clients anytime.`,
   },
   {
     question: "Can I change plans later?",
@@ -39,7 +39,7 @@ const faqs: FAQItem[] = [
   },
   {
     question: "Can I use my own domain with white-label?",
-    answer: "Growth and Scale plans include custom domain support (e.g., access.yourbrand.com). Starter includes AuthHub-branded links. All plans include white-label branding options—Starter with AuthHub branding, Growth and Scale with your full brand.",
+    answer: "Not currently. Authorization links use an AuthHub URL. Growth and Scale include logo and brand-color customization; Starter uses AuthHub branding. Clients complete permissions on the official platform surfaces.",
   },
 ];
 

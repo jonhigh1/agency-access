@@ -3,10 +3,10 @@
 import { SignInButton, SignUpButton } from '@/components/lazy-clerk-auth-buttons';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import { createPortal } from 'react-dom';
-import { m, AnimatePresence } from 'framer-motion';
+import { m } from 'framer-motion';
 
 function MenuIcon({ open }: { open: boolean }) {
   return (
@@ -57,6 +57,9 @@ function scrollToSection(targetId: string) {
 export function MarketingNav() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const mobileMenuDialogRef = useRef<HTMLDialogElement>(null);
+  const mobileMenuOpenerRef = useRef<HTMLElement | null>(null);
+  const restoreMobileMenuFocusRef = useRef(false);
   const pathname = usePathname();
   const router = useRouter();
 
@@ -68,6 +71,20 @@ export function MarketingNav() {
   useEffect(() => {
     setMobileMenuOpen(false);
   }, [pathname]);
+
+  useEffect(() => {
+    const dialog = mobileMenuDialogRef.current;
+    if (mobileMenuOpen) {
+      if (dialog && !dialog.open) dialog.showModal();
+      return;
+    }
+
+    dialog?.close();
+    if (restoreMobileMenuFocusRef.current) {
+      mobileMenuOpenerRef.current?.focus();
+      restoreMobileMenuFocusRef.current = false;
+    }
+  }, [mobileMenuOpen]);
 
   // After navigating to homepage, scroll to the hash target once the page renders
   useEffect(() => {
@@ -117,6 +134,16 @@ export function MarketingNav() {
     } else {
       setMobileMenuOpen(false);
     }
+  };
+
+  const openMobileMenu = () => {
+    mobileMenuOpenerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    restoreMobileMenuFocusRef.current = true;
+    setMobileMenuOpen(true);
+  };
+
+  const closeMobileMenu = () => {
+    setMobileMenuOpen(false);
   };
 
   return (
@@ -175,7 +202,7 @@ export function MarketingNav() {
 
         {/* Mobile Menu Button */}
         <button
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          onClick={() => (mobileMenuOpen ? closeMobileMenu() : openMobileMenu())}
           className="md:hidden flex items-center justify-center p-2 min-h-[44px] min-w-[44px] rounded-none hover:bg-muted/10 touch-feedback"
           aria-label={mobileMenuOpen ? 'Close navigation menu' : 'Open navigation menu'}
           aria-expanded={mobileMenuOpen}
@@ -186,34 +213,34 @@ export function MarketingNav() {
 
       {/* Mobile Menu Overlay - Rendered via Portal */}
       {isMounted && createPortal(
-        <AnimatePresence>
-          {mobileMenuOpen && (
-            <>
-              {/* Backdrop */}
-              <m.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                transition={{ duration: 0.2 }}
-                onClick={() => setMobileMenuOpen(false)}
-                className="fixed inset-0 z-[9998] bg-black/50 md:hidden"
-                aria-hidden="true"
-              />
-
+        mobileMenuOpen && (
+          <dialog
+            ref={mobileMenuDialogRef}
+            aria-labelledby="mobile-navigation-title"
+            onCancel={(event) => {
+              event.preventDefault();
+              closeMobileMenu();
+            }}
+            onClick={(event) => {
+              if (event.target === event.currentTarget) closeMobileMenu();
+            }}
+            className="fixed inset-0 z-[9999] m-0 h-full w-full max-w-none border-0 bg-transparent p-0 backdrop:bg-black/50 md:hidden"
+          >
               {/* Mobile Menu Panel - Brutalist bento grid */}
               <m.div
                 initial={{ x: '100%' }}
                 animate={{ x: 0 }}
                 exit={{ x: '100%' }}
                 transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                className="fixed top-0 right-0 bottom-0 z-[9999] w-full max-w-sm bg-card md:hidden shadow-brutalist-lg border-l-2 border-black flex flex-col"
+                className="ml-auto flex h-full w-full max-w-sm flex-col border-l-2 border-black bg-card shadow-brutalist-lg"
                 style={{ backgroundColor: 'white' }}
               >
               {/* Mobile Menu Header */}
               <div className="flex items-center justify-between p-4 border-b-2 border-black flex-shrink-0">
-                <span className="font-dela text-xl font-bold">Menu</span>
+                <span id="mobile-navigation-title" className="sr-only">Navigation menu</span>
+                <span aria-hidden="true" className="font-dela text-xl font-bold">Menu</span>
                 <button
-                  onClick={() => setMobileMenuOpen(false)}
+                  onClick={closeMobileMenu}
                   className="flex items-center justify-center p-2 min-h-[44px] min-w-[44px] border-2 border-black rounded-none hover:bg-black hover:text-white touch-feedback transition-colors duration-200"
                   aria-label="Close menu"
                 >
@@ -276,9 +303,8 @@ export function MarketingNav() {
                   </div>
                 </div>
               </m.div>
-            </>
-          )}
-        </AnimatePresence>,
+          </dialog>
+        ),
         document.body
       )}
     </nav>

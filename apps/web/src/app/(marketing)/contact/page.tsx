@@ -106,7 +106,7 @@ export default function ContactPage() {
                   Is there a free trial?
                 </h3>
                 <p className="text-gray-600">
-                  Yes! Start your 14-day free trial on any paid plan—Starter, Growth, or Agency.
+                  Yes! Start your 14-day free trial on any paid plan—Starter, Growth, or Scale.
                   No credit card required.
                 </p>
               </div>

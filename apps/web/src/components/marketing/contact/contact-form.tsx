@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { m, AnimatePresence } from 'framer-motion';
 import { CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -31,37 +31,53 @@ export function ContactForm() {
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitStatus, setSubmitStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const nameInputRef = useRef<HTMLInputElement>(null);
+  const emailInputRef = useRef<HTMLInputElement>(null);
+  const messageInputRef = useRef<HTMLTextAreaElement>(null);
+  const submissionInFlightRef = useRef(false);
 
-  const validateForm = (): boolean => {
+  const validateForm = (data: FormData): boolean => {
     const newErrors: FormErrors = {};
 
-    if (!formData.name.trim()) {
+    if (!data.name) {
       newErrors.name = 'Name is required';
-    } else if (formData.name.trim().length < 2) {
+    } else if (data.name.length < 2) {
       newErrors.name = 'Name must be at least 2 characters';
     }
 
-    if (!formData.email.trim()) {
+    if (!data.email) {
       newErrors.email = 'Email is required';
-    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
       newErrors.email = 'Please enter a valid email address';
     }
 
-    if (!formData.message.trim()) {
+    if (!data.message) {
       newErrors.message = 'Message is required';
-    } else if (formData.message.trim().length < 10) {
+    } else if (data.message.length < 10) {
       newErrors.message = 'Message must be at least 10 characters';
     }
 
     setErrors(newErrors);
+    if (newErrors.name) nameInputRef.current?.focus();
+    else if (newErrors.email) emailInputRef.current?.focus();
+    else if (newErrors.message) messageInputRef.current?.focus();
     return Object.keys(newErrors).length === 0;
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submissionInFlightRef.current) return;
 
-    if (!validateForm()) return;
+    const normalizedFormData = {
+      name: formData.name.trim(),
+      email: formData.email.trim(),
+      company: formData.company.trim(),
+      message: formData.message.trim(),
+    };
 
+    if (!validateForm(normalizedFormData)) return;
+
+    submissionInFlightRef.current = true;
     setIsSubmitting(true);
     setSubmitStatus('idle');
 
@@ -71,7 +87,7 @@ export function ContactForm() {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(normalizedFormData),
       });
 
       const data = await response.json();
@@ -85,6 +101,7 @@ export function ContactForm() {
     } catch {
       setSubmitStatus('error');
     } finally {
+      submissionInFlightRef.current = false;
       setIsSubmitting(false);
     }
   };
@@ -151,6 +168,7 @@ export function ContactForm() {
                 Name <span className="text-danger-ink">*</span>
               </label>
               <input
+                ref={nameInputRef}
                 type="text"
                 id="name"
                 value={formData.name}
@@ -189,6 +207,7 @@ export function ContactForm() {
                 Email <span className="text-danger-ink">*</span>
               </label>
               <input
+                ref={emailInputRef}
                 type="email"
                 id="email"
                 value={formData.email}
@@ -248,6 +267,7 @@ export function ContactForm() {
                 Message <span className="text-danger-ink">*</span>
               </label>
               <textarea
+                ref={messageInputRef}
                 id="message"
                 value={formData.message}
                 onChange={(e) => handleChange('message', e.target.value)}
