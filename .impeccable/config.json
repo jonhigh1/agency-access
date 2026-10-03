@@ -1,0 +1,20 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "design-system-font",
+        "value": "archivo black",
+        "createdAt": "2026-10-02T01:10:48.158Z",
+        "reason": "AuthHub launch frame 05-lockup follows videos/authhub-launch/frame.md, which sets Archivo Black as the display face. Root DESIGN.md is the stale product UI system and is not the video type spec."
+      },
+      {
+        "rule": "design-system-font",
+        "value": "jetbrains mono",
+        "createdAt": "2026-10-02T01:10:48.251Z",
+        "reason": "AuthHub launch frame 05-lockup follows videos/authhub-launch/frame.md, which sets JetBrains Mono as the mono face. The design sidecar lags DESIGN.md, which already names JetBrains Mono."
+      }
+    ]
+  }
+}
