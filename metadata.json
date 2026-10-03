@@ -1,0 +1,41 @@
+{
+  "cli_version": "0.10.2",
+  "checkpoint_id": "01M41RTJ45J8PE51ZZV3VR950D",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "apps/web/src/app/(marketing)/contact/page.tsx",
+    "apps/web/src/app/(marketing)/features/white-label/page.tsx",
+    "apps/web/src/app/(marketing)/page.tsx",
+    "apps/web/src/app/(marketing)/pricing/page.tsx",
+    "apps/web/src/components/marketing/__tests__/marketing-nav.test.tsx",
+    "apps/web/src/components/marketing/__tests__/schedule-demo-modal.test.tsx",
+    "apps/web/src/components/marketing/contact/__tests__/contact-form.test.tsx",
+    "apps/web/src/components/marketing/contact/contact-form.tsx",
+    "apps/web/src/components/marketing/homepage-faq-section.tsx",
+    "apps/web/src/components/marketing/marketing-nav.tsx",
+    "apps/web/src/components/marketing/pricing/__tests__/savings-calculator-motion.test.tsx",
+    "apps/web/src/components/marketing/pricing/faq-section.tsx",
+    "apps/web/src/components/marketing/pricing/pricing-tiers.tsx",
+    "apps/web/src/components/marketing/pricing/savings-calculator.tsx",
+    "apps/web/src/components/marketing/schedule-demo-modal.tsx",
+    "apps/web/src/components/marketing/social-proof-section.tsx"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 0,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 0,
+    "api_call_count": 1
+  }
+}
