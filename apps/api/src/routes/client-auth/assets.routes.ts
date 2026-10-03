@@ -21,6 +21,7 @@ import {
   MetaAccessConfigSchema,
   type MetaAssetGrantResult,
   type MetaClientAuthorizationMetadata,
+  type MetaDeclinableAssetKind,
   platformGroupOf,
   type GooglePlatformProductId,
   type Platform,
@@ -41,6 +42,7 @@ import { MetaGrantAttemptSupersededError, metaAssetGrantService } from '@/servic
 import { metaAssetsService } from '@/services/meta-assets.service';
 import { MetaConnector } from '@/services/connectors/meta';
 import { sendError, sendSuccess, sendValidationError } from '../../lib/response.js';
+import { applyPostVerifyReevaluation } from '../../lib/authorization-reeval.js';
 
 type ShareResultWithVerification = TikTokPartnerShareResultItem & { verified?: boolean };
 
@@ -537,7 +539,7 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
       return sendError(reply, 'VALIDATION_ERROR', 'Invalid asset selection data', 400, validated.error.errors,);
     }
 
-    const { connectionId, platform, selectedAssets } = validated.data;
+    const { connectionId, platform, selectedAssets, declinedAssetKinds } = validated.data;
 
     try {
       const authContext = await resolveAuthorizedConnection(token, connectionId);
@@ -575,6 +577,7 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
       });
       let metaRequirementContext: Parameters<typeof metaAssetGrantService.syncRequirements>[0] | null = null;
       let selectedMetaBusinessId: string | null = null;
+      let effectiveDeclines: MetaDeclinableAssetKind[] = [];
 
       if (authPlatform === 'meta') {
         if (!existingAuth || !authContext.accessRequest) {
@@ -609,7 +612,41 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
           config.catalogTasks,
           config.datasetTasks?.length ? config.datasetTasks : defaultTasks.datasetTasks
         );
-        if (requirements.length === 0) {
+
+        // Explicit client declines ride on the meta_ads save — that is the
+        // one write carrying the full selector state. A kind with selections
+        // in the same save cannot be declined (selection wins), a kind the
+        // agency's catalog setting does not cover cannot be declined, and a
+        // decline never satisfies fulfillment (evaluate still returns
+        // selection_required for a fully declined request).
+        if (platformStr === 'meta_ads' && (declinedAssetKinds?.length ?? 0) > 0) {
+          const selectedCounts: Record<MetaDeclinableAssetKind, number> = {
+            ad_account: normalizeStringIds(resolvedSelectedAssets.adAccounts).length,
+            page: normalizeStringIds(resolvedSelectedAssets.pages).length,
+            instagram_account: normalizeStringIds(resolvedSelectedAssets.instagramAccounts).length,
+            catalog: normalizeStringIds(resolvedSelectedAssets.catalogs).length,
+            dataset: normalizeStringIds(resolvedSelectedAssets.datasets).length,
+          };
+          let catalogAllowed = false;
+          try {
+            const settings = await metaAssetsService.getAssetSettings(connection.agencyId);
+            catalogAllowed = settings.data?.catalog?.enabled ?? false;
+          } catch {
+            catalogAllowed = false;
+          }
+          const allowed: Record<MetaDeclinableAssetKind, boolean> = {
+            ad_account: true,
+            page: true,
+            instagram_account: true,
+            catalog: catalogAllowed,
+            dataset: true,
+          };
+          effectiveDeclines = declinedAssetKinds!.filter(
+            (kind) => allowed[kind] && selectedCounts[kind] === 0
+          );
+        }
+
+        if (requirements.length === 0 && effectiveDeclines.length === 0) {
           return sendError(reply, 'NO_SELECTED_ASSETS', 'Select at least one Meta asset', 400);
         }
 
@@ -709,6 +746,15 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
       const priorMetaAdsAssets = currentGrantedAssets.meta_ads || {};
       const updatedGrantedAssets = {
         ...currentGrantedAssets,
+        ...(platformStr === 'meta_ads' ? {
+          meta: {
+            ...(currentGrantedAssets.meta || {}),
+            declinedAssetKinds: {
+              kinds: effectiveDeclines,
+              declinedAt: new Date().toISOString(),
+            },
+          },
+        } : {}),
         ...(instagramSelection ? {
           meta_ads: {
             ...(priorMetaAdsAssets.selectedBusinessId === selectedMetaBusinessId ? priorMetaAdsAssets : {}),
@@ -744,6 +790,12 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
 
         const updatedMetadata = {
           ...existingMetadata,
+          ...(platformStr === 'meta_ads' ? {
+            meta: {
+              ...((existingMetadata.meta as any) || {}),
+              declinedAssetKinds: effectiveDeclines,
+            },
+          } : {}),
           selectedAssets: {
             ...(existingMetadata.selectedAssets || {}),
             ...(instagramSelection ? {
@@ -771,6 +823,25 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
 
         if (metaRequirementContext) {
           await metaAssetGrantService.syncRequirements(metaRequirementContext);
+          const diff = await metaAssetGrantService.reconcileRemovedRequirements(
+            metaRequirementContext
+          );
+          if (diff.removed.length > 0 || diff.readded.length > 0) {
+            await auditService.createAuditLog({
+              agencyId: connection.agencyId,
+              action: 'META_GRANT_REMOVED_FROM_SELECTION',
+              userEmail: connection.clientEmail,
+              resourceType: 'client_connection',
+              resourceId: connectionId,
+              metadata: {
+                platform: platformStr,
+                removed: diff.removed,
+                readded: diff.readded,
+                selectedBusinessId: selectedMetaBusinessId,
+              },
+              request,
+            });
+          }
         }
       }
 
@@ -783,6 +854,7 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
         metadata: {
           platform,
           selectedAssets: resolvedSelectedAssets,
+          ...(platformStr === 'meta_ads' ? { declines: effectiveDeclines } : {}),
         },
       });
 
@@ -1531,6 +1603,8 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
         request,
       });
 
+      const requestStatus = await applyPostVerifyReevaluation(accessRequest.id);
+
       return reply.send({
         data: {
           success: verificationStatus === 'verified',
@@ -1539,6 +1613,7 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
           selectedBusinessName,
           managedBusinessLinkStatus: managedBusinessLinkResult.data.status,
           assetGrantResults: mergedAssetGrantResults,
+          ...(requestStatus ? { requestStatus } : {}),
         },
         error: null,
       });
@@ -1964,6 +2039,8 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
         request,
       });
 
+      const requestStatus = await applyPostVerifyReevaluation(accessRequest.id);
+
       return reply.send({
         data: {
           success: verificationStatus === 'verified',
@@ -1972,6 +2049,7 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
           partnerBusinessId,
           partnerBusinessName: partnerBusinessName || undefined,
           verificationResults,
+          ...(requestStatus ? { requestStatus } : {}),
         },
         error: null,
       });
@@ -2246,7 +2324,9 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
         request,
       });
 
-      return reply.send({ data: { success: allVerified, partial: anyVerified && !allVerified, status, results }, error: null });
+      const requestStatus = await applyPostVerifyReevaluation(accessRequest.id);
+
+      return reply.send({ data: { success: allVerified, partial: anyVerified && !allVerified, status, results, ...(requestStatus ? { requestStatus } : {}) }, error: null });
     } catch (error) {
       if (error instanceof MetaGrantAttemptSupersededError) {
         return sendError(reply, 'META_GRANT_ATTEMPT_SUPERSEDED', error.message, 409);

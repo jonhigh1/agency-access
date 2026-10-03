@@ -583,10 +583,32 @@ export const MetaOBOStateSchema = z.object({
 });
 export type MetaOBOState = z.infer<typeof MetaOBOStateSchema>;
 
+/** Asset kinds a client can explicitly decline to share ('unknown' is a Graph placeholder, not a decision). */
+export const MetaDeclinableAssetKindSchema = z.enum([
+  'ad_account',
+  'page',
+  'instagram_account',
+  'catalog',
+  'dataset',
+]);
+export type MetaDeclinableAssetKind = z.infer<typeof MetaDeclinableAssetKindSchema>;
+
+/** One client-side "we don't have / won't share this asset type" decision. */
+export const MetaAssetDeclineSchema = z.object({
+  assetKind: MetaDeclinableAssetKindSchema,
+  declinedAt: z.string().datetime(),
+  assetLabel: z.string().optional(),
+});
+export type MetaAssetDecline = z.infer<typeof MetaAssetDeclineSchema>;
+
+/** Declines surfaced alongside metaFulfillment rows in the invite payload. */
+export type MetaFulfillmentDeclines = MetaAssetDecline[];
+
 export const MetaClientAuthorizationMetadataSchema = z.object({
   discovery: MetaDiscoverySnapshotSchema.optional(),
   selection: MetaClientBusinessSelectionSchema.optional(),
   obo: MetaOBOStateSchema.optional(),
+  declinedAssetKinds: z.array(MetaDeclinableAssetKindSchema).optional(),
 });
 export type MetaClientAuthorizationMetadata = z.infer<typeof MetaClientAuthorizationMetadataSchema>;
 

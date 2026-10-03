@@ -17,6 +17,7 @@ import {
 vi.mock('@/services/access-request.service', () => ({
   accessRequestService: {
     getAccessRequestByToken: vi.fn(),
+    markRequestAuthorized: vi.fn(),
   },
 }));
 
@@ -122,6 +123,11 @@ describe('Client Auth Asset Routes - Meta', () => {
     });
     vi.mocked(prisma.metaAssetGrant.findUnique).mockResolvedValue(null);
     vi.mocked(prisma.metaAssetGrant.findMany).mockResolvedValue([] as any);
+
+    vi.mocked(accessRequestService.markRequestAuthorized).mockResolvedValue({
+      data: null,
+      error: null,
+    } as any);
 
     vi.mocked(accessRequestService.getAccessRequestByToken).mockResolvedValue({
       data: {
@@ -1479,6 +1485,52 @@ describe('Client Auth Asset Routes - Meta', () => {
     expect(prisma.metaAssetGrant.updateMany).toHaveBeenCalledWith(expect.objectContaining({
       data: expect.objectContaining({ status: 'manual_action_required', nextActor: 'client_admin' }),
     }));
+  });
+
+  it('echoes the re-evaluated request status after manual Dataset verification', async () => {
+    vi.mocked(accessRequestService.getAccessRequestByToken).mockResolvedValue({
+      data: {
+        id: 'request-a', agencyId: 'agency-a',
+        metaAccessConfig: {
+          recipients: [{ type: 'system_user', id: 'client-system-user-1' }],
+          pageTasks: [], adAccountTasks: [], datasetTasks: ['ADVERTISE'],
+        },
+      } as any,
+      error: null,
+    });
+    vi.mocked(prisma.platformAuthorization.findUnique).mockResolvedValue({
+      id: 'pa-1', connectionId: 'conn-1', platform: 'meta', secretId: 'secret-1', status: 'active',
+      metadata: {
+        selectedAssets: { meta_ads: { datasets: [] } },
+        meta: { selection: { clientBusinessId: 'biz_client_2', selectedAt: '2026-09-22T00:00:00.000Z' } },
+      },
+    } as any);
+    vi.mocked(prisma.agencyPlatformConnection.findUnique).mockResolvedValue({
+      id: 'agency-meta-1', agencyId: 'agency-a', platform: 'meta', businessId: 'partner-bm-1', status: 'active', metadata: {},
+    } as any);
+    vi.mocked(metaOBOService.getClientAccessTokenForOBO).mockResolvedValue({
+      data: { accessToken: 'client-admin-user-token' }, error: null,
+    });
+    vi.mocked(metaPartnerService.verifyDatasetAccess).mockResolvedValue({
+      verified: true, assignedTasks: ['ADVERTISE'],
+    });
+    vi.mocked(metaPartnerService.verifyDatasetAgencyAccess).mockResolvedValue({
+      verified: true, assignedTasks: ['ADVERTISE'],
+    });
+    vi.mocked(accessRequestService.markRequestAuthorized).mockResolvedValue({
+      data: { id: 'request-a', status: 'partial' }, error: null,
+    } as any);
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/client/token-a/meta/datasets/verify',
+      payload: { connectionId: 'conn-1', datasetIds: ['pixel-1'] },
+    });
+
+    expect(response.statusCode, response.body).toBe(200);
+    expect(accessRequestService.markRequestAuthorized).toHaveBeenCalledWith('request-a');
+    expect(response.json().data.success).toBe(true);
+    expect(response.json().data.requestStatus).toBe('partial');
   });
 
   it('rejects manual Dataset verification when selected Pixel is outside the client Business Portfolio', async () => {

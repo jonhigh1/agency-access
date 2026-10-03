@@ -284,4 +284,105 @@ describe('metaAssetGrantService', () => {
       recipient: { type: 'human', id: 'person-1', grantMethod: 'assigned_users' },
     })).rejects.toBeInstanceOf(Prisma.PrismaClientKnownRequestError);
   });
+
+  describe('reconcileRemovedRequirements', () => {
+    const requirement = (assetId: string, assetKind = 'page') => ({
+      assetId,
+      assetKind,
+      requestedTasks: ['MANAGE'],
+    });
+
+    it('excludes removed non-verified rows with a client-authored envelope', async () => {
+      vi.mocked(prisma.metaAssetGrant.findMany).mockResolvedValueOnce([
+        { assetKind: 'page', assetId: 'page-kept', status: 'sharing_attempted', metadata: null },
+        { assetKind: 'page', assetId: 'page-gone', status: 'manual_action_required', metadata: null },
+      ] as any);
+
+      const diff = await metaAssetGrantService.reconcileRemovedRequirements({
+        ...context,
+        requirements: [requirement('page-kept')],
+      });
+
+      expect(diff.removed).toEqual([{ assetKind: 'page', assetId: 'page-gone' }]);
+      expect(diff.readded).toEqual([]);
+      expect(prisma.metaAssetGrant.updateMany).toHaveBeenCalledTimes(1);
+      const [input] = vi.mocked(prisma.metaAssetGrant.updateMany).mock.calls[0] as any as [any];
+      expect(input.where.assetId).toBe('page-gone');
+      expect(input.where.status).toEqual({ notIn: ['verified', 'excluded'] });
+      expect(input.data.status).toBe('excluded');
+      expect(input.data.metadata.exclusion).toEqual(
+        expect.objectContaining({ reason: 'removed_from_selection', excludedBy: 'client' })
+      );
+    });
+
+    it('never excludes verified rows that left the selection', async () => {
+      vi.mocked(prisma.metaAssetGrant.findMany).mockResolvedValueOnce([
+        { assetKind: 'page', assetId: 'page-verified', status: 'verified', metadata: null },
+      ] as any);
+
+      const diff = await metaAssetGrantService.reconcileRemovedRequirements({
+        ...context,
+        requirements: [],
+      });
+
+      expect(diff.removed).toEqual([]);
+      expect(prisma.metaAssetGrant.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('leaves already-excluded rows alone', async () => {
+      vi.mocked(prisma.metaAssetGrant.findMany).mockResolvedValueOnce([
+        { assetKind: 'page', assetId: 'page-gone', status: 'excluded', metadata: { exclusion: { excludedBy: 'client' } } },
+      ] as any);
+
+      const diff = await metaAssetGrantService.reconcileRemovedRequirements({
+        ...context,
+        requirements: [],
+      });
+
+      expect(diff.removed).toEqual([]);
+      expect(prisma.metaAssetGrant.updateMany).not.toHaveBeenCalled();
+    });
+
+    it('resets client-excluded rows to selected when the asset re-enters', async () => {
+      vi.mocked(prisma.metaAssetGrant.findMany).mockResolvedValueOnce([
+        {
+          assetKind: 'ad_account',
+          assetId: 'act-back',
+          status: 'excluded',
+          metadata: { exclusion: { reason: 'removed_from_selection', excludedBy: 'client' } },
+        },
+      ] as any);
+
+      const diff = await metaAssetGrantService.reconcileRemovedRequirements({
+        ...context,
+        requirements: [requirement('act-back', 'ad_account')],
+      });
+
+      expect(diff.readded).toEqual([{ assetKind: 'ad_account', assetId: 'act-back' }]);
+      expect(prisma.metaAssetGrant.updateMany).toHaveBeenCalledTimes(1);
+      const [input] = vi.mocked(prisma.metaAssetGrant.updateMany).mock.calls[0] as any as [any];
+      expect(input.where.status).toBe('excluded');
+      expect(input.data.status).toBe('selected');
+      expect(input.data.metadata).toBe(Prisma.JsonNull);
+    });
+
+    it('keeps agency exclusions when the asset re-enters', async () => {
+      vi.mocked(prisma.metaAssetGrant.findMany).mockResolvedValueOnce([
+        {
+          assetKind: 'ad_account',
+          assetId: 'act-agency',
+          status: 'excluded',
+          metadata: { exclusion: { reason: 'duplicate_asset', excludedBy: 'agency_owner' } },
+        },
+      ] as any);
+
+      const diff = await metaAssetGrantService.reconcileRemovedRequirements({
+        ...context,
+        requirements: [requirement('act-agency', 'ad_account')],
+      });
+
+      expect(diff.readded).toEqual([]);
+      expect(prisma.metaAssetGrant.updateMany).not.toHaveBeenCalled();
+    });
+  });
 });

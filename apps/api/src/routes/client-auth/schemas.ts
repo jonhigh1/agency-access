@@ -39,6 +39,13 @@ export const oauthExchangeSchema = z.object({
 export const saveAssetsSchema = z.object({
   connectionId: z.string(),
   platform: z.string(),
+  // Explicit client-side "no assets of this type to share" decisions. The
+  // route filters these to kinds the request actually covers and that carry
+  // zero selections in this save; declines never satisfy fulfillment.
+  declinedAssetKinds: z
+    .array(z.enum(['ad_account', 'page', 'instagram_account', 'catalog', 'dataset']))
+    .max(5)
+    .optional(),
   selectedAssets: z.object({
     // Client-controlled claim (KTD5): the route validates it against the
     // business this connection's platform token can actually see.

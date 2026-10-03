@@ -18,7 +18,7 @@ import { registerCompletionRoutes } from '../completion.routes';
 describe('client completion routes', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('does not claim completion or notify when fulfillment is partial', async () => {
+  it('returns 409 and does not notify when fulfillment is partial', async () => {
     const app = Fastify();
     await registerCompletionRoutes(app);
     vi.mocked(accessRequestService.getAccessRequestByToken).mockResolvedValue({
@@ -38,7 +38,7 @@ describe('client completion routes', () => {
     await app.close();
   });
 
-  it('notifies only after the fulfillment evaluator returns completed', async () => {
+  it('returns success without notifying from the route when fulfillment completes', async () => {
     const app = Fastify();
     await registerCompletionRoutes(app);
     vi.mocked(accessRequestService.getAccessRequestByToken).mockResolvedValue({
@@ -54,17 +54,16 @@ describe('client completion routes', () => {
       data: { id: 'request-1', status: 'completed' } as any,
       error: null,
     });
-    vi.mocked(notificationService.queueNotification).mockResolvedValue({ data: true, error: null });
 
     const response = await app.inject({ method: 'POST', url: '/client/token-1/complete' });
 
     expect(response.statusCode).toBe(200);
     expect(response.json().data.success).toBe(true);
-    expect(notificationService.queueNotification).toHaveBeenCalledTimes(1);
+    expect(notificationService.queueNotification).not.toHaveBeenCalled();
     await app.close();
   });
 
-  it('does not notify again after completion', async () => {
+  it('never notifies from the route even when the request was already completed', async () => {
     const app = Fastify();
     await registerCompletionRoutes(app);
     vi.mocked(accessRequestService.getAccessRequestByToken).mockResolvedValue({

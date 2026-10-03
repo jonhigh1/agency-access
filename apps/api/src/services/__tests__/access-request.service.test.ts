@@ -11,6 +11,7 @@ import { Prisma } from '@prisma/client';
 import { queueWebhookDelivery } from '@/lib/queue-helpers';
 import * as accessRequestService from '@/services/access-request.service';
 import { metaAssetsService } from '@/services/meta-assets.service';
+import { notificationService } from '@/services/notification.service';
 
 const META_ACCESS_CONFIG = {
   recipients: [{ type: 'human' as const, id: 'person-1', name: 'Jon High' }],
@@ -95,6 +96,12 @@ vi.mock('@/services/meta-assets.service', () => ({
   metaAssetsService: {
     getAssignableRecipients: vi.fn(),
     getAssetSettings: vi.fn(),
+  },
+}));
+
+vi.mock('@/services/notification.service', () => ({
+  notificationService: {
+    queueNotification: vi.fn(),
   },
 }));
 
@@ -962,6 +969,202 @@ describe('AccessRequestService', () => {
 
       expect(result.data).toBeNull();
       expect(result.error?.code).toBe('REQUEST_EXPIRED');
+    });
+
+    it('surfaces Meta declined asset kinds from the client connection grant blob', async () => {
+      const mockRequest = {
+        id: 'request-declines',
+        uniqueToken: 'declinetoken1',
+        clientName: 'Test Client',
+        clientEmail: 'client@test.com',
+        agencyId: 'agency-1',
+        expiresAt: new Date(Date.now() + 100000),
+        platforms: [{ platform: 'meta_ads', accessLevel: 'manage' }],
+        intakeFields: [],
+        branding: {},
+      };
+
+      vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue(mockRequest as any);
+      vi.mocked(prisma.agency.findUnique).mockResolvedValue({ name: 'Agency' } as any);
+      vi.mocked(prisma.agencyPlatformConnection.findMany).mockResolvedValue([]);
+      vi.mocked(prisma.clientConnection.findMany).mockResolvedValue([
+        {
+          id: 'conn-meta',
+          status: 'active',
+          grantedAssets: {
+            meta: {
+              declinedAssetKinds: {
+                kinds: ['catalog', 'dataset'],
+                declinedAt: '2026-10-01T00:00:00.000Z',
+              },
+            },
+          },
+          authorizations: [{ platform: 'meta', status: 'active', authorizationEpoch: 1 }],
+          metaAssetGrants: [],
+        },
+      ] as any);
+
+      const result = await accessRequestService.getAccessRequestByToken('declinetoken1');
+
+      expect(result.error).toBeNull();
+      expect(result.data?.metaDeclines).toEqual([
+        { assetKind: 'catalog', declinedAt: '2026-10-01T00:00:00.000Z' },
+        { assetKind: 'dataset', declinedAt: '2026-10-01T00:00:00.000Z' },
+      ]);
+    });
+
+    it('drops invalid asset kinds from the Meta decline blob', async () => {
+      const mockRequest = {
+        id: 'request-declines',
+        uniqueToken: 'declinetoken2',
+        clientName: 'Test Client',
+        clientEmail: 'client@test.com',
+        agencyId: 'agency-1',
+        expiresAt: new Date(Date.now() + 100000),
+        platforms: [{ platform: 'meta_ads', accessLevel: 'manage' }],
+        intakeFields: [],
+        branding: {},
+      };
+
+      vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue(mockRequest as any);
+      vi.mocked(prisma.agency.findUnique).mockResolvedValue({ name: 'Agency' } as any);
+      vi.mocked(prisma.agencyPlatformConnection.findMany).mockResolvedValue([]);
+      vi.mocked(prisma.clientConnection.findMany).mockResolvedValue([
+        {
+          id: 'conn-meta',
+          status: 'active',
+          grantedAssets: {
+            meta: {
+              declinedAssetKinds: {
+                kinds: ['catalog', 'not_a_kind', 42],
+                declinedAt: '2026-10-01T00:00:00.000Z',
+              },
+            },
+          },
+          authorizations: [{ platform: 'meta', status: 'active', authorizationEpoch: 1 }],
+          metaAssetGrants: [],
+        },
+      ] as any);
+
+      const result = await accessRequestService.getAccessRequestByToken('declinetoken2');
+
+      expect(result.error).toBeNull();
+      expect(result.data?.metaDeclines).toEqual([
+        { assetKind: 'catalog', declinedAt: '2026-10-01T00:00:00.000Z' },
+      ]);
+    });
+
+    it('maps client connections to platform groups for wizard resume', async () => {
+      const mockRequest = {
+        id: 'request-connections',
+        uniqueToken: 'conntoken123',
+        clientName: 'Test Client',
+        clientEmail: 'client@test.com',
+        agencyId: 'agency-1',
+        expiresAt: new Date(Date.now() + 100000),
+        platforms: [
+          { platform: 'meta_ads', accessLevel: 'manage' },
+          { platform: 'beehiiv', accessLevel: 'manage' },
+        ],
+        intakeFields: [],
+        branding: {},
+      };
+
+      vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue(mockRequest as any);
+      vi.mocked(prisma.agency.findUnique).mockResolvedValue({ name: 'Agency' } as any);
+      vi.mocked(prisma.agencyPlatformConnection.findMany).mockResolvedValue([]);
+      vi.mocked(prisma.clientConnection.findMany).mockResolvedValue([
+        {
+          id: 'conn-meta',
+          status: 'active',
+          grantedAssets: {},
+          authorizations: [{ platform: 'meta', status: 'active', authorizationEpoch: 1 }],
+          metaAssetGrants: [],
+        },
+        {
+          id: 'conn-manual',
+          status: 'active',
+          grantedAssets: {},
+          authorizations: [
+            { platform: 'beehiiv', status: 'active', authorizationEpoch: 1 },
+            { platform: 'google_ads', status: 'active', authorizationEpoch: 1 },
+          ],
+          metaAssetGrants: [],
+        },
+      ] as any);
+
+      const result = await accessRequestService.getAccessRequestByToken('conntoken123');
+
+      expect(result.error).toBeNull();
+      expect(result.data?.connections).toEqual([
+        { id: 'conn-meta', platformGroup: 'meta' },
+        { id: 'conn-manual', platformGroup: 'beehiiv' },
+        { id: 'conn-manual', platformGroup: 'google' },
+      ]);
+    });
+
+    it('ignores Meta decline blobs on connections outside the meta platform group', async () => {
+      const mockRequest = {
+        id: 'request-google-only',
+        uniqueToken: 'googleonly1',
+        clientName: 'Test Client',
+        clientEmail: 'client@test.com',
+        agencyId: 'agency-1',
+        expiresAt: new Date(Date.now() + 100000),
+        platforms: [{ platform: 'google_ads', accessLevel: 'manage' }],
+        intakeFields: [],
+        branding: {},
+      };
+
+      vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue(mockRequest as any);
+      vi.mocked(prisma.agency.findUnique).mockResolvedValue({ name: 'Agency' } as any);
+      vi.mocked(prisma.agencyPlatformConnection.findMany).mockResolvedValue([]);
+      vi.mocked(prisma.clientConnection.findMany).mockResolvedValue([
+        {
+          id: 'conn-google',
+          status: 'active',
+          grantedAssets: {
+            meta: {
+              declinedAssetKinds: {
+                kinds: ['catalog'],
+                declinedAt: '2026-10-01T00:00:00.000Z',
+              },
+            },
+          },
+          authorizations: [{ platform: 'google_ads', status: 'active', authorizationEpoch: 1 }],
+          metaAssetGrants: [],
+        },
+      ] as any);
+
+      const result = await accessRequestService.getAccessRequestByToken('googleonly1');
+
+      expect(result.error).toBeNull();
+      expect(result.data?.metaDeclines).toEqual([]);
+    });
+
+    it('returns empty metaDeclines and connections when there are no client connections', async () => {
+      const mockRequest = {
+        id: 'request-empty',
+        uniqueToken: 'emptytoken1',
+        clientName: 'Test Client',
+        clientEmail: 'client@test.com',
+        agencyId: 'agency-1',
+        expiresAt: new Date(Date.now() + 100000),
+        platforms: [{ platform: 'meta_ads', accessLevel: 'manage' }],
+        intakeFields: [],
+        branding: {},
+      };
+
+      vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue(mockRequest as any);
+      vi.mocked(prisma.agency.findUnique).mockResolvedValue({ name: 'Agency' } as any);
+      vi.mocked(prisma.agencyPlatformConnection.findMany).mockResolvedValue([]);
+      vi.mocked(prisma.clientConnection.findMany).mockResolvedValue([]);
+
+      const result = await accessRequestService.getAccessRequestByToken('emptytoken1');
+
+      expect(result.error).toBeNull();
+      expect(result.data?.metaDeclines).toEqual([]);
+      expect(result.data?.connections).toEqual([]);
     });
   });
 
@@ -1932,6 +2135,103 @@ describe('AccessRequestService', () => {
       expect(prisma.accessRequest.update).not.toHaveBeenCalled();
       expect(prisma.webhookEvent.create).not.toHaveBeenCalled();
       expect(queueWebhookDelivery).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('setAccessRequestLifecycleStatus', () => {
+    const completedTransitionFixture = (status: string) => ({
+      id: 'request-1',
+      status,
+      agencyId: 'agency-1',
+      authorizedAt: null,
+      clientEmail: 'client@test.com',
+      platforms: [{ platform: 'meta_ads', accessLevel: 'manage' }],
+    });
+
+    it('queues exactly one agency notification when the request first completes', async () => {
+      vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue(
+        completedTransitionFixture('partial') as any
+      );
+      vi.mocked(prisma.accessRequest.update).mockResolvedValue({
+        id: 'request-1',
+        status: 'completed',
+      } as any);
+
+      const result = await accessRequestService.setAccessRequestLifecycleStatus(
+        'request-1',
+        'completed'
+      );
+
+      expect(result.error).toBeNull();
+      expect(result.previousStatus).toBe('partial');
+      expect(notificationService.queueNotification).toHaveBeenCalledTimes(1);
+      expect(notificationService.queueNotification).toHaveBeenCalledWith(
+        expect.objectContaining({
+          agencyId: 'agency-1',
+          accessRequestId: 'request-1',
+          clientEmail: 'client@test.com',
+          clientName: 'client',
+          platforms: ['meta_ads'],
+          completedAt: expect.any(Date),
+        })
+      );
+    });
+
+    it('does not notify again when the request is already completed', async () => {
+      vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue(
+        completedTransitionFixture('completed') as any
+      );
+
+      const result = await accessRequestService.setAccessRequestLifecycleStatus(
+        'request-1',
+        'completed'
+      );
+
+      expect(result.error).toBeNull();
+      expect(result.previousStatus).toBe('completed');
+      expect(prisma.accessRequest.update).not.toHaveBeenCalled();
+      expect(notificationService.queueNotification).not.toHaveBeenCalled();
+    });
+
+    it('does not notify on a partial transition', async () => {
+      vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue(
+        completedTransitionFixture('pending') as any
+      );
+      vi.mocked(prisma.accessRequest.update).mockResolvedValue({
+        id: 'request-1',
+        status: 'partial',
+      } as any);
+
+      const result = await accessRequestService.setAccessRequestLifecycleStatus(
+        'request-1',
+        'partial'
+      );
+
+      expect(result.error).toBeNull();
+      expect(result.previousStatus).toBe('pending');
+      expect(notificationService.queueNotification).not.toHaveBeenCalled();
+    });
+
+    it('still completes the transition when the notification queue fails', async () => {
+      vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue(
+        completedTransitionFixture('partial') as any
+      );
+      vi.mocked(prisma.accessRequest.update).mockResolvedValue({
+        id: 'request-1',
+        status: 'completed',
+      } as any);
+      vi.mocked(notificationService.queueNotification).mockRejectedValueOnce(
+        new Error('queue down')
+      );
+
+      const result = await accessRequestService.setAccessRequestLifecycleStatus(
+        'request-1',
+        'completed'
+      );
+
+      expect(result.error).toBeNull();
+      expect(result.data?.status).toBe('completed');
+      expect(notificationService.queueNotification).toHaveBeenCalledTimes(1);
     });
   });
 

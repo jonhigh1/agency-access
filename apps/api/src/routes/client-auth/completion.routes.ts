@@ -1,6 +1,5 @@
 import { FastifyInstance } from 'fastify';
 import { accessRequestService } from '../../services/access-request.service.js';
-import { notificationService } from '../../services/notification.service.js';
 
 export async function registerCompletionRoutes(fastify: FastifyInstance) {
   // Complete client authorization
@@ -43,19 +42,8 @@ export async function registerCompletionRoutes(fastify: FastifyInstance) {
       });
     }
 
-    if (result.previousStatus !== 'completed') {
-      await notificationService.queueNotification({
-      agencyId: accessRequest.agencyId,
-      accessRequestId: accessRequest.id,
-      clientEmail: accessRequest.clientEmail,
-      clientName: accessRequest.clientEmail.split('@')[0],
-      platforms:
-        accessRequest.authorizationProgress?.fulfilledProducts?.map((item) => item.product) ||
-        accessRequest.authorizationProgress?.completedPlatforms ||
-        [],
-      completedAt: new Date(),
-      });
-    }
+    // Agency completion notification is queued by
+    // setAccessRequestLifecycleStatus when the request transitions to completed.
 
     return reply.send({
       data: {

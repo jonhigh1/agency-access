@@ -24,8 +24,10 @@ import {
   type GoogleProductGrantLifecycle,
   type WebhookAccessRequestLifecycleEventType,
   MetaAccessConfigSchema,
+  MetaDeclinableAssetKindSchema,
   getDefaultMetaAccessTasks,
   type MetaFulfillmentStatus,
+  type MetaAssetDecline,
   type UnresolvedProductReason,
 } from '@agency-platform/shared';
 import { invalidateDashboardCache } from '@/lib/cache.js';
@@ -1362,6 +1364,8 @@ export async function setAccessRequestLifecycleStatus(
       status: true,
       agencyId: true,
       authorizedAt: true,
+      clientEmail: true,
+      platforms: true,
     },
   });
 
@@ -1403,6 +1407,25 @@ export async function setAccessRequestLifecycleStatus(
     previousStatus: existing.status,
     nextStatus,
   });
+
+  if (nextStatus === 'completed' && existing.status !== 'completed') {
+    try {
+      const { notificationService } = await import('@/services/notification.service');
+      await notificationService.queueNotification({
+        agencyId: existing.agencyId,
+        accessRequestId: requestId,
+        clientEmail: existing.clientEmail,
+        clientName: existing.clientEmail.split('@')[0],
+        platforms: extractRequestedProducts(existing.platforms).map((product) => product.product),
+        completedAt: new Date(),
+      });
+    } catch (error) {
+      logger.warn('Failed to queue agency completion notification', {
+        accessRequestId: requestId,
+        error: error instanceof Error ? error.message : String(error),
+      });
+    }
+  }
 
   return {
     data: accessRequest,
@@ -1650,6 +1673,47 @@ export async function findByAgentOperation(agencyId: string, operationId: string
   }
 }
 
+function getConnectionPlatformGroups(connection: {
+  authorizations?: Array<{ platform: string }>;
+}): string[] {
+  const groups: string[] = [];
+  for (const authorization of connection.authorizations || []) {
+    const group = platformGroupOf(authorization.platform);
+    if (!groups.includes(group)) {
+      groups.push(group);
+    }
+  }
+  return groups;
+}
+
+function collectMetaDeclines(
+  connections: Array<{ authorizations?: Array<{ platform: string }>; grantedAssets: unknown }>
+): MetaAssetDecline[] {
+  const declines: MetaAssetDecline[] = [];
+  for (const connection of connections) {
+    if (!getConnectionPlatformGroups(connection).includes('meta')) {
+      continue;
+    }
+    const grantedAssets = (connection.grantedAssets as Record<string, unknown> | null) || {};
+    const declineBlob = (grantedAssets.meta as Record<string, unknown> | undefined)
+      ?.declinedAssetKinds;
+    if (!declineBlob || typeof declineBlob !== 'object') {
+      continue;
+    }
+    const kinds = Array.isArray((declineBlob as any).kinds) ? (declineBlob as any).kinds : [];
+    const declinedAt =
+      typeof (declineBlob as any).declinedAt === 'string' ? (declineBlob as any).declinedAt : '';
+    for (const kind of kinds) {
+      const parsed = MetaDeclinableAssetKindSchema.safeParse(kind);
+      if (!parsed.success || !declinedAt) {
+        continue;
+      }
+      declines.push({ assetKind: parsed.data, declinedAt });
+    }
+  }
+  return declines;
+}
+
 /**
  * Get access request by unique token (for client authorization flow)
  */
@@ -1724,6 +1788,7 @@ export async function getAccessRequestByToken(token: string) {
       prisma.clientConnection.findMany({
         where: { accessRequestId: accessRequest.id },
         select: {
+          id: true,
           status: true,
           grantedAssets: true,
           authorizations: {
@@ -1786,6 +1851,13 @@ export async function getAccessRequestByToken(token: string) {
       accessRequest.metaAccessConfig
     );
     const metaFulfillment = buildMetaFulfillment(accessRequest, clientConnections as any);
+    const metaDeclines = collectMetaDeclines(clientConnections as any);
+    const connections = (clientConnections as any[]).flatMap((connection) =>
+      getConnectionPlatformGroups(connection).map((platformGroup) => ({
+        id: connection.id as string,
+        platformGroup,
+      }))
+    );
 
     let metaCatalogEnabled = false;
     if (requestedPlatformGroups.includes('meta')) {
@@ -1801,6 +1873,8 @@ export async function getAccessRequestByToken(token: string) {
         manualInviteTargets,
         authorizationProgress,
         metaFulfillment,
+        metaDeclines,
+        connections,
         ...(requestedPlatformGroups.includes('meta') ? { metaCatalogEnabled } : {}),
       },
       error: null,

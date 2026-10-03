@@ -133,6 +133,104 @@ async function syncRequirements(
   await runGrantWrites(operations);
 }
 
+/**
+ * Reconciles grant rows against the current selection after a save:
+ * - Rows whose asset LEFT the selection are excluded with a client-authored
+ *   envelope — except verified rows (verified access already exists in Meta
+ *   regardless of a later selection change, mirroring excludeMetaGrant) and
+ *   rows that are already excluded.
+ * - Rows whose asset RE-ENTERED the selection are reset from `excluded` to
+ *   `selected` ONLY when the client authored the exclusion. Agency
+ *   exclusions survive client re-selection until the agency revisits them.
+ * Without the reset, evaluate would silently skip a re-added asset forever
+ * (excluded rows are skipped by both claimAttempts and fulfillment).
+ */
+async function reconcileRemovedRequirements(
+  input: MetaGrantContext & { requirements: MetaRequirement[] }
+): Promise<{
+  removed: Array<{ assetKind: MetaAssetKind; assetId: string }>;
+  readded: Array<{ assetKind: MetaAssetKind; assetId: string }>;
+}> {
+  const destination = await upsertDestination(input.destination);
+  const existing = await prisma.metaAssetGrant.findMany({
+    where: {
+      accessRequestId: input.accessRequestId,
+      destinationId: destination.id,
+      clientBusinessId: input.clientBusinessId,
+    },
+    select: { assetKind: true, assetId: true, status: true, metadata: true },
+  });
+  const requiredKeys = new Set(
+    input.requirements.map((requirement) => grantKey(requirement.assetKind, requirement.assetId))
+  );
+
+  const removed: Array<{ assetKind: MetaAssetKind; assetId: string }> = [];
+  const readded: Array<{ assetKind: MetaAssetKind; assetId: string }> = [];
+  const operations: Array<() => Promise<unknown>> = [];
+
+  for (const grant of existing) {
+    const key = grantKey(grant.assetKind, grant.assetId);
+    const exclusion = (grant.metadata as { exclusion?: { excludedBy?: string } } | null)?.exclusion;
+
+    if (!requiredKeys.has(key)) {
+      if (grant.status === 'verified' || grant.status === 'excluded') continue;
+      removed.push({ assetKind: grant.assetKind as MetaAssetKind, assetId: grant.assetId });
+      operations.push(() =>
+        prisma.metaAssetGrant.updateMany({
+          where: {
+            accessRequestId: input.accessRequestId,
+            destinationId: destination.id,
+            clientBusinessId: input.clientBusinessId,
+            assetKind: grant.assetKind,
+            assetId: grant.assetId,
+            // Re-check status in the update: a concurrent verify may have
+            // landed a verified row between findMany and this write.
+            status: { notIn: ['verified', 'excluded'] },
+          },
+          data: {
+            status: 'excluded',
+            verifiedAt: null,
+            verifiedTasks: Prisma.DbNull,
+            verifiedAuthorizationEpoch: null,
+            nextActor: null,
+            metadata: {
+              exclusion: {
+                reason: 'removed_from_selection',
+                excludedBy: 'client',
+                excludedAt: new Date().toISOString(),
+              },
+            },
+          },
+        })
+      );
+      continue;
+    }
+
+    if (grant.status === 'excluded' && exclusion?.excludedBy === 'client') {
+      readded.push({ assetKind: grant.assetKind as MetaAssetKind, assetId: grant.assetId });
+      operations.push(() =>
+        prisma.metaAssetGrant.updateMany({
+          where: {
+            accessRequestId: input.accessRequestId,
+            destinationId: destination.id,
+            clientBusinessId: input.clientBusinessId,
+            assetKind: grant.assetKind,
+            assetId: grant.assetId,
+            status: 'excluded',
+          },
+          data: {
+            status: 'selected',
+            metadata: Prisma.JsonNull,
+          },
+        })
+      );
+    }
+  }
+
+  await runGrantWrites(operations);
+  return { removed, readded };
+}
+
 async function claimAttempts(
   input: MetaGrantContext & { requirements: MetaRequirement[]; recipient: MetaRecipient }
 ) {
@@ -275,4 +373,9 @@ async function recordOutcomes(
   if (updates.some(({ count }) => count !== 1)) throw new MetaGrantAttemptSupersededError();
 }
 
-export const metaAssetGrantService = { syncRequirements, claimAttempts, recordOutcomes };
+export const metaAssetGrantService = {
+  syncRequirements,
+  reconcileRemovedRequirements,
+  claimAttempts,
+  recordOutcomes,
+};
