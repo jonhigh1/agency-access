@@ -629,6 +629,41 @@ describe('Client Auth Routes', () => {
     });
   });
 
+  describe('POST /client/:token/oauth-state', () => {
+    it('does not mint OAuth state for a platform absent from the access request', async () => {
+      vi.mocked(accessRequestService.getAccessRequestByToken).mockResolvedValue({
+        data: {
+          id: 'req-1',
+          agencyId: 'agency-1',
+          clientEmail: 'client@example.com',
+          platforms: [
+            {
+              platformGroup: 'google',
+              products: [{ product: 'google_ads', accessLevel: 'admin' }],
+            },
+          ],
+        } as any,
+        error: null,
+      });
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/client/test-token/oauth-state',
+        payload: { platform: 'klaviyo' },
+      });
+
+      expect(response.statusCode).toBe(400);
+      expect(response.json()).toEqual({
+        data: null,
+        error: {
+          code: 'PLATFORM_NOT_REQUESTED',
+          message: 'Platform was not requested in this access request',
+        },
+      });
+      expect(oauthStateService.createState).not.toHaveBeenCalled();
+    });
+  });
+
   describe('POST /client/:token/oauth-exchange', () => {
     it('should exchange code for tokens with the correct redirectUri', async () => {
       const mockToken = 'test-token';

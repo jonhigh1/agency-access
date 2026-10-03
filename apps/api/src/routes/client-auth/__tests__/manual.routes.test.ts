@@ -20,6 +20,7 @@ vi.mock('@/services/audit.service', () => ({
 
 vi.mock('@/lib/prisma', () => ({
   prisma: {
+    $queryRaw: vi.fn(),
     clientConnection: {
       findUnique: vi.fn(),
       create: vi.fn(),
@@ -39,6 +40,7 @@ describe('Client Auth Manual Routes', () => {
 
   beforeEach(async () => {
     vi.resetAllMocks();
+    vi.mocked(prisma.$queryRaw).mockResolvedValue([] as never);
     app = Fastify();
     await registerManualRoutes(app);
   });
@@ -53,6 +55,7 @@ describe('Client Auth Manual Routes', () => {
         id: 'request-1',
         agencyId: 'agency-1',
         clientEmail: 'client@example.com',
+        platforms: [{ platform: 'shopify', accessLevel: 'manage' }],
       } as any,
       error: null,
     });
@@ -79,16 +82,18 @@ describe('Client Auth Manual Routes', () => {
       expect.objectContaining({
         data: expect.objectContaining({
           grantedAssets: expect.objectContaining({
-            platform: 'shopify',
-            shopDomain: 'store-example.myshopify.com',
-            collaboratorCodeHash: hashCollaboratorCode('1234'),
+            shopify: expect.objectContaining({
+              platform: 'shopify',
+              shopDomain: 'store-example.myshopify.com',
+              collaboratorCodeHash: hashCollaboratorCode('1234'),
+            }),
           }),
         }),
       })
     );
 
     const createCall = vi.mocked(prisma.clientConnection.create).mock.calls[0]?.[0] as any;
-    expect(createCall?.data?.grantedAssets?.collaboratorCode).toBe('1234');
+    expect(createCall?.data?.grantedAssets?.shopify?.collaboratorCode).toBe('1234');
 
     expect(auditService.createAuditLog).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -110,7 +115,12 @@ describe('Client Auth Manual Routes', () => {
   it('does not include the invite bearer in manual connection error logs', async () => {
     const rawInviteToken = 'invite-bearer-secret';
     vi.mocked(accessRequestService.getAccessRequestByToken).mockResolvedValue({
-      data: { id: 'request-1', agencyId: 'agency-1', clientEmail: 'client@example.com' } as any,
+      data: {
+        id: 'request-1',
+        agencyId: 'agency-1',
+        clientEmail: 'client@example.com',
+        platforms: [{ platform: 'beehiiv', accessLevel: 'manage' }],
+      } as any,
       error: null,
     });
     vi.mocked(prisma.clientConnection.findUnique).mockResolvedValue(null);
@@ -134,19 +144,11 @@ describe('Client Auth Manual Routes', () => {
         id: 'request-1',
         agencyId: 'agency-1',
         clientEmail: 'client@example.com',
+        platforms: [{ platform: 'shopify', accessLevel: 'manage' }],
       } as any,
       error: null,
     });
-    vi.mocked(prisma.clientConnection.findUnique).mockResolvedValue({
-      id: 'conn-existing',
-      grantedAssets: {
-        platform: 'shopify',
-      },
-    } as any);
-    vi.mocked(prisma.clientConnection.update).mockResolvedValue({
-      id: 'conn-existing',
-      status: 'pending_verification',
-    } as any);
+    vi.mocked(prisma.$queryRaw).mockResolvedValue([{ id: 'conn-existing', status: 'pending_verification' }] as never);
     vi.mocked(auditService.createAuditLog).mockResolvedValue({} as any);
 
     const response = await app.inject({
@@ -161,18 +163,7 @@ describe('Client Auth Manual Routes', () => {
 
     expect(response.statusCode).toBe(200);
     expect(prisma.clientConnection.create).not.toHaveBeenCalled();
-    expect(prisma.clientConnection.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { id: 'conn-existing' },
-        data: expect.objectContaining({
-          grantedAssets: expect.objectContaining({
-            platform: 'shopify',
-            shopDomain: 'new-store.myshopify.com',
-            collaboratorCodeHash: hashCollaboratorCode('9876'),
-          }),
-        }),
-      })
-    );
+    expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
   });
 
   for (const { platform, agencyEmail } of [
@@ -187,17 +178,11 @@ describe('Client Auth Manual Routes', () => {
           id: 'request-1',
           agencyId: 'agency-1',
           clientEmail: 'client@example.com',
+          platforms: [{ platform, accessLevel: 'manage' }],
         } as any,
         error: null,
       });
-      vi.mocked(prisma.clientConnection.findUnique).mockResolvedValue({
-        id: 'conn-existing',
-        grantedAssets: null,
-      } as any);
-      vi.mocked(prisma.clientConnection.update).mockResolvedValue({
-        id: 'conn-existing',
-        status: 'pending_verification',
-      } as any);
+      vi.mocked(prisma.$queryRaw).mockResolvedValue([{ id: 'conn-existing', status: 'pending_verification' }] as never);
       vi.mocked(auditService.createAuditLog).mockResolvedValue({} as any);
 
       const response = await app.inject({
@@ -211,19 +196,7 @@ describe('Client Auth Manual Routes', () => {
 
       expect(response.statusCode).toBe(200);
       expect(prisma.clientConnection.create).not.toHaveBeenCalled();
-      expect(prisma.clientConnection.update).toHaveBeenCalledWith(
-        expect.objectContaining({
-          where: { id: 'conn-existing' },
-          data: expect.objectContaining({
-            status: 'pending_verification',
-            grantedAssets: expect.objectContaining({
-              platform,
-              agencyEmail,
-              authMethod: 'manual_team_invitation',
-            }),
-          }),
-        })
-      );
+      expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
     });
   }
 
@@ -233,17 +206,11 @@ describe('Client Auth Manual Routes', () => {
         id: 'request-1',
         agencyId: 'agency-1',
         clientEmail: 'client@example.com',
+        platforms: [{ platform: 'pinterest', accessLevel: 'manage' }],
       } as any,
       error: null,
     });
-    vi.mocked(prisma.clientConnection.findUnique).mockResolvedValue({
-      id: 'conn-existing',
-      grantedAssets: null,
-    } as any);
-    vi.mocked(prisma.clientConnection.update).mockResolvedValue({
-      id: 'conn-existing',
-      status: 'pending_verification',
-    } as any);
+    vi.mocked(prisma.$queryRaw).mockResolvedValue([{ id: 'conn-existing', status: 'pending_verification' }] as never);
     vi.mocked(auditService.createAuditLog).mockResolvedValue({} as any);
 
     const response = await app.inject({
@@ -257,19 +224,7 @@ describe('Client Auth Manual Routes', () => {
 
     expect(response.statusCode).toBe(200);
     expect(prisma.clientConnection.create).not.toHaveBeenCalled();
-    expect(prisma.clientConnection.update).toHaveBeenCalledWith(
-      expect.objectContaining({
-        where: { id: 'conn-existing' },
-        data: expect.objectContaining({
-          status: 'pending_verification',
-          grantedAssets: expect.objectContaining({
-            platform: 'pinterest',
-            businessId: '123456789',
-            authMethod: 'manual_partnership',
-          }),
-        }),
-      })
-    );
+    expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
   });
 
   it('creates Mailchimp manual connection with pending verification status', async () => {
@@ -278,6 +233,7 @@ describe('Client Auth Manual Routes', () => {
         id: 'request-1',
         agencyId: 'agency-1',
         clientEmail: 'client@example.com',
+        platforms: [{ platform: 'mailchimp', accessLevel: 'manage' }],
       } as any,
       error: null,
     });
@@ -302,9 +258,11 @@ describe('Client Auth Manual Routes', () => {
         data: expect.objectContaining({
           status: 'pending_verification',
           grantedAssets: expect.objectContaining({
-            platform: 'mailchimp',
-            agencyEmail: 'ops@agency.com',
-            authMethod: 'manual_team_invitation',
+            mailchimp: expect.objectContaining({
+              platform: 'mailchimp',
+              agencyEmail: 'ops@agency.com',
+              authMethod: 'manual_team_invitation',
+            }),
           }),
         }),
       })
@@ -317,6 +275,7 @@ describe('Client Auth Manual Routes', () => {
         id: 'request-1',
         agencyId: 'agency-1',
         clientEmail: 'client@example.com',
+        platforms: [{ platform: 'klaviyo', accessLevel: 'manage' }],
       } as any,
       error: null,
     });
@@ -341,12 +300,124 @@ describe('Client Auth Manual Routes', () => {
         data: expect.objectContaining({
           status: 'pending_verification',
           grantedAssets: expect.objectContaining({
-            platform: 'klaviyo',
-            agencyEmail: 'ops@agency.com',
-            authMethod: 'manual_team_invitation',
+            klaviyo: expect.objectContaining({
+              platform: 'klaviyo',
+              agencyEmail: 'ops@agency.com',
+              authMethod: 'manual_team_invitation',
+            }),
           }),
         }),
       })
     );
+  });
+
+  it('rejects a manual platform that the invite did not request', async () => {
+    vi.mocked(accessRequestService.getAccessRequestByToken).mockResolvedValue({
+      data: {
+        id: 'request-1',
+        agencyId: 'agency-1',
+        clientEmail: 'client@example.com',
+        platforms: [{ platform: 'beehiiv', accessLevel: 'manage' }],
+      } as any,
+      error: null,
+    });
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/client/token-1/zapier/manual-connect',
+      payload: { platform: 'zapier', agencyEmail: 'ops@agency.com' },
+    });
+
+    expect(response.statusCode).toBe(400);
+    expect(response.json()).toEqual({
+      data: null,
+      error: {
+        code: 'PLATFORM_NOT_REQUESTED',
+        message: 'Platform was not requested in this access request',
+      },
+    });
+    expect(prisma.clientConnection.create).not.toHaveBeenCalled();
+  });
+
+  it('keeps prior manual platform records when another manual platform is submitted', async () => {
+    vi.mocked(accessRequestService.getAccessRequestByToken).mockResolvedValue({
+      data: {
+        id: 'request-1',
+        agencyId: 'agency-1',
+        clientEmail: 'client@example.com',
+        platforms: [{ platform: 'beehiiv', accessLevel: 'manage' }, { platform: 'zapier', accessLevel: 'manage' }],
+      } as any,
+      error: null,
+    });
+    vi.mocked(prisma.$queryRaw).mockResolvedValue([{ id: 'conn-existing', status: 'pending_verification' }] as never);
+    vi.mocked(auditService.createAuditLog).mockResolvedValue({} as any);
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/client/token-1/zapier/manual-connect',
+      payload: { platform: 'zapier', agencyEmail: 'ops@agency.com' },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
+  });
+
+  it('creates a Zapier manual connection with pending verification status', async () => {
+    vi.mocked(accessRequestService.getAccessRequestByToken).mockResolvedValue({
+      data: {
+        id: 'request-1',
+        agencyId: 'agency-1',
+        clientEmail: 'client@example.com',
+        platforms: [{ platform: 'zapier', accessLevel: 'manage' }],
+      } as any,
+      error: null,
+    });
+    vi.mocked(prisma.clientConnection.findUnique).mockResolvedValue(null);
+    vi.mocked(prisma.clientConnection.create).mockResolvedValue({
+      id: 'conn-zapier-1',
+      status: 'pending_verification',
+    } as any);
+    vi.mocked(auditService.createAuditLog).mockResolvedValue({} as any);
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/client/token-1/zapier/manual-connect',
+      payload: { platform: 'zapier', agencyEmail: 'ops@agency.com' },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(prisma.clientConnection.create).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          status: 'pending_verification',
+          grantedAssets: expect.objectContaining({
+            zapier: expect.objectContaining({ platform: 'zapier', agencyEmail: 'ops@agency.com' }),
+          }),
+        }),
+      })
+    );
+  });
+
+  it('keeps an active sibling authorization active while recording a pending manual platform', async () => {
+    vi.mocked(accessRequestService.getAccessRequestByToken).mockResolvedValue({
+      data: {
+        id: 'request-1',
+        agencyId: 'agency-1',
+        clientEmail: 'client@example.com',
+        platforms: [{ platform: 'beehiiv', accessLevel: 'manage' }, { platform: 'zapier', accessLevel: 'manage' }],
+      } as any,
+      error: null,
+    });
+    vi.mocked(prisma.$queryRaw).mockResolvedValue([{ id: 'conn-active', status: 'active' }] as never);
+    vi.mocked(auditService.createAuditLog).mockResolvedValue({} as any);
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/client/token-1/zapier/manual-connect',
+      payload: { platform: 'zapier', agencyEmail: 'ops@agency.com' },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
   });
 });

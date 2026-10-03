@@ -711,9 +711,10 @@ function resolveProductSummary(
 
     const grantedAssets =
       (request.connection?.grantedAssets as Record<string, unknown> | null) || null;
+    const manualGrant = grantedAssets?.[requestedProduct.product];
     const grantedPlatform =
-      grantedAssets && typeof grantedAssets.platform === 'string'
-        ? grantedAssets.platform
+      manualGrant && typeof manualGrant === 'object' && typeof (manualGrant as Record<string, unknown>).platform === 'string'
+        ? (manualGrant as Record<string, unknown>).platform as string
         : null;
 
     if (
@@ -721,7 +722,9 @@ function resolveProductSummary(
       (grantedPlatform === requestedProduct.product ||
         normalizePlatformGroup(grantedPlatform) === requestedProduct.platformGroup)
     ) {
-      return { status: 'connected' };
+      return (manualGrant as Record<string, unknown>).verificationStatus === 'verified'
+        ? { status: 'connected' }
+        : { status: 'pending', note: 'Waiting for verification' };
     }
 
     // The client DID authorize (rows are only created at token exchange), but
@@ -850,6 +853,7 @@ function buildClientDetailPlatformGroups(
           status: ClientDetailProductStatus;
           note?: string;
           latestRequestId?: string;
+          latestRequestedAt?: Date;
           googleGrantLifecycle?: GoogleProductGrantLifecycle;
         }
       >;
@@ -873,6 +877,7 @@ function buildClientDetailPlatformGroups(
               status: ClientDetailProductStatus;
               note?: string;
               latestRequestId?: string;
+              latestRequestedAt?: Date;
               googleGrantLifecycle?: GoogleProductGrantLifecycle;
             }
           >(),
@@ -880,6 +885,13 @@ function buildClientDetailPlatformGroups(
 
       if (!groupedProducts.has(groupKey)) {
         groupedProducts.set(groupKey, currentGroup);
+      } else if (
+        currentGroup.latestRequestedAt &&
+        request.createdAt > currentGroup.latestRequestedAt
+      ) {
+        currentGroup.latestRequestId = request.id;
+        currentGroup.latestRequestName = request.clientName;
+        currentGroup.latestRequestedAt = request.createdAt;
       }
 
       const nextProductSummary = resolveProductSummary(request, requestedProduct);
@@ -887,13 +899,16 @@ function buildClientDetailPlatformGroups(
 
       if (
         !existingProduct ||
-        getProductStatusPriority(nextProductSummary.status) >
-          getProductStatusPriority(existingProduct.status)
+        request.createdAt > (existingProduct.latestRequestedAt || new Date(0)) ||
+        (request.createdAt.getTime() === existingProduct.latestRequestedAt?.getTime() &&
+          getProductStatusPriority(nextProductSummary.status) >
+            getProductStatusPriority(existingProduct.status))
       ) {
         currentGroup.products.set(requestedProduct.product, {
           status: nextProductSummary.status,
           note: nextProductSummary.note,
           latestRequestId: request.id,
+          latestRequestedAt: request.createdAt,
           ...(nextProductSummary.googleGrantLifecycle
             ? { googleGrantLifecycle: nextProductSummary.googleGrantLifecycle }
             : {}),

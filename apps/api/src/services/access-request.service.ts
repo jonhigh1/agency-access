@@ -420,6 +420,7 @@ type UnresolvedProduct = RequestedProduct & {
 };
 
 type AuthorizationProgressConnection = {
+  status?: string;
   grantedAssets: unknown;
   authorizations?: Array<{
     platform: string;
@@ -799,9 +800,10 @@ function hasNonSelectingProductAccess(
 ): boolean {
   const grantedAssets =
     (connection.grantedAssets as Record<string, unknown> | null) || null;
+  const platformGrant = getManualPlatformGrant(requestedProduct, grantedAssets);
   const grantedPlatform =
-    grantedAssets && typeof grantedAssets.platform === 'string'
-      ? grantedAssets.platform
+    platformGrant && typeof platformGrant.platform === 'string'
+      ? platformGrant.platform
       : null;
 
   if (
@@ -809,7 +811,7 @@ function hasNonSelectingProductAccess(
     (grantedPlatform === requestedProduct.product ||
       normalizePlatformGroup(grantedPlatform) === requestedProduct.platformGroup)
   ) {
-    return true;
+    return platformGrant?.verificationStatus === 'verified';
   }
 
   return (connection.authorizations || []).some(
@@ -818,6 +820,17 @@ function hasNonSelectingProductAccess(
       (authorization.platform === requestedProduct.product ||
         normalizePlatformGroup(authorization.platform) === requestedProduct.platformGroup)
   );
+}
+
+function getManualPlatformGrant(
+  requestedProduct: RequestedProduct,
+  grantedAssets: Record<string, unknown> | null
+): Record<string, unknown> | null {
+  const candidate = grantedAssets?.[requestedProduct.product];
+  if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) return null;
+
+  const grant = candidate as Record<string, unknown>;
+  return grant.platform === requestedProduct.product ? grant : null;
 }
 
 function extractSelectedAssets(
@@ -935,6 +948,15 @@ function evaluateAuthorizationProgress(
     if (!isAssetSelectingProduct(requestedProduct.product)) {
       if (connections.some((connection) => hasNonSelectingProductAccess(requestedProduct, connection))) {
         fulfilledProducts.push(requestedProduct);
+      } else {
+        const hasPendingManualGrant = connections.some((connection) => {
+          const grantedAssets = (connection.grantedAssets as Record<string, unknown> | null) || null;
+          return getManualPlatformGrant(requestedProduct, grantedAssets)?.verificationStatus === 'pending';
+        });
+        unresolvedProducts.push({
+          ...requestedProduct,
+          reason: hasPendingManualGrant ? 'pending' : 'authorization_required',
+        });
       }
       continue;
     }
@@ -980,6 +1002,11 @@ function evaluateAuthorizationProgress(
       );
       googleProductFulfillment.push(lifecycle);
 
+      if (!hasAuthorization) {
+        unresolvedProducts.push({ ...requestedProduct, reason: 'authorization_required' });
+        continue;
+      }
+
       if (hasNoAssets) {
         unresolvedProducts.push({
           ...requestedProduct,
@@ -1011,6 +1038,11 @@ function evaluateAuthorizationProgress(
     }
 
     if (requestedProduct.platformGroup === 'meta') {
+      if (!hasAuthorization && (!hasSelectedAssets || !resolvedSelectedAssets)) {
+        unresolvedProducts.push({ ...requestedProduct, reason: 'authorization_required' });
+        continue;
+      }
+
       if (hasNoAssets) {
         unresolvedProducts.push({ ...requestedProduct, reason: 'no_assets' });
         continue;
@@ -1033,6 +1065,11 @@ function evaluateAuthorizationProgress(
         ...requestedProduct,
         reason: fulfillment.reason || 'sharing_required',
       });
+      continue;
+    }
+
+    if (!hasAuthorization) {
+      unresolvedProducts.push({ ...requestedProduct, reason: 'authorization_required' });
       continue;
     }
 
@@ -1123,9 +1160,12 @@ function buildConnectionSummaries(
 
     const grantedAssets =
       (connection.grantedAssets as Record<string, unknown> | null) || null;
-    if (grantedAssets && typeof grantedAssets.platform === 'string') {
-      const normalizedPlatform = normalizePlatformGroup(grantedAssets.platform);
-      connectionPlatforms.add(normalizedPlatform);
+    if (grantedAssets) {
+      for (const grant of Object.values(grantedAssets)) {
+        if (grant && typeof grant === 'object' && typeof (grant as Record<string, unknown>).platform === 'string') {
+          connectionPlatforms.add(normalizePlatformGroup((grant as Record<string, string>).platform));
+        }
+      }
     }
 
     return {
@@ -1454,13 +1494,16 @@ export async function getAccessRequestById(id: string, agencyId?: string) {
       });
 
       const grantedAssets = (latestShopifyConnection?.grantedAssets as Record<string, unknown> | null) || null;
-      const isShopifySubmission = grantedAssets?.platform === 'shopify';
-      const shopDomain = typeof grantedAssets?.shopDomain === 'string' ? grantedAssets.shopDomain : undefined;
+      const shopifyAssets = grantedAssets?.shopify && typeof grantedAssets.shopify === 'object'
+        ? grantedAssets.shopify as Record<string, unknown>
+        : null;
+      const isShopifySubmission = shopifyAssets?.platform === 'shopify';
+      const shopDomain = typeof shopifyAssets?.shopDomain === 'string' ? shopifyAssets.shopDomain : undefined;
       const collaboratorCode =
-        typeof grantedAssets?.collaboratorCode === 'string' ? grantedAssets.collaboratorCode : undefined;
+        typeof shopifyAssets?.collaboratorCode === 'string' ? shopifyAssets.collaboratorCode : undefined;
       const collaboratorCodeHash =
-        typeof grantedAssets?.collaboratorCodeHash === 'string'
-          ? grantedAssets.collaboratorCodeHash
+        typeof shopifyAssets?.collaboratorCodeHash === 'string'
+          ? shopifyAssets.collaboratorCodeHash
           : undefined;
 
       if (!latestShopifyConnection || !isShopifySubmission) {
@@ -1492,6 +1535,7 @@ export async function getAccessRequestById(id: string, agencyId?: string) {
     const clientConnections = await prisma.clientConnection.findMany({
       where: { accessRequestId: accessRequest.id },
       select: {
+        status: true,
         grantedAssets: true,
         authorizations: {
           select: {
@@ -1680,6 +1724,7 @@ export async function getAccessRequestByToken(token: string) {
       prisma.clientConnection.findMany({
         where: { accessRequestId: accessRequest.id },
         select: {
+          status: true,
           grantedAssets: true,
           authorizations: {
             select: {
@@ -2091,6 +2136,7 @@ export async function markRequestAuthorized(requestId: string) {
     const clientConnections = await prisma.clientConnection.findMany({
       where: { accessRequestId: requestId },
       select: {
+        status: true,
         grantedAssets: true,
         authorizations: {
           select: {
@@ -2239,6 +2285,7 @@ export async function excludeMetaGrant(input: {
       const clientConnections = await tx.clientConnection.findMany({
         where: { accessRequestId: input.accessRequestId },
         select: {
+          status: true,
           grantedAssets: true,
           authorizations: {
             select: { platform: true, status: true, authorizationEpoch: true },

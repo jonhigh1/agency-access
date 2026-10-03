@@ -663,6 +663,74 @@ describe('Phase 5: Client Service - TDD Tests', () => {
       ]);
     });
 
+    it('uses the newest request for each product when records are not ordered', async () => {
+      vi.mocked(mockPrisma.client.findUnique).mockResolvedValue({
+        id: 'client-1',
+        agencyId: 'agency-1',
+        name: 'Taylor Client',
+        company: 'Acme',
+        email: 'taylor@acme.com',
+        website: null,
+        language: 'en',
+        createdAt: new Date('2026-03-01T00:00:00.000Z'),
+        updatedAt: new Date('2026-03-12T00:00:00.000Z'),
+        accessRequests: [
+          {
+            id: 'request-revoked',
+            clientName: 'Old Snapchat access',
+            status: 'revoked',
+            createdAt: new Date('2026-03-09T00:00:00.000Z'),
+            authorizedAt: new Date('2026-03-09T01:00:00.000Z'),
+            platforms: { snapchat: ['snapchat_ads'] },
+            connection: {
+              id: 'connection-revoked',
+              status: 'revoked',
+              createdAt: new Date('2026-03-09T01:00:00.000Z'),
+              grantedAssets: null,
+              authorizations: [{ platform: 'snapchat', status: 'revoked', metadata: {} }],
+            },
+          },
+          {
+            id: 'request-active',
+            clientName: 'Current Snapchat access',
+            status: 'partial',
+            createdAt: new Date('2026-03-12T00:00:00.000Z'),
+            authorizedAt: new Date('2026-03-12T01:00:00.000Z'),
+            platforms: { snapchat: ['snapchat_ads'] },
+            connection: {
+              id: 'connection-active',
+              status: 'active',
+              createdAt: new Date('2026-03-12T01:00:00.000Z'),
+              grantedAssets: {},
+              authorizations: [{ platform: 'snapchat', status: 'active', metadata: {} }],
+            },
+          },
+        ],
+      } as any);
+
+      const result = await clientService.getClientDetail({
+        clientId: 'client-1',
+        agencyId: 'agency-1',
+      });
+
+      expect(result?.platformGroups).toEqual([
+        expect.objectContaining({
+          platformGroup: 'snapchat',
+          status: 'connected',
+          latestRequestId: 'request-active',
+          latestRequestName: 'Current Snapchat access',
+          latestRequestedAt: new Date('2026-03-12T00:00:00.000Z'),
+          products: [
+            expect.objectContaining({
+              product: 'snapchat_ads',
+              status: 'connected',
+              latestRequestId: 'request-active',
+            }),
+          ],
+        }),
+      ]);
+    });
+
     it('marks LinkedIn Pages as no_assets when discovery completed without administered pages', async () => {
       vi.mocked(mockPrisma.client.findUnique).mockResolvedValue({
         id: 'client-1',
@@ -761,6 +829,49 @@ describe('Phase 5: Client Service - TDD Tests', () => {
           status: 'pending',
           products: [expect.objectContaining({ product: 'snapchat_ads', status: 'pending' })],
         }),
+      ]);
+    });
+
+    it('does not treat pending manual evidence as connected', async () => {
+      const clientData = {
+        id: 'client-1',
+        agencyId: 'agency-1',
+        name: 'Taylor Client',
+        company: 'Acme',
+        email: 'taylor@acme.com',
+        website: null,
+        language: 'en',
+        createdAt: new Date('2026-03-01T00:00:00.000Z'),
+        updatedAt: new Date('2026-03-05T00:00:00.000Z'),
+        accessRequests: [{
+          id: 'request-manual',
+          clientName: 'Beehiiv access',
+          status: 'partial',
+          createdAt: new Date('2026-03-11T00:00:00.000Z'),
+          authorizedAt: null,
+          platforms: { beehiiv: ['beehiiv'] },
+          connection: {
+            id: 'connection-shared',
+            status: 'active',
+            createdAt: new Date('2026-03-11T00:00:00.000Z'),
+            grantedAssets: { beehiiv: { platform: 'beehiiv', verificationStatus: 'pending' } },
+            authorizations: [{ platform: 'google', status: 'active', metadata: {} }],
+          },
+        }],
+      };
+      vi.mocked(mockPrisma.client.findUnique).mockResolvedValue(clientData as any);
+
+      const pending = await clientService.getClientDetail({ clientId: 'client-1', agencyId: 'agency-1' });
+
+      expect(pending?.platformGroups[0].products).toEqual([
+        expect.objectContaining({ product: 'beehiiv', status: 'pending' }),
+      ]);
+
+      clientData.accessRequests[0].connection.grantedAssets.beehiiv.verificationStatus = 'verified';
+      const verified = await clientService.getClientDetail({ clientId: 'client-1', agencyId: 'agency-1' });
+
+      expect(verified?.platformGroups[0].products).toEqual([
+        expect.objectContaining({ product: 'beehiiv', status: 'connected' }),
       ]);
     });
 

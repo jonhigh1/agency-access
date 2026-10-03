@@ -6,9 +6,10 @@ import { auditService } from '../../services/audit.service.js';
 import { prisma } from '../../lib/prisma.js';
 import { z } from 'zod';
 import { sendError } from '../../lib/response.js';
+import { isPlatformRequested } from './platform-request.js';
 
 export async function registerManualRoutes(fastify: FastifyInstance) {
-  type EmailManualPlatform = 'beehiiv' | 'kit' | 'mailchimp' | 'klaviyo';
+  type EmailManualPlatform = 'beehiiv' | 'kit' | 'mailchimp' | 'klaviyo' | 'zapier';
 
   const normalizeShopDomain = (value: string): string =>
     value
@@ -25,47 +26,41 @@ export async function registerManualRoutes(fastify: FastifyInstance) {
       .update(`shopify-collaborator-code:${value}`)
       .digest('hex');
 
-  const findExistingConnection = (accessRequestId: string) =>
-    prisma.clientConnection.findUnique({
-      where: { accessRequestId },
-      select: {
-        id: true,
-        grantedAssets: true,
-      },
-    });
-
   const saveManualConnection = async ({
-    existingConnection,
     accessRequestId,
     agencyId,
     clientEmail,
     grantedAssets,
   }: {
-    existingConnection: { id: string; grantedAssets: unknown } | null;
     accessRequestId: string;
     agencyId: string;
     clientEmail: string;
     grantedAssets: Record<string, unknown>;
-  }) => (
-    existingConnection
-      ? prisma.clientConnection.update({
-          where: { id: existingConnection.id },
-          data: {
-            clientEmail,
-            status: 'pending_verification',
-            grantedAssets: grantedAssets as Prisma.InputJsonValue,
-          },
-        })
-      : prisma.clientConnection.create({
-          data: {
-            accessRequestId,
-            agencyId,
-            clientEmail,
-            status: 'pending_verification',
-            grantedAssets: grantedAssets as Prisma.InputJsonValue,
-          },
-        })
-  );
+  }) => {
+    const platform = grantedAssets.platform as string;
+    const patch = JSON.stringify({ [platform]: grantedAssets });
+    const updateExisting = () => prisma.$queryRaw<Array<{ id: string; status: string }>>(Prisma.sql`
+      UPDATE client_connections
+      SET client_email = ${clientEmail},
+          status = CASE WHEN status = 'active' THEN 'active' ELSE 'pending_verification' END,
+          granted_assets = COALESCE(granted_assets, '{}'::jsonb) || ${patch}::jsonb
+      WHERE access_request_id = ${accessRequestId}
+      RETURNING id, status
+    `);
+    const updated = await updateExisting();
+    if (updated[0]) return { connection: updated[0], existed: true };
+    try {
+      const connection = await prisma.clientConnection.create({
+        data: { accessRequestId, agencyId, clientEmail, status: 'pending_verification', grantedAssets: { [platform]: grantedAssets } as Prisma.InputJsonValue },
+      });
+      return { connection, existed: false };
+    } catch (error) {
+      if ((error as { code?: string }).code !== 'P2002') throw error;
+      const concurrentUpdate = await updateExisting();
+      if (concurrentUpdate[0]) return { connection: concurrentUpdate[0], existed: true };
+      throw error;
+    }
+  };
 
   const createEmailManualConnectHandler = (
     platform: EmailManualPlatform,
@@ -103,6 +98,10 @@ export async function registerManualRoutes(fastify: FastifyInstance) {
         return sendError(reply, 'INVALID_TOKEN', 'Access request not found or expired', 404);
       }
 
+      if (!isPlatformRequested(accessRequest.data.platforms, platform)) {
+        return sendError(reply, 'PLATFORM_NOT_REQUESTED', 'Platform was not requested in this access request', 400);
+      }
+
       try {
         const resolvedClientEmail = clientEmail || accessRequest.data.clientEmail || 'unknown';
         const grantedAssetsPayload = {
@@ -111,12 +110,10 @@ export async function registerManualRoutes(fastify: FastifyInstance) {
           clientEmail: clientEmail || accessRequest.data.clientEmail,
           invitationSentAt: new Date().toISOString(),
           authMethod: 'manual_team_invitation',
+          verificationStatus: 'pending',
         };
 
-        const existingConnection = await findExistingConnection(accessRequest.data.id);
-
-        const connection = await saveManualConnection({
-          existingConnection,
+        const { connection, existed } = await saveManualConnection({
           accessRequestId: accessRequest.data.id,
           agencyId: accessRequest.data.agencyId,
           clientEmail: resolvedClientEmail,
@@ -125,7 +122,7 @@ export async function registerManualRoutes(fastify: FastifyInstance) {
 
         await auditService.createAuditLog({
           agencyId: accessRequest.data.agencyId,
-          action: existingConnection ? 'MANUAL_INVITATION_UPDATED' : 'MANUAL_INVITATION_INITIATED',
+          action: existed ? 'MANUAL_INVITATION_UPDATED' : 'MANUAL_INVITATION_INITIATED',
           resourceType: 'ClientConnection',
           resourceId: connection.id,
           platform,
@@ -196,6 +193,15 @@ export async function registerManualRoutes(fastify: FastifyInstance) {
     )
   );
 
+  fastify.post(
+    '/client/:token/zapier/manual-connect',
+    createEmailManualConnectHandler(
+      'zapier',
+      'Manual invitation initiated. Waiting for agency to accept Zapier team invite.',
+      'Failed to create Zapier manual connection'
+    )
+  );
+
   // Pinterest manual connection endpoint (partnership flow)
   fastify.post('/client/:token/pinterest/manual-connect', async (request, reply) => {
   const { token } = request.params as { token: string };
@@ -219,12 +225,13 @@ export async function registerManualRoutes(fastify: FastifyInstance) {
     return sendError(reply, 'INVALID_TOKEN', 'Access request not found or expired', 404);
   }
 
+  if (!isPlatformRequested(accessRequest.data.platforms, 'pinterest')) {
+    return sendError(reply, 'PLATFORM_NOT_REQUESTED', 'Platform was not requested in this access request', 400);
+  }
+
   try {
     const resolvedClientEmail = clientEmail || accessRequest.data.clientEmail || 'unknown';
-    const existingConnection = await findExistingConnection(accessRequest.data.id);
-
-    const connection = await saveManualConnection({
-      existingConnection,
+    const { connection, existed } = await saveManualConnection({
       accessRequestId: accessRequest.data.id,
       agencyId: accessRequest.data.agencyId,
       clientEmail: resolvedClientEmail,
@@ -235,12 +242,13 @@ export async function registerManualRoutes(fastify: FastifyInstance) {
         setupComplete: true,
         setupCompletedAt: new Date().toISOString(),
         authMethod: 'manual_partnership',
+        verificationStatus: 'pending',
       },
     });
 
     await auditService.createAuditLog({
       agencyId: accessRequest.data.agencyId,
-      action: existingConnection ? 'MANUAL_INVITATION_UPDATED' : 'MANUAL_INVITATION_INITIATED',
+      action: existed ? 'MANUAL_INVITATION_UPDATED' : 'MANUAL_INVITATION_INITIATED',
       resourceType: 'ClientConnection',
       resourceId: connection.id,
       platform: 'pinterest',
@@ -299,6 +307,10 @@ export async function registerManualRoutes(fastify: FastifyInstance) {
       return sendError(reply, 'INVALID_TOKEN', 'Access request not found or expired', 404);
     }
 
+    if (!isPlatformRequested(accessRequest.data.platforms, 'shopify')) {
+      return sendError(reply, 'PLATFORM_NOT_REQUESTED', 'Platform was not requested in this access request', 400);
+    }
+
     try {
       const grantedAssetsPayload = {
         platform: 'shopify',
@@ -309,23 +321,10 @@ export async function registerManualRoutes(fastify: FastifyInstance) {
         setupComplete: true,
         setupCompletedAt: new Date().toISOString(),
         authMethod: 'manual_collaborator_request',
+        verificationStatus: 'pending',
       };
 
-      const existingConnection = await findExistingConnection(accessRequest.data.id);
-
-      const existingPlatform =
-        existingConnection &&
-        existingConnection.grantedAssets &&
-        typeof (existingConnection.grantedAssets as Record<string, unknown>).platform === 'string'
-          ? (existingConnection.grantedAssets as Record<string, unknown>).platform as string
-          : undefined;
-
-      if (existingConnection && existingPlatform && existingPlatform !== 'shopify') {
-        return sendError(reply, 'CONNECTION_CONFLICT', 'This access request already has a non-Shopify connection', 409);
-      }
-
-      const connection = await saveManualConnection({
-        existingConnection,
+      const { connection, existed } = await saveManualConnection({
         accessRequestId: accessRequest.data.id,
         agencyId: accessRequest.data.agencyId,
         clientEmail: clientEmail || accessRequest.data.clientEmail || 'unknown',
@@ -334,7 +333,7 @@ export async function registerManualRoutes(fastify: FastifyInstance) {
 
       await auditService.createAuditLog({
         agencyId: accessRequest.data.agencyId,
-        action: existingConnection ? 'MANUAL_INVITATION_UPDATED' : 'MANUAL_INVITATION_INITIATED',
+        action: existed ? 'MANUAL_INVITATION_UPDATED' : 'MANUAL_INVITATION_INITIATED',
         resourceType: 'ClientConnection',
         resourceId: connection.id,
         platform: 'shopify',

@@ -60,6 +60,15 @@ export async function registerOAuthStateRoutes(fastify: FastifyInstance) {
 
     const { platform } = validated.data;
 
+    if (!isPlatformRequested(accessRequest.data.platforms, platform)) {
+      return sendError(
+        reply,
+        'PLATFORM_NOT_REQUESTED',
+        'Platform was not requested in this access request',
+        400
+      );
+    }
+
     const stateResult = await oauthStateService.createState({
       agencyId: accessRequest.data.agencyId,
       platform,

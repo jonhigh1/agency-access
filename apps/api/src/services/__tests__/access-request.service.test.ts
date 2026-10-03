@@ -534,7 +534,8 @@ describe('AccessRequestService', () => {
         },
         {
           id: 'conn-manual',
-          grantedAssets: { platform: 'beehiiv' },
+          status: 'pending_verification',
+          grantedAssets: { beehiiv: { platform: 'beehiiv' } },
           authorizations: [],
         },
       ] as any);
@@ -542,9 +543,7 @@ describe('AccessRequestService', () => {
       const result = await accessRequestService.getAccessRequestByToken('token-123');
 
       expect(result.error).toBeNull();
-      expect(result.data?.authorizationProgress.completedPlatforms).toEqual(
-        expect.arrayContaining(['beehiiv'])
-      );
+      expect(result.data?.authorizationProgress.completedPlatforms).not.toContain('beehiiv');
       expect(result.data?.authorizationProgress.completedPlatforms).not.toContain('google');
       expect((result.data as any)?.authorizationProgress.unresolvedProducts).toEqual(
         expect.arrayContaining([
@@ -565,6 +564,70 @@ describe('AccessRequestService', () => {
         ])
       );
       expect(result.data?.authorizationProgress.isComplete).toBe(false);
+    });
+
+    it('counts a manual platform only after that platform is verified', async () => {
+      const mockRequest = {
+        id: 'request-manual',
+        uniqueToken: 'token-manual-verified-123',
+        clientName: 'Test Client',
+        clientEmail: 'client@test.com',
+        agencyId: 'agency-1',
+        expiresAt: new Date(Date.now() + 100000),
+        platforms: [{ platform: 'beehiiv', accessLevel: 'manage' }],
+        intakeFields: [],
+        branding: {},
+      };
+
+      vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue(mockRequest as any);
+      vi.mocked(prisma.agency.findUnique).mockResolvedValue({ name: 'Agency' } as any);
+      vi.mocked(prisma.agencyPlatformConnection.findMany).mockResolvedValue([]);
+      vi.mocked(prisma.clientConnection.findMany).mockResolvedValue([
+        {
+          id: 'conn-manual-active',
+          status: 'active',
+          grantedAssets: { beehiiv: { platform: 'beehiiv', verificationStatus: 'verified' } },
+          authorizations: [],
+        },
+      ] as any);
+
+      const result = await accessRequestService.getAccessRequestByToken('token-manual-verified-123');
+
+      expect(result.error).toBeNull();
+      expect(result.data?.authorizationProgress.completedPlatforms).toEqual(['beehiiv']);
+      expect(result.data?.authorizationProgress.isComplete).toBe(true);
+    });
+
+    it('keeps pending manual evidence unresolved when the shared connection is active', async () => {
+      vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue({
+        id: 'request-manual-pending',
+        uniqueToken: 'token-manual-pending-123',
+        clientName: 'Test Client',
+        clientEmail: 'client@test.com',
+        agencyId: 'agency-1',
+        expiresAt: new Date(Date.now() + 100000),
+        platforms: [{ platform: 'beehiiv', accessLevel: 'manage' }],
+        intakeFields: [],
+        branding: {},
+      } as any);
+      vi.mocked(prisma.agency.findUnique).mockResolvedValue({ name: 'Agency' } as any);
+      vi.mocked(prisma.agencyPlatformConnection.findMany).mockResolvedValue([]);
+      vi.mocked(prisma.clientConnection.findMany).mockResolvedValue([
+        {
+          id: 'conn-shared-active',
+          status: 'active',
+          grantedAssets: { beehiiv: { platform: 'beehiiv', verificationStatus: 'pending' } },
+          authorizations: [{ platform: 'google', status: 'active' }],
+        },
+      ] as any);
+
+      const result = await accessRequestService.getAccessRequestByToken('token-manual-pending-123');
+
+      expect(result.error).toBeNull();
+      expect(result.data?.authorizationProgress.completedPlatforms).toEqual([]);
+      expect((result.data as any)?.authorizationProgress.unresolvedProducts).toEqual([
+        { product: 'beehiiv', platformGroup: 'beehiiv', reason: 'pending' },
+      ]);
     });
 
     it('marks Google products complete once the native grant lifecycle is verified', async () => {
@@ -1068,6 +1131,28 @@ describe('AccessRequestService', () => {
       expect(result.data?.authorizationProgress.unresolvedProducts).toEqual([]);
     });
 
+    it('names every requested product that still needs authorization', async () => {
+      vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue({
+        id: 'request-auth-needed',
+        agencyId: 'agency-1',
+        platforms: [
+          { platform: 'beehiiv', accessLevel: 'manage' },
+          { platform: 'linkedin_ads', accessLevel: 'manage' },
+        ],
+      } as any);
+      vi.mocked(prisma.clientConnection.findMany).mockResolvedValue([] as any);
+
+      const result = await accessRequestService.getAccessRequestById('request-auth-needed');
+
+      expect(result.data?.authorizationProgress).toMatchObject({
+        isComplete: false,
+        unresolvedProducts: [
+          { product: 'beehiiv', platformGroup: 'beehiiv', reason: 'authorization_required' },
+          { product: 'linkedin_ads', platformGroup: 'linkedin', reason: 'authorization_required' },
+        ],
+      });
+    });
+
     it('keeps Meta Ads incomplete until selected catalogs are granted', async () => {
       vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue({
         id: 'request-1',
@@ -1490,9 +1575,11 @@ describe('AccessRequestService', () => {
         id: 'conn-1',
         createdAt: new Date('2026-03-05T00:00:00.000Z'),
         grantedAssets: {
-          platform: 'shopify',
-          shopDomain: 'client-store.myshopify.com',
-          collaboratorCode: '1234',
+          shopify: {
+            platform: 'shopify',
+            shopDomain: 'client-store.myshopify.com',
+            collaboratorCode: '1234',
+          },
         },
       } as any);
 

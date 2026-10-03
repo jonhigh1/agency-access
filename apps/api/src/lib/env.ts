@@ -211,6 +211,12 @@ const envSchema = z.object({
   WEBHOOK_DELIVERY_TIMEOUT_MS: z.coerce.number().int().min(1000).default(5000),
   WEBHOOK_FAILURE_DISABLE_THRESHOLD: z.coerce.number().int().min(1).default(5),
   WEBHOOK_MAX_ATTEMPTS: z.coerce.number().int().min(1).default(6),
+
+  // Drex by Nace.AI (decision model — wire-compatible with @typesafe-ai/sdk)
+  DREX_API_KEY: z.string().optional(),
+  TYPESAFE_BASE_URL: z.string().url().optional(),
+  TYPESAFE_API_KEY: z.string().optional(),
+  TYPESAFE_DEFAULT_MODEL: z.string().optional(),
 });
 
 const rawEnv = {
