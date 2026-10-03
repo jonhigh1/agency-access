@@ -1,8 +1,14 @@
-import type { ClientAccessRequestPlatformGroup, Platform } from '@agency-platform/shared';
+import type {
+  ClientAccessRequestPlatformGroup,
+  ClientUnresolvedProduct,
+  Platform,
+} from '@agency-platform/shared';
+import { buildInvitePlatformChecklist } from './invite/platform-status';
 
 interface BuildInvitePlatformQueueOptions {
   platforms: ClientAccessRequestPlatformGroup[];
   completedPlatforms: ReadonlySet<Platform>;
+  unresolvedProducts?: ReadonlyArray<ClientUnresolvedProduct>;
   returningPlatform?: Platform | null;
 }
 
@@ -16,6 +22,7 @@ export interface InvitePlatformQueueState {
 export function buildInvitePlatformQueue({
   platforms,
   completedPlatforms,
+  unresolvedProducts,
   returningPlatform = null,
 }: BuildInvitePlatformQueueOptions): InvitePlatformQueueState {
   const completed = platforms.filter((group) =>
@@ -32,10 +39,28 @@ export function buildInvitePlatformQueue({
     };
   }
 
-  const activePlatform =
-    incomplete.find((group) => group.platformGroup === returningPlatform) || incomplete[0];
+  const waitingPlatforms = new Set(
+    buildInvitePlatformChecklist({ platforms, completedPlatforms, unresolvedProducts })
+      .filter((entry) => entry.status === 'waiting-on-agency')
+      .map((entry) => entry.platform)
+  );
+  const actionable = incomplete.filter(
+    (group) => !waitingPlatforms.has(group.platformGroup as Platform)
+  );
 
-  const remainingPlatforms = incomplete.filter(
+  if (actionable.length === 0) {
+    return {
+      activePlatform: null,
+      completedPlatforms: completed,
+      remainingPlatforms: [],
+      nextPlatform: null,
+    };
+  }
+
+  const activePlatform =
+    actionable.find((group) => group.platformGroup === returningPlatform) || actionable[0];
+
+  const remainingPlatforms = actionable.filter(
     (group) => group.platformGroup !== activePlatform.platformGroup
   );
 

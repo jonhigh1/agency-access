@@ -15,7 +15,8 @@ interface UseInviteRequestLoaderOptions<TData> {
     | 'manual-mailchimp'
     | 'manual-klaviyo'
     | 'manual-pinterest'
-    | 'manual-shopify';
+    | 'manual-shopify'
+    | 'manual-zapier';
   delayedMs?: number;
   timeoutMs?: number;
   parseData?: (payload: any) => TData;

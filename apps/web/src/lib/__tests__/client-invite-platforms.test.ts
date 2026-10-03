@@ -3,7 +3,6 @@ import {
   getClientInviteManualRoute,
   getClientInvitePlatformCapability,
   getInviteSecuritySummary,
-  isClientInviteManualCallbackPlatform,
   isClientInviteManualPlatform,
   MANUAL_INVITE_PLATFORMS,
   isManualInvitePlatform,
@@ -14,7 +13,6 @@ describe('client invite platform capabilities', () => {
     expect(getClientInvitePlatformCapability('beehiiv')).toMatchObject({
       flow: 'manual',
       manualRoute: 'beehiiv/manual',
-      manualCallback: true,
     });
   });
 
@@ -22,21 +20,26 @@ describe('client invite platform capabilities', () => {
     expect(getClientInvitePlatformCapability('mailchimp')).toMatchObject({
       flow: 'manual',
       manualRoute: 'mailchimp/manual',
-      manualCallback: true,
     });
 
     expect(getClientInvitePlatformCapability('klaviyo')).toMatchObject({
       flow: 'manual',
       manualRoute: 'klaviyo/manual',
-      manualCallback: true,
     });
+  });
+
+  it('routes Zapier through its manual invite flow', () => {
+    expect(getClientInvitePlatformCapability('zapier')).toMatchObject({
+      flow: 'manual',
+      manualRoute: 'zapier/manual',
+    });
+    expect(getClientInviteManualRoute('zapier')).toBe('zapier/manual');
   });
 
   it('keeps linkedin on oauth flow', () => {
     expect(getClientInvitePlatformCapability('linkedin')).toMatchObject({
       flow: 'oauth',
       manualRoute: null,
-      manualCallback: false,
     });
   });
 
@@ -44,7 +47,6 @@ describe('client invite platform capabilities', () => {
     expect(getClientInvitePlatformCapability('snapchat')).toMatchObject({
       flow: 'oauth',
       manualRoute: null,
-      manualCallback: false,
     });
     expect(isClientInviteManualPlatform('snapchat')).toBe(false);
     expect(getClientInviteManualRoute('snapchat')).toBeNull();
@@ -62,10 +64,6 @@ describe('client invite platform capabilities', () => {
     expect('badge' in summary).toBe(false);
   });
 
-  it('flags mailchimp manual callback handling as complete-on-return', () => {
-    expect(isClientInviteManualCallbackPlatform('mailchimp')).toBe(true);
-    expect(isClientInviteManualCallbackPlatform('google')).toBe(false);
-  });
 });
 
 describe('MANUAL_INVITE_PLATFORMS', () => {

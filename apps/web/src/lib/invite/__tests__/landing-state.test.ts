@@ -25,6 +25,15 @@ const baseInput = (): InviteLandingInput => ({
   metaFulfillment: [],
 });
 
+it('keeps a fresh request at intake when every product still needs authorization', () => {
+  expect(resolveInviteLandingState({
+    ...baseInput(),
+    unresolvedProducts: [
+      { product: 'google_ads', platformGroup: 'google', reason: 'authorization_required' },
+    ],
+  }).phase).toBe('intake');
+});
+
 const fulfillmentRow = (overrides: Partial<MetaFulfillmentResult>): MetaFulfillmentResult => ({
   id: 'row-1',
   assetKind: 'ad_account',

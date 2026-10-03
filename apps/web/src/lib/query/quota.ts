@@ -60,19 +60,20 @@ export interface UsageSnapshot extends TierLimits {
  * Get current usage snapshot for agency
  */
 export function useQuota() {
-  const { orgId, getToken } = useAuth();
+  const { orgId, userId, getToken } = useAuth();
+  const principalId = orgId || userId;
 
   return useQuery({
-    queryKey: ['quota', 'usage', orgId],
+    queryKey: ['quota', 'usage', principalId],
     queryFn: async () => {
-      if (!orgId) throw new Error('No organization ID');
+      if (!principalId) throw new Error('No signed-in user');
 
       const payload = await authorizedApiFetch<{ data?: UsageSnapshot }>('/api/quota', {
         getToken,
       });
       return payload.data as UsageSnapshot;
     },
-    enabled: !!orgId,
+    enabled: !!principalId,
     staleTime: 30_000, // 30 seconds
     gcTime: 5 * 60 * 1000, // 5 minutes
   });
@@ -82,12 +83,13 @@ export function useQuota() {
  * Check if an action is allowed under current quota
  */
 export function useQuotaCheck() {
-  const { orgId, getToken } = useAuth();
+  const { orgId, userId, getToken } = useAuth();
+  const principalId = orgId || userId;
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (input: QuotaCheckInput): Promise<QuotaCheckResult> => {
-      if (!orgId) throw new Error('No organization ID');
+      if (!principalId) throw new Error('No signed-in user');
 
       const payload = await authorizedApiFetch<{ data?: QuotaCheckResult }>('/api/quota/check', {
         getToken,
@@ -98,7 +100,7 @@ export function useQuotaCheck() {
     },
     onSuccess: () => {
       // Invalidate usage query to get fresh data
-      queryClient.invalidateQueries({ queryKey: ['quota', 'usage', orgId] });
+      queryClient.invalidateQueries({ queryKey: ['quota', 'usage', principalId] });
     },
   });
 }
@@ -139,17 +141,18 @@ export class QuotaExceededError extends Error {
  * Prefetch quota data for an agency
  */
 export function usePrefetchQuota() {
-  const { orgId, getToken } = useAuth();
+  const { orgId, userId, getToken } = useAuth();
+  const principalId = orgId || userId;
   const queryClient = useQueryClient();
 
   return async () => {
-    if (!orgId) return;
+    if (!principalId) return;
 
     // ponytail: authorizedApiFetch throws on null token; prefetch is best-effort, keep the skip.
     if (!(await getToken())) return;
 
     await queryClient.prefetchQuery({
-      queryKey: ['quota', 'usage', orgId],
+      queryKey: ['quota', 'usage', principalId],
       queryFn: async () => {
         const payload = await authorizedApiFetch<{ data?: UsageSnapshot }>('/api/quota', {
           getToken,

@@ -19,6 +19,7 @@ import { capturePosthogEvent } from '@/lib/analytics/capture-posthog';
 // field. Keep the page reading these constants, never a literal.
 export const INTAKE_LABELS_ERROR = 'All intake fields must have a label';
 export const SUBDOMAIN_ERROR_PREFIX = 'Subdomain must';
+export const PRIMARY_COLOR_ERROR_PREFIX = 'Primary color must';
 
 // ============================================================
 // TYPES
@@ -260,6 +261,7 @@ export function AccessRequestProvider({
   // Last serialized draft written per agency; skips byte-identical rewrites
   // caused by state changes that do not affect the draft payload.
   const lastWriteRef = useRef<{ agencyId: string; serialized: string | null } | null>(null);
+  const submissionInFlightRef = useRef(false);
 
   useEffect(() => {
     if (!hasDraftContent(state)) {
@@ -468,6 +470,10 @@ export function AccessRequestProvider({
             return { valid: false, error: INTAKE_LABELS_ERROR };
           }
 
+          if (!/^#[0-9a-f]{6}$/i.test(state.branding.primaryColor)) {
+            return { valid: false, error: `${PRIMARY_COLOR_ERROR_PREFIX} be a six-digit hex value` };
+          }
+
           // Subdomain validation (optional field)
           if (state.branding.subdomain) {
             // Alphanumeric + hyphen, 3-63 chars, no leading/trailing hyphens
@@ -497,6 +503,16 @@ export function AccessRequestProvider({
   // ============================================================
 
   const submitRequest = useCallback(async () => {
+    if (submissionInFlightRef.current) return;
+    for (const step of [1, 2, 3]) {
+      const validation = validateStep(step);
+      if (!validation.valid) {
+        setState((prev) => ({ ...prev, currentStep: step, error: validation.error || 'Check the request details', submitting: false }));
+        return;
+      }
+    }
+    submissionInFlightRef.current = true;
+    let created = false;
     setState((prev) => ({ ...prev, submitting: true, error: null }));
 
     try {
@@ -564,8 +580,13 @@ export function AccessRequestProvider({
         return;
       }
 
-      // Success! Navigate to success page
+      if (!result.data?.id) {
+        throw new Error('The server returned an invalid response. Please try again.');
+      }
+
+      // Keep the submission guard until navigation unmounts this form.
       if (result.data) {
+        created = true;
         setState(initialState);
 
         // Track access request creation in PostHog
@@ -599,8 +620,10 @@ export function AccessRequestProvider({
         error: err instanceof Error ? err.message : 'Network error. Please try again.',
         submitting: false,
       }));
+    } finally {
+      if (!created) submissionInFlightRef.current = false;
     }
-  }, [state, agencyId, router, queryClient, getToken]);
+  }, [state, agencyId, router, queryClient, getToken, validateStep]);
 
   // ============================================================
   // CONTEXT VALUE

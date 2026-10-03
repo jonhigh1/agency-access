@@ -223,9 +223,7 @@ export function ManualInviteFlow<TData extends ManualInviteFlowData>({
         throw new Error(result.error?.message || config.submit.failureMessage);
       }
 
-      router.push(
-        `/invite/${token}?step=2&platform=${config.platform}&connectionId=${result.data.connectionId}`
-      );
+      router.push(buildClientInviteConnectViewUrl(token, config.platform) as any);
     } catch (err) {
       setSubmissionError(err instanceof Error ? err.message : config.submit.failureMessage);
     } finally {
@@ -360,6 +358,7 @@ export function ManualInviteFlow<TData extends ManualInviteFlowData>({
     <InviteFlowShell
       title={toDisplayName(data.agencyName, data.agencyName)}
       description={config.shellDescription}
+      primaryColor={data.branding?.primaryColor}
       header={
         <ManualInviteHeader
           agencyName={toDisplayName(data.agencyName, data.agencyName)}

@@ -53,7 +53,7 @@ export function InviteTerminalCard({
         <h1 className="font-display text-2xl font-semibold text-ink text-balance">{copy.title}</h1>
         <p className="mt-3 text-sm leading-6 text-muted-foreground">{copy.description}</p>
         <p className="mt-2 text-sm leading-6 text-ink">
-          Nothing has been shared yet. You can safely close this page.
+          You can safely close this page.
         </p>
         <InviteSupportCard
           className="mt-6 text-left"

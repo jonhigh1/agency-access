@@ -239,6 +239,39 @@ describe('Access Request Wizard', () => {
     expect(subdomain).toHaveAccessibleDescription(/3–63 lowercase letters/i);
   });
 
+  it('names the primary-color hex value field', async () => {
+    renderWithProviders(<AccessRequestPage />);
+
+    await userEvent.click(await screen.findByRole('button', { name: /pick client/i }));
+    await userEvent.click(screen.getByRole('button', { name: /continue to platforms/i }));
+    await userEvent.click(await screen.findByRole('button', { name: /pick platforms/i }));
+    await userEvent.click(screen.getByRole('button', { name: /continue to customize/i }));
+    await userEvent.click(screen.getByRole('button', { name: 'Branding' }));
+
+    expect(screen.getByRole('textbox', { name: 'Primary color hex value' })).toBeInTheDocument();
+    expect(screen.queryByText('.agencyplatform.com')).not.toBeInTheDocument();
+    expect(screen.getByText('Custom subdomain routing is not available yet.')).toBeInTheDocument();
+  });
+
+  it('focuses the invalid primary color on the first review attempt', async () => {
+    renderWithProviders(<AccessRequestPage />);
+    await userEvent.click(await screen.findByRole('button', { name: /pick client/i }));
+    await userEvent.click(screen.getByRole('button', { name: /continue to platforms/i }));
+    await userEvent.click(await screen.findByRole('button', { name: /pick platforms/i }));
+    await userEvent.click(screen.getByRole('button', { name: /continue to customize/i }));
+    await userEvent.click(screen.getByRole('button', { name: 'Branding' }));
+
+    const color = screen.getByRole('textbox', { name: 'Primary color hex value' });
+    await userEvent.clear(color);
+    await userEvent.type(color, 'invalid');
+    await userEvent.click(screen.getByRole('button', { name: /review & create/i }));
+
+    expect(color).toHaveFocus();
+    expect(color).toHaveAttribute('aria-invalid', 'true');
+    expect(color).toHaveAccessibleDescription(/six-digit hex color/i);
+    expect(screen.getByRole('heading', { name: 'Customize' })).toBeInTheDocument();
+  });
+
   it('submits successfully and routes to success page', async () => {
     vi.mocked(accessRequestsApi.createAccessRequest).mockResolvedValue({
       data: {

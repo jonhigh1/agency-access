@@ -108,7 +108,7 @@ describe('Manual invite flows', () => {
         expect.stringContaining('/api/client/token-123/beehiiv/manual-connect'),
         expect.objectContaining({ method: 'POST' })
       );
-      expect(pushMock).toHaveBeenCalledWith('/invite/token-123?step=2&platform=beehiiv&connectionId=conn-beehiiv-1');
+      expect(pushMock).toHaveBeenCalledWith('/invite/token-123?view=connect&platform=beehiiv');
     });
   });
 
@@ -129,6 +129,21 @@ describe('Manual invite flows', () => {
 
     expect(pushMock).toHaveBeenCalledWith('/invite/token-123?view=connect&platform=beehiiv');
     expect(backMock).not.toHaveBeenCalled();
+  });
+
+  it('applies the saved brand color to the manual invite frame', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({
+        ok: true,
+        json: async () => buildPayload({ branding: { primaryColor: '#0A7CFF' } }),
+      }))
+    );
+
+    render(<BeehiivManualPage />);
+
+    await screen.findByText(/copy invite email/i);
+    expect(screen.getByTestId('invite-brand-accent')).toHaveStyle({ borderTopColor: '#0A7CFF' });
   });
 
   it('shows terminal agency-contact guidance for an expired manual invite', async () => {
@@ -176,7 +191,7 @@ describe('Manual invite flows', () => {
         expect.stringContaining('/api/client/token-123/kit/manual-connect'),
         expect.objectContaining({ method: 'POST' })
       );
-      expect(pushMock).toHaveBeenCalledWith('/invite/token-123?step=2&platform=kit&connectionId=conn-kit-1');
+      expect(pushMock).toHaveBeenCalledWith('/invite/token-123?view=connect&platform=kit');
     });
   });
 
@@ -225,7 +240,7 @@ describe('Manual invite flows', () => {
         expect.stringContaining('/api/client/token-123/mailchimp/manual-connect'),
         expect.objectContaining({ method: 'POST' })
       );
-      expect(pushMock).toHaveBeenCalledWith('/invite/token-123?step=2&platform=mailchimp&connectionId=conn-mailchimp-1');
+      expect(pushMock).toHaveBeenCalledWith('/invite/token-123?view=connect&platform=mailchimp');
     });
   });
 
@@ -271,7 +286,7 @@ describe('Manual invite flows', () => {
         expect.stringContaining('/api/client/token-123/klaviyo/manual-connect'),
         expect.objectContaining({ method: 'POST' })
       );
-      expect(pushMock).toHaveBeenCalledWith('/invite/token-123?step=2&platform=klaviyo&connectionId=conn-klaviyo-1');
+      expect(pushMock).toHaveBeenCalledWith('/invite/token-123?view=connect&platform=klaviyo');
     });
   });
 
@@ -322,7 +337,7 @@ describe('Manual invite flows', () => {
     await screen.findByRole('heading', { name: /select store/i });
     expect(screen.getAllByText(/step 2 of 3/i).length).toBeGreaterThan(0);
     await clickPrimaryAction('Select Store');
-    await screen.findByRole('heading', { name: /connected/i });
+    await screen.findByRole('heading', { name: /submitted for review/i });
     expect(screen.getAllByText(/step 3 of 3/i).length).toBeGreaterThan(0);
 
     const returnButtons = screen.getAllByRole('button', { name: 'Return to request' });
@@ -336,7 +351,7 @@ describe('Manual invite flows', () => {
         expect.stringContaining('/api/client/token-123/shopify/manual-connect'),
         expect.objectContaining({ method: 'POST' })
       );
-      expect(pushMock).toHaveBeenCalledWith('/invite/token-123?step=2&platform=shopify&connectionId=conn-shopify-1');
+      expect(pushMock).toHaveBeenCalledWith('/invite/token-123?view=connect&platform=shopify');
     });
   });
 });

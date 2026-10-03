@@ -89,7 +89,9 @@ export const UNRESOLVED_REASON_RULES: Record<
     `${p} is missing some approved permissions. Redo the access step to grant them.`
   ),
   stale: actionNeeded((p) => `${p} access needs a refresh. Connect ${p} again.`),
-  pending: waitingOnAgency((p) => `Verifying your ${p} access. This usually takes a few minutes.`),
+  pending: waitingOnAgency((p) =>
+    `Your ${p} access request was recorded. Your agency will verify it before this request can finish.`
+  ),
   granted: waitingOnAgency((p) => `${p} access was recorded. Waiting on final verification.`),
   failed: actionNeeded((p) => `The ${p} access step did not go through. Try the step again.`),
   unresolved: waitingOnAgency((p) => GENERIC_ATTENTION_COPY(p)),

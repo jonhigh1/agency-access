@@ -74,4 +74,29 @@ describe('buildInvitePlatformQueue', () => {
     const firstOpenEntry = checklist.find((entry) => entry.status !== 'done');
     expect(queue.activePlatform?.platformGroup).toBe(firstOpenEntry?.platform);
   });
+
+  it('skips a waiting manual report and advances to the next actionable platform', () => {
+    const queue = buildInvitePlatformQueue({
+      platforms: [
+        { platformGroup: 'beehiiv', products: [{ product: 'beehiiv', accessLevel: 'admin' }] },
+        { platformGroup: 'zapier', products: [{ product: 'zapier', accessLevel: 'admin' }] },
+      ],
+      completedPlatforms: new Set<Platform>(),
+      unresolvedProducts: [{ product: 'beehiiv', platformGroup: 'beehiiv', reason: 'pending' }],
+    });
+
+    expect(queue.activePlatform?.platformGroup).toBe('zapier');
+    expect(queue.nextPlatform).toBeNull();
+  });
+
+  it('returns no active platform when every remaining platform is waiting on verification', () => {
+    const queue = buildInvitePlatformQueue({
+      platforms: [{ platformGroup: 'beehiiv', products: [{ product: 'beehiiv', accessLevel: 'admin' }] }],
+      completedPlatforms: new Set<Platform>(),
+      unresolvedProducts: [{ product: 'beehiiv', platformGroup: 'beehiiv', reason: 'pending' }],
+    });
+
+    expect(queue.activePlatform).toBeNull();
+    expect(queue.nextPlatform).toBeNull();
+  });
 });

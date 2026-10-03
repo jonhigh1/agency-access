@@ -11,6 +11,7 @@ import { InvitePlatformQueueItem } from './invite-platform-queue-item';
 interface InviteFlowShellProps {
   title: string;
   description?: string;
+  primaryColor?: string | null;
   header?: ReactNode;
   /**
    * The flow's one progress surface (R3): a named-platform checklist with each
@@ -31,6 +32,9 @@ interface InviteFlowShellProps {
   children: ReactNode;
 }
 
+const DEFAULT_PRIMARY_COLOR = '#FF6B35';
+const isSixDigitHex = (color?: string | null): color is string => /^#[0-9A-Fa-f]{6}$/.test(color ?? '');
+
 /**
  * Single-column invite frame (Variant A): one truthful header, one progress
  * surface (the checklist), then one stage on screen. No rail, no dock, no
@@ -39,6 +43,7 @@ interface InviteFlowShellProps {
 export function InviteFlowShell({
   title,
   description,
+  primaryColor,
   header,
   checklist,
   onRefresh,
@@ -46,9 +51,15 @@ export function InviteFlowShell({
   refreshError = null,
   children,
 }: InviteFlowShellProps) {
+  const frameAccent = isSixDigitHex(primaryColor) ? primaryColor : DEFAULT_PRIMARY_COLOR;
+
   return (
     <div className="min-h-screen bg-paper">
-      <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+      <div
+        data-testid="invite-brand-accent"
+        className="mx-auto max-w-4xl border-t-4 border-transparent px-4 py-8 sm:px-6 lg:px-8"
+        style={{ borderTopColor: frameAccent }}
+      >
         <header className="mb-8">
           {header ? (
             header

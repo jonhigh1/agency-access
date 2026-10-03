@@ -173,7 +173,7 @@ function findRawWhiteSurface(source: string): string[] {
  * the review conversation. Files not listed allow zero.
  */
 const BORDER2_BUDGET_BY_SOURCE_PATH: Record<string, number> = {
-  'app/invite/[token]/client-invite-page.tsx': 8,
+  'app/invite/[token]/client-invite-page.tsx': 9,
   'app/platforms/callback/page.tsx': 5,
   'app/invite/[token]/loading.tsx': 1,
   'app/invite/oauth-callback/page.tsx': 2,

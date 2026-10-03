@@ -35,6 +35,7 @@ import {
   AccessRequestProvider,
   useAccessRequest,
   INTAKE_LABELS_ERROR,
+  PRIMARY_COLOR_ERROR_PREFIX,
   SUBDOMAIN_ERROR_PREFIX,
 } from '@/contexts/access-request-context';
 import type { IntakeField } from '@/contexts/access-request-context';
@@ -186,7 +187,13 @@ function AccessRequestWizardContent() {
     setError(validation.error || 'Check the highlighted fields');
     const emptyField = state.intakeFields.find((field) => !field.label.trim());
     setCustomizeTab(emptyField ? 'fields' : 'branding');
-    setValidationFocusId(emptyField ? `intake-field-${emptyField.id}` : 'subdomain');
+    setValidationFocusId(
+      emptyField
+        ? `intake-field-${emptyField.id}`
+        : validation.error?.startsWith(PRIMARY_COLOR_ERROR_PREFIX)
+          ? 'primaryColorHex'
+          : 'subdomain'
+    );
     setValidationAttempt((attempt) => attempt + 1);
   };
 
@@ -622,13 +629,22 @@ function AccessRequestWizardContent() {
                       className="h-11 w-20 rounded-lg cursor-pointer border border-border"
                     />
                     <input
+                      id="primaryColorHex"
+                      aria-label="Primary color hex value"
                       type="text"
                       value={state.branding.primaryColor}
                       onChange={(e) => updateBranding({ primaryColor: e.target.value })}
                       className="flex-1 px-3 py-2 border border-border rounded-lg focus:ring-2 focus:ring-ring focus:border-coral font-mono text-sm"
                       placeholder="#FF6B35"
+                      aria-invalid={state.error?.startsWith(PRIMARY_COLOR_ERROR_PREFIX) || undefined}
+                      aria-describedby={state.error?.startsWith(PRIMARY_COLOR_ERROR_PREFIX) ? 'primary-color-error' : undefined}
                     />
                   </div>
+                  {state.error?.startsWith(PRIMARY_COLOR_ERROR_PREFIX) ? (
+                    <p id="primary-color-error" className="mt-2 text-sm text-danger-ink">
+                      Use a six-digit hex color, such as #FF6B35.
+                    </p>
+                  ) : null}
                 </div>
 
                 <div>
@@ -650,10 +666,10 @@ function AccessRequestWizardContent() {
                       aria-invalid={state.error?.startsWith(SUBDOMAIN_ERROR_PREFIX) || undefined}
                       aria-describedby={state.error?.startsWith(SUBDOMAIN_ERROR_PREFIX) ? 'subdomain-error' : undefined}
                     />
-                    <span className="px-4 py-2 bg-muted/30 border border-l-0 border-border rounded-r-lg text-muted-foreground text-sm">
-                      .agencyplatform.com
-                    </span>
                   </div>
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    Custom subdomain routing is not available yet.
+                  </p>
                   {state.error?.startsWith(SUBDOMAIN_ERROR_PREFIX) ? (
                     <p id="subdomain-error" className="mt-2 text-sm text-danger-ink">
                       Use 3–63 lowercase letters, numbers, or hyphens. Do not start or end with a hyphen.
@@ -908,7 +924,7 @@ function AccessRequestWizardContent() {
                               <span className="text-sm text-foreground">Custom color</span>
                             )}
                             {state.branding.subdomain && (
-                              <span className="text-sm text-foreground">{state.branding.subdomain}.agencyplatform.com</span>
+                              <span className="text-sm text-foreground">Custom subdomain saved for future routing</span>
                             )}
                           </div>
                         </div>
@@ -918,7 +934,7 @@ function AccessRequestWizardContent() {
                             className="w-24 h-12 rounded-md flex items-center justify-center text-xs font-medium text-center px-2"
                             style={{
                               backgroundColor: state.branding.primaryColor + '15',
-                              color: state.branding.primaryColor,
+                              color: 'var(--ink)',
                             }}
                           >
                             {state.branding.logoUrl ? (

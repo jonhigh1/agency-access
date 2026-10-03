@@ -20,5 +20,6 @@ describe('InviteLoadStateCard', () => {
     expect(onRetry).toHaveBeenCalledTimes(1);
     expect(screen.getByRole('heading', { name: /still working on it/i })).toBeInTheDocument();
     expect(screen.getByRole('link', { name: /contact support/i })).toHaveAttribute('href', '/contact');
+    expect(screen.queryByText(/nothing has been shared/i)).not.toBeInTheDocument();
   });
 });

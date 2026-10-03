@@ -23,7 +23,6 @@ import { resolveApiUrl } from '@/lib/api/api-env';
 import { ApiResponseError, parseJsonResponse } from '@/lib/api/parse-json-response';
 import {
   getInviteSecuritySummary,
-  isClientInviteManualCallbackPlatform,
   isClientInviteManualPlatform,
 } from '@/lib/client-invite-platforms';
 import { buildInvitePlatformQueue } from '@/lib/invite-platform-queue';
@@ -170,9 +169,17 @@ export default function ClientAuthorizationPage({
       buildInvitePlatformQueue({
         platforms: data?.platforms || [],
         completedPlatforms,
+        unresolvedProducts: data?.authorizationProgress?.unresolvedProducts,
         returningPlatform: oauthConnectionInfo?.platform ?? (urlView === 'connect' ? urlPlatform : null),
       }),
-    [completedPlatforms, data?.platforms, oauthConnectionInfo?.platform, urlPlatform, urlView]
+    [
+      completedPlatforms,
+      data?.authorizationProgress?.unresolvedProducts,
+      data?.platforms,
+      oauthConnectionInfo?.platform,
+      urlPlatform,
+      urlView,
+    ]
   );
   const activePlatformName = platformQueue.activePlatform
     ? PLATFORM_NAMES[platformQueue.activePlatform.platformGroup as Platform]
@@ -290,7 +297,10 @@ export default function ClientAuthorizationPage({
         platform_count: loadedPayload.platforms?.length || 0,
         platforms: startedPlatforms,
         has_intake_fields: loadedPayload.intakeFields?.length > 0,
-        has_custom_branding: !!loadedPayload.branding?.logoUrl,
+        has_custom_branding:
+          !!loadedPayload.branding?.logoUrl ||
+          !!loadedPayload.branding?.primaryColor &&
+            loadedPayload.branding.primaryColor.toUpperCase() !== '#FF6B35',
       });
     }
 
@@ -303,15 +313,6 @@ export default function ClientAuthorizationPage({
 
     if (urlStep === '2' && urlConnectionId && urlPlatform) {
       setIsReviewingConnectStatus(false);
-      if (isClientInviteManualCallbackPlatform(urlPlatform)) {
-        mergedCompleted = new Set<Platform>([...Array.from(mergedCompleted), urlPlatform]);
-        setOauthConnectionInfo(null);
-        setResumeWizardStart(null);
-        setCompletedPlatforms(mergedCompleted);
-        setPhase('platforms');
-        return;
-      }
-
       // U7: the OAuth return or refresh resumes the SAME connection at the
       // share step, with Meta selections prefilled from server truth. The
       // mapper owns the phase decision (R7, KTD12).
@@ -516,6 +517,7 @@ export default function ClientAuthorizationPage({
     );
     if (missingRequiredField) {
       setIntakeError(`Complete ${missingRequiredField.label} before continuing.`);
+      document.getElementById(`intake-${missingRequiredField.id}`)?.focus();
       return;
     }
 
@@ -653,12 +655,14 @@ export default function ClientAuthorizationPage({
         ? 'Review connected platforms'
         : activePlatformName
         ? `Complete ${activePlatformName} access`
-        : 'Complete account access',
+        : isComplete ? 'Confirming account access' : 'Awaiting agency verification',
       description: isConnectStatusReview
         ? 'All requested platforms are connected. Review the status or return to the final confirmation.'
         : activePlatformName
         ? `Finish ${activePlatformName} first. The rest of the request is listed below.`
-        : 'Finish the remaining platform connection steps.',
+        : isComplete
+        ? 'Confirming the requested account access.'
+        : 'Your remaining platform reports are waiting for verification.',
     },
     finalizing: {
       title: 'Confirming your authorization',
@@ -683,6 +687,7 @@ export default function ClientAuthorizationPage({
     <InviteFlowShell
       title={agencyDisplayName}
       description={`Authorize access for ${data.clientName}`}
+      primaryColor={data.branding?.primaryColor}
       header={
         <InviteHeroHeader
           title={phaseCopy.title}
@@ -712,13 +717,14 @@ export default function ClientAuthorizationPage({
             <div className="space-y-5 px-6 py-6">
               {intakeFields.map((field) => (
                 <div key={field.id} className="space-y-2">
-                  <label className="block text-sm font-semibold text-ink">
+                  <label htmlFor={`intake-${field.id}`} className="block text-sm font-semibold text-ink">
                     {field.label}
                     {field.required ? <span className="ml-1 text-danger-ink">*</span> : null}
                   </label>
 
                   {field.type === 'textarea' ? (
                     <textarea
+                      id={`intake-${field.id}`}
                       value={intakeResponses[field.id] || ''}
                       onChange={(e) =>
                         setIntakeResponses((prev) => ({
@@ -750,6 +756,7 @@ export default function ClientAuthorizationPage({
                     />
                   ) : (
                     <input
+                      id={`intake-${field.id}`}
                       type={field.type === 'email' ? 'email' : field.type === 'url' ? 'url' : 'text'}
                       value={intakeResponses[field.id] || ''}
                       onChange={(e) =>
@@ -866,11 +873,11 @@ export default function ClientAuthorizationPage({
               description={
                 platformQueue.nextPlatform
                   ? `Complete this step, then continue to ${PLATFORM_NAMES[platformQueue.nextPlatform.platformGroup as Platform]}.`
-                  : 'Complete this final platform to finish the request.'
+                  : 'Complete this platform step, then check the request’s progress.'
               }
               exitNote={
                 isClientInviteManualPlatform(platformQueue.activePlatform.platformGroup as Platform)
-                  ? `This takes about two minutes inside ${PLATFORM_NAMES[platformQueue.activePlatform.platformGroup as Platform]}. You stay on this page.`
+                  ? `Complete the native invite steps inside ${PLATFORM_NAMES[platformQueue.activePlatform.platformGroup as Platform]}, then return to this request.`
                   : `You will leave for ${PLATFORM_NAMES[platformQueue.activePlatform.platformGroup as Platform]} and come right back here.`
               }
               identities={activePlatformIdentities}
@@ -915,6 +922,16 @@ export default function ClientAuthorizationPage({
                 onRequestUnavailable={(code) => setForcedTerminalCode(code)}
               />
             </InvitePlatformStage>
+            </div>
+          ) : !isConnectStatusReview ? (
+            <div className="border-2 border-black bg-card p-6 text-center" role="status" aria-live="polite">
+              <h2 className="text-xl font-semibold text-ink font-display">Access verification is in progress</h2>
+              <p className="mt-2 text-sm text-muted-foreground">
+                Your agency is verifying the reported access. Check again after they confirm it.
+              </p>
+              <Button className="mt-4" variant="secondary" onClick={refreshAuthorizationProgress}>
+                Check again
+              </Button>
             </div>
           ) : null}
         </div>

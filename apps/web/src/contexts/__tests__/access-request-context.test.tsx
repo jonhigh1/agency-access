@@ -671,6 +671,7 @@ describe('AccessRequestContext', () => {
           google: ['google_ads', 'ga4'],
           meta: ['meta_ads'],
         });
+        result.current.updateMetaAccessConfig({ recipients: [{ type: 'human', id: 'person-1', name: 'Agency user' }], pageTasks: [], adAccountTasks: [], catalogTasks: ['MANAGE'] });
         result.current.updateAccessLevel('standard'); // Global default
         result.current.updatePlatformAccessLevel('google', 'admin'); // Override for google
       });
@@ -740,6 +741,83 @@ describe('AccessRequestContext', () => {
 
       // Should NOT navigate
       expect(mockPush).not.toHaveBeenCalled();
+    });
+
+    it('submits one request when invoked twice before the first response', async () => {
+      let resolveRequest!: (value: any) => void;
+      vi.mocked(accessRequestsApi.createAccessRequest).mockImplementationOnce(
+        () => new Promise((resolve) => { resolveRequest = resolve; }) as any
+      );
+      const { result } = renderHook(() => useAccessRequest(), { wrapper });
+
+      act(() => {
+        result.current.updateClient({ id: 'client-123', name: 'Test Client', email: 'test@example.com', agencyId: 'agency-123' });
+        result.current.updatePlatforms({ google: ['google_ads'] });
+      });
+
+      let first!: Promise<void>;
+      let second!: Promise<void>;
+      act(() => {
+        first = result.current.submitRequest();
+        second = result.current.submitRequest();
+      });
+      expect(accessRequestsApi.createAccessRequest).toHaveBeenCalledTimes(1);
+
+      await act(async () => {
+        resolveRequest({ data: { id: 'request-123' } });
+        await Promise.all([first, second]);
+      });
+    });
+
+    it('validates a restored review draft before submission', async () => {
+      sessionStorage.setItem('access-request-draft:agency-123', JSON.stringify({
+        version: 1,
+        state: {
+          client: { id: 'client-123', name: 'Test Client', email: 'test@example.com', agencyId: 'agency-123', company: 'Test Company', website: null, language: 'en', createdAt: '2026-10-01T00:00:00Z', updatedAt: '2026-10-01T00:00:00Z' },
+          externalReference: '',
+          selectedPlatforms: { google: ['google_ads'] },
+          platformAccessLevels: {},
+          intakeFields: [],
+          branding: { logoUrl: '', primaryColor: 'invalid', subdomain: '' },
+          currentStep: 4,
+        },
+      }));
+      vi.mocked(accessRequestsApi.createAccessRequest).mockResolvedValue({ data: { id: 'request-123' } } as any);
+      const { result } = renderHook(() => useAccessRequest(), { wrapper });
+      expect(result.current.state.currentStep).toBe(4);
+      await act(async () => { await result.current.submitRequest(); });
+      expect(accessRequestsApi.createAccessRequest).not.toHaveBeenCalled();
+      expect(result.current.state.currentStep).toBe(3);
+      expect(result.current.state.error).toContain('six-digit hex');
+    });
+
+    it('ignores a second submission after success while navigation is pending', async () => {
+      vi.mocked(accessRequestsApi.createAccessRequest).mockResolvedValue({ data: { id: 'request-123' } } as any);
+      const { result } = renderHook(() => useAccessRequest(), { wrapper });
+      act(() => {
+        result.current.updateClient({ id: 'client-123', name: 'Test Client', email: 'test@example.com', agencyId: 'agency-123' });
+        result.current.updatePlatforms({ google: ['google_ads'] });
+      });
+      const submit = result.current.submitRequest;
+      await act(async () => { await submit(); await submit(); });
+      expect(accessRequestsApi.createAccessRequest).toHaveBeenCalledTimes(1);
+      expect(mockPush).toHaveBeenCalledTimes(1);
+    });
+
+    it('releases pending state and permits retry after an empty API response', async () => {
+      vi.mocked(accessRequestsApi.createAccessRequest).mockResolvedValueOnce({} as any)
+        .mockResolvedValueOnce({ data: { id: 'request-123' } } as any);
+      const { result } = renderHook(() => useAccessRequest(), { wrapper });
+      act(() => {
+        result.current.updateClient({ id: 'client-123', name: 'Test Client', email: 'test@example.com', agencyId: 'agency-123' });
+        result.current.updatePlatforms({ google: ['google_ads'] });
+      });
+      await act(async () => { await result.current.submitRequest(); });
+      expect(result.current.state.submitting).toBe(false);
+      expect(result.current.state.error).toContain('response');
+      expect(mockPush).not.toHaveBeenCalled();
+      await act(async () => { await result.current.submitRequest(); });
+      expect(mockPush).toHaveBeenCalledWith('/access-requests/request-123/success');
     });
 
     it('should include intake fields and branding in submission', async () => {

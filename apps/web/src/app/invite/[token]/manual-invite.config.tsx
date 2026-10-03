@@ -84,7 +84,9 @@ function para(children: ReactNode): ReactNode {
 function bulletList(items: ReactNode[]): ReactNode {
   return (
     <div className="px-4 py-3">
-      <ul className="list-disc space-y-2 pl-5 text-sm text-foreground">{items}</ul>
+      <ul className="list-disc space-y-2 pl-5 text-sm text-foreground">
+        {items.map((item, index) => <li key={index}>{item}</li>)}
+      </ul>
     </div>
   );
 }
@@ -98,9 +100,9 @@ function stack(children: ReactNode): ReactNode {
 // ---------------------------------------------------------------------------
 
 interface EmailInviteSpec {
-  platform: 'kit' | 'klaviyo' | 'mailchimp';
+  platform: 'kit' | 'klaviyo' | 'mailchimp' | 'zapier';
   platformName: string;
-  targetKey: 'kit' | 'klaviyo' | 'mailchimp';
+  targetKey: 'kit' | 'klaviyo' | 'mailchimp' | 'zapier';
   copyButton: ComponentType<{ text: string }>;
   loginUrl: string;
   loginLabel: string;
@@ -112,6 +114,7 @@ interface EmailInviteSpec {
   step3Description: string;
   step3FirstBullet: string;
   step3LastBullet: string;
+  step3PrimaryLabel?: string;
   failureMessage: string;
 }
 
@@ -169,14 +172,14 @@ function buildEmailInviteConfig(spec: EmailInviteSpec): ManualInviteConfig<Email
             'Choose the role you want your agency to have.',
             spec.step3LastBullet,
           ]),
-        primaryLabel: 'I sent the invite',
+        primaryLabel: spec.step3PrimaryLabel || 'I sent the invite',
       },
     ],
     completion: {
-      description: 'We will return you to the authorization request once confirmed.',
-      pendingMessage: 'Confirm completion and continue back to the request flow.',
+      description: 'We will record your submission and return you to the authorization request for review.',
+      pendingMessage: 'Confirm you sent the invite. Your agency will review access before it is verified.',
       gateLabel: (data) => `I invited ${data.agencyEmail} to my ${platformName} account`,
-      loadingLabel: 'Connecting...',
+      loadingLabel: 'Submitting...',
     },
     submit: {
       failureMessage: spec.failureMessage,
@@ -250,6 +253,25 @@ export const mailchimpManualConfig = buildEmailInviteConfig({
   failureMessage: 'Failed to create Mailchimp connection',
 });
 
+export const zapierManualConfig = buildEmailInviteConfig({
+  platform: 'zapier',
+  platformName: 'Zapier',
+  targetKey: 'zapier',
+  copyButton: KitCopyButton,
+  loginUrl: 'https://zapier.com/app/login',
+  loginLabel: 'Open Zapier Login',
+  step2Title: 'Add your agency to Zapier',
+  step2Description: 'Sign in to your Team or Enterprise account and invite your agency member.',
+  step2PrimaryLabel: 'I opened settings',
+  step2Guidance: 'Use team settings to invite the agency email. Team membership alone does not share your app connections.',
+  step3Title: 'Share each required app connection',
+  step3Description: 'Open App Connections and explicitly share every app account your agency needs.',
+  step3FirstBullet: 'Open Apps, select a connected app account, then select Share.',
+  step3LastBullet: 'Select the agency member or team, click Done, then repeat for each required app connection.',
+  step3PrimaryLabel: 'I shared the app connections',
+  failureMessage: 'Failed to create Zapier connection',
+});
+
 // ---------------------------------------------------------------------------
 // Beehiiv
 // ---------------------------------------------------------------------------
@@ -307,10 +329,10 @@ export const beehiivManualConfig: ManualInviteConfig<EmailManualData> = {
     },
   ],
   completion: {
-    description: 'Once confirmed, we will mark Beehiiv as completed for this request.',
-    pendingMessage: 'Confirm this invite is complete, then continue back to the request flow.',
+    description: 'We will record your Beehiiv invitation and return you to the request for agency review.',
+    pendingMessage: 'Confirm you sent the invite. Your agency will verify access before it is complete.',
     gateLabel: (data) => `I invited ${data.agencyEmail} to my Beehiiv workspace`,
-    loadingLabel: 'Connecting...',
+    loadingLabel: 'Submitting...',
   },
   submit: {
     failureMessage: 'Failed to create Beehiiv connection',
@@ -397,10 +419,10 @@ export const pinterestManualConfig: ManualInviteConfig<PinterestManualData> = {
     },
   ],
   completion: {
-    description: 'Confirm completion and return to the authorization request.',
-    pendingMessage: 'Confirm completion to finalize Pinterest setup for this request.',
+    description: 'Submit your Pinterest partner setup for agency review.',
+    pendingMessage: 'Confirm you submitted the partner setup. Your agency will verify access before it is complete.',
     gateLabel: 'I completed Pinterest partner setup and permissions',
-    loadingLabel: 'Connecting...',
+    loadingLabel: 'Submitting...',
     disabled: (ctx) => !ctx.data.businessId,
     disabledReason: (ctx) =>
       ctx.data.businessId ? undefined : 'Business ID is required before finalizing Pinterest.',
@@ -523,9 +545,9 @@ export const shopifyManualConfig: ManualInviteConfig<ShopifyManualData> = {
   ],
   completion: {
     id: 'connected',
-    title: 'Connected',
-    description: 'Confirm completion and return to your authorization request.',
-    pendingMessage: 'We will mark Shopify as complete once you confirm and continue.',
+    title: 'Submitted for review',
+    description: 'Submit your Shopify collaborator details for agency review.',
+    pendingMessage: 'Your agency will review the collaborator request before Shopify access is verified.',
     gateLabel: 'I have shared my shop domain and collaborator code with the agency',
     loadingLabel: 'Saving...',
     renderSummary: (ctx) =>

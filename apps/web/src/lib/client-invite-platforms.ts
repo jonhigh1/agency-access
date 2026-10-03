@@ -25,7 +25,6 @@ export function isManualInvitePlatform(platform: string): boolean {
 interface ClientInvitePlatformCapability {
   flow: ClientInviteFlow;
   manualRoute: string | null;
-  manualCallback: boolean;
 }
 
 const CLIENT_INVITE_MANUAL_ROUTE_SEGMENTS: Partial<Record<Platform, string>> = {
@@ -35,6 +34,7 @@ const CLIENT_INVITE_MANUAL_ROUTE_SEGMENTS: Partial<Record<Platform, string>> = {
   klaviyo: 'klaviyo/manual',
   pinterest: 'pinterest/manual',
   shopify: 'shopify/manual',
+  zapier: 'zapier/manual',
 };
 
 const CLIENT_INVITE_MANUAL_PLATFORMS = new Set<Platform>([
@@ -44,6 +44,7 @@ const CLIENT_INVITE_MANUAL_PLATFORMS = new Set<Platform>([
   'klaviyo',
   'pinterest',
   'shopify',
+  'zapier',
 ]);
 
 export function getClientInvitePlatformCapability(platform: Platform): ClientInvitePlatformCapability {
@@ -57,16 +58,11 @@ export function getClientInvitePlatformCapability(platform: Platform): ClientInv
   return {
     flow,
     manualRoute,
-    manualCallback: flow === 'manual',
   };
 }
 
 export function isClientInviteManualPlatform(platform: Platform): boolean {
   return getClientInvitePlatformCapability(platform).flow === 'manual';
-}
-
-export function isClientInviteManualCallbackPlatform(platform: Platform): boolean {
-  return getClientInvitePlatformCapability(platform).manualCallback;
 }
 
 export function getInviteSecuritySummary(platforms: Platform[]): {

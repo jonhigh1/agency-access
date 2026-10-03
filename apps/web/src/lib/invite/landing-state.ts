@@ -17,7 +17,7 @@
  *    platforms resume at asset selection without prefill.
  * 4. A request whose platforms are all connected stays on the platform phase
  *    until finalization confirms it (the page's completion flow owns that).
- * 5. Any recorded progress — connected platforms or unresolved products —
+ * 5. Any recorded progress — connected platforms or authorization work —
  *    lands on the platform phase; only a visit with no progress sees intake.
  *    This kills the mid-flow refresh fallback to intake (G1).
  *
@@ -235,13 +235,11 @@ export function resolveInviteLandingState(input: InviteLandingInput): InviteLand
     return { phase: 'platforms' };
   }
 
-  // 5. Any recorded progress lands on the platform phase; intake is for a
-  //    visit with no progress at all (G1: never fall back mid-flow). The
-  //    unresolved reasons themselves are read verbatim here and interpreted
-  //    only by the shared reason-to-status map (platform-status.ts, KTD12),
-  //    so this phase and the checklist can never disagree.
+  // Missing authorization describes a fresh request, not saved progress.
+  // Other unresolved reasons describe work already started on a platform.
   const hasProgress =
-    input.completedPlatforms.size > 0 || (input.unresolvedProducts?.length ?? 0) > 0;
+    input.completedPlatforms.size > 0 ||
+    (input.unresolvedProducts?.some((product) => product.reason !== 'authorization_required') ?? false);
 
   return { phase: hasProgress ? 'platforms' : 'intake' };
 }

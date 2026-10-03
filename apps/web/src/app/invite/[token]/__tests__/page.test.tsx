@@ -494,7 +494,7 @@ describe('Invite Flow Page', () => {
     stubFetch( fetchMock);
 
     render(<InvitePage />);
-    const company = await screen.findByRole('textbox');
+    const company = await screen.findByRole('textbox', { name: /company name/i });
     await userEvent.type(company, 'Acme');
     await userEvent.click(screen.getByRole('button', { name: /^continue$/i }));
 
@@ -508,6 +508,40 @@ describe('Invite Flow Page', () => {
       expect.stringContaining('/api/client/token-123/intake'),
       expect.objectContaining({ body: JSON.stringify({ intakeResponses: { company: 'Acme' } }) })
     );
+  });
+
+  it('labels text and long-answer intake controls', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({
+        ok: true,
+        json: async () => ({
+          data: {
+            id: 'request-1', agencyId: 'agency-1', agencyName: 'Demo Agency', clientName: 'Client',
+            clientEmail: 'client@test.com', status: 'pending', uniqueToken: 'token-123',
+            expiresAt: new Date().toISOString(),
+            intakeFields: [
+              { id: 'company', label: 'Company name', type: 'text', required: true },
+              { id: 'notes', label: 'Notes for agency', type: 'textarea', required: false },
+            ],
+            branding: {},
+            platforms: [{ platformGroup: 'google', products: [{ product: 'google_ads', accessLevel: 'admin' }] }],
+            manualInviteTargets: { google: {} }, authorizationProgress: { completedPlatforms: [], isComplete: false },
+          },
+          error: null,
+        }),
+      }))
+    );
+
+    render(<InvitePage />);
+
+    const company = await screen.findByRole('textbox', { name: /company name/i });
+    expect(screen.getByRole('textbox', { name: 'Notes for agency' })).toBeInTheDocument();
+
+    await userEvent.type(company, '   ');
+    await userEvent.click(screen.getByRole('button', { name: /^continue$/i }));
+    expect(screen.getByRole('alert')).toHaveTextContent('Complete Company name before continuing.');
+    expect(company).toHaveFocus();
   });
 
   it('advances without an intake POST when no intake fields are configured', async () => {
@@ -538,6 +572,34 @@ describe('Invite Flow Page', () => {
       expect(screen.getByText('Active platform: Google')).toBeInTheDocument();
     });
     expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/intake'))).toHaveLength(0);
+  });
+
+  it('applies saved primary color and records color-only branding', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({
+        ok: true,
+        json: async () => ({
+          data: {
+            id: 'request-1', agencyId: 'agency-1', agencyName: 'Demo Agency', clientName: 'Client',
+            clientEmail: 'client@test.com', status: 'pending', uniqueToken: 'token-123',
+            expiresAt: new Date().toISOString(), intakeFields: [], branding: { primaryColor: '#0A7CFF' },
+            platforms: [{ platformGroup: 'google', products: [{ product: 'google_ads', accessLevel: 'admin' }] }],
+            manualInviteTargets: { google: {} }, authorizationProgress: { completedPlatforms: [], isComplete: false },
+          },
+          error: null,
+        }),
+      }))
+    );
+
+    render(<InvitePage />);
+
+    await screen.findByRole('button', { name: /continue to connect/i });
+    expect(screen.getByTestId('invite-brand-accent')).toHaveStyle({ borderTopColor: '#0A7CFF' });
+    expect(capturePosthogEvent).toHaveBeenCalledWith(
+      'client_authorization_started',
+      expect.objectContaining({ has_custom_branding: true })
+    );
   });
 
   it('skips intake for a returning visitor who already completed a platform', async () => {
@@ -1107,7 +1169,7 @@ describe('Invite Flow Page', () => {
     });
   });
 
-  it('auto-completes manual platform callback for Beehiiv without reopening the wizard', async () => {
+  it('keeps a manual Beehiiv report pending until the agency verifies it', async () => {
     searchParamGetMock.mockImplementation((key: string) => {
       if (key === 'step') return '2';
       if (key === 'platform') return 'beehiiv';
@@ -1155,17 +1217,12 @@ describe('Invite Flow Page', () => {
 
     render(<InvitePage />);
 
-    await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith(
-        expect.stringContaining('/api/client/token-123/complete'),
-        expect.objectContaining({ method: 'POST' })
-      );
-    });
-
-    expect(screen.queryByRole('button', { name: /complete platform/i })).not.toBeInTheDocument();
+    await screen.findByText('Active platform: Beehiiv');
+    expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/complete'))).toHaveLength(0);
+    expect(screen.getByRole('button', { name: /complete platform/i })).toBeInTheDocument();
   });
 
-  it('auto-completes manual platform callback for Shopify', async () => {
+  it('keeps a manual Shopify report pending until the agency verifies it', async () => {
     searchParamGetMock.mockImplementation((key: string) => {
       if (key === 'step') return '2';
       if (key === 'platform') return 'shopify';
@@ -1215,17 +1272,12 @@ describe('Invite Flow Page', () => {
 
     render(<InvitePage />);
 
-    await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith(
-        expect.stringContaining('/api/client/token-123/complete'),
-        expect.objectContaining({ method: 'POST' })
-      );
-    });
-
-    expect(screen.queryByRole('button', { name: /complete platform/i })).not.toBeInTheDocument();
+    await screen.findByText('Active platform: Shopify');
+    expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/complete'))).toHaveLength(0);
+    expect(screen.getByRole('button', { name: /complete platform/i })).toBeInTheDocument();
   });
 
-  it('auto-completes manual platform callback for Mailchimp', async () => {
+  it('keeps a manual Mailchimp report pending until the agency verifies it', async () => {
     searchParamGetMock.mockImplementation((key: string) => {
       if (key === 'step') return '2';
       if (key === 'platform') return 'mailchimp';
@@ -1275,15 +1327,12 @@ describe('Invite Flow Page', () => {
 
     render(<InvitePage />);
 
-    await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith(
-        expect.stringContaining('/api/client/token-123/complete'),
-        expect.objectContaining({ method: 'POST' })
-      );
-    });
+    await screen.findByText('Active platform: Mailchimp');
+    expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/complete'))).toHaveLength(0);
+    expect(screen.getByRole('button', { name: /complete platform/i })).toBeInTheDocument();
   });
 
-  it('returns from a manual platform callback into the next active platform in the queue', async () => {
+  it('does not skip a manually reported platform in the queue', async () => {
     searchParamGetMock.mockImplementation((key: string) => {
       if (key === 'step') return '2';
       if (key === 'platform') return 'mailchimp';
@@ -1291,37 +1340,68 @@ describe('Invite Flow Page', () => {
       return null;
     });
 
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      json: async () => ({
+        data: {
+          id: 'request-1',
+          agencyId: 'agency-1',
+          agencyName: 'Demo Agency',
+          clientName: 'Client',
+          clientEmail: 'client@test.com',
+          status: 'pending',
+          uniqueToken: 'token-123',
+          expiresAt: new Date().toISOString(),
+          intakeFields: [],
+          branding: {},
+          platforms: [
+            { platformGroup: 'google', products: [{ product: 'google_ads', accessLevel: 'admin' }] },
+            { platformGroup: 'mailchimp', products: [{ product: 'mailchimp', accessLevel: 'admin' }] },
+          ],
+          manualInviteTargets: { google: {}, mailchimp: { agencyEmail: 'ops@demoagency.com' } },
+          authorizationProgress: { completedPlatforms: [], isComplete: false },
+        },
+        error: null,
+      }),
+    }));
+
+    vi.stubGlobal(
+      'fetch',
+      fetchMock
+    );
+
+    render(<InvitePage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Active platform: Mailchimp')).toBeInTheDocument();
+      expect(screen.getByText('Completion action: Continue to Google')).toBeInTheDocument();
+      expect(screen.queryAllByRole('button', { name: /complete platform/i })).toHaveLength(1);
+    });
+
+    expect(screen.queryByText('Active platform: Google')).not.toBeInTheDocument();
+    expect(fetchMock.mock.calls.filter(([url]) => String(url).includes('/complete'))).toHaveLength(0);
+  });
+
+  it('advances to Zapier while a reported Beehiiv invite awaits agency verification', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn(async () => ({
         ok: true,
         json: async () => ({
           data: {
-            id: 'request-1',
-            agencyId: 'agency-1',
-            agencyName: 'Demo Agency',
-            clientName: 'Client',
-            clientEmail: 'client@test.com',
-            status: 'pending',
-            uniqueToken: 'token-123',
-            expiresAt: new Date().toISOString(),
-            intakeFields: [],
-            branding: {},
+            id: 'request-1', agencyId: 'agency-1', agencyName: 'Demo Agency', clientName: 'Client',
+            clientEmail: 'client@test.com', status: 'pending', uniqueToken: 'token-123',
+            expiresAt: new Date().toISOString(), intakeFields: [], branding: {},
             platforms: [
-              {
-                platformGroup: 'google',
-                products: [{ product: 'google_ads', accessLevel: 'admin' }],
-              },
-              {
-                platformGroup: 'mailchimp',
-                products: [{ product: 'mailchimp', accessLevel: 'admin' }],
-              },
+              { platformGroup: 'beehiiv', products: [{ product: 'beehiiv', accessLevel: 'admin' }] },
+              { platformGroup: 'zapier', products: [{ product: 'zapier', accessLevel: 'admin' }] },
             ],
-            manualInviteTargets: {
-              google: {},
-              mailchimp: { agencyEmail: 'ops@demoagency.com' },
+            manualInviteTargets: { beehiiv: { agencyEmail: 'ops@demoagency.com' }, zapier: {} },
+            authorizationProgress: {
+              completedPlatforms: [],
+              isComplete: false,
+              unresolvedProducts: [{ product: 'beehiiv', platformGroup: 'beehiiv', reason: 'pending' }],
             },
-            authorizationProgress: { completedPlatforms: [], isComplete: false },
           },
           error: null,
         }),
@@ -1330,13 +1410,40 @@ describe('Invite Flow Page', () => {
 
     render(<InvitePage />);
 
-    await waitFor(() => {
-      expect(screen.getByText('Active platform: Google')).toBeInTheDocument();
-      expect(screen.getByText('Completion action: Finish')).toBeInTheDocument();
-      expect(screen.queryAllByRole('button', { name: /complete platform/i })).toHaveLength(1);
-    });
+    await screen.findByText('Active platform: Zapier');
+    expect(screen.getByText(/Beehiiv access request was recorded/i)).toBeInTheDocument();
+    expect(screen.queryByText('Active platform: Beehiiv')).not.toBeInTheDocument();
+  });
 
-    expect(screen.queryByText('Active platform: Mailchimp')).not.toBeInTheDocument();
+  it('shows a verification state when every remaining platform is waiting', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({
+        ok: true,
+        json: async () => ({
+          data: {
+            id: 'request-1', agencyId: 'agency-1', agencyName: 'Demo Agency', clientName: 'Client',
+            clientEmail: 'client@test.com', status: 'pending', uniqueToken: 'token-123',
+            expiresAt: new Date().toISOString(), intakeFields: [], branding: {},
+            platforms: [{ platformGroup: 'beehiiv', products: [{ product: 'beehiiv', accessLevel: 'admin' }] }],
+            manualInviteTargets: { beehiiv: { agencyEmail: 'ops@demoagency.com' } },
+            authorizationProgress: {
+              completedPlatforms: [],
+              isComplete: false,
+              unresolvedProducts: [{ product: 'beehiiv', platformGroup: 'beehiiv', reason: 'pending' }],
+            },
+          },
+          error: null,
+        }),
+      }))
+    );
+
+    render(<InvitePage />);
+
+    expect(await screen.findByRole('heading', { name: 'Access verification is in progress' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Awaiting agency verification', level: 1 })).toBeInTheDocument();
+    expect(screen.getByText(/agency is verifying the reported access/i)).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /complete platform/i })).not.toBeInTheDocument();
   });
 
   describe('Named-platform progress checklist', () => {

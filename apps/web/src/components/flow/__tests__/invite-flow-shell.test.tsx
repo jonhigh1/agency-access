@@ -150,4 +150,22 @@ describe('InviteFlowShell', () => {
     expect(screen.queryByRole('button', { name: /check again/i })).toBeNull();
     expect(screen.getByText('Main content')).toBeInTheDocument();
   });
+
+  it('uses a valid brand color only for the decorative frame accent', () => {
+    const { rerender } = render(
+      <InviteFlowShell title="Share account access" primaryColor="#0A7CFF">
+        <div>Main content</div>
+      </InviteFlowShell>
+    );
+
+    expect(screen.getByTestId('invite-brand-accent')).toHaveStyle({ borderTopColor: '#0A7CFF' });
+
+    rerender(
+      <InviteFlowShell title="Share account access" primaryColor="blue">
+        <div>Main content</div>
+      </InviteFlowShell>
+    );
+
+    expect(screen.getByTestId('invite-brand-accent')).toHaveStyle({ borderTopColor: '#FF6B35' });
+  });
 });
