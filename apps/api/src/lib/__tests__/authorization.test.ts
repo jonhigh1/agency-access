@@ -19,7 +19,65 @@ vi.mock('@/services/agency-resolution.service', () => ({
   },
 }));
 
-import { resolvePrincipalAgency } from '../authorization';
+import { resolveAuthenticatedUserEmail, resolvePrincipalAgency } from '../authorization';
+
+describe('resolveAuthenticatedUserEmail', () => {
+  beforeEach(() => {
+    clerkClientMock.users.getUser.mockReset();
+  });
+
+  it('uses a verified Clerk email when a valid JWT has no email claim', async () => {
+    clerkClientMock.users.getUser.mockResolvedValue({
+      primaryEmailAddressId: 'email_1',
+      emailAddresses: [
+        {
+          id: 'email_1',
+          emailAddress: 'Owner@Acme.test',
+          verification: { status: 'verified' },
+        },
+      ],
+    });
+
+    await expect(resolveAuthenticatedUserEmail({ sub: 'user_1' })).resolves.toBe(
+      'owner@acme.test'
+    );
+    expect(clerkClientMock.users.getUser).toHaveBeenCalledWith('user_1');
+  });
+
+  it('uses the normalized JWT email without a Clerk lookup', async () => {
+    await expect(
+      resolveAuthenticatedUserEmail({ sub: 'user_1', email: 'Owner@Acme.test' })
+    ).resolves.toBe('owner@acme.test');
+    expect(clerkClientMock.users.getUser).not.toHaveBeenCalled();
+  });
+
+  it('does not use an unverified Clerk email', async () => {
+    clerkClientMock.users.getUser.mockResolvedValue({
+      primaryEmailAddressId: 'email_1',
+      emailAddresses: [
+        {
+          id: 'email_1',
+          emailAddress: 'owner@acme.test',
+          verification: { status: 'unverified' },
+        },
+      ],
+    });
+
+    await expect(resolveAuthenticatedUserEmail({ sub: 'user_1' })).resolves.toBeUndefined();
+  });
+
+  it('does not call Clerk for a subject that is not a user id', async () => {
+    await expect(
+      resolveAuthenticatedUserEmail({ sub: 'org_2abc' })
+    ).resolves.toBeUndefined();
+    expect(clerkClientMock.users.getUser).not.toHaveBeenCalled();
+  });
+
+  it('does not call Clerk when there is no subject at all', async () => {
+    await expect(resolveAuthenticatedUserEmail(undefined)).resolves.toBeUndefined();
+    expect(clerkClientMock.users.getUser).not.toHaveBeenCalled();
+  });
+});
 
 describe('resolvePrincipalAgency', () => {
   beforeEach(() => {

@@ -1,7 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { agencyPlatformService } from '@/services/agency-platform.service';
 import { PLATFORM_CONNECTORS } from './constants.js';
-import { assertAgencyAccess, resolveUserEmail } from '@/lib/authorization.js';
+import { assertAgencyAccess, resolveAuthenticatedUserEmail } from '@/lib/authorization.js';
 import { extractClientIp } from '@/lib/ip.js';
 import { quotaEnforcementMiddleware } from '@/middleware/quota-enforcement.js';
 import { sendError, sendValidationError } from '../../lib/response.js';
@@ -20,14 +20,17 @@ export async function registerConnectionRoutes(fastify: FastifyInstance) {
     if (!agencyId) {
       return sendValidationError(reply, 'agencyId is required');
     }
-    const revokedBy = resolveUserEmail((request as any).user);
-    if (!revokedBy) return sendError(reply, 'USER_EMAIL_REQUIRED', 'Verified user email is required to revoke Meta access', 401);
 
     const principalAgencyId = (request as any).principalAgencyId as string;
     const accessError = assertAgencyAccess(agencyId, principalAgencyId);
     if (accessError) {
       return reply.code(403).send({ data: null, error: accessError });
     }
+
+    // Session JWTs may not carry an email claim; fall back to the verified
+    // Clerk record so the audit actor is always an authenticated identity.
+    const revokedBy = await resolveAuthenticatedUserEmail((request as any).user);
+    if (!revokedBy) return sendError(reply, 'USER_EMAIL_REQUIRED', 'Authenticated user email is required to revoke a platform connection', 401);
 
     const result = await agencyPlatformService.revokeConnection(
       agencyId,

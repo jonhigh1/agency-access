@@ -22,7 +22,7 @@ import type { ClientLanguage } from '@agency-platform/shared';
 import { prisma } from '@/lib/prisma';
 import { quotaEnforcementMiddleware } from '@/middleware/quota-enforcement.js';
 import { authenticate } from '@/middleware/auth.js';
-import { resolvePrincipalAgency, resolveUserEmail } from '@/lib/authorization.js';
+import { resolvePrincipalAgency, resolveAuthenticatedUserEmail } from '@/lib/authorization.js';
 import { extractClientIp } from '@/lib/ip.js';
 
 // Validation schemas
@@ -260,8 +260,10 @@ export async function clientRoutes(fastify: FastifyInstance) {
   fastify.delete('/clients/:id', async (request, reply) => {
     const agencyId = (request as any).agencyId;
     const { id } = request.params as { id: string };
-    const userEmail = resolveUserEmail((request as any).user);
-    if (!userEmail) return reply.code(401).send({ data: null, error: { code: 'USER_EMAIL_REQUIRED', message: 'Verified user email is required to delete a client and revoke Meta access' } });
+    // Session JWTs may not carry an email claim; fall back to the verified
+    // Clerk record so the audit actor is always an authenticated identity.
+    const userEmail = await resolveAuthenticatedUserEmail((request as any).user);
+    if (!userEmail) return reply.code(401).send({ data: null, error: { code: 'USER_EMAIL_REQUIRED', message: 'Authenticated user email is required to delete a client' } });
 
     const deleted = await deleteClient(id, agencyId, {
       userEmail,

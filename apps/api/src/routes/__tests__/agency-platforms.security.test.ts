@@ -11,6 +11,7 @@ vi.mock('../../lib/authorization.js');
 vi.mock('../../services/agency-platform.service.js', () => ({
   agencyPlatformService: {
     getConnections: vi.fn(),
+    revokeConnection: vi.fn(),
   },
 }));
 vi.mock('../../services/meta-assets.service.js', () => ({
@@ -20,7 +21,7 @@ vi.mock('../../services/meta-assets.service.js', () => ({
 }));
 vi.mock('../../services/identity-verification.service.js', () => ({
   identityVerificationService: {
-    updateVerificationStatus: vi.fn(),
+    createIdentityConnection: vi.fn(),
   },
 }));
 vi.mock('../../services/connectors/meta.js', () => ({
@@ -69,6 +70,11 @@ describe('Agency Platforms Routes - Security', () => {
       }
       return null;
     });
+    vi.mocked(authorization.resolveAuthenticatedUserEmail).mockResolvedValue('owner@example.com');
+    vi.mocked(identityVerificationService.createIdentityConnection).mockResolvedValue({
+      data: { id: 'identity-1' },
+      error: null,
+    } as any);
   });
 
   afterEach(async () => {
@@ -131,30 +137,105 @@ describe('Agency Platforms Routes - Security', () => {
     expect(response.json().error.code).toBe('CONNECTION_NOT_FOUND');
   });
 
-  it('returns 403 for identity verify when connection does not belong to principal agency', async () => {
+  it('does not expose an endpoint that marks an identity verified without provider evidence', async () => {
     vi.mocked(prisma.agencyPlatformConnection.findUnique).mockResolvedValue({
       id: 'conn-1',
-      agencyId: 'agency-other',
+      agencyId: 'agency-owner',
       platform: 'meta',
     } as any);
     vi.mocked(prisma.agencyPlatformConnection.findFirst).mockResolvedValue({
       id: 'conn-1',
-      agencyId: 'agency-other',
+      agencyId: 'agency-owner',
       platform: 'meta',
     } as any);
-    vi.mocked(identityVerificationService.updateVerificationStatus).mockResolvedValue({
-      data: { id: 'conn-1', verificationStatus: 'verified' },
-      error: null,
-    } as any);
-
     const response = await app.inject({
       method: 'PUT',
       url: '/agency-platforms/conn-1/verify',
       headers: { authorization: 'Bearer token' },
     });
 
-    expect(response.statusCode).toBe(403);
-    expect(response.json().error.code).toBe('FORBIDDEN');
-    expect(identityVerificationService.updateVerificationStatus).not.toHaveBeenCalled();
+    expect(response.statusCode).toBe(404);
+    expect(prisma.agencyPlatformConnection.findFirst).not.toHaveBeenCalled();
+  });
+
+  it('derives the identity audit actor from authenticated claims', async () => {
+    const response = await app.inject({
+      method: 'POST',
+      url: '/agency-platforms/identity',
+      headers: { authorization: 'Bearer token' },
+      payload: {
+        agencyId: 'agency-owner',
+        platform: 'google',
+        agencyEmail: 'access@agency.example',
+        connectedBy: 'forged@example.com',
+      },
+    });
+
+    expect(response.statusCode).toBe(201);
+    expect(identityVerificationService.createIdentityConnection).toHaveBeenCalledWith(
+      expect.objectContaining({
+        agencyId: 'agency-owner',
+        connectedBy: 'owner@example.com',
+      })
+    );
+  });
+
+  it('rejects identity creation when the authenticated claim has no email', async () => {
+    vi.mocked(authorization.resolveAuthenticatedUserEmail).mockResolvedValueOnce(undefined);
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/agency-platforms/identity',
+      headers: { authorization: 'Bearer token' },
+      payload: {
+        agencyId: 'agency-owner',
+        platform: 'google',
+        agencyEmail: 'access@agency.example',
+      },
+    });
+
+    expect(response.statusCode).toBe(401);
+    expect(response.json().error.code).toBe('USER_EMAIL_REQUIRED');
+    expect(identityVerificationService.createIdentityConnection).not.toHaveBeenCalled();
+  });
+
+  it('derives the revoke actor from the authenticated identity, not the request body', async () => {
+    vi.mocked(agencyPlatformService.revokeConnection).mockResolvedValue({
+      data: { id: 'conn-1', platform: 'meta', revokedBy: 'owner@example.com' },
+      error: null,
+    } as any);
+
+    const response = await app.inject({
+      method: 'DELETE',
+      url: '/agency-platforms/meta',
+      headers: { authorization: 'Bearer token' },
+      payload: {
+        agencyId: 'agency-owner',
+        revokedBy: 'forged@example.com',
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(agencyPlatformService.revokeConnection).toHaveBeenCalledWith(
+      'agency-owner',
+      'meta',
+      'owner@example.com',
+      expect.objectContaining({ ipAddress: expect.any(String) })
+    );
+  });
+
+  it('rejects platform revoke when no verified email is available', async () => {
+    vi.mocked(authorization.resolveAuthenticatedUserEmail).mockResolvedValueOnce(undefined);
+
+    const response = await app.inject({
+      method: 'DELETE',
+      url: '/agency-platforms/meta',
+      headers: { authorization: 'Bearer token' },
+      payload: { agencyId: 'agency-owner' },
+    });
+
+    expect(response.statusCode).toBe(401);
+    expect(response.json().error.code).toBe('USER_EMAIL_REQUIRED');
+    expect(agencyPlatformService.revokeConnection).not.toHaveBeenCalled();
   });
 });

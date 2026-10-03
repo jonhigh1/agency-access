@@ -51,7 +51,7 @@ describe('Token health routes - security', () => {
       data: { agencyId: 'agency-owner', principalId: 'user_123', agency: { id: 'agency-owner', name: 'Owner', email: 'owner@example.com' } },
       error: null,
     });
-    vi.mocked(authorization.resolveUserEmail).mockReturnValue('owner@example.com');
+    vi.mocked(authorization.resolveAuthenticatedUserEmail).mockResolvedValue('owner@example.com');
     vi.mocked(connectionService.getAgencyTokenHealth).mockResolvedValue({ data: [], error: null } as any);
     vi.mocked(connectionService.getAgencyConnections).mockResolvedValue({ data: [], error: null } as any);
     vi.mocked(connectionService.getAgencyConnectionSummaries).mockResolvedValue({ data: [], error: null } as any);
@@ -138,7 +138,7 @@ describe('Token health routes - security', () => {
   });
 
   it('blocks token revocation when verified actor email is unavailable', async () => {
-    vi.mocked(authorization.resolveUserEmail).mockReturnValue(undefined);
+    vi.mocked(authorization.resolveAuthenticatedUserEmail).mockResolvedValueOnce(undefined);
     vi.mocked(prisma.clientConnection.findFirst).mockResolvedValue({ id: 'conn-1', agencyId: 'agency-owner' } as any);
 
     const response = await app.inject({
@@ -148,7 +148,39 @@ describe('Token health routes - security', () => {
     });
 
     expect(response.statusCode).toBe(401);
+    expect(response.json().error.code).toBe('USER_EMAIL_REQUIRED');
     expect(connectionService.revokeConnection).not.toHaveBeenCalled();
+  });
+
+  it('blocks authorization revoke when verified actor email is unavailable', async () => {
+    vi.mocked(authorization.resolveAuthenticatedUserEmail).mockResolvedValueOnce(undefined);
+    vi.mocked(prisma.platformAuthorization.findUnique).mockResolvedValue({
+      id: 'auth-1',
+      connectionId: 'conn-1',
+      platform: 'meta',
+      connection: { agencyId: 'agency-owner' },
+    } as any);
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/authorizations/auth-1/revoke',
+      headers: { authorization: 'Bearer token' },
+    });
+
+    expect(response.statusCode).toBe(401);
+    expect(response.json().error.code).toBe('USER_EMAIL_REQUIRED');
+    expect(connectionService.revokePlatformAuthorization).not.toHaveBeenCalled();
+  });
+
+  it('does not resolve actor email on list endpoints', async () => {
+    const response = await app.inject({
+      method: 'GET',
+      url: '/connections',
+      headers: { authorization: 'Bearer token' },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(authorization.resolveAuthenticatedUserEmail).not.toHaveBeenCalled();
   });
 
   it('lists connections as summaries with a default limit of 50', async () => {

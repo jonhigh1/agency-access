@@ -10,7 +10,7 @@ import { z } from 'zod';
 import type { Platform } from '@agency-platform/shared';
 import { connectionService } from '../services/connection.service.js';
 import { authenticate } from '@/middleware/auth.js';
-import { resolvePrincipalAgency, resolveUserEmail, type AuthorizationError } from '@/lib/authorization.js';
+import { resolvePrincipalAgency, resolveAuthenticatedUserEmail, type AuthorizationError } from '@/lib/authorization.js';
 import { extractClientIp } from '@/lib/ip.js';
 import { prisma } from '@/lib/prisma.js';
 import { sendError, sendValidationError } from '../lib/response.js';
@@ -46,7 +46,6 @@ async function resolveAgencyIdOrReply(request: FastifyRequest, reply: FastifyRep
 
   return {
     agencyId: principal.data.agencyId,
-    userEmail: resolveUserEmail((request as any).user),
     sent: null,
   };
 }
@@ -167,7 +166,7 @@ export async function tokenHealthRoutes(fastify: FastifyInstance) {
 
   // Revoke connection
   fastify.post('/connections/:id/revoke', async (request, reply) => {
-    const { agencyId, userEmail, sent } = await resolveAgencyIdOrReply(request, reply);
+    const { agencyId, sent } = await resolveAgencyIdOrReply(request, reply);
     if (!agencyId) return sent;
 
     const { id } = request.params as { id: string };
@@ -177,7 +176,10 @@ export async function tokenHealthRoutes(fastify: FastifyInstance) {
       return sendRouteError(reply, connectionNotFound(), 404);
     }
 
-    if (!userEmail) return sendError(reply, 'USER_EMAIL_REQUIRED', 'Verified user email is required to revoke Meta access', 401);
+    // Session JWTs may not carry an email claim; fall back to the verified
+    // Clerk record so the audit actor is always an authenticated identity.
+    const userEmail = await resolveAuthenticatedUserEmail((request as any).user);
+    if (!userEmail) return sendError(reply, 'USER_EMAIL_REQUIRED', 'Authenticated user email is required to revoke this connection', 401);
     const result = await connectionService.revokeConnection(id, connection, {
       userEmail,
       ipAddress: extractClientIp(request),
@@ -223,7 +225,7 @@ export async function tokenHealthRoutes(fastify: FastifyInstance) {
 
   // Revoke platform authorization
   fastify.post('/authorizations/:id/revoke', async (request, reply) => {
-    const { agencyId, userEmail, sent } = await resolveAgencyIdOrReply(request, reply);
+    const { agencyId, sent } = await resolveAgencyIdOrReply(request, reply);
     if (!agencyId) return sent;
 
     const { id } = request.params as { id: string };
@@ -238,7 +240,10 @@ export async function tokenHealthRoutes(fastify: FastifyInstance) {
       });
     }
 
-    if (!userEmail) return sendError(reply, 'USER_EMAIL_REQUIRED', 'Verified user email is required to revoke Meta access', 401);
+    // Session JWTs may not carry an email claim; fall back to the verified
+    // Clerk record so the audit actor is always an authenticated identity.
+    const userEmail = await resolveAuthenticatedUserEmail((request as any).user);
+    if (!userEmail) return sendError(reply, 'USER_EMAIL_REQUIRED', 'Authenticated user email is required to revoke this authorization', 401);
     const result = await connectionService.revokePlatformAuthorization(auth.connectionId, auth.platform as Platform, {
       userEmail,
       ipAddress: extractClientIp(request),

@@ -33,7 +33,7 @@ vi.mock('@/lib/authorization', () => ({
     data: { agencyId: 'agency-1', principalId: 'test-user', agency: { id: 'agency-1', name: 'Agency', email: 'test@example.com' } },
     error: null,
   })),
-  resolveUserEmail: vi.fn(() => 'test@example.com'),
+  resolveAuthenticatedUserEmail: vi.fn(async () => 'test@example.com'),
 }));
 
 describe('Phase 5: Clients Routes - TDD Tests', () => {

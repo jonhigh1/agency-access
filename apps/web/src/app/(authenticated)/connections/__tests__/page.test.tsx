@@ -842,4 +842,45 @@ describe('ConnectionsPage', () => {
       expect(mockReplace).toHaveBeenCalledWith('/connections');
     }, { timeout: 5000 });
   });
+
+  it('surfaces the API error message when a disconnect fails', async () => {
+    (global.fetch as any)
+      .mockResolvedValueOnce(mockJsonResponse({ data: [{ id: 'test-agency-id' }] }))
+      .mockResolvedValueOnce(
+        mockJsonResponse({
+          data: [
+            { platform: 'meta', name: 'Meta', category: 'recommended', connected: true },
+          ],
+        })
+      )
+      .mockResolvedValueOnce(
+        mockJsonResponse(
+          {
+            data: null,
+            error: {
+              code: 'USER_EMAIL_REQUIRED',
+              message: 'Authenticated user email is required to revoke a platform connection',
+            },
+          },
+          { status: 401 }
+        )
+      );
+
+    renderPage();
+
+    await waitFor(() => {
+      expect(screen.getByText('Meta')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByRole('button', { name: /disconnect/i }));
+
+    await waitFor(() => {
+      expect(
+        screen.getByText(
+          'Failed to disconnect platform: Authenticated user email is required to revoke a platform connection'
+        )
+      ).toBeInTheDocument();
+    });
+    expect(screen.queryByText(/Failed to disconnect platform: Failed to disconnect platform/)).not.toBeInTheDocument();
+  });
 });

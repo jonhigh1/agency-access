@@ -171,7 +171,7 @@ describe('Agency Platforms Routes', () => {
       data: { agencyId: 'agency-1', principalId: 'user_123' },
       error: null,
     });
-    vi.mocked(authorization.resolveUserEmail).mockReturnValue('admin@agency.com');
+    vi.mocked(authorization.resolveAuthenticatedUserEmail).mockResolvedValue('admin@agency.com');
     vi.mocked(authorization.assertAgencyAccess).mockImplementation((requested, principal) => {
       if (requested !== principal) {
         return {
@@ -1287,7 +1287,7 @@ describe('Agency Platforms Routes', () => {
     });
 
     it('rejects disconnect when verified actor email is unavailable', async () => {
-      vi.mocked(authorization.resolveUserEmail).mockReturnValue(undefined);
+      vi.mocked(authorization.resolveAuthenticatedUserEmail).mockResolvedValue(undefined);
       const response = await app.inject({
         method: 'DELETE',
         url: '/agency-platforms/meta',

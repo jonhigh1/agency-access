@@ -1,5 +1,30 @@
 ---
 
+## Session: 2026-10-03 — Fix 401 USER_EMAIL_REQUIRED on revoke endpoints (jam 76b5f94c)
+
+### What was done
+- Read the jam (jev browser blocked; drove jam.dev via agent-browser): Disconnect on /connections fired `DELETE /agency-platforms/meta` → 401, empty body, one click, 4s video.
+- Root-caused: Clerk session JWTs in production carry no resolvable email claims; PR #72's hard 401 `USER_EMAIL_REQUIRED` guards keyed on `resolveUserEmail(request.user)` broke every mutating revoke endpoint (platform disconnect, client delete, both token-health revokes) while GETs worked.
+- Fixed all four handlers to derive the audit actor via `resolveAuthenticatedUserEmail` (JWT claims → verified Clerk record), placed after agency-ownership checks; removed email resolution from token-health's shared helper so list endpoints pay zero email cost.
+- Web: disconnect mutation now surfaces the API error message; removed the ignored client-supplied `revokedBy` body field.
+- TDD: red→green across agency-platforms.security, clients.security, token-health.security, authorization (helper), connections page (toast). Updated 4 stale mocks from the old seam.
+- Validation: full API suite 1711 passed, full web suite 2272 passed, typecheck clean across workspaces. Logged to docs/ERRORS.md; concept saved to gbrain (concepts/clerk-session-token-email-claims).
+
+### Files changed
+- `apps/api/src/routes/agency-platforms/connection.routes.ts` — revoke actor via authenticated email, after access check
+- `apps/api/src/routes/clients.ts` — same for DELETE /clients/:id
+- `apps/api/src/routes/token-health.ts` — email resolution moved into the two revoke handlers; helper no longer returns userEmail
+- `apps/web/src/app/(authenticated)/connections/page.tsx` — disconnect error parsing; dead revokedBy removed
+- Tests: `agency-platforms.security.test.ts`, `clients.security.test.ts`, `clients.routes.test.ts`, `token-health.security.test.ts`, `agency-platforms.routes.test.ts`, `authorization.test.ts`, `connections/__tests__/page.test.tsx`
+- Docs: `docs/ERRORS.md`, `tasks/todo.md`, `concepts/clerk-session-token-email-claims.md` (gbrain write-through)
+
+### Decisions made
+- Keep the Clerk-API fallback in code rather than relying on a Clerk session-token template change (dashboard config); verified emails only, unchanged security posture. See docs/ERRORS.md residual note.
+
+### Next steps
+- Commit alongside the in-flight WIP (fix depends on the uncommitted `resolveAuthenticatedUserEmail` helper in authorization.ts) and deploy; then verify a real disconnect against production.
+- Optional: add the email claim to Clerk's session token template so JWTs carry it directly.
+
 ## Session: 2026-09-26/27 — Client invite flow 10X redesign (PR #73)
 
 ### What was done

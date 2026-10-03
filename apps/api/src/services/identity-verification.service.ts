@@ -286,61 +286,6 @@ export async function createIdentityConnection(input: CreateIdentityConnectionIn
 }
 
 /**
- * Update identity verification status
- *
- * Called after agency identity is verified via platform API.
- *
- * @param connectionId - Connection ID
- * @param status - Verification status ('verified' | 'failed')
- * @param verifiedData - Optional verified data from platform API
- * @param errorMessage - Optional error message if verification failed
- * @returns Updated connection record
- */
-export async function updateVerificationStatus(
-  connectionId: string,
-  status: 'verified' | 'failed',
-  verifiedData?: {
-    businessName?: string;
-    email?: string;
-    businessId?: string;
-  },
-  errorMessage?: string
-) {
-  try {
-    // Get existing connection to preserve metadata
-    const existingConnection = await prisma.agencyPlatformConnection.findUnique({
-      where: { id: connectionId },
-      select: { metadata: true },
-    });
-
-    const connection = await prisma.agencyPlatformConnection.update({
-      where: { id: connectionId },
-      data: {
-        verificationStatus: status,
-        lastVerifiedAt: new Date(),
-        verificationError: errorMessage,
-        metadata: verifiedData
-          ? {
-              ...((existingConnection?.metadata as any) || {}),
-              verifiedData,
-            }
-          : undefined,
-      },
-    });
-
-    return { data: connection, error: null };
-  } catch (error) {
-    return {
-      data: null,
-      error: {
-        code: 'INTERNAL_ERROR',
-        message: 'Failed to update verification status',
-      },
-    };
-  }
-}
-
-/**
  * Identity Verification Service
  * Exports all identity verification service functions
  */
@@ -348,5 +293,4 @@ export const identityVerificationService = {
   validateIdentity,
   checkIdentityUniqueness,
   createIdentityConnection,
-  updateVerificationStatus,
 };

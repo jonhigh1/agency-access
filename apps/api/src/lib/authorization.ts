@@ -43,6 +43,17 @@ export function resolveUserEmail(user: AuthUserClaims | undefined): string | und
   return normalizeEmail(nested);
 }
 
+export async function resolveAuthenticatedUserEmail(
+  user: AuthUserClaims | undefined
+): Promise<string | undefined> {
+  const claimEmail = resolveUserEmail(user);
+  if (claimEmail) return claimEmail;
+
+  if (!user?.sub?.startsWith('user_')) return undefined;
+
+  return fetchClerkEmailAddress(user.sub);
+}
+
 async function fetchClerkEmailAddress(userId: string): Promise<string | undefined> {
   try {
     const user = await getClerkClient().users.getUser(userId);

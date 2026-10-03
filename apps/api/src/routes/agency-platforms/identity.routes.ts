@@ -1,8 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { identityVerificationService } from '@/services/identity-verification.service';
 import { SUPPORTED_PLATFORMS } from './constants.js';
-import { assertAgencyAccess } from '@/lib/authorization.js';
-import { prisma } from '@/lib/prisma';
+import { assertAgencyAccess, resolveAuthenticatedUserEmail } from '@/lib/authorization.js';
 import { sendError, sendValidationError } from '../../lib/response.js';
 
 export async function registerIdentityRoutes(fastify: FastifyInstance) {
@@ -11,22 +10,26 @@ export async function registerIdentityRoutes(fastify: FastifyInstance) {
    * Create identity-only connection (no OAuth tokens).
    */
   fastify.post('/agency-platforms/identity', async (request, reply) => {
-    const { agencyId, platform, agencyEmail, businessId, connectedBy } = request.body as {
+    const { agencyId, platform, agencyEmail, businessId } = request.body as {
       agencyId?: string;
       platform?: string;
       agencyEmail?: string;
       businessId?: string;
-      connectedBy?: string;
     };
 
-    if (!agencyId || !platform || !connectedBy) {
-      return sendValidationError(reply, 'agencyId, platform, and connectedBy are required');
+    if (!agencyId || !platform) {
+      return sendValidationError(reply, 'agencyId and platform are required');
     }
 
     const principalAgencyId = (request as any).principalAgencyId as string;
     const accessError = assertAgencyAccess(agencyId, principalAgencyId);
     if (accessError) {
       return reply.code(403).send({ data: null, error: accessError });
+    }
+
+    const connectedBy = await resolveAuthenticatedUserEmail((request as any).user);
+    if (!connectedBy) {
+      return sendError(reply, 'USER_EMAIL_REQUIRED', 'Authenticated user email is required to add a platform identity', 401);
     }
 
     if (!SUPPORTED_PLATFORMS.includes(platform as any)) {
@@ -63,39 +66,4 @@ export async function registerIdentityRoutes(fastify: FastifyInstance) {
     return reply.code(201).send(result);
   });
 
-  /**
-   * PUT /agency-platforms/:id/verify
-   * Verify agency identity via platform API check.
-   */
-  fastify.put('/agency-platforms/:id/verify', async (request, reply) => {
-    const { id } = request.params as { id: string };
-    const principalAgencyId = (request as any).principalAgencyId as string;
-
-    const connection = await prisma.agencyPlatformConnection.findFirst({
-      where: { id },
-      select: { id: true, agencyId: true },
-    });
-
-    if (!connection) {
-      return sendError(reply, 'CONNECTION_NOT_FOUND', 'Connection not found', 404);
-    }
-
-    const accessError = assertAgencyAccess(connection.agencyId, principalAgencyId);
-    if (accessError) {
-      return reply.code(403).send({ data: null, error: accessError });
-    }
-
-    const result = await identityVerificationService.updateVerificationStatus(
-      id,
-      'verified',
-      {}
-    );
-
-    if (result.error) {
-      const statusCode = result.error.code === 'NOT_FOUND' ? 404 : 500;
-      return reply.code(statusCode).send(result);
-    }
-
-    return reply.send(result);
-  });
 }

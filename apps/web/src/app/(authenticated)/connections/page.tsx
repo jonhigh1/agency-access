@@ -337,7 +337,6 @@ function ConnectionsPageContent() {
 
       setDisconnectingPlatform(platform);
 
-      const userEmail = user?.primaryEmailAddress?.emailAddress || 'user@agency.com';
       const token = await getAuthToken();
 
       const response = await fetch(
@@ -348,15 +347,18 @@ function ConnectionsPageContent() {
             'Content-Type': 'application/json',
             ...(token && { Authorization: `Bearer ${token}` }),
           },
-          body: JSON.stringify({
-            agencyId,
-            revokedBy: userEmail,
-          }),
+          // The server derives the audit actor from the authenticated
+          // identity; no client-supplied revokedBy is sent or trusted.
+          body: JSON.stringify({ agencyId }),
         }
       );
 
-      if (!response.ok) throw new Error('Failed to disconnect platform');
-      return response.json();
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        const message = result?.error?.message ?? 'Failed to disconnect platform';
+        throw new Error(message);
+      }
+      return result;
     },
     onSuccess: (_, platform) => {
       // Track platform disconnected in PostHog

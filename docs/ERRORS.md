@@ -3,6 +3,36 @@
 Log deterministic errors with a conclusion; infrastructure errors without one
 until a pattern emerges. Newest first.
 
+## 2026-10-03 — RESOLVED: 401 USER_EMAIL_REQUIRED on all mutating revoke endpoints (jam 76b5f94c)
+
+**Deterministic** (root cause proven by code path + production capture).
+
+- Symptom: `DELETE /agency-platforms/meta` → 401 from
+  https://authhub.co/connections Disconnect (jam.dev/c/76b5f94c). Same guard
+  broke DELETE /clients/:id, POST /connections/:id/revoke, and
+  POST /authorizations/:id/revoke.
+- Root cause: PR #72 (b7ed78e1, 2026-09-26) added hard 401
+  `USER_EMAIL_REQUIRED` guards keyed on `resolveUserEmail(request.user)` —
+  i.e. on email claims inside the Clerk session JWT. Clerk session tokens do
+  not include email claims in this deployment, so every revoke 401'd while
+  GETs succeeded (agency resolution keys off sub/orgId and has its own
+  Clerk-API email fallback).
+- Fix: route handlers now derive the audit actor via
+  `resolveAuthenticatedUserEmail` (JWT claims → verified Clerk record), after
+  the agency-ownership check. token-health's shared helper no longer resolves
+  email on list endpoints. Frontend disconnect no longer sends a client
+  `revokedBy` and now surfaces the API error message.
+- Tests: failing-first coverage added in agency-platforms.security,
+  clients.security, token-health.security, authorization (helper), and
+  connections page (toast surfaces API message). Full suites green (API 1711,
+  web 2272), typecheck clean.
+- Residual: any NEW endpoint that keys authorization off JWT email claims will
+  repeat this bug. Clerk-side option (not done): add email to the session
+  token template so claims carry it; the Clerk-API fallback keeps working
+  either way.
+
+---
+
 ---
 
 ## 2026-09-13 — RESOLVED: 11 pre-existing web test failures (settings + success page)

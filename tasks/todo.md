@@ -1,3 +1,31 @@
+# Bug fix: 401 on platform disconnect (jam 76b5f94c) — 2026-10-03
+
+## Root cause
+Clerk session JWTs lack resolvable email claims. PR #72 (b7ed78e1) added hard
+401 `USER_EMAIL_REQUIRED` guards keyed on `resolveUserEmail(request.user)` to
+four mutating endpoints. Any session without an email claim 401s on platform
+disconnect, client delete, and both token-health revokes. Page GETs succeed
+because resolvePrincipalAgency keys off sub/orgId and has its own Clerk-API
+email fallback.
+
+## Review (completed)
+- [x] TDD red→green: agency-platforms.security (actor derived from authenticated identity; body revokedBy ignored; 401 when no verified email), clients.security (same for client delete), token-health.security (actor via fallback, 401 paths, GETs skip email resolution), authorization (helper: verified-only Clerk email; no Clerk call for non-user subs)
+- [x] Fix connection.routes.ts DELETE → resolveAuthenticatedUserEmail after agency access check
+- [x] Fix clients.ts DELETE → resolveAuthenticatedUserEmail
+- [x] Fix token-health.ts: both revokes resolve email post-ownership-check; userEmail removed from resolveAgencyIdOrReply (list endpoints pay zero email cost)
+- [x] Web: disconnect mutation surfaces API error message; dead client-supplied revokedBy removed from the request body
+- [x] Validate: full API suite 1711 passed, full web suite 2272 passed, typecheck clean across workspaces
+- [x] Logged to docs/ERRORS.md
+
+Residual (accepted, not fixed):
+- Clerk session token template could carry the email claim (dashboard config,
+  not code); the Clerk-API fallback covers both cases.
+- Any future endpoint keying authorization off JWT email claims will repeat
+  this bug class — use resolveAuthenticatedUserEmail instead.
+
+
+---
+
 # Content Calendar Implementation — September 2026
 
 Source: `marketing/content/CONTENT-CALENDAR-SEPTEMBER-2026.md`

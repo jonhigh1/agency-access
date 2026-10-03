@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import Fastify, { FastifyInstance } from 'fastify';
 import { clientRoutes } from '../clients';
 import * as authorization from '@/lib/authorization.js';
+import { deleteClient } from '@/services/client.service';
 
 vi.mock('@/lib/authorization.js');
 vi.mock('@/services/client.service', () => ({
@@ -82,6 +83,46 @@ describe('Client Routes - Security', () => {
 
     expect(response.statusCode).toBe(403);
     expect(response.json().error.code).toBe('FORBIDDEN');
+  });
+
+  it('derives the delete actor from the authenticated identity, not the request body', async () => {
+    vi.mocked(authorization.resolvePrincipalAgency).mockResolvedValue({
+      data: { agencyId: 'agency-owner', principalId: 'user_123' },
+      error: null,
+    } as any);
+    vi.mocked(authorization.resolveAuthenticatedUserEmail).mockResolvedValue('owner@example.com');
+    vi.mocked(deleteClient).mockResolvedValue({ id: 'client-1' } as any);
+
+    const response = await app.inject({
+      method: 'DELETE',
+      url: '/clients/client-1',
+      headers: { authorization: 'Bearer token' },
+      payload: { userEmail: 'forged@example.com' },
+    });
+
+    expect(response.statusCode).toBe(204);
+    expect(deleteClient).toHaveBeenCalledWith('client-1', 'agency-owner', {
+      userEmail: 'owner@example.com',
+      ipAddress: expect.any(String),
+    });
+  });
+
+  it('rejects client delete when no verified email is available', async () => {
+    vi.mocked(authorization.resolvePrincipalAgency).mockResolvedValue({
+      data: { agencyId: 'agency-owner', principalId: 'user_123' },
+      error: null,
+    } as any);
+    vi.mocked(authorization.resolveAuthenticatedUserEmail).mockResolvedValueOnce(undefined);
+
+    const response = await app.inject({
+      method: 'DELETE',
+      url: '/clients/client-1',
+      headers: { authorization: 'Bearer token' },
+    });
+
+    expect(response.statusCode).toBe(401);
+    expect(response.json().error.code).toBe('USER_EMAIL_REQUIRED');
+    expect(deleteClient).not.toHaveBeenCalled();
   });
 });
 
