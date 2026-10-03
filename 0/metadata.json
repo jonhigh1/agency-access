@@ -1,0 +1,40 @@
+{
+  "cli_version": "0.10.2",
+  "checkpoint_id": "01M405SSZCSRAG6RPDQFNE4297",
+  "session_id": "167a071b-bd67-4dac-8eb3-8b2783c08d4c",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-03T06:04:11.471715Z",
+  "branch": "codex/authhub-polish",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "apps/web/src/components/__tests__/manage-assets-modal-shell.test.tsx",
+    "apps/web/src/components/manage-assets-modal-shell.tsx",
+    "apps/web/src/components/ui/__tests__/sidebar.test.tsx",
+    "apps/web/src/components/ui/sidebar.tsx"
+  ],
+  "agent": "Factory AI Droid",
+  "model": "",
+  "turn_id": "21b2787b5dd8",
+  "checkpoint_transcript_start": 2,
+  "transcript_lines_at_start": 2,
+  "compact_transcript_start": 1,
+  "token_usage": {
+    "input_tokens": 0,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 0,
+    "api_call_count": 0
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-10-03T06:04:11.467116Z",
+    "agent_lines": 100,
+    "agent_removed": 4,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 100,
+    "total_lines_changed": 104,
+    "agent_percentage": 100,
+    "metric_version": 2
+  }
+}
