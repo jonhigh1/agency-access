@@ -1,10 +1,29 @@
 import React, { useState } from 'react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import postcss from 'postcss';
+import tailwindcss from 'tailwindcss';
+import tailwindConfig from '../../../../tailwind.config';
 import { Sidebar, SidebarBody, SidebarLink } from '../sidebar';
 
 const mockUsePathname = vi.fn();
+let sidebarUtilities = '';
+let utilitiesStyle: HTMLStyleElement | undefined;
+
+beforeAll(async () => {
+  const sidebarSource = readFileSync(join(__dirname, '..', 'sidebar.tsx'), 'utf8');
+  sidebarUtilities = (
+    await postcss([
+      tailwindcss({
+        ...tailwindConfig,
+        content: [{ raw: sidebarSource, extension: 'tsx' }],
+      }),
+    ]).process('@tailwind utilities;', { from: undefined })
+  ).css;
+});
 
 vi.mock('next/navigation', () => ({
   usePathname: () => mockUsePathname(),
@@ -57,6 +76,11 @@ describe('Sidebar', () => {
     });
   });
 
+  afterEach(() => {
+    utilitiesStyle?.remove();
+    utilitiesStyle = undefined;
+  });
+
   it('renders mobile menu controls as accessible buttons with proper labels and state', async () => {
     const user = userEvent.setup();
     render(<StatefulMobileSidebar />);
@@ -78,6 +102,23 @@ describe('Sidebar', () => {
     fireEvent(panel, new Event('cancel', { cancelable: true }));
     expect(screen.queryByRole('dialog', { name: 'Sidebar navigation' })).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Open navigation menu' })).toHaveFocus();
+  });
+
+  it('uses generated Tailwind utilities to hide a closed mobile menu and display an open menu', () => {
+    utilitiesStyle = document.createElement('style');
+    utilitiesStyle.textContent = sidebarUtilities;
+    document.head.append(utilitiesStyle);
+
+    const { container } = render(<StatefulMobileSidebar />);
+    const panel = container.querySelector('dialog')!;
+
+    expect(getComputedStyle(panel).display).toBe('none');
+
+    fireEvent.click(screen.getByRole('button', { name: 'Open navigation menu' }));
+    expect(getComputedStyle(panel).display).toBe('flex');
+
+    fireEvent.click(panel.querySelector('button[aria-label="Close navigation menu"]')!);
+    expect(getComputedStyle(panel).display).toBe('none');
   });
 
   it('marks parent navigation link as active on nested routes', () => {

@@ -173,7 +173,7 @@ export const MobileSidebar = ({
                 setOpen(false);
               }}
               className={cn(
-                "fixed inset-0 z-[100] m-0 h-full w-full max-h-none max-w-none flex flex-col justify-between border-0 bg-card p-6 text-foreground backdrop:bg-ink/50 md:hidden",
+                "fixed inset-0 z-[100] m-0 hidden h-full w-full max-h-none max-w-none flex-col justify-between border-0 bg-card p-6 text-foreground open:flex backdrop:bg-ink/50 md:hidden",
                 className
               )}
             >

@@ -1,5 +1,10 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen } from '@testing-library/react';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import postcss from 'postcss';
+import tailwindcss from 'tailwindcss';
+import tailwindConfig from '../../../tailwind.config';
 import { ManageAssetsModalShell } from '../manage-assets-modal-shell';
 import { SingleSelect } from '../ui/single-select';
 
@@ -22,6 +27,21 @@ const baseProps = {
   description: 'Manage the Meta assets connected to this client.',
 };
 
+let shellUtilities = '';
+let utilitiesStyle: HTMLStyleElement | undefined;
+
+beforeAll(async () => {
+  const shellSource = readFileSync(join(__dirname, '..', 'manage-assets-modal-shell.tsx'), 'utf8');
+  shellUtilities = (
+    await postcss([
+      tailwindcss({
+        ...tailwindConfig,
+        content: [{ raw: shellSource, extension: 'tsx' }],
+      }),
+    ]).process('@tailwind utilities;', { from: undefined })
+  ).css;
+});
+
 beforeEach(() => {
   Object.defineProperty(HTMLDialogElement.prototype, 'showModal', {
     configurable: true,
@@ -31,6 +51,11 @@ beforeEach(() => {
     configurable: true,
     value() { this.removeAttribute('open'); },
   });
+});
+
+afterEach(() => {
+  utilitiesStyle?.remove();
+  utilitiesStyle = undefined;
 });
 
 function renderShell(overrides: Partial<Parameters<typeof ManageAssetsModalShell>[0]> = {}) {
@@ -68,6 +93,36 @@ describe('ManageAssetsModalShell behavior', () => {
     );
 
     expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+  });
+
+  it('uses generated Tailwind utilities to hide a closed dialog and display an open dialog', () => {
+    utilitiesStyle = document.createElement('style');
+    utilitiesStyle.textContent = shellUtilities;
+    document.head.append(utilitiesStyle);
+
+    const { container, rerender } = renderShell({ isOpen: false });
+    const dialog = container.querySelector('dialog')!;
+
+    expect(getComputedStyle(dialog).display).toBe('none');
+    expect(screen.queryByText('Shell content')).not.toBeInTheDocument();
+
+    rerender(
+      <ManageAssetsModalShell {...baseProps} isOpen onClose={vi.fn()}>
+        <p>Shell content</p>
+      </ManageAssetsModalShell>
+    );
+
+    expect(getComputedStyle(dialog).display).toBe('flex');
+    expect(screen.getByText('Shell content')).toBeInTheDocument();
+
+    rerender(
+      <ManageAssetsModalShell {...baseProps} isOpen={false} onClose={vi.fn()}>
+        <p>Shell content</p>
+      </ManageAssetsModalShell>
+    );
+
+    expect(getComputedStyle(dialog).display).toBe('none');
+    expect(screen.queryByText('Shell content')).not.toBeInTheDocument();
   });
 
   it('closes the modal on Escape', () => {
