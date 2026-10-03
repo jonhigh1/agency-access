@@ -1,0 +1,34 @@
+{
+  "cli_version": "0.10.2",
+  "checkpoint_id": "01M41RTCHBQ3BZA2SHQE3S5FPW",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "apps/api/.env.example",
+    "apps/api/src/lib/drex.ts",
+    "apps/api/src/lib/env.ts",
+    "apps/api/src/routes/__tests__/client-auth.routes.test.ts",
+    "apps/api/src/routes/client-auth/oauth-state.routes.ts",
+    "apps/api/src/services/__tests__/access-request.service.test.ts",
+    "apps/api/src/services/__tests__/client.service.test.ts",
+    "apps/api/src/services/access-request.service.ts",
+    "apps/api/src/services/client.service.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 0,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 0,
+    "api_call_count": 1
+  }
+}

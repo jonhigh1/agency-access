@@ -1,0 +1,47 @@
+{
+  "cli_version": "0.10.2",
+  "checkpoint_id": "01M41RTCHBQ3BZA2SHQE3S5FPW",
+  "session_id": "ses_efd642343ffe1ZZwGAKPcm1SVS",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-03T20:55:47.880729Z",
+  "branch": "main",
+  "checkpoints_count": 2,
+  "save_step_count": 1,
+  "files_touched": [
+    "apps/api/.env.example",
+    "apps/api/src/lib/drex.ts",
+    "apps/api/src/lib/env.ts",
+    "apps/api/src/routes/__tests__/client-auth.routes.test.ts",
+    "apps/api/src/routes/client-auth/oauth-state.routes.ts",
+    "apps/api/src/services/__tests__/access-request.service.test.ts",
+    "apps/api/src/services/__tests__/client.service.test.ts",
+    "apps/api/src/services/access-request.service.ts",
+    "apps/api/src/services/client.service.ts"
+  ],
+  "agent": "OpenCode",
+  "model": "muse-spark-1.3-contributor-free",
+  "turn_id": "16d99d144b91",
+  "compact_transcript_start": 0,
+  "token_usage": {
+    "input_tokens": 0,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 0,
+    "api_call_count": 1
+  },
+  "session_metrics": {
+    "turn_count": 2
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-10-03T20:55:47.86856Z",
+    "agent_lines": 383,
+    "agent_removed": 23,
+    "human_added": 211,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 594,
+    "total_lines_changed": 750,
+    "agent_percentage": 54.13333333333333,
+    "metric_version": 2
+  }
+}
