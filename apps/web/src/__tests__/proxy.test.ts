@@ -76,6 +76,17 @@ describe('proxy public route handling', () => {
     expect(protectMock).not.toHaveBeenCalled();
   });
 
+  it.each(['/invite/audit-token', '/authorize/audit-token', '/client/audit-token'])(
+    'allows anonymous clients to reach invitation route %s',
+    async (path) => {
+      const { default: proxy } = await import('../proxy');
+
+      await proxy({ protect: protectMock }, new Request(`https://authhub.test${path}`));
+
+      expect(protectMock).not.toHaveBeenCalled();
+    },
+  );
+
   it('does not protect sitemap.xml (required for Google Search Console)', async () => {
     const { default: proxy } = await import('../proxy');
 

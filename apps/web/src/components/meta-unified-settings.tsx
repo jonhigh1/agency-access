@@ -461,6 +461,8 @@ function AssetCard({
   extraContent?: React.ReactNode;
 }) {
   // Match Google ProductCard: section card is the brutalist anchor; rows stay light.
+  const toggleId = `meta-asset-${label.toLowerCase().replaceAll(' ', '-')}`;
+
   return (
     <div
       className={cn(
@@ -472,12 +474,14 @@ function AssetCard({
     >
       <div className="flex items-start gap-3">
         <input
+          id={toggleId}
+          aria-label={label}
           type="checkbox"
           checked={enabled}
           onChange={(e) => onToggle(e.target.checked)}
           className="mt-1 h-5 w-5 rounded border-border text-danger-ink focus:ring-coral"
         />
-        <div className="flex-1">
+        <label htmlFor={toggleId} className="flex-1 cursor-pointer">
           <div className="flex items-start gap-3">
             <div className="mt-0.5 flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-paper text-muted-foreground">
               {icon}
@@ -487,9 +491,9 @@ function AssetCard({
               <p className="text-sm text-muted-foreground">{description}</p>
             </div>
           </div>
-          {extraContent ? <div className="mt-4 border-t border-border pt-4">{extraContent}</div> : null}
-        </div>
+        </label>
       </div>
+      {extraContent ? <div className="ml-8 mt-4 border-t border-border pt-4">{extraContent}</div> : null}
     </div>
   );
 }

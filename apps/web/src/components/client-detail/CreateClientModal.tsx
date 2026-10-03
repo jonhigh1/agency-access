@@ -7,8 +7,8 @@
  * Allows entering name, company, email, and website.
  */
 
-import { useState } from 'react';
-import { m, AnimatePresence } from 'framer-motion';
+import { useEffect, useRef, useState } from 'react';
+import { m } from 'framer-motion';
 import { X, Loader2, CheckCircle2, Plus } from 'lucide-react';
 import { useAuth } from '@clerk/nextjs';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -29,6 +29,11 @@ const URL_REGEX = /^https?:\/\/.+/;
 export function CreateClientModal({ onClose, onSuccess }: CreateClientModalProps) {
   const { getToken } = useAuth();
   const queryClient = useQueryClient();
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const nameInputRef = useRef<HTMLInputElement>(null);
+  const openerRef = useRef<HTMLElement | null>(null);
+  const submissionInFlightRef = useRef(false);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [name, setName] = useState('');
   const [company, setCompany] = useState('');
@@ -36,6 +41,25 @@ export function CreateClientModal({ onClose, onSuccess }: CreateClientModalProps
   const [website, setWebsite] = useState('');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+
+    openerRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    if (!dialog.open) dialog.showModal();
+    nameInputRef.current?.focus();
+
+    return () => {
+      if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+      openerRef.current?.focus();
+    };
+  }, []);
+
+  const closeModal = () => {
+    dialogRef.current?.close();
+    onClose();
+  };
 
   // Create client mutation
   const createMutation = useMutation({
@@ -63,25 +87,32 @@ export function CreateClientModal({ onClose, onSuccess }: CreateClientModalProps
         throw new Error(msg);
       }
 
-      return response.json();
+      const result = await response.json() as { data?: { id?: string; name?: string; email?: string } };
+      if (!result.data?.id || !result.data.name || !result.data.email) {
+        throw new Error('Server returned no client');
+      }
+
+      return result.data as { id: string; name: string; email: string };
     },
-    onSuccess: (result) => {
+    onSuccess: (client) => {
       // Invalidate clients list query
       queryClient.invalidateQueries({ queryKey: ['clients-with-connections'] });
 
       setSuccess(true);
-      setTimeout(() => {
-        onSuccess?.(result.data);
-        onClose();
+      closeTimerRef.current = setTimeout(() => {
+        onSuccess?.(client);
+        closeModal();
       }, 1000);
     },
     onError: (error: Error) => {
+      submissionInFlightRef.current = false;
       setErrorMessage(error.message);
     },
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (submissionInFlightRef.current) return;
     setErrorMessage(null);
 
     // Validation
@@ -106,7 +137,7 @@ export function CreateClientModal({ onClose, onSuccess }: CreateClientModalProps
       return;
     }
 
-    // Create client
+    submissionInFlightRef.current = true;
     createMutation.mutate({
       name: name.trim(),
       company: company.trim(),
@@ -117,45 +148,51 @@ export function CreateClientModal({ onClose, onSuccess }: CreateClientModalProps
   };
 
   return (
-    <AnimatePresence>
+    <m.dialog
+      ref={dialogRef}
+      aria-labelledby="create-client-title"
+      onCancel={(event) => {
+        event.preventDefault();
+        closeModal();
+      }}
+      onClick={(event) => {
+        if (event.target === event.currentTarget) closeModal();
+      }}
+      className="fixed z-50 m-auto w-full max-w-md overflow-visible border-0 bg-transparent p-4 backdrop:bg-black/50"
+    >
       <m.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
-        onClick={onClose}
+        initial={{ scale: 0.95, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        className="bg-card rounded-lg shadow-brutalist"
       >
-        <m.div
-          initial={{ scale: 0.95, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.95, opacity: 0 }}
-          onClick={(e) => e.stopPropagation()}
-          className="bg-card rounded-lg shadow-brutalist max-w-md w-full"
-        >
-          {/* Header */}
-          <div className="flex items-center justify-between px-6 py-4 border-b border-black/10">
-            <div className="flex items-center gap-2">
-              <div className="flex items-center justify-center w-8 h-8 bg-coral/20 rounded-lg">
-                <Plus className="h-4 w-4 text-danger-ink" />
-              </div>
-              <h2 className="text-lg font-semibold text-ink">Create Client</h2>
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-black/10">
+          <div className="flex items-center gap-2">
+            <div className="flex items-center justify-center w-8 h-8 bg-coral/20 rounded-lg">
+              <Plus className="h-4 w-4 text-danger-ink" />
             </div>
-            <button
-              onClick={onClose}
-              className="p-1 text-muted-foreground hover:bg-muted/10 rounded-none transition-colors"
-            >
-              <X className="h-5 w-5 text-muted-foreground" />
-            </button>
+            <h2 id="create-client-title" className="text-lg font-semibold text-ink">Create Client</h2>
           </div>
+          <button
+            type="button"
+            aria-label="Close create client"
+            onClick={closeModal}
+            className="p-1 text-muted-foreground hover:bg-muted/10 rounded-none transition-colors"
+          >
+            <X className="h-5 w-5 text-muted-foreground" />
+          </button>
+        </div>
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="p-6 space-y-4">
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="p-6 space-y-4">
             {/* Name */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Name <span className="text-danger-ink">*</span>
+              <label htmlFor="create-client-name" className="block text-sm font-medium text-gray-700 mb-1">
+                Client contact name <span className="text-danger-ink">*</span>
               </label>
               <input
+                id="create-client-name"
+                ref={nameInputRef}
                 type="text"
                 value={name}
                 onChange={(e) => setName(e.target.value)}
@@ -167,10 +204,11 @@ export function CreateClientModal({ onClose, onSuccess }: CreateClientModalProps
 
             {/* Company */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Company <span className="text-danger-ink">*</span>
+              <label htmlFor="create-client-company" className="block text-sm font-medium text-gray-700 mb-1">
+                Company name <span className="text-danger-ink">*</span>
               </label>
               <input
+                id="create-client-company"
                 type="text"
                 value={company}
                 onChange={(e) => setCompany(e.target.value)}
@@ -182,10 +220,11 @@ export function CreateClientModal({ onClose, onSuccess }: CreateClientModalProps
 
             {/* Email */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Email <span className="text-danger-ink">*</span>
+              <label htmlFor="create-client-email" className="block text-sm font-medium text-gray-700 mb-1">
+                Email address <span className="text-danger-ink">*</span>
               </label>
               <input
+                id="create-client-email"
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -198,10 +237,11 @@ export function CreateClientModal({ onClose, onSuccess }: CreateClientModalProps
 
             {/* Website */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="create-client-website" className="block text-sm font-medium text-gray-700 mb-1">
                 Website
               </label>
               <input
+                id="create-client-website"
                 type="url"
                 value={website}
                 onChange={(e) => setWebsite(e.target.value)}
@@ -232,7 +272,7 @@ export function CreateClientModal({ onClose, onSuccess }: CreateClientModalProps
                 type="button"
                 variant="secondary"
                 size="sm"
-                onClick={onClose}
+                onClick={closeModal}
                 disabled={createMutation.isPending}
               >
                 Cancel
@@ -256,9 +296,8 @@ export function CreateClientModal({ onClose, onSuccess }: CreateClientModalProps
                 )}
               </Button>
             </div>
-          </form>
-        </m.div>
+        </form>
       </m.div>
-    </AnimatePresence>
+    </m.dialog>
   );
 }
