@@ -1,0 +1,30 @@
+{
+  "cli_version": "0.10.2",
+  "checkpoint_id": "01M41MFQXEKE4ZP8F1M7TWX7TE",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "apps/api/src/lib/__tests__/authorization.test.ts",
+    "apps/api/src/lib/authorization.ts",
+    "apps/api/src/routes/__tests__/agency-platforms.security.test.ts",
+    "apps/api/src/routes/agency-platforms/identity.routes.ts",
+    "apps/api/src/services/identity-verification.service.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 0,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 0,
+    "api_call_count": 1
+  }
+}
