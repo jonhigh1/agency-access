@@ -2167,6 +2167,12 @@ export interface ClientAccessRequestPlatformGroup {
   products: ClientAccessRequestPlatformProduct[];
 }
 
+/** Saved Meta business selection needed to resume client-side grant panels. */
+export interface ClientMetaResumeSelection {
+  connectionId: string;
+  clientBusinessId: string;
+}
+
 // Public payload returned by GET /api/client/:token.
 export interface ClientAccessRequestPayload {
   id: string;
@@ -2190,6 +2196,8 @@ export interface ClientAccessRequestPayload {
   metaDeclines?: MetaFulfillmentDeclines;
   /** Client connections flattened to platform groups (read-side summary). */
   connections?: Array<{ id: string; platformGroup: Platform }>;
+  /** Non-secret Meta business IDs for resuming selected asset grant panels. */
+  metaResumeSelections?: ClientMetaResumeSelection[];
   manualInviteTargets: Record<string, ManualInviteTarget>;
   authorizationProgress: ClientAuthorizationProgress;
 }

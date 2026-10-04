@@ -87,6 +87,8 @@ interface PlatformAuthWizardProps {
   // asset fetch, so only still-shared assets prefill. Absent for a fresh
   // connect and for non-Meta platforms.
   initialMetaSelections?: InviteSelectionPrefill | null;
+  /** Saved client Business Portfolio ID for step-3 Meta grant panels. */
+  initialMetaBusinessId?: string;
   // U7 terminal states: 'available' until the page learns the request expired
   // or was revoked; a terminal value disables the primary action truthfully.
   requestAvailability?: RequestAvailability;
@@ -348,7 +350,24 @@ function getSelectedAssetCount(product: string, assets: any): number {
  * blob carries the full available lists, so an all-empty blob means the
  * client's business has nothing to select from.
  */
-function getMetaZeroSelectionMode(assets: MetaSelectionBlob): ZeroSelectionMode {
+function getMetaZeroSelectionMode(
+  assets: MetaSelectionBlob,
+  allowedAssetTypes: readonly string[]
+): ZeroSelectionMode {
+  const declineKindByAssetType: Record<string, string> = {
+    ad_account: 'ad_account',
+    page: 'page',
+    instagram: 'instagram_account',
+    catalog: 'catalog',
+    dataset: 'dataset',
+  };
+  const declinedKinds = new Set(assets.declinedAssetKinds || []);
+  if (
+    allowedAssetTypes.length > 0 &&
+    allowedAssetTypes.every((type) => declinedKinds.has(declineKindByAssetType[type] as never))
+  ) {
+    return 'declined-save';
+  }
   const availableCount =
     (assets.allAdAccounts?.length ?? 0) +
     (assets.allPages?.length ?? 0) +
@@ -359,9 +378,13 @@ function getMetaZeroSelectionMode(assets: MetaSelectionBlob): ZeroSelectionMode 
 }
 
 /** Maps one product's selection blob to the resolver's per-product input. */
-function getProductCtaState(product: string, assets: MetaSelectionBlob): CtaProductSelectionState {
+function getProductCtaState(
+  product: string,
+  assets: MetaSelectionBlob,
+  metaAllowedAssetTypes: readonly string[]
+): CtaProductSelectionState {
   const zeroSelectionMode: ZeroSelectionMode = isMetaAssetProduct(product)
-    ? getMetaZeroSelectionMode(assets)
+    ? getMetaZeroSelectionMode(assets, metaAllowedAssetTypes)
     : hasNoAssetsFollowUp(product, assets)
       ? 'follow-up-save'
       : 'selection-required';
@@ -448,6 +471,7 @@ export function PlatformAuthWizard({
   initialConnectionId,
   initialStep,
   initialMetaSelections,
+  initialMetaBusinessId,
   requestAvailability = 'available',
   onRequestUnavailable,
   metaFulfillment,
@@ -516,7 +540,20 @@ export function PlatformAuthWizard({
   );
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(initialStep ? clampStep(initialStep) : 1);
   const [connectionId, setConnectionId] = useState<string | null>(initialConnectionId || null);
-  const [groupAssets, setGroupAssets] = useState<Record<string, any>>({});
+  const [groupAssets, setGroupAssets] = useState<Record<string, any>>(() => {
+    if (!hasInitialMetaSelections) return {};
+    const prefill = initialMetaSelections as InviteSelectionPrefill;
+    const selectedAssets: MetaSelectionBlob = {
+      ...prefill,
+      selectedBusinessId: initialMetaBusinessId,
+      selectedAdAccountsWithNames: prefill.adAccounts.map((id) => ({ id, name: id })),
+      selectedPagesWithNames: prefill.pages.map((id) => ({ id, name: id })),
+      selectedInstagramWithNames: prefill.instagramAccounts.map((id) => ({ id, name: id })),
+      selectedCatalogsWithNames: prefill.catalogs.map((id) => ({ id, name: id })),
+      selectedDatasetsWithNames: prefill.datasets.map((id) => ({ id, name: id })),
+    };
+    return { meta_ads: selectedAssets, meta_pages: selectedAssets, instagram: selectedAssets };
+  });
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // Selector-scoped fetch failure. Kept separate from `error` so the CTA
@@ -834,6 +871,9 @@ export function PlatformAuthWizard({
                 connectionId,
                 platform: p.product, // Product-level ID for saving
                 selectedAssets,
+                ...(p.product === 'meta_ads'
+                  ? { declinedAssetKinds: selectedAssets.declinedAssetKinds || [] }
+                  : {}),
               }),
               signal: saveController.signal,
             }
@@ -1011,7 +1051,11 @@ export function PlatformAuthWizard({
     setChooseAccountsExpanded(true);
   }, [metaAssetsLoaded, metaSelectionBlob, retainedResumeSelection]);
   const ctaProductStates = selectableProducts.map((product) =>
-    getProductCtaState(product.product, groupAssets[product.product] || {})
+    getProductCtaState(
+      product.product,
+      groupAssets[product.product] || {},
+      metaAllowedAssetTypes
+    )
   );
 
   const ctaResolution =

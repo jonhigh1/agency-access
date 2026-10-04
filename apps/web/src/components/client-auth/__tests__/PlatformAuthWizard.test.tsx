@@ -194,6 +194,26 @@ vi.mock('@/components/client-auth/MetaAssetSelector', () => ({
             instagramAccounts: [],
             catalogs: [],
             datasets: [],
+            declinedAssetKinds: ['ad_account', 'page', 'instagram_account', 'dataset'],
+            allAdAccounts: [{ id: 'act_9', name: 'Available Account' }],
+            allPages: [{ id: 'page_9', name: 'Available Page' }],
+            allInstagramAccounts: [{ id: 'ig_9', username: 'available' }],
+            allDatasets: [{ id: 'ds_9', name: 'Available Dataset' }],
+            assetsLoaded: true,
+          })
+        }
+      >
+        Decline All Meta Assets
+      </button>
+      <button
+        type="button"
+        onClick={() =>
+          onSelectionChange({
+            adAccounts: [],
+            pages: [],
+            instagramAccounts: [],
+            catalogs: [],
+            datasets: [],
             // Lists are present but the real selector only sets assetsLoaded
             // after a successful fetch; its absence means still-loading.
             allAdAccounts: [{ id: 'act_9', name: 'Available Account' }],
@@ -336,11 +356,12 @@ vi.mock('@/components/client-auth/AutomaticPagesGrant', () => ({
 }));
 
 vi.mock('@/components/client-auth/AdAccountSharingInstructions', () => ({
-  AdAccountSharingInstructions: ({ autoStart, initialStatus, onComplete }: any) => (
+  AdAccountSharingInstructions: ({ autoStart, initialStatus, onComplete, selectedAdAccounts }: any) => (
     <div>
       <div>
         {`Ad Account Sharing Instructions autostart:${String(autoStart ?? true)} initialStatus:${initialStatus ?? 'none'}`}
       </div>
+      <div>{`Resume panel assets: ${selectedAdAccounts.map((account: any) => account.id).join(',')}`}</div>
       <button
         type="button"
         onClick={() =>
@@ -1655,6 +1676,31 @@ describe('PlatformAuthWizard', () => {
       );
     });
 
+    it('saves an explicit all-Meta decline with the schema-level decline field', async () => {
+      vi.mocked(fetch).mockResolvedValue({
+        ok: true,
+        text: async () => JSON.stringify({ data: { success: true }, error: null }),
+      } as Response);
+
+      renderShareScreen({ platform: 'meta', platformName: 'Meta', products: [{ product: 'meta_ads', accessLevel: 'admin' }] });
+
+      fireEvent.click(screen.getByRole('button', { name: /decline all meta assets/i }));
+      const shareButton = await screen.findByRole('button', { name: /share access/i });
+      await waitFor(() => expect(shareButton).toBeEnabled());
+      fireEvent.click(shareButton);
+
+      await waitFor(() => {
+        const saveCall = vi.mocked(fetch).mock.calls.find(([url]) => String(url).includes('/save-assets'));
+        expect(saveCall).toBeDefined();
+        expect(JSON.parse(String(saveCall?.[1]?.body))).toEqual(
+          expect.objectContaining({
+            platform: 'meta_ads',
+            declinedAssetKinds: ['ad_account', 'page', 'instagram_account', 'dataset'],
+          })
+        );
+      });
+    });
+
     it('names the create action when the selected business has no ad accounts', async () => {
       vi.mocked(fetch).mockResolvedValue({
         ok: true,
@@ -2125,6 +2171,27 @@ describe('PlatformAuthWizard', () => {
         'https://api.example.com/api/client/token-1/save-assets',
         expect.anything()
       );
+    });
+
+    it('hydrates the step-three grant panel with the saved client business and assets', async () => {
+      vi.mocked(fetch).mockResolvedValue({
+        ok: true,
+        text: async () => JSON.stringify({ data: { businessId: 'agency-business-1' }, error: null }),
+      } as Response);
+
+      render(
+        <PlatformAuthWizard
+          {...resumeProps}
+          initialStep={3}
+          initialMetaBusinessId="client-business-1"
+          initialMetaSelections={{
+            adAccounts: ['act_111'], pages: [], instagramAccounts: [], catalogs: [], datasets: [],
+          }}
+          metaFulfillment={[fulfillmentRow({ assetId: 'act_111', status: 'selected' })]}
+        />
+      );
+
+      expect(await screen.findByText('Resume panel assets: act_111')).toBeInTheDocument();
     });
 
     it('reopens the chooser and never resurrects the prefill after a selection reset', async () => {

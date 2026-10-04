@@ -25,10 +25,16 @@ export type RequestAvailability = 'available' | 'expired' | 'revoked';
  * - `selection-required`: the client must select at least one asset.
  * - `follow-up-save`: zero available assets is itself saveable (the platform
  *   records the follow-up), so zero selections do not block.
+ * - `declined-save`: every requested Meta asset type was explicitly declined,
+ *   so the decline decision is saveable.
  * - `create-required`: zero available assets cannot be saved; the client must
  *   create an asset first (KTD10).
  */
-export type ZeroSelectionMode = 'selection-required' | 'follow-up-save' | 'create-required';
+export type ZeroSelectionMode =
+  | 'selection-required'
+  | 'follow-up-save'
+  | 'declined-save'
+  | 'create-required';
 
 export interface CtaProductSelectionState {
   /** Product-level id, e.g. `meta_ads`. */

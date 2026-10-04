@@ -37,6 +37,7 @@ import { webhookEventService } from '@/services/webhook-event.service.js';
 import { normalizeCustomerId } from '@/services/connectors/google.js';
 import { resolveListLimit, resolveListOffset } from '@/lib/list-pagination.js';
 import { metaAssetsService } from '@/services/meta-assets.service.js';
+import { readMetaAuthorizationMetadata } from '@/lib/meta-authorization-metadata.js';
 
 const LegacyPlatformSchema = z.enum([
   'whatsapp_business',
@@ -1797,6 +1798,7 @@ export async function getAccessRequestByToken(token: string) {
               platform: true,
               status: true,
               authorizationEpoch: true,
+              metadata: true,
             },
           },
           metaAssetGrants: {
@@ -1859,6 +1861,20 @@ export async function getAccessRequestByToken(token: string) {
         platformGroup,
       }))
     );
+    // The invite already authorizes this connection by its unguessable token.
+    // Return only the saved client Business Portfolio ID needed by resume
+    // panels; metadata, OAuth state, and tokens never leave this service.
+    const metaResumeSelections = (clientConnections as any[]).flatMap((connection) => {
+      const metaAuthorization = connection.authorizations?.find(
+        (authorization: { platform?: string }) => platformGroupOf(authorization.platform || '') === 'meta'
+      );
+      const clientBusinessId = metaAuthorization
+        ? readMetaAuthorizationMetadata(metaAuthorization.metadata).metaMetadata.selection?.clientBusinessId
+        : undefined;
+      return typeof clientBusinessId === 'string'
+        ? [{ connectionId: connection.id as string, clientBusinessId }]
+        : [];
+    });
 
     let metaCatalogEnabled = false;
     if (requestedPlatformGroups.includes('meta')) {
@@ -1876,6 +1892,7 @@ export async function getAccessRequestByToken(token: string) {
         metaFulfillment,
         metaDeclines,
         connections,
+        metaResumeSelections,
         ...(requestedPlatformGroups.includes('meta') ? { metaCatalogEnabled } : {}),
       },
       error: null,

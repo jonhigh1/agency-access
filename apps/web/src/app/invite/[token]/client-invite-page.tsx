@@ -184,6 +184,11 @@ export default function ClientAuthorizationPage({
     () => data?.connections?.find((connection) => connection.platformGroup === 'meta')?.id,
     [data?.connections]
   );
+  const metaResumeBusinessId = useMemo(
+    () => data?.metaResumeSelections?.find((selection) => selection.connectionId === metaConnectionId)
+      ?.clientBusinessId,
+    [data?.metaResumeSelections, metaConnectionId]
+  );
   const platformQueue = useMemo(
     () =>
       buildInvitePlatformQueue({
@@ -296,6 +301,11 @@ export default function ClientAuthorizationPage({
       ...Array.from(apiCompleted),
       ...Array.from(sessionCompleted),
     ]);
+    // Session storage records local navigation only. Server unresolved work
+    // reopens its platform instead of allowing stale state to finalize it.
+    for (const unresolved of loadedPayload.authorizationProgress?.unresolvedProducts || []) {
+      mergedCompleted.delete(unresolved.platformGroup as Platform);
+    }
 
     if (!urlStep && !startedTrackedRef.current) {
       startedTrackedRef.current = true;
@@ -963,7 +973,9 @@ export default function ClientAuthorizationPage({
                 initialConnectionId={
                   oauthConnectionInfo?.platform === platformQueue.activePlatform.platformGroup
                     ? oauthConnectionInfo.connectionId
-                    : undefined
+                    : resumeWizardStart?.platform === platformQueue.activePlatform.platformGroup
+                      ? resumeWizardStart.connectionId
+                      : undefined
                 }
                 initialStep={
                   resumeWizardStart?.platform === platformQueue.activePlatform.platformGroup
@@ -973,6 +985,11 @@ export default function ClientAuthorizationPage({
                 initialMetaSelections={
                   resumeWizardStart?.platform === platformQueue.activePlatform.platformGroup
                     ? resumeWizardStart.metaSelectionPrefill
+                    : undefined
+                }
+                initialMetaBusinessId={
+                  resumeWizardStart?.platform === platformQueue.activePlatform.platformGroup
+                    ? metaResumeBusinessId
                     : undefined
                 }
                 requestAvailability={

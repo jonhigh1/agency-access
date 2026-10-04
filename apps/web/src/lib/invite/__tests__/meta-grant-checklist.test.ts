@@ -85,6 +85,19 @@ describe('buildMetaGrantChecklist', () => {
     });
   });
 
+  it('keeps an asset pending until every recipient row is verified', () => {
+    const result = buildMetaGrantChecklist({
+      rows: [
+        row({ assetKind: 'ad_account', assetId: 'act_1', recipientId: 'biz-a', status: 'verified' }),
+        row({ assetKind: 'ad_account', assetId: 'act_1', recipientId: 'biz-b', status: 'selected' }),
+      ],
+      selectedKinds: kinds({ adAccounts: 1 }),
+    });
+
+    expect(result.items[0]).toMatchObject({ state: 'pending', remainingCount: 1 });
+    expect(result.remainingCount).toBe(1);
+  });
+
   it('escalates a kind to action_required when any row needs action', () => {
     const result = buildMetaGrantChecklist({
       rows: [

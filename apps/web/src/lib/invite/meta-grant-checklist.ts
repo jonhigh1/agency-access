@@ -189,7 +189,17 @@ export function buildMetaGrantChecklist(input: MetaGrantChecklistInput): MetaGra
     // for every resuming client.
     if (selectedCount === 0 && kindRows.length === 0 && !declined) continue;
 
-    const verifiedCount = kindRows.filter((row) => row.status === 'verified').length;
+    const rowsByAsset = new Map<string, MetaFulfillmentResult[]>();
+    for (const row of kindRows) {
+      const assetRows = rowsByAsset.get(row.assetId);
+      if (assetRows) assetRows.push(row);
+      else rowsByAsset.set(row.assetId, [row]);
+    }
+    // Fulfillment rows are per (asset, recipient). An asset is verified only
+    // after every recipient row verifies; row count is not asset count.
+    const verifiedCount = Array.from(rowsByAsset.values()).filter((assetRows) =>
+      assetRows.every((row) => row.status === 'verified')
+    ).length;
     let state: MetaGrantItemState;
     if (declined) {
       state = 'declined';
@@ -214,7 +224,7 @@ export function buildMetaGrantChecklist(input: MetaGrantChecklistInput): MetaGra
     // otherwise from the row count (the resume case — each row is one asset
     // the client confirmed sharing).
     const unverifiedCount =
-      selectedCount > 0 ? selectedCount - verifiedCount : kindRows.length - verifiedCount;
+      selectedCount > 0 ? selectedCount - verifiedCount : rowsByAsset.size - verifiedCount;
 
     items.push({
       key: assetKind,

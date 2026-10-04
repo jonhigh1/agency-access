@@ -999,7 +999,19 @@ describe('AccessRequestService', () => {
               },
             },
           },
-          authorizations: [{ platform: 'meta', status: 'active', authorizationEpoch: 1 }],
+          authorizations: [{
+            platform: 'meta',
+            status: 'active',
+            authorizationEpoch: 1,
+            metadata: {
+              meta: {
+                selection: {
+                  clientBusinessId: 'client-business-1',
+                  selectedAt: '2026-10-03T00:00:00.000Z',
+                },
+              },
+            },
+          }],
           metaAssetGrants: [],
         },
       ] as any);
@@ -1041,7 +1053,19 @@ describe('AccessRequestService', () => {
               },
             },
           },
-          authorizations: [{ platform: 'meta', status: 'active', authorizationEpoch: 1 }],
+          authorizations: [{
+            platform: 'meta',
+            status: 'active',
+            authorizationEpoch: 1,
+            metadata: {
+              meta: {
+                selection: {
+                  clientBusinessId: 'client-business-1',
+                  selectedAt: '2026-10-03T00:00:00.000Z',
+                },
+              },
+            },
+          }],
           metaAssetGrants: [],
         },
       ] as any);
@@ -1078,7 +1102,19 @@ describe('AccessRequestService', () => {
           id: 'conn-meta',
           status: 'active',
           grantedAssets: {},
-          authorizations: [{ platform: 'meta', status: 'active', authorizationEpoch: 1 }],
+          authorizations: [{
+            platform: 'meta',
+            status: 'active',
+            authorizationEpoch: 1,
+            metadata: {
+              meta: {
+                selection: {
+                  clientBusinessId: 'client-business-1',
+                  selectedAt: '2026-10-03T00:00:00.000Z',
+                },
+              },
+            },
+          }],
           metaAssetGrants: [],
         },
         {
@@ -1100,6 +1136,9 @@ describe('AccessRequestService', () => {
         { id: 'conn-meta', platformGroup: 'meta' },
         { id: 'conn-manual', platformGroup: 'beehiiv' },
         { id: 'conn-manual', platformGroup: 'google' },
+      ]);
+      expect(result.data?.metaResumeSelections).toEqual([
+        { connectionId: 'conn-meta', clientBusinessId: 'client-business-1' },
       ]);
     });
 

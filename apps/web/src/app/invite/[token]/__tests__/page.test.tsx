@@ -43,6 +43,7 @@ vi.mock('@/components/client-auth/PlatformAuthWizard', async () => {
       initialConnectionId,
       initialStep,
       initialMetaSelections,
+      initialMetaBusinessId,
       requestAvailability,
     }: any) => {
       const [mountedPlatformName] = React.useState(platformName);
@@ -56,6 +57,7 @@ vi.mock('@/components/client-auth/PlatformAuthWizard', async () => {
           {initialMetaSelections?.adAccounts?.length ? (
             <p>{`Meta prefill: ${initialMetaSelections.adAccounts.join(', ')}`}</p>
           ) : null}
+          {initialMetaBusinessId ? <p>{`Meta business: ${initialMetaBusinessId}`}</p> : null}
           {requestAvailability && requestAvailability !== 'available' ? (
             <p>{`Request availability: ${requestAvailability}`}</p>
           ) : null}
@@ -1876,6 +1878,7 @@ describe('Invite Flow Page', () => {
           ],
           manualInviteTargets: {},
           connections: [{ id: 'conn-meta-1', platformGroup: 'meta' }],
+          metaResumeSelections: [{ connectionId: 'conn-meta-1', clientBusinessId: 'client-business-1' }],
           metaFulfillment: [metaResumeRow()],
           authorizationProgress: {
             completedPlatforms: [],
@@ -1987,6 +1990,20 @@ describe('Invite Flow Page', () => {
       await renderThroughCompletionError(metaResumePayload({ connections: undefined }));
 
       expect(screen.queryByRole('button', { name: /resume meta checklist/i })).not.toBeInTheDocument();
+    });
+
+    it('reopens unresolved Meta work when session storage incorrectly marks it complete', async () => {
+      sessionStorage.setItem('invite-progress:token-123', JSON.stringify(['meta']));
+      stubFetch(async () => metaResumePayload() as unknown as Record<string, unknown>);
+
+      render(<InvitePage />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Active platform: Meta')).toBeInTheDocument();
+        expect(screen.getByText('Initial connection: conn-meta-1')).toBeInTheDocument();
+        expect(screen.getByText('Initial step: 3')).toBeInTheDocument();
+        expect(screen.getByText('Meta business: client-business-1')).toBeInTheDocument();
+      });
     });
 
     it('refreshes progress before re-posting completion from the follow-up card', async () => {

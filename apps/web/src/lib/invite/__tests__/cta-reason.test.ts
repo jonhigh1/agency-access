@@ -137,6 +137,22 @@ describe('resolveCta', () => {
     expect(resolution).toEqual({ kind: 'ready', disabled: false });
   });
 
+  it('is ready when every requested Meta asset type was explicitly declined', () => {
+    const resolution = resolveCta(
+      buildInput({
+        products: [
+          {
+            product: 'meta_ads',
+            selectedCount: 0,
+            zeroSelectionMode: 'declined-save',
+          },
+        ],
+      })
+    );
+
+    expect(resolution).toEqual({ kind: 'ready', disabled: false });
+  });
+
   it('stays disabled while any product in a grouped request still needs a selection', () => {
     const resolution = resolveCta(
       buildInput({
