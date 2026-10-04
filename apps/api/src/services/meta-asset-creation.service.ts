@@ -11,6 +11,7 @@ import { createHash } from 'node:crypto';
 import { infisical } from '../lib/infisical.js';
 import { readMetaAuthorizationMetadata } from '../lib/meta-authorization-metadata.js';
 import { prisma } from '../lib/prisma.js';
+import { updateGrantedAssets } from '../lib/granted-assets.js';
 import { auditService } from './audit.service.js';
 import { MetaGraphMutationError, metaConnector } from './connectors/meta.js';
 
@@ -314,37 +315,27 @@ class MetaAssetCreationService {
       });
 
       // Step 6: Update connection metadata with created asset
-      const connection = await prisma.clientConnection.findUnique({
-        where: { id: connectionId },
-      });
-
-      if (connection) {
-        const currentGrantedAssets = (connection.grantedAssets as any) || {};
-        const createdAdAccounts = currentGrantedAssets.meta?.createdAdAccounts || [];
-
-        await prisma.clientConnection.update({
-          where: { id: connectionId },
-          data: {
-            grantedAssets: {
-              ...currentGrantedAssets,
-              meta: {
-                ...(currentGrantedAssets.meta || {}),
-                createdAdAccounts: [
-                  ...createdAdAccounts,
-                  {
-                    id: createdAccount.id,
-                    accountId: createdAccount.accountId,
-                    name: createdAccount.name,
-                    currency: createdAccount.currency,
-                    timezoneId: createdAccount.timezoneId,
-                    createdAt: new Date().toISOString(),
-                  },
-                ],
+      await updateGrantedAssets(connectionId, (currentGrantedAssets) => {
+        const meta = (currentGrantedAssets.meta as Record<string, unknown> | undefined) || {};
+        const createdAdAccounts = Array.isArray(meta.createdAdAccounts) ? meta.createdAdAccounts : [];
+        return {
+          ...currentGrantedAssets,
+          meta: {
+            ...meta,
+            createdAdAccounts: [
+              ...createdAdAccounts,
+              {
+                id: createdAccount.id,
+                accountId: createdAccount.accountId,
+                name: createdAccount.name,
+                currency: createdAccount.currency,
+                timezoneId: createdAccount.timezoneId,
+                createdAt: new Date().toISOString(),
               },
-            },
+            ],
           },
-        });
-      }
+        };
+      });
 
       // Step 7: Create audit log
       await auditService.createAuditLog({
@@ -475,35 +466,27 @@ class MetaAssetCreationService {
       });
 
       // Step 6: Update connection metadata with created asset
-      const connection = await prisma.clientConnection.findUnique({
-        where: { id: connectionId },
-      });
-
-      if (connection) {
-        const currentGrantedAssets = (connection.grantedAssets as any) || {};
-        const createdProductCatalogs = currentGrantedAssets.meta?.createdProductCatalogs || [];
-
-        await prisma.clientConnection.update({
-          where: { id: connectionId },
-          data: {
-            grantedAssets: {
-              ...currentGrantedAssets,
-              meta: {
-                ...(currentGrantedAssets.meta || {}),
-                createdProductCatalogs: [
-                  ...createdProductCatalogs,
-                  {
-                    id: createdCatalog.id,
-                    name: createdCatalog.name,
-                    catalogType: createdCatalog.catalogType,
-                    createdAt: new Date().toISOString(),
-                  },
-                ],
+      await updateGrantedAssets(connectionId, (currentGrantedAssets) => {
+        const meta = (currentGrantedAssets.meta as Record<string, unknown> | undefined) || {};
+        const createdProductCatalogs = Array.isArray(meta.createdProductCatalogs)
+          ? meta.createdProductCatalogs
+          : [];
+        return {
+          ...currentGrantedAssets,
+          meta: {
+            ...meta,
+            createdProductCatalogs: [
+              ...createdProductCatalogs,
+              {
+                id: createdCatalog.id,
+                name: createdCatalog.name,
+                catalogType: createdCatalog.catalogType,
+                createdAt: new Date().toISOString(),
               },
-            },
+            ],
           },
-        });
-      }
+        };
+      });
 
       // Step 7: Create audit log
       await auditService.createAuditLog({
@@ -718,37 +701,27 @@ class MetaAssetCreationService {
       });
 
       // Append to ClientConnection.grantedAssets (mirrors createdAdAccounts)
-      const connection = await prisma.clientConnection.findUnique({
-        where: { id: connectionId },
-      });
-
-      if (connection) {
-        const currentGrantedAssets = (connection.grantedAssets as any) || {};
-        const createdBusinesses = currentGrantedAssets.meta?.createdBusinesses || [];
-
-        await prisma.clientConnection.update({
-          where: { id: connectionId },
-          data: {
-            grantedAssets: {
-              ...currentGrantedAssets,
-              meta: {
-                ...(currentGrantedAssets.meta || {}),
-                createdBusinesses: [
-                  ...createdBusinesses,
-                  {
-                    id: createdBusiness.id,
-                    name: createdBusiness.name,
-                    timezoneId: createdBusiness.timezoneId,
-                    vertical: params.vertical,
-                    primaryPageId: params.primaryPageId,
-                    createdAt: new Date().toISOString(),
-                  },
-                ],
+      await updateGrantedAssets(connectionId, (currentGrantedAssets) => {
+        const meta = (currentGrantedAssets.meta as Record<string, unknown> | undefined) || {};
+        const createdBusinesses = Array.isArray(meta.createdBusinesses) ? meta.createdBusinesses : [];
+        return {
+          ...currentGrantedAssets,
+          meta: {
+            ...meta,
+            createdBusinesses: [
+              ...createdBusinesses,
+              {
+                id: createdBusiness.id,
+                name: createdBusiness.name,
+                timezoneId: createdBusiness.timezoneId,
+                vertical: params.vertical,
+                primaryPageId: params.primaryPageId,
+                createdAt: new Date().toISOString(),
               },
-            },
+            ],
           },
-        });
-      }
+        };
+      });
 
       await auditService.createAuditLog({
         agencyId,

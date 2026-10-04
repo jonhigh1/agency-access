@@ -46,6 +46,8 @@ vi.mock('@/lib/infisical', () => ({
 
 vi.mock('@/lib/prisma', () => ({
   prisma: {
+    $transaction: vi.fn(),
+    $queryRaw: vi.fn(),
     clientConnection: {
       findUnique: vi.fn(),
       update: vi.fn(),
@@ -67,6 +69,8 @@ describe('Client Auth Asset Routes - TikTok', () => {
     app = Fastify();
     await registerAssetRoutes(app);
     vi.clearAllMocks();
+    vi.mocked(prisma.$transaction).mockImplementation(async (callback: any) => callback(prisma));
+    vi.mocked(prisma.$queryRaw).mockResolvedValue([{ id: 'conn-1', granted_assets: {} }] as any);
 
     vi.mocked(accessRequestService.getAccessRequestByToken).mockResolvedValue({
       data: {

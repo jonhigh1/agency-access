@@ -9,6 +9,8 @@ vi.mock('../../lib/infisical.js', () => ({
 
 vi.mock('../../lib/prisma.js', () => ({
   prisma: {
+    $transaction: vi.fn(),
+    $queryRaw: vi.fn(),
     platformAuthorization: {
       findUnique: vi.fn(),
       update: vi.fn(),
@@ -74,6 +76,10 @@ describe('MetaAssetCreationService.createBusiness', () => {
     vi.mocked(prisma.metaAssetCreation.create).mockImplementation(async (args: any) => ({ id: 'creation-1', ...args.data }) as never);
     vi.mocked(prisma.metaAssetCreation.update).mockResolvedValue({} as never);
     vi.mocked(prisma.metaAssetCreation.updateMany).mockResolvedValue({ count: 1 } as never);
+    vi.mocked(prisma.$transaction).mockImplementation(async (callback: any) => callback(prisma));
+    vi.mocked(prisma.$queryRaw).mockResolvedValue([
+      { id: connectionId, granted_assets: { meta: { createdAdAccounts: [{ id: 'act-1' }] } } },
+    ] as never);
     vi.mocked(infisical.getOAuthTokens).mockResolvedValue({
       accessToken: 'client-token',
       refreshToken: null,

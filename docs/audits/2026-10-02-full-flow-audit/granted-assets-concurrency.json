@@ -1,0 +1,26 @@
+{
+  "environment": "Disposable loopback PostgreSQL on port 55440; no providers",
+  "cases": [
+    {
+      "name": "helper_and_manual_sql_patch_preserve_both_platform_records",
+      "passed": true,
+      "observed": {
+        "platforms": [
+          "beehiiv",
+          "google_ads"
+        ]
+      }
+    },
+    {
+      "name": "two_concurrent_same_platform_appends_preserve_both_assets",
+      "passed": true,
+      "observed": {
+        "accountIds": [
+          "act-1",
+          "act-2"
+        ]
+      }
+    }
+  ],
+  "passed": true
+}

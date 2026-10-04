@@ -172,14 +172,22 @@ function buildOAuthExchangeHandler(fastify: FastifyInstance, options: OAuthExcha
       let clientConnection = existingConnection;
 
       if (!clientConnection) {
-        clientConnection = await prisma.clientConnection.create({
-          data: {
-            accessRequestId: stateData.accessRequestId!,
-            agencyId: accessRequest.agencyId,
-            clientEmail: stateData.clientEmail!,
-            status: 'active',
-          },
-        });
+        try {
+          clientConnection = await prisma.clientConnection.create({
+            data: {
+              accessRequestId: stateData.accessRequestId!,
+              agencyId: accessRequest.agencyId,
+              clientEmail: stateData.clientEmail!,
+              status: 'active',
+            },
+          });
+        } catch (error) {
+          if ((error as { code?: unknown })?.code !== 'P2002') throw error;
+          clientConnection = await prisma.clientConnection.findFirst({
+            where: { accessRequestId: stateData.accessRequestId! },
+          });
+          if (!clientConnection) throw error;
+        }
       }
 
       const existingAuthorization = await prisma.platformAuthorization.findUnique({

@@ -77,6 +77,8 @@ vi.mock('@/services/connectors/meta', async () => {
 
 vi.mock('@/lib/prisma', () => ({
   prisma: {
+    $transaction: vi.fn(),
+    $queryRaw: vi.fn(),
     clientConnection: {
       findUnique: vi.fn(),
       update: vi.fn(),
@@ -123,6 +125,8 @@ describe('Client Auth Asset Routes - Meta', () => {
     });
     vi.mocked(prisma.metaAssetGrant.findUnique).mockResolvedValue(null);
     vi.mocked(prisma.metaAssetGrant.findMany).mockResolvedValue([] as any);
+    vi.mocked(prisma.$transaction).mockImplementation(async (callback: any) => callback(prisma));
+    vi.mocked(prisma.$queryRaw).mockResolvedValue([{ id: 'conn-1', granted_assets: {} }] as any);
 
     vi.mocked(accessRequestService.markRequestAuthorized).mockResolvedValue({
       data: null,
@@ -2563,6 +2567,10 @@ describe('Client Auth Asset Routes - Meta', () => {
         clientEmail: 'client@example.com',
         grantedAssets: { meta_ads: { selectedBusinessId: 'biz_client_2', adAccounts: ['act_1'] } },
       } as any);
+      vi.mocked(prisma.$queryRaw).mockResolvedValue([{
+        id: 'conn-1',
+        granted_assets: { meta_ads: { selectedBusinessId: 'biz_client_2', adAccounts: ['act_1'] } },
+      }] as any);
 
       const response = await app.inject({
         method: 'POST',

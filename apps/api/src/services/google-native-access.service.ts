@@ -8,6 +8,7 @@ import {
   type GoogleProductGrantLifecycle,
 } from '@agency-platform/shared';
 import { prisma } from '@/lib/prisma';
+import { updateGrantedAssets } from '@/lib/granted-assets';
 import { resolveGoogleNativeGrantDispatchMode } from '@/lib/worker-runtime';
 import { auditService } from '@/services/audit.service';
 import { googleAdsConnector } from '@/services/connectors/google-ads';
@@ -318,29 +319,20 @@ async function persistGrantLifecycle(
     grantStatus,
   });
 
-  const grantedAssets =
-    grant.connection.grantedAssets &&
-    typeof grant.connection.grantedAssets === 'object' &&
-    !Array.isArray(grant.connection.grantedAssets)
-      ? ({ ...(grant.connection.grantedAssets as Record<string, unknown>) } as Record<string, unknown>)
-      : {};
-  const existingProductAssets =
-    grantedAssets[grant.product] &&
-    typeof grantedAssets[grant.product] === 'object' &&
-    !Array.isArray(grantedAssets[grant.product])
-      ? ({ ...(grantedAssets[grant.product] as Record<string, unknown>) } as Record<string, unknown>)
-      : {};
-
-  grantedAssets[grant.product] = {
-    ...existingProductAssets,
-    googleGrantLifecycle: lifecycle,
-  };
-
-  await prisma.clientConnection.update({
-    where: { id: grant.connectionId },
-    data: {
-      grantedAssets: grantedAssets as Prisma.InputJsonValue,
-    },
+  await updateGrantedAssets(grant.connectionId, (grantedAssets) => {
+    const existingProductAssets =
+      grantedAssets[grant.product] &&
+      typeof grantedAssets[grant.product] === 'object' &&
+      !Array.isArray(grantedAssets[grant.product])
+        ? grantedAssets[grant.product] as Record<string, unknown>
+        : {};
+    return {
+      ...grantedAssets,
+      [grant.product]: {
+        ...existingProductAssets,
+        googleGrantLifecycle: lifecycle,
+      },
+    } as Prisma.InputJsonObject;
   });
 
   const platformAuthorization = await prisma.platformAuthorization.findUnique({

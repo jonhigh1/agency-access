@@ -38,6 +38,8 @@ vi.mock('@/services/meta-assets.service', () => ({
 
 vi.mock('@/lib/prisma', () => ({
   prisma: {
+    $transaction: vi.fn(),
+    $queryRaw: vi.fn(),
     clientConnection: {
       findUnique: vi.fn(),
       update: vi.fn(),
@@ -136,6 +138,8 @@ describe('save-assets explicit asset-type declines', () => {
     app = Fastify();
     await registerAssetRoutes(app);
     vi.clearAllMocks();
+    vi.mocked(prisma.$transaction).mockImplementation(async (callback: any) => callback(prisma));
+    vi.mocked(prisma.$queryRaw).mockResolvedValue([{ id: 'conn-1', granted_assets: {} }] as any);
     vi.mocked(prisma.clientConnection.update).mockResolvedValue({ id: 'conn-1' } as any);
     vi.mocked(prisma.platformAuthorization.update).mockResolvedValue({ id: 'pa-1' } as any);
     vi.mocked(prisma.metaAgencyDestination.upsert).mockResolvedValue({ id: 'destination-1' } as any);

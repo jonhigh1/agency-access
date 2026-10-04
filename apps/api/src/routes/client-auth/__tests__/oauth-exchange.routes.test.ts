@@ -228,6 +228,27 @@ describe('OAuth exchange routes (characterization)', () => {
           });
         });
 
+        it('reloads the connection after a concurrent create conflict', async () => {
+          mockHappyPath();
+          vi.mocked(prisma.clientConnection.findFirst)
+            .mockResolvedValueOnce(null as any)
+            .mockResolvedValueOnce(CONNECTED_CONNECTION as any);
+          vi.mocked(prisma.clientConnection.create).mockRejectedValue({ code: 'P2002' });
+
+          const response = await app.inject({
+            method: 'POST',
+            url,
+            payload: { code: 'code-1', state: 'state-1' },
+          });
+
+          expect(response.statusCode).toBe(200);
+          expect(response.json().data).toMatchObject({ connectionId: 'conn-1', platform: 'google' });
+          expect(infisical.storeOAuthTokens).toHaveBeenCalledWith(
+            expect.any(String),
+            expect.objectContaining({ accessToken: 'access-1' })
+          );
+        });
+
         it.each([
           [{ status: 'revoked' }, 'REQUEST_REVOKED', 'Access request has been revoked'],
           [{ status: 'expired' }, 'REQUEST_EXPIRED', 'Access request has expired'],

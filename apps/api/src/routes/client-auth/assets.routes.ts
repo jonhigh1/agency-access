@@ -15,6 +15,7 @@ import {
 } from '@/services/tiktok-partner.service';
 import { infisical } from '../../lib/infisical.js';
 import { prisma } from '../../lib/prisma.js';
+import { updateGrantedAssets } from '../../lib/granted-assets.js';
 import { readMetaAuthorizationMetadata } from '../../lib/meta-authorization-metadata.js';
 import {
   type MetaAssetKind,
@@ -735,7 +736,6 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
         };
       }
 
-      const currentGrantedAssets = (connection.grantedAssets as any) || {};
       const instagramSelection = platformStr === 'instagram'
         ? {
             instagramAccounts: resolvedSelectedAssets.instagramAccounts || [],
@@ -743,30 +743,27 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
             selectedBusinessId: selectedMetaBusinessId,
           }
         : null;
-      const priorMetaAdsAssets = currentGrantedAssets.meta_ads || {};
-      const updatedGrantedAssets = {
-        ...currentGrantedAssets,
-        ...(platformStr === 'meta_ads' ? {
-          meta: {
-            ...(currentGrantedAssets.meta || {}),
-            declinedAssetKinds: {
-              kinds: effectiveDeclines,
-              declinedAt: new Date().toISOString(),
+      await updateGrantedAssets(connectionId, (currentGrantedAssets) => {
+        const priorMetaAdsAssets = (currentGrantedAssets.meta_ads as Record<string, unknown> | undefined) || {};
+        return {
+          ...currentGrantedAssets,
+          ...(platformStr === 'meta_ads' ? {
+            meta: {
+              ...((currentGrantedAssets.meta as Record<string, unknown> | undefined) || {}),
+              declinedAssetKinds: {
+                kinds: effectiveDeclines,
+                declinedAt: new Date().toISOString(),
+              },
             },
-          },
-        } : {}),
-        ...(instagramSelection ? {
-          meta_ads: {
-            ...(priorMetaAdsAssets.selectedBusinessId === selectedMetaBusinessId ? priorMetaAdsAssets : {}),
-            ...instagramSelection,
-          },
-        } : {}),
-        [platform]: resolvedSelectedAssets,
-      };
-
-      await prisma.clientConnection.update({
-        where: { id: connectionId },
-        data: { grantedAssets: updatedGrantedAssets },
+          } : {}),
+          ...(instagramSelection ? {
+            meta_ads: {
+              ...(priorMetaAdsAssets.selectedBusinessId === selectedMetaBusinessId ? priorMetaAdsAssets : {}),
+              ...instagramSelection,
+            },
+          } : {}),
+          [platform]: resolvedSelectedAssets,
+        };
       });
 
       if (existingAuth) {
@@ -1541,9 +1538,6 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
         },
       });
 
-      const currentGrantedAssets = (connection.grantedAssets as Record<string, unknown> | null) || {};
-      const currentMetaGrantedAssets =
-        (currentGrantedAssets.meta as Record<string, unknown> | undefined) || {};
       const pageResults = mergedAssetGrantResults.filter((result) => result.assetType === 'page');
       const adAccountResults = mergedAssetGrantResults.filter(
         (result) => result.assetType === 'ad_account'
@@ -1552,40 +1546,36 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
         pageResults.length > 0 && pageResults.every((result) => result.status === 'verified');
       const adAccountsAccessGranted = !skippedExcludedGrant &&
         adAccountResults.length > 0 && adAccountResults.every((result) => result.status === 'verified');
-      const pagesAccessGrantedAt =
-        pagesAccessGranted
+      await updateGrantedAssets(connectionId, (currentGrantedAssets) => {
+        const currentMetaGrantedAssets =
+          (currentGrantedAssets.meta as Record<string, unknown> | undefined) || {};
+        const pagesAccessGrantedAt = pagesAccessGranted
           ? requestedAssetTypes.has('page')
             ? verificationCompletedAt
             : typeof currentMetaGrantedAssets.pagesAccessGrantedAt === 'string'
               ? currentMetaGrantedAssets.pagesAccessGrantedAt
               : verificationCompletedAt
           : undefined;
-      const adAccountsAccessGrantedAt =
-        adAccountsAccessGranted
+        const adAccountsAccessGrantedAt = adAccountsAccessGranted
           ? requestedAssetTypes.has('ad_account')
             ? verificationCompletedAt
             : typeof currentMetaGrantedAssets.adAccountsAccessGrantedAt === 'string'
               ? currentMetaGrantedAssets.adAccountsAccessGrantedAt
               : verificationCompletedAt
           : undefined;
-
-      await prisma.clientConnection.update({
-        where: { id: connectionId },
-        data: {
-          grantedAssets: {
-            ...currentGrantedAssets,
-            meta: {
-              ...currentMetaGrantedAssets,
-              verifiedMetaAssetGrantStatus: verificationStatus,
-              verifiedMetaAssetGrantResults: mergedAssetGrantResults,
-              verifiedMetaAssetGrantAt: verificationCompletedAt,
-              pagesAccessGranted,
-              pagesAccessGrantedAt,
-              adAccountsAccessGranted,
-              adAccountsAccessGrantedAt,
-            },
+        return {
+          ...currentGrantedAssets,
+          meta: {
+            ...currentMetaGrantedAssets,
+            verifiedMetaAssetGrantStatus: verificationStatus,
+            verifiedMetaAssetGrantResults: mergedAssetGrantResults,
+            verifiedMetaAssetGrantAt: verificationCompletedAt,
+            pagesAccessGranted,
+            pagesAccessGrantedAt,
+            adAccountsAccessGranted,
+            adAccountsAccessGrantedAt,
           },
-        },
+        };
       });
 
       await auditService.createAuditLog({
@@ -1694,28 +1684,21 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
             status: 'waiting_for_manual_share',
           })
         );
-        const currentGrantedAssets = (connection.grantedAssets as Record<string, unknown> | null) || {};
-
-        await prisma.clientConnection.update({
-          where: { id: connectionId },
-          data: {
-            grantedAssets: {
-              ...currentGrantedAssets,
-              meta: {
-                ...((currentGrantedAssets.meta as Record<string, unknown> | undefined) || {}),
-                manualAdAccountShare: {
-                  status: 'waiting_for_manual_share',
-                  partnerBusinessId,
-                  partnerBusinessName: partnerBusinessName || undefined,
-                  selectedAdAccountIds: selectedAdAccounts.map((account) => account.id),
-                  selectedAdAccounts,
-                  startedAt,
-                  verificationResults,
-                },
-              },
+        await updateGrantedAssets(connectionId, (currentGrantedAssets) => ({
+          ...currentGrantedAssets,
+          meta: {
+            ...((currentGrantedAssets.meta as Record<string, unknown> | undefined) || {}),
+            manualAdAccountShare: {
+              status: 'waiting_for_manual_share',
+              partnerBusinessId,
+              partnerBusinessName: partnerBusinessName || undefined,
+              selectedAdAccountIds: selectedAdAccounts.map((account) => account.id),
+              selectedAdAccounts,
+              startedAt,
+              verificationResults,
             },
           },
-        });
+        }));
 
         await auditService.createAuditLog({
           agencyId: accessRequest.agencyId,
@@ -1835,15 +1818,7 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
         return sendError(reply, 'META_TASKS_REQUIRED', 'Choose the Meta Ads product and access tasks before verifying ad-account sharing', 409);
       }
 
-      const currentGrantedAssets = (connection.grantedAssets as Record<string, unknown> | null) || {};
-      const currentMetaGrantedAssets =
-        (currentGrantedAssets.meta as Record<string, unknown> | undefined) || {};
-      const existingManualShare =
-        (currentMetaGrantedAssets.manualAdAccountShare as Record<string, unknown> | undefined) || {};
-      const partnerBusinessName =
-        (typeof existingManualShare.partnerBusinessName === 'string'
-          ? existingManualShare.partnerBusinessName
-          : null) || resolvedPartnerBusinessName;
+      const partnerBusinessName = resolvedPartnerBusinessName;
       const grantContext = {
         accessRequestId: accessRequest.id,
         connectionId,
@@ -1993,35 +1968,38 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
         },
       });
 
-      await prisma.clientConnection.update({
-        where: { id: connectionId },
-        data: {
-          grantedAssets: {
-            ...currentGrantedAssets,
-            meta: {
-              ...currentMetaGrantedAssets,
-              verifiedMetaAssetGrantStatus: verificationStatus,
-              verifiedMetaAssetGrantResults: mergedGrantResults,
-              verifiedMetaAssetGrantAt: verificationCompletedAt,
-              pagesAccessGranted,
-              pagesAccessGrantedAt: pagesAccessGranted ? verificationCompletedAt : undefined,
-              adAccountsAccessGranted,
-              adAccountsAccessGrantedAt: adAccountsAccessGranted
-                ? verificationCompletedAt
-                : undefined,
-              manualAdAccountShare: {
-                ...existingManualShare,
-                status: verificationStatus,
-                partnerBusinessId,
-                partnerBusinessName: partnerBusinessName || undefined,
-                selectedAdAccountIds: selectedAdAccounts.map((account) => account.id),
-                selectedAdAccounts,
-                verificationResults,
-                lastVerifiedAt: verificationCompletedAt,
-              },
+      await updateGrantedAssets(connectionId, (currentGrantedAssets) => {
+        const currentMetaGrantedAssets =
+          (currentGrantedAssets.meta as Record<string, unknown> | undefined) || {};
+        const existingManualShare =
+          (currentMetaGrantedAssets.manualAdAccountShare as Record<string, unknown> | undefined) || {};
+        const currentPartnerBusinessName =
+          (typeof existingManualShare.partnerBusinessName === 'string'
+            ? existingManualShare.partnerBusinessName
+            : null) || partnerBusinessName;
+        return {
+          ...currentGrantedAssets,
+          meta: {
+            ...currentMetaGrantedAssets,
+            verifiedMetaAssetGrantStatus: verificationStatus,
+            verifiedMetaAssetGrantResults: mergedGrantResults,
+            verifiedMetaAssetGrantAt: verificationCompletedAt,
+            pagesAccessGranted,
+            pagesAccessGrantedAt: pagesAccessGranted ? verificationCompletedAt : undefined,
+            adAccountsAccessGranted,
+            adAccountsAccessGrantedAt: adAccountsAccessGranted ? verificationCompletedAt : undefined,
+            manualAdAccountShare: {
+              ...existingManualShare,
+              status: verificationStatus,
+              partnerBusinessId,
+              partnerBusinessName: currentPartnerBusinessName || undefined,
+              selectedAdAccountIds: selectedAdAccounts.map((account) => account.id),
+              selectedAdAccounts,
+              verificationResults,
+              lastVerifiedAt: verificationCompletedAt,
             },
           },
-        },
+        };
       });
 
       await auditService.createAuditLog({
@@ -2305,15 +2283,15 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
           meta: { ...metaMetadata, obo: { ...(metaMetadata.obo || {}), assetGrantResults: mergedResults, lastVerifiedAt: verifiedAt } },
         } },
       });
-      const existingGranted = (connection.grantedAssets as Record<string, unknown> | null) || {};
-      const existingMetaGranted = (existingGranted.meta as Record<string, unknown> | undefined) || {};
-      await prisma.clientConnection.update({
-        where: { id: connectionId },
-        data: { grantedAssets: {
-          ...existingGranted,
-          meta: { ...existingMetaGranted, verifiedMetaAssetGrantStatus: buildMetaGrantVerificationStatus(mergedResults), verifiedMetaAssetGrantResults: mergedResults, verifiedMetaAssetGrantAt: verifiedAt },
-        } },
-      });
+      await updateGrantedAssets(connectionId, (existingGranted) => ({
+        ...existingGranted,
+        meta: {
+          ...((existingGranted.meta as Record<string, unknown> | undefined) || {}),
+          verifiedMetaAssetGrantStatus: buildMetaGrantVerificationStatus(mergedResults),
+          verifiedMetaAssetGrantResults: mergedResults,
+          verifiedMetaAssetGrantAt: verifiedAt,
+        },
+      }));
       await auditService.createAuditLog({
         agencyId: accessRequest.agencyId,
         action: 'META_ASSET_ACCESS_VERIFIED',

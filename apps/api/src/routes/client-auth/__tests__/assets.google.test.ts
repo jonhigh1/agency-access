@@ -34,6 +34,8 @@ vi.mock('@/services/audit.service', () => ({
 
 vi.mock('@/lib/prisma', () => ({
   prisma: {
+    $transaction: vi.fn(),
+    $queryRaw: vi.fn(),
     clientConnection: {
       findUnique: vi.fn(),
       update: vi.fn(),
@@ -53,6 +55,8 @@ describe('Client Auth Asset Routes - Google', () => {
     app = Fastify();
     await registerAssetRoutes(app);
     vi.clearAllMocks();
+    vi.mocked(prisma.$transaction).mockImplementation(async (callback: any) => callback(prisma));
+    vi.mocked(prisma.$queryRaw).mockResolvedValue([{ id: 'conn-1', granted_assets: {} }] as any);
     env.GOOGLE_ADS_DEVELOPER_TOKEN = 'test-google-ads-developer-token';
 
     vi.mocked(accessRequestService.getAccessRequestByToken).mockResolvedValue({
