@@ -218,6 +218,49 @@ describe('AdAccountSharingInstructions', () => {
       );
     });
   });
+
+  it('skips the start request and seeds verify state when autoStart is false', async () => {
+    const onComplete = vi.fn();
+
+    render(
+      <AdAccountSharingInstructions
+        businessId="partner-bm-1"
+        businessName="Outdoor DIY"
+        selectedAdAccounts={[
+          { id: 'act_1', name: 'DogTimez' },
+          { id: 'act_2', name: 'Still Pending' },
+        ]}
+        accessRequestToken="token-1"
+        connectionId="conn-1"
+        onComplete={onComplete}
+        autoStart={false}
+        initialStatus="partial"
+        initialVerificationResults={[
+          { assetId: 'act_1', assetName: 'DogTimez', status: 'verified' },
+          {
+            assetId: 'act_2',
+            assetName: 'Still Pending',
+            status: 'unresolved',
+            errorMessage: 'Ad account has not been shared to the agency business portfolio yet',
+          },
+        ]}
+      />
+    );
+
+    // Verify-only mode mounts straight into server truth: the seeded partial
+    // result renders instead of a starting spinner, and no start POST fires.
+    await waitFor(() => {
+      expect(screen.getByText(/1\/2/)).toBeInTheDocument();
+    });
+    expect(fetch).not.toHaveBeenCalled();
+    expect(
+      screen.getByText(
+        'Still Pending: Ad account has not been shared to the agency business portfolio yet'
+      )
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /check access/i })).toBeEnabled();
+    expect(onComplete).not.toHaveBeenCalled();
+  });
 });
 
 describe('AdAccountSharingInstructions - stateful manual-grant checklist (U9)', () => {

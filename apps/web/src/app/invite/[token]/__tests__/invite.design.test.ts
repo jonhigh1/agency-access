@@ -189,6 +189,7 @@ const BORDER2_BUDGET_BY_SOURCE_PATH: Record<string, number> = {
   'components/client-auth/MetaAssetSelector.tsx': 8,
   'components/client-auth/MetaBusinessCreator.tsx': 6,
   'components/client-auth/MetaBusinessSetupChecklist.tsx': 2,
+  'components/client-auth/MetaGrantChecklist.tsx': 2,
   'components/client-auth/PlatformAuthWizard.tsx': 17,
   'components/client-auth/PlatformStepProgress.tsx': 1,
   'components/client-auth/PortfolioSelector.tsx': 1,

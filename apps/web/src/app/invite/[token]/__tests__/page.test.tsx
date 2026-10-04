@@ -26,6 +26,7 @@ vi.mock('@/lib/analytics/invite-events', () => ({
   // U11: the flow shell raises this on "Check again"; stubbed here so the
   // click handler reaches the page's refetch.
   trackInviteProgressCheckRequested: vi.fn(),
+  trackClientChecklistResumed: vi.fn(),
 }));
 
 import * as inviteEvents from '@/lib/analytics/invite-events';
@@ -1648,7 +1649,9 @@ describe('Invite Flow Page', () => {
       await waitFor(() => {
         expect(screen.getByText('Active platform: Meta')).toBeInTheDocument();
         expect(screen.getByText('Initial connection: conn-meta-1')).toBeInTheDocument();
-        expect(screen.getByText('Initial step: 2')).toBeInTheDocument();
+        // The saved selection is confirmed, so the return lands on the
+        // step-3 grant checklist instead of asset selection.
+        expect(screen.getByText('Initial step: 3')).toBeInTheDocument();
         expect(screen.getByText('Meta prefill: act_111')).toBeInTheDocument();
       });
 
@@ -1833,6 +1836,199 @@ describe('Invite Flow Page', () => {
 
       expect(screen.queryByRole('button', { name: /check again/i })).not.toBeInTheDocument();
       expect(screen.queryByText("We couldn't check just now. Try again.")).not.toBeInTheDocument();
+    });
+  });
+
+  describe('Meta grant checklist resume (Phase 3)', () => {
+    const metaResumeRow = (overrides: Record<string, unknown> = {}) => ({
+      id: 'row-1',
+      assetKind: 'ad_account',
+      assetId: 'act_111',
+      assetName: 'Acme Ads',
+      recipientType: 'system_user',
+      recipientId: 'recipient-1',
+      recipientName: 'Agency System User',
+      requestedTasks: [],
+      verifiedTasks: [],
+      status: 'selected',
+      updatedAt: '2026-09-26T00:00:00.000Z',
+      ...overrides,
+    });
+
+    // Server truth for a confirmed selection with pending grants: reason
+    // `selected` reads as action-needed, so the queue keeps Meta active.
+    const metaResumePayload = (overrides: Record<string, unknown> = {}) => ({
+      ok: true,
+      json: async () => ({
+        data: {
+          id: 'request-1',
+          agencyId: 'agency-1',
+          agencyName: 'Demo Agency',
+          clientName: 'Client',
+          clientEmail: 'client@test.com',
+          status: 'pending',
+          uniqueToken: 'token-123',
+          expiresAt: new Date().toISOString(),
+          intakeFields: [],
+          branding: {},
+          platforms: [
+            { platformGroup: 'meta', products: [{ product: 'meta_ads', accessLevel: 'admin' }] },
+          ],
+          manualInviteTargets: {},
+          connections: [{ id: 'conn-meta-1', platformGroup: 'meta' }],
+          metaFulfillment: [metaResumeRow()],
+          authorizationProgress: {
+            completedPlatforms: [],
+            isComplete: false,
+            unresolvedProducts: [
+              { product: 'meta_ads', platformGroup: 'meta', reason: 'selected' },
+            ],
+          },
+          ...overrides,
+        },
+        error: null,
+      }),
+    });
+
+    const fulfillmentIncomplete = () => ({
+      ok: false,
+      json: async () => ({
+        error: {
+          code: 'FULFILLMENT_INCOMPLETE',
+          message: 'Some Meta grants are still pending',
+        },
+      }),
+    });
+
+    // Rows in the payload mean a prior confirmed selection, so the revisit
+    // lands straight on the step-3 checklist — no intake, no share step.
+    const renderThroughCompletionError = async (
+      loadPayload: ReturnType<typeof metaResumePayload>
+    ) => {
+      const fetchMock = vi.fn(async (url: string) => {
+        if (String(url).includes('/api/client/token-123/complete')) {
+          return fulfillmentIncomplete() as unknown as Response;
+        }
+        return loadPayload as unknown as Response;
+      });
+      stubFetch(fetchMock);
+
+      render(<InvitePage />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Active platform: Meta')).toBeInTheDocument();
+        expect(screen.getByText('Initial step: 3')).toBeInTheDocument();
+      });
+
+      await userEvent.click(await screen.findByRole('button', { name: /complete platform/i }));
+
+      await waitFor(() => {
+        expect(screen.getByRole('heading', { name: /access needs follow-up/i })).toBeInTheDocument();
+      });
+      return fetchMock;
+    };
+
+    it('offers a way back to the checklist from the completion follow-up card', async () => {
+      let completeCalls = 0;
+      const fetchMock = vi.fn(async (url: string) => {
+        if (String(url).includes('/api/client/token-123/complete')) {
+          completeCalls += 1;
+          return fulfillmentIncomplete() as unknown as Response;
+        }
+        return metaResumePayload() as unknown as Response;
+      });
+      stubFetch(fetchMock);
+
+      render(<InvitePage />);
+
+      // A revisit with a confirmed selection resumes at the checklist itself.
+      await waitFor(() => {
+        expect(screen.getByText('Active platform: Meta')).toBeInTheDocument();
+        expect(screen.getByText('Initial step: 3')).toBeInTheDocument();
+      });
+
+      await userEvent.click(await screen.findByRole('button', { name: /complete platform/i }));
+
+      await waitFor(() => {
+        expect(screen.getByRole('heading', { name: /access needs follow-up/i })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /resume meta checklist/i })).toBeInTheDocument();
+      });
+      expect(completeCalls).toBe(1);
+
+      expect(inviteEvents.trackClientChecklistResumed).not.toHaveBeenCalled();
+
+      await userEvent.click(screen.getByRole('button', { name: /resume meta checklist/i }));
+
+      await waitFor(() => {
+        expect(screen.getByText('Active platform: Meta')).toBeInTheDocument();
+        expect(screen.getByText('Initial step: 3')).toBeInTheDocument();
+      });
+      expect(inviteEvents.trackClientChecklistResumed).toHaveBeenCalledTimes(1);
+
+      // The auto-finalize effect must not re-fire from the resumed phase.
+      await act(async () => {
+        await Promise.resolve();
+        await Promise.resolve();
+      });
+      expect(completeCalls).toBe(1);
+      expect(screen.queryByRole('heading', { name: /access needs follow-up/i })).not.toBeInTheDocument();
+    });
+
+    it('hides the resume button once every fulfillment row is verified', async () => {
+      await renderThroughCompletionError(
+        metaResumePayload({ metaFulfillment: [metaResumeRow({ status: 'verified' })] })
+      );
+
+      expect(screen.queryByRole('button', { name: /resume meta checklist/i })).not.toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /check again/i })).toBeInTheDocument();
+    });
+
+    it('hides the resume button when the request carries no Meta connection', async () => {
+      await renderThroughCompletionError(metaResumePayload({ connections: undefined }));
+
+      expect(screen.queryByRole('button', { name: /resume meta checklist/i })).not.toBeInTheDocument();
+    });
+
+    it('refreshes progress before re-posting completion from the follow-up card', async () => {
+      const calls: string[] = [];
+      let completeCalls = 0;
+      const fetchMock = vi.fn(async (url: string) => {
+        if (String(url).includes('/api/client/token-123/complete')) {
+          completeCalls += 1;
+          calls.push(`complete-${completeCalls}`);
+          if (completeCalls === 1) {
+            return fulfillmentIncomplete() as unknown as Response;
+          }
+          return {
+            ok: true,
+            json: async () => ({ data: { success: true }, error: null }),
+          } as Response;
+        }
+        calls.push('refresh');
+        return metaResumePayload() as unknown as Response;
+      });
+      stubFetch(fetchMock);
+
+      render(<InvitePage />);
+
+      await waitFor(() => {
+        expect(screen.getByText('Active platform: Meta')).toBeInTheDocument();
+        expect(screen.getByText('Initial step: 3')).toBeInTheDocument();
+      });
+
+      await userEvent.click(await screen.findByRole('button', { name: /complete platform/i }));
+
+      await screen.findByRole('button', { name: /check again/i });
+
+      await userEvent.click(screen.getByRole('button', { name: /check again/i }));
+
+      await waitFor(() => {
+        expect(screen.getByRole('heading', { name: /all set — you're done/i })).toBeInTheDocument();
+      });
+
+      // The follow-up card's check-again must refetch server truth BEFORE the
+      // re-POST so the fulfillment card renders fresh rows.
+      expect(calls).toEqual(['refresh', 'complete-1', 'refresh', 'complete-2']);
     });
   });
 });

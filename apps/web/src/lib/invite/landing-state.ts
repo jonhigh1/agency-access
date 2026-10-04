@@ -14,10 +14,17 @@
  *    the share step for that platform with the same connection — no second
  *    OAuth connection is created. Meta adds a selection prefill derived from
  *    the payload's `metaFulfillment` rows (KTD1: zero backend change); other
- *    platforms resume at asset selection without prefill.
- * 4. A request whose platforms are all connected stays on the platform phase
+ *    platforms resume at asset selection without prefill. A Meta return whose
+ *    rows hold a confirmed selection skips straight to the step-3 grant
+ *    checklist: the selection is saved, so the remaining work is the grants.
+ * 4. A plain revisit whose fulfillment rows hold a confirmed Meta selection
+ *    while `authorizationProgress` is not complete also resumes at that
+ *    checklist. It reads the SERVER-completed platforms, not the page's
+ *    session-merged set, so a stale sessionStorage entry for meta cannot
+ *    shadow it (and server-verified meta is never resurrected).
+ * 5. A request whose platforms are all connected stays on the platform phase
  *    until finalization confirms it (the page's completion flow owns that).
- * 5. Any recorded progress — connected platforms or authorization work —
+ * 6. Any recorded progress — connected platforms or authorization work —
  *    lands on the platform phase; only a visit with no progress sees intake.
  *    This kills the mid-flow refresh fallback to intake (G1).
  *
@@ -129,6 +136,19 @@ export function buildMetaSelectionPrefill(
   return any ? prefill : null;
 }
 
+/** True when the payload carries a saved Meta selection: the client confirmed
+ * an asset list at least once. Declines create no fulfillment rows, so they
+ * cannot fake a confirmation, and excluded/revoked rows are not prefillable. */
+export function hasConfirmedMetaSelection(rows?: ReadonlyArray<MetaFulfillmentResult>): boolean {
+  return buildMetaSelectionPrefill(rows) !== null;
+}
+
+/** True while any fulfillment row still needs grant work: neither `verified`
+ * (Meta granted it) nor `excluded` (agency bookkeeping, not client work). */
+export function hasOpenMetaFulfillment(rows?: ReadonlyArray<MetaFulfillmentResult>): boolean {
+  return (rows ?? []).some((row) => row.status !== 'verified' && row.status !== 'excluded');
+}
+
 /** The subset of a fresh Meta asset fetch the intersection reads. */
 export interface InviteSelectableAssets {
   adAccounts?: ReadonlyArray<{ id: string }>;
@@ -170,7 +190,8 @@ export interface InviteResumeParams {
 
 export interface InviteWizardStart {
   platform: Platform;
-  step: 2;
+  /** 2 = share/selection step; 3 = Meta grant checklist. */
+  step: 2 | 3;
   connectionId: string;
   /** Meta only: saved selections from the payload's fulfillment rows. */
   metaSelectionPrefill: InviteSelectionPrefill | null;
@@ -196,6 +217,15 @@ export interface InviteLandingInput {
   /** OAuth return or refresh params, already validated by the caller. */
   resume?: InviteResumeParams | null;
   metaFulfillment?: ReadonlyArray<MetaFulfillmentResult>;
+  /** Connection id of the request's meta platform group, from
+   * `payload.connections` — the checklist resume needs it to reuse the
+   * connection instead of creating a second one. */
+  metaConnectionId?: string;
+  /** The payload's own `authorizationProgress.completedPlatforms` — server
+   * truth, distinct from `completedPlatforms`, which the page session-merges.
+   * The checklist resume reads this one so a stale sessionStorage entry for
+   * meta cannot shadow it. */
+  serverCompletedPlatforms?: ReadonlySet<string>;
 }
 
 export function resolveInviteLandingState(input: InviteLandingInput): InviteLandingState {
@@ -209,13 +239,18 @@ export function resolveInviteLandingState(input: InviteLandingInput): InviteLand
     return { phase: 'complete' };
   }
 
-  // 3. OAuth return or refresh: resume the same connection at the share step.
+  // 3. OAuth return or refresh: resume the same connection. Meta with a
+  //    confirmed selection goes straight to the grant checklist — the
+  //    selection is already saved, so the remaining work is the grants.
   if (input.resume) {
     return {
       phase: 'platforms',
       wizardStart: {
         platform: input.resume.platform,
-        step: 2,
+        step:
+          input.resume.platform === 'meta' && hasConfirmedMetaSelection(input.metaFulfillment)
+            ? 3
+            : 2,
         connectionId: input.resume.connectionId,
         metaSelectionPrefill:
           input.resume.platform === 'meta'
@@ -225,11 +260,35 @@ export function resolveInviteLandingState(input: InviteLandingInput): InviteLand
     };
   }
 
+  // 3.5 Plain revisit with a confirmed Meta selection and unfinished grant
+  //     work: resume the step-3 checklist. Reads the SERVER-completed set, so
+  //     the session-merged `completedPlatforms` cannot shadow it and verified
+  //     meta is never resurrected. (The completed-request and resume branches
+  //     above already returned.)
+  const metaRequested = (input.platforms ?? []).some((group) => group.platformGroup === 'meta');
+  if (
+    !input.resume &&
+    metaRequested &&
+    !input.isComplete &&
+    hasConfirmedMetaSelection(input.metaFulfillment) &&
+    !(input.serverCompletedPlatforms?.has('meta') ?? false)
+  ) {
+    return {
+      phase: 'platforms',
+      wizardStart: {
+        platform: 'meta',
+        step: 3,
+        connectionId: input.metaConnectionId ?? '',
+        metaSelectionPrefill: buildMetaSelectionPrefill(input.metaFulfillment),
+      },
+    };
+  }
+
   const hasPlatforms = (input.platforms?.length ?? 0) > 0;
   const allPlatformsComplete =
     hasPlatforms && input.platforms.every((group) => input.completedPlatforms.has(group.platformGroup));
 
-  // 4. Everything connected, nothing confirmed yet: the completion flow takes
+  // 5. Everything connected, nothing confirmed yet: the completion flow takes
   //    over from the platform phase.
   if (allPlatformsComplete || input.isComplete) {
     return { phase: 'platforms' };

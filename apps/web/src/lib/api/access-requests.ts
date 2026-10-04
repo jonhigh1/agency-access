@@ -6,7 +6,12 @@
  */
 
 import { PlatformGroupConfig } from '@/lib/transform-platforms';
-import type { IntakeField, MetaAccessConfig, MetaFulfillmentResult } from '@agency-platform/shared';
+import type {
+  IntakeField,
+  MetaAccessConfig,
+  MetaFulfillmentDeclines,
+  MetaFulfillmentResult,
+} from '@agency-platform/shared';
 export type { MetaFulfillmentResult } from '@agency-platform/shared';
 import { buildInviteUrl } from '@/lib/app-url';
 import { AuthorizedApiError, authorizedApiFetch } from './authorized-api-fetch';
@@ -72,6 +77,7 @@ export interface AccessRequest {
     }>;
   };
   metaFulfillment?: MetaFulfillmentResult[];
+  metaDeclines?: MetaFulfillmentDeclines;
   authorizationLinkChanged?: boolean;
 }
 

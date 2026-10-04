@@ -2,14 +2,38 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { PlatformAuthWizard } from '../PlatformAuthWizard';
 import { manualGrantChecklistStorageKey } from '@/lib/invite/manual-grant-checklist-storage';
+import type { MetaFulfillmentResult } from '@agency-platform/shared';
 
-const { pushMock, replaceMock, onCompleteMock, trackOnboardingEventMock, trackInviteCtaBlockedMock, trackInviteSelectionSavedMock } = vi.hoisted(() => ({
+let fulfillmentRowSeq = 0;
+
+/** A verified ad-account fulfillment row by default; overrides shape the case. */
+function fulfillmentRow(overrides: Partial<MetaFulfillmentResult> = {}): MetaFulfillmentResult {
+  fulfillmentRowSeq += 1;
+  return {
+    id: `row-${fulfillmentRowSeq}`,
+    assetKind: 'ad_account',
+    assetId: `asset-${fulfillmentRowSeq}`,
+    assetName: `Asset ${fulfillmentRowSeq}`,
+    recipientType: 'business',
+    recipientId: `biz-${fulfillmentRowSeq}`,
+    recipientName: `Recipient ${fulfillmentRowSeq}`,
+    requestedTasks: ['ADVERTISE'],
+    verifiedTasks: [],
+    status: 'verified',
+    updatedAt: '2026-10-03T00:00:00.000Z',
+    ...overrides,
+  };
+}
+
+const { pushMock, replaceMock, onCompleteMock, trackOnboardingEventMock, trackInviteCtaBlockedMock, trackInviteSelectionSavedMock, trackClientGrantChecklistViewedMock, trackClientFinishClickedWithPendingMock } = vi.hoisted(() => ({
   pushMock: vi.fn(),
   replaceMock: vi.fn(),
   onCompleteMock: vi.fn(),
   trackOnboardingEventMock: vi.fn(),
   trackInviteCtaBlockedMock: vi.fn(),
   trackInviteSelectionSavedMock: vi.fn(),
+  trackClientGrantChecklistViewedMock: vi.fn(),
+  trackClientFinishClickedWithPendingMock: vi.fn(),
 }));
 
 vi.mock('next/navigation', () => ({
@@ -312,9 +336,11 @@ vi.mock('@/components/client-auth/AutomaticPagesGrant', () => ({
 }));
 
 vi.mock('@/components/client-auth/AdAccountSharingInstructions', () => ({
-  AdAccountSharingInstructions: ({ onComplete }: any) => (
+  AdAccountSharingInstructions: ({ autoStart, initialStatus, onComplete }: any) => (
     <div>
-      <div>Ad Account Sharing Instructions</div>
+      <div>
+        {`Ad Account Sharing Instructions autostart:${String(autoStart ?? true)} initialStatus:${initialStatus ?? 'none'}`}
+      </div>
       <button
         type="button"
         onClick={() =>
@@ -374,6 +400,8 @@ vi.mock('@/lib/analytics/onboarding', () => ({
 vi.mock('@/lib/analytics/invite-events', () => ({
   trackInviteCtaBlocked: trackInviteCtaBlockedMock,
   trackInviteSelectionSaved: trackInviteSelectionSavedMock,
+  trackClientGrantChecklistViewed: trackClientGrantChecklistViewedMock,
+  trackClientFinishClickedWithPending: trackClientFinishClickedWithPendingMock,
 }));
 
 describe('PlatformAuthWizard', () => {
@@ -609,7 +637,7 @@ describe('PlatformAuthWizard', () => {
 
     await waitFor(() => {
       expect(screen.getByRole('heading', { name: /connected/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /finish request/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /finish/i })).toBeInTheDocument();
     });
 
     fireEvent.click(screen.getByRole('button', { name: /see which accounts you shared/i }));
@@ -754,7 +782,7 @@ describe('PlatformAuthWizard', () => {
     expect(screen.getByText('Business Profile')).toBeInTheDocument();
     expect(screen.getByText(/No locations found yet/i)).toBeInTheDocument();
     expect(screen.getByText(/Follow-up needed/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /finish request/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /finish/i })).toBeInTheDocument();
   });
 
   it('saves grouped Google products sequentially to preserve connection asset updates', async () => {
@@ -1043,7 +1071,7 @@ describe('PlatformAuthWizard', () => {
     expect(screen.getByText('Preparing your accounts')).toBeInTheDocument();
   });
 
-  it('advances Meta into the confirmation step when manual ad-account verification is partial', async () => {
+  it('keeps the ad-account checklist item in an action state when manual verification is partial', async () => {
     vi.mocked(fetch)
       .mockResolvedValueOnce({
         ok: true,
@@ -1083,32 +1111,23 @@ describe('PlatformAuthWizard', () => {
     await waitFor(() => expect(shareButton).toBeEnabled());
     fireEvent.click(shareButton);
 
-    await waitFor(() => {
-      expect(fetch).toHaveBeenCalledWith(
-        'https://api.example.com/api/client/token-1/save-assets',
-        expect.objectContaining({
-          method: 'POST',
-        })
-      );
-    });
-
-    fireEvent.click(await screen.findByRole('button', { name: /report partial meta share/i }));
-
-    await waitFor(() => {
-      expect(screen.getByRole('heading', { name: /connected/i })).toBeInTheDocument();
-    });
-
+    // Save advances straight to the checklist step (confirm is decoupled
+    // from completion), and the ad-account panel mounts with automation on.
+    expect(await screen.findByRole('heading', { name: /connected/i })).toBeInTheDocument();
     expect(
-      screen.getByText(/some meta accounts still need follow-up/i)
+      await screen.findByText(/Ad Account Sharing Instructions autostart:true/)
     ).toBeInTheDocument();
-    fireEvent.click(screen.getByRole('button', { name: /see which accounts you shared/i }));
-    expect(
-      screen.getByText(/still pending still needs manual meta sharing/i)
-    ).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /finish request/i })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /report partial meta share/i }));
+
+    // A partial report flips the item state on the checklist step — it does
+    // not navigate, and the Finish action stays enabled with its count.
+    expect(screen.getByRole('heading', { name: /connected/i })).toBeInTheDocument();
+    expect(screen.getByText('Action needed')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /finish/i })).toBeEnabled();
   });
 
-  it('stays on the grant step when any selected Page grant fails', async () => {
+  it('keeps the Pages checklist item in an action state when any Page grant fails', async () => {
     vi.mocked(fetch).mockResolvedValue({
       ok: true,
       text: async () => JSON.stringify({ data: { success: true }, error: null }),
@@ -1123,6 +1142,7 @@ describe('PlatformAuthWizard', () => {
         onComplete={onCompleteMock}
         initialConnectionId="conn-1"
         initialStep={2}
+        completionActionLabel="Finish request"
       />
     );
 
@@ -1131,14 +1151,21 @@ describe('PlatformAuthWizard', () => {
     await waitFor(() => expect(shareButton).toBeEnabled());
     fireEvent.click(shareButton);
 
+    expect(await screen.findByRole('heading', { name: /connected/i })).toBeInTheDocument();
+
     fireEvent.click(await screen.findByRole('button', { name: /return partial page results/i }));
 
-    expect(screen.queryByRole('heading', { name: /connected/i })).not.toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /review access confirmation/i })).not.toBeInTheDocument();
+    // The partial grant keeps the Pages item on an action state inside the
+    // step-3 checklist — it does not navigate back to step 2.
+    expect(screen.getByRole('heading', { name: /connected/i })).toBeInTheDocument();
+    expect(screen.getByText('Action needed')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /^automatic pages grant$/i })).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: /review access confirmation/i })
+    ).not.toBeInTheDocument();
   });
 
-  it('keeps Instagram access pending for direct Meta verification', async () => {
+  it('keeps the Instagram checklist item pending for direct verification on the checklist step', async () => {
     vi.mocked(fetch)
       .mockResolvedValueOnce({
         ok: true,
@@ -1178,9 +1205,13 @@ describe('PlatformAuthWizard', () => {
     await waitFor(() => expect(shareButton).toBeEnabled());
     fireEvent.click(shareButton);
 
-    expect(await screen.findByText(/share direct instagram access/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /verify agency instagram access/i })).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: /connected/i })).not.toBeInTheDocument();
+    // The checklist step hosts the Instagram verification panel; the wizard
+    // never parks the client on step 2 to wait for grants.
+    expect(await screen.findByRole('heading', { name: /connected/i })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('button', { name: /verify agency instagram access/i })
+    ).toBeInTheDocument();
+    expect(screen.getByText('Pending')).toBeInTheDocument();
   });
 
   it('keeps the current Meta selection flow for the same invite', () => {
@@ -1228,24 +1259,21 @@ describe('PlatformAuthWizard', () => {
         onComplete={onCompleteMock}
         initialConnectionId="conn-1"
         initialStep={2}
+        initialMetaSelections={{
+          adAccounts: ['act_1', 'act_2'],
+          pages: [],
+          instagramAccounts: [],
+          catalogs: [],
+          datasets: [],
+        }}
+        completionActionLabel="Finish request"
       />
     );
 
-    fireEvent.click(screen.getByRole('button', { name: /select meta assets/i }));
-    const shareButton = await screen.findByRole('button', { name: /share access/i });
-    await waitFor(() => expect(shareButton).toBeEnabled());
-    fireEvent.click(shareButton);
-
-    await waitFor(() => {
-      expect(fetch).toHaveBeenCalledWith(
-        'https://api.example.com/api/client/token-1/save-assets',
-        expect.objectContaining({ method: 'POST' })
-      );
-    });
-
-    // Post-save: the grant section renders and the save CTA is gone.
-    expect(await screen.findByText('Ad Account Sharing Instructions')).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /share access/i })).not.toBeInTheDocument();
+    // Resumed saved state: the resumed selection lands saved and the advance
+    // action takes over from the save action.
+    fireEvent.click(await screen.findByRole('button', { name: /emit resumed meta selection/i }));
+    expect(await screen.findByRole('button', { name: /^continue$/i })).toBeEnabled();
 
     // Post-save the client can still go back: a change-selection affordance
     // confirms with the selection count before clearing saved state.
@@ -1257,7 +1285,7 @@ describe('PlatformAuthWizard', () => {
 
     // Stale grant state clears and the wizard is not bricked.
     await waitFor(() => {
-      expect(screen.queryByText('Ad Account Sharing Instructions')).not.toBeInTheDocument();
+      expect(screen.queryByText(/Ad Account Sharing Instructions/)).not.toBeInTheDocument();
     });
 
     // The save CTA returns once the client selects assets again.
@@ -1265,10 +1293,15 @@ describe('PlatformAuthWizard', () => {
     const secondShareButton = await screen.findByRole('button', { name: /share access/i });
     await waitFor(() => expect(secondShareButton).toBeEnabled());
 
-    // The full pipeline completes: a second save reaches the server.
+    // The full pipeline completes: a second save reaches the server and the
+    // wizard lands on the checklist step.
     fireEvent.click(secondShareButton);
+    expect(await screen.findByRole('heading', { name: /connected/i })).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Ad Account Sharing Instructions autostart:true/)
+    ).toBeInTheDocument();
     await waitFor(() => {
-      expect(fetch).toHaveBeenCalledTimes(3); // agency-business-id + 2 saves
+      expect(fetch).toHaveBeenCalledTimes(2); // agency-business-id + the second save
     });
     expect(fetch).toHaveBeenLastCalledWith(
       'https://api.example.com/api/client/token-1/save-assets',
@@ -1276,7 +1309,7 @@ describe('PlatformAuthWizard', () => {
     );
   });
 
-  it('clears saved and Instagram verification state when the selector resets after a switch', async () => {
+  it('clears saved and manual-grant checklist state when the selector resets after a switch', async () => {
     vi.mocked(fetch)
       .mockResolvedValueOnce({
         ok: true,
@@ -1285,28 +1318,6 @@ describe('PlatformAuthWizard', () => {
             data: {
               businessId: 'partner-bm-1',
               businessName: 'Agency Access',
-            },
-            error: null,
-          }),
-      } as Response)
-      .mockResolvedValueOnce({
-        ok: true,
-        text: async () => JSON.stringify({ data: { success: true }, error: null }),
-      } as Response)
-      .mockResolvedValueOnce({
-        ok: true,
-        text: async () =>
-          JSON.stringify({
-            data: {
-              assetGrantResults: [
-                {
-                  assetId: 'ig_1',
-                  assetType: 'instagram_account',
-                  recipientType: 'business',
-                  recipientId: 'partner-bm-1',
-                  status: 'verified',
-                },
-              ],
             },
             error: null,
           }),
@@ -1325,25 +1336,24 @@ describe('PlatformAuthWizard', () => {
         onComplete={onCompleteMock}
         initialConnectionId="conn-1"
         initialStep={2}
+        initialMetaSelections={{
+          adAccounts: ['act_111'],
+          pages: [],
+          instagramAccounts: [],
+          catalogs: [],
+          datasets: [],
+        }}
       />
     );
 
-    fireEvent.click(screen.getByRole('button', { name: /select meta pages and instagram assets/i }));
-    const shareButton = await screen.findByRole('button', { name: /share access/i });
-    await waitFor(() => expect(shareButton).toBeEnabled());
-    fireEvent.click(shareButton);
+    fireEvent.click(await screen.findByRole('button', { name: /emit resumed meta selection/i }));
+    expect(await screen.findByRole('button', { name: /^continue$/i })).toBeEnabled();
 
-    // Verify Instagram while Pages are still pending: the wizard stays on step 2.
-    fireEvent.click(await screen.findByRole('button', { name: /verify agency instagram access/i }));
-    expect(
-      await screen.findByText(/Meta confirmed agency Business Portfolio access/i)
-    ).toBeInTheDocument();
-    expect(screen.queryByRole('heading', { name: /connected/i })).not.toBeInTheDocument();
-
-    // Switch business from the re-opened selection section. The manual-grant
-    // checklist storage is selection-derived: the reset must clear it too.
+    // The manual-grant checklist storage is selection-derived: the reset
+    // (change-selection, then business switch) must clear it too.
     sessionStorage.setItem(manualGrantChecklistStorageKey('token-1', 'partner-bm-1', 'step-1'), '1');
-    fireEvent.click(screen.getByRole('button', { name: /choose accounts to share/i }));
+    fireEvent.click(screen.getByRole('button', { name: /change selection/i }));
+    fireEvent.click(await screen.findByRole('button', { name: /clear selection and edit/i }));
     fireEvent.click(screen.getByRole('button', { name: /switch meta business/i }));
 
     expect(
@@ -1356,15 +1366,11 @@ describe('PlatformAuthWizard', () => {
     await waitFor(() => expect(reselectedShareButton).toBeEnabled());
     fireEvent.click(reselectedShareButton);
 
-    await waitFor(() => {
-      expect(fetch).toHaveBeenCalledTimes(4); // agency-business-id + IG verify + 2 saves
-    });
-
-    // Instagram verification was cleared by the reset: completing Pages alone
-    // must not advance past the Instagram grant step.
-    fireEvent.click(screen.getByRole('button', { name: /automatic pages grant/i }));
-    expect(screen.queryByRole('heading', { name: /connected/i })).not.toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /verify agency instagram access/i })).toBeInTheDocument();
+    // The save lands on the checklist step, which hosts the Instagram panel.
+    expect(await screen.findByRole('heading', { name: /connected/i })).toBeInTheDocument();
+    expect(
+      await screen.findByRole('button', { name: /verify agency instagram access/i })
+    ).toBeInTheDocument();
   });
 
   describe('always-rendered primary action footer', () => {
@@ -1714,7 +1720,7 @@ describe('PlatformAuthWizard', () => {
       resolveFirstSave(successfulResponse);
     });
 
-    it('switches the footer to a disabled advance action with a grant-progress reason after save', async () => {
+      it('advances to the checklist step immediately after save', async () => {
       vi.mocked(fetch)
         .mockResolvedValueOnce({
           ok: true,
@@ -1744,16 +1750,287 @@ describe('PlatformAuthWizard', () => {
       await waitFor(() => expect(shareButton).toBeEnabled());
       fireEvent.click(shareButton);
 
-      const continueButton = await screen.findByRole('button', { name: /continue/i });
-      expect(continueButton).toBeDisabled();
+      // Confirm is decoupled from completion: the save itself advances to
+      // the checklist step, whatever grants are still pending. The pages and
+      // Instagram panels host the pending work on this selection.
+      expect(await screen.findByRole('heading', { name: /connected/i })).toBeInTheDocument();
       expect(
-        screen.getByText('Access grants are still in progress. Complete the grant steps above.')
+        await screen.findByRole('button', { name: /^automatic pages grant$/i })
       ).toBeInTheDocument();
-      expect(screen.queryByRole('button', { name: /share access/i })).not.toBeInTheDocument();
-      // The in-card duplicate advance button is gone; the footer is the primary action.
       expect(
-        screen.queryByRole('button', { name: /review access confirmation/i })
+        await screen.findByRole('button', { name: /verify agency instagram access/i })
+      ).toBeInTheDocument();
+
+      // No disabled advance anywhere: the checklist owns pending grants.
+      expect(screen.queryByRole('button', { name: /share access/i })).not.toBeInTheDocument();
+      expect(
+        screen.queryByText(/access grants are still in progress/i)
       ).not.toBeInTheDocument();
+      screen.getAllByRole('button').forEach((button) => {
+        const label = button.textContent ?? '';
+        if (/continue|finish/i.test(label)) expect(button).toBeEnabled();
+      });
+    });
+
+    it('renders Done checklist states from server fulfillment rows without refiring the share start', async () => {
+      vi.mocked(fetch)
+        .mockResolvedValueOnce({
+          ok: true,
+          text: async () =>
+            JSON.stringify({
+              data: { businessId: 'partner-bm-1', businessName: 'Agency Access' },
+              error: null,
+            }),
+        } as Response)
+        .mockResolvedValue({
+          ok: true,
+          text: async () => JSON.stringify({ data: { success: true }, error: null }),
+        } as Response);
+
+      renderShareScreen({
+        platform: 'meta',
+        platformName: 'Meta',
+        products: [{ product: 'meta_ads', accessLevel: 'admin' }],
+        completionActionLabel: 'Finish request',
+        metaFulfillment: [
+          fulfillmentRow({ assetId: 'act_1', status: 'verified' }),
+          fulfillmentRow({ assetId: 'act_2', status: 'verified' }),
+        ],
+      });
+
+      fireEvent.click(screen.getByRole('button', { name: /select meta assets/i }));
+      fireEvent.click(await screen.findByRole('button', { name: /share access/i }));
+
+      expect(await screen.findByRole('heading', { name: /connected/i })).toBeInTheDocument();
+      expect(await screen.findByText('Done')).toBeInTheDocument();
+
+      // Server rows already describe both ad accounts: no automation refire,
+      // and every remaining count is zeroed so the label is plain.
+      expect(
+        vi.mocked(fetch).mock.calls.filter(([url]) =>
+          String(url).includes('/meta/manual-ad-account-share/start')
+        )
+      ).toHaveLength(0);
+      expect(screen.getByRole('button', { name: /^finish( request)?$/i })).toBeInTheDocument();
+    });
+
+    it('renders checklist items from fulfillment rows when resuming straight to step 3', async () => {
+      // Phase 3 resume: the client lands at step 3 without the selector ever
+      // mounting, so the selection blob is empty. The server rows alone must
+      // populate the checklist.
+      vi.mocked(fetch).mockResolvedValue({
+        ok: true,
+        text: async () => JSON.stringify({ data: { success: true }, error: null }),
+      } as Response);
+
+      renderShareScreen({
+        platform: 'meta',
+        platformName: 'Meta',
+        products: [{ product: 'meta_ads', accessLevel: 'admin' }],
+        completionActionLabel: 'Finish request',
+        initialStep: 3,
+        metaFulfillment: [
+          fulfillmentRow({ assetId: 'act_1', status: 'verified' }),
+          fulfillmentRow({ assetKind: 'page', assetId: 'page_1', status: 'selected' }),
+        ],
+      });
+
+      expect(await screen.findByRole('heading', { name: /connected/i })).toBeInTheDocument();
+      expect(await screen.findByText('Done')).toBeInTheDocument();
+      expect(screen.getByText('Pending')).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: /finish — 1 item left/i })
+      ).toBeInTheDocument();
+    });
+
+    it('fires client_grant_checklist_viewed once with the remaining count on step-3 mount', async () => {
+      vi.mocked(fetch).mockResolvedValue({
+        ok: true,
+        text: async () => JSON.stringify({ data: { success: true }, error: null }),
+      } as Response);
+
+      const { rerender } = render(
+        <PlatformAuthWizard
+          platform="meta"
+          platformName="Meta"
+          products={[{ product: 'meta_ads', accessLevel: 'admin' }]}
+          accessRequestToken="token-1"
+          onComplete={onCompleteMock}
+          initialConnectionId="conn-1"
+          initialStep={3}
+          completionActionLabel="Finish request"
+          metaFulfillment={[
+            fulfillmentRow({ assetId: 'act_1', status: 'verified' }),
+            fulfillmentRow({ assetKind: 'page', assetId: 'page_1', status: 'selected' }),
+          ]}
+        />
+      );
+
+      expect(await screen.findByRole('heading', { name: /connected/i })).toBeInTheDocument();
+      expect(trackClientGrantChecklistViewedMock).toHaveBeenCalledTimes(1);
+      expect(trackClientGrantChecklistViewedMock).toHaveBeenCalledWith({ remaining_count: 1 });
+
+      // Re-renders never re-fire the viewed event.
+      rerender(
+        <PlatformAuthWizard
+          platform="meta"
+          platformName="Meta"
+          products={[{ product: 'meta_ads', accessLevel: 'admin' }]}
+          accessRequestToken="token-1"
+          onComplete={onCompleteMock}
+          initialConnectionId="conn-1"
+          initialStep={3}
+          completionActionLabel="Finish request"
+          metaFulfillment={[
+            fulfillmentRow({ assetId: 'act_1', status: 'verified' }),
+            fulfillmentRow({ assetKind: 'page', assetId: 'page_1', status: 'selected' }),
+          ]}
+        />
+      );
+      expect(trackClientGrantChecklistViewedMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('mounts the ad-account panel in verify mode when server rows show sharing already attempted', async () => {
+      vi.mocked(fetch)
+        .mockResolvedValueOnce({
+          ok: true,
+          text: async () =>
+            JSON.stringify({
+              data: { businessId: 'partner-bm-1', businessName: 'Agency Access' },
+              error: null,
+            }),
+        } as Response)
+        .mockResolvedValue({
+          ok: true,
+          text: async () => JSON.stringify({ data: { success: true }, error: null }),
+        } as Response);
+
+      renderShareScreen({
+        platform: 'meta',
+        platformName: 'Meta',
+        products: [{ product: 'meta_ads', accessLevel: 'admin' }],
+        completionActionLabel: 'Finish request',
+        metaFulfillment: [fulfillmentRow({ assetId: 'act_1', status: 'sharing_attempted' })],
+      });
+
+      fireEvent.click(screen.getByRole('button', { name: /select meta assets/i }));
+      fireEvent.click(await screen.findByRole('button', { name: /share access/i }));
+
+      expect(await screen.findByRole('heading', { name: /connected/i })).toBeInTheDocument();
+      expect(
+        await screen.findByText(/autostart:false initialStatus:idle/)
+      ).toBeInTheDocument();
+      expect(
+        vi.mocked(fetch).mock.calls.filter(([url]) =>
+          String(url).includes('/meta/manual-ad-account-share/start')
+        )
+      ).toHaveLength(0);
+
+      // 2 selected ad accounts, 0 verified rows: the count stays truthful.
+      expect(
+        screen.getByRole('button', { name: /finish — 2 items left/i })
+      ).toBeInTheDocument();
+    });
+
+    it('labels the finish action with the remaining checklist count', async () => {
+      vi.mocked(fetch)
+        .mockResolvedValueOnce({
+          ok: true,
+          text: async () =>
+            JSON.stringify({
+              data: { businessId: 'partner-bm-1', businessName: 'Agency Access' },
+              error: null,
+            }),
+        } as Response)
+        .mockResolvedValue({
+          ok: true,
+          text: async () => JSON.stringify({ data: { success: true }, error: null }),
+        } as Response);
+
+      renderShareScreen({
+        platform: 'meta',
+        platformName: 'Meta',
+        products: [{ product: 'meta_ads', accessLevel: 'admin' }],
+        completionActionLabel: 'Finish request',
+      });
+
+      fireEvent.click(screen.getByRole('button', { name: /select meta instagram assets/i }));
+      fireEvent.click(await screen.findByRole('button', { name: /share access/i }));
+
+      expect(await screen.findByRole('heading', { name: /connected/i })).toBeInTheDocument();
+      expect(
+        screen.getByRole('button', { name: /finish — 1 item left/i })
+      ).toBeInTheDocument();
+    });
+
+    it('fires client_finish_clicked_with_pending when finishing with items left', async () => {
+      vi.mocked(fetch)
+        .mockResolvedValueOnce({
+          ok: true,
+          text: async () =>
+            JSON.stringify({
+              data: { businessId: 'partner-bm-1', businessName: 'Agency Access' },
+              error: null,
+            }),
+        } as Response)
+        .mockResolvedValue({
+          ok: true,
+          text: async () => JSON.stringify({ data: { success: true }, error: null }),
+        } as Response);
+
+      renderShareScreen({
+        platform: 'meta',
+        platformName: 'Meta',
+        products: [{ product: 'meta_ads', accessLevel: 'admin' }],
+        completionActionLabel: 'Finish request',
+      });
+
+      fireEvent.click(screen.getByRole('button', { name: /select meta instagram assets/i }));
+      fireEvent.click(await screen.findByRole('button', { name: /share access/i }));
+
+      const finishButton = await screen.findByRole('button', {
+        name: /finish — 1 item left/i,
+      });
+      fireEvent.click(finishButton);
+
+      expect(trackClientFinishClickedWithPendingMock).toHaveBeenCalledTimes(1);
+      expect(trackClientFinishClickedWithPendingMock).toHaveBeenCalledWith({ remaining_count: 1 });
+      expect(onCompleteMock).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not fire client_finish_clicked_with_pending when nothing is pending', async () => {
+      vi.mocked(fetch)
+        .mockResolvedValueOnce({
+          ok: true,
+          text: async () =>
+            JSON.stringify({
+              data: { businessId: 'partner-bm-1', businessName: 'Agency Access' },
+              error: null,
+            }),
+        } as Response)
+        .mockResolvedValue({
+          ok: true,
+          text: async () => JSON.stringify({ data: { success: true }, error: null }),
+        } as Response);
+
+      renderShareScreen({
+        platform: 'meta',
+        platformName: 'Meta',
+        products: [{ product: 'meta_ads', accessLevel: 'admin' }],
+        completionActionLabel: 'Finish request',
+        metaFulfillment: [
+          fulfillmentRow({ assetId: 'act_1', status: 'verified' }),
+          fulfillmentRow({ assetId: 'act_2', status: 'verified' }),
+        ],
+      });
+
+      fireEvent.click(screen.getByRole('button', { name: /select meta assets/i }));
+      fireEvent.click(await screen.findByRole('button', { name: /share access/i }));
+
+      fireEvent.click(await screen.findByRole('button', { name: /^finish( request)?$/i }));
+
+      expect(trackClientFinishClickedWithPendingMock).not.toHaveBeenCalled();
+      expect(onCompleteMock).toHaveBeenCalledTimes(1);
     });
 
     it('enables the advance action after a saved flow with no pending grants', async () => {
@@ -1838,12 +2115,10 @@ describe('PlatformAuthWizard', () => {
       fireEvent.click(await screen.findByRole('button', { name: /emit resumed meta selection/i }));
 
       // Saved state without a save click: the action becomes the advance
-      // action, gated on the pending grant steps (AE5).
+      // action and stays enabled — confirm is decoupled from completion;
+      // pending grants live in the step-3 checklist, not the CTA.
       const advanceButton = await screen.findByRole('button', { name: /continue/i });
-      await waitFor(() => expect(advanceButton).toBeDisabled());
-      expect(
-        screen.getByText('Access grants are still in progress. Complete the grant steps above.')
-      ).toBeInTheDocument();
+      await waitFor(() => expect(advanceButton).toBeEnabled());
 
       // The wizard must not hit save-assets again on resume.
       expect(fetch).not.toHaveBeenCalledWith(

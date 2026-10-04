@@ -332,6 +332,7 @@ export default function AccessRequestDetailPage({ params }: AccessRequestDetailP
 
         <MetaFulfillmentCard
           results={accessRequest.metaFulfillment || []}
+          declines={accessRequest.metaDeclines}
           onExclude={handleExcludeMetaGrant}
         />
       </div>

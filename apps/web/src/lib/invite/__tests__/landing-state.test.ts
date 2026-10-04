@@ -2,6 +2,8 @@ import { describe, it, expect } from 'vitest';
 import type { MetaFulfillmentResult } from '@agency-platform/shared';
 import {
   buildMetaSelectionPrefill,
+  hasConfirmedMetaSelection,
+  hasOpenMetaFulfillment,
   intersectSelectionPrefill,
   isTerminalRequestCode,
   resolveInviteLandingState,
@@ -113,6 +115,41 @@ describe('buildMetaSelectionPrefill', () => {
   });
 });
 
+describe('hasConfirmedMetaSelection', () => {
+  it('is true when at least one row is a saved selectable selection', () => {
+    expect(hasConfirmedMetaSelection([fulfillmentRow({})])).toBe(true);
+    expect(hasConfirmedMetaSelection([fulfillmentRow({ status: 'sharing_attempted' })])).toBe(true);
+  });
+
+  it('is false for empty input and for rows that carry no client choice', () => {
+    expect(hasConfirmedMetaSelection([])).toBe(false);
+    expect(hasConfirmedMetaSelection(undefined)).toBe(false);
+    // Declines create no fulfillment rows, so they cannot fake a confirmation.
+    expect(hasConfirmedMetaSelection([fulfillmentRow({ status: 'excluded' })])).toBe(false);
+    expect(hasConfirmedMetaSelection([fulfillmentRow({ status: 'revoked' })])).toBe(false);
+  });
+});
+
+describe('hasOpenMetaFulfillment', () => {
+  it('is true while any row still needs grant work', () => {
+    expect(hasOpenMetaFulfillment([fulfillmentRow({})])).toBe(true);
+    expect(hasOpenMetaFulfillment([fulfillmentRow({ status: 'manual_action_required' })])).toBe(true);
+  });
+
+  it('is false once every row is verified or excluded', () => {
+    expect(hasOpenMetaFulfillment([])).toBe(false);
+    expect(hasOpenMetaFulfillment(undefined)).toBe(false);
+    expect(hasOpenMetaFulfillment([fulfillmentRow({ status: 'verified' })])).toBe(false);
+    expect(hasOpenMetaFulfillment([fulfillmentRow({ status: 'excluded' })])).toBe(false);
+    expect(
+      hasOpenMetaFulfillment([
+        fulfillmentRow({ status: 'verified' }),
+        fulfillmentRow({ id: 'row-2', assetId: 'act_9', status: 'excluded' }),
+      ])
+    ).toBe(false);
+  });
+});
+
 describe('intersectSelectionPrefill', () => {
   const prefill = {
     adAccounts: ['act_111', 'act_gone'],
@@ -189,7 +226,7 @@ describe('resolveInviteLandingState', () => {
     expect(state.wizardStart).toBeUndefined();
   });
 
-  it('resumes an OAuth return at the share step with Meta prefill from fulfillment rows', () => {
+  it('resumes an OAuth return with a confirmed selection at the step-3 checklist', () => {
     const state = resolveInviteLandingState({
       ...baseInput({
         platforms: [platformGroup('meta', 'meta_ads')],
@@ -204,7 +241,7 @@ describe('resolveInviteLandingState', () => {
     expect(state.phase).toBe('platforms');
     expect(state.wizardStart).toEqual({
       platform: 'meta',
-      step: 2,
+      step: 3,
       connectionId: 'conn-meta-1',
       metaSelectionPrefill: {
         adAccounts: ['act_111'],
@@ -213,6 +250,26 @@ describe('resolveInviteLandingState', () => {
         catalogs: [],
         datasets: [],
       },
+    });
+  });
+
+  it('keeps an OAuth return without a confirmed selection at the share step', () => {
+    const state = resolveInviteLandingState({
+      ...baseInput({
+        platforms: [platformGroup('meta', 'meta_ads')],
+      }),
+      resume: { platform: 'meta', connectionId: 'conn-meta-1' },
+      metaFulfillment: [fulfillmentRow({ status: 'excluded' })],
+      unresolvedProducts: [
+        { product: 'meta_ads', platformGroup: 'meta', reason: 'authorization_required' },
+      ],
+    });
+
+    expect(state.wizardStart).toEqual({
+      platform: 'meta',
+      step: 2,
+      connectionId: 'conn-meta-1',
+      metaSelectionPrefill: null,
     });
   });
 
@@ -278,5 +335,120 @@ describe('resolveInviteLandingState', () => {
 
   it('lands a fresh visit with no progress on the intake phase', () => {
     expect(resolveInviteLandingState(baseInput()).phase).toBe('intake');
+  });
+});
+
+describe('resolveInviteLandingState — confirmed Meta selection resume (Phase 3)', () => {
+  it('sends a confirmed Meta selection with unfinished grants to the step-3 checklist', () => {
+    const state = resolveInviteLandingState({
+      ...baseInput(),
+      platforms: [platformGroup('meta', 'meta_ads')],
+      metaConnectionId: 'conn-meta-9',
+      metaFulfillment: [
+        fulfillmentRow({}),
+        fulfillmentRow({ id: 'row-2', assetKind: 'page', assetId: 'pg_1', status: 'sharing_attempted' }),
+      ],
+      unresolvedProducts: [
+        { product: 'meta_ads', platformGroup: 'meta', reason: 'sharing_required' },
+      ],
+    });
+
+    expect(state).toEqual({
+      phase: 'platforms',
+      wizardStart: {
+        platform: 'meta',
+        step: 3,
+        connectionId: 'conn-meta-9',
+        metaSelectionPrefill: {
+          adAccounts: ['act_111'],
+          pages: ['pg_1'],
+          instagramAccounts: [],
+          catalogs: [],
+          datasets: [],
+        },
+      },
+    });
+  });
+
+  it('does not send exclusion-only fulfillment to the checklist', () => {
+    const state = resolveInviteLandingState({
+      ...baseInput(),
+      platforms: [platformGroup('meta', 'meta_ads')],
+      metaConnectionId: 'conn-meta-9',
+      metaFulfillment: [fulfillmentRow({ status: 'excluded' })],
+      unresolvedProducts: [
+        { product: 'meta_ads', platformGroup: 'meta', reason: 'sharing_required' },
+      ],
+    });
+
+    expect(state.wizardStart).toBeUndefined();
+    expect(state.phase).toBe('platforms');
+  });
+
+  it('does not invent a checklist for a declines-only payload', () => {
+    const state = resolveInviteLandingState({
+      ...baseInput(),
+      platforms: [platformGroup('meta', 'meta_ads')],
+      metaConnectionId: 'conn-meta-9',
+      metaFulfillment: [],
+      unresolvedProducts: [
+        { product: 'meta_ads', platformGroup: 'meta', reason: 'sharing_required' },
+      ],
+    });
+
+    expect(state.wizardStart).toBeUndefined();
+    expect(state.phase).toBe('platforms');
+  });
+
+  it('does not let a session-merged completed set shadow the checklist', () => {
+    const state = resolveInviteLandingState({
+      ...baseInput(),
+      platforms: [platformGroup('meta', 'meta_ads')],
+      completedPlatforms: new Set(['meta']),
+      serverCompletedPlatforms: new Set<string>(),
+      metaConnectionId: 'conn-meta-9',
+      metaFulfillment: [fulfillmentRow({})],
+      isComplete: false,
+    });
+
+    expect(state.wizardStart).toEqual({
+      platform: 'meta',
+      step: 3,
+      connectionId: 'conn-meta-9',
+      metaSelectionPrefill: {
+        adAccounts: ['act_111'],
+        pages: [],
+        instagramAccounts: [],
+        catalogs: [],
+        datasets: [],
+      },
+    });
+  });
+
+  it('respects a server-completed Meta and skips the checklist', () => {
+    const state = resolveInviteLandingState({
+      ...baseInput(),
+      platforms: [platformGroup('meta', 'meta_ads')],
+      completedPlatforms: new Set(['meta']),
+      serverCompletedPlatforms: new Set(['meta']),
+      metaConnectionId: 'conn-meta-9',
+      metaFulfillment: [fulfillmentRow({})],
+      isComplete: false,
+    });
+
+    expect(state.wizardStart).toBeUndefined();
+    expect(state.phase).toBe('platforms');
+  });
+
+  it('still lands a completed request on the done screen over the checklist', () => {
+    const state = resolveInviteLandingState({
+      ...baseInput(),
+      platforms: [platformGroup('meta', 'meta_ads')],
+      metaConnectionId: 'conn-meta-9',
+      metaFulfillment: [fulfillmentRow({})],
+      requestStatus: 'completed',
+    });
+
+    expect(state).toEqual({ phase: 'complete' });
   });
 });

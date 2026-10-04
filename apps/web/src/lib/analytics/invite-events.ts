@@ -197,6 +197,61 @@ export function trackInviteProgressCheckRequested(): void {
   captureInviteEvent('invite_progress_check_requested');
 }
 
+/* -------------------------------------------------------------------------- */
+/* Meta decoupled-confirm funnel events (Phase 4)                              */
+/*                                                                             */
+/* Confirm (the save) and grant completion are decoupled: the step-3 checklist */
+/* hosts the pending grant work. These events measure that checklist. Counts   */
+/* and kinds only — never asset names, business ids, or emails.                */
+/* -------------------------------------------------------------------------- */
+
+type ClientGrantChecklistViewedProps = { remaining_count: number };
+
+type ClientGrantItemCompletedProps = {
+  /** Meta asset kind, e.g. `ad_account`. */
+  item_kind: string;
+  /** `panel` = settled inside a checklist panel; `server` = a refetch flipped the rows. */
+  source: 'panel' | 'server';
+};
+
+type ClientAssetsDeclineToggledProps = {
+  /** Declinable Meta asset kind, e.g. `catalog`. */
+  asset_kind: string;
+  /** True when the toggle now marks the kind as declined. */
+  checked: boolean;
+};
+
+type ClientFinishClickedWithPendingProps = { remaining_count: number };
+
+/** Fires once per wizard instance when the step-3 grant checklist becomes visible. */
+export function trackClientGrantChecklistViewed(
+  properties: ClientGrantChecklistViewedProps
+): void {
+  captureInviteEvent('client_grant_checklist_viewed', properties);
+}
+
+/** Fires when a checklist item reaches `done` — from a panel settle or a server-row flip. */
+export function trackClientGrantItemCompleted(properties: ClientGrantItemCompletedProps): void {
+  captureInviteEvent('client_grant_item_completed', properties);
+}
+
+/** Fires on each decline toggle in the Meta asset selector. */
+export function trackClientAssetsDeclineToggled(properties: ClientAssetsDeclineToggledProps): void {
+  captureInviteEvent('client_assets_decline_toggled', properties);
+}
+
+/** Fires when the client leaves the checklist with grant items still pending. */
+export function trackClientFinishClickedWithPending(
+  properties: ClientFinishClickedWithPendingProps
+): void {
+  captureInviteEvent('client_finish_clicked_with_pending', properties);
+}
+
+/** Fires when the client re-enters the grant checklist from the follow-up card. */
+export function trackClientChecklistResumed(): void {
+  captureInviteEvent('client_checklist_resumed');
+}
+
 export function buildInviteReminderMailto(input: {
   clientEmail: string;
   clientName: string;

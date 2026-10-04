@@ -2186,6 +2186,10 @@ export interface ClientAccessRequestPayload {
   /** When false or omitted, client invite hides catalog selection (no catalog_management App Review). */
   metaCatalogEnabled?: boolean;
   metaFulfillment?: MetaFulfillmentResult[];
+  /** Per-kind Meta asset-sharing declines collected from the client's connections. */
+  metaDeclines?: MetaFulfillmentDeclines;
+  /** Client connections flattened to platform groups (read-side summary). */
+  connections?: Array<{ id: string; platformGroup: Platform }>;
   manualInviteTargets: Record<string, ManualInviteTarget>;
   authorizationProgress: ClientAuthorizationProgress;
 }

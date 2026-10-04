@@ -10,6 +10,7 @@
 import { useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { PlatformAuthWizard } from '@/components/client-auth/PlatformAuthWizard';
+import type { MetaFulfillmentDeclines, MetaFulfillmentResult } from '@agency-platform/shared';
 
 // Mock data for visual testing
 const mockData = {
@@ -41,6 +42,17 @@ const mockData = {
     primaryColor: '#FF6B35',
   },
 };
+
+// Mock fulfillment rows exercising every checklist visual state (step 3).
+const mockMetaFulfillment: MetaFulfillmentResult[] = [
+  { id: 'row-1', assetKind: 'ad_account', assetId: 'act_1', assetName: 'Acme Ads', recipientType: 'business', recipientId: 'biz-1', recipientName: 'Agency Portfolio', requestedTasks: ['ADVERTISE'], verifiedTasks: ['ADVERTISE'], status: 'verified', updatedAt: '2026-10-03T00:00:00.000Z' },
+  { id: 'row-2', assetKind: 'ad_account', assetId: 'act_2', assetName: 'Acme Prospecting', recipientType: 'business', recipientId: 'biz-1', recipientName: 'Agency Portfolio', requestedTasks: ['ADVERTISE'], verifiedTasks: [], status: 'manual_action_required', updatedAt: '2026-10-03T00:00:00.000Z' },
+  { id: 'row-3', assetKind: 'page', assetId: 'page_1', assetName: 'Acme Main Page', recipientType: 'business', recipientId: 'biz-1', recipientName: 'Agency Portfolio', requestedTasks: ['MANAGE'], verifiedTasks: [], status: 'selected', updatedAt: '2026-10-03T00:00:00.000Z' },
+];
+
+const mockMetaDeclines: MetaFulfillmentDeclines = [
+  { assetKind: 'catalog', declinedAt: '2026-10-03T00:00:00.000Z' },
+];
 
 export function AccessRequestTestContent() {
   const searchParams = useSearchParams();
@@ -147,6 +159,8 @@ function TestPlatformWizard({
         products={products}
         accessRequestToken="test-token"
         onComplete={onComplete}
+        metaFulfillment={platform === 'meta' ? mockMetaFulfillment : undefined}
+        metaDeclines={platform === 'meta' ? mockMetaDeclines : undefined}
         // Force the step by providing initial values
         initialStep={forceStep}
         initialConnectionId={forceStep >= 2 ? mockConnectionId : undefined}

@@ -1,3 +1,33 @@
+## Session: 2026-10-03 — Meta invite flow: decoupled confirm/complete, step-3 grant checklist, declines, resume (Phase 4 polish)
+
+### What was done
+- Completed the Meta invite-flow decoupling: the wizard's save (confirm) advances unconditionally to a step-3 grant checklist; panel completions only settle checklist items (optimistic overlay + one refetch ask) and never gate the share step.
+- Built the step-3 checklist on a pure resolver (`lib/invite/meta-grant-checklist.ts`): server fulfillment rows roll up per kind, client declines remove kinds, an overlay carries optimistic state until the refetch; rows with an empty selection blob render on the resume path.
+- Declines persist end-to-end: the selector emits `declinedAssetKinds`, the save stores them, the payload carries `metaDeclines`, and the resume/landing logic treats declines as decisions rather than gaps.
+- Resume works: revisits with a confirmed Meta selection land straight on the step-3 checklist; the post-completion 409 card offers "Resume Meta checklist" back into it.
+- Phase 4 polish: five PostHog funnel events (`client_grant_checklist_viewed`, `client_grant_item_completed` panel/server, `client_assets_decline_toggled`, `client_finish_clicked_with_pending`, `client_checklist_resumed`) — counts and kinds only; agency-side declines visibility on `MetaFulfillmentCard` ("Client marked:" muted section, no status badges); stale step-2 grant comments swept to the new model.
+- TDD throughout: red-green per unit across analytics, checklist, wizard, selector, card, page, and API service suites.
+
+### Files changed
+- `apps/web/src/lib/analytics/invite-events.ts` (+test) — five `trackClient*` funnel emitters
+- `apps/web/src/components/client-auth/MetaGrantChecklist.tsx` (+test) — panel settle funnel (`done` only) and server-row flip detection with overlay suppression
+- `apps/web/src/components/client-auth/PlatformAuthWizard.tsx` (+test) — checklist-viewed (once per instance) and finish-with-pending events
+- `apps/web/src/components/client-auth/MetaAssetSelector.tsx` (+decline test) — decline-toggle event
+- `apps/web/src/app/invite/[token]/client-invite-page.tsx` (+page test) — resume event; declines passed to the follow-up card
+- `apps/web/src/components/access-request-detail/meta-fulfillment-card.tsx` (+test) — optional `declines` prop with muted "Client marked:" section
+- `apps/web/src/app/(authenticated)/access-requests/[id]/page.tsx` — passes `accessRequest.metaDeclines`
+- `apps/web/src/lib/api/access-requests.ts` — `AccessRequest.metaDeclines` type
+- `apps/api/src/services/access-request.service.ts` (+service test) — `getAccessRequestById` now returns `metaDeclines`
+- Copy sweep comments: `meta-selection-blob.ts`, wizard, selector
+
+### Decisions made
+- See DEC-014 in docs/DECISIONS.md (parallel `metaDeclines` payload; reversible client declines vs surviving agency exclusions; completion notification moved into `setAccessRequestLifecycleStatus`).
+- Item-completed events fire only on transitions to `done` from either source; a panel settle to `action_required` is a failure, not a completion; server events are suppressed while the optimistic overlay already claims `done`, so one completion is reported once.
+
+### Next steps
+- PostHog dashboard: funnel from checklist_viewed → item_completed → finish (with/without pending).
+- Deploy and watch the agency detail card with real declined payloads; consider surfacing decline counts on the requests list.
+
 ---
 
 ## Session: 2026-10-03 — Fix 401 USER_EMAIL_REQUIRED on revoke endpoints (jam 76b5f94c)

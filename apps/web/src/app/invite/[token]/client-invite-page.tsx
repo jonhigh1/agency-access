@@ -5,7 +5,10 @@ import { useState, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
 import { Check, Loader2, Lock, RefreshCw } from 'lucide-react';
 import { capturePosthogEvent } from '@/lib/analytics/capture-posthog';
-import { trackInviteOpenedOncePerSession } from '@/lib/analytics/invite-events';
+import {
+  trackClientChecklistResumed,
+  trackInviteOpenedOncePerSession,
+} from '@/lib/analytics/invite-events';
 import { InviteFlowShell } from '@/components/flow/invite-flow-shell';
 import { InviteTerminalCard } from '@/components/flow/invite-terminal-card';
 import { beginRequestDeadline } from '@/lib/invite/request-deadline';
@@ -29,6 +32,8 @@ import { buildInvitePlatformQueue } from '@/lib/invite-platform-queue';
 import { buildInvitePlatformChecklist } from '@/lib/invite/platform-status';
 import { toDisplayName } from '@/lib/display-name';
 import {
+  buildMetaSelectionPrefill,
+  hasOpenMetaFulfillment,
   isTerminalRequestCode,
   resolveInviteLandingState,
   terminalKindFromCode,
@@ -68,13 +73,21 @@ const SESSION_STORAGE_PREFIX = 'invite-progress:';
 const isAbortError = (error: unknown) => error instanceof Error && error.name === 'AbortError';
 
 // Shared mapper inputs for both landing resolutions (OAuth-return and plain
-// hydrate); only `resume` differs between the two call sites.
+// hydrate); only `resume` differs between the two call sites. The mapper gets
+// BOTH completed sets: `completedPlatforms` is the page's session-merged view,
+// `serverCompletedPlatforms` the payload's own truth — the Meta checklist
+// resume reads the server set so a stale sessionStorage entry for meta cannot
+// shadow it.
 const landingBaseInputs = (
   payload: ClientAccessRequestPayload,
   mergedCompleted: ReadonlySet<Platform>
 ): Omit<Parameters<typeof resolveInviteLandingState>[0], 'resume'> => ({
   platforms: payload.platforms || [],
   completedPlatforms: mergedCompleted,
+  serverCompletedPlatforms: new Set(payload.authorizationProgress?.completedPlatforms || []),
+  metaConnectionId: payload.connections?.find(
+    (connection) => connection.platformGroup === 'meta'
+  )?.id,
   unresolvedProducts: payload.authorizationProgress?.unresolvedProducts,
   requestStatus: payload.status,
   isComplete: payload.authorizationProgress?.isComplete,
@@ -164,6 +177,13 @@ export default function ClientAuthorizationPage({
     if (!data?.platforms?.length) return false;
     return data.platforms.every((group) => completedPlatforms.has(group.platformGroup as Platform));
   }, [data, completedPlatforms]);
+
+  // The read-side connection summary for Meta: the grant-checklist resume
+  // reuses this connection instead of creating a second OAuth connection.
+  const metaConnectionId = useMemo(
+    () => data?.connections?.find((connection) => connection.platformGroup === 'meta')?.id,
+    [data?.connections]
+  );
   const platformQueue = useMemo(
     () =>
       buildInvitePlatformQueue({
@@ -374,13 +394,27 @@ export default function ClientAuthorizationPage({
       setResumeWizardStart(null);
     }
 
+    // A confirmed Meta selection with open grant work resumes the wizard at
+    // the step-3 checklist even without OAuth params in the URL.
+    if (landing.wizardStart) {
+      setOauthConnectionInfo(null);
+      setIsReviewingConnectStatus(false);
+      setResumeWizardStart(landing.wizardStart);
+    } else if (landing.phase !== 'intake') {
+      setResumeWizardStart(null);
+    }
+
     setPhase(landing.phase === 'intake' ? 'intake' : 'platforms');
   }, [loadedPayload, storageKey, token, urlConnectionId, urlPlatform, urlStep, urlView]);
 
   useEffect(() => {
-    if (!completedPlatforms.size) return;
+    // Persist only once hydration has run for this token — an earlier write
+    // would wipe saved progress before the hydrate reads it. Persist even
+    // when empty afterwards: the checklist resume removes meta from the local
+    // set, and a stale entry would re-complete meta on the next reload.
+    if (intakeHydratedForTokenRef.current !== token) return;
     sessionStorage.setItem(storageKey, JSON.stringify(Array.from(completedPlatforms)));
-  }, [completedPlatforms, storageKey]);
+  }, [completedPlatforms, storageKey, token]);
 
   // Scroll platform stage into view when switching platforms (e.g. Google → Meta) to avoid blank-seeming transitions
   useLayoutEffect(() => {
@@ -456,7 +490,34 @@ export default function ClientAuthorizationPage({
 
   const handleRetryComplete = async () => {
     setIsReviewingConnectStatus(false);
+    // Refresh first: the fulfillment card must render fresh rows before the
+    // re-POST, and the refreshed payload is what finalization is judged on.
+    await refreshAuthorizationProgress();
     await finalizeCompletion();
+  };
+
+  // Way back into the grant checklist from the post-completion 409 card.
+  // Meta leaves the locally completed set: the grants are unverified, the
+  // queue must re-activate Meta, and isComplete must drop so the
+  // auto-finalize effect does not immediately re-fire the 409.
+  const handleResumeMetaChecklist = () => {
+    if (!data) return;
+    trackClientChecklistResumed();
+    setIsReviewingConnectStatus(false);
+    setResumeWizardStart({
+      platform: 'meta',
+      step: 3,
+      connectionId: metaConnectionId ?? '',
+      metaSelectionPrefill: buildMetaSelectionPrefill(data.metaFulfillment),
+    });
+    setOauthConnectionInfo(null);
+    setCompletionError(null);
+    setCompletedPlatforms((prev) => {
+      const next = new Set<Platform>(prev);
+      next.delete('meta');
+      return next;
+    });
+    setPhase('platforms');
   };
 
   // Check again (KTD7): refetch GET /client/:token BEFORE any result renders.
@@ -905,7 +966,9 @@ export default function ClientAuthorizationPage({
                     : undefined
                 }
                 initialStep={
-                  oauthConnectionInfo?.platform === platformQueue.activePlatform.platformGroup ? 2 : undefined
+                  resumeWizardStart?.platform === platformQueue.activePlatform.platformGroup
+                    ? resumeWizardStart.step
+                    : undefined
                 }
                 initialMetaSelections={
                   resumeWizardStart?.platform === platformQueue.activePlatform.platformGroup
@@ -920,11 +983,14 @@ export default function ClientAuthorizationPage({
                     : 'available'
                 }
                 onRequestUnavailable={(code) => setForcedTerminalCode(code)}
+                metaFulfillment={data.metaFulfillment}
+                metaDeclines={data.metaDeclines}
+                onRequestRefresh={refreshAuthorizationProgress}
               />
             </InvitePlatformStage>
             </div>
           ) : !isConnectStatusReview ? (
-            <div className="border-2 border-black bg-card p-6 text-center" role="status" aria-live="polite">
+            <div className="border-t border-black py-6 text-center" role="status" aria-live="polite">
               <h2 className="text-xl font-semibold text-ink font-display">Access verification is in progress</h2>
               <p className="mt-2 text-sm text-muted-foreground">
                 Your agency is verifying the reported access. Check again after they confirm it.
@@ -964,8 +1030,18 @@ export default function ClientAuthorizationPage({
                 <p className="text-sm text-danger-ink">{completionError}</p>
               </div>
               <div className="mt-4 text-left">
-                <MetaFulfillmentCard results={data.metaFulfillment || []} />
+                <MetaFulfillmentCard results={data.metaFulfillment || []} declines={data.metaDeclines} />
               </div>
+              {hasOpenMetaFulfillment(data.metaFulfillment) &&
+              data.connections?.some((connection) => connection.platformGroup === 'meta') ? (
+                <Button
+                  className="mt-3"
+                  variant="secondary"
+                  onClick={handleResumeMetaChecklist}
+                >
+                  Resume Meta checklist
+                </Button>
+              ) : null}
               <Button
                 className="mt-3"
                 variant="primary"

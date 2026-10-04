@@ -8,6 +8,17 @@ Record significant technical choices so future sessions (and humans) understand 
 
 ---
 
+### DEC-014: Meta declines ride a parallel payload; completion notifications moved to the lifecycle transition
+**Date:** 2026-10-03
+
+**Context:** The decoupled invite flow (confirm no longer waits for grants) needed the agency to see what a client explicitly refused to share, and completion had to fire from the single place where request status actually changes.
+
+**Decision:** Client "we don't have / won't share this asset type" choices surface as a parallel `metaDeclines` payload on both invite payloads (token + agency byId), never as synthetic `excluded` fulfillment rows — exclusions remain agency bookkeeping, declines are client decisions with their own muted "Client marked:" surface and no status badges. Client declines are reversible: selecting an asset of that kind (or re-selecting after a reset) withdraws the decline, while agency exclusions survive client-side changes. Completion notifications moved into `setAccessRequestLifecycleStatus`, so the verify-driven partial→completed transition now notifies without a separate completion path.
+
+**Consequences:** positive - one decline shape end to end (`MetaAssetDecline[]`), no fake rows to filter in fulfillment logic, no duplicate notification paths. negative - consumers must join declines to fulfillment by kind when they want the combined view; declines with selections are intentionally ignored (the selection wins).
+
+---
+
 ### DEC-013: The client selection blob is validated server-side at one choke point
 **Date:** 2026-09-27
 

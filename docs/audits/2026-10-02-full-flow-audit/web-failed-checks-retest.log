@@ -1,0 +1,18 @@
+
+> @agency-platform/web@0.1.0 test:run
+> vitest run src/app/invite/[token]/__tests__/invite.design.test.ts src/__tests__/client-component-directives.test.ts src/lib/api/__tests__/api-url-usage.test.ts
+
+
+ RUN  v4.0.16 /Users/jon.high/agency-access/apps/web
+
+ ✓ src/lib/api/__tests__/api-url-usage.test.ts (1 test) 484ms
+     ✓ keeps NEXT_PUBLIC_API_URL reads inside the API environment helper or tests  483ms
+ ✓ src/app/invite/[token]/__tests__/invite.design.test.ts (537 tests) 58ms
+ ✓ src/__tests__/client-component-directives.test.ts (1 test) 1218ms
+     ✓ keeps 'use client' inside the file's directive prologue  1216ms
+
+ Test Files  3 passed (3)
+      Tests  539 passed (539)
+   Start at  21:01:51
+   Duration  2.35s (transform 313ms, setup 868ms, import 607ms, tests 1.76s, environment 1.50s)
+

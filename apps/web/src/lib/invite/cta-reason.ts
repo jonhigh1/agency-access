@@ -13,8 +13,9 @@
  * - Loading and in-flight states yield neutral reasons. They NEVER yield a
  *   selection demand, because the client has not yet been able to select.
  * - Failure states name the failure and the retry affordance ("Try again").
- * - After save the action becomes the advance action; it is gated on grant
- *   verification and reports grant progress while any grant is pending.
+ * - After save the action becomes the advance action, always enabled: confirm
+ *   is decoupled from completion, and grant steps live in the step-3
+ *   checklist (see meta-grant-checklist.ts).
  */
 
 export type RequestAvailability = 'available' | 'expired' | 'revoked';
@@ -53,10 +54,6 @@ export interface CtaReasonInput {
   saved: boolean;
   /** A save (or equivalent grant automation) request is in flight. */
   saveInFlight: boolean;
-  /** At least one grant step is required after save. */
-  grantsRequired: boolean;
-  /** At least one required grant step is still pending. */
-  grantsPending: boolean;
   /** Client business name used by the creation reason. */
   businessName?: string | null;
   /** Terminal invite states. Callers without terminal wiring pass `available`. */
@@ -74,7 +71,6 @@ export type CtaReasonKind =
   | 'expired'
   | 'revoked'
   | 'saving'
-  | 'grant_pending'
   | 'loading'
   | 'fetch_error'
   | 'business_lookup_error'
@@ -98,7 +94,6 @@ export const CTA_REASONS = {
   selectAtLeastOnePage: 'Select at least one Page to continue',
   assetsFetchFailed: "We couldn't load your accounts. Try again.",
   businessLookupFailed: "We couldn't load your business details. Try again.",
-  grantPending: 'Access grants are still in progress. Complete the grant steps above.',
   expired: 'This access request has expired.',
   revoked: 'This access request was revoked.',
 } as const;
@@ -140,16 +135,10 @@ export function resolveCta(input: CtaReasonInput): CtaResolution {
     return disabledWithReason('saving', CTA_REASONS.saving);
   }
 
-  // 3. Post-save: the action becomes the advance action, gated on grants.
+  // 3. Post-save: the action becomes the advance action, always enabled.
+  //    Confirm is decoupled from completion — pending grant steps are the
+  //    step-3 checklist's job, not the CTA's.
   if (input.saved) {
-    if (input.grantsRequired && input.grantsPending) {
-      return {
-        kind: 'advance',
-        disabled: true,
-        reason: CTA_REASONS.grantPending,
-        reasonKind: 'grant_pending',
-      };
-    }
     return enabled('advance');
   }
 

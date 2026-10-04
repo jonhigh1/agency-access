@@ -58,6 +58,18 @@ interface AdAccountSharingInstructionsProps {
   connectionId: string;
   onComplete: (result: ManualMetaShareCompletionResult) => void;
   onError?: (error: string) => void;
+  /**
+   * Fire the start POST on mount. Default true (the wizard's original
+   * behavior). False mounts in verify-only mode: no start POST, state seeded
+   * from initialStatus/initialVerificationResults (server truth).
+   */
+  autoStart?: boolean;
+  /** Server-truth seed for the status banner in verify-only mode. */
+  initialStatus?: 'idle' | 'verified' | 'partial';
+  /** Server-truth seed for per-account results in verify-only mode. */
+  initialVerificationResults?: NonNullable<
+    ManualMetaShareResponse['data']
+  >['verificationResults'];
 }
 
 export type ManualMetaShareVerificationStatus = 'verified' | 'partial';
@@ -230,20 +242,29 @@ export function AdAccountSharingInstructions({
   connectionId,
   onComplete,
   onError,
+  autoStart = true,
+  initialStatus,
+  initialVerificationResults,
 }: AdAccountSharingInstructionsProps) {
-  const [isStarting, setIsStarting] = useState(true);
+  const [isStarting, setIsStarting] = useState(autoStart);
   const [isVerifying, setIsVerifying] = useState(false);
   const [status, setStatus] = useState<'waiting_for_manual_share' | 'verified' | 'partial'>(
-    'waiting_for_manual_share'
+    initialStatus === 'verified'
+      ? 'verified'
+      : initialStatus === 'partial'
+        ? 'partial'
+        : 'waiting_for_manual_share'
   );
   const [verificationResults, setVerificationResults] = useState<
     NonNullable<ManualMetaShareResponse['data']>['verificationResults']
   >(
-    selectedAdAccounts.map((account) => ({
-      assetId: account.id,
-      assetName: account.name,
-      status: 'waiting_for_manual_share',
-    }))
+    initialVerificationResults && initialVerificationResults.length > 0
+      ? initialVerificationResults
+      : selectedAdAccounts.map((account) => ({
+          assetId: account.id,
+          assetName: account.name,
+          status: 'waiting_for_manual_share',
+        }))
   );
   const [checkedRows, setCheckedRows] = useState<Record<string, boolean>>({});
   const content = META_AD_ACCOUNT_INSTRUCTIONS.en;
@@ -272,6 +293,11 @@ export function AdAccountSharingInstructions({
   };
 
   useEffect(() => {
+    // Verify-only mode: server truth already describes this share, so the
+    // start POST must not refire (the step-3 checklist mounts this panel on
+    // every render of a pending ad-account row).
+    if (!autoStart) return;
+
     let isMounted = true;
 
     const startManualShare = async () => {
@@ -319,7 +345,7 @@ export function AdAccountSharingInstructions({
     return () => {
       isMounted = false;
     };
-  }, [accessRequestToken, apiUrl, connectionId, onError]);
+  }, [accessRequestToken, apiUrl, connectionId, onError, autoStart]);
 
   const handleVerifyAccess = async () => {
     try {

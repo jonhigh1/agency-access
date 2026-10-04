@@ -1,6 +1,7 @@
 'use client';
 
 import { type MetaSelectionBlob } from './meta-selection-blob';
+import type { MetaDeclinableAssetKind } from '@agency-platform/shared';
 
 /**
  * MetaAssetSelector - Multi-asset selection for Meta platform
@@ -19,7 +20,10 @@ import { type MetaSelectionBlob } from './meta-selection-blob';
 
 import { useState, useEffect, useRef } from 'react';
 import { capturePosthogEvent } from '@/lib/analytics/capture-posthog';
-import { trackInviteAssetsLoaded } from '@/lib/analytics/invite-events';
+import {
+  trackClientAssetsDeclineToggled,
+  trackInviteAssetsLoaded,
+} from '@/lib/analytics/invite-events';
 import { AssetGroup, type Asset } from './AssetGroup';
 import { MultiSelectCombobox } from '@/components/ui/multi-select-combobox';
 import { AssetSelectorLoading, AssetSelectorError } from './AssetSelectorStates';
@@ -38,6 +42,24 @@ import {
   intersectSelectionPrefill,
   type InviteSelectionPrefill,
 } from '@/lib/invite/landing-state';
+
+/** Exact per-kind skip copy: the client's "we don't have / won't share this type" decision. */
+const DECLINE_TOGGLE_COPY: Record<MetaDeclinableAssetKind, string> = {
+  ad_account: 'No ad accounts to share',
+  page: 'No Pages to share',
+  instagram_account: 'No Instagram accounts to share',
+  catalog: 'No catalogs to share',
+  dataset: 'No pixels or datasets to share',
+};
+
+/** Emission order for declinedAssetKinds — schema order, so re-emits stay stable. */
+const DECLINE_KIND_ORDER: MetaDeclinableAssetKind[] = [
+  'ad_account',
+  'page',
+  'instagram_account',
+  'catalog',
+  'dataset',
+];
 
 interface MetaAssets {
   businesses?: Array<{
@@ -139,6 +161,10 @@ export function MetaAssetSelector({
   const [selectedDatasets, setSelectedDatasets] = useState<Set<string>>(
     () => new Set(initialSelection?.datasets ?? [])
   );
+  // Per-type decline ("we don't have / won't share this type"). Kept outside the
+  // fetch: a re-fetch of the same portfolio must not drop an explicit decision;
+  // only a selection of that kind (or a selection-derived reset) withdraws it.
+  const [declinedKinds, setDeclinedKinds] = useState<Set<MetaDeclinableAssetKind>>(new Set());
   const [datasetVerification, setDatasetVerification] = useState<string | null>(null);
   const [isVerifyingDatasets, setIsVerifyingDatasets] = useState(false);
   const [showCatalogCreator, setShowCatalogCreator] = useState(false);
@@ -196,6 +222,51 @@ export function MetaAssetSelector({
     .filter(Boolean)
     .join(', ');
 
+  // The prop names kinds 'instagram'; the shared decline kind is 'instagram_account'.
+  const kindSelectionSetters: Record<MetaDeclinableAssetKind, (ids: Set<string>) => void> = {
+    ad_account: setSelectedAdAccounts,
+    page: setSelectedPages,
+    instagram_account: setSelectedInstagram,
+    catalog: setSelectedCatalogs,
+    dataset: setSelectedDatasets,
+  };
+  const kindSelectionSizes: Record<MetaDeclinableAssetKind, number> = {
+    ad_account: selectedAdAccounts.size,
+    page: selectedPages.size,
+    instagram_account: selectedInstagram.size,
+    catalog: selectedCatalogs.size,
+    dataset: selectedDatasets.size,
+  };
+
+  /** Withdraw a kind's decline: a selection on that kind means the client can share it. */
+  const clearKindDecline = (kind: MetaDeclinableAssetKind) =>
+    setDeclinedKinds((prev) => {
+      if (!prev.has(kind)) return prev;
+      const next = new Set(prev);
+      next.delete(kind);
+      return next;
+    });
+
+  /** Single sink for per-kind selections so any selection withdraws that kind's decline. */
+  const selectKindAssets = (kind: MetaDeclinableAssetKind, ids: Set<string>) => {
+    if (ids.size > 0) clearKindDecline(kind);
+    kindSelectionSetters[kind](ids);
+  };
+
+  const toggleDecline = (kind: MetaDeclinableAssetKind) => {
+    const wasDeclined = declinedKinds.has(kind);
+    setDeclinedKinds((prev) => {
+      const next = new Set(prev);
+      if (next.has(kind)) next.delete(kind);
+      else next.add(kind);
+      return next;
+    });
+    // Declining also drops any residual selection for the kind.
+    if (!wasDeclined) kindSelectionSetters[kind](new Set());
+    // Funnel: kind and direction only — never asset names or ids.
+    trackClientAssetsDeclineToggled({ asset_kind: kind, checked: !wasDeclined });
+  };
+
   // Handle successful ad account creation - auto-select and refresh
   const handleAdAccountCreated = (newAccount: { id: string; name: string }) => {
     const businessIdForCreation = activeBusinessId;
@@ -209,6 +280,7 @@ export function MetaAssetSelector({
         return;
       }
 
+      clearKindDecline('ad_account');
       setSelectedAdAccounts((prev) => new Set([...prev, newAccount.id]));
       setShowAdAccountCreator(false);
     });
@@ -537,7 +609,7 @@ export function MetaAssetSelector({
 
   useEffect(() => {
     if (assets && initialSelectionSessionKey && resolvedPrefillSessionKey !== initialSelectionSessionKey) return;
-    // Include full asset objects for grant step
+    // Include full asset objects for the save and the step-3 checklist
     const selectedPagesWithNames = Array.from(selectedPages).map((id) => {
       const page = assets?.pages.find((p) => p.id === id);
       return page ? { id: page.id, name: page.name } : { id, name: id };
@@ -600,11 +672,13 @@ export function MetaAssetSelector({
       instagramAccounts: Array.from(selectedInstagram),
       catalogs: Array.from(selectedCatalogs),
       datasets: Array.from(selectedDatasets),
+      // Per-type skips, in schema order so re-emits stay stable.
+      declinedAssetKinds: DECLINE_KIND_ORDER.filter((kind) => declinedKinds.has(kind)),
       selectedBusinessId: selectedBusinessId || undefined,
       selectedBusinessName: selectedBusinessName || undefined,
       businesses: assets?.businesses || [],
       selectionRequired: assets?.selectionRequired,
-      // Include full objects for grant step
+      // Include full objects for the save and the step-3 checklist
       selectedPagesWithNames,
       selectedAdAccountsWithNames,
       selectedInstagramWithNames,
@@ -629,7 +703,7 @@ export function MetaAssetSelector({
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedAdAccounts, selectedPages, selectedInstagram, selectedCatalogs, selectedDatasets, assets, initialSelectionSessionKey, resolvedPrefillSessionKey]);
+  }, [selectedAdAccounts, selectedPages, selectedInstagram, selectedCatalogs, selectedDatasets, declinedKinds, assets, initialSelectionSessionKey, resolvedPrefillSessionKey]);
 
   // Loading state
   if (isLoading) {
@@ -726,6 +800,9 @@ export function MetaAssetSelector({
     setSelectedInstagram(new Set());
     setSelectedCatalogs(new Set());
     setSelectedDatasets(new Set());
+    // Declines are selection-derived too: a switch lands on a different
+    // portfolio than the one the decision was about.
+    setDeclinedKinds(new Set());
     setDatasetVerification(null);
     setIsVerifyingDatasets(false);
     setCatalogCreationErrorsFor({});
@@ -776,6 +853,27 @@ export function MetaAssetSelector({
   };
 
   const openBusinessCreation = () => setBusinessCreationOpen(true);
+
+  /**
+   * Per-type skip control. Only for an allowed kind (each call site sits inside
+   * its allowedAssetTypes branch) with zero selected assets — a kind with a
+   * selection has no decision to record. Placement is directly under the
+   * kind's select control or its empty state, so a zero-option kind gets a way
+   * forward instead of a dead end.
+   */
+  const renderDeclineToggle = (kind: MetaDeclinableAssetKind) => {
+    if (kindSelectionSizes[kind] > 0) return null;
+    return (
+      <button
+        type="button"
+        aria-pressed={declinedKinds.has(kind)}
+        onClick={() => toggleDecline(kind)}
+        className="mt-2 text-sm text-[rgb(var(--muted-foreground))] underline hover:text-[rgb(var(--coral))] aria-pressed:text-[rgb(var(--ink))]"
+      >
+        {DECLINE_TOGGLE_COPY[kind]}
+      </button>
+    );
+  };
 
   return (
     <div className="space-y-6">
@@ -902,7 +1000,7 @@ export function MetaAssetSelector({
                 description: asset.description,
               }))}
               selectedIds={selectedAdAccounts}
-              onSelectionChange={setSelectedAdAccounts}
+              onSelectionChange={(ids) => selectKindAssets('ad_account', ids)}
               placeholder="Select ad accounts..."
             />
           ) : (
@@ -931,6 +1029,7 @@ export function MetaAssetSelector({
               )}
             </div>
           )}
+          {renderDeclineToggle('ad_account')}
         </div>
         ) : null}
 
@@ -958,7 +1057,7 @@ export function MetaAssetSelector({
                 description: asset.description,
               }))}
               selectedIds={selectedPages}
-              onSelectionChange={setSelectedPages}
+              onSelectionChange={(ids) => selectKindAssets('page', ids)}
               placeholder="Select pages..."
             />
           ) : showPageCreator ? (
@@ -1002,6 +1101,7 @@ export function MetaAssetSelector({
               )}
             </div>
           )}
+          {renderDeclineToggle('page')}
         </div>
         ) : null}
 
@@ -1029,11 +1129,12 @@ export function MetaAssetSelector({
 
         {/* Instagram Accounts - Keep as AssetGroup for now */}
         {showInstagramAccounts ? (
+        <>
         <AssetGroup
           title="Instagram Accounts"
           assets={instagramAssets}
           selectedIds={selectedInstagram}
-          onSelectionChange={setSelectedInstagram}
+          onSelectionChange={(ids) => selectKindAssets('instagram_account', ids)}
           icon={
             <div className="w-10 h-10 border-2 border-black dark:border-white bg-pink-500 flex items-center justify-center">
               <Camera className="h-5 w-5 text-white" aria-hidden="true" />
@@ -1041,6 +1142,8 @@ export function MetaAssetSelector({
           }
           defaultExpanded={instagramAssets.length > 0}
         />
+        {renderDeclineToggle('instagram_account')}
+        </>
         ) : null}
 
         {showCatalogs ? (
@@ -1081,10 +1184,11 @@ export function MetaAssetSelector({
               <MultiSelectCombobox
                 options={(assets?.productCatalogs || []).map((catalog) => ({ id: catalog.id, name: catalog.name, description: catalog.catalogType || '' }))}
                 selectedIds={selectedCatalogs}
-                onSelectionChange={setSelectedCatalogs}
+                onSelectionChange={(ids) => selectKindAssets('catalog', ids)}
                 placeholder="Select product catalogs..."
               />
             ) : <p className="text-sm text-[rgb(var(--muted-foreground))]">No product catalogs found in this Business Portfolio.</p>}
+            {renderDeclineToggle('catalog')}
           </div>
         ) : null}
 
@@ -1101,10 +1205,11 @@ export function MetaAssetSelector({
               <MultiSelectCombobox
                 options={(assets?.pixels || []).map((pixel) => ({ id: pixel.id, name: pixel.name, description: pixel.id }))}
                 selectedIds={selectedDatasets}
-                onSelectionChange={setSelectedDatasets}
+                onSelectionChange={(ids) => selectKindAssets('dataset', ids)}
                 placeholder="Select Pixels and Datasets..."
               />
             ) : <p className="mt-3 text-sm text-[rgb(var(--muted-foreground))]">No Pixels were returned for this Business Portfolio.</p>}
+            {renderDeclineToggle('dataset')}
             {datasetVerification ? <p role="status" className="mt-3 text-sm text-[rgb(var(--ink))]">{datasetVerification}</p> : null}
             {activeBusinessId ? (
               <div className="mt-4">

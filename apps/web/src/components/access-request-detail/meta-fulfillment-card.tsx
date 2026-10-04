@@ -2,10 +2,13 @@
 
 import { useRef, useState } from 'react';
 import { Button, Card, StatusBadge } from '@/components/ui';
+import type { MetaAssetDecline, MetaFulfillmentDeclines } from '@agency-platform/shared';
 import type { MetaFulfillmentResult } from '@/lib/api/access-requests';
 
 interface MetaFulfillmentCardProps {
   results: MetaFulfillmentResult[];
+  /** Client "we don't have / won't share this asset type" decisions. Absent on older payloads. */
+  declines?: MetaFulfillmentDeclines;
   onExclude?: (grantId: string, reason: string) => Promise<string | null>;
 }
 
@@ -20,6 +23,15 @@ const STATUS_LABELS: Record<MetaFulfillmentResult['status'], string> = {
   excluded: 'Excluded',
 };
 
+/** Client-voiced copy per declined kind. Declines are decisions, not statuses — no badges. */
+const DECLINE_COPY: Record<MetaAssetDecline['assetKind'], string> = {
+  ad_account: 'No ad accounts to share',
+  page: 'No pages to share',
+  instagram_account: 'No Instagram accounts to share',
+  catalog: 'No catalogs to share',
+  dataset: 'No pixels or datasets to share',
+};
+
 function badgeVariant(status: MetaFulfillmentResult['status']) {
   if (status === 'verified') return 'success' as const;
   if (status === 'blocked' || status === 'revoked') return 'danger' as const;
@@ -31,7 +43,7 @@ function formatValue(value: string) {
   return value.replace(/_/g, ' ').replace(/\b\w/g, (character) => character.toUpperCase());
 }
 
-export function MetaFulfillmentCard({ results, onExclude }: MetaFulfillmentCardProps) {
+export function MetaFulfillmentCard({ results, declines, onExclude }: MetaFulfillmentCardProps) {
   const [activeGrantId, setActiveGrantId] = useState<string | null>(null);
   const [reason, setReason] = useState('');
   const [confirmed, setConfirmed] = useState(false);
@@ -39,7 +51,9 @@ export function MetaFulfillmentCard({ results, onExclude }: MetaFulfillmentCardP
   const [message, setMessage] = useState('');
   const resultRefs = useRef<Record<string, HTMLLIElement | null>>({});
 
-  if (results.length === 0) return null;
+  const hasDeclines = Boolean(declines && declines.length > 0);
+
+  if (results.length === 0 && !hasDeclines) return null;
 
   const submitExclusion = async (grantId: string) => {
     setSubmitting(true);
@@ -79,6 +93,21 @@ export function MetaFulfillmentCard({ results, onExclude }: MetaFulfillmentCardP
 
   return (
     <Card className="border-black/10">
+      {hasDeclines ? (
+        <div className="border-b border-border px-6 py-4">
+          <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Client marked:
+          </p>
+          <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
+            {(declines ?? []).map((decline) => (
+              <li key={decline.assetKind}>{DECLINE_COPY[decline.assetKind]}</li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
+      {results.length === 0 ? null : (
+        <>
       <div className="border-b border-border px-6 py-4">
         <h2 className="font-display text-lg font-semibold text-ink">Meta Access Results</h2>
         <p className="text-sm text-muted-foreground">Verified separately for each asset and recipient</p>
@@ -176,6 +205,8 @@ export function MetaFulfillmentCard({ results, onExclude }: MetaFulfillmentCardP
           );
         })}
       </ul>
+        </>
+      )}
     </Card>
   );
 }

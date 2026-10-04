@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
-import type { MetaFulfillmentResult } from '@agency-platform/shared';
+import type { MetaFulfillmentDeclines, MetaFulfillmentResult } from '@agency-platform/shared';
 import { MetaFulfillmentCard } from '../meta-fulfillment-card';
 
 const results: MetaFulfillmentResult[] = [
@@ -18,7 +18,43 @@ const results: MetaFulfillmentResult[] = [
   },
 ];
 
+const declines: MetaFulfillmentDeclines = [
+  { assetKind: 'catalog', declinedAt: '2026-10-01T00:00:00.000Z' },
+  { assetKind: 'instagram_account', declinedAt: '2026-10-01T00:00:00.000Z' },
+];
+
 describe('MetaFulfillmentCard', () => {
+  it('renders one muted line per client decline above the results', () => {
+    render(<MetaFulfillmentCard results={results} declines={declines} />);
+
+    expect(screen.getByText('Client marked:')).toBeInTheDocument();
+    expect(screen.getByText('No catalogs to share')).toBeInTheDocument();
+    expect(screen.getByText('No Instagram accounts to share')).toBeInTheDocument();
+    // Declines are decisions, not statuses — no status badges for them.
+    expect(screen.queryByText('Declined')).not.toBeInTheDocument();
+    // The section sits at the top: it precedes the results header.
+    expect(
+      screen.getByText('Client marked:').compareDocumentPosition(screen.getByText('Meta Access Results')) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+  });
+
+  it('renders nothing new when the declines prop is absent or empty', () => {
+    const { unmount } = render(<MetaFulfillmentCard results={results} />);
+    expect(screen.queryByText('Client marked:')).not.toBeInTheDocument();
+    unmount();
+
+    render(<MetaFulfillmentCard results={results} declines={[]} />);
+    expect(screen.queryByText('Client marked:')).not.toBeInTheDocument();
+  });
+
+  it('renders a declines-only card when no fulfillment rows exist yet', () => {
+    render(<MetaFulfillmentCard results={[]} declines={declines} />);
+
+    expect(screen.getByText('Client marked:')).toBeInTheDocument();
+    expect(screen.queryByText('Meta Access Results')).not.toBeInTheDocument();
+  });
+
   it('clears confirmation and reason when an exclusion is cancelled before another grant is opened', () => {
     render(<MetaFulfillmentCard results={results} onExclude={vi.fn()} />);
 

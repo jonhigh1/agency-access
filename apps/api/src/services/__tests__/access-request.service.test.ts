@@ -1253,6 +1253,37 @@ describe('AccessRequestService', () => {
       expect((result.data as any).intakeResponses).toEqual({ company: 'Acme' });
     });
 
+    it('surfaces client Meta declines in the agency-facing payload', async () => {
+      vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue({
+        id: 'request-declines',
+        agencyId: 'agency-1',
+        platforms: [{ platform: 'meta_ads', accessLevel: 'manage' }],
+      } as any);
+      vi.mocked(prisma.clientConnection.findMany).mockResolvedValue([
+        {
+          grantedAssets: {
+            meta: {
+              declinedAssetKinds: {
+                kinds: ['catalog', 'dataset'],
+                declinedAt: '2026-10-01T00:00:00.000Z',
+              },
+            },
+          },
+          authorizations: [{ platform: 'meta', status: 'active', authorizationEpoch: 1 }],
+          metaAssetGrants: [],
+        },
+      ] as any);
+      vi.mocked(prisma.agencyPlatformConnection.findMany).mockResolvedValue([] as any);
+
+      const result = await accessRequestService.getAccessRequestById('request-declines');
+
+      expect(result.error).toBeNull();
+      expect(result.data?.metaDeclines).toEqual([
+        { assetKind: 'catalog', declinedAt: '2026-10-01T00:00:00.000Z' },
+        { assetKind: 'dataset', declinedAt: '2026-10-01T00:00:00.000Z' },
+      ]);
+    });
+
     it('does not treat Instagram OAuth alone as completed access', async () => {
       vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue({
         id: 'request-instagram',

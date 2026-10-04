@@ -21,8 +21,6 @@ function buildInput(overrides: Partial<CtaReasonInput> = {}): CtaReasonInput {
     ],
     saved: false,
     saveInFlight: false,
-    grantsRequired: false,
-    grantsPending: false,
     businessName: 'Client One',
     requestAvailability: 'available',
     ...overrides,
@@ -177,47 +175,9 @@ describe('resolveCta', () => {
     expectDisabled(resolution, CTA_REASONS.saving);
   });
 
-  it('emits a disabled advance action with a grant-progress reason while grants are pending', () => {
-    const resolution = resolveCta(
-      buildInput({
-        products: [
-          {
-            product: 'meta_ads',
-            selectedCount: 2,
-            zeroSelectionMode: 'selection-required',
-          },
-        ],
-        saved: true,
-        grantsRequired: true,
-        grantsPending: true,
-      })
-    );
-
-    expect(resolution.kind).toBe('advance');
-    expect(resolution.disabled).toBe(true);
-    expect(resolution.reason).toBe(CTA_REASONS.grantPending);
-  });
-
-  it('emits an enabled advance action once grants are verified', () => {
-    const resolution = resolveCta(
-      buildInput({
-        products: [
-          {
-            product: 'meta_ads',
-            selectedCount: 2,
-            zeroSelectionMode: 'selection-required',
-          },
-        ],
-        saved: true,
-        grantsRequired: true,
-        grantsPending: false,
-      })
-    );
-
-    expect(resolution).toEqual({ kind: 'advance', disabled: false });
-  });
-
-  it('emits an enabled advance action when no grants are required after save', () => {
+  it('advances immediately after save even when grant work remains', () => {
+    // Confirm is decoupled from completion: grant steps live in the step-3
+    // checklist, so a saved selection always enables the advance action.
     const resolution = resolveCta(
       buildInput({
         products: [
@@ -234,9 +194,26 @@ describe('resolveCta', () => {
     expect(resolution).toEqual({ kind: 'advance', disabled: false });
   });
 
-  it('never reports a stale done after grants reset from a changed selection', () => {
-    // A selection toggle after verification resets the saved and grant flags
-    // (U2 semantics). The resolver must read the live flags, not assume done.
+  it('emits an enabled advance action after save', () => {
+    const resolution = resolveCta(
+      buildInput({
+        products: [
+          {
+            product: 'meta_ads',
+            selectedCount: 2,
+            zeroSelectionMode: 'selection-required',
+          },
+        ],
+        saved: true,
+      })
+    );
+
+    expect(resolution).toEqual({ kind: 'advance', disabled: false });
+  });
+
+  it('never reports a stale advance after a changed selection resets the saved flag', () => {
+    // A selection toggle resets the saved flag (U2 semantics). The resolver
+    // must read the live flags, not assume done.
     const beforeReset = resolveCta(
       buildInput({
         products: [
@@ -247,8 +224,6 @@ describe('resolveCta', () => {
           },
         ],
         saved: true,
-        grantsRequired: true,
-        grantsPending: false,
       })
     );
     expect(beforeReset).toEqual({ kind: 'advance', disabled: false });
@@ -263,13 +238,10 @@ describe('resolveCta', () => {
           },
         ],
         saved: false,
-        grantsRequired: true,
-        grantsPending: true,
       })
     );
 
     expectDisabled(afterReset, 'Select at least one ad account to continue');
-    expect(afterReset.reason).not.toBe(CTA_REASONS.grantPending);
   });
 
   it('disables with a terminal reason when the request expired', () => {
@@ -373,7 +345,7 @@ describe('resolveCta reasonKind (U11)', () => {
     ).toBe('business_lookup_error');
   });
 
-  it('labels the in-flight save and the pending grants', () => {
+  it('labels the in-flight save', () => {
     expect(
       resolveCta(
         buildInput({
@@ -382,16 +354,6 @@ describe('resolveCta reasonKind (U11)', () => {
         })
       ).reasonKind
     ).toBe('saving');
-    expect(
-      resolveCta(
-        buildInput({
-          products: [{ product: 'meta_ads', selectedCount: 2, zeroSelectionMode: 'selection-required' }],
-          saved: true,
-          grantsRequired: true,
-          grantsPending: true,
-        })
-      ).reasonKind
-    ).toBe('grant_pending');
   });
 
   it('labels the terminal states', () => {
@@ -427,8 +389,6 @@ describe('per-product select reason (#25)', () => {
       products: [{ product: 'meta_pages', selectedCount: 0, zeroSelectionMode: 'selection-required' }],
       saved: false,
       saveInFlight: false,
-      grantsRequired: false,
-      grantsPending: false,
     });
     expect(resolution.reason).toBe('Select at least one Page to continue');
     expect(resolution.reasonKind).toBe('select_required');
@@ -443,8 +403,6 @@ describe('per-product select reason (#25)', () => {
       products: [{ product: 'meta_ads', selectedCount: 0, zeroSelectionMode: 'selection-required' }],
       saved: false,
       saveInFlight: false,
-      grantsRequired: false,
-      grantsPending: false,
     });
     expect(resolution.reason).toBe('Select at least one ad account to continue');
     expect(resolution.reasonKind).toBe('select_required');

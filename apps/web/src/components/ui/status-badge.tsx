@@ -38,7 +38,7 @@ interface StatusBadgeProps {
 const SUCCESS_BADGE = 'bg-teal/10 text-success-ink border border-teal/30';
 const WARNING_BADGE = 'bg-warning/10 text-warning border border-warning/30';
 const DANGER_BADGE = 'bg-coral/10 text-danger-ink border border-coral/30';
-const NEUTRAL_BADGE = 'bg-muted/10 text-muted-foreground border border-border';
+const NEUTRAL_BADGE = 'bg-muted/10 text-ink/70 border border-border';
 
 const STATUS_CONFIG: Record<
   StatusType,

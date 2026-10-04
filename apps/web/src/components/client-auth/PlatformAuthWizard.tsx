@@ -6,7 +6,7 @@
  * Steps:
  * 1. Connect: OAuth authorization button
  * 2. Select Assets: MetaAssetSelector with asset fetching
- * 3. Connected: Success confirmation with granted assets list
+ * 3. Connected: pending-grant checklist + shared accounts summary
  *
  * State Management:
  * - currentStep: tracks wizard progress
@@ -15,7 +15,7 @@
  * - grantedAssets: confirmation from backend after grant
  */
 
-import { useState, useCallback, useEffect, useRef } from 'react';
+import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { m, AnimatePresence } from 'framer-motion';
 import { Loader2, ExternalLink, CheckCircle2, ChevronDown, Lock } from 'lucide-react';
@@ -26,22 +26,27 @@ import { SelectionResetConfirmDialog } from './SelectionResetConfirmDialog';
 import { GoogleAssetSelector } from './GoogleAssetSelector';
 import { LinkedInAssetSelector } from './LinkedInAssetSelector';
 import { TikTokAssetSelector } from './TikTokAssetSelector';
-import { AutomaticPagesGrant } from './AutomaticPagesGrant';
-import { CatalogAccessGrant } from './CatalogAccessGrant';
-import { InstagramAccessGrant } from './InstagramAccessGrant';
-import { MetaPageEngagementProof } from './MetaPageEngagementProof';
-import { AdAccountSharingInstructions } from './AdAccountSharingInstructions';
+import { MetaGrantChecklist, metaGrantSelectedKindsFromBlob } from './MetaGrantChecklist';
 import { clearManualGrantChecklistStorage } from '@/lib/invite/manual-grant-checklist-storage';
-import type { ManualMetaShareCompletionResult } from './AdAccountSharingInstructions';
 import { StepHelpText } from './StepHelpText';
 import { PlatformIcon, Button } from '@/components/ui';
 import {
   PLATFORM_NAMES,
   buildMetaClientAllowedAssetTypes,
 } from '@agency-platform/shared';
-import type { MetaAccessConfig, Platform } from '@agency-platform/shared';
+import type {
+  MetaAccessConfig,
+  MetaAssetDecline,
+  MetaFulfillmentResult,
+  Platform,
+} from '@agency-platform/shared';
 import { trackOnboardingEvent } from '@/lib/analytics/onboarding';
-import { trackInviteCtaBlocked, trackInviteSelectionSaved } from '@/lib/analytics/invite-events';
+import {
+  trackClientFinishClickedWithPending,
+  trackClientGrantChecklistViewed,
+  trackInviteCtaBlocked,
+  trackInviteSelectionSaved,
+} from '@/lib/analytics/invite-events';
 import { rememberInviteOAuthReturnToken } from '@/lib/client-invite-oauth';
 import { getClientInviteManualRoute } from '@/lib/client-invite-platforms';
 import { getApiBaseUrl } from '@/lib/api/api-env';
@@ -57,6 +62,11 @@ import {
   isTerminalRequestCode,
   type InviteSelectionPrefill,
 } from '@/lib/invite/landing-state';
+import {
+  buildMetaGrantChecklist,
+  type MetaGrantChecklist as MetaGrantChecklistResult,
+  type MetaGrantItemState,
+} from '@/lib/invite/meta-grant-checklist';
 
 interface PlatformAuthWizardProps {
   platform: Platform;
@@ -83,6 +93,13 @@ interface PlatformAuthWizardProps {
   // U7: fired when a save returns a terminal request code so the page can
   // replace the flow with the terminal card instead of a generic failure.
   onRequestUnavailable?: (code: string) => void;
+  // R4 decoupling: server truth for the step-3 grant checklist. Absent (or
+  // empty) on a fresh save — every selected kind then starts pending.
+  metaFulfillment?: MetaFulfillmentResult[];
+  metaDeclines?: MetaAssetDecline[];
+  // Fired after a save and after every checklist settle so the page can
+  // refetch the payload and replace the optimistic overlay with rows.
+  onRequestRefresh?: () => void;
 }
 
 interface TikTokShareResult {
@@ -217,7 +234,10 @@ function hasNoAssetsFollowUp(product: string, assets: MetaSelectionBlob): boolea
   return false;
 }
 
-function getMetaFollowUpLines(assets: MetaSelectionBlob): string[] {
+function getMetaFollowUpLines(
+  assets: MetaSelectionBlob,
+  checklist?: MetaGrantChecklistResult
+): string[] {
   const lines: string[] = [];
   const unresolvedManualResults = Array.isArray(assets.manualAdAccountVerificationResults)
     ? assets.manualAdAccountVerificationResults.filter(
@@ -252,7 +272,16 @@ function getMetaFollowUpLines(assets: MetaSelectionBlob): string[] {
         : typeof account?.id === 'string'
           ? account.id
           : 'Selected Instagram account';
-    lines.push(assets.instagramBusinessAccessStatus === 'verified'
+    // The checklist machine owns the Instagram state once mounted; the blob
+    // flag stays as the fallback for callers without a checklist.
+    const instagramState = checklist?.items.find(
+      (item) => item.key === 'instagram_account'
+    )?.state;
+    const instagramVerified =
+      instagramState !== undefined
+        ? instagramState === 'done'
+        : assets.instagramBusinessAccessStatus === 'verified';
+    lines.push(instagramVerified
       ? `Follow-up needed: ${accountName} agency access is verified; individual recipient access is not verified`
       : `Follow-up needed: ${accountName} needs agency Business Portfolio sharing and verification`);
   });
@@ -262,15 +291,26 @@ function getMetaFollowUpLines(assets: MetaSelectionBlob): string[] {
     : Array.isArray(assets.datasets)
       ? assets.datasets.map((id: string) => ({ id, name: id }))
       : [];
-  selectedDatasets.forEach((dataset: any) => {
-    lines.push(`Follow-up needed: ${dataset.name || dataset.id} requires manual Meta access assignment and verification`);
-  });
+  // A verified dataset row set is a Done on the checklist: repeating the
+  // manual-assignment ask would contradict the Connected header.
+  const datasetDone = checklist?.items.some(
+    (item) => item.key === 'dataset' && item.state === 'done'
+  );
+  if (!datasetDone) {
+    selectedDatasets.forEach((dataset: any) => {
+      lines.push(`Follow-up needed: ${dataset.name || dataset.id} requires manual Meta access assignment and verification`);
+    });
+  }
 
   return lines;
 }
 
-function hasGrantFollowUp(product: string, assets: MetaSelectionBlob): boolean {
-  return isMetaAssetProduct(product) && getMetaFollowUpLines(assets).length > 0;
+function hasGrantFollowUp(
+  product: string,
+  assets: MetaSelectionBlob,
+  checklist?: MetaGrantChecklistResult
+): boolean {
+  return isMetaAssetProduct(product) && getMetaFollowUpLines(assets, checklist).length > 0;
 }
 
 function getSelectedAssetCount(product: string, assets: any): number {
@@ -333,7 +373,7 @@ function getProductCtaState(product: string, assets: MetaSelectionBlob): CtaProd
   };
 }
 
-function getProductSummaryLines(product: string, assets: any): string[] {
+function getProductSummaryLines(product: string, assets: any, checklist?: MetaGrantChecklistResult): string[] {
   switch (product) {
     case 'google_ads':
       if ((assets.adAccounts?.length ?? 0) > 0) return [`${assets.adAccounts.length} Ad Account${assets.adAccounts.length === 1 ? '' : 's'} selected`];
@@ -364,7 +404,7 @@ function getProductSummaryLines(product: string, assets: any): string[] {
       if ((assets.adAccounts?.length ?? 0) > 0) lines.push(`${assets.adAccounts.length} Ad Account${assets.adAccounts.length === 1 ? '' : 's'} selected`);
       if ((assets.pages?.length ?? 0) > 0) lines.push(`${assets.pages.length} Page${assets.pages.length === 1 ? '' : 's'} selected`);
       if ((assets.instagramAccounts?.length ?? 0) > 0) lines.push(`${assets.instagramAccounts.length} IG Account${assets.instagramAccounts.length === 1 ? '' : 's'} selected`);
-      lines.push(...getMetaFollowUpLines(assets));
+      lines.push(...getMetaFollowUpLines(assets, checklist));
       return lines;
     }
     case 'meta_pages':
@@ -410,6 +450,9 @@ export function PlatformAuthWizard({
   initialMetaSelections,
   requestAvailability = 'available',
   onRequestUnavailable,
+  metaFulfillment,
+  metaDeclines,
+  onRequestRefresh,
 }: PlatformAuthWizardProps) {
   const router = useRouter();
   const apiBaseUrl = getApiBaseUrl();
@@ -459,7 +502,8 @@ export function PlatformAuthWizard({
   }, [accessRequestToken, deferManualRedirect, manualRoute, router]);
 
   // Initialize with props if returning from OAuth callback
-  // All platforms use 3 steps: Connect → Choose Accounts & Grant Access → Done
+  // All platforms use 3 steps: Connect → Choose Accounts to Share → Done
+  // (the Done step hosts the pending-grant checklist; grants no longer live on step 2)
   const metaNeedsGrantStep = platform === 'meta' && primaryMetaAssetProduct !== null;
   const maxSteps = 3;
   // U7 resume prefill: present only when the payload carried saved Meta
@@ -482,12 +526,9 @@ export function PlatformAuthWizard({
   const [businessName, setBusinessName] = useState<string | null>(null);
   const [businessIdLoading, setBusinessIdLoading] = useState(false);
   const [businessIdError, setBusinessIdError] = useState<string | null>(null);
-  const [pagesGranted, setPagesGranted] = useState(false);
-  const [catalogsGranted, setCatalogsGranted] = useState(false);
-  const [instagramBusinessAccessVerified, setInstagramBusinessAccessVerified] = useState(false);
-  const [metaAdAccountShareStatus, setMetaAdAccountShareStatus] = useState<
-    'idle' | 'verified' | 'partial'
-  >('idle');
+  // R4: grant progress lives in the checklist overlay, never in wizard
+  // flags — confirm is decoupled from completion.
+  const [checklistOverlay, setChecklistOverlay] = useState<Record<string, MetaGrantItemState>>({});
   const [assetsSaved, setAssetsSaved] = useState(false);
   const [chooseAccountsExpanded, setChooseAccountsExpanded] = useState(true);
   const [grantAccessExpanded, setGrantAccessExpanded] = useState(true);
@@ -530,17 +571,43 @@ export function PlatformAuthWizard({
     }
   }, [initialConnectionId]);
 
-  // Derived Meta asset state (single source for grant-step decisions)
+  // Derived Meta asset state (single source for checklist + summary copy)
   const metaAdAssets = groupAssets['meta_ads'] || {};
-  const hasMetaPages = (metaAdAssets.pages?.length ?? 0) > 0;
-  const hasMetaAdAccounts = (metaAdAssets.adAccounts?.length ?? 0) > 0;
-  const hasMetaCatalogs = (metaAdAssets.catalogs?.length ?? 0) > 0;
-  const hasMetaInstagramAccounts = (metaAdAssets.instagramAccounts?.length ?? 0) > 0;
-  const instagramSelectionKey = (metaAdAssets.instagramAccounts || []).join('|');
 
+  // One machine call per render: the checklist component renders from the
+  // same pure module, and the wizard reads `remainingCount` for the step-3
+  // action label plus item states for the follow-up summary copy.
+  const metaChecklist = useMemo(
+    () =>
+      buildMetaGrantChecklist({
+        rows: metaFulfillment,
+        declines: metaDeclines,
+        selectedKinds: metaGrantSelectedKindsFromBlob(metaAdAssets),
+        overlay: checklistOverlay,
+      }),
+    [metaFulfillment, metaDeclines, groupAssets, checklistOverlay]
+  );
+
+  // Funnel: the step-3 checklist became visible. Once per wizard instance —
+  // re-renders never re-fire, and the remaining count is the same number the
+  // Finish label renders.
+  const hasReportedChecklistViewRef = useRef(false);
   useEffect(() => {
-    setInstagramBusinessAccessVerified(false);
-  }, [instagramSelectionKey]);
+    if (!(platform === 'meta' && metaNeedsGrantStep && currentStep === 3 && connectionId)) return;
+    if (hasReportedChecklistViewRef.current) return;
+    hasReportedChecklistViewRef.current = true;
+    trackClientGrantChecklistViewed({ remaining_count: metaChecklist.remainingCount });
+  }, [platform, metaNeedsGrantStep, currentStep, connectionId, metaChecklist.remainingCount]);
+
+  // Checklist settle: optimistic overlay flip + one refetch ask. The refetch
+  // replaces the overlay with server rows when it lands.
+  const handleItemSettled = useCallback(
+    (kind: string, state: MetaGrantItemState) => {
+      setChecklistOverlay((prev) => ({ ...prev, [kind]: state }));
+      onRequestRefresh?.();
+    },
+    [onRequestRefresh]
+  );
 
   // Step 1: Initiate OAuth
   const handleConnectClick = async (presentation: 'redirect' | 'popup' = 'redirect') => {
@@ -631,9 +698,8 @@ export function PlatformAuthWizard({
     });
 
     if (isMetaAssetProduct(product)) {
-      setPagesGranted(false);
-      setCatalogsGranted(false);
-      setMetaAdAccountShareStatus('idle');
+      // A fresh selection blob invalidates any optimistic grant state.
+      setChecklistOverlay({});
     }
 
     if (platform === 'tiktok' || product === 'tiktok' || product === 'tiktok_ads') {
@@ -663,10 +729,7 @@ export function PlatformAuthWizard({
     // #22: every reset invalidates an in-flight save's success handler.
     saveVersionRef.current += 1;
     setAssetsSaved(false);
-    setPagesGranted(false);
-    setCatalogsGranted(false);
-    setMetaAdAccountShareStatus('idle');
-    setInstagramBusinessAccessVerified(false);
+    setChecklistOverlay({});
     // U9 registration: the manual-grant checklist persists per-row check
     // state in sessionStorage. A post-save change-selection must uncheck it,
     // so clear its storage alongside the in-memory resets.
@@ -793,8 +856,10 @@ export function PlatformAuthWizard({
         return;
       }
 
-      // Mark assets as saved
+      // Mark assets as saved, then ask the page for fresh fulfillment rows —
+      // the step-3 checklist renders from server truth once they land.
       setAssetsSaved(true);
+      onRequestRefresh?.();
 
       // U11: one event per successful save. Counts only — never asset names.
       {
@@ -886,19 +951,11 @@ export function PlatformAuthWizard({
         }
       }
 
-      // After saving, stay on step 2 to show grant access UI (for Meta) or go to final step
-      // For Meta with pages/ad accounts, grant access is shown in step 2
-      // For other platforms or Meta without grant needs, go to final step
-      if (metaNeedsGrantStep) {
-        if (hasMetaPages || hasMetaAdAccounts || hasMetaCatalogs || hasMetaInstagramAccounts) {
-          // Stay on step 2 to show grant access UI
-          setChooseAccountsExpanded(false);
-          setGrantAccessExpanded(true);
-        } else {
-          setCurrentStep(3);
-        }
-      } else if (platform !== 'tiktok') {
-        // TikTok progress is controlled by the partner-share automation result above.
+      // R4: confirm is decoupled from completion. Meta (and every other
+      // OAuth platform) advances to step 3, whose checklist hosts the
+      // pending grant work. TikTok progress stays controlled by its
+      // partner-share automation result above.
+      if (platform !== 'tiktok') {
         setCurrentStep(3);
       }
     } catch (err) {
@@ -957,19 +1014,6 @@ export function PlatformAuthWizard({
     getProductCtaState(product.product, groupAssets[product.product] || {})
   );
 
-  const grantsRequired = Boolean(
-    platform === 'meta' &&
-      metaNeedsGrantStep &&
-      (hasMetaPages || hasMetaAdAccounts || hasMetaCatalogs || hasMetaInstagramAccounts)
-  );
-  const grantsPending = Boolean(
-    grantsRequired &&
-      ((hasMetaPages && !pagesGranted) ||
-        (hasMetaCatalogs && !catalogsGranted) ||
-        (hasMetaAdAccounts && metaAdAccountShareStatus === 'idle') ||
-        (hasMetaInstagramAccounts && !instagramBusinessAccessVerified))
-  );
-
   const ctaResolution =
     currentStep === 2 && connectionId && requiresAssetSelection
       ? resolveCta({
@@ -980,8 +1024,6 @@ export function PlatformAuthWizard({
           products: ctaProductStates,
           saved: assetsSaved,
           saveInFlight: isProcessing || isTikTokSharing,
-          grantsRequired,
-          grantsPending,
           // The creation reason names the client's selected business.
           businessName: groupAssets['meta_ads']?.selectedBusinessName ?? null,
           // U7: the page passes the live availability from the load, refresh,
@@ -1025,11 +1067,20 @@ export function PlatformAuthWizard({
     void handleBatchSave();
   };
 
+  // Step-3 primary action: report an exit with pending grant work, then advance.
+  const handleFinishClick = useCallback(() => {
+    if (metaChecklist.remainingCount > 0) {
+      trackClientFinishClickedWithPending({ remaining_count: metaChecklist.remainingCount });
+    }
+    onComplete();
+  }, [metaChecklist.remainingCount, onComplete]);
+
   const hasZeroAssetFollowUp = Object.entries(groupAssets).some(
     ([product, assets]) => getSelectedAssetCount(product, assets) === 0 && hasNoAssetsFollowUp(product, assets)
   );
   const hasMetaFollowUp =
-    platform === 'meta' && getMetaFollowUpLines(groupAssets['meta_ads'] || {}).length > 0;
+    platform === 'meta' &&
+    getMetaFollowUpLines(groupAssets['meta_ads'] || {}, metaChecklist).length > 0;
 
   // Render step content
   const renderStepContent = () => {
@@ -1298,7 +1349,7 @@ export function PlatformAuthWizard({
                             initialSelection={metaSelectionPrefill}
                             allowedAssetTypes={metaAllowedAssetTypes}
                             onSelectionChange={(selectedAssets) => {
-                              // Store both IDs and full asset objects for grant step
+                              // Store both IDs and full asset objects for the save and the step-3 checklist
                               // selectedAssets now includes selectedPagesWithNames, etc. from MetaAssetSelector
                               handleProductSelectionChange(p.product, selectedAssets);
                             }}
@@ -1393,237 +1444,6 @@ export function PlatformAuthWizard({
               </div>
             );
           })()}
-
-          {/* Section Divider for Meta Grant Access */}
-          {platform === 'meta' && metaNeedsGrantStep && connectionId && assetsSaved && (() => {
-            if (!hasMetaPages && !hasMetaAdAccounts && !hasMetaCatalogs && !hasMetaInstagramAccounts) {
-              return null;
-            }
-
-            return (
-              <div className="relative my-5">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t-2 border-black dark:border-white" />
-                </div>
-                <div className="relative flex justify-center">
-                  <span className="bg-card px-4 text-sm text-muted-foreground font-bold uppercase tracking-wider">then</span>
-                </div>
-              </div>
-            );
-          })()}
-
-            {/* Grant Access Section (for Meta after assets are saved) - Brutalist Card */}
-            {platform === 'meta' && metaNeedsGrantStep && connectionId && assetsSaved && (() => {
-          const metaAssets = groupAssets['meta_ads'] || {};
-          const selectedPages: Array<{ id: string; name: string }> = metaAssets.selectedPagesWithNames ||
-            (metaAssets.pages || []).map((id: string) => {
-              const allPages = metaAssets.allPages || [];
-              const page = allPages.find((p: any) => p.id === id);
-              return { id, name: page?.name || id };
-            });
-          const selectedAdAccounts = metaAssets.selectedAdAccountsWithNames ||
-            (metaAssets.adAccounts || []).map((id: string) => {
-              const allAdAccounts = metaAssets.allAdAccounts || [];
-              const account = allAdAccounts.find((a: any) => a.id === id);
-              return { id, name: account?.name || id };
-            });
-          const hasPages = selectedPages.length > 0;
-          const hasAdAccounts = selectedAdAccounts.length > 0;
-          const selectedInstagramAccounts: Array<{ id: string; name: string }> = metaAssets.selectedInstagramWithNames ||
-            (metaAssets.instagramAccounts || []).map((id: string) => ({ id, name: id }));
-          const hasInstagramAccounts = selectedInstagramAccounts.length > 0;
-
-              // Only show grant access UI if there are pages or ad accounts
-              const selectedCatalogs: Array<{ id: string; name: string }> = metaAssets.selectedCatalogsWithNames ||
-                (metaAssets.catalogs || []).map((id: string) => ({ id, name: metaAssets.allProductCatalogs?.find((catalog: any) => catalog.id === id)?.name || id }));
-              if (!hasPages && !hasAdAccounts && selectedCatalogs.length === 0 && !hasInstagramAccounts) {
-                return null;
-              }
-
-          return (
-                <div className="border-2 border-black dark:border-white overflow-hidden">
-                  <button
-                    type="button"
-                    onClick={() => setGrantAccessExpanded(!grantAccessExpanded)}
-                    className="w-full px-6 py-4 flex items-center justify-between bg-muted/20 dark:bg-muted/60 hover:bg-muted/30 dark:hover:bg-muted/50 transition-colors"
-                  >
-                    <div className="text-left">
-                      <h3 className="text-xl font-bold text-[var(--ink)] font-display">
-                        Grant access
-                      </h3>
-                      <p className="text-sm text-muted-foreground dark:text-muted-foreground mt-1">
-                        Complete the steps below to grant access to your selected accounts.
-                      </p>
-                    </div>
-                    <m.div
-                      animate={{ rotate: grantAccessExpanded ? 0 : -90 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <ChevronDown className="w-6 h-6 text-muted-foreground dark:text-muted-foreground" />
-                    </m.div>
-                  </button>
-
-                  <AnimatePresence initial={false}>
-                    {grantAccessExpanded && (
-                      <m.div
-                        initial={{ height: 0, opacity: 0 }}
-                        animate={{ height: 'auto', opacity: 1 }}
-                        exit={{ height: 0, opacity: 0 }}
-                        transition={{ duration: 0.3, ease: 'easeInOut' }}
-                        className="overflow-hidden"
-                      >
-                        <div className="p-4">
-
-                  {/* Show error banner if Business Manager ID is missing */}
-                  {businessIdError && (
-                    <div className="border-2 border-[var(--coral)] bg-[var(--coral)]/10 p-4 text-danger-ink mb-4">
-                      <p className="font-semibold">{businessIdError}</p>
-                    </div>
-                  )}
-
-              {error && (
-                    <div className="border-2 border-[var(--coral)] bg-[var(--coral)]/10 p-4 text-danger-ink mb-4">
-                  {error}
-                </div>
-              )}
-
-              {hasPages && (
-                <div className="mb-5 space-y-5">
-                  {selectedPages.map((selectedPage) => (
-                    <MetaPageEngagementProof
-                      key={selectedPage.id}
-                      selectedPage={selectedPage}
-                      connectionId={connectionId}
-                      accessRequestToken={accessRequestToken}
-                    />
-                  ))}
-                </div>
-              )}
-
-              {hasPages && (
-                <AutomaticPagesGrant
-                  selectedPages={selectedPages}
-                  accessLevel="Admin"
-                      connectionId={connectionId}
-                  accessRequestToken={accessRequestToken}
-                  onGrantComplete={(results) => {
-                    const allPagesGranted = results.length > 0 && results.every((result) => result.status === 'granted');
-                    setPagesGranted(allPagesGranted);
-                    // If ad accounts also need sharing, wait; otherwise advance
-                    if (
-                      allPagesGranted &&
-                      (!hasAdAccounts || metaAdAccountShareStatus === 'verified' || metaAdAccountShareStatus === 'partial') &&
-                      (!hasMetaCatalogs || catalogsGranted) &&
-                      (!hasInstagramAccounts || instagramBusinessAccessVerified)
-                    ) {
-                          setCurrentStep(3);
-                    }
-                  }}
-                  onError={setError}
-                />
-              )}
-
-              {hasAdAccounts && businessId && (
-                    <div className={hasPages ? 'mt-8' : ''}>
-                  <AdAccountSharingInstructions
-                    businessId={businessId}
-                    businessName={businessName || undefined}
-                    selectedAdAccounts={selectedAdAccounts}
-                    accessRequestToken={accessRequestToken}
-                        connectionId={connectionId}
-                    onComplete={(result: ManualMetaShareCompletionResult) => {
-                      setMetaAdAccountShareStatus(result.status);
-                      setGroupAssets((prev) => ({
-                        ...prev,
-                        meta_ads: {
-                          ...(prev.meta_ads || {}),
-                          manualAdAccountShareStatus: result.status,
-                          manualAdAccountVerificationResults: result.verificationResults || [],
-                        },
-                      }));
-                      // If pages also need granting, wait; otherwise advance
-                      if ((!hasPages || pagesGranted) && (!hasMetaCatalogs || catalogsGranted) &&
-                        (!hasInstagramAccounts || instagramBusinessAccessVerified)) {
-                            setCurrentStep(3);
-                      }
-                    }}
-                    onError={setError}
-                  />
-                </div>
-              )}
-
-              {selectedCatalogs.length > 0 && (
-                <CatalogAccessGrant
-                  key={JSON.stringify(selectedCatalogs.map((catalog: { id: string }) => catalog.id).sort())}
-                  catalogs={selectedCatalogs}
-                  connectionId={connectionId}
-                  accessRequestToken={accessRequestToken}
-                  onComplete={(verified) => {
-                    setCatalogsGranted(verified);
-                    if (verified && (!hasPages || pagesGranted) && (!hasAdAccounts || metaAdAccountShareStatus !== 'idle') &&
-                      (!hasInstagramAccounts || instagramBusinessAccessVerified)) {
-                      setCurrentStep(3);
-                    }
-                  }}
-                />
-              )}
-
-              {hasInstagramAccounts && businessId && typeof metaAssets.selectedBusinessId === 'string' ? (
-                <InstagramAccessGrant
-                  key={JSON.stringify(selectedInstagramAccounts.map((account) => account.id).sort())}
-                  accounts={selectedInstagramAccounts}
-                  clientBusinessId={metaAssets.selectedBusinessId}
-                  agencyBusinessId={businessId}
-                  connectionId={connectionId}
-                  accessRequestToken={accessRequestToken}
-                  onComplete={(verified) => {
-                    setInstagramBusinessAccessVerified(verified);
-                    setGroupAssets((prev) => ({
-                      ...prev,
-                      meta_ads: {
-                        ...(prev.meta_ads || {}),
-                        instagramBusinessAccessStatus: verified ? 'verified' : 'unresolved',
-                      },
-                    }));
-                    if (verified && (!hasPages || pagesGranted) &&
-                      (!hasAdAccounts || metaAdAccountShareStatus !== 'idle') &&
-                      (!hasMetaCatalogs || catalogsGranted)) {
-                      setCurrentStep(3);
-                    }
-                  }}
-                />
-              ) : null}
-
-              {(hasAdAccounts || hasInstagramAccounts) && !businessId && (
-                    <div className={`border-2 p-6 ${
-                      businessIdError
-                        ? 'border-[var(--coral)] bg-[var(--coral)]/10'
-                        : 'border-[var(--warning)] bg-[var(--warning)]/10'
-                    }`}>
-                      {businessIdLoading ? (
-                        <p className="text-[var(--warning)] flex items-center gap-2">
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                          Loading Business Manager ID...
-                        </p>
-                      ) : businessIdError ? (
-                        <div className="space-y-2">
-                          <p className="text-danger-ink font-semibold">Error loading Business Manager ID</p>
-                          <p className="text-danger-ink text-sm">{businessIdError}</p>
-                        </div>
-                      ) : (
-                  <p className="text-[var(--warning)]">
-                    Loading Business Manager ID...
-                  </p>
-                      )}
-                    </div>
-                  )}
-                        </div>
-                      </m.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-              );
-            })()}
 
             {platform === 'tiktok' && connectionId && assetsSaved && (
               <div className="border-2 border-black dark:border-white overflow-hidden">
@@ -1789,6 +1609,24 @@ export function PlatformAuthWizard({
               </div>
             </m.div>
 
+            {/* R4: the pending-grant checklist lives here, not on step 2.
+                Panel completions only settle items (overlay + refetch ask). */}
+            {platform === 'meta' && metaNeedsGrantStep && connectionId ? (
+              <MetaGrantChecklist
+                rows={metaFulfillment}
+                declines={metaDeclines}
+                selectedAssets={groupAssets['meta_ads']}
+                connectionId={connectionId}
+                accessRequestToken={accessRequestToken}
+                businessId={businessId}
+                businessName={businessName}
+                metaCatalogEnabled={metaCatalogEnabled}
+                onError={setError}
+                onItemSettled={handleItemSettled}
+                overlay={checklistOverlay}
+              />
+            ) : null}
+
             {/* Collapsible shared accounts – collapsed by default, compact and secondary */}
             <div className="border-2 border-black dark:border-white overflow-hidden">
               <button
@@ -1836,8 +1674,8 @@ export function PlatformAuthWizard({
                         const isWarning =
                           (hasNoAssetsFollowUp(product, assets) &&
                             getSelectedAssetCount(product, assets) === 0) ||
-                          hasGrantFollowUp(product, assets);
-                        const summaryLines = getProductSummaryLines(product, assets);
+                          hasGrantFollowUp(product, assets, metaChecklist);
+                        const summaryLines = getProductSummaryLines(product, assets, metaChecklist);
                         const assetNames: string[] = assets.selectedAssetNames || [];
 
                         return (
@@ -1906,12 +1744,14 @@ export function PlatformAuthWizard({
             </div>
 
             <Button
-              onClick={onComplete}
+              onClick={handleFinishClick}
               variant="brutalist"
               size="lg"
               className="w-full"
             >
-              {finalActionLabel}
+              {metaChecklist.remainingCount > 0
+                ? `Finish — ${metaChecklist.remainingCount} item${metaChecklist.remainingCount === 1 ? '' : 's'} left`
+                : finalActionLabel}
             </Button>
           </div>
         );

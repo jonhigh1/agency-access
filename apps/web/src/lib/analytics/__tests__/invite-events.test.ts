@@ -11,6 +11,11 @@ vi.mock('../capture-posthog', () => ({
 }));
 
 import {
+  trackClientAssetsDeclineToggled,
+  trackClientChecklistResumed,
+  trackClientFinishClickedWithPending,
+  trackClientGrantChecklistViewed,
+  trackClientGrantItemCompleted,
   trackInviteAssetsLoaded,
   trackInviteBusinessChosen,
   trackInviteCtaBlocked,
@@ -230,6 +235,80 @@ describe('invite-events — redesigned flow funnel (U11)', () => {
       undefined
     );
   });
+
+describe('invite-events — Meta decoupled-confirm funnel (client_*)', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('tracks client_grant_checklist_viewed with the remaining count only', () => {
+    trackClientGrantChecklistViewed({ remaining_count: 2 });
+
+    expect(capturePosthogEventMock).toHaveBeenCalledWith('client_grant_checklist_viewed', {
+      remaining_count: 2,
+    });
+  });
+
+  it('tracks client_grant_item_completed with the item kind and source only', () => {
+    trackClientGrantItemCompleted({ item_kind: 'page', source: 'panel' });
+    trackClientGrantItemCompleted({ item_kind: 'ad_account', source: 'server' });
+
+    expect(capturePosthogEventMock).toHaveBeenNthCalledWith(1, 'client_grant_item_completed', {
+      item_kind: 'page',
+      source: 'panel',
+    });
+    expect(capturePosthogEventMock).toHaveBeenNthCalledWith(2, 'client_grant_item_completed', {
+      item_kind: 'ad_account',
+      source: 'server',
+    });
+  });
+
+  it('tracks client_assets_decline_toggled with the asset kind and check state', () => {
+    trackClientAssetsDeclineToggled({ asset_kind: 'catalog', checked: true });
+
+    expect(capturePosthogEventMock).toHaveBeenCalledWith('client_assets_decline_toggled', {
+      asset_kind: 'catalog',
+      checked: true,
+    });
+  });
+
+  it('tracks client_finish_clicked_with_pending with the remaining count', () => {
+    trackClientFinishClickedWithPending({ remaining_count: 3 });
+
+    expect(capturePosthogEventMock).toHaveBeenCalledWith('client_finish_clicked_with_pending', {
+      remaining_count: 3,
+    });
+  });
+
+  it('tracks client_checklist_resumed without properties', () => {
+    trackClientChecklistResumed();
+
+    expect(capturePosthogEventMock).toHaveBeenCalledTimes(1);
+    expect(capturePosthogEventMock).toHaveBeenCalledWith('client_checklist_resumed', undefined);
+  });
+
+  it('carries only kind-level data across the decoupled-confirm events', () => {
+    const secretToken = 'tok_live_do_not_send';
+
+    trackClientGrantChecklistViewed({ remaining_count: 1 });
+    trackClientGrantItemCompleted({ item_kind: 'catalog', source: 'panel' });
+    trackClientGrantItemCompleted({ item_kind: 'dataset', source: 'server' });
+    trackClientAssetsDeclineToggled({ asset_kind: 'page', checked: true });
+    trackClientFinishClickedWithPending({ remaining_count: 2 });
+    trackClientChecklistResumed();
+
+    const sensitiveKeyPattern = /(token|email|_name$|^name|asset_name|secret)/i;
+    for (const [, properties] of capturePosthogEventMock.mock.calls) {
+      for (const [key, value] of Object.entries(properties ?? {})) {
+        expect(key).not.toMatch(sensitiveKeyPattern);
+        if (typeof value === 'string') {
+          expect(value).not.toContain(secretToken);
+          expect(value).not.toMatch('@');
+        }
+      }
+    }
+  });
+});
 
   it('carries only kind-level data — no tokens, emails, business names, or asset names', () => {
     const secretToken = 'tok_live_do_not_send';

@@ -1607,6 +1607,7 @@ export async function getAccessRequestById(id: string, agencyId?: string) {
 
     return {
       data: {
+        metaDeclines: collectMetaDeclines(clientConnections as any),
         ...accessRequest,
         platforms: hierarchicalPlatforms,
         authorizationProgress,

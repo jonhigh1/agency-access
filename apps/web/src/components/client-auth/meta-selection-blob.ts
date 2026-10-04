@@ -1,9 +1,9 @@
-import type { MetaAssetKind } from '@agency-platform/shared';
+import type { MetaAssetKind, MetaDeclinableAssetKind } from '@agency-platform/shared';
 
 /**
  * The Meta selection blob the wizard stores under `groupAssets.meta_ads` and
  * reads structurally (review #36): what MetaAssetSelector emits through
- * `onSelectionChange`, the grant step consumes, and `evaluateMetaProductFulfillment`
+ * `onSelectionChange`, the save and step-3 grant checklist consume, and `evaluateMetaProductFulfillment`
  * reads back. KTD5's preserved keys (`selectedBusinessId`,
  * `manualAdAccountShareStatus` on the grant path, verification results) stay
  * unchanged; this interface names the shape instead of leaking `any`.
@@ -14,6 +14,9 @@ export interface MetaSelectionBlob {
   instagramAccounts: string[];
   catalogs: string[];
   datasets: string[];
+
+  /** Kinds the client explicitly declined to share; any selection of the kind withdraws its decline. */
+  declinedAssetKinds?: MetaDeclinableAssetKind[];
 
   selectedBusinessId?: string;
   selectedBusinessName?: string;
