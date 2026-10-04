@@ -78,7 +78,7 @@ export function ManualChecklistWizard({
     const blockedReason = currentStep.primaryAction.disabled
       ? currentStep.primaryAction.disabledReason || 'This step is currently unavailable.'
       : currentStep.completionGate && !currentStep.completionGate.checked
-      ? currentStep.completionGate.requiredMessage || 'Please confirm completion before continuing.'
+      ? currentStep.completionGate.requiredMessage || 'Please confirm these steps before continuing.'
       : undefined;
 
     onStepStateChange?.({
@@ -129,7 +129,7 @@ export function ManualChecklistWizard({
 
     const gate = currentStep.completionGate;
     if (gate && !gate.checked) {
-      setValidationError(gate.requiredMessage || 'Please confirm completion before continuing.');
+      setValidationError(gate.requiredMessage || 'Please confirm these steps before continuing.');
       return;
     }
 

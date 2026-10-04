@@ -77,6 +77,7 @@ export interface ManualInviteConfig<TData extends ManualInviteFlowData> {
   platformName: string;
   loaderSource: Parameters<typeof useInviteRequestLoader>[0]['source'];
   parseData: (payload: ClientAccessRequestPayload) => TData;
+  unavailableMessage?: (data: TData) => string | undefined;
   timeoutMessage: string;
   shellDescription: string;
   headerSecurityNote: string;
@@ -286,7 +287,7 @@ export function ManualInviteFlow<TData extends ManualInviteFlowData>({
               });
             }
           },
-          requiredMessage: 'Confirm completion before continuing.',
+          requiredMessage: 'Confirm these steps before continuing.',
         },
         primaryAction: {
           label: 'Return to request',
@@ -352,6 +353,11 @@ export function ManualInviteFlow<TData extends ManualInviteFlowData>({
         onRetry={retry}
       />
     );
+  }
+
+  const unavailableMessage = config.unavailableMessage?.(data);
+  if (unavailableMessage) {
+    return <InviteLoadStateCard phase="error" message={unavailableMessage} onRetry={retry} />;
   }
 
   return (

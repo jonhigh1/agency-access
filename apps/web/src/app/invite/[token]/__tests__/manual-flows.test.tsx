@@ -7,6 +7,7 @@ import KlaviyoManualPage from '../klaviyo/manual/page';
 import MailchimpManualPage from '../mailchimp/manual/page';
 import PinterestManualPage from '../pinterest/manual/page';
 import ShopifyManualPage from '../shopify/manual/page';
+import ZapierManualPage from '../zapier/manual/page';
 
 const { pushMock, backMock } = vi.hoisted(() => ({
   pushMock: vi.fn(),
@@ -309,6 +310,30 @@ describe('Manual invite flows', () => {
     const blockedAction = screen.getAllByRole('button', { name: 'Business ID required' })[0];
     expect(blockedAction).toBeDisabled();
     expect(screen.getAllByText(/business id is required before this step can continue/i).length).toBeGreaterThan(0);
+  });
+
+  it('blocks the Zapier checklist when the agency has not configured an invite email', async () => {
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      json: async () =>
+        buildPayload({
+          manualInviteTargets: { zapier: {} },
+          platforms: [
+            {
+              platformGroup: 'zapier',
+              products: [{ product: 'zapier', accessLevel: 'admin' }],
+            },
+          ],
+        }),
+    } as Response));
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(<ZapierManualPage />);
+
+    expect(await screen.findByText(/has not configured a zapier invite email/i)).toBeInTheDocument();
+    expect(screen.getByText(/contact your agency, then try again/i)).toBeInTheDocument();
+    expect(screen.queryByDisplayValue('your agency contact email')).not.toBeInTheDocument();
+    expect(fetchMock.mock.calls.some(([url]) => String(url).includes('/manual-connect'))).toBe(false);
   });
 
   it('Shopify flow submits collaborator details and redirects', async () => {

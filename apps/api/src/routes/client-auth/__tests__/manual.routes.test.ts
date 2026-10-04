@@ -339,6 +339,54 @@ describe('Client Auth Manual Routes', () => {
     expect(prisma.clientConnection.create).not.toHaveBeenCalled();
   });
 
+  it('rejects an email manual submission without a configured agency invite target', async () => {
+    vi.mocked(accessRequestService.getAccessRequestByToken).mockResolvedValue({
+      data: {
+        id: 'request-1',
+        agencyId: 'agency-1',
+        clientEmail: 'client@example.com',
+        platforms: [{ platform: 'zapier', accessLevel: 'manage' }],
+        manualInviteTargets: { zapier: {} },
+      } as any,
+      error: null,
+    });
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/client/token-1/zapier/manual-connect',
+      payload: { platform: 'zapier', agencyEmail: 'ops@agency.com' },
+    });
+
+    expect(response.statusCode).toBe(409);
+    expect(response.json().error.code).toBe('MANUAL_INVITE_TARGET_UNAVAILABLE');
+    expect(prisma.$queryRaw).not.toHaveBeenCalled();
+    expect(prisma.clientConnection.create).not.toHaveBeenCalled();
+  });
+
+  it('rejects manual submissions after the access request is completed', async () => {
+    vi.mocked(accessRequestService.getAccessRequestByToken).mockResolvedValue({
+      data: {
+        id: 'request-1',
+        agencyId: 'agency-1',
+        clientEmail: 'client@example.com',
+        status: 'completed',
+        platforms: [{ platform: 'beehiiv', accessLevel: 'manage' }],
+      } as any,
+      error: null,
+    });
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/client/token-1/beehiiv/manual-connect',
+      payload: { platform: 'beehiiv', agencyEmail: 'ops@agency.com' },
+    });
+
+    expect(response.statusCode).toBe(409);
+    expect(response.json().error.code).toBe('REQUEST_COMPLETED');
+    expect(prisma.$queryRaw).not.toHaveBeenCalled();
+    expect(prisma.clientConnection.create).not.toHaveBeenCalled();
+  });
+
   it('keeps prior manual platform records when another manual platform is submitted', async () => {
     vi.mocked(accessRequestService.getAccessRequestByToken).mockResolvedValue({
       data: {
@@ -419,5 +467,30 @@ describe('Client Auth Manual Routes', () => {
 
     expect(response.statusCode).toBe(200);
     expect(prisma.$queryRaw).toHaveBeenCalledTimes(1);
+  });
+
+  it('preserves verified evidence for a replayed manual platform', async () => {
+    vi.mocked(accessRequestService.getAccessRequestByToken).mockResolvedValue({
+      data: {
+        id: 'request-1',
+        agencyId: 'agency-1',
+        clientEmail: 'client@example.com',
+        platforms: [{ platform: 'zapier', accessLevel: 'manage' }],
+      } as any,
+      error: null,
+    });
+    vi.mocked(prisma.$queryRaw).mockResolvedValue([{ id: 'conn-existing', status: 'active' }] as never);
+    vi.mocked(auditService.createAuditLog).mockResolvedValue({} as any);
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/client/token-1/zapier/manual-connect',
+      payload: { platform: 'zapier', agencyEmail: 'ops@agency.com' },
+    });
+
+    expect(response.statusCode).toBe(200);
+    const query = vi.mocked(prisma.$queryRaw).mock.calls[0]?.[0] as any;
+    expect(query.strings.join('')).toContain("verificationStatus' = 'verified'");
+    expect(query.values).toContain('zapier');
   });
 });

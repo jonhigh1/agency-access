@@ -116,6 +116,43 @@ describe('Manual Agency Platform Routes', () => {
     expect(invalidateDashboardCache).toHaveBeenCalledWith('agency-1');
   });
 
+  it('updates a Pinterest business ID without requiring an invitation email', async () => {
+    vi.mocked(agencyResolutionService.resolveAgency).mockResolvedValue({
+      data: { agencyId: 'agency-1' },
+      error: null,
+    } as any);
+    vi.mocked(prisma.agencyPlatformConnection.findFirst).mockResolvedValue({
+      id: 'conn-pinterest-1',
+      agencyId: 'agency-1',
+      platform: 'pinterest',
+      agencyEmail: null,
+      metadata: {},
+    } as any);
+    vi.mocked(prisma.agencyPlatformConnection.update).mockResolvedValue({
+      id: 'conn-pinterest-1',
+      platform: 'pinterest',
+      agencyEmail: null,
+      status: 'active',
+      connectedAt: new Date(),
+    } as any);
+    vi.mocked(prisma.auditLog.create).mockResolvedValue({} as any);
+
+    const response = await app.inject({
+      method: 'PATCH',
+      url: '/agency-platforms/pinterest/manual-invitation',
+      payload: {
+        agencyId: 'agency-1',
+        businessId: '123456789',
+      },
+    });
+
+    expect(response.statusCode).toBe(200);
+    const updateCall = vi.mocked(prisma.agencyPlatformConnection.update).mock.calls[0]?.[0] as any;
+    expect(updateCall.data.agencyEmail).toBeNull();
+    expect(updateCall.data.metadata).toMatchObject({ businessId: '123456789' });
+    expect(updateCall.data.metadata.invitationEmail).toBeUndefined();
+  });
+
   it('rejects Snapchat manual connect because Snapchat is an OAuth platform', async () => {
     vi.mocked(agencyResolutionService.resolveAgency).mockResolvedValue({
       data: { agencyId: 'agency-1' },

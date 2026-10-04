@@ -41,9 +41,19 @@ export async function registerManualRoutes(fastify: FastifyInstance) {
     const patch = JSON.stringify({ [platform]: grantedAssets });
     const updateExisting = () => prisma.$queryRaw<Array<{ id: string; status: string }>>(Prisma.sql`
       UPDATE client_connections
-      SET client_email = ${clientEmail},
-          status = CASE WHEN status = 'active' THEN 'active' ELSE 'pending_verification' END,
-          granted_assets = COALESCE(granted_assets, '{}'::jsonb) || ${patch}::jsonb
+      SET client_email = CASE
+            WHEN granted_assets -> ${platform} ->> 'verificationStatus' = 'verified' THEN client_email
+            ELSE ${clientEmail}
+          END,
+          status = CASE
+            WHEN granted_assets -> ${platform} ->> 'verificationStatus' = 'verified' THEN status
+            WHEN status = 'active' THEN 'active'
+            ELSE 'pending_verification'
+          END,
+          granted_assets = CASE
+            WHEN granted_assets -> ${platform} ->> 'verificationStatus' = 'verified' THEN granted_assets
+            ELSE COALESCE(granted_assets, '{}'::jsonb) || ${patch}::jsonb
+          END
       WHERE access_request_id = ${accessRequestId}
       RETURNING id, status
     `);
@@ -98,8 +108,24 @@ export async function registerManualRoutes(fastify: FastifyInstance) {
         return sendError(reply, 'INVALID_TOKEN', 'Access request not found or expired', 404);
       }
 
+      if (accessRequest.data.status === 'completed') {
+        return sendError(reply, 'REQUEST_COMPLETED', 'Access request has already been completed', 409);
+      }
+
       if (!isPlatformRequested(accessRequest.data.platforms, platform)) {
         return sendError(reply, 'PLATFORM_NOT_REQUESTED', 'Platform was not requested in this access request', 400);
+      }
+
+      const manualInviteTarget = (accessRequest.data as {
+        manualInviteTargets?: Record<string, { agencyEmail?: string }>;
+      }).manualInviteTargets?.[platform];
+      if (manualInviteTarget && !manualInviteTarget.agencyEmail) {
+        return sendError(
+          reply,
+          'MANUAL_INVITE_TARGET_UNAVAILABLE',
+          'Your agency has not configured an invite email for this platform. Contact your agency and try again.',
+          409
+        );
       }
 
       try {
@@ -225,6 +251,10 @@ export async function registerManualRoutes(fastify: FastifyInstance) {
     return sendError(reply, 'INVALID_TOKEN', 'Access request not found or expired', 404);
   }
 
+  if (accessRequest.data.status === 'completed') {
+    return sendError(reply, 'REQUEST_COMPLETED', 'Access request has already been completed', 409);
+  }
+
   if (!isPlatformRequested(accessRequest.data.platforms, 'pinterest')) {
     return sendError(reply, 'PLATFORM_NOT_REQUESTED', 'Platform was not requested in this access request', 400);
   }
@@ -305,6 +335,10 @@ export async function registerManualRoutes(fastify: FastifyInstance) {
     const accessRequest = await accessRequestService.getAccessRequestByToken(token);
     if (accessRequest.error || !accessRequest.data) {
       return sendError(reply, 'INVALID_TOKEN', 'Access request not found or expired', 404);
+    }
+
+    if (accessRequest.data.status === 'completed') {
+      return sendError(reply, 'REQUEST_COMPLETED', 'Access request has already been completed', 409);
     }
 
     if (!isPlatformRequested(accessRequest.data.platforms, 'shopify')) {

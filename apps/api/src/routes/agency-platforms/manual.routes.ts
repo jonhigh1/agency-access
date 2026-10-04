@@ -223,8 +223,12 @@ export async function registerManualRoutes(fastify: FastifyInstance) {
         metadata: {
           ...((existingConnection.metadata as any) || {}),
           ...(isPinterest ? { businessId, businessIdUpdatedAt: new Date().toISOString() } : {}),
-          invitationEmail: invitationEmail!.toLowerCase(),
-          invitationEmailUpdatedAt: new Date().toISOString(),
+          ...(isPinterest
+            ? {}
+            : {
+                invitationEmail: invitationEmail!.toLowerCase(),
+                invitationEmailUpdatedAt: new Date().toISOString(),
+              }),
         },
       },
     });

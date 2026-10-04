@@ -128,11 +128,14 @@ function buildEmailInviteConfig(spec: EmailInviteSpec): ManualInviteConfig<Email
     parseData: (payload: ClientAccessRequestPayload): EmailManualData => ({
       agencyName: payload.agencyName,
       clientName: payload.clientName,
-      agencyEmail: payload.manualInviteTargets?.[spec.targetKey]?.agencyEmail ||
-        'your agency contact email',
+      agencyEmail: payload.manualInviteTargets?.[spec.targetKey]?.agencyEmail || '',
       clientEmail: payload.clientEmail,
       branding: payload.branding,
     }),
+    unavailableMessage: (data) =>
+      data.agencyEmail
+        ? undefined
+        : `Your agency has not configured a ${platformName} invite email. Contact your agency, then try again.`,
     timeoutMessage: `${platformName} setup took too long to load. Retry or contact support.`,
     shellDescription: `Connect ${platformName} by completing each checklist step.`,
     headerSecurityNote: `Use only ${platformName}-native invite screens. Never share credentials.`,
@@ -283,10 +286,14 @@ export const beehiivManualConfig: ManualInviteConfig<EmailManualData> = {
   parseData: (payload: ClientAccessRequestPayload): EmailManualData => ({
     agencyName: payload.agencyName,
     clientName: payload.clientName,
-    agencyEmail: payload.manualInviteTargets?.beehiiv?.agencyEmail || 'your agency contact email',
+    agencyEmail: payload.manualInviteTargets?.beehiiv?.agencyEmail || '',
     clientEmail: payload.clientEmail,
     branding: payload.branding,
   }),
+  unavailableMessage: (data) =>
+    data.agencyEmail
+      ? undefined
+      : 'Your agency has not configured a Beehiiv invite email. Contact your agency, then try again.',
   timeoutMessage: 'Beehiiv setup took too long to load. Retry or contact support.',
   shellDescription: 'Connect Beehiiv by completing each checklist step.',
   headerSecurityNote: 'Use only Beehiiv-native invite screens. Never share credentials.',
