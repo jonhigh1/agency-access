@@ -58,7 +58,9 @@ export function metaGrantSelectedKindsFromBlob(
 /** State chip: existing badge variants, explicit client-voiced labels. */
 const STATE_BADGE: Record<MetaGrantItemState, { badgeVariant: StatusVariant; label: string }> = {
   done: { badgeVariant: 'success', label: 'Done' },
-  pending: { badgeVariant: 'warning', label: 'Pending' },
+  // Neutral, not warning-amber: amber sat beside the coral Finish CTA and the
+  // two warm hues blended. Warm color now means "needs action" only.
+  pending: { badgeVariant: 'default', label: 'Pending' },
   action_required: { badgeVariant: 'danger', label: 'Action needed' },
   declined: { badgeVariant: 'default', label: 'Declined' },
 };

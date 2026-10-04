@@ -200,7 +200,6 @@ export function AutomaticPagesGrant({
   return (
     <div className="space-y-6">
       <div>
-        <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-1">{content.title}</h3>
         <p className="text-sm text-muted-foreground">{content.subtitle}</p>
       </div>
 
@@ -286,7 +285,11 @@ export function AutomaticPagesGrant({
           disabled={isGranting || displayPages.length === 0 || hasGranted}
           variant={isGranting || displayPages.length === 0 || hasGranted ? 'secondary' : 'primary'}
           size="lg"
-          className="w-full px-6 py-3"
+          className={
+            isGranting || displayPages.length === 0 || hasGranted
+              ? 'w-full px-6 py-3 bg-muted/40 text-ink/70'
+              : 'w-full px-6 py-3'
+          }
         >
           {isGranting ? (
             <span className="flex items-center justify-center gap-2">

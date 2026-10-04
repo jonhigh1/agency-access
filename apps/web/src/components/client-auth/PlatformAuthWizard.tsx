@@ -1597,7 +1597,7 @@ export function PlatformAuthWizard({
                 <h3 className="text-lg font-bold text-[var(--ink)] font-display">
                   Connected
                 </h3>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-sm text-muted-foreground text-balance">
                   {hasMetaFollowUp
                     ? 'Some Meta accounts still need follow-up.'
                     : hasTikTokPartialShare
