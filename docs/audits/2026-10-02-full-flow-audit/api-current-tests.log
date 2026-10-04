@@ -1,0 +1,1381 @@
+
+> @agency-platform/api@0.1.0 test:run
+> vitest run
+
+
+ RUN  v4.0.16 /Users/jon.high/agency-access/apps/api
+
+ ✓ src/routes/__tests__/usage.test.ts (8 tests) 778ms
+       ✓ should return usage snapshot for authenticated user  751ms
+ ✓ src/routes/client-auth/__tests__/asset-creation.routes.test.ts (17 tests) 807ms
+       ✓ creates a business and returns it with 200  753ms
+ ✓ src/routes/__tests__/dashboard.routes.test.ts (5 tests) 680ms
+     ✓ returns bounded dashboard summaries and truncation metadata  661ms
+ ✓ src/routes/client-auth/__tests__/manual.routes.test.ts (14 tests) 752ms
+     ✓ normalizes Shopify shop domain and stores collaborator code hash only  697ms
+stdout | src/routes/__tests__/internal-admin.routes.test.ts > Internal Admin Routes > exposes bounded agent metrics only to internal admins
+[INFO] agent approval decision {
+  event: 'agent_approval_decision',
+  agencyId: 'agency-1',
+  grantId: 'grant-1',
+  operationId: 'op-1',
+  decision: 'approved',
+  latencyMs: 250
+}
+
+ ✓ src/routes/__tests__/client-offboarding.security.test.ts (15 tests) 669ms
+       ✓ rejects prepare for a cross-agency connection  605ms
+ ✓ src/routes/__tests__/internal-admin.routes.test.ts (25 tests) 614ms
+     ✓ exposes bounded agent metrics only to internal admins  488ms
+ ✓ src/routes/__tests__/webhooks.test.ts (24 tests) 648ms
+       ✓ should handle subscription.created event  546ms
+ ✓ src/routes/__tests__/access-requests.routes.test.ts (25 tests) 653ms
+       ✓ should default the list limit to 50 when the query omits limit  544ms
+stderr | src/routes/__tests__/agency-platforms.routes.test.ts > Agency Platforms Routes > Snapchat agency OAuth flow > GET /agency-platforms/snapchat/callback > still creates the connection when Snapchat identity lookup throws
+Failed to fetch Snapchat organizations: ConnectorError: snapchat connector error [USER_INFO_FAILED]: Snapchat user info request failed
+    at /Users/jon.high/agency-access/apps/api/src/routes/__tests__/agency-platforms.routes.test.ts:1181:11
+    at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:145:11
+    at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:915:26
+    at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:1243:20
+    at new Promise (<anonymous>)
+    at runWithTimeout (file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:1209:10)
+    at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:1653:37
+    at Traces.$ (file:///Users/jon.high/agency-access/node_modules/vitest/dist/chunks/traces.U4xDYhzZ.js:115:27)
+    at trace (file:///Users/jon.high/agency-access/node_modules/vitest/dist/chunks/test.B8ej_ZHS.js:239:21)
+    at runTest (file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:1653:12) {
+  platform: 'snapchat',
+  code: 'USER_INFO_FAILED',
+  details: undefined
+}
+
+ ✓ src/routes/__tests__/agency-platforms.routes.test.ts (44 tests) 1157ms
+       ✓ should list all agency platform connections  554ms
+ ✓ src/routes/__tests__/token-health.security.test.ts (10 tests) 487ms
+     ✓ rejects token health requests without authentication  442ms
+ ✓ src/routes/__tests__/agent-operations.security.test.ts (3 tests) 396ms
+     ✓ reads agent operations only through the server-derived principal  384ms
+ ✓ src/routes/__tests__/clients.routes.test.ts (22 tests) 603ms
+       ✓ should create a new client  479ms
+ ✓ src/routes/agency-platforms/__tests__/pinterest.routes.test.ts (7 tests) 568ms
+       ✓ should save Pinterest Business ID to connection metadata  467ms
+stdout | src/routes/client-auth/__tests__/assets.meta.test.ts > Client Auth Asset Routes - Meta > returns business-scoped Meta assets and persists discovery metadata for the selected client business
+[INFO] Fetching Meta assets for client { businessId: 'biz_client_2' }
+
+stdout | src/routes/client-auth/__tests__/assets.meta.test.ts > Client Auth Asset Routes - Meta > returns business-scoped Meta assets and persists discovery metadata for the selected client business
+[INFO] Successfully fetched Meta assets {
+  adAccountCount: 2,
+  pageCount: 2,
+  instagramAccountCount: 1,
+  productCatalogCount: 0,
+  pixelCount: 0
+}
+
+stdout | src/routes/client-auth/__tests__/assets.meta.test.ts > Client Auth Asset Routes - Meta > returns 400 when the requested Meta business portfolio is unavailable
+[INFO] Fetching Meta assets for client { businessId: 'biz_missing' }
+
+stderr | src/routes/client-auth/__tests__/assets.meta.test.ts > Client Auth Asset Routes - Meta > returns 400 when the requested Meta business portfolio is unavailable
+[ERROR] Failed to fetch Meta assets {
+  error: MetaBusinessPortfolioUnavailableError: Selected Meta business portfolio is not available for this client user
+      at ClientAssetsService.fetchMetaAssets (/Users/jon.high/agency-access/apps/api/src/services/client-assets.service.ts:202:15)
+      at processTicksAndRejections (node:internal/process/task_queues:103:5)
+      at Object.<anonymous> (/Users/jon.high/agency-access/apps/api/src/routes/client-auth/assets.routes.ts:2837:18) {
+    code: 'INVALID_META_BUSINESS_PORTFOLIO',
+    statusCode: 400
+  }
+}
+
+stderr | src/routes/client-auth/__tests__/assets.meta.test.ts > Client Auth Asset Routes - Meta > asks the client to reconnect when Meta rejects the user or Page token
+[ERROR] Meta Page access lookup failed { pageId: 'page_1', status: undefined, code: 190 }
+
+stderr | src/middleware/__tests__/agent-auth.test.ts > agent authentication middleware > rejects a missing bearer token before grant lookup
+[WARN] agent authorization denied { event: 'agent_authorization_failure', reason: 'missing_token' }
+
+stderr | src/middleware/__tests__/agent-auth.test.ts > agent authentication middleware > rejects invalid, expired, wrong-issuer, audience, or resource tokens uniformly
+[WARN] agent authorization denied { event: 'agent_authorization_failure', reason: 'invalid_token' }
+
+stderr | src/middleware/__tests__/agent-auth.test.ts > agent authentication middleware > returns setup-required without exposing tenant data when no grant exists
+[WARN] agent authorization denied {
+  event: 'agent_authorization_failure',
+  reason: 'grant_required',
+  oauthClientId: 'oauth-client-1'
+}
+
+ ✓ src/middleware/__tests__/agent-auth.test.ts (4 tests) 554ms
+     ✓ resolves an active grant into a server-derived agent principal  541ms
+ ✓ src/routes/client-auth/__tests__/assets.tiktok.test.ts (5 tests) 579ms
+     ✓ returns TikTok assets and logs token read audit event  556ms
+ ✓ src/routes/client-auth/__tests__/assets.meta.test.ts (48 tests) 724ms
+     ✓ creates one durable requirement for each selected Meta asset and recipient  426ms
+ ✓ src/routes/__tests__/agency-platforms.security.test.ts (8 tests) 703ms
+     ✓ returns 401 when Authorization header is missing  589ms
+ ✓ src/routes/__tests__/agent-grants.security.test.ts (7 tests) 560ms
+     ✓ rejects cross-agency grant listing  529ms
+ ✓ src/middleware/__tests__/auth.middleware.test.ts (3 tests) 702ms
+     ✓ reuses existing auth context without requiring auth header  693ms
+ ✓ src/routes/client-auth/__tests__/intake.routes.test.ts (14 tests) 773ms
+     ✓ stores configured intake answers and returns the saved readback  731ms
+stdout | src/routes/client-auth/__tests__/assets.google.test.ts > Client Auth Asset Routes - Google > returns only active Google Ads accounts for client asset discovery
+🔍 Starting Google Ads account fetch...
+
+stdout | src/routes/client-auth/__tests__/assets.google.test.ts > Client Auth Asset Routes - Google > returns only active Google Ads accounts for client asset discovery
+📋 Found 3 accessible Google Ads account(s): [ '1111111111', '2222222222', '3333333333' ]
+
+stdout | src/routes/client-auth/__tests__/assets.google.test.ts > Client Auth Asset Routes - Google > returns only active Google Ads accounts for client asset discovery
+[REST-GET 1111111111(login=none)] 200 → {"descriptiveName":"Enabled Account","manager":false,"status":"ENABLED"}
+[REST-GET 2222222222(login=none)] 200 → {"descriptiveName":"Cancelled Account","manager":false,"status":"CANCELED"}
+
+stderr | src/routes/client-auth/__tests__/assets.google.test.ts > Client Auth Asset Routes - Google > returns only active Google Ads accounts for client asset discovery
+Google Ads account name unresolved after all discovery phases {
+  customerId: '3333333333',
+  formattedId: '333-333-3333',
+  errors: [
+    'GAQL(login=none) 403: Permission denied',
+    'REST-GET(login=none) 404: Not Found',
+    'REST-GET(login=3333333333) 404: Not Found',
+    'GAQL(login=none) 403: Permission denied',
+    'GAQL(login=3333333333) 403: Permission denied',
+    'GAQL(login=3333333333) 403: Permission denied',
+    'GAQL(login=1111111111) 403: Permission denied',
+    'GAQL(login=2222222222) 403: Permission denied'
+  ]
+}
+
+stdout | src/routes/client-auth/__tests__/assets.google.test.ts > Client Auth Asset Routes - Google > returns only active Google Ads accounts for client asset discovery
+✅ Google Ads fetch complete: 1 active account(s) (2 inactive filtered out, 1 unknown)
+  📦 1111111111: "Enabled Account" [direct] [ENABLED]
+  🚫 Filtered 2222222222: "Cancelled Account" [direct] [CANCELED]
+  🚫 Filtered 3333333333: "Google Ads account • 333-333-3333" [fallback] [UNKNOWN]
+
+ ✓ src/routes/client-auth/__tests__/assets.google.test.ts (4 tests) 626ms
+     ✓ returns business profile locations without fetching unrelated Google product inventories  601ms
+ ✓ src/routes/__tests__/affiliate.routes.test.ts (8 tests) 593ms
+     ✓ accepts a valid affiliate application  550ms
+ ✓ src/routes/__tests__/client-auth.routes.test.ts (19 tests) 719ms
+       ✓ should generate an OAuth URL for a valid access request  583ms
+ ✓ src/routes/__tests__/webhook-settings.routes.test.ts (13 tests) 736ms
+     ✓ returns the webhook endpoint for the principal agency  664ms
+ ✓ src/routes/client-auth/__tests__/assets.declines.test.ts (7 tests) 695ms
+     ✓ accepts a zero-selection save with declines and persists them  655ms
+stderr | src/routes/client-auth/__tests__/oauth-exchange.routes.test.ts > OAuth exchange routes (characterization) > shared contract for both endpoints > tokened endpoint > degrades a failed Snapchat identity lookup into a persisted discoveryFailed authorization
+Failed to fetch Snapchat organizations: Error: snap identity lookup failed
+    at /Users/jon.high/agency-access/apps/api/src/routes/client-auth/__tests__/oauth-exchange.routes.test.ts:602:54
+    at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:145:11
+    at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:915:26
+    at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:1243:20
+    at new Promise (<anonymous>)
+    at runWithTimeout (file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:1209:10)
+    at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:1653:37
+    at Traces.$ (file:///Users/jon.high/agency-access/node_modules/vitest/dist/chunks/traces.U4xDYhzZ.js:115:27)
+    at trace (file:///Users/jon.high/agency-access/node_modules/vitest/dist/chunks/test.B8ej_ZHS.js:239:21)
+    at runTest (file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:1653:12)
+
+stderr | src/routes/client-auth/__tests__/oauth-exchange.routes.test.ts > OAuth exchange routes (characterization) > shared contract for both endpoints > static endpoint > degrades a failed Snapchat identity lookup into a persisted discoveryFailed authorization
+Failed to fetch Snapchat organizations: Error: snap identity lookup failed
+    at /Users/jon.high/agency-access/apps/api/src/routes/client-auth/__tests__/oauth-exchange.routes.test.ts:602:54
+    at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:145:11
+    at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:915:26
+    at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:1243:20
+    at new Promise (<anonymous>)
+    at runWithTimeout (file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:1209:10)
+    at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:1653:37
+    at Traces.$ (file:///Users/jon.high/agency-access/node_modules/vitest/dist/chunks/traces.U4xDYhzZ.js:115:27)
+    at trace (file:///Users/jon.high/agency-access/node_modules/vitest/dist/chunks/test.B8ej_ZHS.js:239:21)
+    at runTest (file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:1653:12)
+
+ ✓ src/routes/__tests__/meta-assets.routes.test.ts (4 tests) 799ms
+       ✓ should fetch all assets for a business  675ms
+stderr | src/routes/client-auth/__tests__/oauth-exchange.routes.test.ts > OAuth exchange routes (characterization) > tokened endpoint specifics (POST /client/:token/oauth-exchange) > preserves cleanup work queued by a concurrent reauthorization
+[Meta OAuth] Old token secret cleanup will retry for meta_token_orphaned: Error: Infisical unavailable
+    at Object.<anonymous> (/Users/jon.high/agency-access/apps/api/src/routes/client-auth/__tests__/oauth-exchange.routes.test.ts:886:55)
+    at Object.Mock [as deleteSecret] (file:///Users/jon.high/agency-access/node_modules/@vitest/spy/dist/index.js:285:34)
+    at Object.<anonymous> (/Users/jon.high/agency-access/apps/api/src/routes/client-auth/oauth-exchange.routes.ts:301:29)
+    at processTicksAndRejections (node:internal/process/task_queues:103:5)
+
+stderr | src/routes/client-auth/__tests__/oauth-exchange.routes.test.ts > OAuth exchange routes (characterization) > tokened endpoint specifics (POST /client/:token/oauth-exchange) > keeps old Meta access active and uses a new secret after transaction failure
+[Meta OAuth] Failed to remove uncommitted token secret secret/agency-access/test-platform/conn-1_epoch_2_023edce8-639b-4322-9fa2-60170733b887: Error: Infisical unavailable
+    at /Users/jon.high/agency-access/apps/api/src/routes/client-auth/__tests__/oauth-exchange.routes.test.ts:961:63
+    at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:145:11
+    at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:915:26
+    at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:1243:20
+    at new Promise (<anonymous>)
+    at runWithTimeout (file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:1209:10)
+    at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:1653:37
+    at Traces.$ (file:///Users/jon.high/agency-access/node_modules/vitest/dist/chunks/traces.U4xDYhzZ.js:115:27)
+    at trace (file:///Users/jon.high/agency-access/node_modules/vitest/dist/chunks/test.B8ej_ZHS.js:239:21)
+    at runTest (file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:1653:12)
+
+ ✓ src/routes/client-auth/__tests__/oauth-exchange.routes.test.ts (46 tests) 742ms
+         ✓ returns 400 VALIDATION_ERROR body for an invalid payload  606ms
+ ✓ src/routes/__tests__/help-scout.routes.test.ts (3 tests) 561ms
+     ✓ returns 401 when Authorization header is missing  552ms
+ ✓ src/routes/__tests__/sentry-debug.security.test.ts (4 tests) 445ms
+     ✓ rejects unauthenticated Sentry debug endpoints  432ms
+stderr | src/routes/client-auth/__tests__/assets.linkedin.test.ts > Client Auth Asset Routes - LinkedIn > surfaces a route error when LinkedIn page detail hydration fully fails
+[ERROR] Failed to fetch LinkedIn pages {
+  error: Error: Failed to fetch LinkedIn organization details
+      at ClientAssetsService.fetchLinkedInPages (/Users/jon.high/agency-access/apps/api/src/services/client-assets.service.ts:779:15)
+      at processTicksAndRejections (node:internal/process/task_queues:103:5)
+      at Object.<anonymous> (/Users/jon.high/agency-access/apps/api/src/routes/client-auth/assets.routes.ts:2874:18)
+}
+
+ ✓ src/routes/client-auth/__tests__/assets.linkedin.test.ts (5 tests) 494ms
+     ✓ returns selector-ready LinkedIn Campaign Manager accounts for linkedin_ads  466ms
+ ✓ src/middleware/__tests__/rate-limit-auth.test.ts (1 test) 472ms
+     ✓ verifies bearer auth once across pre-auth, rate-limit bypass, and route auth  471ms
+ ✓ src/routes/__tests__/subscriptions.security.test.ts (5 tests) 640ms
+     ✓ returns 401 when Authorization header is missing  611ms
+ ✓ src/routes/client-auth/__tests__/completion.routes.test.ts (3 tests) 662ms
+     ✓ returns 409 and does not notify when fulfillment is partial  650ms
+ ✓ src/middleware/__tests__/internal-admin.test.ts (3 tests) 673ms
+     ✓ returns 401 when authenticated user context is missing  663ms
+ ✓ src/routes/__tests__/beehiiv.security.test.ts (3 tests) 646ms
+     ✓ rejects team access verification without authentication  636ms
+ ✓ src/routes/__tests__/clients.security.test.ts (4 tests) 662ms
+     ✓ returns 401 when Authorization header is missing  635ms
+ ✓ src/routes/agency-platforms/__tests__/manual.routes.test.ts (5 tests) 567ms
+     ✓ invalidates platform caches after manual connect succeeds  554ms
+ ✓ src/routes/__tests__/access-requests.security.test.ts (2 tests) 493ms
+     ✓ returns 401 for protected route when Authorization header is missing  486ms
+ ✓ src/routes/__tests__/agencies.security.test.ts (15 tests) 620ms
+     ✓ returns 403 when /agencies clerkUserId filter does not match principal  535ms
+stderr | src/routes/__tests__/quota.routes.security.test.ts > quota routes - security > returns 500 when Clerk verification rejects the token
+Error fetching quota: Error: invalid token
+    at /Users/jon.high/agency-access/apps/api/src/routes/__tests__/quota.routes.security.test.ts:79:46
+    at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:145:11
+    at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:915:26
+    at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:1243:20
+    at new Promise (<anonymous>)
+    at runWithTimeout (file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:1209:10)
+    at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:1653:37
+    at Traces.$ (file:///Users/jon.high/agency-access/node_modules/vitest/dist/chunks/traces.U4xDYhzZ.js:115:27)
+    at trace (file:///Users/jon.high/agency-access/node_modules/vitest/dist/chunks/test.B8ej_ZHS.js:239:21)
+    at runTest (file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:1653:12)
+
+ ✓ src/routes/__tests__/quota.routes.security.test.ts (5 tests) 543ms
+     ✓ returns the exact 401 body when no authorization token is present  516ms
+ ✓ src/routes/__tests__/subscriptions.checkout.test.ts (3 tests) 536ms
+     ✓ rejects invalid billing interval  516ms
+ ✓ src/routes/__tests__/mcp.protocol.test.ts (2 tests) 448ms
+     ✓ publishes OAuth protected resource metadata without tenant data  429ms
+ ✓ src/middleware/__tests__/affiliate-partner.test.ts (3 tests) 557ms
+     ✓ returns 401 when authenticated user context is missing  550ms
+ ✓ src/lib/__tests__/env.test.ts (34 tests) 98ms
+ ✓ src/routes/__tests__/mcp.security.test.ts (6 tests) 347ms
+     ✓ challenges unauthenticated calls with discoverable resource metadata  328ms
+ ✓ src/services/__tests__/webhook-delivery-timeout.test.ts (2 tests) 90ms
+ ✓ src/routes/__tests__/dashboard.security.test.ts (2 tests) 516ms
+     ✓ returns 401 when Authorization header is missing  508ms
+stdout | src/services/__tests__/client-assets.service.test.ts > ClientAssetsService - Meta > waits for portfolio selection before loading scoped assets
+[INFO] Fetching Meta assets for client { businessId: null }
+
+stdout | src/services/__tests__/client-assets.service.test.ts > ClientAssetsService - Meta > waits for portfolio selection before loading scoped assets
+[INFO] Successfully fetched Meta assets {
+  adAccountCount: 0,
+  pageCount: 0,
+  instagramAccountCount: 0,
+  productCatalogCount: 0,
+  pixelCount: 0
+}
+
+stdout | src/services/__tests__/client-assets.service.test.ts > ClientAssetsService - Meta > fetches client-selectable Meta business portfolios and scoped assets for the selected business
+[INFO] Fetching Meta assets for client { businessId: 'biz_client_2' }
+
+stdout | src/services/__tests__/client-assets.service.test.ts > ClientAssetsService - Meta > fetches client-selectable Meta business portfolios and scoped assets for the selected business
+[INFO] Successfully fetched Meta assets {
+  adAccountCount: 2,
+  pageCount: 2,
+  instagramAccountCount: 1,
+  productCatalogCount: 3,
+  pixelCount: 1
+}
+
+stdout | src/services/__tests__/client-assets.service.test.ts > ClientAssetsService - Meta > throws when the requested Meta business portfolio is not available to the client user
+[INFO] Fetching Meta assets for client { businessId: 'biz_missing' }
+
+stderr | src/services/__tests__/client-assets.service.test.ts > ClientAssetsService - Meta > throws when the requested Meta business portfolio is not available to the client user
+[ERROR] Failed to fetch Meta assets {
+  error: MetaBusinessPortfolioUnavailableError: Selected Meta business portfolio is not available for this client user
+      at ClientAssetsService.fetchMetaAssets (/Users/jon.high/agency-access/apps/api/src/services/client-assets.service.ts:202:15)
+      at processTicksAndRejections (node:internal/process/task_queues:103:5)
+      at /Users/jon.high/agency-access/apps/api/src/services/__tests__/client-assets.service.test.ts:259:5
+      at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:915:20 {
+    code: 'INVALID_META_BUSINESS_PORTFOLIO',
+    statusCode: 400
+  }
+}
+
+stdout | src/services/__tests__/client-assets.service.test.ts > ClientAssetsService - Meta > loads only requested Meta asset families for grant validation
+[INFO] Fetching Meta assets for client { businessId: 'business-1' }
+
+stdout | src/services/__tests__/client-assets.service.test.ts > ClientAssetsService - Meta > loads only requested Meta asset families for grant validation
+[INFO] Successfully fetched Meta assets {
+  adAccountCount: 0,
+  pageCount: 0,
+  instagramAccountCount: 0,
+  productCatalogCount: 0,
+  pixelCount: 0
+}
+
+stdout | src/services/__tests__/client-assets.service.test.ts > ClientAssetsService - Meta > warns when connected Instagram accounts cannot load but keeps core assets available
+[INFO] Fetching Meta assets for client { businessId: 'business-1' }
+
+stderr | src/services/__tests__/client-assets.service.test.ts > ClientAssetsService - Meta > warns when connected Instagram accounts cannot load but keeps core assets available
+[WARN] Failed to fetch Instagram accounts for business business-1 {
+  error: Error: Meta API error (instagram_accounts?fields=id,username,profile_picture_url): Permission denied
+      at ClientAssetsService.fetchBusinessCollection (/Users/jon.high/agency-access/apps/api/src/services/client-assets.service.ts:441:15)
+      at processTicksAndRejections (node:internal/process/task_queues:103:5)
+      at ClientAssetsService.fetchBusinessInstagramAccounts (/Users/jon.high/agency-access/apps/api/src/services/client-assets.service.ts:548:19)
+      at async Promise.all (index 2)
+      at ClientAssetsService.fetchMetaAssetsForBusiness (/Users/jon.high/agency-access/apps/api/src/services/client-assets.service.ts:341:79)
+      at async Promise.all (index 0)
+      at ClientAssetsService.fetchMetaAssets (/Users/jon.high/agency-access/apps/api/src/services/client-assets.service.ts:207:28)
+      at /Users/jon.high/agency-access/apps/api/src/services/__tests__/client-assets.service.test.ts:312:20
+      at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:915:20
+}
+
+stdout | src/services/__tests__/client-assets.service.test.ts > ClientAssetsService - Meta > warns when connected Instagram accounts cannot load but keeps core assets available
+[INFO] Successfully fetched Meta assets {
+  adAccountCount: 0,
+  pageCount: 0,
+  instagramAccountCount: 0,
+  productCatalogCount: 0,
+  pixelCount: 0
+}
+
+stdout | src/services/__tests__/client-assets.service.test.ts > ClientAssetsService - Meta > warns when Pixel discovery is denied without failing core asset discovery
+[INFO] Fetching Meta assets for client { businessId: 'business-1' }
+
+stderr | src/services/__tests__/client-assets.service.test.ts > ClientAssetsService - Meta > warns when Pixel discovery is denied without failing core asset discovery
+[WARN] Failed to fetch Meta client_pixels for business business-1 {
+  error: Error: Meta API error (client_pixels?fields=id,name): Permission denied
+      at ClientAssetsService.fetchBusinessCollection (/Users/jon.high/agency-access/apps/api/src/services/client-assets.service.ts:441:15)
+      at processTicksAndRejections (node:internal/process/task_queues:103:5)
+      at ClientAssetsService.fetchBusinessPixels (/Users/jon.high/agency-access/apps/api/src/services/client-assets.service.ts:371:22)
+      at async Promise.all (index 4)
+      at ClientAssetsService.fetchMetaAssetsForBusiness (/Users/jon.high/agency-access/apps/api/src/services/client-assets.service.ts:341:79)
+      at async Promise.all (index 0)
+      at ClientAssetsService.fetchMetaAssets (/Users/jon.high/agency-access/apps/api/src/services/client-assets.service.ts:207:28)
+      at /Users/jon.high/agency-access/apps/api/src/services/__tests__/client-assets.service.test.ts:337:20
+      at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:915:20
+}
+
+stdout | src/services/__tests__/client-assets.service.test.ts > ClientAssetsService - Meta > warns when Pixel discovery is denied without failing core asset discovery
+[INFO] Successfully fetched Meta assets {
+  adAccountCount: 0,
+  pageCount: 0,
+  instagramAccountCount: 0,
+  productCatalogCount: 0,
+  pixelCount: 0
+}
+
+stdout | src/services/__tests__/client-assets.service.test.ts > ClientAssetsService - Meta > warns when one catalog edge fails instead of treating incomplete discovery as empty
+[INFO] Fetching Meta assets for client { businessId: 'business-1' }
+
+stdout | src/services/__tests__/client-assets.service.test.ts > ClientAssetsService - Meta > warns when one catalog edge fails instead of treating incomplete discovery as empty
+[INFO] Successfully fetched Meta assets {
+  adAccountCount: 0,
+  pageCount: 0,
+  instagramAccountCount: 0,
+  productCatalogCount: 0,
+  pixelCount: 0
+}
+
+stdout | src/services/__tests__/client-assets.service.test.ts > ClientAssetsService - Meta > surfaces denied owned_ad_accounts reads instead of returning an empty asset list
+[INFO] Fetching Meta assets for client { businessId: 'business-1' }
+
+stderr | src/services/__tests__/client-assets.service.test.ts > ClientAssetsService - Meta > surfaces denied owned_ad_accounts reads instead of returning an empty asset list
+[ERROR] Failed to fetch Meta assets {
+  error: Error: Meta API error (owned_ad_accounts?fields=id,name,account_status,currency): Permission denied
+      at ClientAssetsService.fetchBusinessCollection (/Users/jon.high/agency-access/apps/api/src/services/client-assets.service.ts:441:15)
+      at processTicksAndRejections (node:internal/process/task_queues:103:5)
+      at async Promise.all (index 0)
+      at ClientAssetsService.fetchBusinessAdAccounts (/Users/jon.high/agency-access/apps/api/src/services/client-assets.service.ts:469:45)
+      at async Promise.all (index 0)
+      at ClientAssetsService.fetchMetaAssetsForBusiness (/Users/jon.high/agency-access/apps/api/src/services/client-assets.service.ts:341:79)
+      at async Promise.all (index 0)
+      at ClientAssetsService.fetchMetaAssets (/Users/jon.high/agency-access/apps/api/src/services/client-assets.service.ts:207:28)
+      at /Users/jon.high/agency-access/apps/api/src/services/__tests__/client-assets.service.test.ts:395:5
+      at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:915:20
+}
+
+stdout | src/services/__tests__/client-assets.service.test.ts > ClientAssetsService - Meta > surfaces denied client_ad_accounts reads instead of returning an empty asset list
+[INFO] Fetching Meta assets for client { businessId: 'business-1' }
+
+stderr | src/services/__tests__/client-assets.service.test.ts > ClientAssetsService - Meta > surfaces denied client_ad_accounts reads instead of returning an empty asset list
+[ERROR] Failed to fetch Meta assets {
+  error: Error: Meta API error (client_ad_accounts?fields=id,name,account_status,currency): Permission denied
+      at ClientAssetsService.fetchBusinessCollection (/Users/jon.high/agency-access/apps/api/src/services/client-assets.service.ts:441:15)
+      at processTicksAndRejections (node:internal/process/task_queues:103:5)
+      at async Promise.all (index 1)
+      at ClientAssetsService.fetchBusinessAdAccounts (/Users/jon.high/agency-access/apps/api/src/services/client-assets.service.ts:469:45)
+      at async Promise.all (index 0)
+      at ClientAssetsService.fetchMetaAssetsForBusiness (/Users/jon.high/agency-access/apps/api/src/services/client-assets.service.ts:341:79)
+      at async Promise.all (index 0)
+      at ClientAssetsService.fetchMetaAssets (/Users/jon.high/agency-access/apps/api/src/services/client-assets.service.ts:207:28)
+      at /Users/jon.high/agency-access/apps/api/src/services/__tests__/client-assets.service.test.ts:395:5
+      at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:915:20
+}
+
+stdout | src/services/__tests__/client-assets.service.test.ts > ClientAssetsService - Meta > surfaces denied owned_pages reads instead of returning an empty asset list
+[INFO] Fetching Meta assets for client { businessId: 'business-1' }
+
+stderr | src/services/__tests__/client-assets.service.test.ts > ClientAssetsService - Meta > surfaces denied owned_pages reads instead of returning an empty asset list
+[ERROR] Failed to fetch Meta assets {
+  error: Error: Meta API error (owned_pages?fields=id,name,category,instagram_business_account{id,username}): Permission denied
+      at ClientAssetsService.fetchBusinessCollection (/Users/jon.high/agency-access/apps/api/src/services/client-assets.service.ts:441:15)
+      at processTicksAndRejections (node:internal/process/task_queues:103:5)
+      at async Promise.all (index 0)
+      at ClientAssetsService.fetchBusinessPages (/Users/jon.high/agency-access/apps/api/src/services/client-assets.service.ts:508:39)
+      at async Promise.all (index 1)
+      at ClientAssetsService.fetchMetaAssetsForBusiness (/Users/jon.high/agency-access/apps/api/src/services/client-assets.service.ts:341:79)
+      at async Promise.all (index 0)
+      at ClientAssetsService.fetchMetaAssets (/Users/jon.high/agency-access/apps/api/src/services/client-assets.service.ts:207:28)
+      at /Users/jon.high/agency-access/apps/api/src/services/__tests__/client-assets.service.test.ts:395:5
+      at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:915:20
+}
+
+stdout | src/services/__tests__/client-assets.service.test.ts > ClientAssetsService - Meta > surfaces denied client_pages reads instead of returning an empty asset list
+[INFO] Fetching Meta assets for client { businessId: 'business-1' }
+
+stderr | src/services/__tests__/client-assets.service.test.ts > ClientAssetsService - Meta > surfaces denied client_pages reads instead of returning an empty asset list
+[ERROR] Failed to fetch Meta assets {
+  error: Error: Meta API error (client_pages?fields=id,name,category,instagram_business_account{id,username}): Permission denied
+      at ClientAssetsService.fetchBusinessCollection (/Users/jon.high/agency-access/apps/api/src/services/client-assets.service.ts:441:15)
+      at processTicksAndRejections (node:internal/process/task_queues:103:5)
+      at async Promise.all (index 1)
+      at ClientAssetsService.fetchBusinessPages (/Users/jon.high/agency-access/apps/api/src/services/client-assets.service.ts:508:39)
+      at async Promise.all (index 1)
+      at ClientAssetsService.fetchMetaAssetsForBusiness (/Users/jon.high/agency-access/apps/api/src/services/client-assets.service.ts:341:79)
+      at async Promise.all (index 0)
+      at ClientAssetsService.fetchMetaAssets (/Users/jon.high/agency-access/apps/api/src/services/client-assets.service.ts:207:28)
+      at /Users/jon.high/agency-access/apps/api/src/services/__tests__/client-assets.service.test.ts:395:5
+      at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:915:20
+}
+
+stderr | src/services/__tests__/client-assets.service.test.ts > ClientAssetsService - Meta > requires Meta reauthorization when the user token is invalid
+[ERROR] Meta Page access lookup failed { pageId: 'page_1', status: undefined, code: 190 }
+
+stderr | src/services/__tests__/client-assets.service.test.ts > ClientAssetsService - Meta > requires Meta reauthorization when the page token is invalid
+[ERROR] Meta Page content access failed { pageId: 'page_1', status: undefined, code: 190 }
+
+stdout | src/services/__tests__/client-assets.service.test.ts > ClientAssetsService - TikTok > fetches TikTok advertisers, business centers, and BC assets
+[INFO] Fetching TikTok assets
+
+stdout | src/services/__tests__/client-assets.service.test.ts > ClientAssetsService - TikTok > fetches TikTok advertisers, business centers, and BC assets
+[INFO] Successfully fetched TikTok assets {
+  advertiserCount: 1,
+  businessCenterCount: 1,
+  businessCenterAssetGroups: 1
+}
+
+stdout | src/services/__tests__/client-assets.service.test.ts > ClientAssetsService - TikTok > returns empty arrays when TikTok API fails
+[INFO] Fetching TikTok assets
+
+stderr | src/services/__tests__/client-assets.service.test.ts > ClientAssetsService - TikTok > returns empty arrays when TikTok API fails
+[ERROR] Failed to fetch TikTok advertisers {
+  error: Error: TikTok advertiser API failed (500)
+      at ClientAssetsService.fetchTikTokAdvertisers (/Users/jon.high/agency-access/apps/api/src/services/client-assets.service.ts:1153:15)
+      at processTicksAndRejections (node:internal/process/task_queues:103:5)
+      at async Promise.all (index 0)
+      at ClientAssetsService.fetchTikTokAssets (/Users/jon.high/agency-access/apps/api/src/services/client-assets.service.ts:1107:46)
+      at /Users/jon.high/agency-access/apps/api/src/services/__tests__/client-assets.service.test.ts:623:20
+      at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:915:20
+}
+[ERROR] Failed to fetch TikTok business centers {
+  error: Error: TikTok business center API failed (500)
+      at ClientAssetsService.fetchTikTokBusinessCenters (/Users/jon.high/agency-access/apps/api/src/services/client-assets.service.ts:1187:15)
+      at processTicksAndRejections (node:internal/process/task_queues:103:5)
+      at async Promise.all (index 1)
+      at ClientAssetsService.fetchTikTokAssets (/Users/jon.high/agency-access/apps/api/src/services/client-assets.service.ts:1107:46)
+      at /Users/jon.high/agency-access/apps/api/src/services/__tests__/client-assets.service.test.ts:623:20
+      at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:915:20
+}
+
+stdout | src/services/__tests__/client-assets.service.test.ts > ClientAssetsService - TikTok > returns empty arrays when TikTok API fails
+[INFO] Successfully fetched TikTok assets {
+  advertiserCount: 0,
+  businessCenterCount: 0,
+  businessCenterAssetGroups: 0
+}
+
+stderr | src/services/__tests__/client-assets.service.test.ts > ClientAssetsService - LinkedIn > throws when all LinkedIn organization detail lookups fail
+[ERROR] Failed to fetch LinkedIn pages {
+  error: Error: Failed to fetch LinkedIn organization details
+      at ClientAssetsService.fetchLinkedInPages (/Users/jon.high/agency-access/apps/api/src/services/client-assets.service.ts:779:15)
+      at processTicksAndRejections (node:internal/process/task_queues:103:5)
+      at /Users/jon.high/agency-access/apps/api/src/services/__tests__/client-assets.service.test.ts:732:5
+      at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:915:20
+}
+
+ ✓ src/services/__tests__/client-assets.service.test.ts (24 tests) 65ms
+ ✓ src/services/__tests__/meta-partner.service.test.ts (21 tests) 33ms
+ ✓ src/services/__tests__/access-request-reminder.service.test.ts (6 tests) 21ms
+stdout | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > creates the business, persists selection with source "created", merges discovery, appends grantedAssets, and audits
+[INFO] Creating Meta business {
+  connectionId: 'conn-1',
+  businessName: 'Acme Business',
+  vertical: 'OTHER',
+  primaryPageId: 'page-1'
+}
+
+ ✓ src/routes/__tests__/templates.security.test.ts (2 tests) 628ms
+     ✓ returns 401 when Authorization header is missing  624ms
+stdout | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > creates the business, persists selection with source "created", merges discovery, appends grantedAssets, and audits
+[INFO] Meta business created successfully {
+  connectionId: 'conn-1',
+  businessId: 'biz-new',
+  businessName: 'Acme Business'
+}
+
+stdout | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > initializes an empty meta metadata block when none exists yet
+[INFO] Creating Meta business {
+  connectionId: 'conn-1',
+  businessName: 'First Business',
+  vertical: 'OTHER',
+  primaryPageId: 'page-1'
+}
+
+stdout | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > initializes an empty meta metadata block when none exists yet
+[INFO] Meta business created successfully {
+  connectionId: 'conn-1',
+  businessId: 'biz-first',
+  businessName: 'First Business'
+}
+
+stdout | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > replays a stored creation result without calling Meta again
+[INFO] Creating Meta business {
+  connectionId: 'conn-1',
+  businessName: 'Acme',
+  vertical: 'OTHER',
+  primaryPageId: 'page-1'
+}
+
+stdout | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > treats a concurrent unique-claim conflict as in progress without calling Meta
+[INFO] Creating Meta business {
+  connectionId: 'conn-1',
+  businessName: 'Acme',
+  vertical: 'OTHER',
+  primaryPageId: 'page-1'
+}
+
+stdout | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > marks an abandoned in-progress claim unknown and requires asset discovery
+[INFO] Creating Meta business {
+  connectionId: 'conn-1',
+  businessName: 'Acme',
+  vertical: 'OTHER',
+  primaryPageId: 'page-1'
+}
+
+stdout | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > does not retry a Meta creation with unknown outcome
+[INFO] Creating Meta business {
+  connectionId: 'conn-1',
+  businessName: 'Acme',
+  vertical: 'OTHER',
+  primaryPageId: 'page-1'
+}
+
+stderr | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > does not retry a Meta creation with unknown outcome
+[ERROR] Failed to create Meta business { connectionId: 'conn-1', error: 'fetch failed' }
+
+stdout | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > does not retry a Meta creation with unknown outcome
+[INFO] Creating Meta business {
+  connectionId: 'conn-1',
+  businessName: 'Acme',
+  vertical: 'OTHER',
+  primaryPageId: 'page-1'
+}
+
+stdout | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > does not retry after Meta returns a 5xx creation response
+[INFO] Creating Meta business {
+  connectionId: 'conn-1',
+  businessName: 'Acme',
+  vertical: 'OTHER',
+  primaryPageId: 'page-1'
+}
+
+stderr | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > does not retry after Meta returns a 5xx creation response
+[ERROR] Failed to create Meta business {
+  connectionId: 'conn-1',
+  error: 'Meta business creation failed: Internal Server Error'
+}
+
+stdout | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > does not retry after Meta returns a 5xx creation response
+[INFO] Creating Meta business {
+  connectionId: 'conn-1',
+  businessName: 'Acme',
+  vertical: 'OTHER',
+  primaryPageId: 'page-1'
+}
+
+stdout | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > does not retry after Meta creates a business but local persistence fails
+[INFO] Creating Meta business {
+  connectionId: 'conn-1',
+  businessName: 'Acme',
+  vertical: 'OTHER',
+  primaryPageId: 'page-1'
+}
+
+stdout | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > does not retry after Meta creates a business but local persistence fails
+[INFO] Meta business created successfully { connectionId: 'conn-1', businessId: 'biz-new', businessName: 'Acme' }
+
+stderr | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > does not retry after Meta creates a business but local persistence fails
+[ERROR] Failed to create Meta business { connectionId: 'conn-1', error: 'database unavailable' }
+
+stdout | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > does not retry after Meta creates a business but local persistence fails
+[INFO] Creating Meta business {
+  connectionId: 'conn-1',
+  businessName: 'Acme',
+  vertical: 'OTHER',
+  primaryPageId: 'page-1'
+}
+
+stdout | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > does not replay an idempotency claim under a different Meta authorization
+[INFO] Creating Meta business {
+  connectionId: 'conn-1',
+  businessName: 'Acme',
+  vertical: 'OTHER',
+  primaryPageId: 'page-1'
+}
+
+stdout | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > retries after Meta clearly rejects creation
+[INFO] Creating Meta business {
+  connectionId: 'conn-1',
+  businessName: 'Acme',
+  vertical: 'OTHER',
+  primaryPageId: 'page-1'
+}
+
+stderr | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > retries after Meta clearly rejects creation
+[ERROR] Failed to create Meta business {
+  connectionId: 'conn-1',
+  error: 'Meta business creation failed: permissions error'
+}
+
+stdout | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > retries after Meta clearly rejects creation
+[INFO] Creating Meta business {
+  connectionId: 'conn-1',
+  businessName: 'Acme',
+  vertical: 'OTHER',
+  primaryPageId: 'page-1'
+}
+
+stdout | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > retries after Meta clearly rejects creation
+[INFO] Meta business created successfully { connectionId: 'conn-1', businessId: 'biz-new', businessName: 'Acme' }
+
+stdout | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > returns AUTHORIZATION_NOT_FOUND before touching Meta
+[INFO] Creating Meta business {
+  connectionId: 'conn-1',
+  businessName: 'Acme',
+  vertical: 'OTHER',
+  primaryPageId: 'page-1'
+}
+
+stdout | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > returns AUTHORIZATION_INACTIVE before touching Meta
+[INFO] Creating Meta business {
+  connectionId: 'conn-1',
+  businessName: 'Acme',
+  vertical: 'OTHER',
+  primaryPageId: 'page-1'
+}
+
+stdout | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > returns TOKEN_NOT_FOUND when Infisical retrieval fails
+[INFO] Creating Meta business {
+  connectionId: 'conn-1',
+  businessName: 'Acme',
+  vertical: 'OTHER',
+  primaryPageId: 'page-1'
+}
+
+stderr | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > returns TOKEN_NOT_FOUND when Infisical retrieval fails
+[ERROR] Failed to retrieve Meta tokens from Infisical {
+  connectionId: 'conn-1',
+  secretId: 'secret-1',
+  error: Error: boom
+      at /Users/jon.high/agency-access/apps/api/src/services/__tests__/meta-asset-creation.service.test.ts:471:59
+      at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:145:11
+      at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:915:26
+      at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:1243:20
+      at new Promise (<anonymous>)
+      at runWithTimeout (file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:1209:10)
+      at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:1653:37
+      at Traces.$ (file:///Users/jon.high/agency-access/node_modules/vitest/dist/chunks/traces.U4xDYhzZ.js:115:27)
+      at trace (file:///Users/jon.high/agency-access/node_modules/vitest/dist/chunks/test.B8ej_ZHS.js:239:21)
+      at runTest (file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:1653:12)
+}
+
+stdout | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > returns TOKEN_EXPIRED when the token expiry is in the past
+[INFO] Creating Meta business {
+  connectionId: 'conn-1',
+  businessName: 'Acme',
+  vertical: 'OTHER',
+  primaryPageId: 'page-1'
+}
+
+stdout | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > maps a Meta error to the right code
+[INFO] Creating Meta business {
+  connectionId: 'conn-1',
+  businessName: 'Acme',
+  vertical: 'OTHER',
+  primaryPageId: 'page-1'
+}
+
+stderr | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > maps a Meta error to the right code
+[ERROR] Failed to create Meta business {
+  connectionId: 'conn-1',
+  error: 'Meta business creation failed: You have reached the limit of businesses you can create'
+}
+
+stdout | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > maps a Meta error to the right code
+[INFO] Creating Meta business {
+  connectionId: 'conn-1',
+  businessName: 'Acme',
+  vertical: 'OTHER',
+  primaryPageId: 'page-1'
+}
+
+stderr | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > maps a Meta error to the right code
+[ERROR] Failed to create Meta business {
+  connectionId: 'conn-1',
+  error: 'Meta business creation failed: (#100) Invalid parameter: primary_page is not a Page you administer'
+}
+
+stdout | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > maps a Meta error to the right code
+[INFO] Creating Meta business {
+  connectionId: 'conn-1',
+  businessName: 'Acme',
+  vertical: 'OTHER',
+  primaryPageId: 'page-1'
+}
+
+stderr | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > maps a Meta error to the right code
+[ERROR] Failed to create Meta business {
+  connectionId: 'conn-1',
+  error: 'Meta business creation failed: (#200) Permissions error'
+}
+
+stderr | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.getUserPages > returns an error when the Graph call fails (distinct from owning no pages)
+[ERROR] Failed to fetch client user pages {
+  connectionId: 'conn-1',
+  error: 'Failed to fetch user pages: token expired'
+}
+
+stdout | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createProductCatalog > creates one Meta catalog and stores one result for overlapping duplicate requests
+[INFO] Creating Meta product catalog {
+  connectionId: 'conn-1',
+  businessId: 'business-1',
+  catalogName: 'Spring catalog'
+}
+
+stdout | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createProductCatalog > creates one Meta catalog and stores one result for overlapping duplicate requests
+[INFO] Creating Meta product catalog {
+  connectionId: 'conn-1',
+  businessId: 'business-1',
+  catalogName: 'Spring catalog'
+}
+
+stdout | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createProductCatalog > creates one Meta catalog and stores one result for overlapping duplicate requests
+[INFO] Meta product catalog created successfully {
+  connectionId: 'conn-1',
+  catalogId: 'catalog-1',
+  catalogName: 'Spring catalog'
+}
+
+ ✓ src/services/__tests__/meta-asset-creation.service.test.ts (21 tests) 57ms
+ ✓ src/routes/__tests__/agencies.onboarding.routes.test.ts (5 tests) 634ms
+     ✓ returns onboarding lifecycle status for the principal agency  602ms
+ ✓ src/lib/__tests__/agent-auth-metadata.test.ts (9 tests) 38ms
+stderr | src/services/connectors/__tests__/meta.connector.test.ts > MetaConnector Asset Discovery > getBusinessAccounts > keeps primary business results when the business_users lookup fails
+Failed to fetch supplemental Meta business_users data; continuing with primary businesses list. Error: Failed to fetch business accounts: Permissions error
+    at fetchBusinessCollection (/Users/jon.high/agency-access/apps/api/src/services/connectors/meta.ts:425:17)
+    at processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at MetaConnector.getBusinessAccounts (/Users/jon.high/agency-access/apps/api/src/services/connectors/meta.ts:458:7)
+    at /Users/jon.high/agency-access/apps/api/src/services/connectors/__tests__/meta.connector.test.ts:289:22
+    at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:915:20
+
+stderr | src/services/connectors/__tests__/meta.connector.test.ts > MetaConnector Asset Discovery > getProductCatalogs > should fail discovery when either catalog edge is unavailable
+[WARN] Failed to fetch Meta product catalogs { businessId: 'test-business-id', edge: 'client_product_catalogs' }
+
+ ✓ src/services/connectors/__tests__/meta.connector.test.ts (38 tests) 37ms
+ ✓ src/services/__tests__/connection.service.test.ts (40 tests) 29ms
+ ✓ src/services/__tests__/internal-admin.service.test.ts (19 tests) 43ms
+stdout | src/services/__tests__/agent-operation.service.test.ts > agentOperationService > returns the existing operation for an identical retry and conflicts on changed intent
+[INFO] agent duplicate effect suppressed {
+  event: 'agent_duplicate_suppressed',
+  agencyId: 'agency-1',
+  grantId: 'grant-1',
+  operationId: 'op-1',
+  actionType: 'access_request.dispatch'
+}
+
+stderr | src/services/__tests__/agent-operation.service.test.ts > agentOperationService > rejects secret-bearing operation snapshots before persistence
+[WARN] agent secret-bearing input rejected {
+  event: 'agent_redaction_violation',
+  agencyId: 'agency-1',
+  grantId: 'grant-1',
+  operationType: 'client.upsert'
+}
+
+ ✓ src/services/__tests__/agent-operation.service.test.ts (11 tests) 36ms
+ ✓ scripts/deploy-repair/__tests__/repair-session.test.ts (33 tests) 22ms
+ ✓ src/services/__tests__/client.service.test.ts (29 tests) 58ms
+ ✓ src/routes/client-auth/__tests__/assets.security.test.ts (3 tests) 928ms
+     ✓ returns 403 when saving assets for connection outside token access request  914ms
+ ✓ src/services/__tests__/meta-asset-grant.service.test.ts (14 tests) 35ms
+ ✓ scripts/deploy-repair/__tests__/attempt-loop.test.ts (27 tests) 14ms
+ ✓ scripts/__tests__/posthog-rename-plan-filters.test.ts (35 tests) 35ms
+stderr | src/services/__tests__/access-request.service.test.ts > AccessRequestService > markRequestAuthorized > should mark request as completed and emit a completed webhook event once
+[WARN] Failed to queue agency completion notification {
+  accessRequestId: 'request-1',
+  error: "Cannot read properties of undefined (reading 'split')"
+}
+
+stderr | src/services/__tests__/access-request.service.test.ts > AccessRequestService > setAccessRequestLifecycleStatus > does not notify on a partial transition
+[WARN] Failed to emit access request lifecycle webhook {
+  accessRequestId: 'request-1',
+  previousStatus: 'pending',
+  nextStatus: 'partial',
+  error: "Cannot read properties of undefined (reading 'toISOString')"
+}
+
+stderr | src/services/__tests__/access-request.service.test.ts > AccessRequestService > setAccessRequestLifecycleStatus > still completes the transition when the notification queue fails
+[WARN] Failed to queue agency completion notification { accessRequestId: 'request-1', error: 'queue down' }
+
+ ✓ src/services/__tests__/agency-platform.service.test.ts (30 tests) 32ms
+ ✓ src/services/__tests__/access-request.service.test.ts (92 tests) 99ms
+ ✓ src/services/__tests__/token-lifecycle.service.test.ts (10 tests) 17ms
+stdout | scripts/__tests__/deactivate-legacy-snapchat-connections.test.ts > legacy Snapchat connection migration > cli > defaults to dry-run and only writes in --apply mode
+
+[legacy-snapchat-migration] mode=dry-run selected=2 migrated=0 failed=0
+  would revoke: agencyId=agency-1 platform=snapchat connectionId=conn-snap connectedBy=owner@agency.test
+  would revoke: agencyId=agency-1 platform=snapchat_ads connectionId=conn-ads connectedBy=ops@agency.test
+Dry run only — no rows changed. Re-run with --apply to deactivate the rows above.
+
+stdout | scripts/__tests__/deactivate-legacy-snapchat-connections.test.ts > legacy Snapchat connection migration > cli > defaults to dry-run and only writes in --apply mode
+
+[legacy-snapchat-migration] mode=apply selected=1 migrated=1 failed=0
+  revoked: agencyId=agency-1 platform=snapchat connectionId=conn-snap connectedBy=owner@agency.test
+
+stdout | scripts/__tests__/deactivate-legacy-snapchat-connections.test.ts > legacy Snapchat connection migration > cli > exits 1 when a row changed since selection
+
+[legacy-snapchat-migration] mode=apply selected=1 migrated=0 failed=1
+  FAILED: agencyId=agency-1 platform=snapchat connectionId=conn-only connectedBy=owner@agency.test — row changed since selection
+1 row(s) failed and remain active. They are safe to retry: re-run with --apply.
+
+ ✓ scripts/__tests__/deactivate-legacy-snapchat-connections.test.ts (10 tests) 20ms
+ ✓ src/services/__tests__/agent-access-operations.service.test.ts (12 tests) 51ms
+ ✓ src/services/__tests__/client-offboarding.service.test.ts (23 tests) 41ms
+ ✓ src/services/mcp/__tests__/tool-contracts.test.ts (3 tests) 81ms
+ ✓ src/routes/__tests__/mcp.agent-flow.integration.test.ts (1 test) 53ms
+ ✓ src/services/__tests__/google-assets.service.test.ts (3 tests) 14ms
+ ✓ src/lib/__tests__/infisical.test.ts (4 tests) 20ms
+ ✓ src/services/__tests__/clerk-metadata.service.test.ts (9 tests) 50ms
+stderr | src/services/__tests__/oauth-state.service.test.ts > OAuthStateService > createState > should fall back to a stateless token when database writes fail
+[ERROR] OAuth state creation failed {
+  error: {
+    name: 'Error',
+    message: 'Database connection failed',
+    stack: 'Error: Database connection failed\n' +
+      '    at /Users/jon.high/agency-access/apps/api/src/services/__tests__/oauth-state.service.test.ts:216:66\n' +
+      '    at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:145:11\n' +
+      '    at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:915:26\n' +
+      '    at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:1243:20\n' +
+      '    at new Promise (<anonymous>)\n' +
+      '    at runWithTimeout (file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:1209:10)\n' +
+      '    at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:1653:37\n' +
+      '    at Traces.$ (file:///Users/jon.high/agency-access/node_modules/vitest/dist/chunks/traces.U4xDYhzZ.js:115:27)\n' +
+      '    at trace (file:///Users/jon.high/agency-access/node_modules/vitest/dist/chunks/test.B8ej_ZHS.js:239:21)\n' +
+      '    at runTest (file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:1653:12)'
+  }
+}
+[WARN] Falling back to stateless OAuth state token { platform: 'google', agencyId: 'agency-1' }
+
+stderr | src/services/__tests__/oauth-state.service.test.ts > OAuthStateService > createState > should fail closed in production when durable state storage is unavailable
+[ERROR] OAuth state creation failed {
+  error: {
+    name: 'Error',
+    message: 'Database connection failed',
+    stack: 'Error: Database connection failed\n' +
+      '    at /Users/jon.high/agency-access/apps/api/src/services/__tests__/oauth-state.service.test.ts:238:66\n' +
+      '    at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:145:11\n' +
+      '    at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:915:26\n' +
+      '    at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:1243:20\n' +
+      '    at new Promise (<anonymous>)\n' +
+      '    at runWithTimeout (file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:1209:10)\n' +
+      '    at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:1653:37\n' +
+      '    at Traces.$ (file:///Users/jon.high/agency-access/node_modules/vitest/dist/chunks/traces.U4xDYhzZ.js:115:27)\n' +
+      '    at trace (file:///Users/jon.high/agency-access/node_modules/vitest/dist/chunks/test.B8ej_ZHS.js:239:21)\n' +
+      '    at runTest (file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:1653:12)'
+  }
+}
+
+stderr | src/services/__tests__/oauth-state.service.test.ts > OAuthStateService > validateState > should handle database errors during validation
+[ERROR] OAuth state validation failed {
+  error: {
+    name: 'Error',
+    message: 'Database connection failed',
+    stack: 'Error: Database connection failed\n' +
+      '    at /Users/jon.high/agency-access/apps/api/src/services/__tests__/oauth-state.service.test.ts:425:70\n' +
+      '    at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:145:11\n' +
+      '    at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:915:26\n' +
+      '    at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:1243:20\n' +
+      '    at new Promise (<anonymous>)\n' +
+      '    at runWithTimeout (file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:1209:10)\n' +
+      '    at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:1653:37\n' +
+      '    at Traces.$ (file:///Users/jon.high/agency-access/node_modules/vitest/dist/chunks/traces.U4xDYhzZ.js:115:27)\n' +
+      '    at trace (file:///Users/jon.high/agency-access/node_modules/vitest/dist/chunks/test.B8ej_ZHS.js:239:21)\n' +
+      '    at runTest (file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:1653:12)'
+  }
+}
+
+stderr | src/services/__tests__/oauth-state.service.test.ts > OAuthStateService > validateState > should validate stateless fallback tokens without database
+[ERROR] OAuth state creation failed {
+  error: {
+    name: 'Error',
+    message: 'Database unavailable',
+    stack: 'Error: Database unavailable\n' +
+      '    at /Users/jon.high/agency-access/apps/api/src/services/__tests__/oauth-state.service.test.ts:435:66\n' +
+      '    at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:145:11\n' +
+      '    at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:915:26\n' +
+      '    at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:1243:20\n' +
+      '    at new Promise (<anonymous>)\n' +
+      '    at runWithTimeout (file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:1209:10)\n' +
+      '    at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:1653:37\n' +
+      '    at Traces.$ (file:///Users/jon.high/agency-access/node_modules/vitest/dist/chunks/traces.U4xDYhzZ.js:115:27)\n' +
+      '    at trace (file:///Users/jon.high/agency-access/node_modules/vitest/dist/chunks/test.B8ej_ZHS.js:239:21)\n' +
+      '    at runTest (file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:1653:12)'
+  }
+}
+[WARN] Falling back to stateless OAuth state token { platform: 'google', agencyId: 'agency-1' }
+
+stderr | src/services/__tests__/oauth-state.service.test.ts > OAuthStateService > validateState > should reject stateless fallback tokens in production
+[ERROR] OAuth state creation failed {
+  error: {
+    name: 'Error',
+    message: 'Database unavailable',
+    stack: 'Error: Database unavailable\n' +
+      '    at /Users/jon.high/agency-access/apps/api/src/services/__tests__/oauth-state.service.test.ts:456:66\n' +
+      '    at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:145:11\n' +
+      '    at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:915:26\n' +
+      '    at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:1243:20\n' +
+      '    at new Promise (<anonymous>)\n' +
+      '    at runWithTimeout (file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:1209:10)\n' +
+      '    at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:1653:37\n' +
+      '    at Traces.$ (file:///Users/jon.high/agency-access/node_modules/vitest/dist/chunks/traces.U4xDYhzZ.js:115:27)\n' +
+      '    at trace (file:///Users/jon.high/agency-access/node_modules/vitest/dist/chunks/test.B8ej_ZHS.js:239:21)\n' +
+      '    at runTest (file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:1653:12)'
+  }
+}
+[WARN] Falling back to stateless OAuth state token { platform: 'google', agencyId: 'agency-1' }
+
+ ✓ src/services/__tests__/oauth-state.service.test.ts (18 tests) 29ms
+stderr | src/middleware/__tests__/quota-enforcement.test.ts > Quota Enforcement Middleware - TDD Tests > checkQuota > should return error when tier fetch fails
+Failed to fetch tier: { code: 'CLERK_FETCH_FAILED' }
+
+ ✓ src/middleware/__tests__/quota-enforcement.test.ts (15 tests) 20ms
+ ✓ src/services/__tests__/affiliate.service.test.ts (11 tests) 19ms
+stdout | src/services/connectors/__tests__/google.connector.test.ts > GoogleConnector > parses GA4 properties from Analytics Admin accountSummaries and uses Authorization header
+🔍 Starting Google Ads account fetch...
+
+stderr | src/services/connectors/__tests__/google.connector.test.ts > GoogleConnector > parses GA4 properties from Analytics Admin accountSummaries and uses Authorization header
+GOOGLE_ADS_DEVELOPER_TOKEN not configured - Google Ads accounts will not be available
+
+stderr | src/services/connectors/__tests__/google.connector.test.ts > GoogleConnector > parses GA4 properties from Analytics Admin accountSummaries and uses Authorization header
+Google Business Profile API error: { status: 403, statusText: 'Forbidden', error: 'Forbidden' }
+Google Tag Manager API error (accounts): { status: 403, statusText: 'Forbidden', error: 'Forbidden' }
+Google Search Console API error: { status: 403, statusText: 'Forbidden', error: 'Forbidden' }
+Google Merchant Center API error: { status: 403, statusText: 'Forbidden', error: 'Forbidden' }
+
+stdout | src/services/connectors/__tests__/google.connector.test.ts > GoogleConnector > maps Business Profile locations instead of only top-level business accounts
+🔍 Starting Google Ads account fetch...
+
+stderr | src/services/connectors/__tests__/google.connector.test.ts > GoogleConnector > maps Business Profile locations instead of only top-level business accounts
+GOOGLE_ADS_DEVELOPER_TOKEN not configured - Google Ads accounts will not be available
+
+stderr | src/services/connectors/__tests__/google.connector.test.ts > GoogleConnector > maps Business Profile locations instead of only top-level business accounts
+Google Tag Manager API error (accounts): { status: 403, statusText: 'Forbidden', error: 'Forbidden' }
+Google Search Console API error: { status: 403, statusText: 'Forbidden', error: 'Forbidden' }
+Google Merchant Center API error: { status: 403, statusText: 'Forbidden', error: 'Forbidden' }
+Google Analytics Admin API error: { status: 403, statusText: 'Forbidden', error: 'Forbidden' }
+
+stdout | src/services/connectors/__tests__/google.connector.test.ts > GoogleConnector > follows Business Profile pagination for accounts and locations
+🔍 Starting Google Ads account fetch...
+
+stderr | src/services/connectors/__tests__/google.connector.test.ts > GoogleConnector > follows Business Profile pagination for accounts and locations
+GOOGLE_ADS_DEVELOPER_TOKEN not configured - Google Ads accounts will not be available
+
+stderr | src/services/connectors/__tests__/google.connector.test.ts > GoogleConnector > follows Business Profile pagination for accounts and locations
+Google Tag Manager API error (accounts): { status: 403, statusText: 'Forbidden', error: 'Forbidden' }
+Google Search Console API error: { status: 403, statusText: 'Forbidden', error: 'Forbidden' }
+Google Merchant Center API error: { status: 403, statusText: 'Forbidden', error: 'Forbidden' }
+Google Analytics Admin API error: { status: 403, statusText: 'Forbidden', error: 'Forbidden' }
+
+stdout | src/services/connectors/__tests__/google.connector.test.ts > GoogleConnector > resolves Merchant Center account details and accessible sub-accounts from authinfo
+🔍 Starting Google Ads account fetch...
+
+stderr | src/services/connectors/__tests__/google.connector.test.ts > GoogleConnector > resolves Merchant Center account details and accessible sub-accounts from authinfo
+GOOGLE_ADS_DEVELOPER_TOKEN not configured - Google Ads accounts will not be available
+
+stderr | src/services/connectors/__tests__/google.connector.test.ts > GoogleConnector > resolves Merchant Center account details and accessible sub-accounts from authinfo
+Google Business Profile API error: { status: 404, statusText: 'Not Found', error: 'Not Found' }
+Google Tag Manager API error (accounts): { status: 404, statusText: 'Not Found', error: 'Not Found' }
+Google Search Console API error: { status: 404, statusText: 'Not Found', error: 'Not Found' }
+Google Analytics Admin API error: { status: 404, statusText: 'Not Found', error: 'Not Found' }
+
+stdout | src/services/connectors/__tests__/google.connector.test.ts > GoogleConnector > filters unresolved Google Ads accounts when account detail lookup returns 403
+🔍 Starting Google Ads account fetch...
+
+stderr | src/services/connectors/__tests__/google.connector.test.ts > GoogleConnector > filters unresolved Google Ads accounts when account detail lookup returns 403
+Google Business Profile API error: { status: 404, statusText: 'Not Found', error: 'Not Found' }
+Google Tag Manager API error (accounts): { status: 404, statusText: 'Not Found', error: 'Not Found' }
+Google Search Console API error: { status: 404, statusText: 'Not Found', error: 'Not Found' }
+Google Merchant Center API error: { status: 404, statusText: 'Not Found', error: 'Not Found' }
+Google Analytics Admin API error: { status: 404, statusText: 'Not Found', error: 'Not Found' }
+
+stdout | src/services/connectors/__tests__/google.connector.test.ts > GoogleConnector > filters unresolved Google Ads accounts when account detail lookup returns 403
+📋 Found 1 accessible Google Ads account(s): [ '6449142979' ]
+
+stdout | src/services/connectors/__tests__/google.connector.test.ts > GoogleConnector > filters unresolved Google Ads accounts when account detail lookup returns 403
+✅ Google Ads fetch complete: 0 active account(s) (1 inactive filtered out, 1 unknown)
+  🚫 Filtered 6449142979: "Google Ads account • 644-914-2979" [fallback] [UNKNOWN]
+
+stderr | src/services/connectors/__tests__/google.connector.test.ts > GoogleConnector > filters unresolved Google Ads accounts when account detail lookup returns 403
+Google Ads account name unresolved after all discovery phases {
+  customerId: '6449142979',
+  formattedId: '644-914-2979',
+  errors: [
+    'GAQL(login=none) 403: Permission denied',
+    'REST-GET(login=none) 404: Not Found',
+    'REST-GET(login=6449142979) 404: Not Found',
+    'GAQL(login=none) 403: Permission denied',
+    'GAQL(login=6449142979) 403: Permission denied',
+    'GAQL(login=6449142979) 403: Permission denied'
+  ]
+}
+
+stdout | src/services/connectors/__tests__/google.connector.test.ts > GoogleConnector > returns only ENABLED Google Ads accounts and filters cancelled or unresolved accounts
+🔍 Starting Google Ads account fetch...
+
+stderr | src/services/connectors/__tests__/google.connector.test.ts > GoogleConnector > returns only ENABLED Google Ads accounts and filters cancelled or unresolved accounts
+Google Business Profile API error: { status: 404, statusText: 'Not Found', error: 'Not Found' }
+Google Tag Manager API error (accounts): { status: 404, statusText: 'Not Found', error: 'Not Found' }
+Google Search Console API error: { status: 404, statusText: 'Not Found', error: 'Not Found' }
+Google Merchant Center API error: { status: 404, statusText: 'Not Found', error: 'Not Found' }
+Google Analytics Admin API error: { status: 404, statusText: 'Not Found', error: 'Not Found' }
+
+stdout | src/services/connectors/__tests__/google.connector.test.ts > GoogleConnector > returns only ENABLED Google Ads accounts and filters cancelled or unresolved accounts
+📋 Found 3 accessible Google Ads account(s): [ '1111111111', '2222222222', '3333333333' ]
+
+stdout | src/services/connectors/__tests__/google.connector.test.ts > GoogleConnector > returns only ENABLED Google Ads accounts and filters cancelled or unresolved accounts
+[REST-GET 1111111111(login=none)] 200 → {"descriptiveName":"Enabled Account","manager":false,"status":"ENABLED"}
+[REST-GET 2222222222(login=none)] 200 → {"descriptiveName":"Cancelled Account","manager":false,"status":"CANCELED"}
+
+stdout | src/services/connectors/__tests__/google.connector.test.ts > GoogleConnector > returns only ENABLED Google Ads accounts and filters cancelled or unresolved accounts
+✅ Google Ads fetch complete: 1 active account(s) (2 inactive filtered out, 1 unknown)
+  📦 1111111111: "Enabled Account" [direct] [ENABLED]
+  🚫 Filtered 2222222222: "Cancelled Account" [direct] [CANCELED]
+  🚫 Filtered 3333333333: "Google Ads account • 333-333-3333" [fallback] [UNKNOWN]
+
+stderr | src/services/connectors/__tests__/google.connector.test.ts > GoogleConnector > returns only ENABLED Google Ads accounts and filters cancelled or unresolved accounts
+Google Ads account name unresolved after all discovery phases {
+  customerId: '3333333333',
+  formattedId: '333-333-3333',
+  errors: [
+    'GAQL(login=none) 403: Permission denied for none',
+    'REST-GET(login=none) 404: Not Found',
+    'REST-GET(login=3333333333) 404: Not Found',
+    'GAQL(login=none) 403: Permission denied for none',
+    'GAQL(login=3333333333) 403: Permission denied for 3333333333',
+    'GAQL(login=3333333333) 403: Permission denied for 3333333333',
+    'GAQL(login=1111111111) 403: Permission denied for 1111111111',
+    'GAQL(login=2222222222) 403: Permission denied for 2222222222'
+  ]
+}
+
+stdout | src/services/connectors/__tests__/google.connector.test.ts > GoogleConnector > uses the customer descriptive name when Google Ads returns direct customer details
+🔍 Starting Google Ads account fetch...
+
+stderr | src/services/connectors/__tests__/google.connector.test.ts > GoogleConnector > uses the customer descriptive name when Google Ads returns direct customer details
+Google Business Profile API error: { status: 404, statusText: 'Not Found', error: 'Not Found' }
+Google Tag Manager API error (accounts): { status: 404, statusText: 'Not Found', error: 'Not Found' }
+Google Search Console API error: { status: 404, statusText: 'Not Found', error: 'Not Found' }
+Google Merchant Center API error: { status: 404, statusText: 'Not Found', error: 'Not Found' }
+Google Analytics Admin API error: { status: 404, statusText: 'Not Found', error: 'Not Found' }
+
+stdout | src/services/connectors/__tests__/google.connector.test.ts > GoogleConnector > uses the customer descriptive name when Google Ads returns direct customer details
+📋 Found 1 accessible Google Ads account(s): [ '6449142979' ]
+
+stdout | src/services/connectors/__tests__/google.connector.test.ts > GoogleConnector > uses the customer descriptive name when Google Ads returns direct customer details
+[Phase1-GAQL 6449142979(no-login)] 200 OK → {"customer":{"id":"6449142979","descriptiveName":"Pillar AI Agency MCC","manager":true,"status":"ENABLED"}}
+
+stdout | src/services/connectors/__tests__/google.connector.test.ts > GoogleConnector > uses the customer descriptive name when Google Ads returns direct customer details
+✅ Google Ads fetch complete: 1 active account(s) (0 inactive filtered out, 0 unknown)
+  📦 6449142979: "Pillar AI Agency MCC" [direct] [ENABLED]
+
+stdout | src/services/connectors/__tests__/google.connector.test.ts > GoogleConnector > falls back to customer_client hierarchy names when direct customer lookups are not accessible
+🔍 Starting Google Ads account fetch...
+
+stderr | src/services/connectors/__tests__/google.connector.test.ts > GoogleConnector > falls back to customer_client hierarchy names when direct customer lookups are not accessible
+Google Business Profile API error: { status: 404, statusText: 'Not Found', error: 'Not Found' }
+Google Tag Manager API error (accounts): { status: 404, statusText: 'Not Found', error: 'Not Found' }
+Google Search Console API error: { status: 404, statusText: 'Not Found', error: 'Not Found' }
+Google Merchant Center API error: { status: 404, statusText: 'Not Found', error: 'Not Found' }
+Google Analytics Admin API error: { status: 404, statusText: 'Not Found', error: 'Not Found' }
+
+stdout | src/services/connectors/__tests__/google.connector.test.ts > GoogleConnector > falls back to customer_client hierarchy names when direct customer lookups are not accessible
+📋 Found 2 accessible Google Ads account(s): [ '6449142979', '5497559774' ]
+
+stdout | src/services/connectors/__tests__/google.connector.test.ts > GoogleConnector > falls back to customer_client hierarchy names when direct customer lookups are not accessible
+✅ Google Ads fetch complete: 2 active account(s) (0 inactive filtered out, 0 unknown)
+  📦 6449142979: "Pillar AI Agency MCC" [hierarchy] [ENABLED]
+  📦 5497559774: "Client Alpha" [hierarchy] [ENABLED]
+
+stdout | src/services/connectors/__tests__/google.connector.test.ts > GoogleConnector > retries hierarchy discovery with alternate login customer contexts when the configured login customer is invalid
+🔍 Starting Google Ads account fetch...
+
+stdout | src/services/connectors/__tests__/google.connector.test.ts > GoogleConnector > retries hierarchy discovery with alternate login customer contexts when the configured login customer is invalid
+📋 Found 2 accessible Google Ads account(s): [ '1111111111', '2222222222' ]
+
+stderr | src/services/connectors/__tests__/google.connector.test.ts > GoogleConnector > retries hierarchy discovery with alternate login customer contexts when the configured login customer is invalid
+Google Business Profile API error: { status: 404, statusText: 'Not Found', error: 'Not Found' }
+Google Tag Manager API error (accounts): { status: 404, statusText: 'Not Found', error: 'Not Found' }
+Google Search Console API error: { status: 404, statusText: 'Not Found', error: 'Not Found' }
+Google Merchant Center API error: { status: 404, statusText: 'Not Found', error: 'Not Found' }
+Google Analytics Admin API error: { status: 404, statusText: 'Not Found', error: 'Not Found' }
+
+stdout | src/services/connectors/__tests__/google.connector.test.ts > GoogleConnector > retries hierarchy discovery with alternate login customer contexts when the configured login customer is invalid
+✅ Google Ads fetch complete: 2 active account(s) (0 inactive filtered out, 0 unknown)
+  📦 1111111111: "Agency MCC" [hierarchy] [ENABLED]
+  📦 2222222222: "Client Bravo" [hierarchy] [ENABLED]
+
+ ✓ src/services/connectors/__tests__/google.connector.test.ts (16 tests) 40ms
+ ✓ scripts/deploy-repair/__tests__/incident.test.ts (35 tests) 20ms
+ ✓ src/services/__tests__/webhook-event.service.test.ts (27 tests) 14ms
+ ✓ src/services/__tests__/audit.service.test.ts (11 tests) 21ms
+ ✓ src/services/connectors/__tests__/snapchat.connector.test.ts (22 tests) 15ms
+ ✓ src/jobs/__tests__/annual-reset.test.ts (10 tests) 19ms
+stdout | src/services/__tests__/subscription.service.test.ts > SubscriptionService > createCheckoutSession > should create checkout session for new subscription
+Creem checkout request: {
+  productId: 'prod_4SUPfON3XwTo5SKOJzN2dH',
+  hasCustomer: false,
+  customerEmail: 'test@example.com',
+  tier: 'STARTER',
+  billingInterval: 'monthly'
+}
+
+stdout | src/services/__tests__/subscription.service.test.ts > SubscriptionService > createCheckoutSession > should handle existing Creem customer
+Creem checkout request: {
+  productId: 'prod_4SUPfON3XwTo5SKOJzN2dH',
+  hasCustomer: true,
+  customerEmail: 'test@example.com',
+  tier: 'STARTER',
+  billingInterval: 'monthly'
+}
+
+stdout | src/services/__tests__/subscription.service.test.ts > SubscriptionService > createCheckoutSession > should handle Creem API errors
+Creem checkout request: {
+  productId: 'prod_4SUPfON3XwTo5SKOJzN2dH',
+  hasCustomer: false,
+  customerEmail: 'test@example.com',
+  tier: 'STARTER',
+  billingInterval: 'monthly'
+}
+
+stderr | src/services/__tests__/subscription.service.test.ts > SubscriptionService > createCheckoutSession > should handle Creem API errors
+Creem checkout error: {
+  code: 'CHECKOUT_ERROR',
+  message: 'Creem checkout failed',
+  details: undefined
+}
+
+stdout | src/services/__tests__/subscription.service.test.ts > SubscriptionService > createCheckoutSession > uses yearly product ID when billingInterval is yearly
+Creem checkout request: {
+  productId: 'prod_6Hyydvn6jh0numRxJecMol',
+  hasCustomer: true,
+  customerEmail: 'test@example.com',
+  tier: 'STARTER',
+  billingInterval: 'yearly'
+}
+
+stdout | src/services/__tests__/subscription.service.test.ts > SubscriptionService > createCheckoutSession > defaults checkout to monthly product ID when billingInterval is omitted
+Creem checkout request: {
+  productId: 'prod_4SUPfON3XwTo5SKOJzN2dH',
+  hasCustomer: true,
+  customerEmail: 'test@example.com',
+  tier: 'STARTER',
+  billingInterval: 'monthly'
+}
+
+stdout | src/services/__tests__/subscription.service.test.ts > SubscriptionService > createCheckoutSession > includes affiliate referral metadata in checkout when agency is attributed
+Creem checkout request: {
+  productId: 'prod_4SUPfON3XwTo5SKOJzN2dH',
+  hasCustomer: true,
+  customerEmail: 'test@example.com',
+  tier: 'STARTER',
+  billingInterval: 'monthly'
+}
+
+ ✓ src/services/__tests__/identity-verification.service.test.ts (14 tests) 17ms
+ ✓ src/services/__tests__/subscription.service.test.ts (29 tests) 18ms
+ ✓ src/services/__tests__/meta-assets.service.test.ts (15 tests) 25ms
+ ✓ scripts/deploy-status/__tests__/render.test.ts (13 tests) 27ms
+ ✓ src/services/__tests__/onboarding-email.service.test.ts (15 tests) 16ms
+ ✓ src/services/__tests__/agency.service.test.ts (25 tests) 27ms
+stdout | src/services/__tests__/agent-grant.service.test.ts > agent-grant.service > creates the owner-approved agency grant without storing bearer material
+[INFO] agent connected {
+  event: 'agent_connected',
+  agencyId: 'agency-1',
+  grantId: 'grant-1',
+  oauthClientId: 'oauth-client-1'
+}
+
+stdout | src/services/__tests__/agent-grant.service.test.ts > agent-grant.service > accepts a grant with offboarding:read and offboarding:prepare permissions
+[INFO] agent connected {
+  event: 'agent_connected',
+  agencyId: 'agency-1',
+  grantId: 'grant-2',
+  oauthClientId: 'oauth-client-2'
+}
+
+stdout | src/services/__tests__/agent-grant.service.test.ts > agent-grant.service > soft-revokes the grant and cancels pending non-executing operations atomically
+[INFO] agent grant revoked {
+  event: 'agent_grant_revoked',
+  agencyId: 'agency-1',
+  grantId: 'grant-1'
+}
+
+ ✓ src/services/__tests__/agent-grant.service.test.ts (6 tests) 39ms
+ ✓ src/services/__tests__/google-native-access.execution.test.ts (9 tests) 36ms
+stderr | src/jobs/__tests__/sync-clerk-metadata.test.ts > Clerk Metadata Sync Job - TDD Tests > syncAllAgencyMetadata > should return success and failure counts
+Failed to sync metadata for agency agency-2: Error: Sync failed
+    at /Users/jon.high/agency-access/apps/api/src/jobs/__tests__/sync-clerk-metadata.test.ts:72:32
+    at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:145:11
+    at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:915:26
+    at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:1243:20
+    at new Promise (<anonymous>)
+    at runWithTimeout (file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:1209:10)
+    at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:1653:37
+    at Traces.$ (file:///Users/jon.high/agency-access/node_modules/vitest/dist/chunks/traces.U4xDYhzZ.js:115:27)
+    at trace (file:///Users/jon.high/agency-access/node_modules/vitest/dist/chunks/test.B8ej_ZHS.js:239:21)
+    at runTest (file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:1653:12)
+
+stderr | src/jobs/__tests__/sync-clerk-metadata.test.ts > Clerk Metadata Sync Job - TDD Tests > Error Handling > should continue processing other agencies if one fails
+Failed to sync metadata for agency agency-2: Error: Clerk API error
+    at /Users/jon.high/agency-access/apps/api/src/jobs/__tests__/sync-clerk-metadata.test.ts:117:32
+    at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:145:11
+    at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:915:26
+    at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:1243:20
+    at new Promise (<anonymous>)
+    at runWithTimeout (file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:1209:10)
+    at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:1653:37
+    at Traces.$ (file:///Users/jon.high/agency-access/node_modules/vitest/dist/chunks/traces.U4xDYhzZ.js:115:27)
+    at trace (file:///Users/jon.high/agency-access/node_modules/vitest/dist/chunks/test.B8ej_ZHS.js:239:21)
+    at runTest (file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:1653:12)
+
+stderr | src/jobs/__tests__/sync-clerk-metadata.test.ts > Clerk Metadata Sync Job - TDD Tests > Error Handling > should handle Clerk service errors per agency
+Failed to sync metadata for agency agency-1: User not found
+
+stderr | src/jobs/__tests__/sync-clerk-metadata.test.ts > Clerk Metadata Sync Job - TDD Tests > Error Handling > should handle Clerk service errors per agency
+Failed to sync metadata for agency agency-2: User not found
+
+ ✓ src/jobs/__tests__/sync-clerk-metadata.test.ts (9 tests) 16ms
+ ✓ src/services/__tests__/webhook-endpoint.service.test.ts (7 tests) 30ms
+stdout | scripts/__tests__/backfill-clerk-tier-agency-to-scale.test.ts > clerk tier backfill > cli > defaults to dry run, writes only with --apply, and disconnects
+
+[clerk-tier-backfill] mode=dry-run scanned=1 pages=1 selected=1 changed=0 failed=0 auditFailed=0 unmapped=0
+  would rewrite: userId=user_agency AGENCY -> SCALE basis=quota-fingerprint
+Dry run only — nothing changed. Review the basis of each row above, then re-run with --apply (start with --limit for a canary).
+
+stdout | scripts/__tests__/backfill-clerk-tier-agency-to-scale.test.ts > clerk tier backfill > cli > defaults to dry run, writes only with --apply, and disconnects
+
+[clerk-tier-backfill] mode=apply scanned=1 pages=1 selected=1 changed=1 failed=0 auditFailed=0 unmapped=0
+  rewritten: userId=user_agency AGENCY -> SCALE basis=quota-fingerprint
+
+stdout | scripts/__tests__/backfill-clerk-tier-agency-to-scale.test.ts > clerk tier backfill > cli > exits 1 when any user failed
+
+[clerk-tier-backfill] mode=apply scanned=1 pages=1 selected=1 changed=0 failed=1 auditFailed=0 unmapped=0
+  FAILED: userId=user_a AGENCY -> SCALE basis=quota-fingerprint — boom
+1 user(s) were not rewritten and are safe to retry: re-run with --apply.
+
+ ✓ scripts/__tests__/backfill-clerk-tier-agency-to-scale.test.ts (21 tests) 19ms
+ ✓ src/services/connectors/__tests__/beehiiv.connector.test.ts (10 tests) 9ms
+ ✓ src/services/__tests__/webhook-delivery.service.test.ts (4 tests) 19ms
+ ✓ src/services/__tests__/webhook.service.test.ts (8 tests) 61ms
+ ✓ src/services/__tests__/google-native-grant.service.test.ts (3 tests) 7ms
+ ✓ src/lib/__tests__/authorization.test.ts (11 tests) 26ms
+ ✓ src/services/connectors/__tests__/google-oauth-parity.test.ts (11 tests) 15ms
+ ✓ src/services/connectors/__tests__/google-offboarding.test.ts (33 tests) 25ms
+ ✓ src/lib/__tests__/job-handlers.test.ts (5 tests) 18ms
+ ✓ src/lib/__tests__/etag.test.ts (3 tests) 6ms
+ ✓ src/lib/__tests__/meta-constants.test.ts (1 test) 4ms
+ ✓ src/services/__tests__/agent-activity.service.test.ts (6 tests) 20ms
+ ✓ src/lib/__tests__/creem-webhook-payload.test.ts (8 tests) 15ms
+ ✓ src/services/__tests__/agency-platform-revoke.integration.test.ts (1 test) 9ms
+ ✓ scripts/deploy-repair/__tests__/replay.test.ts (7 tests) 15ms
+ ✓ src/services/__tests__/schema-integration.test.ts (23 tests | 19 skipped) 16ms
+stdout | src/jobs/__tests__/trial-expiration.test.ts > expireTrials > should downgrade expired trialing subscriptions to FREE
+Expired trial for subscription sub-1, agency agency-1
+
+stdout | src/jobs/__tests__/trial-expiration.test.ts > expireTrials > should handle multiple expired subscriptions
+Expired trial for subscription sub-1, agency agency-1
+
+stdout | src/jobs/__tests__/trial-expiration.test.ts > expireTrials > should handle multiple expired subscriptions
+Expired trial for subscription sub-2, agency agency-1
+
+ ✓ src/jobs/__tests__/trial-expiration.test.ts (3 tests) 15ms
+ ✓ src/services/connectors/__tests__/google-ads.test.ts (8 tests) 15ms
+ ✓ src/services/__tests__/agent-operation-retention.service.test.ts (1 test) 6ms
+ ✓ src/services/__tests__/google-native-access.service.test.ts (3 tests) 9ms
+ ✓ scripts/deploy-status/__tests__/vercel.test.ts (14 tests) 14ms
+ ✓ src/services/__tests__/billing-analytics.service.test.ts (10 tests) 15ms
+ ✓ src/services/__tests__/meta-obo.service.test.ts (5 tests) 16ms
+ ✓ src/services/__tests__/meta-system-user.service.test.ts (6 tests) 12ms
+ ✓ src/services/__tests__/quota.service.effective-tier.test.ts (1 test) 3ms
+ ✓ src/services/__tests__/access-request-notification.service.test.ts (2 tests) 7ms
+ ✓ src/lib/meta-graph-request.test.ts (2 tests) 29ms
+ ✓ scripts/deploy-status/__tests__/classify.test.ts (14 tests) 9ms
+ ✓ src/services/__tests__/affiliate-program.service.test.ts (8 tests) 18ms
+ ✓ src/services/__tests__/help-scout.service.test.ts (4 tests) 14ms
+ ✓ src/lib/__tests__/agent-schema-readiness.test.ts (3 tests) 6ms
+ ✓ src/services/__tests__/agent-policy.service.test.ts (3 tests) 5ms
+ ✓ src/lib/__tests__/webhook-signature.test.ts (4 tests) 5ms
+ ✓ src/lib/__tests__/webhook-schema-readiness.test.ts (3 tests) 5ms
+ ✓ src/jobs/__tests__/check-expired-requests.test.ts (2 tests) 6ms
+ ✓ src/services/__tests__/tier-limits.service.test.ts (14 tests) 11ms
+ ✓ src/lib/__tests__/cache.test.ts (6 tests) 7ms
+ ✓ src/lib/__tests__/affiliate-partner-auth.test.ts (3 tests) 6ms
+ ✓ src/services/__tests__/tiktok-partner.service.test.ts (5 tests) 11ms
+ ✓ scripts/deploy-repair/__tests__/wait-for-deploy.test.ts (9 tests) 5ms
+ ✓ scripts/deploy-repair/__tests__/prompt.test.ts (13 tests) 7ms
+ ✓ src/lib/__tests__/response.test.ts (2 tests) 6ms
+ ✓ src/lib/__tests__/pg-boss.test.ts (3 tests) 9ms
+ ✓ src/services/connectors/__tests__/meta-debug-token-parity.test.ts (4 tests) 10ms
+ ✓ src/services/connectors/__tests__/tiktok.connector.test.ts (6 tests) 9ms
+ ✓ src/services/__tests__/quota.service.test.ts (10 tests) 10ms
+ ✓ src/lib/__tests__/sentry-redaction.test.ts (5 tests) 6ms
+ ✓ src/services/__tests__/instruction-generation.service.test.ts (12 tests) 10ms
+ ✓ src/services/__tests__/agent-telemetry.service.test.ts (2 tests) 9ms
+ ✓ src/lib/__tests__/creem-signature.test.ts (11 tests) 12ms
+ ✓ src/services/__tests__/subscription-billing.service.test.ts (4 tests) 10ms
+ ✓ src/lib/__tests__/worker-runtime.test.ts (6 tests) 5ms
+ ✓ src/lib/__tests__/cors.test.ts (3 tests) 6ms
+stderr | src/lib/__tests__/authorization-reeval.test.ts > applyPostVerifyReevaluation > returns undefined instead of throwing when the re-evaluation rejects
+[WARN] Post-verify access request re-evaluation failed { accessRequestId: 'request-1', error: 're-evaluation exploded' }
+
+ ✓ src/lib/__tests__/authorization-reeval.test.ts (3 tests) 10ms
+ ✓ src/lib/__tests__/meta-authorization-metadata.test.ts (5 tests) 6ms
+ ✓ src/routes/__tests__/mcp.recovery-flow.test.ts (1 test) 5ms
+ ✓ src/services/__tests__/connection-aggregation.service.test.ts (1 test) 5ms
+ ✓ src/services/__tests__/agent-rate-limit.service.test.ts (2 tests) 7ms
+ ✓ src/services/__tests__/quota.service.usage-parity.test.ts (3 tests) 10ms
+ ✓ src/services/__tests__/agency-resolution.service.test.ts (2 tests) 15ms
+ ✓ src/lib/__tests__/list-pagination.test.ts (2 tests) 3ms
+ ✓ src/services/connectors/__tests__/registry.config.test.ts (6 tests) 8ms
+ ✓ src/routes/agency-platforms/__tests__/constants.test.ts (3 tests) 10ms
+ ✓ src/lib/__tests__/internal-admin-auth.test.ts (4 tests) 4ms
+ ✓ src/routes/client-auth/__tests__/platform-request.test.ts (2 tests) 6ms
+
+ Test Files  159 passed (159)
+      Tests  1744 passed | 19 skipped (1763)
+   Start at  21:03:37
+   Duration  25.92s (transform 9.97s, setup 1.88s, import 63.76s, tests 32.76s, environment 37ms)
+

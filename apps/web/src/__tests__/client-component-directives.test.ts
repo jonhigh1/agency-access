@@ -33,7 +33,7 @@ describe('client component directives', () => {
 
     for (const file of collectSourceFiles(srcDir)) {
       const content = fs.readFileSync(file, 'utf8');
-      const source = ts.createSourceFile(file, content, ts.ScriptTarget.Latest, true);
+      const source = ts.createSourceFile(file, content, ts.ScriptTarget.Latest, false);
 
       for (let i = 0; i < source.statements.length; i += 1) {
         const statement = source.statements[i];
@@ -51,5 +51,5 @@ describe('client component directives', () => {
     }
 
     expect(violations).toEqual([]);
-  });
+  }, 30_000); // Whole-source parsing needs a budget independent of full-suite CPU contention.
 });
