@@ -1,0 +1,19 @@
+You generate concise chat thread titles.
+Return a JSON object with key: title.
+Respond with only the JSON object, no prose and no code fences.
+Rules:
+- Summarize the user's request in 3-6 words.
+- Never exceed 6 words.
+- Be specific: include distinguishing identifiers from the message when present (PR/issue numbers, branch names, file or feature names, error codes).
+- Two different requests should never produce the same title if the message contains anything that tells them apart.
+- Use a short noun or verb phrase, not a full sentence.
+- Avoid quotes, markdown, emoji, and trailing punctuation.
+- If images are attached, use them as primary context for the title.
+
+User message:
+Given everything you know about this project, our history, and our goals, write an agent instruction file and goal file for a Hub that will act as the full AuthHub team. 
+
+This is what Hubs are: Hubs: give larger work a team
+Bring a coordinator and worker agents together around shared instructions, linked projects and a versioned Library in Synara Beta.
+
+Delegate independent work, preserve the original request and attachments, follow durable work cards and checklists, and receive a combined completion summary. The queue supports 1–8 parallel workers (3 by default), with visible waiting, failure and recovery states. New repository work defaults to isolated worktrees; explicit environment choices are respected.
