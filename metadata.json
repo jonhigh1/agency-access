@@ -3,7 +3,7 @@
   "checkpoint_id": "01M4687MR1V15VGYGH6NC84408",
   "strategy": "manual-commit",
   "branch": "hub/INVITE-001-choose-finish-split",
-  "checkpoints_count": 1,
+  "checkpoints_count": 2,
   "files_touched": [
     "apps/web/src/components/client-auth/MetaAssetSelector.tsx",
     "apps/web/src/components/client-auth/MetaGrantChecklist.tsx",
@@ -21,6 +21,13 @@
       "transcript": "/0/full.jsonl",
       "compact_transcript": "/0/transcript.jsonl",
       "content_hash": "/0/content_hash.txt",
+      "prompt": ""
+    },
+    {
+      "metadata": "/1/metadata.json",
+      "transcript": "/1/full.jsonl",
+      "compact_transcript": "/1/transcript.jsonl",
+      "content_hash": "/1/content_hash.txt",
       "prompt": ""
     }
   ],
