@@ -3,10 +3,12 @@
   "checkpoint_id": "01M46J8H3MNMDM08PNMTTJ8PK6",
   "strategy": "manual-commit",
   "branch": "hub/INVITE-002-skip-empty-meta-saves",
-  "checkpoints_count": 4,
+  "checkpoints_count": 6,
   "files_touched": [
     "apps/api/src/routes/client-auth/__tests__/assets.meta.test.ts",
-    "apps/api/src/routes/client-auth/assets.routes.ts"
+    "apps/api/src/routes/client-auth/assets.routes.ts",
+    "apps/web/src/components/client-auth/PlatformAuthWizard.tsx",
+    "apps/web/src/components/client-auth/__tests__/PlatformAuthWizard.test.tsx"
   ],
   "sessions": [
     {
@@ -22,6 +24,13 @@
       "compact_transcript": "/1/transcript.jsonl",
       "content_hash": "/1/content_hash.txt",
       "prompt": "/1/prompt.txt"
+    },
+    {
+      "metadata": "/2/metadata.json",
+      "transcript": "/2/full.jsonl",
+      "compact_transcript": "/2/transcript.jsonl",
+      "content_hash": "/2/content_hash.txt",
+      "prompt": "/2/prompt.txt"
     }
   ],
   "token_usage": {
