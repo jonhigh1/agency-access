@@ -22,6 +22,11 @@ import {
 } from "@/lib/comparison-data";
 import { getLeadsiePricingPage, isLeadsiePricingSlug } from "@/lib/leadsie-pricing-page";
 import { getThreeWayComparisonPage, isThreeWayComparisonSlug } from "@/lib/three-way-comparison-data";
+import { getCanonicalAppUrl } from "@/lib/app-url";
+
+function comparePageCanonical(slug: string): string {
+  return `${getCanonicalAppUrl()}/compare/${slug}`;
+}
 
 interface ComparisonPageProps {
   params: Promise<{ slug: string }>;
@@ -38,10 +43,14 @@ export async function generateMetadata({ params }: ComparisonPageProps): Promise
       title: threeWayPage.metaTitle,
       description: threeWayPage.metaDescription,
       keywords: threeWayPage.keywords,
+      alternates: {
+        canonical: comparePageCanonical(slug),
+      },
       openGraph: {
         title: threeWayPage.metaTitle,
         description: ogDescription,
         type: "article",
+        url: comparePageCanonical(slug),
       },
     };
   }
@@ -54,10 +63,14 @@ export async function generateMetadata({ params }: ComparisonPageProps): Promise
       title: pricingPage.metaTitle,
       description: pricingPage.metaDescription,
       keywords: pricingPage.keywords,
+      alternates: {
+        canonical: comparePageCanonical(slug),
+      },
       openGraph: {
         title: pricingPage.metaTitle,
         description: ogDescription,
         type: "article",
+        url: comparePageCanonical(slug),
       },
     };
   }
@@ -76,10 +89,14 @@ export async function generateMetadata({ params }: ComparisonPageProps): Promise
     title: page.metaTitle,
     description: page.metaDescription,
     keywords: page.keywords,
+    alternates: {
+      canonical: comparePageCanonical(slug),
+    },
     openGraph: {
       title: page.metaTitle,
       description: ogDescription,
       type: "website",
+      url: comparePageCanonical(slug),
     },
   };
 }
