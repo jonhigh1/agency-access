@@ -14,6 +14,8 @@ afterAll(() => {
 
 vi.mock('@/lib/prisma', () => ({
   prisma: {
+    $transaction: vi.fn(),
+    $queryRaw: vi.fn(),
     googleNativeGrant: {
       findUnique: vi.fn(),
     },
@@ -71,9 +73,26 @@ import {
 } from '@/services/token-lifecycle.service';
 import { googleNativeAccessService } from '../google-native-access.service.js';
 
+function mockGrantedAssetsTransaction(): void {
+  vi.mocked(prisma.$transaction).mockImplementation(async (callback: (tx: typeof prisma) => unknown) =>
+    callback(prisma)
+  );
+  vi.mocked(prisma.$queryRaw).mockResolvedValue([
+    {
+      id: 'connection-1',
+      granted_assets: {
+        google_ads: {
+          adAccounts: ['9756457868'],
+        },
+      },
+    },
+  ] as never);
+}
+
 describe('GoogleNativeAccessService manager-link execution', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGrantedAssetsTransaction();
   });
 
   it('creates a manager-link invitation and persists client-pending lifecycle state', async () => {
@@ -382,6 +401,7 @@ describe('GoogleNativeAccessService manager-link execution', () => {
 describe('GoogleNativeAccessService direct user-invite execution', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGrantedAssetsTransaction();
   });
 
   it('creates a user invitation with the client token and persists agency-pending lifecycle state', async () => {
