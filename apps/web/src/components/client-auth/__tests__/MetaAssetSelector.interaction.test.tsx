@@ -235,8 +235,8 @@ describe('MetaAssetSelector interactions', () => {
     );
   });
 
-  it('verifies manually assigned Pixel access and reports Meta read-back', async () => {
-    const assetsResponse = {
+  it('selects Pixels and Datasets without showing manual Meta steps on the selection step', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce({
       ok: true,
       text: async () => JSON.stringify({ data: {
         businesses: [{ id: 'biz-1', name: 'Business' }],
@@ -244,10 +244,6 @@ describe('MetaAssetSelector interactions', () => {
         adAccounts: [], pages: [], instagramAccounts: [], productCatalogs: [],
         pixels: [{ id: 'pixel-1', name: 'Website Pixel' }],
       }, error: null }),
-    } as Response;
-    vi.mocked(fetch).mockResolvedValueOnce(assetsResponse).mockResolvedValueOnce({
-      ok: true,
-      text: async () => JSON.stringify({ data: { status: 'verified' }, error: null }),
     } as Response);
     const user = userEvent.setup();
     const onSelectionChange = vi.fn();
@@ -255,8 +251,6 @@ describe('MetaAssetSelector interactions', () => {
     render(<MetaAssetSelector sessionId="conn-1" accessRequestToken="token-1" allowedAssetTypes={['dataset']} onSelectionChange={onSelectionChange} />);
 
     expect(await screen.findByRole('heading', { name: 'Pixels and Datasets' })).toBeInTheDocument();
-    expect(screen.getByText(/selection alone does not prove access/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Open Meta Business Manager' })).toBeEnabled();
     await user.click(screen.getByText('Select Pixels and Datasets...', { exact: false }));
     await user.click(await screen.findByText('Website Pixel'));
     await waitFor(() => expect(onSelectionChange).toHaveBeenCalledWith(expect.objectContaining({
@@ -264,16 +258,15 @@ describe('MetaAssetSelector interactions', () => {
       selectedDatasetsWithNames: [{ id: 'pixel-1', name: 'Website Pixel' }],
       selectedAssetNames: expect.arrayContaining(['Website Pixel']),
     })));
-    await user.click(screen.getByLabelText('Verify access'));
-    await user.click(screen.getByRole('button', { name: 'Verify access' }));
-    expect(await screen.findByRole('status')).toHaveTextContent(/Meta confirmed access for every selected recipient/);
-    expect(fetch).toHaveBeenLastCalledWith('https://api.example.com/api/client/token-1/meta/datasets/verify', expect.objectContaining({
-      method: 'POST',
-      body: JSON.stringify({ connectionId: 'conn-1', datasetIds: ['pixel-1'] }),
-    }));
+
+    // The Business Settings walkthrough and verify live in the step-3 checklist.
+    expect(screen.queryByText('Manage Pixels and Datasets in Meta')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Open Meta Business Manager' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Verify access' })).not.toBeInTheDocument();
+    expect(fetch).toHaveBeenCalledTimes(1);
   });
 
-  it('keeps optional Leads Access separate from Page tasks and lead-data permission', async () => {
+  it('shows no Leads Access section when Leads Access is not requested', async () => {
     vi.mocked(fetch).mockResolvedValueOnce({
       ok: true,
       text: async () => JSON.stringify({ data: {
@@ -285,15 +278,12 @@ describe('MetaAssetSelector interactions', () => {
 
     render(<MetaAssetSelector sessionId="conn-1" accessRequestToken="token-1" allowedAssetTypes={['page']} onSelectionChange={vi.fn()} />);
 
-    expect(await screen.findByRole('heading', { name: 'Optional: Meta Leads Access' })).toBeInTheDocument();
-    expect(screen.getByText(/Leads Access is not included in this request/)).toBeInTheDocument();
-    expect(screen.getByText('leads_retrieval')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Review Leads Access in Meta Business Settings' })).toHaveAttribute(
-      'href', 'https://business.facebook.com/settings/biz-1'
-    );
+    await screen.findByText('Select pages...', { exact: false });
+    expect(screen.queryByText(/Leads Access/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Meta Business Settings/ })).not.toBeInTheDocument();
   });
 
-  it('shows task-based Leads Access as attempted and read-back gated', async () => {
+  it('tells the client requested Leads Access is confirmed after sharing, with no manual link here', async () => {
     vi.mocked(fetch).mockResolvedValueOnce({
       ok: true,
       text: async () => JSON.stringify({ data: {
@@ -311,10 +301,9 @@ describe('MetaAssetSelector interactions', () => {
       onSelectionChange={vi.fn()}
     />);
 
-    expect(await screen.findByText(/This request includes the Manage Leads Access Page task/)).toBeInTheDocument();
-    expect(screen.getByText(/AuthHub will attempt assignment and report Meta read-back/)).toBeInTheDocument();
-    expect(screen.getByText('leads_retrieval')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Open Meta Business Settings for Leads Access' })).toBeInTheDocument();
+    expect(await screen.findByText(/Leads Access is part of this request/)).toBeInTheDocument();
+    expect(screen.getByText(/after you share/i)).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Meta Business Settings/ })).not.toBeInTheDocument();
   });
 
   it('confirms with the selection count before a confirmed business switch and declines without changing anything', async () => {
@@ -505,10 +494,6 @@ describe('MetaAssetSelector interactions', () => {
     } as Response;
     vi.mocked(fetch)
       .mockResolvedValueOnce(assetsResponse)
-      .mockResolvedValueOnce({
-        ok: true,
-        text: async () => JSON.stringify({ data: { status: 'verified' }, error: null }),
-      } as Response)
       .mockResolvedValueOnce(switchedResponse);
 
     render(<MetaAssetSelector
@@ -522,16 +507,12 @@ describe('MetaAssetSelector interactions', () => {
     await screen.findByRole('heading', { name: 'Pixels and Datasets' });
     await user.click(screen.getByText('Select Pixels and Datasets...', { exact: false }));
     await user.click(await screen.findByText('Website Pixel'));
-    await user.click(screen.getByLabelText('Verify access'));
-    await user.click(screen.getByRole('button', { name: 'Verify access' }));
-    expect(await screen.findByRole('status')).toHaveTextContent(/Meta confirmed access for every selected recipient/);
 
     await chooseBusiness(user, /Business Two/);
     expect(screen.getByRole('alertdialog')).toHaveTextContent('1');
     await user.click(screen.getByRole('button', { name: 'Clear selection and switch' }));
 
     expect(onSelectionDerivedStateReset).toHaveBeenCalledTimes(1);
-    expect(screen.queryByText(/Meta confirmed access for every selected recipient/)).not.toBeInTheDocument();
     await findSharingReceipt('Business Two');
   });
 

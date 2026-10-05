@@ -132,6 +132,37 @@ describe('MetaGrantChecklist', () => {
     process.env.NEXT_PUBLIC_API_URL = 'https://api.example.com';
   });
 
+  it('shows the Leads Access Business Settings step inside the Pages item when the task is requested', () => {
+    render(
+      <MetaGrantChecklist
+        {...baseProps}
+        requestedPageTasks={['CREATE_CONTENT', 'MANAGE_LEADS']}
+        selectedAssets={blob({ pages: ['page_1'] })}
+      />
+    );
+
+    const pagesItem = screen.getByText('Pages').closest('[data-checklist-kind="page"]') as HTMLElement;
+    expect(pagesItem).not.toBeNull();
+    expect(pagesItem).toHaveTextContent(/Leads Access/);
+    expect(pagesItem).toHaveTextContent('leads_retrieval');
+    expect(
+      screen.getByRole('link', { name: 'Open Meta Business Settings for Leads Access' })
+    ).toHaveAttribute('href', 'https://business.facebook.com/settings/client-bm-1');
+  });
+
+  it('omits Leads Access when the task is not requested', () => {
+    render(
+      <MetaGrantChecklist
+        {...baseProps}
+        requestedPageTasks={['CREATE_CONTENT']}
+        selectedAssets={blob({ pages: ['page_1'] })}
+      />
+    );
+
+    expect(screen.queryByText(/Leads Access/)).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Meta Business Settings/ })).not.toBeInTheDocument();
+  });
+
   it('renders one bordered row per machine item in stable kind order', () => {
     render(
       <MetaGrantChecklist

@@ -165,8 +165,6 @@ export function MetaAssetSelector({
   // fetch: a re-fetch of the same portfolio must not drop an explicit decision;
   // only a selection of that kind (or a selection-derived reset) withdraws it.
   const [declinedKinds, setDeclinedKinds] = useState<Set<MetaDeclinableAssetKind>>(new Set());
-  const [datasetVerification, setDatasetVerification] = useState<string | null>(null);
-  const [isVerifyingDatasets, setIsVerifyingDatasets] = useState(false);
   const [showCatalogCreator, setShowCatalogCreator] = useState(false);
   const [catalogName, setCatalogName] = useState('');
   const [catalogCreationErrorsFor, setCatalogCreationErrorsFor] = useState<Record<string, string>>({});
@@ -201,10 +199,6 @@ export function MetaAssetSelector({
   const activeBusinessIdRef = useRef(activeBusinessId);
   const assetFetchVersion = useRef(0);
   const businessCreationVersion = useRef(0);
-  const datasetVerificationVersion = useRef(0);
-  const datasetVerificationKey = JSON.stringify([activeBusinessId, [...selectedDatasets].sort()]);
-  const datasetVerificationKeyRef = useRef(datasetVerificationKey);
-  datasetVerificationKeyRef.current = datasetVerificationKey;
   activeBusinessIdRef.current = activeBusinessId;
   const showAdAccounts = allowedAssetTypes.includes('ad_account');
   const showPages = allowedAssetTypes.includes('page');
@@ -388,50 +382,6 @@ export function MetaAssetSelector({
       setIsRefreshingCatalogs(false);
     }
   };
-
-  const verifyDatasetAccess = async () => {
-    if (selectedDatasets.size === 0) {
-      setDatasetVerification('Select at least one Pixel or Dataset first.');
-      return;
-    }
-    const version = ++datasetVerificationVersion.current;
-    const requestKey = datasetVerificationKeyRef.current;
-    setIsVerifyingDatasets(true);
-    setDatasetVerification(null);
-    try {
-      const response = await fetch(`${getApiBaseUrl()}/api/client/${accessRequestToken}/meta/datasets/verify`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ connectionId: sessionId, datasetIds: Array.from(selectedDatasets) }),
-      });
-      const json = await parseJsonResponse<{ data?: { status?: string }; error?: { message?: string } }>(response, {
-        fallbackErrorMessage: 'Could not verify Pixel or Dataset access',
-      });
-      if (json.error) throw new ApiResponseError(json.error.message || 'Could not verify Pixel or Dataset access');
-      if (version !== datasetVerificationVersion.current || requestKey !== datasetVerificationKeyRef.current) return;
-      const status = json.data?.status;
-      setDatasetVerification(status === 'verified'
-        ? 'Meta confirmed access for every selected recipient and required task.'
-        : status === 'partial'
-          ? 'Meta confirmed some access. Review the remaining people, partner, or tasks in Business Settings.'
-          : 'Meta did not confirm the required access. Check the people, partner, and tasks in Business Settings, then verify again.');
-    } catch (err) {
-      if (version === datasetVerificationVersion.current && requestKey === datasetVerificationKeyRef.current) {
-        setDatasetVerification(err instanceof Error ? err.message : 'Could not verify Pixel or Dataset access.');
-      }
-    } finally {
-      if (version === datasetVerificationVersion.current) setIsVerifyingDatasets(false);
-    }
-  };
-
-  useEffect(() => {
-    datasetVerificationVersion.current += 1;
-    setDatasetVerification(null);
-    setIsVerifyingDatasets(false);
-    return () => {
-      datasetVerificationVersion.current += 1;
-    };
-  }, [activeBusinessId, selectedDatasets]);
 
   const fetchAssets = async (requestedBusinessId?: string) => {
     const fetchVersion = ++assetFetchVersion.current;
@@ -803,8 +753,6 @@ export function MetaAssetSelector({
     // Declines are selection-derived too: a switch lands on a different
     // portfolio than the one the decision was about.
     setDeclinedKinds(new Set());
-    setDatasetVerification(null);
-    setIsVerifyingDatasets(false);
     setCatalogCreationErrorsFor({});
     // U9 registration: the manual-grant checklist persists per-row check
     // state in sessionStorage. It is selection-derived, so a business switch
@@ -1105,26 +1053,10 @@ export function MetaAssetSelector({
         </div>
         ) : null}
 
-        {showPages && activeBusinessId ? (
-          <section aria-labelledby="meta-leads-access-heading" className="border-t border-black/10 p-4 dark:border-white/10">
-            <h3 id="meta-leads-access-heading" className="text-lg font-bold text-[rgb(var(--ink))] font-display">
-              {requestedPageTasks.includes('MANAGE_LEADS') ? 'Requested: Meta Leads Access' : 'Optional: Meta Leads Access'}
-            </h3>
-            <p className="mt-2 text-sm text-[rgb(var(--muted-foreground))]">
-              {requestedPageTasks.includes('MANAGE_LEADS')
-                ? <>This request includes the Manage Leads Access Page task for selected agency recipients. AuthHub will attempt assignment and report Meta read-back. It does not read lead records or request <code>leads_retrieval</code>. If Meta does not verify the task, use Business Settings and keep access pending until AuthHub confirms it.</>
-                : <>Leads Access is not included in this request. Page task sharing alone does not confirm it. AuthHub does not read lead records or request <code>leads_retrieval</code>.</>}
-            </p>
-            <Button asChild variant="secondary" className="mt-3">
-              <a
-                href={`https://business.facebook.com/settings/${encodeURIComponent(activeBusinessId)}`}
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                {requestedPageTasks.includes('MANAGE_LEADS') ? 'Open Meta Business Settings for Leads Access' : 'Review Leads Access in Meta Business Settings'}
-              </a>
-            </Button>
-          </section>
+        {showPages && requestedPageTasks.includes('MANAGE_LEADS') ? (
+          <p className="border-t border-black/10 pt-4 text-sm text-[rgb(var(--muted-foreground))] dark:border-white/10">
+            Leads Access is part of this request. We confirm it with you right after you share.
+          </p>
         ) : null}
 
         {/* Instagram Accounts - Keep as AssetGroup for now */}
@@ -1193,13 +1125,13 @@ export function MetaAssetSelector({
         ) : null}
 
         {showPixels ? (
-          <section aria-labelledby="meta-pixels-heading" className="border-t border-black/10 p-4 dark:border-white/10">
-            <div className="flex items-center justify-between gap-3">
+          <section aria-labelledby="meta-pixels-heading" className="border-t border-black/10 pt-4 dark:border-white/10">
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
               <h3 id="meta-pixels-heading" className="text-lg font-bold text-[rgb(var(--ink))] font-display">Pixels and Datasets</h3>
               <span className="label-micro">{assets?.pixels?.length || 0} FOUND</span>
             </div>
             <p className="mt-2 text-sm text-[rgb(var(--muted-foreground))]">
-              Select the client’s Pixels or Datasets needed for this request. Assign the requested access to each selected recipient and the agency partner in Meta. Then verify it here. Selection alone does not prove access.
+              Select the Pixels or Datasets this request needs. We walk you through assigning access in Meta right after you share.
             </p>
             {(assets?.pixels?.length || 0) > 0 ? (
               <MultiSelectCombobox
@@ -1210,25 +1142,6 @@ export function MetaAssetSelector({
               />
             ) : <p className="mt-3 text-sm text-[rgb(var(--muted-foreground))]">No Pixels were returned for this Business Portfolio.</p>}
             {renderDeclineToggle('dataset')}
-            {datasetVerification ? <p role="status" className="mt-3 text-sm text-[rgb(var(--ink))]">{datasetVerification}</p> : null}
-            {activeBusinessId ? (
-              <div className="mt-4">
-                <GuidedRedirectCard
-                  title="Manage Pixels and Datasets in Meta"
-                  description="Assign the requested access to each recipient and the agency partner. Return here to check the access that Meta reports."
-                  businessManagerUrl={`https://business.facebook.com/settings/${encodeURIComponent(activeBusinessId)}`}
-                  instructions={[
-                    { title: 'Open this Business Portfolio in Meta Business Settings.' },
-                    { title: 'Open Data Sources, then Pixels or Datasets. Assign the requested tasks to each selected person and the agency partner.' },
-                    { title: 'Return here and verify access. AuthHub reports only the access that Meta confirms.' },
-                  ]}
-                  onRefresh={verifyDatasetAccess}
-                  isRefreshing={isVerifyingDatasets}
-                  completionLabel="Verify access"
-                  actionLabel="Verify access"
-                />
-              </div>
-            ) : null}
           </section>
         ) : null}
       </div>

@@ -336,43 +336,4 @@ describe('MetaAssetSelector', () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3));
     await findSharingReceipt('Client One');
   });
-
-  it('ignores dataset verification that returns after the selection changes', async () => {
-    const makeResponse = (data: unknown) => ({
-      ok: true,
-      text: async () => JSON.stringify({ data, error: null }),
-    } as Response);
-    let resolveVerification!: (response: Response) => void;
-    const fetchMock = vi.fn()
-      .mockResolvedValueOnce(makeResponse({
-        businesses: [{ id: 'biz_1', name: 'Client One' }],
-        selectionRequired: false,
-        selectedBusinessId: 'biz_1',
-        selectedBusinessName: 'Client One',
-        adAccounts: [], pages: [], instagramAccounts: [], productCatalogs: [],
-        pixels: [{ id: 'pixel_old', name: 'Old Pixel' }],
-      }))
-      .mockReturnValueOnce(new Promise<Response>((resolve) => { resolveVerification = resolve; }));
-    vi.stubGlobal('fetch', fetchMock);
-
-    render(
-      <MetaAssetSelector
-        sessionId="conn-1"
-        accessRequestToken="token-1"
-        allowedAssetTypes={['dataset']}
-        onSelectionChange={vi.fn()}
-      />
-    );
-
-    await findSharingReceipt('Client One');
-    fireEvent.click(screen.getByRole('button', { name: 'Select pixel' }));
-    fireEvent.click(screen.getByRole('button', { name: 'Verify access' }));
-    await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
-
-    fireEvent.click(screen.getByRole('button', { name: 'Clear pixels' }));
-    await act(async () => resolveVerification(makeResponse({ status: 'verified' })));
-
-    expect(screen.queryByText(/Meta confirmed access for every selected recipient/i)).not.toBeInTheDocument();
-    expect(screen.queryByRole('status')).not.toBeInTheDocument();
-  });
 });

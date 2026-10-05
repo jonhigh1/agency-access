@@ -153,7 +153,7 @@ describe('resolveCta', () => {
     expect(resolution).toEqual({ kind: 'ready', disabled: false });
   });
 
-  it('stays disabled while any product in a grouped request still needs a selection', () => {
+  it('is ready when one product in a grouped request has a selection and another has none', () => {
     const resolution = resolveCta(
       buildInput({
         products: [
@@ -171,7 +171,53 @@ describe('resolveCta', () => {
       })
     );
 
-    expectDisabled(resolution, 'Select at least one Page to continue');
+    expect(resolution).toEqual({ kind: 'ready', disabled: false });
+  });
+
+  it('is ready for Meta when an ad account and a Page are selected but Instagram has no selection', () => {
+    // Regression: the three Meta products share one selection blob, and the
+    // Instagram product reports zero whenever no Instagram account is chosen.
+    const resolution = resolveCta(
+      buildInput({
+        products: [
+          { product: 'meta_ads', selectedCount: 2, zeroSelectionMode: 'selection-required' },
+          { product: 'meta_pages', selectedCount: 1, zeroSelectionMode: 'selection-required' },
+          { product: 'instagram', selectedCount: 0, zeroSelectionMode: 'selection-required' },
+        ],
+      })
+    );
+
+    expect(resolution).toEqual({ kind: 'ready', disabled: false });
+  });
+
+  it('still demands a selection when every product in a grouped request is empty', () => {
+    const resolution = resolveCta(
+      buildInput({
+        products: [
+          { product: 'meta_ads', selectedCount: 0, zeroSelectionMode: 'selection-required' },
+          { product: 'meta_pages', selectedCount: 0, zeroSelectionMode: 'selection-required' },
+          { product: 'instagram', selectedCount: 0, zeroSelectionMode: 'selection-required' },
+        ],
+      })
+    );
+
+    expectDisabled(resolution, 'Select at least one ad account to continue');
+  });
+
+  it('does not let a selection hide an in-flight load or fetch failure', () => {
+    const products = [
+      { product: 'meta_ads', selectedCount: 1, zeroSelectionMode: 'selection-required' as const },
+      { product: 'instagram', selectedCount: 0, zeroSelectionMode: 'selection-required' as const },
+    ];
+
+    expectDisabled(
+      resolveCta(buildInput({ products, assetsLoading: true })),
+      CTA_REASONS.preparing
+    );
+    expectDisabled(
+      resolveCta(buildInput({ products, assetsFetchError: 'boom' })),
+      CTA_REASONS.assetsFetchFailed
+    );
   });
 
   it('is disabled with a neutral saving reason while the save request is in flight', () => {

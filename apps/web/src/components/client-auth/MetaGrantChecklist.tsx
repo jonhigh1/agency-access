@@ -18,6 +18,7 @@
  */
 
 import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { Button } from '@/components/ui/button';
 import { StatusBadge, type StatusVariant } from '@/components/ui/status-badge';
 import { trackClientGrantItemCompleted } from '@/lib/analytics/invite-events';
 import { AutomaticPagesGrant } from './AutomaticPagesGrant';
@@ -86,6 +87,8 @@ interface MetaGrantChecklistProps {
   overlay?: Readonly<Record<string, MetaGrantItemState>>;
   /** Selector parity flag; catalog UI already gates on the selection blob. */
   metaCatalogEnabled?: boolean;
+  /** Page tasks the agency requested; MANAGE_LEADS adds a Leads Access step. */
+  requestedPageTasks?: readonly string[];
 }
 
 /** Kinds with a panel the client can act on right now. */
@@ -104,6 +107,7 @@ export function MetaGrantChecklist({
   onError,
   onItemSettled,
   overlay,
+  requestedPageTasks,
 }: MetaGrantChecklistProps) {
   const checklist = useMemo(
     () =>
@@ -308,6 +312,23 @@ export function MetaGrantChecklist({
               onGrantComplete={handlePagesGrantComplete}
               onError={onError}
             />
+            {requestedPageTasks?.includes('MANAGE_LEADS') && clientBusinessId ? (
+              <div className="border-t border-black/10 pt-4 dark:border-white/10">
+                <h5 className="text-sm font-semibold text-ink">Leads Access</h5>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  This request includes the Manage Leads Access Page task. We attempt the assignment and report what Meta confirms. We never read lead records or request <code>leads_retrieval</code>. If Meta does not confirm it, assign it in Business Settings and it stays pending until we can confirm it.
+                </p>
+                <Button asChild variant="secondary" className="mt-3">
+                  <a
+                    href={`https://business.facebook.com/settings/${encodeURIComponent(clientBusinessId)}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Open Meta Business Settings for Leads Access
+                  </a>
+                </Button>
+              </div>
+            ) : null}
           </div>
         );
       case 'ad_account':

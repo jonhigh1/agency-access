@@ -8,8 +8,10 @@
  *
  * Mapping rules:
  * - Exactly one reason wins. Precedence: terminal request state, save in
- *   flight, post-save advance, loading, fetch error, business lookup, then the
- *   per-product selection rules.
+ *   flight, post-save advance, loading, fetch error, business lookup, any
+ *   selection (ready), then the zero-selection rules.
+ * - One selection across all products is enough. Partial access is saveable;
+ *   products left empty become pending work, not a block.
  * - Loading and in-flight states yield neutral reasons. They NEVER yield a
  *   selection demand, because the client has not yet been able to select.
  * - Failure states name the failure and the retry affordance ("Try again").
@@ -162,21 +164,28 @@ export function resolveCta(input: CtaReasonInput): CtaResolution {
     return disabledWithReason('business_lookup_error', CTA_REASONS.businessLookupFailed);
   }
 
-  // 6. Per-product selection rules. Creation comes first: the client cannot
-  //    select what does not exist yet.
+  // 6. A selection anywhere is shareable. Partial access is a real outcome:
+  //    products with no selection stay out of the save and surface as pending
+  //    work later, never as a block here. The Meta products share one
+  //    selection blob, so a product-by-product demand would block a client who
+  //    chose an ad account and a Page but has no Instagram account.
+  if (input.products.some((product) => product.selectedCount > 0)) {
+    return enabled('ready');
+  }
+
+  // 7. Nothing is selected. Creation comes first: the client cannot select
+  //    what does not exist yet.
   for (const product of input.products) {
-    if (product.selectedCount > 0) continue;
     if (product.zeroSelectionMode === 'create-required') {
       return disabledWithReason('create_required', createAccountReason(input.businessName));
     }
   }
   for (const product of input.products) {
-    if (product.selectedCount > 0) continue;
     if (product.zeroSelectionMode === 'selection-required') {
       return disabledWithReason('select_required', selectRequiredReason(product.product));
     }
   }
 
-  // 7. Everything is selected, or every zero selection is a saveable follow-up.
+  // 8. Every zero selection is a saveable follow-up or an explicit decline.
   return enabled('ready');
 }

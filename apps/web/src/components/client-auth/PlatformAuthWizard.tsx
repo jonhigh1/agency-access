@@ -458,6 +458,15 @@ function getProductSummaryLines(product: string, assets: any, checklist?: MetaGr
   }
 }
 
+const PAGE_TASK_LABELS: Record<string, string> = {
+  MANAGE: 'Manage settings',
+  CREATE_CONTENT: 'Create content',
+  MODERATE: 'Moderate',
+  ADVERTISE: 'Advertise',
+  ANALYZE: 'View insights',
+  MANAGE_LEADS: 'Manage Leads Access',
+};
+
 export function PlatformAuthWizard({
   platform,
   platformName,
@@ -1122,9 +1131,13 @@ export function PlatformAuthWizard({
   const hasZeroAssetFollowUp = Object.entries(groupAssets).some(
     ([product, assets]) => getSelectedAssetCount(product, assets) === 0 && hasNoAssetsFollowUp(product, assets)
   );
+  // The checklist is the source of truth for pending grants: blob flags only
+  // appear once a panel has run, so a fresh partial share would otherwise read
+  // as fully granted above its own pending items.
   const hasMetaFollowUp =
     platform === 'meta' &&
-    getMetaFollowUpLines(groupAssets['meta_ads'] || {}, metaChecklist).length > 0;
+    (metaChecklist.remainingCount > 0 ||
+      getMetaFollowUpLines(groupAssets['meta_ads'] || {}, metaChecklist).length > 0);
 
   // Render step content
   const renderStepContent = () => {
@@ -1308,7 +1321,7 @@ export function PlatformAuthWizard({
                     Choose accounts to share
                   </h3>
                   <p className="text-sm text-muted-foreground dark:text-muted-foreground mt-1">
-                    Select the specific accounts you want to share.
+                    Select the accounts you can share now. Anything left to do shows up in the next step.
                   </p>
                 </div>
                 <m.div
@@ -1339,7 +1352,13 @@ export function PlatformAuthWizard({
             <div className="space-y-10">
               {/* Show all products that require asset selection */}
               {products
-                .filter((p) => supportsAssetSelection(p.product))
+                // The Meta products share one selector, so only the primary
+                // renders; the others would be headings over a repeat note.
+                .filter(
+                  (p) =>
+                    supportsAssetSelection(p.product) &&
+                    !(isMetaAssetProduct(p.product) && primaryMetaAssetProduct !== p.product)
+                )
                 .map((p) => {
                   // Map product IDs to display names (some products aren't in PLATFORM_CONFIG)
                   const productNameMap: Record<string, string> = {
@@ -1356,7 +1375,11 @@ export function PlatformAuthWizard({
                     'tiktok': 'TikTok Ads',
                     'tiktok_ads': 'TikTok Ads',
                   };
-                  const productName = PLATFORM_NAMES[p.product as Platform] || productNameMap[p.product] || p.product;
+                  // The one Meta selector covers ads, Pages, and Instagram, so
+                  // it is named for the platform, not for a single product.
+                  const productName = isMetaAssetProduct(p.product)
+                    ? platformName
+                    : PLATFORM_NAMES[p.product as Platform] || productNameMap[p.product] || p.product;
 
                   return (
                     <div key={p.product} className="space-y-3">
@@ -1379,7 +1402,7 @@ export function PlatformAuthWizard({
                               </ul>
                               {metaAccessConfig.pageTasks.length > 0 ? (
                                 <p className="mt-2 text-xs text-muted-foreground">
-                                  Page tasks: {metaAccessConfig.pageTasks.map((task) => task === 'MANAGE_LEADS' ? 'Manage Leads Access' : task).join(', ')}
+                                  Page tasks: {metaAccessConfig.pageTasks.map((task) => PAGE_TASK_LABELS[task] ?? task).join(', ')}
                                 </p>
                               ) : null}
                             </div>
@@ -1401,12 +1424,6 @@ export function PlatformAuthWizard({
                             onError={handleSelectorError}
                           />
                         </div>
-                      )}
-
-                      {isMetaAssetProduct(p.product) && primaryMetaAssetProduct !== p.product && (
-                        <p className="text-sm text-muted-foreground">
-                          Account selection is shared with {PLATFORM_NAMES[primaryMetaAssetProduct as Platform] || primaryMetaAssetProduct}.
-                        </p>
                       )}
 
                       {/* Use generic GoogleAssetSelector for all Google products */}
@@ -1665,6 +1682,7 @@ export function PlatformAuthWizard({
                 businessId={businessId}
                 businessName={businessName}
                 metaCatalogEnabled={metaCatalogEnabled}
+                requestedPageTasks={metaAccessConfig?.pageTasks}
                 onError={setError}
                 onItemSettled={handleItemSettled}
                 overlay={checklistOverlay}

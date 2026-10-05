@@ -999,7 +999,7 @@ describe('PlatformAuthWizard', () => {
     ]);
   });
 
-  it('blocks a grouped Meta save when Instagram has no selected accounts', async () => {
+  it('saves a grouped Meta selection when Instagram has no selected accounts', async () => {
     vi.mocked(fetch).mockResolvedValue({
       ok: true,
       text: async () => JSON.stringify({ data: { success: true }, error: null }),
@@ -1023,11 +1023,41 @@ describe('PlatformAuthWizard', () => {
     fireEvent.click(screen.getByRole('button', { name: /select meta assets/i }));
     const shareButton = await screen.findByRole('button', { name: /share access/i });
 
-    expect(shareButton).toBeDisabled();
+    // The selected ad account is shareable on its own. Instagram stays unshared.
+    await waitFor(() => expect(shareButton).toBeEnabled());
     fireEvent.click(shareButton);
+
+    await waitFor(() => {
+      const saveCall = vi.mocked(fetch).mock.calls.find(([url]) => String(url).includes('/save-assets'));
+      expect(saveCall).toBeDefined();
+      const body = JSON.parse(String(saveCall?.[1]?.body));
+      expect(body.selectedAssets.adAccounts.length).toBeGreaterThan(0);
+      expect(body.selectedAssets.instagramAccounts ?? []).toHaveLength(0);
+    });
+  });
+
+  it('shows one Meta selection area for a grouped request and says what happens after sharing', async () => {
+    render(
+      <PlatformAuthWizard
+        platform="meta"
+        platformName="Meta"
+        products={[
+          { product: 'meta_ads', accessLevel: 'admin' },
+          { product: 'meta_pages', accessLevel: 'admin' },
+          { product: 'instagram', accessLevel: 'admin' },
+        ]}
+        accessRequestToken="token-1"
+        onComplete={onCompleteMock}
+        initialConnectionId="conn-1"
+        initialStep={2}
+      />
+    );
+
+    expect(screen.getAllByRole('button', { name: /select meta assets/i })).toHaveLength(1);
+    expect(screen.queryByText(/Account selection is shared with/i)).not.toBeInTheDocument();
     expect(
-      vi.mocked(fetch).mock.calls.filter(([url]) => String(url).includes('/save-assets'))
-    ).toHaveLength(0);
+      screen.getByText(/anything left to do .* next step/i)
+    ).toBeInTheDocument();
   });
 
   it('selects and saves Instagram-only Meta assets', async () => {
@@ -1976,6 +2006,40 @@ describe('PlatformAuthWizard', () => {
       expect(
         screen.getByRole('button', { name: /finish — 2 items left/i })
       ).toBeInTheDocument();
+    });
+
+    it('does not claim access was granted while the checklist still has items left', async () => {
+      vi.mocked(fetch)
+        .mockResolvedValueOnce({
+          ok: true,
+          text: async () =>
+            JSON.stringify({
+              data: { businessId: 'partner-bm-1', businessName: 'Agency Access' },
+              error: null,
+            }),
+        } as Response)
+        .mockResolvedValue({
+          ok: true,
+          text: async () => JSON.stringify({ data: { success: true }, error: null }),
+        } as Response);
+
+      renderShareScreen({
+        platform: 'meta',
+        platformName: 'Meta',
+        products: [{ product: 'meta_ads', accessLevel: 'admin' }],
+        completionActionLabel: 'Finish request',
+        metaFulfillment: [fulfillmentRow({ assetId: 'act_1', status: 'sharing_attempted' })],
+      });
+
+      fireEvent.click(screen.getByRole('button', { name: /select meta assets/i }));
+      fireEvent.click(await screen.findByRole('button', { name: /share access/i }));
+
+      expect(await screen.findByRole('heading', { name: /connected/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /finish — 2 items left/i })).toBeInTheDocument();
+      expect(screen.getByText('Some Meta accounts still need follow-up.')).toBeInTheDocument();
+      expect(
+        screen.queryByText('Access granted to the accounts you selected.')
+      ).not.toBeInTheDocument();
     });
 
     it('labels the finish action with the remaining checklist count', async () => {
