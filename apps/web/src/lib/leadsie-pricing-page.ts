@@ -1,5 +1,5 @@
 /**
- * Leadsie pricing breakdown — programmatic compare article (copy verified 2026-09-23)
+ * Leadsie pricing breakdown — programmatic compare article (copy verified 2026-10-05)
  */
 
 const LEADSIE_PRICING_AUTHHUB_PLATFORM_BREADTH = "15+";
@@ -9,9 +9,11 @@ export const LEADSIE_PRICING_SLUG = "leadsie-pricing";
 export interface LeadsiePlanRow {
   name: string;
   monthly: string;
-  yearly: string;
-  onboardingCredits: string;
-  auditCredits: string;
+  yearlyTotal: string;
+  effectiveMonthly: string;
+  newClients: string;
+  prospects: string;
+  keyGates: string;
 }
 
 export interface LeadsieOverageRow {
@@ -21,12 +23,15 @@ export interface LeadsieOverageRow {
   auditCredits: string;
 }
 
-export interface LeadsieWorkedExampleRow {
-  newClients: string;
+export interface LeadsieWorkedExample {
+  label: string;
+  scenario: string;
   leadsiePath: string;
   leadsieCost: string;
   authHubPlan: string;
   authHubCost: string;
+  deltaNote: string;
+  extraNote?: string;
 }
 
 export interface LeadsiePricingFaq {
@@ -40,16 +45,28 @@ export interface LeadsiePricingPageData {
   metaTitle: string;
   metaDescription: string;
   openGraphDescription?: string;
+  datePublished: string;
   lastVerified: string;
-  introLead: string;
+  lastVerifiedDisplay: string;
+  answerBox: string;
+  priceCheckNote: string;
+  annualCreditPoolsIntro: string;
+  annualCreditPoolsBullets: string[];
   plans: LeadsiePlanRow[];
   overagePacks: LeadsieOverageRow[];
   creditBullets: string[];
-  runOutNote: string;
-  workedExamples: LeadsieWorkedExampleRow[];
+  runOutIntro: string;
+  unitsDifferenceRows: { label: string; leadsie: string; authHub: string }[];
+  unitsCallout: string;
+  authHubPricingNote: string;
+  workedExamplesIntro: string;
+  workedExamples: LeadsieWorkedExample[];
   workedExamplesFootnote: string;
   stayOnLeadsie: string[];
   switchToAuthHub: string[];
+  migrationIntro: string;
+  migrationSteps: string[];
+  migrationFootnote: string;
   faqs: LeadsiePricingFaq[];
   bottomLine: string;
   keywords: string[];
@@ -57,49 +74,69 @@ export interface LeadsiePricingPageData {
 
 export const leadsiePricingPage: LeadsiePricingPageData = {
   slug: LEADSIE_PRICING_SLUG,
-  title: "Leadsie Pricing (2026): Plans, Credits, and Real Monthly Cost",
-  metaTitle: "Leadsie Pricing (2026): Plans, Credits & Real Cost",
+  title: "Leadsie Pricing 2026: Plans, Credits, and What a Busy Month Really Costs",
+  metaTitle: "Leadsie Pricing 2026: $59–$299/mo + What Overages Really Cost",
   metaDescription:
-    "Leadsie plans start at $59/mo for 3 client credits. See credit rules, $50 overages, and busy-month cost vs AuthHub fixed tiers.",
+    "Leadsie costs $59, $129 or $299/mo. We priced busy months at 5, 10, 20 and 50 new clients — including $50 overage packs — then matched AuthHub active-client tiers. Checked Oct 2026.",
   openGraphDescription:
-    "Leadsie pricing explained: Starter, Agency, Pro, onboarding vs audit credits, $50 overage packs, and what a 10- or 20-client month actually costs.",
-  lastVerified: "2026-09-23",
-  introLead:
-    "Leadsie plans start at $59/month for 3 onboarding credits. Busy months add $50 overage packs. Below is how credits work, what a real month costs at 5 / 10 / 15 / 20 / 50 new clients, and how AuthHub’s fixed tiers compare. Prices are pre-tax and were checked on Leadsie’s pricing page on September 23, 2026 — confirm both vendors before you buy.",
+    "Leadsie list prices, credit rules, $50 overage packs, annual pools, and busy-month math vs AuthHub active-client tiers — units matched honestly. Checked Oct 2026.",
+  datePublished: "2026-09-23",
+  lastVerified: "2026-10-05",
+  lastVerifiedDisplay: "October 5, 2026 (~09:37 AM PT)",
+  answerBox:
+    "Leadsie costs $59, $129, or $299/mo (Starter / Agency / Pro) for 3 / 10 / 50 new-client credits, larger audit pools, and $50 overage packs past the cap. List price isn’t always the bill — busy months add packs (or force an upgrade); annual plans pool credits for the year. Below: plans, credit rules, annual pools, and busy-month math vs AuthHub’s active-client tiers — units matched honestly.",
+  priceCheckNote:
+    "Prices are pre-tax, checked October 5, 2026 (~09:37 AM PT) on Leadsie pricing and AuthHub pricing. Verify both vendors live before you buy.",
+  annualCreditPoolsIntro:
+    "Yearly plans front a year of credits: Starter 36 + 120, Agency 120 + 600, Pro 600 + 3,000 (clients + prospects). Quiet months can subsidize spikes until the pool is gone. Monthly plans still get ~3-month rollover. Confirm Leadsie’s annual toggle before you commit.",
+  annualCreditPoolsBullets: [
+    "Three public monthly plans, plus Enterprise on request. Annual billing pools credits for the year (~two months free on the yearly path).",
+    "Sources: leadsie.com/pricing, Leadsie help pricing article (updated July 1, 2026). USD; tax at checkout. 14-day trial (no card); 30-day money-back.",
+  ],
   plans: [
     {
       name: "Starter",
       monthly: "$59",
-      yearly: "~$49/mo ($590/yr)",
-      onboardingCredits: "3 / month",
-      auditCredits: "10 / month",
+      yearlyTotal: "$590/yr",
+      effectiveMonthly: "~$49/mo",
+      newClients: "3/mo (annual 36/yr)",
+      prospects: "10/mo (120/yr)",
+      keyGates: "Core 1-link access",
     },
     {
       name: "Agency",
       monthly: "$129",
-      yearly: "~$107/mo ($1,290/yr)",
-      onboardingCredits: "10 / month",
-      auditCredits: "50 / month",
+      yearlyTotal: "$1,290/yr",
+      effectiveMonthly: "~$107/mo",
+      newClients: "10/mo (annual 120/yr)",
+      prospects: "50/mo (600/yr)",
+      keyGates: "White-label & embed, webhooks, unlimited teams",
     },
     {
       name: "Pro",
       monthly: "$299",
-      yearly: "~$249/mo ($2,990/yr)",
-      onboardingCredits: "50 / month",
-      auditCredits: "250 / month",
+      yearlyTotal: "$2,990/yr",
+      effectiveMonthly: "~$249/mo",
+      newClients: "50/mo (annual 600/yr)",
+      prospects: "250/mo (3,000/yr)",
+      keyGates: "Agency gates + multi-brand (up to 3)",
     },
     {
       name: "Enterprise",
       monthly: "Custom",
-      yearly: "Custom",
-      onboardingCredits: "Custom",
-      auditCredits: "Custom",
+      yearlyTotal: "Custom",
+      effectiveMonthly: "Custom",
+      newClients: "Custom",
+      prospects: "Custom",
+      keyGates: "API / custom (contact)",
     },
   ],
   creditBullets: [
-    "Onboarding credit: each new client that grants manager or admin access uses one credit, regardless of how many assets they share.",
-    "Audit credit: view-only access checks use separate audit credits.",
-    "Rollover: unused credits roll over for about three months on paid plans.",
+    "Onboarding — new client grants manager/admin access → 1 credit (any asset count).",
+    "Audit (prospect) — view-only; larger pool than onboarding on every plan.",
+    "Prospect → client — upgrade to manage/admin costs an onboarding credit.",
+    "Rollover — unused credits typically roll ~three months on monthly plans.",
+    "“Onboarding credits” ≈ “new clients with manage access this month.” That number drives the invoice.",
   ],
   overagePacks: [
     {
@@ -121,90 +158,147 @@ export const leadsiePricingPage: LeadsiePricingPageData = {
       auditCredits: "+50",
     },
   ],
-  runOutNote:
-    "Your access links stay live when credits run out — Leadsie does not shut off existing requests. The cliff is buying $50 overage packs (or upgrading) before the next onboarding or audit you need.",
+  runOutIntro:
+    "Active subscriptions keep links live over the cap. Going over triggers a $50 overage pack (or an upgrade). Same Agency plan, different pack counts → different invoices.",
+  unitsDifferenceRows: [
+    {
+      label: "Meter",
+      leadsie: "New-client / prospect credits per month (or annual pools)",
+      authHub: "Active-client roster caps",
+    },
+    {
+      label: "Public caps",
+      leadsie: "3 / 10 / 50 new clients + audit pools",
+      authHub: "5 / 20 / 50 active clients",
+    },
+    {
+      label: "Spike cost",
+      leadsie: "$50 packs or upgrade",
+      authHub: "Upgrade when roster exceeds cap",
+    },
+    {
+      label: "Accumulation",
+      leadsie: "Credits reset (with rollover)",
+      authHub: "Actives accumulate until churn / offboard",
+    },
+  ],
+  unitsCallout:
+    "Why “10–20 new/mo = Growth $79” was wrong: Growth caps 20 active clients, not 20 new onboards. At 10–20 news/month with low churn, you cross 20 actives in ~2–3 months. Examples pair Leadsie onboard math with an explicit AuthHub roster.",
+  authHubPricingNote:
+    "AuthHub monthly (primary): $29 / $79 / $149 for 5 / 20 / 50 actives. Annual ~$24 / $66 / $124/mo — footnote only.",
+  workedExamplesIntro:
+    "Assumptions labeled. Pre-tax. Lowest Leadsie monthly path covering the onboard load (incl. $50 packs). AuthHub = tier for the stated active roster.",
   workedExamples: [
     {
-      newClients: "5",
-      leadsiePath: "Starter + 1 overage",
+      label: "A",
+      scenario: "~5 active clients, ~5 new onboards",
+      leadsiePath: "Starter + 1 pack (3+3 ≥ 5)",
       leadsieCost: "$109",
-      authHubPlan: "Starter",
+      authHubPlan: "Starter (5 active)",
       authHubCost: "$29",
+      deltaNote: "Delta: $80 if AuthHub stays at 5 actives.",
+      extraNote: "Net-new, no churn → Starter breaks next month.",
     },
     {
-      newClients: "10",
-      leadsiePath: "Agency",
+      label: "B",
+      scenario: "~18 active, ~8–10 new onboards",
+      leadsiePath: "Agency (≤10 news)",
       leadsieCost: "$129",
-      authHubPlan: "Growth",
+      authHubPlan: "Growth (18 ≤ 20)",
       authHubCost: "$79",
+      deltaNote: "Delta: $50.",
+      extraNote: "Net adds past 20 actives → AuthHub Scale $149.",
     },
     {
-      newClients: "15",
-      leadsiePath: "Agency + 1 overage",
+      label: "C",
+      scenario: "~15 new onboards; roster already ~22 active",
+      leadsiePath: "Agency + 1 pack (10+5)",
       leadsieCost: "$179",
-      authHubPlan: "Growth",
-      authHubCost: "$79",
+      authHubPlan: "Scale (22 > 20)",
+      authHubCost: "$149",
+      deltaNote: "Delta: $30.",
+      extraNote:
+        "Growth ($79) is unavailable past 20 actives — even if “only” 15 were new this month.",
     },
     {
-      newClients: "20",
-      leadsiePath: "Agency + 2 overages",
+      label: "D",
+      scenario: "~20 new onboards, building toward 40–50 actives",
+      leadsiePath: "Agency + 2 packs (10+10)",
       leadsieCost: "$229",
-      authHubPlan: "Growth",
-      authHubCost: "$79",
+      authHubPlan: "Scale",
+      authHubCost: "$149",
+      deltaNote: "Deltas: $80 (Agency+packs vs Scale); $150 (Pro vs Scale).",
+      extraNote: "Or Pro $299 if surges repeat.",
     },
     {
-      newClients: "50",
+      label: "E",
+      scenario: "~50 new onboards in one month",
       leadsiePath: "Pro",
       leadsieCost: "$299",
       authHubPlan: "Scale",
       authHubCost: "$149",
+      deltaNote: "Delta: $150 if actives stay ≤50.",
+      extraNote: "Already 30 actives + 50 news → past Scale; talk to both vendors.",
     },
   ],
   workedExamplesFootnote:
-    "Worked examples use the lowest published monthly Leadsie path that covers the workload, including listed $50 overage packs. AuthHub figures use monthly list prices ($29 Starter · $79 Growth · $149 Scale). AuthHub also offers annual billing (effective $24 / $66 / $124 on /pricing).",
+    "Read: Leadsie list price is the floor; credits + packs (or annual pool burn) are the bill. AuthHub = tier for active roster. Don’t map “new this month” 1:1 onto AuthHub caps.",
   stayOnLeadsie: [
-    "You need Leadsie's 31+ long-tail integrations",
-    "Access Detective, Meta asset creation, or influencer whitelisting is core to your workflow",
-    "Your team and clients are best served during UK/EU hours",
-    "You already have a separate intake process that works well",
-    "You are happy with credit rollover and overage math",
+    `Broader coverage than AuthHub’s ${LEADSIE_PRICING_AUTHHUB_PLATFORM_BREADTH} — Leadsie lists 31 accounts/assets (integrations)`,
+    "Access Detective, Meta asset creation, or influencer whitelisting is core",
+    "Few news/month; rarely hit overages",
+    "Annual pools / 3-month rollover beat a hard active-client cap",
+    "On-demand support + Meta-heavy workflow already fit",
   ],
   switchToAuthHub: [
-    "You want a predictable monthly number without credit math",
-    "You regularly onboard in the 5–20 client band where overage packs show up",
-    "You want intake fields + OAuth in one client link",
-    "You care about token health monitoring and Infisical-backed audit events on AuthHub's core connectors",
-    `Your clients use AuthHub's ${LEADSIE_PRICING_AUTHHUB_PLATFORM_BREADTH} core connectors`,
+    "Predictable monthly number without credit/pack math",
+    "Active roster fits 5 / 20 / 50; spikes would otherwise buy Leadsie packs",
+    "Intake + OAuth in one link, token health, Infisical + audit logs (no SOC 2)",
+    `Clients on AuthHub’s ${LEADSIE_PRICING_AUTHHUB_PLATFORM_BREADTH} core set (Meta, Google Ads, GA4, LinkedIn, TikTok, related) — no Leadsie parity`,
+    "API + webhooks on Growth/Scale or white-label on Growth+",
   ],
+  migrationIntro:
+    "Neither SaaS moves existing platform permissions. Canceling Leadsie does not revoke grants; AuthHub does not inherit them.",
+  migrationSteps: [
+    "Inventory clients and platforms.",
+    "Dual-run — keep Leadsie for clients you’re not moving; AuthHub for new onboardings.",
+    "Re-authorize — AuthHub-managed clients need a fresh AuthHub authorization.",
+  ],
+  migrationFootnote: "No instant-migration promise.",
   faqs: [
     {
-      question: "How much does Leadsie cost per month in 2026?",
+      question: "How much does Leadsie cost per month?",
       answer:
-        "Leadsie's published monthly list prices are $59 for Starter (3 onboarding credits), $129 for Agency (10 credits), and $299 for Pro (50 credits). Yearly billing shows about $49, $107, and $249 per month when paid upfront ($590, $1,290, and $2,990 annually). Enterprise is custom. Confirm on Leadsie's pricing page before purchase.",
+        "$59 / $129 / $299 monthly. Annual $590 / $1,290 / $2,990 (~$49 / $107 / $249/mo). Real cost = plan + any $50 packs. Enterprise custom. Confirm on leadsie.com/pricing.",
     },
     {
-      question: "What counts as a Leadsie onboarding credit?",
+      question: "Is there a free plan or trial?",
       answer:
-        "One onboarding credit is used when a new client grants manager or admin access through Leadsie, regardless of how many ad accounts or assets they include. View-only audits consume separate audit credits.",
+        "Leadsie: 14-day trial (no card; extendable until you onboard per their FAQ) + 30-day money-back. AuthHub: 14-day trial, no card. No permanent free plan on pages checked Oct 5, 2026.",
     },
     {
-      question: "How much are Leadsie overage packs?",
+      question: "What counts as a Leadsie credit?",
       answer:
-        "Each overage pack costs $50. Starter plans get 3 onboarding credits and 10 audit credits per pack; Agency gets 5 and 25; Pro gets 10 and 50. Packs apply when you exceed your plan's monthly allowance.",
+        "One onboarding credit per new manage/admin client (any asset count). Audit credits for view-only. Prospect → manage costs an onboarding credit. Unused typically roll ~three months; annual uses yearly pools.",
     },
     {
-      question: "Do unused Leadsie credits roll over?",
+      question: "What happens when credits run out?",
       answer:
-        "Yes. Leadsie states unused credits roll over for about three months on paid plans. That helps steady agencies but does not remove $50 overage charges in spike months.",
+        "Links stay live. Pay a $50 pack (Starter +3/+10, Agency +5/+25, Pro +10/+50) or upgrade.",
     },
     {
-      question: "How does AuthHub pricing compare to Leadsie for busy months?",
+      question: "Do unused credits roll over? What about annual?",
       answer:
-        "AuthHub Starter ($29), Growth ($79), and Scale ($149) cap active clients at 5, 20, and 50 per month with no credit packs. In the worked examples above, 10–20 new clients stay on Growth at $79 while Leadsie ranges from $129 to $229 depending on overages. Verify both pricing pages before you buy.",
+        "Yes monthly (~three months). Annual pools a year up front (36+120 / 120+600 / 600+3000). Pools smooth lumps; they don’t remove the overage cliff once spent.",
+    },
+    {
+      question: "How does AuthHub compare for a busy month?",
+      answer:
+        "Match units. Leadsie = new-client credits (+ packs). AuthHub = $29 / $79 / $149 for 5 / 20 / 50 actives. 10–20 new clients does not auto-fit Growth — only ≤20 actives does. See worked examples above.",
     },
   ],
   bottomLine:
-    "Leadsie fits agencies that want the broadest integration list and are comfortable modeling credits and $50 overage packs. AuthHub fits agencies that want fixed monthly tiers, intake plus OAuth in one link, and published token-health and audit tooling. Prices change — re-check Leadsie and AuthHub before you sign.",
+    "Leadsie is simple on the marketing page and conditional in production: credits, rollover/annual pools, and $50 packs decide the invoice. AuthHub is simple if your active roster fits 5 / 20 / 50 — misleading if you treat “new this month” as the cap. Pick the meter that matches how you grow; dual-run to prove it.",
   keywords: [
     "Leadsie pricing",
     "Leadsie cost",

@@ -464,10 +464,10 @@ export function generateLeadsiePricingSchema(
     {
       "@type": "Article",
       "@id": `${pageUrl}#article`,
-      headline: page.metaTitle,
+      headline: page.title,
       description: page.metaDescription,
       dateModified: page.lastVerified,
-      datePublished: page.lastVerified,
+      datePublished: page.datePublished,
       mainEntityOfPage: {
         "@type": "WebPage",
         "@id": pageUrl,
