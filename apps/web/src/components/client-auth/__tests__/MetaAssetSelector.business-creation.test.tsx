@@ -237,7 +237,8 @@ describe('MetaAssetSelector - zero Business Portfolio branch', () => {
         'https://api.example.com/api/client/token-1/assets/meta_ads?connectionId=conn-1&businessId=biz_new'
       );
     });
-    expect(await screen.findByText(/Meta asset discovery failed/i)).toBeInTheDocument();
+    expect(await screen.findByRole('alert')).toBeInTheDocument();
+    expect(screen.getByText('META_CONNECTION_UNKNOWN')).toBeInTheDocument();
     expect(screen.queryByText(/Meta Asset Creator/i)).not.toBeInTheDocument();
   });
 
