@@ -37,7 +37,7 @@ export function MetaAutoAssignSettings({ agencyId }: MetaAutoAssignSettingsProps
     enabled: Boolean(agencyId) && auth.isLoaded,
   });
 
-  const { data: assignees = [], isLoading: loadingAssignees, error: assigneesError, refetch } = useQuery<
+  const { data: assigneesData, isLoading: loadingAssignees, error: assigneesError, refetch } = useQuery<
     MetaAssignableRecipient[]
   >({
     queryKey: ['meta-assignees', agencyId],
@@ -103,6 +103,7 @@ export function MetaAutoAssignSettings({ agencyId }: MetaAutoAssignSettingsProps
     return <p className="text-sm text-muted-foreground">Loading Auto-Assign settings…</p>;
   }
 
+  const assignees = assigneesData ?? [];
   const humans = assignees.filter((recipient) => recipient.type === 'human');
   const systemUsers = assignees.filter((recipient) => recipient.type === 'system_user');
 
