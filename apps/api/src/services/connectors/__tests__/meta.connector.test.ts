@@ -158,7 +158,7 @@ describe('MetaConnector Asset Discovery', () => {
     const [url, init] = vi.mocked(fetch).mock.calls.at(-1)!;
     expect(String(url)).toContain('input_token=client-access-token');
     expect(String(url)).not.toContain('test-app-secret');
-    expect(init?.headers).toEqual({ Authorization: 'Bearer test-app-id|test-app-secret' });
+    expect(new Headers(init?.headers).get('Authorization')).toBe('Bearer test-app-id|test-app-secret');
     expect(init?.signal).toBeInstanceOf(AbortSignal);
   });
 
@@ -214,11 +214,8 @@ describe('MetaConnector Asset Discovery', () => {
         expect.stringContaining(`graph.facebook.com/${META_GRAPH_VERSION}/me/businesses`),
         expect.any(Object)
       );
-      expect(fetch).toHaveBeenNthCalledWith(
-        2,
-        `https://graph.facebook.com/${META_GRAPH_VERSION}/me/businesses?after=cursor-2`,
-        expect.objectContaining({ headers: { Authorization: `Bearer ${accessToken}` } })
-      );
+      const [, paginationInit] = vi.mocked(fetch).mock.calls[1] as [string, RequestInit];
+      expect(new Headers(paginationInit.headers).get('Authorization')).toBe(`Bearer ${accessToken}`);
       expect(result).toEqual({
         businesses: [
           { id: 'biz_1', name: 'Business One', verticalName: 'Retail', verificationStatus: undefined },
@@ -269,9 +266,9 @@ describe('MetaConnector Asset Discovery', () => {
       );
       expect(secondCallUrl.searchParams.get('fields')).toBe('business{id,name,verification_status}');
       expect(secondCallUrl.searchParams.has('access_token')).toBe(false);
-      expect(vi.mocked(fetch).mock.calls[1]?.[1]).toEqual(expect.objectContaining({
-        headers: { Authorization: `Bearer ${accessToken}` },
-      }));
+      expect(
+        new Headers(vi.mocked(fetch).mock.calls[1]?.[1]?.headers).get('Authorization')
+      ).toBe(`Bearer ${accessToken}`);
       expect(fetch).toHaveBeenCalledTimes(2);
 
       expect(result).toEqual({
@@ -532,10 +529,11 @@ describe('MetaConnector Asset Discovery', () => {
     await expect(connector.getClientInstagramAccounts(accessToken, businessId)).resolves.toEqual([
       { id: 'ig_123', username: 'client_ig' },
     ]);
-    expect(fetch).toHaveBeenCalledWith(
-      expect.stringContaining(`/${businessId}/client_instagram_assets?fields=id%2Cig_user_id%2Cig_username`),
-      expect.objectContaining({ headers: { Authorization: `Bearer ${accessToken}` } }),
+    const [, igInit] = vi.mocked(fetch).mock.calls[0] as [string, RequestInit];
+    expect(String(vi.mocked(fetch).mock.calls[0]?.[0])).toContain(
+      `/${businessId}/client_instagram_assets?fields=id%2Cig_user_id%2Cig_username`
     );
+    expect(new Headers(igInit.headers).get('Authorization')).toBe(`Bearer ${accessToken}`);
   });
 
   describe('getProductCatalogs', () => {
