@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { MetaAssetSelector } from '../MetaAssetSelector';
+import { stubFetchWithCreationLinks } from './meta-selector-fetch-test-utils';
 
 const { trackClientAssetsDeclineToggledMock } = vi.hoisted(() => ({
   trackClientAssetsDeclineToggledMock: vi.fn(),
@@ -143,7 +144,7 @@ describe('MetaAssetSelector declines', () => {
   });
 
   it('renders the decline toggle for an allowed kind with zero selections and toggles aria-pressed', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(makeResponse(baseAssets())));
+    stubFetchWithCreationLinks(vi.fn().mockResolvedValue(makeResponse(baseAssets())));
     const { onSelectionChange } = renderSelector({ allowedAssetTypes: ['catalog'] });
 
     await screen.findByText('Sharing from Client One');
@@ -162,7 +163,7 @@ describe('MetaAssetSelector declines', () => {
   });
 
   it('emits client_assets_decline_toggled on each toggle with the new state', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(makeResponse(baseAssets())));
+    stubFetchWithCreationLinks(vi.fn().mockResolvedValue(makeResponse(baseAssets())));
     renderSelector({ allowedAssetTypes: ['catalog'] });
 
     await screen.findByText('Sharing from Client One');
@@ -236,7 +237,7 @@ describe('MetaAssetSelector declines', () => {
       .fn()
       .mockResolvedValueOnce(makeResponse(baseAssets()))
       .mockResolvedValueOnce(makeResponse(baseAssets({ pages: [{ id: 'page_1', name: 'Client Page' }] })));
-    vi.stubGlobal('fetch', fetchMock);
+    stubFetchWithCreationLinks(fetchMock);
     const { onSelectionChange } = renderSelector({ allowedAssetTypes: ['page'] });
 
     await screen.findByText('Sharing from Client One');
@@ -260,7 +261,7 @@ describe('MetaAssetSelector declines', () => {
   });
 
   it('renders no decline toggle for kinds not in allowedAssetTypes', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(makeResponse(baseAssets())));
+    stubFetchWithCreationLinks(vi.fn().mockResolvedValue(makeResponse(baseAssets())));
     renderSelector({ allowedAssetTypes: ['catalog'] });
 
     await screen.findByText('Sharing from Client One');
@@ -271,7 +272,7 @@ describe('MetaAssetSelector declines', () => {
   });
 
   it('renders the decline toggle as the primary affordance when a kind has zero options', async () => {
-    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(makeResponse(baseAssets())));
+    stubFetchWithCreationLinks(vi.fn().mockResolvedValue(makeResponse(baseAssets())));
     const { onSelectionChange } = renderSelector({ allowedAssetTypes: ['dataset'] });
 
     await screen.findByText('Sharing from Client One');

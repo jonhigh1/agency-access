@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MetaAssetSelector } from '../MetaAssetSelector';
+import { fetchCallUrl, stubFetchWithCreationLinks } from './meta-selector-fetch-test-utils';
 
 const { captureAdAccountSuccess } = vi.hoisted(() => ({ captureAdAccountSuccess: vi.fn() }));
 
@@ -109,34 +110,6 @@ function assetsResponse(overrides: Record<string, unknown> = {}): Response {
 
 function userPagesResponse(pages: Array<{ id: string; name: string }>): Response {
   return jsonResponse({ data: { pages }, error: null });
-}
-
-function metaCreationLinksResponse(): Response {
-  return jsonResponse({
-    data: {
-      pageCreationUrl: 'https://business.facebook.com/pages/creation/?business_id=biz-1',
-      pixelCreationUrl: 'https://business.facebook.com/events_manager2/pixel/new/?business_id=biz-1',
-      adAccountCreationUrl: 'https://business.facebook.com/settings/biz-1/ad_accounts',
-    },
-    error: null,
-  });
-}
-
-/** Intercepts creation-link fetches so asset mocks keep stable call indices. */
-function stubFetchWithCreationLinks(fetchMock: ReturnType<typeof vi.fn>) {
-  vi.stubGlobal(
-    'fetch',
-    vi.fn((url: string, init?: RequestInit) => {
-      if (String(url).includes('/create/meta/links')) {
-        return Promise.resolve(metaCreationLinksResponse());
-      }
-      return fetchMock(url, init);
-    })
-  );
-}
-
-function fetchCallUrl(fetchMock: ReturnType<typeof vi.fn>, index: number): string | undefined {
-  return fetchMock.mock.calls[index]?.[0] as string | undefined;
 }
 
 describe('MetaAssetSelector - zero Business Portfolio branch', () => {

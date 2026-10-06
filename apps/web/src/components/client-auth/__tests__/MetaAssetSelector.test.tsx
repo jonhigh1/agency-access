@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import posthog from 'posthog-js';
 import { MetaAssetSelector } from '../MetaAssetSelector';
+import { fetchCallUrl, stubFetchWithCreationLinks } from './meta-selector-fetch-test-utils';
 
 vi.mock('posthog-js', () => ({
   default: {
@@ -117,7 +118,7 @@ describe('MetaAssetSelector', () => {
           }),
       } as Response);
 
-    vi.stubGlobal('fetch', fetchMock);
+    stubFetchWithCreationLinks(fetchMock);
 
     render(
       <MetaAssetSelector
@@ -134,8 +135,7 @@ describe('MetaAssetSelector', () => {
     fireEvent.click(screen.getByRole('button', { name: /confirm business/i }));
 
     await waitFor(() => {
-      expect(fetchMock).toHaveBeenNthCalledWith(
-        2,
+      expect(fetchCallUrl(fetchMock, 1)).toBe(
         'https://api.example.com/api/client/token-1/assets/meta_ads?connectionId=conn-1&businessId=biz_2'
       );
     });
@@ -205,7 +205,7 @@ describe('MetaAssetSelector', () => {
           }),
       } as Response);
 
-    vi.stubGlobal('fetch', fetchMock);
+    stubFetchWithCreationLinks(fetchMock);
     const onSelectionChange = vi.fn();
 
     render(
@@ -224,8 +224,7 @@ describe('MetaAssetSelector', () => {
     fireEvent.click(screen.getByRole('button', { name: /meta asset creator/i }));
 
     await waitFor(() => {
-      expect(fetchMock).toHaveBeenNthCalledWith(
-        2,
+      expect(fetchCallUrl(fetchMock, 1)).toBe(
         'https://api.example.com/api/client/token-1/assets/meta_ads?connectionId=conn-1&businessId=biz_2'
       );
     });
@@ -259,8 +258,7 @@ describe('MetaAssetSelector', () => {
     fireEvent.click(await screen.findByRole('button', { name: /clear selection and switch/i }));
 
     await waitFor(() => {
-      expect(fetchMock).toHaveBeenNthCalledWith(
-        3,
+      expect(fetchCallUrl(fetchMock, 2)).toBe(
         'https://api.example.com/api/client/token-1/assets/meta_ads?connectionId=conn-1&businessId=biz_1'
       );
     });
@@ -306,7 +304,7 @@ describe('MetaAssetSelector', () => {
         selectedBusinessName: 'Client One',
         adAccounts: [], pages: [], instagramAccounts: [], productCatalogs: [], pixels: [],
       }));
-    vi.stubGlobal('fetch', fetchMock);
+    stubFetchWithCreationLinks(fetchMock);
     const onSelectionChange = vi.fn();
 
     render(
