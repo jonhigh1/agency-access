@@ -27,6 +27,10 @@ import { GoogleAssetSelector } from './GoogleAssetSelector';
 import { LinkedInAssetSelector } from './LinkedInAssetSelector';
 import { TikTokAssetSelector } from './TikTokAssetSelector';
 import { MetaGrantChecklist, metaGrantSelectedKindsFromBlob } from './MetaGrantChecklist';
+import {
+  ClientGrantPrimaryButton,
+  ClientGrantSecondaryButton,
+} from './client-grant-button';
 import { clearManualGrantChecklistStorage } from '@/lib/invite/manual-grant-checklist-storage';
 import { StepHelpText } from './StepHelpText';
 import { PlatformIcon, Button } from '@/components/ui';
@@ -1872,16 +1876,15 @@ export function PlatformAuthWizard({
               </AnimatePresence>
             </div>
 
-            <Button
-              onClick={handleFinishClick}
-              variant="brutalist"
-              size="lg"
-              className="w-full"
-            >
-              {metaChecklist.remainingCount > 0
-                ? `Finish — ${metaChecklist.remainingCount} item${metaChecklist.remainingCount === 1 ? '' : 's'} left`
-                : finalActionLabel}
-            </Button>
+            {metaChecklist.remainingCount > 0 ? (
+              <ClientGrantSecondaryButton type="button" onClick={handleFinishClick}>
+                {`Finish when done (${metaChecklist.remainingCount} left)`}
+              </ClientGrantSecondaryButton>
+            ) : (
+              <ClientGrantPrimaryButton type="button" onClick={handleFinishClick}>
+                {finalActionLabel}
+              </ClientGrantPrimaryButton>
+            )}
           </div>
         );
       }

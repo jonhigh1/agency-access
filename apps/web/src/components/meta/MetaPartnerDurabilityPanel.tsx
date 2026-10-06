@@ -5,7 +5,16 @@ import {
   META_AUTOMATION_MATRIX_LINES,
 } from '@/lib/content/meta-partner-durability';
 import { META_GRANT_METHOD_LABELS } from '@/lib/content/meta-grant-access';
+import { META_PARTNER_GRANT_ADVANCED_COPY } from '@/lib/invite/meta-partner-grant-narrative';
 import { ManageAssetsSectionCard } from '@/components/manage-assets-ui';
+
+const CLIENT_MATRIX_DETAIL: Record<string, string> = {
+  'Facebook Pages': 'AuthHub assigns partner access and confirms the result.',
+  'Ad accounts': 'Assign Partner in Meta Business Settings, then Check access in AuthHub.',
+  'Business Portfolio link (client ↔ agency BM)':
+    'Manual steps in Meta Business Settings until automatic assignment is available.',
+  'Instagram, catalogs, pixels & datasets': 'Partner share or assignment in Meta Business Settings.',
+};
 
 export function MetaPartnerDurabilityPanel() {
   return (
@@ -32,11 +41,20 @@ export function MetaPartnerDurabilityPanel() {
                 >
                   {META_GRANT_METHOD_LABELS[row.mode]}
                 </span>
-                <span className="text-xs">{row.detail}</span>
+                <span className="text-xs">{CLIENT_MATRIX_DETAIL[row.asset] ?? row.detail}</span>
               </li>
             ))}
           </ul>
         </div>
+        <details className="border-t border-black/10 pt-3 dark:border-white/10">
+          <summary className="cursor-pointer text-xs font-semibold text-ink">Advanced (Graph paths)</summary>
+          <ul className="mt-2 space-y-2 text-xs">
+            <li>{META_PARTNER_GRANT_ADVANCED_COPY.automationMatrixDetail.pages}</li>
+            <li>{META_PARTNER_GRANT_ADVANCED_COPY.automationMatrixDetail.adAccounts}</li>
+            <li>{META_PARTNER_GRANT_ADVANCED_COPY.automationMatrixDetail.portfolioLink}</li>
+            <li>{META_PARTNER_GRANT_ADVANCED_COPY.businessScopedDiscovery}</li>
+          </ul>
+        </details>
       </div>
     </ManageAssetsSectionCard>
   );

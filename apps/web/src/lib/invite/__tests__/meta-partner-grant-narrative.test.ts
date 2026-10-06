@@ -27,9 +27,9 @@ describe('meta-partner-grant-narrative', () => {
     expect(narrative.agencyPartnerLine).toContain('3808519629379919');
     expect(narrative.agencyPartnerLine).toMatch(/Partner recipient/i);
     expect(narrative.clientPortfolioLine).toContain('biz_client_2');
-    expect(narrative.discoveryNote).toMatch(/business_management/i);
-    expect(narrative.discoveryNote).toMatch(/pages_show_list/i);
-    expect(narrative.zeroPortfolioPagesNote).not.toMatch(/business_management proof/i);
-    expect(narrative.zeroPortfolioPagesNote).toMatch(/not business_management/i);
+    expect(narrative.discoveryNote).not.toMatch(/business_management/i);
+    expect(narrative.discoveryNote).toMatch(/Business Portfolio/i);
+    expect(narrative.zeroPortfolioPagesNote).not.toMatch(/pages_show_list/i);
+    expect(narrative.zeroPortfolioPagesNote).toMatch(/Facebook profile/i);
   });
 });

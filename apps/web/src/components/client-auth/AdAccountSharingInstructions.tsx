@@ -43,7 +43,11 @@ import {
   type InviteVerifyResultKind,
 } from '@/lib/analytics/invite-events';
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard';
-import { Button } from '@/components/ui/button';
+import {
+  ClientGrantCtaRow,
+  ClientGrantPrimaryButton,
+  ClientGrantSecondaryButton,
+} from './client-grant-button';
 
 interface AdAccount {
   id: string;
@@ -64,6 +68,8 @@ interface AdAccountSharingInstructionsProps {
    * from initialStatus/initialVerificationResults (server truth).
    */
   autoStart?: boolean;
+  /** When true, omit duplicate title block (parent checklist row owns the heading). */
+  embedded?: boolean;
   /** Server-truth seed for the status banner in verify-only mode. */
   initialStatus?: 'idle' | 'verified' | 'partial';
   /** Server-truth seed for per-account results in verify-only mode. */
@@ -146,8 +152,8 @@ function ChecklistRow({
     <li className={hairline ? 'hairline-b' : undefined}>
       <label
         htmlFor={`manual-grant-${rowId}`}
-        className={`flex min-h-[44px] cursor-pointer items-start gap-3 py-3 ${
-          indented ? 'pl-11' : ''
+        className={`flex min-h-9 cursor-pointer items-start gap-2 py-2 ${
+          indented ? 'pl-8' : ''
         }`}
       >
         <input
@@ -204,19 +210,14 @@ function BusinessIdCopyCard({ businessId, businessName, content }: BusinessIdCop
       )}
       <div className="mt-2 flex flex-wrap items-center gap-3">
         <span className="break-all font-mono text-sm font-bold text-ink">{businessId}</span>
-        <Button
-          type="button"
-          variant="secondary"
-          size="sm"
-          onClick={() => void copy(businessId)}
-        >
+        <ClientGrantSecondaryButton type="button" onClick={() => void copy(businessId)}>
           {copied ? (
             <Check className="h-4 w-4 text-success-ink" aria-hidden="true" />
           ) : (
             <Copy className="h-4 w-4" aria-hidden="true" />
           )}
           {copied ? content.copied : content.copyButton}
-        </Button>
+        </ClientGrantSecondaryButton>
       </div>
       {/* Stable live region: the confirmation swaps in on copy, so screen
           readers announce it — never color-only. */}
@@ -243,6 +244,7 @@ export function AdAccountSharingInstructions({
   onComplete,
   onError,
   autoStart = true,
+  embedded = false,
   initialStatus,
   initialVerificationResults,
 }: AdAccountSharingInstructionsProps) {
@@ -417,11 +419,13 @@ export function AdAccountSharingInstructions({
   }));
 
   return (
-    <div className="space-y-8">
-      <div>
-        <h3 className="text-2xl font-bold text-ink mb-2">{content.title}</h3>
-        <p className="text-muted-foreground">{content.description}</p>
-      </div>
+    <div className="space-y-6">
+      {!embedded ? (
+        <div>
+          <h3 className="mb-2 text-lg font-bold text-ink">{content.title}</h3>
+          <p className="text-sm text-muted-foreground">{content.description}</p>
+        </div>
+      ) : null}
 
       {/* Plain-language framing: what the client is doing and why. */}
       <div className="space-y-1">
@@ -472,8 +476,8 @@ export function AdAccountSharingInstructions({
           one checkbox per row, persisted per (token, business). */}
       <div>
         <div>
-          <p className="label-micro hairline-b px-4 py-3">{content.checklistHint}</p>
-          <ol className="px-4">
+          <p className="label-micro hairline-b px-3 py-2">{content.checklistHint}</p>
+          <ol className="px-3">
             <ChecklistRow
               rowId={STEP1_ROW_ID}
               number="1"
@@ -544,23 +548,10 @@ export function AdAccountSharingInstructions({
         </p>
       </div>
 
-      {/* Actions */}
-      <div className="flex gap-4 pt-4 border-t border-black/10 dark:border-white/10">
-        <Button asChild variant="secondary" className="flex-1">
-          <a
-            href="https://business.facebook.com/settings"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <ExternalLink className="w-5 h-5" />
-            {content.openBusinessManager}
-          </a>
-        </Button>
-        <Button
+      <ClientGrantCtaRow className="border-t border-black/10 dark:border-white/10">
+        <ClientGrantPrimaryButton
           onClick={handleVerifyAccess}
           disabled={isStarting || isVerifying || status === 'verified'}
-          variant="primary"
-          className="flex-1"
         >
           {isVerifying ? (
             <>
@@ -578,8 +569,18 @@ export function AdAccountSharingInstructions({
               {content.checkAccess}
             </>
           )}
-        </Button>
-      </div>
+        </ClientGrantPrimaryButton>
+        <ClientGrantSecondaryButton asChild>
+          <a
+            href="https://business.facebook.com/settings"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <ExternalLink className="h-4 w-4" />
+            {content.openBusinessManager}
+          </a>
+        </ClientGrantSecondaryButton>
+      </ClientGrantCtaRow>
     </div>
   );
 }
