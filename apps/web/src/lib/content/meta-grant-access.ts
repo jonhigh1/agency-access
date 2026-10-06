@@ -20,6 +20,11 @@ export const META_GRANT_ACCESS = {
         grantButton: 'Grant Access',
         granting: 'Granting...',
         success: 'Access granted successfully',
+        readBackSuccessTitle: 'Partner access confirmed',
+        readBackSuccessDetail:
+          'Meta read-back verified the agency Partner assignment on each selected Page.',
+        readBackFailureTitle: 'Automatic assignment could not be confirmed',
+        tryAgainButton: 'Try Grant Access again',
         error: 'Failed to grant access',
         manualFallback:
           'Automatic assignment did not complete. Add the agency as a Partner on these Pages in Meta Business Settings, then try Grant Access again or ask the agency to verify.',

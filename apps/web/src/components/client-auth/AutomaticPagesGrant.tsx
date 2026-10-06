@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Loader2, X, CheckCircle2, AlertCircle } from 'lucide-react';
 import { META_GRANT_ACCESS } from '@/lib/content/meta-grant-access';
+import { formatMetaPageChipDisplay } from '@/lib/invite/meta-entity-identity';
 import { getApiBaseUrl } from '@/lib/api/api-env';
 import { ApiResponseError, parseJsonResponse } from '@/lib/api/parse-json-response';
 import { capturePosthogEvent } from '@/lib/analytics/capture-posthog';
@@ -39,6 +40,8 @@ interface AutomaticPagesGrantProps {
   accessRequestToken: string;
   onGrantComplete: (results: GrantResult[]) => void;
   onError?: (error: string) => void;
+  /** Visual QA fixture: submit grant once after mount when fetch is mocked. */
+  fixtureAutoGrantOnMount?: boolean;
 }
 
 export function AutomaticPagesGrant({
@@ -48,16 +51,18 @@ export function AutomaticPagesGrant({
   accessRequestToken,
   onGrantComplete,
   onError,
+  fixtureAutoGrantOnMount = false,
 }: AutomaticPagesGrantProps) {
   const [isGranting, setIsGranting] = useState(false);
   const [grantResults, setGrantResults] = useState<GrantResult[] | null>(null);
   const [removedPages, setRemovedPages] = useState<Set<string>>(new Set());
   const [localError, setLocalError] = useState<string | null>(null);
+  const fixtureGrantStarted = useRef(false);
 
   const content = META_GRANT_ACCESS.en.automatic;
   const displayPages = selectedPages.filter((p) => !removedPages.has(p.id));
 
-  const handleGrantAccess = async () => {
+  async function handleGrantAccess() {
     if (displayPages.length === 0) {
       const errorMsg = 'No pages selected';
       setLocalError(errorMsg);
@@ -188,7 +193,15 @@ export function AutomaticPagesGrant({
     } finally {
       setIsGranting(false);
     }
-  };
+  }
+
+  useEffect(() => {
+    if (!fixtureAutoGrantOnMount || fixtureGrantStarted.current || displayPages.length === 0) {
+      return;
+    }
+    fixtureGrantStarted.current = true;
+    void handleGrantAccess();
+  }, [fixtureAutoGrantOnMount, displayPages.length]);
 
   const handleRemovePage = (pageId: string) => {
     setRemovedPages((prev) => new Set(prev).add(pageId));
@@ -210,6 +223,34 @@ export function AutomaticPagesGrant({
         </div>
       )}
 
+      {hasGranted && !isGranting ? (
+        <div
+          role="status"
+          data-testid="automatic-pages-readback-success"
+          className="border border-success-ink bg-[rgb(var(--teal))]/10 p-4 text-ink"
+        >
+          <p className="flex items-center gap-2 font-semibold text-success-ink">
+            <CheckCircle2 className="h-5 w-5 shrink-0" aria-hidden />
+            {content.facebookPages.readBackSuccessTitle}
+          </p>
+          <p className="mt-1 text-sm text-muted-foreground">{content.facebookPages.readBackSuccessDetail}</p>
+        </div>
+      ) : null}
+
+      {hasFailed && !isGranting && !hasGranted ? (
+        <div
+          role="alert"
+          data-testid="automatic-pages-readback-failure"
+          className="border border-danger-ink bg-coral/10 p-4 text-ink"
+        >
+          <p className="flex items-center gap-2 font-semibold text-danger-ink">
+            <AlertCircle className="h-5 w-5 shrink-0" aria-hidden />
+            {content.facebookPages.readBackFailureTitle}
+          </p>
+          <p className="mt-2 text-sm text-muted-foreground">{content.facebookPages.manualFallback}</p>
+        </div>
+      ) : null}
+
       <div className="p-6">
         <div className="flex items-start gap-4 mb-4">
           <div className="w-10 h-10 rounded-none bg-coral/20 flex items-center justify-center flex-shrink-0">
@@ -230,7 +271,7 @@ export function AutomaticPagesGrant({
           <label className="block text-sm font-semibold text-foreground mb-2">
             Select Accounts
           </label>
-          <div className="min-h-[60px] border border-black/10 dark:border-white/10 rounded-none p-3 flex flex-wrap gap-2">
+          <div className="flex min-h-[60px] flex-wrap gap-2 rounded-none border border-black/10 p-3 dark:border-white/10">
             {displayPages.length === 0 ? (
               <span className="text-muted-foreground text-sm">No pages selected</span>
             ) : (
@@ -239,10 +280,12 @@ export function AutomaticPagesGrant({
                 const isGranted = result?.status === 'granted';
                 const isFailed = result?.status === 'failed';
 
+                const chip = formatMetaPageChipDisplay(page.name, page.id);
+
                 return (
                   <div
                     key={page.id}
-                    className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-none border-2 ${
+                    className={`inline-flex max-w-full items-center gap-2 rounded-none border-2 px-3 py-1.5 ${
                       isGranted
                         ? 'bg-[rgb(var(--teal))]/10 border-[rgb(var(--teal))]/40'
                         : isFailed
@@ -250,8 +293,8 @@ export function AutomaticPagesGrant({
                         : 'bg-muted/20 border-black/10 dark:border-white/10'
                     }`}
                   >
-                    <span className="text-sm font-medium text-ink">
-                      {page.name} ({page.id.slice(0, 6)}...)
+                    <span className="text-sm font-medium text-ink" title={chip.title}>
+                      {chip.label}
                     </span>
                     {isGranted && (
                       <CheckCircle2 className="w-4 h-4 text-success-ink" />
@@ -273,17 +316,12 @@ export function AutomaticPagesGrant({
               })
             )}
           </div>
-          {hasFailed && (
-            <div className="mt-2 space-y-2 text-sm text-danger-ink">
-              <p>Some pages failed to grant access. Please try again.</p>
-              <p className="text-muted-foreground">{content.facebookPages.manualFallback}</p>
-            </div>
-          )}
         </div>
 
         {/* Grant Access Button */}
         <Button
-          onClick={handleGrantAccess}
+          data-testid="automatic-pages-grant-button"
+          onClick={() => void handleGrantAccess()}
           disabled={isGranting || displayPages.length === 0 || hasGranted}
           variant={isGranting || displayPages.length === 0 || hasGranted ? 'secondary' : 'primary'}
           size="lg"
@@ -303,6 +341,8 @@ export function AutomaticPagesGrant({
               <CheckCircle2 className="w-5 h-5" />
               {content.facebookPages.success}
             </span>
+          ) : hasFailed ? (
+            content.facebookPages.tryAgainButton
           ) : (
             content.facebookPages.grantButton
           )}

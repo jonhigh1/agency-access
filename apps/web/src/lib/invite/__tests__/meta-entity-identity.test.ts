@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildMetaSelectedIdentityRows,
   formatMetaEntityIdentity,
+  formatMetaPageChipDisplay,
   metaAssetOptionDescription,
 } from '../meta-entity-identity';
 
@@ -10,6 +11,14 @@ describe('meta-entity-identity', () => {
     expect(formatMetaEntityIdentity('DogTimez Ads', 'act_813104320370861')).toBe(
       'DogTimez Ads · ID act_813104320370861'
     );
+  });
+
+  it('prefers page name on chips and keeps full id in title', () => {
+    expect(formatMetaPageChipDisplay('Demo Page', 'page_demo_1')).toEqual({
+      label: 'Demo Page',
+      title: 'Demo Page · ID page_demo_1',
+    });
+    expect(formatMetaPageChipDisplay('3315067890123', '3315067890123').label).toBe('3315067890123');
   });
 
   it('builds combobox descriptions with required Meta object id', () => {

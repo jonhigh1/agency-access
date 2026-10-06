@@ -45,6 +45,36 @@ describe('MetaAutoAssignCard', () => {
     expect(screen.getByText(/Alex/)).toBeInTheDocument();
   });
 
+  it('offers retry when some assignments failed and Auto-Assign can run again', async () => {
+    const user = userEvent.setup();
+    const onRun = vi.fn(async () => null);
+
+    render(
+      <MetaAutoAssignCard
+        results={[
+          {
+            assetKind: 'ad_account',
+            assetId: 'act_demo',
+            assetName: 'Client Ad Account',
+            recipientType: 'system_user',
+            recipientId: '200',
+            recipientName: 'Automation Bot',
+            requestedTasks: ['ADVERTISE'],
+            status: 'failed',
+            errorMessage: 'Requires live Meta OAuth (fixture)',
+            attemptedAt: new Date().toISOString(),
+          },
+        ]}
+        partnerVerified
+        autoAssignEnabled
+        onRunAutoAssign={onRun}
+      />,
+    );
+
+    await user.click(screen.getByTestId('meta-auto-assign-retry-failed'));
+    expect(onRun).toHaveBeenCalled();
+  });
+
   it('invokes Auto-Assign when the agency runs it', async () => {
     const user = userEvent.setup();
     const onRun = vi.fn(async () => null);
