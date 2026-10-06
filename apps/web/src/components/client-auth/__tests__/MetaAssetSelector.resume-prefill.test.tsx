@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { MetaAssetSelector } from '../MetaAssetSelector';
+import { stubFetchWithCreationLinks } from './meta-selector-fetch-test-utils';
 
 vi.mock('posthog-js', () => ({
   default: {
@@ -81,8 +82,7 @@ describe('MetaAssetSelector resume prefill pruning', () => {
   });
 
   function mockFetch(returnedAccounts: Array<{ id: string; name: string }>) {
-    vi.stubGlobal(
-      'fetch',
+    stubFetchWithCreationLinks(
       vi.fn().mockResolvedValue({
         ok: true,
         text: async () =>
@@ -177,7 +177,7 @@ describe('MetaAssetSelector resume prefill pruning', () => {
   it('applies a prefill that arrives while assets are loading', async () => {
     let resolveResponse!: (response: Response) => void;
     const fetchMock = vi.fn(() => new Promise<Response>((resolve) => { resolveResponse = resolve; }));
-    vi.stubGlobal('fetch', fetchMock);
+    stubFetchWithCreationLinks(fetchMock);
 
     const onSelectionChange = vi.fn();
     const { rerender } = render(
@@ -251,7 +251,7 @@ describe('MetaAssetSelector resume prefill pruning', () => {
         ok: true,
         text: async () => JSON.stringify({ data: { businesses: [{ id: 'biz_2', name: 'Client Two' }], selectedBusinessId: 'biz_2', selectedBusinessName: 'Client Two', adAccounts: [{ id: 'act_new', name: 'New account' }], pages: [], instagramAccounts: [] }, error: null }),
       } as Response);
-    vi.stubGlobal('fetch', fetchMock);
+    stubFetchWithCreationLinks(fetchMock);
 
     const onSelectionChange = vi.fn();
     const { rerender } = render(

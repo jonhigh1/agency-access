@@ -22,6 +22,7 @@ import { useState, FormEvent } from 'react';
 import { CheckCircle2, AlertCircle, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { SingleSelect } from '@/components/ui/single-select';
+import { GuidedRedirectCard } from './GuidedRedirectModal';
 import { resolveApiUrl } from '@/lib/api/api-env';
 import { ApiResponseError, parseJsonResponse } from '@/lib/api/parse-json-response';
 
@@ -86,6 +87,8 @@ interface MetaAssetCreatorProps {
   connectionId: string;
   businessId: string;
   accessRequestToken: string;
+  /** Meta Business Settings deep link when API creation is unavailable. */
+  manualCreationUrl?: string;
   onSuccess?: (account: CreateAdAccountResponse) => void;
   onError?: (error: string) => void;
   onReconcile?: () => Promise<boolean>;
@@ -97,6 +100,7 @@ export function MetaAssetCreator({
   connectionId,
   businessId,
   accessRequestToken,
+  manualCreationUrl,
   onSuccess,
   onError,
   onReconcile,
@@ -107,6 +111,9 @@ export function MetaAssetCreator({
   const [createdAccount, setCreatedAccount] = useState<CreateAdAccountResponse | null>(null);
   const requiresReconciliation = creationError instanceof ApiResponseError
     && ['CREATION_OUTCOME_UNKNOWN', 'CREATION_IN_PROGRESS'].includes(creationError.code || '');
+  const showManualCreationFallback = creationError instanceof ApiResponseError
+    && creationError.code === 'INSUFFICIENT_PERMISSIONS'
+    && Boolean(manualCreationUrl);
 
   // Form state
   const [accountName, setAccountName] = useState('');
@@ -203,6 +210,37 @@ export function MetaAssetCreator({
 
   // Error state
   if (state === 'error') {
+    if (showManualCreationFallback && manualCreationUrl) {
+      return (
+        <div className="space-y-4">
+          <div className="border border-danger-ink bg-[rgb(var(--coral))]/10 p-4">
+            <p className="text-sm text-danger-ink">{creationError?.message}</p>
+            <p className="text-sm text-[rgb(var(--muted-foreground))] mt-2">
+              Create the ad account in Meta Business Settings, then refresh the list below.
+            </p>
+          </div>
+          <GuidedRedirectCard
+            title="Create an ad account in Meta"
+            description="AuthHub could not create the account via API. Finish in Meta, then check back here."
+            businessManagerUrl={manualCreationUrl}
+            instructions={[
+              { title: 'Open Meta Business Settings', description: 'Use the button below — a new tab will open' },
+              { title: 'Add an ad account to this portfolio', description: 'Follow Meta’s prompts for name, currency, and timezone' },
+              { title: 'Return here and refresh the asset list', description: 'Select the new account to continue sharing' },
+            ]}
+            completionLabel="I've created the ad account in Meta"
+            actionLabel="Refresh asset list"
+            onRefresh={async () => {
+              if (onReconcile) {
+                await onReconcile();
+              }
+              handleReset();
+            }}
+          />
+        </div>
+      );
+    }
+
     return (
       <div className="border border-danger-ink bg-[rgb(var(--coral))]/10 p-6">
         <div className="flex items-start gap-3">

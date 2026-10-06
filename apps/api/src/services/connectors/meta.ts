@@ -949,6 +949,14 @@ export class MetaConnector {
   }
 
   /**
+   * Deep link to Meta Business Settings ad account creation for a portfolio.
+   * Used when Graph API creation is unavailable but the client can finish in Meta UI.
+   */
+  getAdAccountCreationUrl(businessId: string): string {
+    return `https://business.facebook.com/settings/${businessId}/ad_accounts`;
+  }
+
+  /**
    * Get supported currencies for ad account creation
    * Common currencies used in Meta Ads
    *
