@@ -52,6 +52,8 @@ vi.mock('@/services/meta-partner.service', () => ({
     verifyCatalogAccess: vi.fn(),
     grantCatalogAgencyAccess: vi.fn(),
     verifyCatalogAgencyAccess: vi.fn(),
+    grantAgencyPartnerAccess: vi.fn(),
+    verifyAgencyPartnerAccess: vi.fn(),
     verifyDatasetAccess: vi.fn(),
     verifyDatasetAgencyAccess: vi.fn(),
   },
@@ -189,6 +191,14 @@ describe('Client Auth Asset Routes - Meta', () => {
       error: null,
     } as any);
     vi.mocked(metaAssetsService.getClientInstagramAssetsForBusiness).mockResolvedValue({ data: [], error: null });
+
+    vi.mocked(metaPartnerService.grantAgencyPartnerAccess).mockResolvedValue(undefined);
+    vi.mocked(metaPartnerService.verifyAgencyPartnerAccess).mockImplementation(
+      async (_token, _assetId, _agencyId, requiredTasks) => ({
+        verified: requiredTasks.length > 0,
+        assignedTasks: [...requiredTasks],
+      })
+    );
 
     vi.mocked(infisical.getOAuthTokens).mockResolvedValue({
       accessToken: 'meta-access-token',
@@ -1088,10 +1098,15 @@ describe('Client Auth Asset Routes - Meta', () => {
     expect(response.statusCode).toBe(200);
     expect(response.json().data).toMatchObject({
       success: false,
-      partial: true,
+      partial: false,
       managedBusinessLinkStatus: 'manual_action_required',
       assetGrantResults: expect.arrayContaining([
-        expect.objectContaining({ recipientType: 'system_user', status: 'verified' }),
+        expect.objectContaining({
+          recipientType: 'system_user',
+          assetType: 'ad_account',
+          status: 'unresolved',
+          errorCode: 'MANUAL_SHARE_PENDING',
+        }),
         expect.objectContaining({
           recipientType: 'business',
           status: 'unresolved',
@@ -1099,9 +1114,7 @@ describe('Client Auth Asset Routes - Meta', () => {
         }),
       ]),
     });
-    expect(metaPartnerService.grantAdAccountAccess).toHaveBeenCalledWith(
-      'client-admin-user-token', 'act_2a', 'client-system-user-1', ['MANAGE', 'ADVERTISE', 'ANALYZE']
-    );
+    expect(metaPartnerService.grantAdAccountAccess).not.toHaveBeenCalled();
   });
 
   it('verifies configured Page tasks, including Leads Access, through the OBO flow', async () => {
@@ -1197,10 +1210,10 @@ describe('Client Auth Asset Routes - Meta', () => {
       },
     });
 
-    expect(response.statusCode).toBe(200);
+    expect(response.statusCode, response.body).toBe(200);
     expect(response.json().data).toEqual({
-      success: true,
-      partial: false,
+      success: false,
+      partial: true,
       selectedBusinessId: 'biz_client_2',
       selectedBusinessName: 'Client Two',
       managedBusinessLinkStatus: 'linked',
@@ -1208,16 +1221,9 @@ describe('Client Auth Asset Routes - Meta', () => {
         expect.objectContaining({
           assetId: 'page_2a',
           assetType: 'page',
+          recipientType: 'system_user',
           status: 'verified',
           requestedTasks: ['MANAGE_LEADS'],
-          grantedAt: expect.any(String),
-          verifiedAt: expect.any(String),
-        }),
-        expect.objectContaining({
-          assetId: 'act_2a',
-          assetType: 'ad_account',
-          status: 'verified',
-          requestedTasks: ['MANAGE', 'ADVERTISE', 'ANALYZE'],
           grantedAt: expect.any(String),
           verifiedAt: expect.any(String),
         }),
@@ -1225,14 +1231,20 @@ describe('Client Auth Asset Routes - Meta', () => {
           assetId: 'page_2a',
           recipientType: 'business',
           recipientId: 'partner-bm-1',
-          requestedTasks: [],
+          requestedTasks: ['MANAGE_LEADS'],
           status: 'verified',
+        }),
+        expect.objectContaining({
+          assetId: 'act_2a',
+          assetType: 'ad_account',
+          recipientType: 'system_user',
+          status: 'unresolved',
+          errorCode: 'MANUAL_SHARE_PENDING',
         }),
         expect.objectContaining({
           assetId: 'act_2a',
           recipientType: 'business',
           recipientId: 'partner-bm-1',
-          requestedTasks: [],
           status: 'verified',
         }),
       ]),
@@ -1258,11 +1270,18 @@ describe('Client Auth Asset Routes - Meta', () => {
     expect(metaPartnerService.verifyPageAccess).toHaveBeenCalledWith(
       'client-admin-user-token', 'page_2a', 'client-system-user-1', ['MANAGE_LEADS']
     );
-    expect(metaPartnerService.grantAdAccountAccess).toHaveBeenCalledWith(
+    expect(metaPartnerService.grantAdAccountAccess).not.toHaveBeenCalled();
+    expect(metaPartnerService.grantAgencyPartnerAccess).toHaveBeenCalledWith(
       'client-admin-user-token',
-      'act_2a',
-      'client-system-user-1',
-      ['MANAGE', 'ADVERTISE', 'ANALYZE']
+      'page_2a',
+      'partner-bm-1',
+      ['MANAGE_LEADS'],
+    );
+    expect(metaPartnerService.verifyAgencyPartnerAccess).toHaveBeenCalledWith(
+      'client-admin-user-token',
+      'page_2a',
+      'partner-bm-1',
+      ['MANAGE_LEADS'],
     );
     expect(prisma.platformAuthorization.update).toHaveBeenCalledWith({
       where: { id: 'pa-1' },
@@ -1277,7 +1296,7 @@ describe('Client Auth Asset Routes - Meta', () => {
                 }),
                 expect.objectContaining({
                   assetId: 'act_2a',
-                  status: 'verified',
+                  status: 'unresolved',
                 }),
               ]),
               lastVerifiedAt: expect.any(String),
@@ -1291,9 +1310,9 @@ describe('Client Auth Asset Routes - Meta', () => {
       data: {
         grantedAssets: expect.objectContaining({
           meta: expect.objectContaining({
-            verifiedMetaAssetGrantStatus: 'verified',
+            verifiedMetaAssetGrantStatus: 'partial',
             pagesAccessGranted: true,
-            adAccountsAccessGranted: true,
+            adAccountsAccessGranted: false,
             verifiedMetaAssetGrantAt: expect.any(String),
           }),
         }),
@@ -2512,12 +2531,14 @@ describe('Client Auth Asset Routes - Meta', () => {
     expect(response.statusCode).toBe(200);
     expect(metaPartnerService.grantPageAccess).toHaveBeenCalledTimes(3);
     expect(metaPartnerService.verifyPageAccess).toHaveBeenCalledTimes(3);
-    expect(metaPartnerService.grantAdAccountAccess).toHaveBeenCalledTimes(2);
-    expect(metaPartnerService.verifyAdAccountAccess).toHaveBeenCalledTimes(2);
+    expect(metaPartnerService.grantAgencyPartnerAccess).toHaveBeenCalledTimes(3);
+    expect(metaPartnerService.verifyAgencyPartnerAccess).toHaveBeenCalledTimes(3);
+    expect(metaPartnerService.grantAdAccountAccess).not.toHaveBeenCalled();
+    expect(metaPartnerService.verifyAdAccountAccess).not.toHaveBeenCalled();
 
     const results = response.json().data.assetGrantResults as Array<{ assetId: string; assetType: string; recipientType: string; status: string }>;
     expect(results).toHaveLength(10);
-    expect(results.every((result) => result.status === 'verified')).toBe(true);
+    expect(results.filter((result) => result.assetType === 'page').every((result) => result.status === 'verified')).toBe(true);
     expect(results.filter((result) => result.assetType === 'page' && result.recipientType === 'system_user').map((result) => result.assetId)).toEqual([
       'page_1',
       'page_2',
@@ -2526,6 +2547,16 @@ describe('Client Auth Asset Routes - Meta', () => {
     expect(
       results.filter((result) => result.assetType === 'ad_account' && result.recipientType === 'system_user').map((result) => result.assetId)
     ).toEqual(['act_1', 'act_2']);
+    expect(
+      results.filter((result) => result.assetType === 'ad_account' && result.recipientType === 'system_user').every(
+        (result) => result.status === 'unresolved'
+      )
+    ).toBe(true);
+    expect(
+      results.filter((result) => result.assetType === 'ad_account' && result.recipientType === 'business').every(
+        (result) => result.status === 'verified'
+      )
+    ).toBe(true);
   });
 
   describe('save-assets hardening (review batch A)', () => {

@@ -187,9 +187,9 @@ class MetaPartnerService {
     };
   }
 
-  async grantCatalogAgencyAccess(
+  async grantAgencyPartnerAccess(
     clientToken: string,
-    catalogId: string,
+    assetId: string,
     agencyBusinessId: string,
     tasks: string[]
   ): Promise<void> {
@@ -197,12 +197,32 @@ class MetaPartnerService {
       business: agencyBusinessId,
       permitted_tasks: JSON.stringify(tasks),
     });
-    const response = await this.graphRequest(`${this.META_GRAPH_URL}/${catalogId}/agencies`, clientToken, {
+    const response = await this.graphRequest(`${this.META_GRAPH_URL}/${assetId}/agencies`, clientToken, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: formData.toString(),
     });
-    if (!response.ok) throw new Error(`Failed to share Meta catalog with agency: ${await response.text()}`);
+    if (!response.ok) {
+      throw new Error(`Failed to share Meta asset with agency partner: ${await response.text()}`);
+    }
+  }
+
+  async verifyAgencyPartnerAccess(
+    clientToken: string,
+    assetId: string,
+    agencyBusinessId: string,
+    requiredTasks: string[] = []
+  ): Promise<MetaAssignedUserVerificationResult> {
+    return this.getAgencyAccess(clientToken, assetId, agencyBusinessId, requiredTasks);
+  }
+
+  async grantCatalogAgencyAccess(
+    clientToken: string,
+    catalogId: string,
+    agencyBusinessId: string,
+    tasks: string[]
+  ): Promise<void> {
+    await this.grantAgencyPartnerAccess(clientToken, catalogId, agencyBusinessId, tasks);
   }
 
   async verifyCatalogAgencyAccess(
@@ -211,7 +231,7 @@ class MetaPartnerService {
     agencyBusinessId: string,
     requiredTasks: string[] = []
   ): Promise<boolean> {
-    const result = await this.getAgencyAccess(clientToken, catalogId, agencyBusinessId, requiredTasks);
+    const result = await this.verifyAgencyPartnerAccess(clientToken, catalogId, agencyBusinessId, requiredTasks);
     return result.verified;
   }
 
