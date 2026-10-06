@@ -184,6 +184,12 @@ export function MetaAssetSelector({
   // Creation UI state
   const [showAdAccountCreator, setShowAdAccountCreator] = useState(false);
   const [showPageCreator, setShowPageCreator] = useState(false);
+  const [showPixelCreator, setShowPixelCreator] = useState(false);
+  const [metaCreationLinks, setMetaCreationLinks] = useState<{
+    pageCreationUrl?: string;
+    pixelCreationUrl?: string;
+    adAccountCreationUrl?: string;
+  } | null>(null);
 
   // Business creation state (zero-portfolio clients)
   const [userPages, setUserPages] = useState<Array<{ id: string; name: string; category?: string }> | null>(null);
@@ -309,6 +315,12 @@ export function MetaAssetSelector({
   const handlePageCreated = () => {
     fetchAssets(activeBusinessId).then(() => {
       setShowPageCreator(false);
+    });
+  };
+
+  const handlePixelCreated = () => {
+    void fetchAssets(activeBusinessId).then(() => {
+      setShowPixelCreator(false);
     });
   };
 
@@ -563,17 +575,56 @@ export function MetaAssetSelector({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [assets, isLoading, connectionError, sessionId, selectedBusinessId, businessId]);
 
-  // Business created → refetch scoped to the new portfolio and open the
-  // ad-account creator inline: one pass, no return-and-reselect journey.
+  // Business created → refetch scoped to the new portfolio; when the request
+  // needs ad accounts, open the inline creator in the same pass.
   const handleBusinessCreated = (business: { id: string; name: string }) => {
     const creationVersion = ++businessCreationVersion.current;
     setZeroPortfolioPrimaryPageId('');
     void fetchAssets(business.id).then((fetchedAssets) => {
       if (!fetchedAssets || businessCreationVersion.current !== creationVersion) return;
       setCreatedBusiness(business);
-      setShowAdAccountCreator(true);
+      if (showAdAccounts) {
+        setShowAdAccountCreator(true);
+      }
     });
   };
+
+  const scopedCreationBusinessId = selectedBusinessId || businessId || undefined;
+
+  useEffect(() => {
+    if (!scopedCreationBusinessId) {
+      setMetaCreationLinks(null);
+      return;
+    }
+
+    let cancelled = false;
+
+    const loadCreationLinks = async () => {
+      try {
+        const response = await fetch(
+          `${getApiBaseUrl()}/api/client/${accessRequestToken}/create/meta/links?businessId=${scopedCreationBusinessId}`
+        );
+        const json = await parseJsonResponse<{
+          data?: {
+            pageCreationUrl?: string;
+            pixelCreationUrl?: string;
+            adAccountCreationUrl?: string;
+          };
+          error?: { message?: string };
+        }>(response, { fallbackErrorMessage: 'Failed to load Meta creation links' });
+        if (!cancelled && json.data) {
+          setMetaCreationLinks(json.data);
+        }
+      } catch {
+        if (!cancelled) setMetaCreationLinks(null);
+      }
+    };
+
+    void loadCreationLinks();
+    return () => {
+      cancelled = true;
+    };
+  }, [accessRequestToken, scopedCreationBusinessId]);
 
   // Notify parent of changes
   const totalSelected =
@@ -1020,6 +1071,7 @@ export function MetaAssetSelector({
                 connectionId={sessionId}
                 businessId={creationBusinessId}
                 accessRequestToken={accessRequestToken}
+                manualCreationUrl={metaCreationLinks?.adAccountCreationUrl}
                 onSuccess={handleAdAccountCreated}
                 onError={onError}
                 onReconcile={handleAdAccountReconcile}
@@ -1097,8 +1149,11 @@ export function MetaAssetSelector({
             /* Guided redirect card */
             <GuidedRedirectCard
               title="Create a Facebook Page"
-              description="Pages must be created in Meta Business Manager. Follow these steps:"
-              businessManagerUrl={`https://business.facebook.com/settings/${creationBusinessId}/pages`}
+              description="Pages are created in Meta Business Manager. Follow these steps, then check back here."
+              businessManagerUrl={
+                metaCreationLinks?.pageCreationUrl ||
+                `https://business.facebook.com/settings/${creationBusinessId}/pages`
+              }
               instructions={[
                 { title: 'Click the button below to open Meta Business Manager', description: 'A new tab will open' },
                 { title: 'Click "Add a Page" or "Create a New Page"', description: 'Choose to create a new page or add an existing one' },
@@ -1233,7 +1288,36 @@ export function MetaAssetSelector({
                 onSelectionChange={(ids) => selectKindAssets('dataset', ids)}
                 placeholder="Select Pixels and Datasets..."
               />
-            ) : <p className="mt-3 text-sm text-[rgb(var(--muted-foreground))]">No Pixels were returned for this Business Portfolio.</p>}
+            ) : showPixelCreator && creationBusinessId && metaCreationLinks?.pixelCreationUrl ? (
+              <GuidedRedirectCard
+                title="Create a Meta Pixel"
+                description="Pixels are created in Meta Events Manager. Follow these steps, then check back here."
+                businessManagerUrl={metaCreationLinks.pixelCreationUrl}
+                instructions={[
+                  { title: 'Open Meta Events Manager', description: 'Use the button below — a new tab will open' },
+                  { title: 'Name your Pixel and connect your website', description: 'Follow Meta’s setup prompts' },
+                  { title: 'Return here and refresh the list', description: 'Your Pixel will appear when discovery succeeds' },
+                ]}
+                completionLabel="I've created the Pixel in Meta"
+                onRefresh={handlePixelCreated}
+              />
+            ) : (
+              <div className="mt-3 py-6 text-center px-4 border border-black/10 dark:border-white/10">
+                <p className="text-sm text-[rgb(var(--muted-foreground))] mb-4 max-w-sm mx-auto">
+                  No Pixels were returned for this Business Portfolio. Create one in Meta, then refresh to select it.
+                </p>
+                {creationBusinessId && metaCreationLinks?.pixelCreationUrl ? (
+                  <Button variant="primary" className="min-h-[44px]" onClick={() => setShowPixelCreator(true)}>
+                    <Plus className="w-5 h-5" aria-hidden="true" />
+                    Create Pixel
+                  </Button>
+                ) : (
+                  <p className="text-xs text-[rgb(var(--muted-foreground))]">
+                    Select a Business Portfolio to load Pixel creation steps.
+                  </p>
+                )}
+              </div>
+            )}
             {renderDeclineToggle('dataset')}
           </section>
         ) : null}
