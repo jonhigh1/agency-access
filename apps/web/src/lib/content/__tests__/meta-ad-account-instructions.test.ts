@@ -13,6 +13,8 @@ describe('META_AD_ACCOUNT_INSTRUCTIONS', () => {
   it('carries the U9 manual-grant checklist copy in the en keys', () => {
     const en = META_AD_ACCOUNT_INSTRUCTIONS.en;
 
+    expect(en.title).toMatch(/\(Manual\)/i);
+
     // Plain-language framing: what the client is doing and why.
     expect(en.intro).toContain('{agency}');
     expect(en.intro).toContain('{count}');

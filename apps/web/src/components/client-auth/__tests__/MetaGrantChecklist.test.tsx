@@ -182,6 +182,25 @@ describe('MetaGrantChecklist', () => {
     expect(screen.queryByRole('link', { name: /Meta Business Settings/ })).not.toBeInTheDocument();
   });
 
+  it('shows Manual on ad accounts and Automatic on Pages without cross-labeling', () => {
+    render(
+      <MetaGrantChecklist
+        {...baseProps}
+        selectedAssets={blob({
+          adAccounts: ['act_1'],
+          pages: ['page_1'],
+        })}
+      />
+    );
+
+    const adRow = screen.getByText('Ad accounts').closest('[data-checklist-kind="ad_account"]') as HTMLElement;
+    const pageRow = screen.getByText('Pages').closest('[data-checklist-kind="page"]') as HTMLElement;
+    expect(adRow.querySelector('[data-grant-method="manual"]')).toHaveTextContent('Manual');
+    expect(pageRow.querySelector('[data-grant-method="automatic"]')).toHaveTextContent('Automatic');
+    expect(adRow).not.toHaveTextContent('Automatic');
+    expect(pageRow.querySelector('[data-grant-method="manual"]')).toBeNull();
+  });
+
   it('renders one bordered row per machine item in stable kind order', () => {
     render(
       <MetaGrantChecklist

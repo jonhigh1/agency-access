@@ -4,11 +4,16 @@
  * Content strings for Meta automatic and manual access granting flows
  */
 
+export const META_GRANT_METHOD_LABELS = {
+  automatic: 'Automatic',
+  manual: 'Manual',
+} as const;
+
 export const META_GRANT_ACCESS = {
   en: {
     automatic: {
       title: 'Automatic',
-      subtitle: 'These services can be granted access to automatically',
+      subtitle: 'AuthHub assigns these in Meta and confirms the result for you',
       facebookPages: {
         title: 'Facebook Pages',
         accessLevel: 'Admin', // or from access request
@@ -18,11 +23,18 @@ export const META_GRANT_ACCESS = {
         error: 'Failed to grant access',
       },
     },
+    manual: {
+      title: 'Manual',
+      subtitle:
+        'Add the agency as a Partner on these assets in Meta Business Settings, then use Check access here.',
+      systemUserDisclaimer:
+        'System-user assignment is separate from Partner share. It does not prove the agency owner has human Ads Manager access.',
+    },
   },
   es: {
     automatic: {
       title: 'Automático',
-      subtitle: 'Estos servicios pueden recibir acceso automáticamente',
+      subtitle: 'AuthHub asigna estos activos en Meta y confirma el resultado por ti',
       facebookPages: {
         title: 'Páginas de Facebook',
         accessLevel: 'Administrador',
@@ -32,11 +44,18 @@ export const META_GRANT_ACCESS = {
         error: 'Error al conceder acceso',
       },
     },
+    manual: {
+      title: 'Manual',
+      subtitle:
+        'Añade la agencia como socio en estos activos en Meta Business Settings y luego usa Verificar acceso aquí.',
+      systemUserDisclaimer:
+        'La asignación al system user es independiente del acceso Partner. No demuestra que el propietario de la agencia tenga acceso humano a Ads Manager.',
+    },
   },
   nl: {
     automatic: {
       title: 'Automatisch',
-      subtitle: 'Deze services kunnen automatisch toegang krijgen',
+      subtitle: 'AuthHub wijst deze toe in Meta en bevestigt het resultaat voor je',
       facebookPages: {
         title: 'Facebook Pagina\'s',
         accessLevel: 'Beheerder',
@@ -45,6 +64,13 @@ export const META_GRANT_ACCESS = {
         success: 'Toegang succesvol verleend',
         error: 'Toegang verlenen mislukt',
       },
+    },
+    manual: {
+      title: 'Handmatig',
+      subtitle:
+        'Voeg het agency toe als Partner op deze activa in Meta Business Settings en gebruik daarna Check access hier.',
+      systemUserDisclaimer:
+        'Toewijzing aan een system user is los van Partner-toegang. Het bewijst niet dat de agency-eigenaar menselijke Ads Manager-toegang heeft.',
     },
   },
 } as const;
