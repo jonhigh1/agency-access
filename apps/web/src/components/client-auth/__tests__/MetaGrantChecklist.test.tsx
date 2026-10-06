@@ -132,6 +132,23 @@ describe('MetaGrantChecklist', () => {
     process.env.NEXT_PUBLIC_API_URL = 'https://api.example.com';
   });
 
+  it('shows Partner grant narrative with agency Business Portfolio id and automation labels', () => {
+    render(
+      <MetaGrantChecklist
+        {...baseProps}
+        selectedAssets={blob({
+          adAccounts: ['act_1'],
+          pages: ['page_1'],
+        })}
+      />
+    );
+
+    expect(screen.getByRole('region', { name: /partner access narrative/i })).toBeInTheDocument();
+    expect(screen.getByText(/agency-bm-1/)).toBeInTheDocument();
+    expect(screen.getByText('Automatic')).toBeInTheDocument();
+    expect(screen.getByText('Manual')).toBeInTheDocument();
+  });
+
   it('shows the Leads Access Business Settings step inside the Pages item when the task is requested', () => {
     render(
       <MetaGrantChecklist
@@ -141,7 +158,9 @@ describe('MetaGrantChecklist', () => {
       />
     );
 
-    const pagesItem = screen.getByText('Pages').closest('[data-checklist-kind="page"]') as HTMLElement;
+    const pagesItem = screen
+      .getByRole('heading', { name: 'Pages' })
+      .closest('[data-checklist-kind="page"]') as HTMLElement;
     expect(pagesItem).not.toBeNull();
     expect(pagesItem).toHaveTextContent(/Leads Access/);
     expect(pagesItem).toHaveTextContent('leads_retrieval');
@@ -175,9 +194,9 @@ describe('MetaGrantChecklist', () => {
       />
     );
 
-    expect(screen.getByText('Ad accounts')).toBeInTheDocument();
-    expect(screen.getByText('Pages')).toBeInTheDocument();
-    expect(screen.getByText('Pixels & datasets')).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Ad accounts' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Pages' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: 'Pixels & datasets' })).toBeInTheDocument();
     expect(screen.queryByText('Instagram accounts')).not.toBeInTheDocument();
     expect(screen.queryByText('Catalogs')).not.toBeInTheDocument();
   });

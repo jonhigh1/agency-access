@@ -200,6 +200,7 @@ export function AutomaticPagesGrant({
   return (
     <div className="space-y-6">
       <div>
+        <p className="label-micro">{content.title}</p>
         <p className="text-sm text-muted-foreground">{content.subtitle}</p>
       </div>
 
