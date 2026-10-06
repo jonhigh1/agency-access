@@ -97,6 +97,7 @@ function parseFileToPost(filePath: string, slug: string): BlogPost {
       ? stage
       : "consideration") as BlogStage,
     publishedAt: String(data.publishedAt ?? ""),
+    updatedAt: data.updatedAt ? String(data.updatedAt) : undefined,
     readTime: Number(data.readTime) || 5,
     author: authorObj,
     tags: Array.isArray(data.tags) ? data.tags.map(String) : [],
@@ -112,6 +113,7 @@ function parseFileToPost(filePath: string, slug: string): BlogPost {
       : undefined,
     featuredImage: data.featuredImage ? String(data.featuredImage) : undefined,
     canonical: data.canonical ? String(data.canonical) : undefined,
+    suppressArticleFooter: data.suppressArticleFooter === true,
   };
 }
 
