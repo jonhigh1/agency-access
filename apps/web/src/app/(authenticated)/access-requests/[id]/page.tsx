@@ -18,12 +18,14 @@ import {
   excludeMetaGrant,
   getAccessRequest,
   getAuthorizationUrl,
+  runMetaAutoAssign,
 } from '@/lib/api/access-requests';
 import { executeSendInviteReminder } from '@/lib/invite-reminder';
 import type { AccessRequest } from '@/lib/api/access-requests';
 import type { ManualConfirmationPlatform } from '@agency-platform/shared';
 import {
   RequestActionsBar,
+  MetaAutoAssignCard,
   MetaFulfillmentCard,
   RequestOverviewCard,
   RequestPlatformsCard,
@@ -220,6 +222,17 @@ export default function AccessRequestDetailPage({ params }: AccessRequestDetailP
     window.open(authorizationUrl, '_blank', 'noopener,noreferrer');
   };
 
+  const handleRunMetaAutoAssign = async () => {
+    if (!accessRequest) return 'Could not load access request.';
+    const result = await runMetaAutoAssign(accessRequest.id, resolveApiToken);
+    if (result.error) return result.error.message;
+
+    const refreshed = await getAccessRequest(accessRequest.id, resolveApiToken);
+    if (!refreshed.data) return refreshed.error?.message || 'Could not refresh assignment results.';
+    setAccessRequest(refreshed.data);
+    return null;
+  };
+
   const handleExcludeMetaGrant = async (grantId: string, reason: string) => {
     if (!accessRequest) return 'Could not load access request.';
     const result = await excludeMetaGrant(accessRequest.id, grantId, reason, resolveApiToken);
@@ -282,6 +295,11 @@ export default function AccessRequestDetailPage({ params }: AccessRequestDetailP
       </div>
     );
   }
+
+  const partnerVerified = accessRequest.metaFulfillment?.some(
+    (row) => row.recipientType === 'business' && row.status === 'verified',
+  ) ?? false;
+  const autoAssignEnabled = accessRequest.metaAutoAssignEnabled ?? false;
 
   return (
     <div className="min-h-screen bg-paper">
@@ -354,6 +372,13 @@ export default function AccessRequestDetailPage({ params }: AccessRequestDetailP
           results={accessRequest.metaFulfillment || []}
           declines={accessRequest.metaDeclines}
           onExclude={handleExcludeMetaGrant}
+        />
+
+        <MetaAutoAssignCard
+          results={accessRequest.metaAutoAssignResults || []}
+          partnerVerified={partnerVerified}
+          autoAssignEnabled={autoAssignEnabled}
+          onRunAutoAssign={handleRunMetaAutoAssign}
         />
       </div>
     </div>

@@ -595,6 +595,45 @@ export const MetaAssignableRecipientSchema = z.object({
 });
 export type MetaAssignableRecipient = z.infer<typeof MetaAssignableRecipientSchema>;
 
+/** Agency-wide defaults for post-Partner Auto-Assign (ticket 08). Stored on Meta connection metadata. */
+export const MetaAutoAssignRecipientSchema = z.object({
+  type: z.enum(['human', 'system_user']),
+  id: z.string().min(1),
+  name: z.string().min(1).optional(),
+});
+export type MetaAutoAssignRecipient = z.infer<typeof MetaAutoAssignRecipientSchema>;
+
+export const MetaAutoAssignPreferencesSchema = z.object({
+  enabled: z.boolean().default(false),
+  recipients: z.array(MetaAutoAssignRecipientSchema).default([]),
+});
+export type MetaAutoAssignPreferences = z.infer<typeof MetaAutoAssignPreferencesSchema>;
+
+export const MetaAutoAssignResultStatusSchema = z.enum(['verified', 'failed', 'skipped']);
+export type MetaAutoAssignResultStatus = z.infer<typeof MetaAutoAssignResultStatusSchema>;
+
+export const MetaAutoAssignResultSchema = z.object({
+  assetKind: MetaAssetKindSchema,
+  assetId: z.string().min(1),
+  assetName: z.string().optional(),
+  recipientType: z.enum(['human', 'system_user']),
+  recipientId: z.string().min(1),
+  recipientName: z.string().optional(),
+  requestedTasks: z.array(z.string().min(1)).default([]),
+  verifiedTasks: z.array(z.string().min(1)).optional(),
+  status: MetaAutoAssignResultStatusSchema,
+  errorCode: z.string().optional(),
+  errorMessage: z.string().optional(),
+  attemptedAt: z.string().datetime(),
+});
+export type MetaAutoAssignResult = z.infer<typeof MetaAutoAssignResultSchema>;
+
+export const META_AUTO_ASSIGN_GRANT_METHOD = 'agency_auto_assign' as const;
+
+export function defaultMetaAutoAssignPreferences(): MetaAutoAssignPreferences {
+  return MetaAutoAssignPreferencesSchema.parse({});
+}
+
 export const MetaAssetGrantResultSchema = z.object({
   assetId: z.string().min(1),
   assetType: MetaAssetKindSchema,

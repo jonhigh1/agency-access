@@ -5,6 +5,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth, useUser } from '@clerk/nextjs';
 import { MetaAssetSettings } from '@agency-platform/shared';
 import { MetaPagePermissionsModal } from './meta-page-permissions-modal';
+import { MetaAutoAssignSettings } from './meta-auto-assign-settings';
 import { ManageAssetsSectionCard, ManageAssetsStatusPanel } from './manage-assets-ui';
 import { Button } from './ui/button';
 import { SingleSelect } from '@/components/ui/single-select';
@@ -428,6 +429,8 @@ export function MetaUnifiedSettings({ agencyId }: MetaUnifiedSettingsProps) {
           />
         </div>
       </ManageAssetsSectionCard>
+
+      <MetaAutoAssignSettings agencyId={agencyId} />
 
       {/* Meta Page Permissions Modal */}
       <MetaPagePermissionsModal

@@ -25,7 +25,9 @@ import {
   type WebhookAccessRequestLifecycleEventType,
   MetaAccessConfigSchema,
   MetaDeclinableAssetKindSchema,
+  META_AUTO_ASSIGN_GRANT_METHOD,
   getDefaultMetaAccessTasks,
+  type MetaAutoAssignResult,
   type MetaFulfillmentStatus,
   type MetaAssetDecline,
   type UnresolvedProductReason,
@@ -39,6 +41,7 @@ import { webhookEventService } from '@/services/webhook-event.service.js';
 import { normalizeCustomerId } from '@/services/connectors/google.js';
 import { resolveListLimit, resolveListOffset } from '@/lib/list-pagination.js';
 import { metaAssetsService } from '@/services/meta-assets.service.js';
+import { metaAutoAssignService } from '@/services/meta-auto-assign.service.js';
 import { readMetaAuthorizationMetadata } from '@/lib/meta-authorization-metadata.js';
 
 const LegacyPlatformSchema = z.enum([
@@ -435,6 +438,7 @@ type AuthorizationProgressConnection = {
   metaAssetGrants?: Array<{
     assetKind: string;
     assetId: string;
+    grantMethod?: string;
     status: MetaFulfillmentStatus | 'pending' | 'granted' | 'failed' | 'unresolved';
     recipientType: string;
     recipientId: string;
@@ -454,6 +458,8 @@ type AgencyPlatformConnectionSummary = {
 
 type MetaFulfillmentGrant = NonNullable<AuthorizationProgressConnection['metaAssetGrants']>[number] & {
   id: string;
+  grantMethod?: string;
+  lastAttemptAt?: Date | null;
   assetName?: string | null;
   requestedTasks: unknown;
   verifiedTasks?: unknown;
@@ -712,7 +718,9 @@ function buildMetaFulfillment(accessRequest: { metaAccessConfig?: unknown }, con
   );
 
   return connections.flatMap((connection) =>
-    ((connection.metaAssetGrants || []) as MetaFulfillmentGrant[]).map((grant) => {
+    ((connection.metaAssetGrants || []) as MetaFulfillmentGrant[])
+      .filter((grant) => grant.grantMethod !== 'agency_auto_assign')
+      .map((grant) => {
       const problem = grant.status === 'verified' ? getVerifiedMetaGrantProblem(grant) : null;
       const status: MetaFulfillmentStatus = problem === 'stale'
         ? 'stale'
@@ -774,6 +782,46 @@ function buildMetaFulfillment(accessRequest: { metaAccessConfig?: unknown }, con
           : {}),
       };
     })
+  );
+}
+
+function buildMetaAutoAssignResults(
+  connections: AuthorizationProgressConnection[],
+  recipientNameLookup: Map<string, string>,
+): MetaAutoAssignResult[] {
+  return connections.flatMap((connection) =>
+    ((connection.metaAssetGrants || []) as MetaFulfillmentGrant[])
+      .filter((grant) => grant.grantMethod === META_AUTO_ASSIGN_GRANT_METHOD)
+      .map((grant) => {
+        const metadataName =
+          grant.metadata &&
+          typeof grant.metadata === 'object' &&
+          !Array.isArray(grant.metadata) &&
+          typeof (grant.metadata as { recipientName?: unknown }).recipientName === 'string'
+            ? (grant.metadata as { recipientName: string }).recipientName
+            : undefined;
+
+        const status: MetaAutoAssignResult['status'] =
+          grant.status === 'verified' ? 'verified' : 'failed';
+
+        return {
+          assetKind: grant.assetKind as MetaAutoAssignResult['assetKind'],
+          assetId: grant.assetId,
+          assetName: grant.assetName || grant.assetId,
+          recipientType: grant.recipientType as 'human' | 'system_user',
+          recipientId: grant.recipientId,
+          recipientName:
+            metadataName ||
+            recipientNameLookup.get(`${grant.recipientType}:${grant.recipientId}`) ||
+            grant.recipientId,
+          requestedTasks: Array.isArray(grant.requestedTasks) ? (grant.requestedTasks as string[]) : [],
+          verifiedTasks: Array.isArray(grant.verifiedTasks) ? (grant.verifiedTasks as string[]) : undefined,
+          status,
+          errorCode: grant.lastErrorCode || undefined,
+          errorMessage: grant.lastErrorMessage || undefined,
+          attemptedAt: (grant.lastAttemptAt || grant.updatedAt).toISOString(),
+        };
+      }),
   );
 }
 
@@ -1660,6 +1708,8 @@ export async function getAccessRequestById(id: string, agencyId?: string) {
             nextActor: true,
             lastErrorCode: true,
             lastErrorMessage: true,
+            grantMethod: true,
+            lastAttemptAt: true,
             metadata: true,
             verifiedAt: true,
             updatedAt: true,
@@ -1682,7 +1732,15 @@ export async function getAccessRequestById(id: string, agencyId?: string) {
       [],
       accessRequest.metaAccessConfig
     );
+    const autoAssignPrefs = await metaAutoAssignService.getPreferences(accessRequest.agencyId);
+    const autoAssignRecipientNames = new Map(
+      (autoAssignPrefs.data?.recipients ?? []).map((recipient) => [
+        `${recipient.type}:${recipient.id}`,
+        recipient.name ?? recipient.id,
+      ]),
+    );
     const metaFulfillment = buildMetaFulfillment(accessRequest, clientConnections as any);
+    const metaAutoAssignResults = buildMetaAutoAssignResults(clientConnections as any, autoAssignRecipientNames);
     const manualConfirmations = buildManualConfirmations(
       clientConnections,
       new Set(requestedProducts.map((product) => product.product))
@@ -1695,6 +1753,8 @@ export async function getAccessRequestById(id: string, agencyId?: string) {
         platforms: hierarchicalPlatforms,
         authorizationProgress,
         metaFulfillment,
+        metaAutoAssignResults,
+        metaAutoAssignEnabled: autoAssignPrefs.data?.enabled ?? false,
         manualConfirmations,
         ...(shopifySubmission ? { shopifySubmission } : {}),
       },
@@ -1898,6 +1958,8 @@ export async function getAccessRequestByToken(token: string) {
               nextActor: true,
               lastErrorCode: true,
               lastErrorMessage: true,
+              grantMethod: true,
+              lastAttemptAt: true,
               metadata: true,
               verifiedAt: true,
               updatedAt: true,
@@ -1937,6 +1999,14 @@ export async function getAccessRequestByToken(token: string) {
       accessRequest.metaAccessConfig
     );
     const metaFulfillment = buildMetaFulfillment(accessRequest, clientConnections as any);
+    const autoAssignPrefs = await metaAutoAssignService.getPreferences(accessRequest.agencyId);
+    const autoAssignRecipientNames = new Map(
+      (autoAssignPrefs.data?.recipients ?? []).map((recipient) => [
+        `${recipient.type}:${recipient.id}`,
+        recipient.name ?? recipient.id,
+      ]),
+    );
+    const metaAutoAssignResults = buildMetaAutoAssignResults(clientConnections as any, autoAssignRecipientNames);
     const metaDeclines = collectMetaDeclines(clientConnections as any);
     const connections = (clientConnections as any[]).flatMap((connection) =>
       getConnectionPlatformGroups(connection).map((platformGroup) => ({
@@ -1973,6 +2043,7 @@ export async function getAccessRequestByToken(token: string) {
         manualInviteTargets,
         authorizationProgress,
         metaFulfillment,
+        metaAutoAssignResults,
         metaDeclines,
         connections,
         metaResumeSelections,

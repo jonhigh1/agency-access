@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { prisma } from '@/lib/prisma';
 import { agencyPlatformService } from '@/services/agency-platform.service';
 import { metaAssetsService } from '@/services/meta-assets.service';
+import { metaAutoAssignService } from '@/services/meta-auto-assign.service.js';
 import { googleAssetsService } from '@/services/google-assets.service';
 import { MetaConnector } from '@/services/connectors/meta';
 import { GoogleConnector } from '@/services/connectors/google';
@@ -310,6 +311,54 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
     }
 
     return reply.send(result);
+  });
+
+  /**
+   * GET /agency-platforms/meta/auto-assign-preferences
+   * Agency defaults for post-Partner Auto-Assign (ticket 08).
+   */
+  fastify.get('/agency-platforms/meta/auto-assign-preferences', async (request, reply) => {
+    const { agencyId } = request.query as { agencyId?: string };
+
+    if (!agencyId) {
+      return sendValidationError(reply, 'agencyId is required');
+    }
+    if (!ensureAgencyAccess(request, reply, agencyId)) return;
+
+    const result = await metaAutoAssignService.getPreferences(agencyId);
+    if (result.error) {
+      return reply.code(result.error.code === 'NOT_FOUND' ? 404 : 500).send(result);
+    }
+
+    return reply.send({ data: result.data, error: null });
+  });
+
+  /**
+   * PATCH /agency-platforms/meta/auto-assign-preferences
+   */
+  fastify.patch('/agency-platforms/meta/auto-assign-preferences', async (request, reply) => {
+    const { agencyId, preferences } = request.body as {
+      agencyId?: string;
+      preferences?: unknown;
+    };
+
+    if (!agencyId || preferences === undefined) {
+      return sendValidationError(reply, 'agencyId and preferences are required');
+    }
+    if (!ensureAgencyAccess(request, reply, agencyId)) return;
+
+    const result = await metaAutoAssignService.savePreferences(agencyId, preferences as any, request);
+    if (result.error) {
+      const statusCode =
+        result.error.code === 'VALIDATION_ERROR' || result.error.code === 'INVALID_AUTO_ASSIGN_RECIPIENT'
+          ? 400
+          : result.error.code === 'NOT_FOUND'
+            ? 404
+            : 502;
+      return reply.code(statusCode).send({ data: null, error: result.error });
+    }
+
+    return reply.send({ data: result.data, error: null });
   });
 
   /**

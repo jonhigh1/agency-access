@@ -4,3 +4,4 @@ export { RequestActionsBar } from './request-actions-bar';
 export { ShopifySubmissionPanel } from './shopify-submission-panel';
 export { ConfirmModal } from './confirm-modal';
 export { MetaFulfillmentCard } from './meta-fulfillment-card';
+export { MetaAutoAssignCard } from './meta-auto-assign-card';
