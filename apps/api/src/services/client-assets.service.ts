@@ -14,7 +14,13 @@
 import { logger } from '../lib/logger.js';
 import { META_GRAPH_VERSION } from '../lib/meta-constants.js';
 import { metaGraphGet } from '../lib/meta-graph-request.js';
-import type { MetaAssetKind, MetaPageEngagementProof, MetaProductCatalog } from '@agency-platform/shared';
+import { getRecordedMetaGraphOps, metaGraphFetch } from '../lib/meta-graph-instrumentation.js';
+import {
+  formatMetaGraphOpCaption,
+  type MetaAssetKind,
+  type MetaPageEngagementProof,
+  type MetaProductCatalog,
+} from '@agency-platform/shared';
 import { MetaConnector } from './connectors/meta.js';
 
 export interface MetaAdAccount {
@@ -254,14 +260,17 @@ class ClientAssetsService {
     accessToken: string,
     pageId: string
   ): Promise<MetaPageEngagementProof> {
+    const opsStart = getRecordedMetaGraphOps().length;
     const pageUrl = new URL(`${this.GRAPH_API_BASE}/${pageId}`);
     pageUrl.searchParams.set(
       'fields',
       'id,name,category,tasks,fan_count,followers_count,instagram_business_account{id,username},access_token'
     );
 
-    const pageResponse = await fetch(pageUrl, {
-      headers: { Authorization: `Bearer ${accessToken}` },
+    const pageResponse = await metaGraphFetch(pageUrl.toString(), {
+      method: 'GET',
+      accessToken,
+      tokenClass: 'client_user',
       signal: AbortSignal.timeout(15_000),
     });
     if (!pageResponse.ok) {
@@ -288,8 +297,10 @@ class ClientAssetsService {
     feedUrl.searchParams.set('fields', 'id,created_time');
     feedUrl.searchParams.set('limit', '3');
 
-    const feedResponse = await fetch(feedUrl, {
-      headers: { Authorization: `Bearer ${page.access_token}` },
+    const feedResponse = await metaGraphFetch(feedUrl.toString(), {
+      method: 'GET',
+      accessToken: page.access_token,
+      tokenClass: 'selected_page',
       signal: AbortSignal.timeout(15_000),
     });
     if (!feedResponse.ok) {
@@ -326,6 +337,9 @@ class ClientAssetsService {
           id: post.id,
           ...(post.created_time ? { createdTime: post.created_time } : {}),
         })),
+      graphOperationCaptions: getRecordedMetaGraphOps()
+        .slice(opsStart)
+        .map((op) => formatMetaGraphOpCaption(op)),
     };
   }
 

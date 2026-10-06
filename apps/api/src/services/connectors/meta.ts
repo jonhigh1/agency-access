@@ -1,6 +1,7 @@
 import { env } from '../../lib/env.js';
 import { META_GRAPH_VERSION } from '../../lib/meta-constants.js';
 import { metaGraphGet, META_GRAPH_TIMEOUT_MS } from '../../lib/meta-graph-request.js';
+import { metaGraphFetch } from '../../lib/meta-graph-instrumentation.js';
 import { logger } from '../../lib/logger.js';
 import {
   META_PERMISSION_CONTRACT,
@@ -858,7 +859,7 @@ export class MetaConnector {
       timezone_id: params.timezoneId,
     });
 
-    const response = await fetch(
+    const response = await metaGraphFetch(
       `https://graph.facebook.com/${META_GRAPH_VERSION}/me/businesses`,
       {
         method: 'POST',
@@ -866,6 +867,7 @@ export class MetaConnector {
           'Content-Type': 'application/x-www-form-urlencoded',
         },
         body: requestBody.toString(),
+        tokenClass: 'client_user',
       }
     );
 
