@@ -253,6 +253,20 @@ describe('MetaGrantChecklist', () => {
     expect(screen.getByText(/autostart:true initialStatus:idle/)).toBeInTheDocument();
   });
 
+  it('shows unified Needs you status for a pending manual ad-account row (CF-01)', () => {
+    render(
+      <MetaGrantChecklist {...baseProps} selectedAssets={blob({ adAccounts: ['act_1'] })} />
+    );
+
+    const row = screen
+      .getByRole('heading', { name: 'Ad accounts' })
+      .closest('[data-checklist-kind="ad_account"]') as HTMLElement;
+    expect(row).toHaveAttribute('data-primary-status', 'needs_you');
+    expect(within(row).getByText('Needs you')).toBeInTheDocument();
+    expect(within(row).queryByText('Pending')).not.toBeInTheDocument();
+    expect(within(row).getByText(/share in meta business settings/i)).toBeInTheDocument();
+  });
+
   it('mounts the ad-account panel in verify mode when server rows show sharing already attempted', () => {
     render(
       <MetaGrantChecklist

@@ -1060,7 +1060,7 @@ describe('PlatformAuthWizard', () => {
 
     // Wait for the post-save step so every sequential save has finished
     // before asserting which platforms were posted.
-    await screen.findByText('Connected');
+    await screen.findByText('Meta signed in');
 
     const saveBodies = vi.mocked(fetch).mock.calls
       .filter(([url]) => String(url).includes('/save-assets'))
@@ -1103,7 +1103,7 @@ describe('PlatformAuthWizard', () => {
     await waitFor(() => expect(shareButton).toBeEnabled());
     fireEvent.click(shareButton);
 
-    await screen.findByText('Connected');
+    await screen.findByText('Meta signed in');
 
     const saveBodies = vi.mocked(fetch).mock.calls
       .filter(([url]) => String(url).includes('/save-assets'))

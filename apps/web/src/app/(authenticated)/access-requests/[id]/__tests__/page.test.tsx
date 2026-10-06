@@ -93,7 +93,7 @@ describe('AccessRequestDetailPage', () => {
     expect(screen.getByRole('link', { name: /edit request/i })).toHaveAttribute('href', '/access-requests/request-1/edit');
     expect(screen.getByRole('button', { name: /cancel request/i })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /send reminder/i })).toBeInTheDocument();
-    expect(screen.getByText(/waiting on client authorization/i)).toBeInTheDocument();
+    expect(screen.getByText(/client invite: needs you/i)).toBeInTheDocument();
   });
 
   it('offers retry for a service failure and returns to dashboard for a missing request', async () => {
@@ -127,7 +127,7 @@ describe('AccessRequestDetailPage', () => {
     renderWithProviders(<AccessRequestDetailPage params={Promise.resolve({ id: 'request-stale' })} />);
 
     expect(await screen.findByText(/still pending after/i)).toBeInTheDocument();
-    expect(screen.queryByText(/waiting on client authorization/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/client invite: needs you/i)).not.toBeInTheDocument();
   });
 
   it('shows reminder sent when Send Reminder API succeeds', async () => {

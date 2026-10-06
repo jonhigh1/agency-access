@@ -70,6 +70,7 @@ describe('buildMetaGrantChecklist', () => {
       label: 'Ad accounts',
       grantMethod: 'manual',
       state: 'pending',
+      primaryStatus: 'needs_you',
       remainingCount: 1,
       declined: false,
       clientAction: META_GRANT_CLIENT_ACTIONS.pending,
