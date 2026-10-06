@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import type { MetaAssetDecline, MetaFulfillmentResult } from '@agency-platform/shared';
 import type { MetaSelectionBlob } from '../meta-selection-blob';
 import { MetaGrantChecklist } from '../MetaGrantChecklist';
@@ -143,10 +143,11 @@ describe('MetaGrantChecklist', () => {
       />
     );
 
-    expect(screen.getByRole('region', { name: /partner access narrative/i })).toBeInTheDocument();
-    expect(screen.getByText(/agency-bm-1/)).toBeInTheDocument();
-    expect(screen.getByText('Automatic')).toBeInTheDocument();
-    expect(screen.getByText('Manual')).toBeInTheDocument();
+    const narrative = screen.getByRole('region', { name: /partner access narrative/i });
+    expect(narrative).toBeInTheDocument();
+    expect(within(narrative).getByText(/agency-bm-1/)).toBeInTheDocument();
+    expect(within(narrative).getByText('Automatic')).toBeInTheDocument();
+    expect(within(narrative).getByText('Manual')).toBeInTheDocument();
   });
 
   it('shows the Leads Access Business Settings step inside the Pages item when the task is requested', () => {
@@ -193,8 +194,12 @@ describe('MetaGrantChecklist', () => {
       />
     );
 
-    const adRow = screen.getByText('Ad accounts').closest('[data-checklist-kind="ad_account"]') as HTMLElement;
-    const pageRow = screen.getByText('Pages').closest('[data-checklist-kind="page"]') as HTMLElement;
+    const adRow = screen
+      .getByRole('heading', { name: 'Ad accounts' })
+      .closest('[data-checklist-kind="ad_account"]') as HTMLElement;
+    const pageRow = screen
+      .getByRole('heading', { name: 'Pages' })
+      .closest('[data-checklist-kind="page"]') as HTMLElement;
     expect(adRow.querySelector('[data-grant-method="manual"]')).toHaveTextContent('Manual');
     expect(pageRow.querySelector('[data-grant-method="automatic"]')).toHaveTextContent('Automatic');
     expect(adRow).not.toHaveTextContent('Automatic');
