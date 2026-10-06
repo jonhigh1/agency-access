@@ -783,6 +783,10 @@ describe('Client Auth Asset Routes - Meta', () => {
           managedTasks: ['MANAGE'],
         },
         posts: [{ id: 'post_1', createdTime: '2026-09-21T00:00:00+0000' }],
+        graphOperationCaptions: [
+          expect.stringContaining('GET'),
+          expect.stringContaining('selected_page'),
+        ],
       },
       error: null,
     });

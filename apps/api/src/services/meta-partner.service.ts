@@ -10,6 +10,7 @@
  */
 
 import { META_GRAPH_VERSION } from '@/lib/meta-constants';
+import { metaGraphFetch } from '@/lib/meta-graph-instrumentation.js';
 
 export interface MetaAssignedUserVerificationResult {
   verified: boolean;
@@ -23,10 +24,17 @@ class MetaPartnerService {
   private readonly META_GRAPH_URL = `https://graph.facebook.com/${META_GRAPH_VERSION}`;
   private readonly REQUEST_TIMEOUT_MS = 15_000;
 
-  private request(accessToken: string, init: RequestInit): RequestInit {
-    const headers = new Headers(init.headers);
-    headers.set('Authorization', `Bearer ${accessToken}`);
-    return { ...init, headers, signal: AbortSignal.timeout(this.REQUEST_TIMEOUT_MS) };
+  private async graphRequest(
+    url: string,
+    accessToken: string,
+    init: RequestInit
+  ): Promise<Response> {
+    return metaGraphFetch(url, {
+      ...init,
+      accessToken,
+      tokenClass: 'client_user',
+      signal: AbortSignal.timeout(this.REQUEST_TIMEOUT_MS),
+    });
   }
 
   private normalizeTasks(tasks: unknown): string[] {
@@ -47,13 +55,13 @@ class MetaPartnerService {
     const formData = new URLSearchParams();
     formData.append('user', input.systemUserId);
     formData.append('tasks', JSON.stringify(input.tasks));
-    const response = await fetch(url, this.request(input.accessToken, {
+    const response = await this.graphRequest(url, input.accessToken, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: formData.toString(),
-    }));
+    });
 
     if (!response.ok) {
       let errorMessage = 'Unknown error';
@@ -111,7 +119,7 @@ class MetaPartnerService {
     while (nextUrl) {
       if (visitedUrls.has(nextUrl)) throw new Error('Meta returned a repeated pagination URL');
       visitedUrls.add(nextUrl);
-      const response = await fetch(nextUrl, this.request(accessToken, { method: 'GET' }));
+      const response = await this.graphRequest(nextUrl, accessToken, { method: 'GET' });
       if (!response.ok) {
         throw new Error(`Failed to verify assigned user access: ${await response.text()}`);
       }
@@ -136,7 +144,7 @@ class MetaPartnerService {
     while (nextUrl) {
       if (visitedUrls.has(nextUrl)) throw new Error('Meta returned a repeated pagination URL');
       visitedUrls.add(nextUrl);
-      const response = await fetch(nextUrl, this.request(accessToken, { method: 'GET' }));
+      const response = await this.graphRequest(nextUrl, accessToken, { method: 'GET' });
       if (!response.ok) throw new Error(`${failure}: ${await response.text()}`);
       const payload = await response.json() as { data?: T[]; paging?: { next?: string } };
       agencies.push(...(payload.data || []));
@@ -189,11 +197,11 @@ class MetaPartnerService {
       business: agencyBusinessId,
       permitted_tasks: JSON.stringify(tasks),
     });
-    const response = await fetch(`${this.META_GRAPH_URL}/${catalogId}/agencies`, this.request(clientToken, {
+    const response = await this.graphRequest(`${this.META_GRAPH_URL}/${catalogId}/agencies`, clientToken, {
       method: 'POST',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: formData.toString(),
-    }));
+    });
     if (!response.ok) throw new Error(`Failed to share Meta catalog with agency: ${await response.text()}`);
   }
 
@@ -332,11 +340,11 @@ class MetaPartnerService {
     if (!existing.some((user) => user.id === userId)) return;
 
     const formData = new URLSearchParams({ user: userId });
-    const response = await fetch(`${this.META_GRAPH_URL}/${assetId}/assigned_users`, this.request(clientToken, {
+    const response = await this.graphRequest(`${this.META_GRAPH_URL}/${assetId}/assigned_users`, clientToken, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: formData.toString(),
-    }));
+    });
 
     if (!response.ok) {
       throw new Error(`Failed to revoke Meta assigned user: ${await response.text()}`);
@@ -359,11 +367,11 @@ class MetaPartnerService {
     if (!existing.some((agency) => agency.id === agencyBusinessId)) return;
 
     const formData = new URLSearchParams({ business: agencyBusinessId });
-    const response = await fetch(`${this.META_GRAPH_URL}/${assetId}/agencies`, this.request(clientToken, {
+    const response = await this.graphRequest(`${this.META_GRAPH_URL}/${assetId}/agencies`, clientToken, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: formData.toString(),
-    }));
+    });
     const accessType = assetType === 'catalog' ? 'catalog agency' : 'agency';
     if (!response.ok) throw new Error(`Failed to revoke Meta ${accessType} access: ${await response.text()}`);
 

@@ -92,12 +92,10 @@ describe('MetaSystemUserService', () => {
     expect(result).toEqual({ data: [], error: null });
     const [url, options] = vi.mocked(fetch).mock.calls[0];
     expect(String(url)).not.toContain('access_token');
-    expect(options).toEqual({
-      method: 'GET',
-      headers: { Authorization: 'Bearer agency-token' },
-      signal: expect.any(AbortSignal),
-      redirect: 'error',
-    });
+    expect(options.method).toBe('GET');
+    expect(new Headers(options.headers).get('Authorization')).toBe('Bearer agency-token');
+    expect(options.signal).toBeInstanceOf(AbortSignal);
+    expect(options.redirect).toBe('error');
   });
 
   it('loads all system users across Meta Graph pages', async () => {

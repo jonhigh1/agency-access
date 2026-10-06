@@ -1562,6 +1562,8 @@ export interface MetaPageEngagementProof {
     id: string;
     createdTime?: string;
   }>;
+  /** Sanitized Graph operation summaries for screencast captions (no secrets). */
+  graphOperationCaptions?: string[];
 }
 
 export interface MetaInstagramAccount {

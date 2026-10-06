@@ -50,7 +50,7 @@ describe('MetaConnector debug_token parity', () => {
     const [url, init] = (global.fetch as ReturnType<typeof vi.fn>).mock.calls[0];
     expect(url).toBe(`https://graph.facebook.com/${META_GRAPH_VERSION}/debug_token?input_token=user-token`);
     expect(init.method).toBe('GET');
-    expect(init.headers).toEqual({ Authorization: 'Bearer test-app-id|test-app-secret' });
+    expect(new Headers(init.headers).get('Authorization')).toBe('Bearer test-app-id|test-app-secret');
     expect(init.signal).toBeInstanceOf(AbortSignal);
 
     expect(metadata).toEqual({
