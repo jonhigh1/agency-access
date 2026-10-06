@@ -1,16 +1,21 @@
-const META_GRAPH_ORIGIN = 'https://graph.facebook.com';
+import type { MetaGraphTokenClass } from '@agency-platform/shared';
+import { metaGraphFetch } from './meta-graph-instrumentation.js';
+
 export const META_GRAPH_TIMEOUT_MS = 15_000;
 
-export function metaGraphGet(url: string, accessToken: string): Promise<Response> {
-  const parsedUrl = new URL(url);
-  if (parsedUrl.origin !== META_GRAPH_ORIGIN) {
-    throw new Error('Meta Graph request URL must use graph.facebook.com');
-  }
+export type MetaGraphGetContext = {
+  tokenClass?: MetaGraphTokenClass;
+};
 
-  parsedUrl.searchParams.delete('access_token');
-  return fetch(parsedUrl.toString(), {
+export function metaGraphGet(
+  url: string,
+  accessToken: string,
+  context: MetaGraphGetContext = {}
+): Promise<Response> {
+  return metaGraphFetch(url, {
     method: 'GET',
-    headers: { Authorization: `Bearer ${accessToken}` },
+    accessToken,
+    tokenClass: context.tokenClass ?? 'client_user',
     signal: AbortSignal.timeout(META_GRAPH_TIMEOUT_MS),
     redirect: 'error',
   });

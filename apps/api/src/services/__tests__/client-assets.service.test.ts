@@ -437,6 +437,10 @@ describe('ClientAssetsService - Meta', () => {
         { id: 'post_1', createdTime: '2026-09-21T00:00:00+0000' },
         { id: 'post_2' },
       ],
+      graphOperationCaptions: [
+        expect.stringContaining('GET'),
+        expect.stringContaining('selected_page'),
+      ],
     });
     expect(JSON.stringify(result)).not.toContain('page-token-secret');
     expect(String(vi.mocked(fetch).mock.calls[0]?.[0])).toContain('/page_1');
@@ -445,8 +449,13 @@ describe('ClientAssetsService - Meta', () => {
     expect(String(vi.mocked(fetch).mock.calls[1]?.[0])).toContain('fields=id%2Ccreated_time');
     expect(new URL(String(vi.mocked(fetch).mock.calls[0]?.[0])).searchParams.has('access_token')).toBe(false);
     expect(new URL(String(vi.mocked(fetch).mock.calls[1]?.[0])).searchParams.has('access_token')).toBe(false);
-    expect(vi.mocked(fetch).mock.calls[0]?.[1]?.headers).toEqual({ Authorization: 'Bearer user-token' });
-    expect(vi.mocked(fetch).mock.calls[1]?.[1]?.headers).toEqual({ Authorization: 'Bearer page-token-secret' });
+    expect(new Headers(vi.mocked(fetch).mock.calls[0]?.[1]?.headers).get('Authorization')).toBe(
+      'Bearer user-token'
+    );
+    expect(new Headers(vi.mocked(fetch).mock.calls[1]?.[1]?.headers).get('Authorization')).toBe(
+      'Bearer page-token-secret'
+    );
+    expect(JSON.stringify(result.graphOperationCaptions)).not.toContain('page-token-secret');
   });
 
   it('treats an empty Page feed as a successful validation with no invented posts', async () => {
@@ -465,6 +474,7 @@ describe('ClientAssetsService - Meta', () => {
     expect(result).toEqual({
       page: { id: 'page_1', name: 'Client Page', managedTasks: [] },
       posts: [],
+      graphOperationCaptions: expect.any(Array),
     });
   });
 

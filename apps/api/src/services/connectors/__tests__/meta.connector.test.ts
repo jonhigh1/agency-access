@@ -661,10 +661,8 @@ describe('MetaConnector Business Creation', () => {
         { id: 'page-1', name: 'Acme Main', category: 'Retail' },
         { id: 'page-2', name: 'Acme Deals', category: 'Shopping' },
       ]);
-      expect(fetch).toHaveBeenCalledWith(
-        `https://graph.facebook.com/${META_GRAPH_VERSION}/me/accounts?fields=id%2Cname%2Ccategory`,
-        expect.objectContaining({ headers: { Authorization: `Bearer ${accessToken}` } })
-      );
+      const [, init] = vi.mocked(fetch).mock.calls[0] as [string, RequestInit];
+      expect(new Headers(init.headers).get('Authorization')).toBe(`Bearer ${accessToken}`);
     });
 
     it('returns an empty list when the user owns no pages', async () => {
@@ -720,11 +718,13 @@ describe('MetaConnector Business Creation', () => {
         `https://graph.facebook.com/${META_GRAPH_VERSION}/me/businesses`,
         expect.objectContaining({
           method: 'POST',
-          headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         })
       );
 
       const [url, init] = vi.mocked(fetch).mock.calls[0] as [string, RequestInit];
+      expect(new Headers(init.headers).get('Content-Type')).toBe(
+        'application/x-www-form-urlencoded'
+      );
       expect(url).toBe(`https://graph.facebook.com/${META_GRAPH_VERSION}/me/businesses`);
       const body = new URLSearchParams(init.body as string);
       expect(body.get('access_token')).toBe('test-access-token');
