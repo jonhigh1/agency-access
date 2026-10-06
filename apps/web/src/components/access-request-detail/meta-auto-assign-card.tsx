@@ -34,6 +34,7 @@ export function MetaAutoAssignCard({
 }: MetaAutoAssignCardProps) {
   const [running, setRunning] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const hasFailures = results.some((result) => result.status === 'failed');
 
   if (!autoAssignEnabled && results.length === 0) {
     return null;
@@ -71,16 +72,35 @@ export function MetaAutoAssignCard({
         ) : null}
 
         {onRunAutoAssign ? (
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            disabled={running || !partnerVerified || !autoAssignEnabled}
-            isLoading={running}
-            onClick={() => void run()}
-          >
-            {running ? 'Assigning team…' : 'Run Auto-Assign'}
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              variant="secondary"
+              size="sm"
+              disabled={running || !partnerVerified || !autoAssignEnabled}
+              isLoading={running}
+              onClick={() => void run()}
+            >
+              {running ? 'Assigning team…' : 'Run Auto-Assign'}
+            </Button>
+            {hasFailures ? (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={running || !partnerVerified || !autoAssignEnabled}
+                onClick={() => void run()}
+                data-testid="meta-auto-assign-retry-failed"
+              >
+                Retry failed assignments
+              </Button>
+            ) : null}
+          </div>
+        ) : hasFailures ? (
+          <p className="text-sm text-muted-foreground" data-testid="meta-auto-assign-retry-hint">
+            Assignment failed for one or more recipients. Ask your agency to run Auto-Assign again from the request
+            detail page.
+          </p>
         ) : null}
 
         {message ? (

@@ -10,6 +10,22 @@ export function formatMetaEntityIdentity(name: string, id: string): string {
   return `${trimmedName} · ID ${trimmedId}`;
 }
 
+/** Selected Page chip: prefer human-readable name; full identity in `title`. */
+export function formatMetaPageChipDisplay(
+  name: string,
+  id: string,
+): { label: string; title: string } {
+  const trimmedName = name.trim();
+  const trimmedId = id.trim();
+  const displayName = trimmedName || trimmedId;
+  const hasDistinctName =
+    trimmedName.length > 0 && trimmedName !== trimmedId && !/^\d+$/.test(trimmedName);
+  return {
+    label: hasDistinctName ? trimmedName : displayName,
+    title: formatMetaEntityIdentity(displayName, trimmedId),
+  };
+}
+
 /** Combobox secondary line: always includes the Meta object ID. */
 export function metaAssetOptionDescription(
   id: string,

@@ -5,7 +5,7 @@
  * Route: /visual-qa/08-post-grant-auto-assign
  */
 
-import { useEffect } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MetaAutoAssignSettings } from '@/components/meta-auto-assign-settings';
 import { MetaAutoAssignCard } from '@/components/access-request-detail/meta-auto-assign-card';
@@ -15,6 +15,13 @@ const queryClient = new QueryClient({
 });
 
 export default function PostGrantAutoAssignVisualQaPage() {
+  const [retryMessage, setRetryMessage] = useState<string | null>(null);
+
+  const handleRunAutoAssign = useCallback(async () => {
+    setRetryMessage('Fixture retry queued — live Graph assign still requires agency Meta OAuth.');
+    return null;
+  }, []);
+
   useEffect(() => {
     const originalFetch = global.fetch;
     global.fetch = async (input, init) => {
@@ -65,9 +72,15 @@ export default function PostGrantAutoAssignVisualQaPage() {
           </section>
 
           <section aria-label="Post-grant results fixture">
+            {retryMessage ? (
+              <p className="mb-4 text-sm text-muted-foreground" role="status">
+                {retryMessage}
+              </p>
+            ) : null}
             <MetaAutoAssignCard
               partnerVerified
               autoAssignEnabled
+              onRunAutoAssign={handleRunAutoAssign}
               results={[
                 {
                   assetKind: 'page',

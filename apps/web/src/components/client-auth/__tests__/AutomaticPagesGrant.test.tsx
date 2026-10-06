@@ -153,6 +153,100 @@ describe('AutomaticPagesGrant', () => {
     expect(captureMock).not.toHaveBeenCalledWith('client_meta_grant_completed', expect.anything());
   });
 
+  it('shows a success read-back banner when Meta verifies the grant', async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      text: async () =>
+        JSON.stringify({
+          data: {
+            assetGrantResults: [{ assetId: 'page_1', assetType: 'page', status: 'verified' }],
+          },
+          error: null,
+        }),
+    } as Response);
+
+    render(
+      <AutomaticPagesGrant
+        selectedPages={[{ id: 'page_1', name: 'Main Page' }]}
+        connectionId="conn-1"
+        accessRequestToken="token-1"
+        onGrantComplete={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /grant access/i }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('automatic-pages-readback-success')).toBeInTheDocument();
+      expect(screen.getByText(/Partner access confirmed/i)).toBeInTheDocument();
+    });
+    expect(screen.getByText('Main Page')).toBeInTheDocument();
+    expect(screen.queryByText(/page_1/i)).not.toBeInTheDocument();
+  });
+
+  it('shows a failure read-back banner and retry label when read-back fails', async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      text: async () =>
+        JSON.stringify({
+          data: {
+            assetGrantResults: [
+              {
+                assetId: 'page_1',
+                assetType: 'page',
+                status: 'failed',
+                errorMessage: 'Meta returned fewer tasks than this request requires',
+              },
+            ],
+          },
+          error: null,
+        }),
+    } as Response);
+
+    render(
+      <AutomaticPagesGrant
+        selectedPages={[{ id: 'page_1', name: 'Main Page' }]}
+        connectionId="conn-1"
+        accessRequestToken="token-1"
+        onGrantComplete={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /grant access/i }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('automatic-pages-readback-failure')).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /try grant access again/i })).toBeEnabled();
+    });
+  });
+
+  it('auto-grants on mount for visual QA fixtures', async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      text: async () =>
+        JSON.stringify({
+          data: {
+            assetGrantResults: [{ assetId: 'page_1', assetType: 'page', status: 'verified' }],
+          },
+          error: null,
+        }),
+    } as Response);
+
+    render(
+      <AutomaticPagesGrant
+        fixtureAutoGrantOnMount
+        selectedPages={[{ id: 'page_1', name: 'Main Page' }]}
+        connectionId="conn-1"
+        accessRequestToken="token-1"
+        onGrantComplete={vi.fn()}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByTestId('automatic-pages-readback-success')).toBeInTheDocument();
+    });
+  });
+
   it('shows Manual fallback copy when read-back fails for a Page', async () => {
     vi.mocked(fetch).mockResolvedValue({
       ok: true,
