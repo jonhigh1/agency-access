@@ -717,19 +717,25 @@ describe('Client Auth Asset Routes - Meta', () => {
     );
   });
 
-  it('returns 400 when the requested Meta business portfolio is unavailable', async () => {
+  it('returns actionable BM mismatch error when the requested Meta business portfolio is unavailable', async () => {
     vi.mocked(clientAssetsService.fetchMetaAssets).mockRestore();
     const response = await app.inject({
       method: 'GET',
       url: '/client/token-a/assets/meta_ads?connectionId=conn-1&businessId=biz_missing',
     });
 
-    expect(response.statusCode).toBe(400);
+    expect(response.statusCode).toBe(409);
     expect(response.json()).toEqual({
       data: null,
       error: {
-        code: 'INVALID_META_BUSINESS_PORTFOLIO',
-        message: 'Selected Meta business portfolio is not available for this client user',
+        code: 'META_CONNECTION_BM_MISMATCH',
+        message:
+          'The ad account, Page, Instagram, or Pixel you selected do not belong to the same Business Portfolio in Meta. AuthHub cannot complete grant until assets are aligned.',
+        details: expect.objectContaining({
+          supportCode: 'META_CONNECTION_BM_MISMATCH',
+          title: 'Business Portfolio mismatch',
+          nextSteps: expect.any(Array),
+        }),
       },
     });
   });

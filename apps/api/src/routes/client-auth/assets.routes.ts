@@ -2899,19 +2899,23 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
         error: null,
       });
     } catch (error) {
-      if (error instanceof MetaConnectionError) {
+      const isMetaAssetFetch =
+        platform === 'meta_ads' || platform === 'meta_pages' || authPlatform === 'meta';
+
+      if (isMetaAssetFetch && error instanceof MetaConnectionError) {
         return sendMetaConnectionError(reply, error.presentation);
       }
 
-      if (error instanceof MetaBusinessPortfolioUnavailableError) {
+      if (isMetaAssetFetch && error instanceof MetaBusinessPortfolioUnavailableError) {
         const presentation = mapMetaConnectionErrorFromApi(error.code, error.message);
         return sendMetaConnectionError(reply, presentation);
       }
 
-      const mapped = error instanceof Error
-        ? mapMetaConnectionErrorFromApi('ASSET_FETCH_ERROR', error.message)
-        : mapMetaConnectionErrorFromApi('ASSET_FETCH_ERROR');
-      return sendMetaConnectionError(reply, mapped);
+      if (error instanceof MetaBusinessPortfolioUnavailableError) {
+        return sendError(reply, error.code, error.message, error.statusCode);
+      }
+
+      return sendError(reply, 'ASSET_FETCH_ERROR', `Failed to fetch assets: ${error}`, 500);
     }
   });
 }

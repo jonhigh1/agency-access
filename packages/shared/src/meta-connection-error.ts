@@ -326,6 +326,11 @@ export function tryMapThrownMetaError(error: unknown): MetaConnectionError | nul
   if (error instanceof MetaConnectionError) return error;
 
   if (error instanceof Error) {
+    // Edge-scoped asset reads already throw `Meta API error (...)` wrappers.
+    if (error.message.startsWith('Meta API error')) {
+      return null;
+    }
+
     const graphPayload = parseMetaGraphErrorBody(error.message);
     if (graphPayload) {
       const mapped = mapMetaGraphError(graphPayload);
