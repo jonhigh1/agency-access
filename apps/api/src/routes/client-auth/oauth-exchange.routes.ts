@@ -6,7 +6,12 @@ import { getConnector, type PlatformConnector } from '../../services/connectors/
 import { infisical } from '../../lib/infisical.js';
 import { prisma } from '../../lib/prisma.js';
 import { env } from '../../lib/env.js';
-import { type Platform } from '@agency-platform/shared';
+import {
+  getMetaOAuthMissingRequiredScopes,
+  getMetaOAuthPermissionSet,
+  platformGroupOf,
+  type Platform,
+} from '@agency-platform/shared';
 import { oauthExchangeSchema } from './schemas.js';
 import { sanitizeOAuthError } from '../../lib/errors.js';
 import { sendError } from '../../lib/response.js';
@@ -70,10 +75,30 @@ function isMetaPlatform(platform: string): boolean {
   return platform === 'meta' || platform === 'meta_ads' || platform === 'meta_pages' || platform === 'instagram';
 }
 
+function getRequestedMetaProductIds(accessRequestPlatforms: unknown): string[] {
+  if (!Array.isArray(accessRequestPlatforms)) {
+    return [];
+  }
+
+  const productIds = accessRequestPlatforms.flatMap((entry: unknown) => {
+    if (!entry || typeof entry !== 'object') return [];
+    const record = entry as { platform?: string; platformGroup?: string; products?: unknown[] };
+    const group = record.platformGroup ||
+      (typeof record.platform === 'string' ? platformGroupOf(record.platform as Platform) : undefined);
+    if (group !== 'meta') return [];
+    const products = Array.isArray(record.products) ? record.products : [record.platform];
+    return products
+      .map((product) => (typeof product === 'string' ? product : (product as { product?: string })?.product))
+      .filter((productId): productId is string => typeof productId === 'string');
+  });
+  return [...new Set(productIds)];
+}
+
 async function getAuthorizationMetadata(
   platform: string,
   connector: PlatformConnector,
   accessToken: string,
+  requiredOAuthScopes?: readonly string[],
 ): Promise<Prisma.InputJsonObject> {
   const userInfo = await getUserInfoForExchange(platform, connector, accessToken);
   if (!isMetaPlatform(platform)) return userInfo as Prisma.InputJsonObject;
@@ -86,9 +111,21 @@ async function getAuthorizationMetadata(
     throw new Error('Meta token inspection reported an invalid token.');
   }
 
+  const grantedScopes = [...new Set(debug.scopes)].sort();
+  const missingOAuthScopes = requiredOAuthScopes?.length
+    ? getMetaOAuthMissingRequiredScopes(grantedScopes, requiredOAuthScopes)
+    : [];
+
   return {
     ...(userInfo as Prisma.InputJsonObject),
-    grantedScopes: [...new Set(debug.scopes)].sort(),
+    grantedScopes,
+    ...(requiredOAuthScopes?.length
+      ? {
+          requiredOAuthScopes: [...requiredOAuthScopes],
+          missingOAuthScopes,
+          oauthScopesComplete: missingOAuthScopes.length === 0,
+        }
+      : {}),
     tokenDebug: {
       checkedAt: new Date().toISOString(),
       isValid: debug.isValid,
@@ -153,6 +190,9 @@ function buildOAuthExchangeHandler(fastify: FastifyInstance, options: OAuthExcha
       }
 
       const connector = getConnector(platform as Platform);
+      const metaPermissionSet = isMetaPlatform(platform)
+        ? getMetaOAuthPermissionSet(platform, getRequestedMetaProductIds(accessRequest.platforms))
+        : null;
       const [exchanged, existingConnection] = await Promise.all([
         (async () => {
           let tokens = await connector.exchangeCode(code, redirectUri);
@@ -161,7 +201,12 @@ function buildOAuthExchangeHandler(fastify: FastifyInstance, options: OAuthExcha
             tokens = await connector.getLongLivedToken(tokens.accessToken);
           }
 
-          const userInfo = await getAuthorizationMetadata(platform, connector, tokens.accessToken);
+          const userInfo = await getAuthorizationMetadata(
+            platform,
+            connector,
+            tokens.accessToken,
+            metaPermissionSet?.permissions,
+          );
           return { tokens, userInfo };
         })(),
         prisma.clientConnection.findFirst({
