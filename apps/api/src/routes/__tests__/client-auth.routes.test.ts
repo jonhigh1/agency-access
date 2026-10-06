@@ -457,11 +457,11 @@ describe('Client Auth Routes', () => {
         error: null,
       });
 
-      // klaviyo passes the enum check but was never requested by the agency.
+      // linkedin passes the enum check but was never requested by the agency.
       const response = await app.inject({
         method: 'POST',
         url: '/client/test-token/oauth-url',
-        payload: { platform: 'klaviyo' },
+        payload: { platform: 'linkedin' },
       });
 
       expect(response.statusCode).toBe(400);
@@ -649,7 +649,7 @@ describe('Client Auth Routes', () => {
       const response = await app.inject({
         method: 'POST',
         url: '/client/test-token/oauth-state',
-        payload: { platform: 'klaviyo' },
+        payload: { platform: 'linkedin' },
       });
 
       expect(response.statusCode).toBe(400);

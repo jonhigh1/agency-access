@@ -674,14 +674,15 @@ describe('OAuth exchange routes (characterization)', () => {
         });
 
         it('returns 400 PLATFORM_NOT_REQUESTED when the state platform is absent from the access request', async () => {
-          // ACCESS_REQUEST.platforms holds no klaviyo row, so the klaviyo state
-          // must not exchange tokens for this request.
-          mockHappyPath({ state: { platform: 'klaviyo' } });
+          // ACCESS_REQUEST.platforms holds no linkedin row, so the linkedin state
+          // must not exchange tokens for this request. (Klaviyo, Mailchimp, and
+          // Pinterest are manual platforms now — rejected earlier at the schema.)
+          mockHappyPath({ state: { platform: 'linkedin' } });
 
           const response = await app.inject({
             method: 'POST',
             url,
-            payload: { code: 'code-1', state: 'state-1', platform: 'klaviyo' },
+            payload: { code: 'code-1', state: 'state-1', platform: 'linkedin' },
           });
 
           expect(response.statusCode).toBe(400);

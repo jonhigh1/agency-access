@@ -2,6 +2,9 @@ import { z } from 'zod';
 
 // Platforms a client may start an OAuth flow for. Shared by both the
 // state-creation and exchange schemas so the accepted set cannot drift.
+// Klaviyo, Mailchimp, and Pinterest are manual-invitation platforms
+// (see PLATFORM_TOKEN_CAPABILITIES in @agency-platform/shared) and are
+// intentionally excluded — their OAuth credentials no longer exist.
 const clientOAuthPlatform = z.enum([
   'google',
   'meta',
@@ -13,9 +16,6 @@ const clientOAuthPlatform = z.enum([
   'instagram',
   'tiktok',
   'snapchat',
-  'mailchimp',
-  'pinterest',
-  'klaviyo',
 ]);
 
 export const submitIntakeSchema = z.object({
