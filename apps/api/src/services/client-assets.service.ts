@@ -17,6 +17,7 @@ import { metaGraphGet } from '../lib/meta-graph-request.js';
 import { getRecordedMetaGraphOps, metaGraphFetch } from '../lib/meta-graph-instrumentation.js';
 import {
   formatMetaGraphOpCaption,
+  tryMapThrownMetaError,
   type MetaAssetKind,
   type MetaPageEngagementProof,
   type MetaProductCatalog,
@@ -250,6 +251,10 @@ class ClientAssetsService {
       if (error instanceof MetaBusinessPortfolioUnavailableError) {
         throw error;
       }
+      const mapped = tryMapThrownMetaError(error);
+      if (mapped) {
+        throw mapped;
+      }
       throw new Error(
         `Failed to fetch Meta assets: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
@@ -309,7 +314,7 @@ class ClientAssetsService {
     }
 
     const feedData = (await feedResponse.json()) as {
-      data?: Array<{ id?: string; created_time?: string }>;
+      data?: Array<{ id?: string; created_time?: string; message?: string; story?: string }>;
     };
 
     return {

@@ -643,6 +643,10 @@ describe('MetaConnector Business Creation', () => {
 
   describe('getUserPages', () => {
     it('returns the user own pages mapped from /me/accounts', async () => {
+      const { clearRecordedMetaGraphOps, getRecordedMetaGraphOps } = await import(
+        '../../../lib/meta-graph-instrumentation.js'
+      );
+      clearRecordedMetaGraphOps();
       vi.mocked(fetch).mockResolvedValueOnce({
         ok: true,
         json: async () => ({
@@ -661,6 +665,12 @@ describe('MetaConnector Business Creation', () => {
       ]);
       const [, init] = vi.mocked(fetch).mock.calls[0] as [string, RequestInit];
       expect(new Headers(init.headers).get('Authorization')).toBe(`Bearer ${accessToken}`);
+      expect(getRecordedMetaGraphOps()[0]).toEqual({
+        method: 'GET',
+        edge: '/me/accounts',
+        tokenClass: 'client_user',
+        outcome: 'ok',
+      });
     });
 
     it('returns an empty list when the user owns no pages', async () => {

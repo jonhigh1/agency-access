@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Ticket 05 — Validate Page success state</title>
+    <style>
+      :root {
+        --ink: #09090b;
+        --paper: #fafafa;
+        --teal: 0, 168, 150;
+        --coral: 255, 107, 53;
+      }
+      body {
+        margin: 0;
+        font-family: system-ui, sans-serif;
+        background: var(--paper);
+        color: var(--ink);
+      }
+      .wrap {
+        max-width: 32rem;
+        margin: 2.5rem auto;
+        padding: 1.5rem;
+        border: 2px solid var(--ink);
+        box-shadow: 4px 4px 0 var(--ink);
+        background: #fff;
+      }
+      .label-nano {
+        font-size: 0.65rem;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        color: #71717a;
+      }
+      .success {
+        margin-top: 0.75rem;
+        border: 1px solid #047857;
+        background: rgba(var(--teal), 0.1);
+        padding: 0.75rem;
+      }
+      .muted {
+        color: #71717a;
+        font-size: 0.875rem;
+      }
+      .mono {
+        font-family: ui-monospace, monospace;
+        font-size: 0.75rem;
+      }
+      time {
+        font-size: 0.875rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <p class="mono muted">Visual QA fixture — success card markup mirrors MetaPageEngagementProof.tsx</p>
+      <section aria-labelledby="meta-page-proof-title">
+        <h4 id="meta-page-proof-title" style="font-size: 1.125rem; font-weight: 700">Validate Page access</h4>
+        <p class="muted">
+          AuthHub validates Page identity, managed tasks, connected Instagram (if any), and up to three recent public
+          post dates. Post text and engager profiles are never shown.
+        </p>
+        <p class="muted">
+          This check confirms <strong>pages_read_engagement</strong> access only. It does not grant your agency Page
+          management rights or prove they can publish on your Page.
+        </p>
+        <div class="success" role="status">
+          <div style="font-weight: 600; margin-bottom: 0.5rem">Page access validated for App Review Demo Page</div>
+          <dl style="display: grid; gap: 0.5rem; font-size: 0.875rem">
+            <div><dt class="label-nano">Category</dt><dd>Local Business</dd></div>
+            <div><dt class="label-nano">Managed tasks</dt><dd>MANAGE, ADVERTISE</dd></div>
+            <div><dt class="label-nano">Connected Instagram</dt><dd>@appreviewdemo</dd></div>
+          </dl>
+          <ul style="list-style: none; padding: 0; margin: 0; font-size: 0.875rem">
+            <li style="border-top: 1px solid rgba(0, 0, 0, 0.2); padding-top: 0.5rem; margin-top: 0.5rem">
+              <span class="mono muted">Recent public post date</span>
+              <p><time datetime="2026-09-21T12:00:00+0000">9/21/2026</time></p>
+            </li>
+            <li style="border-top: 1px solid rgba(0, 0, 0, 0.2); padding-top: 0.5rem; margin-top: 0.5rem">
+              <span class="mono muted">Recent public post date</span>
+              <p><time datetime="2026-09-15T08:30:00+0000">9/15/2026</time></p>
+            </li>
+          </ul>
+          <p class="muted" style="margin-top: 0.75rem; border-top: 1px solid rgba(0, 0, 0, 0.2); padding-top: 0.5rem; font-size: 0.75rem">
+            Validation succeeded for engagement read access. Partner Page manage grants are separate and are not proven
+            by this step.
+          </p>
+        </div>
+      </section>
+    </div>
+  </body>
+</html>

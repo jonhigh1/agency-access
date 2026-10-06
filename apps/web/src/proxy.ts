@@ -41,6 +41,7 @@ const isPublicRoute = createRouteMatcher([
   // the matcher below already excludes these paths so the middleware never runs.
   '/ingest',
   '/ingest/(.*)',
+  '/test/(.*)',
 ])
 
 /** Marketing pages that should redirect authenticated users to the dashboard. */

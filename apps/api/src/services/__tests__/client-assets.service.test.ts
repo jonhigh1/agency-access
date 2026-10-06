@@ -438,10 +438,11 @@ describe('ClientAssetsService - Meta', () => {
         { id: 'post_2' },
       ],
       graphOperationCaptions: [
-        expect.stringContaining('GET'),
-        expect.stringContaining('selected_page'),
+        expect.stringMatching(/GET.*client_user.*ok/i),
+        expect.stringMatching(/GET.*selected_page.*ok/i),
       ],
     });
+    expect(result.graphOperationCaptions?.join(' ')).toMatch(/\{page_id\}|page_1/);
     expect(JSON.stringify(result)).not.toContain('page-token-secret');
     expect(String(vi.mocked(fetch).mock.calls[0]?.[0])).toContain('/page_1');
     expect(String(vi.mocked(fetch).mock.calls[0]?.[0])).toContain('followers_count');
@@ -456,6 +457,36 @@ describe('ClientAssetsService - Meta', () => {
       'Bearer page-token-secret'
     );
     expect(JSON.stringify(result.graphOperationCaptions)).not.toContain('page-token-secret');
+  });
+
+  it('drops post message and story fields from the Page feed response', async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          id: 'page_1',
+          name: 'Client Page',
+          access_token: 'page-token-secret',
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: [
+            {
+              id: 'post_1',
+              created_time: '2026-09-21T00:00:00+0000',
+              message: 'Hidden caption',
+              story: 'Hidden story',
+            },
+          ],
+        }),
+      } as Response);
+
+    const result = await clientAssetsService.fetchPageEngagementProof('user-token', 'page_1');
+
+    expect(result.posts).toEqual([{ id: 'post_1', createdTime: '2026-09-21T00:00:00+0000' }]);
+    expect(JSON.stringify(result)).not.toContain('Hidden');
   });
 
   it('treats an empty Page feed as a successful validation with no invented posts', async () => {
