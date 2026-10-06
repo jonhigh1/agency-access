@@ -17,7 +17,7 @@
  * into that panel's props.
  */
 
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, type ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { StatusBadge, type StatusVariant } from '@/components/ui/status-badge';
 import { trackClientGrantItemCompleted } from '@/lib/analytics/invite-events';
@@ -35,8 +35,10 @@ import {
   buildMetaGrantChecklist,
   type MetaGrantChecklistItem,
   type MetaGrantItemState,
+  type MetaGrantMethod,
   type MetaGrantSelectedKinds,
 } from '@/lib/invite/meta-grant-checklist';
+import { META_GRANT_ACCESS, META_GRANT_METHOD_LABELS } from '@/lib/content/meta-grant-access';
 import type { MetaAssetDecline, MetaAssetKind, MetaFulfillmentResult } from '@agency-platform/shared';
 import { MetaPartnerGrantNarrative } from './MetaPartnerGrantNarrative';
 
@@ -95,6 +97,33 @@ interface MetaGrantChecklistProps {
 /** Kinds with a panel the client can act on right now. */
 function isActionable(item: MetaGrantChecklistItem): boolean {
   return item.state === 'pending' || item.state === 'action_required';
+}
+
+const GRANT_METHOD_COPY = META_GRANT_ACCESS.en;
+
+function grantMethodLabel(method: MetaGrantMethod | undefined): string | null {
+  if (!method) return null;
+  return META_GRANT_METHOD_LABELS[method];
+}
+
+function GrantMethodPanelIntro({
+  grantMethod,
+  children,
+}: {
+  grantMethod: MetaGrantMethod;
+  children: ReactNode;
+}) {
+  const copy =
+    grantMethod === 'manual' ? GRANT_METHOD_COPY.manual : GRANT_METHOD_COPY.automatic;
+  return (
+    <div className="mt-3 space-y-2">
+      <div>
+        <p className="label-micro">{copy.title}</p>
+        <p className="text-sm text-muted-foreground">{copy.subtitle}</p>
+      </div>
+      {children}
+    </div>
+  );
 }
 
 export function MetaGrantChecklist({
@@ -300,7 +329,8 @@ export function MetaGrantChecklist({
     switch (item.assetKind) {
       case 'page':
         return (
-          <div className="mt-3 space-y-4">
+          <GrantMethodPanelIntro grantMethod="automatic">
+          <div className="space-y-4">
             {selectedPages.map((selectedPage) => (
               <MetaPageEngagementProof
                 key={selectedPage.id}
@@ -335,10 +365,11 @@ export function MetaGrantChecklist({
               </div>
             ) : null}
           </div>
+          </GrantMethodPanelIntro>
         );
       case 'ad_account':
         return (
-          <div className="mt-3">
+          <GrantMethodPanelIntro grantMethod="manual">
             {businessId ? (
               <AdAccountSharingInstructions
                 businessId={businessId}
@@ -355,7 +386,7 @@ export function MetaGrantChecklist({
             ) : (
               businessIdNotice
             )}
-          </div>
+          </GrantMethodPanelIntro>
         );
       case 'catalog':
         return (
@@ -430,7 +461,17 @@ export function MetaGrantChecklist({
             }
           >
             <div>
-              <h4 className="font-display text-base font-bold text-ink">{item.label}</h4>
+              <div className="flex flex-wrap items-center gap-2">
+                <h4 className="font-display text-base font-bold text-ink">{item.label}</h4>
+                {grantMethodLabel(item.grantMethod) ? (
+                  <span
+                    className="label-micro border border-black px-1.5 py-0.5 dark:border-white"
+                    data-grant-method={item.grantMethod}
+                  >
+                    {grantMethodLabel(item.grantMethod)}
+                  </span>
+                ) : null}
+              </div>
               <p className="mt-0.5 text-sm text-muted-foreground">{item.clientAction}</p>
             </div>
             <div className="flex shrink-0 items-center gap-2">

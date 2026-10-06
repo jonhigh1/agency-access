@@ -20,6 +20,32 @@ describe('AdAccountSharingInstructions', () => {
     process.env.NEXT_PUBLIC_API_URL = 'https://api.example.com/';
   });
 
+  it('labels the panel as Manual partner share in the heading', async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      text: async () =>
+        JSON.stringify({
+          data: { success: true, status: 'waiting_for_manual_share' },
+          error: null,
+        }),
+    } as Response);
+
+    render(
+      <AdAccountSharingInstructions
+        businessId="partner-bm-1"
+        selectedAdAccounts={[{ id: 'act_1', name: 'DogTimez' }]}
+        accessRequestToken="token-1"
+        connectionId="conn-1"
+        onComplete={vi.fn()}
+      />
+    );
+
+    expect(
+      await screen.findByRole('heading', { name: /grant access to your ad accounts \(manual\)/i })
+    ).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /check access/i })).toBeInTheDocument();
+  });
+
   it('shows the waiting verification state without completing when manual Meta share is still pending', async () => {
     const onComplete = vi.fn();
 

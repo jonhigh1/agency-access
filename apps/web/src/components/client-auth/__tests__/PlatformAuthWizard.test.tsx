@@ -853,6 +853,36 @@ describe('PlatformAuthWizard', () => {
     );
   });
 
+  it('shows a system-user disclaimer on ad-account requests that does not claim human owner access', async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      text: async () => JSON.stringify({ data: { businessId: 'biz_1' }, error: null }),
+    } as Response);
+
+    render(
+      <PlatformAuthWizard
+        platform="meta"
+        platformName="Meta"
+        products={[{ product: 'meta_ads', accessLevel: 'admin' }]}
+        accessRequestToken="token-1"
+        onComplete={onCompleteMock}
+        initialConnectionId="conn-1"
+        initialStep={2}
+        metaAccessConfig={{
+          recipients: [{ type: 'system_user', id: 'sys-1', name: 'Automation Bot' }],
+          pageTasks: [],
+          adAccountTasks: ['ADVERTISE'],
+          catalogTasks: ['MANAGE'],
+        }}
+      />
+    );
+
+    expect(await screen.findByRole('note')).toHaveTextContent(
+      /system-user assignment is separate from partner share/i
+    );
+    expect(screen.getByRole('note')).toHaveTextContent(/human ads manager access/i);
+  });
+
   it('keeps the chooser open and unsaved when fresh Meta assets prune resume selections', async () => {
     vi.mocked(fetch).mockResolvedValue({
       ok: true,

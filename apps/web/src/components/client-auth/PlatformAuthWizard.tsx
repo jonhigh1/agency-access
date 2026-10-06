@@ -67,6 +67,7 @@ import {
   type MetaGrantChecklist as MetaGrantChecklistResult,
   type MetaGrantItemState,
 } from '@/lib/invite/meta-grant-checklist';
+import { META_GRANT_ACCESS } from '@/lib/content/meta-grant-access';
 
 interface PlatformAuthWizardProps {
   platform: Platform;
@@ -535,6 +536,12 @@ export function PlatformAuthWizard({
     (type === 'page' && requestedMetaAssetProducts.includes('meta_pages')) ||
     (type === 'instagram' && requestedMetaAssetProducts.includes('instagram'))
   );
+  const metaRequestIncludesAdAccounts = requestedMetaAssetProducts.includes('meta_ads');
+  const metaSystemUserDisclaimer =
+    metaRequestIncludesAdAccounts &&
+    metaAccessConfig?.recipients.some((recipient) => recipient.type === 'system_user')
+      ? META_GRANT_ACCESS.en.manual.systemUserDisclaimer
+      : null;
   const finalActionLabel = completionActionLabel || 'Continue to next platform';
   const activePopupWaiter = useRef<{
     popup: Window;
@@ -1437,6 +1444,14 @@ export function PlatformAuthWizard({
                               {metaAccessConfig.pageTasks.length > 0 ? (
                                 <p className="mt-2 text-xs text-muted-foreground">
                                   Page tasks: {metaAccessConfig.pageTasks.map((task) => PAGE_TASK_LABELS[task] ?? task).join(', ')}
+                                </p>
+                              ) : null}
+                              {metaSystemUserDisclaimer ? (
+                                <p
+                                  className="mt-3 border border-black/10 bg-muted/20 px-3 py-2 text-xs text-muted-foreground dark:border-white/10"
+                                  role="note"
+                                >
+                                  {metaSystemUserDisclaimer}
                                 </p>
                               ) : null}
                             </div>
