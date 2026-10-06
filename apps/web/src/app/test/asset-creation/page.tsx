@@ -16,6 +16,7 @@
 import { useState, useEffect } from 'react';
 import { MetaAssetCreator } from '@/components/client-auth/MetaAssetCreator';
 import { MetaBusinessCreator } from '@/components/client-auth/MetaBusinessCreator';
+import { ZeroPortfolioPageDiscovery } from '@/components/client-auth/ZeroPortfolioPageDiscovery';
 import { MetaBusinessSetupChecklist } from '@/components/client-auth/MetaBusinessSetupChecklist';
 import { GuidedRedirectCard } from '@/components/client-auth/GuidedRedirectModal';
 import { Button } from '@/components/ui/button';
@@ -38,6 +39,7 @@ if (process.env.NODE_ENV === 'production') {
 export default function AssetCreationTestPage() {
   const [showAdAccountCreator, setShowAdAccountCreator] = useState(false);
   const [showPageCreator, setShowPageCreator] = useState(false);
+  const [zeroPortfolioPrimaryPageId, setZeroPortfolioPrimaryPageId] = useState('');
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Default to light mode on mount
@@ -224,34 +226,73 @@ export default function AssetCreationTestPage() {
           )}
         </section>
 
-        {/* Section 5: MetaBusinessCreator (zero-portfolio clients) */}
+        {/* Section 5: Zero-portfolio Page discovery (pages_show_list) */}
         <section className="mb-12">
           <h2 className="text-lg font-bold text-[var(--ink)] font-display mb-4 pb-2 border-b-2 border-black dark:border-white">
-            5. MetaBusinessCreator (Create Business Portfolio)
+            5. Zero-portfolio Page discovery + BM create unlock
           </h2>
 
-          <div className="border-2 border-black dark:border-white bg-slate-50 dark:bg-slate-900 p-6 space-y-4">
+          <div className="border-2 border-black dark:border-white bg-slate-50 dark:bg-slate-900 p-6 space-y-6">
             <div>
               <h3 className="text-lg font-bold text-[var(--ink)] font-display">
-                No Business Portfolio yet
+                No Business Portfolio found
               </h3>
               <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">
-                Zero-portfolio empty state as rendered in the wizard (Page check passed).
-                Timezone list loads from the API — in dev it needs a valid request token,
-                so it may render with the default selection only.
+                Fixture for App Review: managed Pages listed with name and ID; primary Page
+                selection unlocks Business Portfolio creation.
               </p>
             </div>
 
-            <MetaBusinessCreator
-              connectionId="test-connection-id"
-              accessRequestToken="test-token"
-              userPages={[
-                { id: 'page-1', name: 'Acme Main', category: 'Retail' },
-                { id: 'page-2', name: 'Acme Deals', category: 'Shopping' },
+            <ZeroPortfolioPageDiscovery
+              pages={[
+                { id: '112233445566778', name: 'Acme Main', category: 'Retail' },
+                { id: '998877665544332', name: 'Acme Deals', category: 'Shopping' },
               ]}
-              onSuccess={(business) => console.log('Business created:', business)}
-              onError={(error) => console.error('Error:', error)}
+              loading={false}
+              error={null}
+              primaryPageId={zeroPortfolioPrimaryPageId}
+              onPrimaryPageChange={setZeroPortfolioPrimaryPageId}
+              businessCreator={
+                zeroPortfolioPrimaryPageId ? (
+                  <MetaBusinessCreator
+                    connectionId="test-connection-id"
+                    accessRequestToken="test-token"
+                    userPages={[
+                      { id: '112233445566778', name: 'Acme Main', category: 'Retail' },
+                      { id: '998877665544332', name: 'Acme Deals', category: 'Shopping' },
+                    ]}
+                    fixedPrimaryPageId={zeroPortfolioPrimaryPageId}
+                    onSuccess={(business) => console.log('Business created:', business)}
+                    onError={(error) => console.error('Error:', error)}
+                  />
+                ) : null
+              }
             />
+
+            <div className="pt-8 border-t-2 border-dashed border-black dark:border-white">
+              <p className="text-xs font-mono text-slate-500 mb-4">
+                Visual QA fixture — primary Page already selected (BM create unlocked)
+              </p>
+              <ZeroPortfolioPageDiscovery
+                pages={[
+                  { id: '112233445566778', name: 'Acme Main', category: 'Retail' },
+                ]}
+                loading={false}
+                error={null}
+                primaryPageId="112233445566778"
+                onPrimaryPageChange={() => {}}
+                businessCreator={
+                  <MetaBusinessCreator
+                    connectionId="test-connection-id"
+                    accessRequestToken="test-token"
+                    userPages={[{ id: '112233445566778', name: 'Acme Main', category: 'Retail' }]}
+                    fixedPrimaryPageId="112233445566778"
+                    onSuccess={(business) => console.log('Business created:', business)}
+                    onError={(error) => console.error('Error:', error)}
+                  />
+                }
+              />
+            </div>
           </div>
         </section>
 

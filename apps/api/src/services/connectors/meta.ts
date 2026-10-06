@@ -803,8 +803,14 @@ export class MetaConnector {
   async getUserPages(
     accessToken: string
   ): Promise<Array<{ id: string; name: string; category?: string }>> {
-    const response = await metaGraphGet(
-      `https://graph.facebook.com/${META_GRAPH_VERSION}/me/accounts?fields=id,name,category`, accessToken
+    const response = await metaGraphFetch(
+      `https://graph.facebook.com/${META_GRAPH_VERSION}/me/accounts?fields=id,name,category`,
+      {
+        method: 'GET',
+        accessToken,
+        tokenClass: 'client_user',
+        signal: AbortSignal.timeout(META_GRAPH_TIMEOUT_MS),
+      }
     );
 
     if (!response.ok) {

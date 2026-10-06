@@ -200,16 +200,16 @@ export function PortfolioSelector({
 
   const renderCreationCard = () => (
     <section
-      aria-label="No business portfolio yet"
+      aria-label="No Business Portfolio found"
       className="bg-[rgb(var(--warm-gray))]/20 p-6 space-y-4"
     >
       <div>
         <h3 className="text-lg font-bold text-[rgb(var(--ink))] font-display">
-          No business portfolio yet
+          No Business Portfolio found
         </h3>
         <p className="mt-1 text-sm text-[rgb(var(--muted-foreground))]">
-          Meta needs a business portfolio to hold ad accounts and pages. Create one
-          here — it takes about a minute.
+          Meta needs a Business Portfolio to hold ad accounts and Pages. Your managed Facebook
+          Pages are listed below — choose a primary Page, then create a portfolio here.
         </p>
       </div>
       {onCreateBusiness ? (
