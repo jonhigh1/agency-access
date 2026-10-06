@@ -103,18 +103,24 @@ describe('PortfolioSelector — single-owner receipt', () => {
 });
 
 describe('PortfolioSelector — several businesses', () => {
-  it('renders the plain question with name-only options and no raw IDs', () => {
-    const { container } = renderSelector({
+  it('renders the plain question with business portfolio ids visible on options', async () => {
+    const user = userEvent.setup();
+    renderSelector({
       businesses: [acme, bloom, northstar],
       selectedBusiness: null,
       selectionRequired: true,
     });
 
     expect(screen.getByText(/which business/i)).toBeInTheDocument();
-    expect(screen.getByRole('combobox')).toBeInTheDocument();
-    expect(container.textContent).not.toContain(ACME_ID);
-    expect(container.textContent).not.toContain(BLOOM_ID);
-    expect(container.textContent).not.toContain(NORTH_ID);
+    await user.click(screen.getByRole('combobox'));
+    expect(screen.getByRole('option', { name: new RegExp(ACME_ID) })).toBeInTheDocument();
+    expect(screen.getByRole('option', { name: new RegExp(BLOOM_ID) })).toBeInTheDocument();
+  });
+
+  it('shows the confirmed business portfolio name and id on the receipt', () => {
+    renderSelector();
+    expect(screen.getByText(new RegExp(ACME_ID))).toBeInTheDocument();
+    expect(screen.getByText(/Acme Studio · ID/)).toBeInTheDocument();
   });
 
   it('confirms the chosen alternate business', async () => {
@@ -165,7 +171,8 @@ describe('PortfolioSelector — duplicate names (collision tiebreaker)', () => {
     expect(options[0].textContent).toContain('Retail');
     expect(options[1].textContent).toContain('Verification pending');
     expect(options[2].textContent).not.toContain('Retail');
-    expect(options[2].textContent).toBe('Northstar Group');
+    expect(options[2].textContent).toContain('Northstar Group');
+    expect(options[2].textContent).toContain(NORTH_ID);
   });
 });
 

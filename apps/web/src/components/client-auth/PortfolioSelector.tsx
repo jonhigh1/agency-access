@@ -10,10 +10,9 @@
  * - Zero businesses     → the business-creation path stays reachable through
  *   onCreateBusiness.
  *
- * Choices show plain names only (R2, KTD11). When two businesses share a
- * name, a secondary attribute (vertical if present in the payload, else
- * verification status) disambiguates the colliding pair. Raw platform IDs are
- * never rendered.
+ * Choices show business names with Meta Business Portfolio IDs visible for
+ * App Review (business_management). When two businesses share a name, vertical
+ * or verification status disambiguates the colliding pair alongside the ID.
  *
  * The data source is injected: the invite wizard passes the token-auth
  * fetcher, the OAuth callback page passes the Clerk fetcher. onBusinessConfirmed
@@ -29,6 +28,7 @@ import {
   trackInviteQuestionShown,
   trackInviteReceiptShown,
 } from '@/lib/analytics/invite-events';
+import { formatMetaEntityIdentity } from '@/lib/invite/meta-entity-identity';
 
 export interface PortfolioBusiness {
   id: string;
@@ -185,11 +185,17 @@ export function PortfolioSelector({
     }
     return counts;
   }, [optionBusinesses]);
-  const tiebreakerLabel = (business: PortfolioBusiness): string | undefined => {
+  const optionDescription = (business: PortfolioBusiness): string => {
     const isColliding = (nameCounts.get(business.name.trim().toLowerCase()) ?? 0) > 1;
-    if (!isColliding) return undefined;
-    if (business.vertical) return humanizeVertical(business.vertical);
-    return humanizeVerification(business.verificationStatus);
+    const tiebreaker = isColliding
+      ? business.vertical
+        ? humanizeVertical(business.vertical)
+        : humanizeVerification(business.verificationStatus)
+      : null;
+    if (tiebreaker) {
+      return `${tiebreaker} · ID ${business.id}`;
+    }
+    return `ID ${business.id}`;
   };
 
   const renderCreationCard = () => (
@@ -232,7 +238,7 @@ export function PortfolioSelector({
         options={optionBusinesses.map((business) => ({
           value: business.id,
           label: business.name,
-          description: tiebreakerLabel(business),
+          description: optionDescription(business),
         }))}
         value={pendingBusinessId}
         onChange={(value) => setPendingBusinessId(value)}
@@ -299,6 +305,9 @@ export function PortfolioSelector({
           </p>
           <p className="mt-1 text-sm text-[rgb(var(--muted-foreground))]">
             The assets in this request will be shared from this business.
+          </p>
+          <p className="mt-2 font-mono text-xs text-[rgb(var(--muted-foreground))]">
+            {formatMetaEntityIdentity(selectedBusiness.name, selectedBusiness.id)}
           </p>
         </div>
         <Button type="button" variant="secondary" onClick={startChoosing}>

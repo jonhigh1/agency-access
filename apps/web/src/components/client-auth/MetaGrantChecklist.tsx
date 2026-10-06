@@ -37,7 +37,8 @@ import {
   type MetaGrantItemState,
   type MetaGrantSelectedKinds,
 } from '@/lib/invite/meta-grant-checklist';
-import type { MetaAssetDecline, MetaFulfillmentResult } from '@agency-platform/shared';
+import type { MetaAssetDecline, MetaAssetKind, MetaFulfillmentResult } from '@agency-platform/shared';
+import { MetaPartnerGrantNarrative } from './MetaPartnerGrantNarrative';
 
 /**
  * Selection counts per kind, read only from the blob's id arrays. Shared with
@@ -194,6 +195,10 @@ export function MetaGrantChecklist({
     },
     [settleItem]
   );
+
+  const grantNarrativeKinds: MetaAssetKind[] = checklist.items
+    .filter((item) => !item.declined)
+    .map((item) => item.assetKind);
 
   if (!checklist.hasAny) return null;
 
@@ -399,6 +404,17 @@ export function MetaGrantChecklist({
 
   return (
     <section aria-label="Finish Meta access" className="space-y-3">
+      <MetaPartnerGrantNarrative
+        agencyBusinessId={businessId}
+        agencyBusinessName={businessName}
+        clientBusinessId={clientBusinessId}
+        clientBusinessName={
+          typeof metaAssets.selectedBusinessName === 'string'
+            ? metaAssets.selectedBusinessName
+            : null
+        }
+        selectedKinds={grantNarrativeKinds}
+      />
       <p className="label-micro">Finish Meta access</p>
       {checklist.items.map((item) => (
         <div

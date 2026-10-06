@@ -33,6 +33,9 @@ import { MetaBusinessSetupChecklist } from './MetaBusinessSetupChecklist';
 import { GuidedRedirectCard } from './GuidedRedirectModal';
 import { SelectionResetConfirmDialog } from './SelectionResetConfirmDialog';
 import { PortfolioSelector, type PortfolioBusiness } from './PortfolioSelector';
+import { MetaSelectedEntitiesSummary } from './MetaSelectedEntitiesSummary';
+import { metaAssetOptionDescription } from '@/lib/invite/meta-entity-identity';
+import { buildMetaPartnerGrantNarrative } from '@/lib/invite/meta-partner-grant-narrative';
 import { clearManualGrantChecklistStorage } from '@/lib/invite/manual-grant-checklist-storage';
 import { Briefcase, Camera, FileText, MailX, Plus, ShoppingBag } from 'lucide-react';
 import { getApiBaseUrl } from '@/lib/api/api-env';
@@ -679,13 +682,16 @@ export function MetaAssetSelector({
   const adAccountAssets = (assets?.adAccounts || []).map((account) => ({
     id: account.id,
     name: account.name,
-    description: account.status || account.currency || '',
+    description: metaAssetOptionDescription(
+      account.id,
+      account.status || account.currency || null
+    ),
   }));
 
   const pageAssets = (assets?.pages || []).map((page) => ({
     id: page.id,
     name: page.name,
-    description: page.category || '',
+    description: metaAssetOptionDescription(page.id, page.category || null),
   }));
 
   const instagramAssets: Asset[] = (assets?.instagramAccounts || []).map((account) => ({
@@ -736,6 +742,36 @@ export function MetaAssetSelector({
       (createdBusiness?.id === selectedBusinessId ||
         (selectedBusinessVerification && selectedBusinessVerification !== 'verified'))
   );
+
+  const businessScopedDiscoveryCopy = buildMetaPartnerGrantNarrative({
+    agencyBusinessId: businessId ?? null,
+    agencyBusinessName: null,
+    clientBusinessId: selectedBusinessId,
+    clientBusinessName: selectedBusinessName,
+  }).discoveryNote;
+
+  const selectedSummaryAdAccounts = Array.from(selectedAdAccounts).map((id) => {
+    const account = assets?.adAccounts.find((item) => item.id === id);
+    return account ? { id: account.id, name: account.name } : { id, name: id };
+  });
+  const selectedSummaryPages = Array.from(selectedPages).map((id) => {
+    const page = assets?.pages.find((item) => item.id === id);
+    return page ? { id: page.id, name: page.name } : { id, name: id };
+  });
+  const selectedSummaryInstagram = Array.from(selectedInstagram).map((id) => {
+    const account = assets?.instagramAccounts.find((item) => item.id === id);
+    return account
+      ? { id: account.id, name: account.username || account.name || id }
+      : { id, name: id };
+  });
+  const selectedSummaryCatalogs = Array.from(selectedCatalogs).map((id) => {
+    const catalog = assets?.productCatalogs?.find((item) => item.id === id);
+    return catalog ? { id: catalog.id, name: catalog.name } : { id, name: id };
+  });
+  const selectedSummaryDatasets = Array.from(selectedDatasets).map((id) => {
+    const dataset = assets?.pixels?.find((item) => item.id === id);
+    return dataset ? { id: dataset.id, name: dataset.name } : { id, name: id };
+  });
 
   /**
    * Single ownership point for "reset everything selection-derived" in this
@@ -854,6 +890,24 @@ export function MetaAssetSelector({
         onCreateBusiness={openBusinessCreation}
       />
 
+      {selectedBusinessId && !hasNoBusinessPortfolio ? (
+        <p className="text-xs text-[rgb(var(--muted-foreground))]">{businessScopedDiscoveryCopy}</p>
+      ) : null}
+
+      {totalSelected > 0 && selectedBusinessId ? (
+        <MetaSelectedEntitiesSummary
+          clientBusiness={{
+            id: selectedBusinessId,
+            name: selectedBusinessName || selectedBusinessId,
+          }}
+          adAccounts={showAdAccounts ? selectedSummaryAdAccounts : []}
+          pages={showPages ? selectedSummaryPages : []}
+          instagramAccounts={showInstagramAccounts ? selectedSummaryInstagram : []}
+          catalogs={showCatalogs ? selectedSummaryCatalogs : []}
+          datasets={showPixels ? selectedSummaryDatasets : []}
+        />
+      ) : null}
+
       {businessCreationOpen ? (
         <div className="bg-[rgb(var(--warm-gray))]/20 p-6 space-y-4">
           {userPagesError ? (
@@ -877,14 +931,22 @@ export function MetaAssetSelector({
               onRefresh={fetchUserPages}
             />
           ) : userPages && userPages.length > 0 ? (
-            <MetaBusinessCreator
-              connectionId={sessionId}
-              accessRequestToken={accessRequestToken}
-              userPages={userPages}
-              onSuccess={handleBusinessCreated}
-              onError={onError}
-              onReconcile={handleBusinessReconcile}
-            />
+            <>
+              <p className="text-xs text-[rgb(var(--muted-foreground))]">
+                {buildMetaPartnerGrantNarrative({
+                  agencyBusinessId: null,
+                  clientBusinessId: null,
+                }).zeroPortfolioPagesNote}
+              </p>
+              <MetaBusinessCreator
+                connectionId={sessionId}
+                accessRequestToken={accessRequestToken}
+                userPages={userPages}
+                onSuccess={handleBusinessCreated}
+                onError={onError}
+                onReconcile={handleBusinessReconcile}
+              />
+            </>
           ) : null}
         </div>
       ) : null}
@@ -1114,7 +1176,11 @@ export function MetaAssetSelector({
             ) : null}
             {(assets?.productCatalogs?.length || 0) > 0 ? (
               <MultiSelectCombobox
-                options={(assets?.productCatalogs || []).map((catalog) => ({ id: catalog.id, name: catalog.name, description: catalog.catalogType || '' }))}
+                options={(assets?.productCatalogs || []).map((catalog) => ({
+                  id: catalog.id,
+                  name: catalog.name,
+                  description: metaAssetOptionDescription(catalog.id, catalog.catalogType || null),
+                }))}
                 selectedIds={selectedCatalogs}
                 onSelectionChange={(ids) => selectKindAssets('catalog', ids)}
                 placeholder="Select product catalogs..."
@@ -1135,7 +1201,11 @@ export function MetaAssetSelector({
             </p>
             {(assets?.pixels?.length || 0) > 0 ? (
               <MultiSelectCombobox
-                options={(assets?.pixels || []).map((pixel) => ({ id: pixel.id, name: pixel.name, description: pixel.id }))}
+                options={(assets?.pixels || []).map((pixel) => ({
+                  id: pixel.id,
+                  name: pixel.name,
+                  description: metaAssetOptionDescription(pixel.id),
+                }))}
                 selectedIds={selectedDatasets}
                 onSelectionChange={(ids) => selectKindAssets('dataset', ids)}
                 placeholder="Select Pixels and Datasets..."
