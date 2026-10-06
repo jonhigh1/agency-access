@@ -37,6 +37,7 @@ import {
   META_PERMISSION_CONTRACT,
   META_PERMISSION_OPERATIONS,
   sanitizeMetaOAuthScopes,
+  getMetaOAuthMissingRequiredScopes,
   getMetaOAuthPermissionSet,
   isMetaPermissionTrackValid,
   MetaPermissionSchema,
@@ -120,6 +121,31 @@ describe('Phase 5: Shared Types - TDD Tests', () => {
     expect(
       sanitizeMetaOAuthScopes([...META_CORE_PERMISSIONS, 'catalog_management'])
     ).toEqual([...META_CORE_PERMISSIONS]);
+  });
+
+  it('strips ads_read and unknown scopes from sanitized OAuth scope lists', () => {
+    expect(META_OAUTH_EXCLUDED_PERMISSIONS).toContain('ads_read');
+    expect(
+      sanitizeMetaOAuthScopes([
+        'ads_read',
+        ...META_CORE_PERMISSIONS,
+        'catalog_management',
+        'unknown_permission',
+      ]),
+    ).toEqual([...META_CORE_PERMISSIONS]);
+    expect(sanitizeMetaOAuthScopes(['ads_read', 'catalog_management'])).toEqual([]);
+  });
+
+  it('detects missing required Meta OAuth scopes after token exchange', () => {
+    expect(
+      getMetaOAuthMissingRequiredScopes(
+        ['pages_read_engagement', 'pages_show_list'],
+        META_CORE_PERMISSIONS,
+      ),
+    ).toEqual(['ads_management', 'business_management']);
+    expect(
+      getMetaOAuthMissingRequiredScopes([...META_CORE_PERMISSIONS], META_CORE_PERMISSIONS),
+    ).toEqual([]);
   });
 
   it('excludes catalog from default client invite asset types unless explicitly enabled', () => {

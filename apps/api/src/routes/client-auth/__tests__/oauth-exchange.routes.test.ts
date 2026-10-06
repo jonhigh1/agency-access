@@ -382,6 +382,8 @@ describe('OAuth exchange routes (characterization)', () => {
             create: expect.objectContaining({
               metadata: expect.objectContaining({
                 grantedScopes: ['pages_read_engagement', 'pages_show_list'],
+                missingOAuthScopes: ['ads_management', 'business_management'],
+                oauthScopesComplete: false,
                 tokenDebug: expect.objectContaining({ isValid: true, userId: 'meta-user-1' }),
               }),
             }),
