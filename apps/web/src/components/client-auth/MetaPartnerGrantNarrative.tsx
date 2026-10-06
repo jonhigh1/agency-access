@@ -34,7 +34,7 @@ function AutomationBadge({ mode }: { mode: 'automatic' | 'manual' }) {
       className={
         isAutomatic
           ? 'inline-flex items-center rounded border border-[rgb(var(--teal))] bg-[rgb(var(--teal))]/10 px-2 py-0.5 text-xs font-semibold text-success-ink'
-          : 'inline-flex items-center rounded border-2 border-black bg-muted/30 px-2 py-0.5 text-xs font-semibold text-ink dark:border-white'
+          : 'inline-flex items-center rounded border border-black bg-muted/30 px-2 py-0.5 text-xs font-semibold text-ink dark:border-white'
       }
     >
       {META_GRANT_AUTOMATION_LABEL[mode]}
@@ -64,7 +64,7 @@ export function MetaPartnerGrantNarrative({
   return (
     <section
       aria-label="Partner access narrative"
-      className="border-2 border-black p-4 space-y-3 dark:border-white"
+      className="border-l-2 border-black bg-[rgb(var(--card))] p-4 space-y-3 dark:border-white"
     >
       <div>
         <p className="label-micro">How your agency gets access</p>
