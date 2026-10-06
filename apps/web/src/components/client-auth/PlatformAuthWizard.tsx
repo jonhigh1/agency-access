@@ -68,6 +68,7 @@ import {
   type MetaGrantItemState,
 } from '@/lib/invite/meta-grant-checklist';
 import { META_GRANT_ACCESS } from '@/lib/content/meta-grant-access';
+import { resolveMetaGrantPhaseHeader } from '@/lib/invite/client-invite-status';
 
 interface PlatformAuthWizardProps {
   platform: Platform;
@@ -1180,6 +1181,11 @@ export function PlatformAuthWizard({
     (metaChecklist.remainingCount > 0 ||
       getMetaFollowUpLines(groupAssets['meta_ads'] || {}, metaChecklist).length > 0);
 
+  const metaGrantPhaseHeader =
+    platform === 'meta' && metaNeedsGrantStep
+      ? resolveMetaGrantPhaseHeader(metaChecklist)
+      : null;
+
   // Render step content
   const renderStepContent = () => {
     switch (currentStep) {
@@ -1699,22 +1705,34 @@ export function PlatformAuthWizard({
                 initial={{ scale: 1 }}
                 animate={{ scale: 1 }}
                 transition={{ duration: 0.4, type: 'spring' }}
-                className="flex h-10 w-10 shrink-0 items-center justify-center border border-[var(--teal)] bg-[var(--teal)]/10"
+                className={`flex h-10 w-10 shrink-0 items-center justify-center border ${
+                  metaGrantPhaseHeader?.successTone ?? !hasMetaFollowUp
+                    ? 'border-[var(--teal)] bg-[var(--teal)]/10'
+                    : 'border-black/20 bg-muted/30 dark:border-white/20'
+                }`}
               >
-                <CheckCircle2 className="w-5 h-5 text-success-ink" />
+                <CheckCircle2
+                  className={`w-5 h-5 ${
+                    metaGrantPhaseHeader?.successTone ?? !hasMetaFollowUp
+                      ? 'text-success-ink'
+                      : 'text-muted-foreground'
+                  }`}
+                />
               </m.div>
               <div>
                 <h3 className="text-lg font-bold text-[var(--ink)] font-display">
-                  Connected
+                  {metaGrantPhaseHeader?.title ??
+                    (hasMetaFollowUp ? 'Signed in' : 'Connected')}
                 </h3>
                 <p className="text-sm text-muted-foreground text-balance">
-                  {hasMetaFollowUp
-                    ? 'Some Meta accounts still need follow-up.'
-                    : hasTikTokPartialShare
-                    ? 'Some TikTok accounts require manual sharing.'
-                    : hasZeroAssetFollowUp
-                      ? `Some ${platformName} products still need follow-up.`
-                      : 'Access granted to the accounts you selected.'}
+                  {metaGrantPhaseHeader?.subtitle ??
+                    (hasMetaFollowUp
+                      ? 'Finish the steps below to share access with your agency.'
+                      : hasTikTokPartialShare
+                        ? 'Some TikTok accounts require manual sharing.'
+                        : hasZeroAssetFollowUp
+                          ? `Some ${platformName} products still need follow-up.`
+                          : 'Access granted to the accounts you selected.')}
                 </p>
               </div>
             </m.div>

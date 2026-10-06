@@ -82,7 +82,7 @@ describe('AdAccountSharingInstructions', () => {
       />
     );
 
-    expect(await screen.findByText('Waiting for access to be granted... 0/1')).toBeInTheDocument();
+    expect(await screen.findByText('Needs you in Meta — 0 of 1 verified')).toBeInTheDocument();
     expect(screen.getByRole('note')).toHaveTextContent(/if meta blocks the assignment and asks for two-factor authentication/i);
     expect(screen.getByText('DogTimez: Still pending verification')).toBeInTheDocument();
     expect(onComplete).not.toHaveBeenCalled();
@@ -276,7 +276,7 @@ describe('AdAccountSharingInstructions', () => {
     // Verify-only mode mounts straight into server truth: the seeded partial
     // result renders instead of a starting spinner, and no start POST fires.
     await waitFor(() => {
-      expect(screen.getByText(/1\/2/)).toBeInTheDocument();
+      expect(screen.getByText(/1 of 2 verified/)).toBeInTheDocument();
     });
     expect(fetch).not.toHaveBeenCalled();
     expect(

@@ -55,10 +55,10 @@ export function RequestOverviewCard({
 
       {shouldShowAwaitingCallout && (
         <div className="mx-6 mt-4 rounded-lg border border-coral/30 bg-coral/5 px-4 py-3">
-          <p className="text-sm font-semibold text-ink">Waiting on client authorization</p>
+          <p className="text-sm font-semibold text-ink">Client invite: Needs you</p>
           <p className="mt-1 text-sm text-muted-foreground">
-            Your client authorizes when they are ready. Access tokens are stored only after they
-            complete authorization — not when the link is sent.
+            The client still has steps on the invite link (connect, share, or verify). Tokens are
+            stored only after they finish — not when the link is sent.
           </p>
           {reminderStatusMessage ? (
             <p className="mt-2 text-sm font-medium text-ink" role="status">

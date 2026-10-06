@@ -37,6 +37,11 @@ import type {
   MetaFulfillmentResult,
   MetaFulfillmentStatus,
 } from '@agency-platform/shared';
+import {
+  metaGrantRowClientAction,
+  resolveMetaGrantPrimaryStatus,
+  type ClientInvitePrimaryStatus,
+} from './client-invite-status';
 
 /** The four states a checklist row can be in. */
 export type MetaGrantItemState = 'done' | 'pending' | 'action_required' | 'declined';
@@ -70,6 +75,8 @@ export interface MetaGrantChecklistItem {
   /** When set, UI must show Automatic vs Manual to match the live path. */
   grantMethod?: MetaGrantMethod;
   state: MetaGrantItemState;
+  /** Unified invite vocabulary for this row (CF-01). */
+  primaryStatus: ClientInvitePrimaryStatus;
   /** Selected assets of this kind not yet verified. */
   remainingCount: number;
   declined: boolean;
@@ -100,9 +107,10 @@ export interface MetaGrantChecklist {
  * Client-voiced copy for every checklist state, plus one entry per action
  * cause. Tests import this instead of duplicating literals.
  */
+/** @deprecated Prefer META_GRANT_ROW_COPY in client-invite-status.ts */
 export const META_GRANT_CLIENT_ACTIONS = {
   done: 'Access verified by Meta',
-  pending: 'Preparing your access request',
+  pending: 'Share in Meta Business Settings, then tap Check access',
   actionManual: 'Finish the sharing steps in Meta, then verify',
   actionBlocked: 'Meta could not grant this — review and retry',
   actionStale: 'Meta was reconnected — verify access again',
@@ -134,39 +142,6 @@ const ACTION_STATUSES: ReadonlySet<MetaFulfillmentStatus> = new Set([
   'stale',
   'revoked',
 ]);
-
-/** Worst-row copy precedence for `action_required` items. */
-const ACTION_COPY_PRECEDENCE: ReadonlyArray<{
-  status: MetaFulfillmentStatus;
-  copy: string;
-}> = [
-  { status: 'revoked', copy: META_GRANT_CLIENT_ACTIONS.actionRevoked },
-  { status: 'blocked', copy: META_GRANT_CLIENT_ACTIONS.actionBlocked },
-  { status: 'stale', copy: META_GRANT_CLIENT_ACTIONS.actionStale },
-  { status: 'manual_action_required', copy: META_GRANT_CLIENT_ACTIONS.actionManual },
-];
-
-function clientActionFor(
-  state: MetaGrantItemState,
-  kindRows: readonly MetaFulfillmentResult[]
-): string {
-  switch (state) {
-    case 'done':
-      return META_GRANT_CLIENT_ACTIONS.done;
-    case 'pending':
-      return META_GRANT_CLIENT_ACTIONS.pending;
-    case 'declined':
-      return META_GRANT_CLIENT_ACTIONS.declined;
-    case 'action_required': {
-      const worst = ACTION_COPY_PRECEDENCE.find((entry) =>
-        kindRows.some((row) => row.status === entry.status)
-      );
-      // An overlay can force `action_required` without backing rows; the
-      // manual-steps copy is the safest generic ask in that impossible path.
-      return worst ? worst.copy : META_GRANT_CLIENT_ACTIONS.actionManual;
-    }
-  }
-}
 
 export function buildMetaGrantChecklist(input: MetaGrantChecklistInput): MetaGrantChecklist {
   const rows = input.rows ?? [];
@@ -240,15 +215,19 @@ export function buildMetaGrantChecklist(input: MetaGrantChecklistInput): MetaGra
     const unverifiedCount =
       selectedCount > 0 ? selectedCount - verifiedCount : rowsByAsset.size - verifiedCount;
 
+    const grantMethod = META_CHECKLIST_GRANT_METHOD[assetKind];
+    const primaryStatus = resolveMetaGrantPrimaryStatus(state, grantMethod, kindRows);
+
     items.push({
       key: assetKind,
       assetKind,
       label,
-      grantMethod: META_CHECKLIST_GRANT_METHOD[assetKind],
+      grantMethod,
       state,
+      primaryStatus,
       remainingCount: declined ? 0 : Math.max(0, unverifiedCount),
       declined,
-      clientAction: clientActionFor(state, kindRows),
+      clientAction: metaGrantRowClientAction(state, grantMethod, kindRows),
     });
   }
 

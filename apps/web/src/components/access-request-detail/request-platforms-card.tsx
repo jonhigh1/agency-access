@@ -7,6 +7,7 @@ import type { AccessRequest } from '@/lib/api/access-requests';
 import type { ManualConfirmationPlatform } from '@agency-platform/shared';
 import { PLATFORM_NAMES } from '@agency-platform/shared';
 import { ShopifySubmissionPanel } from './shopify-submission-panel';
+import { agencyUnresolvedStatusLabel } from '@/lib/invite/client-invite-status';
 
 interface RequestPlatformsCardProps {
   request: AccessRequest;
@@ -26,14 +27,7 @@ function formatProduct(product: string): string {
 }
 
 function formatUnresolvedReason(reason: string): string {
-  switch (reason) {
-    case 'no_assets':
-      return 'No assets found';
-    case 'selection_required':
-      return 'Selection required';
-    default:
-      return formatProduct(reason);
-  }
+  return agencyUnresolvedStatusLabel(reason);
 }
 
 export function RequestPlatformsCard({ request, onConfirmManualAccess }: RequestPlatformsCardProps) {
@@ -91,7 +85,7 @@ export function RequestPlatformsCard({ request, onConfirmManualAccess }: Request
 
         {unresolvedProducts.length > 0 && (
           <div className="mt-5 rounded-md border border-[var(--warning)] bg-[var(--warning)]/10 p-4">
-            <p className="text-sm font-semibold text-ink">Still needs follow-up</p>
+            <p className="text-sm font-semibold text-ink">Client authorization progress</p>
             <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
               {unresolvedProducts.map((item: UnresolvedProduct) => (
                 <li key={`${item.platformGroup}-${item.product}-${item.reason}`}>

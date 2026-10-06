@@ -43,8 +43,8 @@ describe('RequestPlatformsCard', () => {
       />
     );
 
-    expect(screen.getByText(/still needs follow-up/i)).toBeInTheDocument();
-    expect(screen.getByText(/google ads · no assets found/i)).toBeInTheDocument();
+    expect(screen.getByText(/client authorization progress/i)).toBeInTheDocument();
+    expect(screen.getByText(/google ads · needs you/i)).toBeInTheDocument();
   });
 
   it('requires acknowledgment before confirming reported manual access and submits once', async () => {

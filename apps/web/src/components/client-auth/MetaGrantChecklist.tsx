@@ -41,6 +41,11 @@ import {
 import { META_GRANT_ACCESS, META_GRANT_METHOD_LABELS } from '@/lib/content/meta-grant-access';
 import type { MetaAssetDecline, MetaAssetKind, MetaFulfillmentResult } from '@agency-platform/shared';
 import { MetaPartnerGrantNarrative } from './MetaPartnerGrantNarrative';
+import {
+  CLIENT_INVITE_STATUS_WORD,
+  metaGrantProgressLabel,
+  type ClientInvitePrimaryStatus,
+} from '@/lib/invite/client-invite-status';
 
 /**
  * Selection counts per kind, read only from the blob's id arrays. Shared with
@@ -59,15 +64,36 @@ export function metaGrantSelectedKindsFromBlob(
   };
 }
 
-/** State chip: existing badge variants, explicit client-voiced labels. */
-const STATE_BADGE: Record<MetaGrantItemState, { badgeVariant: StatusVariant; label: string }> = {
-  done: { badgeVariant: 'success', label: 'Done' },
-  // Neutral, not warning-amber: amber sat beside the coral Finish CTA and the
-  // two warm hues blended. Warm color now means "needs action" only.
-  pending: { badgeVariant: 'default', label: 'Pending' },
-  action_required: { badgeVariant: 'danger', label: 'Action needed' },
-  declined: { badgeVariant: 'default', label: 'Declined' },
+/** Unified primary status → badge variant (CF-01). */
+const PRIMARY_STATUS_BADGE: Record<
+  ClientInvitePrimaryStatus,
+  { badgeVariant: StatusVariant; label: string }
+> = {
+  done: { badgeVariant: 'success', label: CLIENT_INVITE_STATUS_WORD.done },
+  needs_you: { badgeVariant: 'danger', label: CLIENT_INVITE_STATUS_WORD.needs_you },
+  waiting: { badgeVariant: 'default', label: CLIENT_INVITE_STATUS_WORD.waiting },
+  declined: { badgeVariant: 'default', label: CLIENT_INVITE_STATUS_WORD.declined },
 };
+
+function verifiedCountForKind(
+  assetKind: MetaAssetKind,
+  kindRows: MetaFulfillmentResult[],
+  selectedCount: number,
+  remainingCount: number
+): number {
+  if (selectedCount > 0) {
+    return Math.max(0, selectedCount - remainingCount);
+  }
+  const rowsByAsset = new Map<string, MetaFulfillmentResult[]>();
+  for (const row of kindRows.filter((entry) => entry.assetKind === assetKind)) {
+    const bucket = rowsByAsset.get(row.assetId);
+    if (bucket) bucket.push(row);
+    else rowsByAsset.set(row.assetId, [row]);
+  }
+  return Array.from(rowsByAsset.values()).filter((assetRows) =>
+    assetRows.every((row) => row.status === 'verified')
+  ).length;
+}
 
 type NamedAsset = { id: string; name: string };
 
@@ -228,6 +254,23 @@ export function MetaGrantChecklist({
   const grantNarrativeKinds: MetaAssetKind[] = checklist.items
     .filter((item) => !item.declined)
     .map((item) => item.assetKind);
+
+  const selectedKinds = useMemo(
+    () => metaGrantSelectedKindsFromBlob(selectedAssets),
+    [selectedAssets]
+  );
+
+  const selectedCountByKind: Record<MetaAssetKind, number> = useMemo(
+    () => ({
+      ad_account: selectedKinds.adAccounts,
+      page: selectedKinds.pages,
+      instagram_account: selectedKinds.instagramAccounts,
+      catalog: selectedKinds.catalogs,
+      dataset: selectedKinds.datasets,
+      unknown: 0,
+    }),
+    [selectedKinds]
+  );
 
   if (!checklist.hasAny) return null;
 
@@ -447,11 +490,24 @@ export function MetaGrantChecklist({
         selectedKinds={grantNarrativeKinds}
       />
       <p className="label-micro">Finish Meta access</p>
-      {checklist.items.map((item) => (
+      {checklist.items.map((item) => {
+        const kindRows = (rows || []).filter((row) => row.assetKind === item.assetKind);
+        const selectedCount = selectedCountByKind[item.assetKind] ?? 0;
+        const verifiedCount = verifiedCountForKind(
+          item.assetKind,
+          kindRows,
+          selectedCount,
+          item.remainingCount
+        );
+        const progressLabel = metaGrantProgressLabel(item, selectedCount, verifiedCount);
+        const statusBadge = PRIMARY_STATUS_BADGE[item.primaryStatus];
+
+        return (
         <div
           key={item.key}
           className="border-2 border-black p-4 dark:border-white"
           data-checklist-kind={item.assetKind}
+          data-primary-status={item.primaryStatus}
         >
           <div
             className={
@@ -475,17 +531,18 @@ export function MetaGrantChecklist({
               <p className="mt-0.5 text-sm text-muted-foreground">{item.clientAction}</p>
             </div>
             <div className="flex shrink-0 items-center gap-2">
-              {item.remainingCount > 0 ? (
-                <span className="label-micro">{item.remainingCount} left</span>
+              {progressLabel ? (
+                <span className="label-micro">{progressLabel}</span>
               ) : null}
-              <StatusBadge badgeVariant={STATE_BADGE[item.state].badgeVariant} size="sm">
-                {STATE_BADGE[item.state].label}
+              <StatusBadge badgeVariant={statusBadge.badgeVariant} size="sm">
+                {statusBadge.label}
               </StatusBadge>
             </div>
           </div>
           {panelFor(item)}
         </div>
-      ))}
+        );
+      })}
     </section>
   );
 }
