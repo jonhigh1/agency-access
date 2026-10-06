@@ -26,7 +26,7 @@ export function recordMetaGraphOp(record: MetaGraphOpRecord): void {
   const serialized = serializeMetaGraphOp(record);
   assertNoTokenMaterialInSerializedGraphOps(serialized);
   recordedOps.push(record);
-  logger.info({ graphOp: record }, 'meta_graph_op');
+  logger.info('meta_graph_op', { graphOp: record });
 }
 
 async function parseMetaErrorCode(response: Response): Promise<number | undefined> {
