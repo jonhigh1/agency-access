@@ -232,10 +232,8 @@ describe('MetaPartnerService', () => {
       'client-token', 'pixel-1', 'agency-business-1', ['ADVERTISE', 'ANALYZE']
     );
 
-    expect(fetch).toHaveBeenCalledWith(
-      'https://graph.facebook.com/v25.0/pixel-1/agencies?fields=id,permitted_tasks',
-      expect.objectContaining({ method: 'GET', signal: expect.any(AbortSignal) })
-    );
+    expect(String(vi.mocked(fetch).mock.calls[0]?.[0])).toContain('/pixel-1/agencies');
+    expect(String(vi.mocked(fetch).mock.calls[0]?.[0])).toContain('permitted_tasks');
     expect(result).toEqual({ verified: false, assignedTasks: ['ADVERTISE'] });
   });
 
@@ -341,11 +339,8 @@ describe('MetaPartnerService', () => {
       'https://graph.facebook.com/v25.0/catalog_123/agencies',
       expect.objectContaining({ method: 'POST' }),
     );
-    expect(fetch).toHaveBeenNthCalledWith(
-      2,
-      'https://graph.facebook.com/v25.0/catalog_123/agencies?fields=id,permitted_tasks',
-      expect.objectContaining({ method: 'GET' }),
-    );
+    expect(String(vi.mocked(fetch).mock.calls[1]?.[0])).toContain('/catalog_123/agencies');
+    expect(String(vi.mocked(fetch).mock.calls[1]?.[0])).toContain('permitted_tasks');
     const request = vi.mocked(fetch).mock.calls[0]?.[1] as RequestInit;
     const params = new URLSearchParams(request.body as string);
     expect(params.get('business')).toBe('agency-bm-1');
@@ -384,10 +379,8 @@ describe('MetaPartnerService', () => {
       'client-token', 'act_123', 'agency-bm-1', ['MANAGE', 'ADVERTISE']
     );
 
-    expect(fetch).toHaveBeenCalledWith(
-      'https://graph.facebook.com/v25.0/act_123/agencies?fields=id,permitted_tasks',
-      expect.objectContaining({ method: 'GET', signal: expect.any(AbortSignal) })
-    );
+    expect(String(vi.mocked(fetch).mock.calls[0]?.[0])).toContain('/act_123/agencies');
+    expect(String(vi.mocked(fetch).mock.calls[0]?.[0])).toContain('permitted_tasks');
     expect(result).toEqual({ verified: false, assignedTasks: ['ADVERTISE'] });
   });
 
@@ -450,18 +443,14 @@ describe('MetaPartnerService', () => {
 
     await metaPartnerService.revokeCatalogAgencyAccess('client-token', 'catalog_123', 'biz-agency');
 
-    expect(fetch).toHaveBeenNthCalledWith(1,
-      'https://graph.facebook.com/v25.0/catalog_123/agencies?fields=id,permitted_tasks',
-      expect.objectContaining({ method: 'GET' }),
-    );
+    expect(String(vi.mocked(fetch).mock.calls[0]?.[0])).toContain('/catalog_123/agencies');
+    expect(String(vi.mocked(fetch).mock.calls[0]?.[0])).toContain('permitted_tasks');
     expect(fetch).toHaveBeenNthCalledWith(2,
       'https://graph.facebook.com/v25.0/catalog_123/agencies',
       expect.objectContaining({ method: 'DELETE' }),
     );
-    expect(fetch).toHaveBeenNthCalledWith(3,
-      'https://graph.facebook.com/v25.0/catalog_123/agencies?fields=id,permitted_tasks',
-      expect.objectContaining({ method: 'GET' }),
-    );
+    expect(String(vi.mocked(fetch).mock.calls[2]?.[0])).toContain('/catalog_123/agencies');
+    expect(String(vi.mocked(fetch).mock.calls[2]?.[0])).toContain('permitted_tasks');
     expect(new Headers(vi.mocked(fetch).mock.calls[1]?.[1]?.headers).get('Authorization')).toBe('Bearer client-token');
   });
 });

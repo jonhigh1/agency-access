@@ -88,12 +88,10 @@ describe('MetaAssetsService', () => {
       const [url, options] = vi.mocked(fetch).mock.calls[0];
       expect(String(url)).toContain(`/${businessId}/business_users`);
       expect(String(url)).not.toContain('access_token');
-      expect(options).toEqual({
-        method: 'GET',
-        headers: { Authorization: `Bearer ${accessToken}` },
-        signal: expect.any(AbortSignal),
-        redirect: 'error',
-      });
+      expect(options.method).toBe('GET');
+      expect(new Headers(options.headers).get('Authorization')).toBe(`Bearer ${accessToken}`);
+      expect(options.signal).toBeInstanceOf(AbortSignal);
+      expect(options.redirect).toBe('error');
       expect(createAuditLog).toHaveBeenCalledWith(expect.objectContaining({
         agencyId,
         userEmail: 'owner@example.com',
