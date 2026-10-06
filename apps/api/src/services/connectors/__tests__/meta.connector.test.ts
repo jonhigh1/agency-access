@@ -2,8 +2,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { META_GRAPH_VERSION, META_PERMISSION_CONTRACT } from '@agency-platform/shared';
 import { MetaConnector, MetaGraphMutationError, metaConnector } from '../meta.js';
 import { getConnector } from '../factory.js';
-import { metaConnector } from '../meta.js';
-import { getConnector } from '../factory.js';
 
 const { mockEnv } = vi.hoisted(() => ({
   mockEnv: {
@@ -91,6 +89,21 @@ describe('MetaConnector Asset Discovery', () => {
       expect(authUrl.searchParams.get('scope')).toBe(
         META_PERMISSION_CONTRACT.core.permissions.join(',')
       );
+    });
+
+    it('strips ads_read and unknown scopes if a caller passes them in the scope list', () => {
+      const authUrl = new URL(
+        connector.getAuthUrl('state-123', [
+          'ads_read',
+          ...META_PERMISSION_CONTRACT.core.permissions,
+          'unknown_permission',
+        ])
+      );
+
+      expect(authUrl.searchParams.get('scope')).toBe(
+        META_PERMISSION_CONTRACT.core.permissions.join(',')
+      );
+      expect(authUrl.searchParams.get('scope')).not.toContain('ads_read');
     });
   });
 
@@ -823,12 +836,6 @@ describe('MetaConnector token revocation', () => {
     } as Response);
 
     await expect(connector.revokeToken('sensitive-token')).resolves.toBeUndefined();
-  });
-});
-
-describe('Meta connector registration', () => {
-  it('uses the Meta connector for Instagram OAuth', () => {
-    expect(getConnector('instagram')).toBe(metaConnector);
   });
 });
 

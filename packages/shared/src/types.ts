@@ -709,11 +709,30 @@ export const META_CORE_PERMISSIONS = [
 ] as const;
 
 /** Never attach these to Meta OAuth consent URLs from AuthHub (deferred review tracks). */
-export const META_OAUTH_EXCLUDED_PERMISSIONS = ['catalog_management'] as const;
+export const META_OAUTH_EXCLUDED_PERMISSIONS = ['ads_read', 'catalog_management'] as const;
+
+const META_OAUTH_ALLOWED_SCOPE_SET = new Set<string>(META_CORE_PERMISSIONS);
 
 export function sanitizeMetaOAuthScopes(scopes: readonly string[]): string[] {
-  const excluded = new Set<string>(META_OAUTH_EXCLUDED_PERMISSIONS);
-  return scopes.filter((scope) => !excluded.has(scope));
+  const seen = new Set<string>();
+  const sanitized: string[] = [];
+  for (const scope of scopes) {
+    if (!META_OAUTH_ALLOWED_SCOPE_SET.has(scope) || seen.has(scope)) {
+      continue;
+    }
+    seen.add(scope);
+    sanitized.push(scope);
+  }
+  return sanitized;
+}
+
+/** Required App Review / track scopes missing from Meta debug_token after OAuth exchange. */
+export function getMetaOAuthMissingRequiredScopes(
+  grantedScopes: readonly string[],
+  requiredScopes: readonly string[],
+): string[] {
+  const granted = new Set(grantedScopes);
+  return requiredScopes.filter((scope) => !granted.has(scope));
 }
 
 export const META_PERMISSION_CONTRACT = {
