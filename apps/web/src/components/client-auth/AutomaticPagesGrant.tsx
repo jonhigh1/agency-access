@@ -227,7 +227,7 @@ export function AutomaticPagesGrant({
         <div
           role="status"
           data-testid="automatic-pages-readback-success"
-          className="border-2 border-success-ink bg-[rgb(var(--teal))]/10 p-4 text-ink"
+          className="border border-success-ink bg-[rgb(var(--teal))]/10 p-4 text-ink"
         >
           <p className="flex items-center gap-2 font-semibold text-success-ink">
             <CheckCircle2 className="h-5 w-5 shrink-0" aria-hidden />
@@ -241,7 +241,7 @@ export function AutomaticPagesGrant({
         <div
           role="alert"
           data-testid="automatic-pages-readback-failure"
-          className="border-2 border-danger-ink bg-coral/10 p-4 text-ink"
+          className="border border-danger-ink bg-coral/10 p-4 text-ink"
         >
           <p className="flex items-center gap-2 font-semibold text-danger-ink">
             <AlertCircle className="h-5 w-5 shrink-0" aria-hidden />
