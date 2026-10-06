@@ -106,6 +106,32 @@ describe('MetaUnifiedSettings', () => {
     vi.restoreAllMocks();
   });
 
+  it('shows Partner durability and Automatic vs Manual matrix copy', async () => {
+    const fetchMock = vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('/agency-platforms/meta/asset-settings')) return buildSettingsResponse();
+      if (url.includes('/agency-platforms/available')) return buildConnectionResponse();
+      if (url.includes('/agency-platforms/meta/business-accounts')) {
+        return {
+          ok: true,
+          json: async () => ({ data: { businesses: [{ id: 'biz_1', name: 'Business One' }] } }),
+        } as Response;
+      }
+      throw new Error(`Unexpected fetch: ${url}`);
+    });
+    vi.stubGlobal('fetch', fetchMock);
+
+    renderWithQueryClient(<MetaUnifiedSettings agencyId="agency-1" />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Partner access model/i)).toBeInTheDocument();
+    });
+    expect(screen.getByText(/Automatic vs Manual/i)).toBeInTheDocument();
+    expect(screen.getByText('Automatic')).toBeInTheDocument();
+    expect(screen.getAllByText('Manual').length).toBeGreaterThanOrEqual(1);
+    expect(screen.getByText(/remove the Partner/i)).toBeInTheDocument();
+  });
+
   it('refreshes business portfolios from Meta when Manage Assets opens', async () => {
     const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
       const url = String(input);

@@ -37,6 +37,31 @@ describe('Meta creation recovery', () => {
     expect(screen.queryByRole('button', { name: /try again/i })).not.toBeInTheDocument();
   });
 
+  it('offers Meta deep-link guidance when API ad-account creation lacks permission', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(response({
+      data: null,
+      error: {
+        code: 'INSUFFICIENT_PERMISSIONS',
+        message: 'Your Meta account does not have permission to create ad accounts.',
+      },
+    })));
+
+    render(
+      <MetaAssetCreator
+        connectionId="connection-1"
+        businessId="business-1"
+        accessRequestToken="token-1"
+        manualCreationUrl="https://business.facebook.com/settings/business-1/ad_accounts"
+      />
+    );
+
+    fireEvent.change(screen.getByLabelText(/account name/i), { target: { value: 'Client Ads' } });
+    fireEvent.click(screen.getByRole('button', { name: /create ad account/i }));
+
+    expect(await screen.findByText(/create an ad account in meta/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /open meta business manager/i })).toBeInTheDocument();
+  });
+
   it('offers Business Portfolio rediscovery after unknown creation result', async () => {
     const onReconcile = vi.fn().mockResolvedValue(true);
     vi.stubGlobal('fetch', vi.fn()

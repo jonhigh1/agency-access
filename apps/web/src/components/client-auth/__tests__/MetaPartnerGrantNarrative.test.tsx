@@ -20,5 +20,7 @@ describe('MetaPartnerGrantNarrative', () => {
     expect(screen.getByText('Manual')).toBeInTheDocument();
     expect(screen.getByText(/Partner share in Meta Business Settings/)).toBeInTheDocument();
     expect(screen.getByText(/business_management/i)).toBeInTheDocument();
+    expect(screen.getByText(/orchestr/i)).toBeInTheDocument();
+    expect(screen.getByText(/remove the Partner/i)).toBeInTheDocument();
   });
 });

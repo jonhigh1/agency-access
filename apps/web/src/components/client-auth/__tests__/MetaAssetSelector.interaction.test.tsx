@@ -2,6 +2,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MetaAssetSelector } from '../MetaAssetSelector';
+import { stubFetchWithCreationLinks } from './meta-selector-fetch-test-utils';
 
 const { captureMock } = vi.hoisted(() => ({
   captureMock: vi.fn(),
@@ -30,9 +31,12 @@ async function chooseBusiness(user: ReturnType<typeof userEvent.setup>, business
 }
 
 describe('MetaAssetSelector interactions', () => {
+  let fetchMock: ReturnType<typeof vi.fn>;
+
   beforeEach(() => {
     vi.clearAllMocks();
-    global.fetch = vi.fn();
+    fetchMock = vi.fn();
+    stubFetchWithCreationLinks(fetchMock);
     process.env.NEXT_PUBLIC_API_URL = 'https://api.example.com/';
   });
 
@@ -44,7 +48,7 @@ describe('MetaAssetSelector interactions', () => {
   ])('lets keyboard users select a $type asset with a named combobox', async ({ type, label, name, field, id }) => {
     const user = userEvent.setup();
     const onSelectionChange = vi.fn();
-    vi.mocked(fetch).mockResolvedValueOnce({
+    fetchMock.mockResolvedValueOnce({
       ok: true,
       text: async () => JSON.stringify({ data: {
         businesses: [{ id: 'biz-1', name: 'Business' }],
@@ -70,7 +74,7 @@ describe('MetaAssetSelector interactions', () => {
   it('lets keyboard and screen-reader users select Instagram and gives its controls 44px targets', async () => {
     const user = userEvent.setup();
     const onSelectionChange = vi.fn();
-    vi.mocked(fetch).mockResolvedValueOnce({
+    fetchMock.mockResolvedValueOnce({
       ok: true,
       text: async () => JSON.stringify({ data: {
         businesses: [{ id: 'biz-1', name: 'Business' }],
@@ -102,7 +106,7 @@ describe('MetaAssetSelector interactions', () => {
     const user = userEvent.setup();
     const onSelectionChange = vi.fn();
 
-    vi.mocked(fetch)
+    fetchMock
       .mockResolvedValueOnce({
         ok: true,
         text: async () =>
@@ -198,7 +202,7 @@ describe('MetaAssetSelector interactions', () => {
   it('returns selected product catalogs with their names', async () => {
     const user = userEvent.setup();
     const onSelectionChange = vi.fn();
-    vi.mocked(fetch).mockResolvedValueOnce({
+    fetchMock.mockResolvedValueOnce({
       ok: true,
       text: async () => JSON.stringify({ data: {
         businesses: [{ id: 'biz-1', name: 'Business' }],
@@ -218,7 +222,7 @@ describe('MetaAssetSelector interactions', () => {
   });
 
   it('shows a warning when Instagram assets could not be discovered', async () => {
-    vi.mocked(fetch).mockResolvedValueOnce({
+    fetchMock.mockResolvedValueOnce({
       ok: true,
       text: async () => JSON.stringify({ data: {
         businesses: [{ id: 'biz-1', name: 'Business' }],
@@ -236,7 +240,7 @@ describe('MetaAssetSelector interactions', () => {
   });
 
   it('selects Pixels and Datasets without showing manual Meta steps on the selection step', async () => {
-    vi.mocked(fetch).mockResolvedValueOnce({
+    fetchMock.mockResolvedValueOnce({
       ok: true,
       text: async () => JSON.stringify({ data: {
         businesses: [{ id: 'biz-1', name: 'Business' }],
@@ -263,11 +267,11 @@ describe('MetaAssetSelector interactions', () => {
     expect(screen.queryByText('Manage Pixels and Datasets in Meta')).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Open Meta Business Manager' })).not.toBeInTheDocument();
     expect(screen.queryByRole('button', { name: 'Verify access' })).not.toBeInTheDocument();
-    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it('shows no Leads Access section when Leads Access is not requested', async () => {
-    vi.mocked(fetch).mockResolvedValueOnce({
+    fetchMock.mockResolvedValueOnce({
       ok: true,
       text: async () => JSON.stringify({ data: {
         businesses: [{ id: 'biz-1', name: 'Business' }],
@@ -284,7 +288,7 @@ describe('MetaAssetSelector interactions', () => {
   });
 
   it('tells the client requested Leads Access is confirmed after sharing, with no manual link here', async () => {
-    vi.mocked(fetch).mockResolvedValueOnce({
+    fetchMock.mockResolvedValueOnce({
       ok: true,
       text: async () => JSON.stringify({ data: {
         businesses: [{ id: 'biz-1', name: 'Business' }],
@@ -310,7 +314,7 @@ describe('MetaAssetSelector interactions', () => {
     const user = userEvent.setup();
     const onSelectionChange = vi.fn();
     const onSelectionDerivedStateReset = vi.fn();
-    vi.mocked(fetch).mockResolvedValueOnce({
+    fetchMock.mockResolvedValueOnce({
       ok: true,
       text: async () => JSON.stringify({ data: {
         businesses: [
@@ -371,7 +375,7 @@ describe('MetaAssetSelector interactions', () => {
     const user = userEvent.setup();
     const onSelectionChange = vi.fn();
     const onSelectionDerivedStateReset = vi.fn();
-    vi.mocked(fetch)
+    fetchMock
       .mockResolvedValueOnce({
         ok: true,
         text: async () => JSON.stringify({ data: {
@@ -426,7 +430,7 @@ describe('MetaAssetSelector interactions', () => {
   it('switches with zero selections without a confirm and still resets', async () => {
     const user = userEvent.setup();
     const onSelectionDerivedStateReset = vi.fn();
-    vi.mocked(fetch)
+    fetchMock
       .mockResolvedValueOnce({
         ok: true,
         text: async () => JSON.stringify({ data: {
@@ -492,7 +496,7 @@ describe('MetaAssetSelector interactions', () => {
         adAccounts: [], pages: [], instagramAccounts: [], productCatalogs: [], pixels: [],
       }, error: null }),
     } as Response;
-    vi.mocked(fetch)
+    fetchMock
       .mockResolvedValueOnce(assetsResponse)
       .mockResolvedValueOnce(switchedResponse);
 
@@ -519,7 +523,7 @@ describe('MetaAssetSelector interactions', () => {
   it('reports the reset when a business is confirmed from the chooser', async () => {
     const user = userEvent.setup();
     const onSelectionDerivedStateReset = vi.fn();
-    vi.mocked(fetch)
+    fetchMock
       .mockResolvedValueOnce({
         ok: true,
         text: async () =>

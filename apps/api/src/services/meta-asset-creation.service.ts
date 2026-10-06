@@ -61,6 +61,7 @@ export interface CreatedBusiness {
 export interface AssetCreationLinks {
   pageCreationUrl: string;
   pixelCreationUrl: string;
+  adAccountCreationUrl: string;
   businessVerificationUrl: string;
   paymentMethodUrl: string;
 }
@@ -811,6 +812,7 @@ class MetaAssetCreationService {
     return {
       pageCreationUrl: metaConnector.getPageCreationUrl(businessId),
       pixelCreationUrl: metaConnector.getPixelCreationUrl(businessId),
+      adAccountCreationUrl: metaConnector.getAdAccountCreationUrl(businessId),
       businessVerificationUrl: metaConnector.getBusinessVerificationUrl(businessId),
       paymentMethodUrl: metaConnector.getPaymentMethodUrl(businessId),
     };

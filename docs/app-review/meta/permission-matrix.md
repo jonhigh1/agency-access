@@ -18,14 +18,33 @@ Meta's reviewer separately said the rejected `Business Asset User Profile Access
 
 Leadsie documents Leads Access as automatic when its client grants Page access; its public guide does not describe a separate `MANAGE_LEADS` mutation or read-back. AuthHub currently exposes `MANAGE_LEADS` as an optional Page task and attempts recipient assignment/read-back. Keep that behavior labeled unverified until a live v25.0 call proves Meta accepts it and the recipient can use Leads Center. Do not imply AuthHub copied Leadsie's internal mechanism. [Leadsie: How to share Facebook/Meta Leads access](https://help.leadsie.com/article/67-how-to-share-leads-access). The Meta SDK also lists `MANAGE_LEADS` among Page tasks, but this alone does not prove the live call works for this app, token, asset, or recipient: [Meta's Page task enum](https://github.com/facebook/facebook-python-business-sdk/blob/main/facebook_business/adobjects/page.py).
 
+## Partner-first copy (in-app + Allowed usage alignment)
+
+Product law for this submission track:
+
+- **OAuth orchestrates.** Client Facebook login grants AuthHub a user token to discover assets, run Partner steps, and re-check access. Token expiry or reconnecting OAuth does **not** by itself remove Partner access on Meta.
+- **Partner access is durable** until the client or agency **removes the Partner** in Meta Business Settings (or the agency disconnects in AuthHub after Meta-side cleanup).
+- **Automation matrix (live paths after tickets 04/07):**
+
+| Asset / step | Automatic vs Manual | Live behavior |
+| --- | --- | --- |
+| Facebook Pages | **Automatic** | `assigned_users` + Page `agencies` partner POST with read-back; Manual fallback copy if Graph fails |
+| Ad accounts | **Manual** | Assign Partner in Meta Business Settings + **Check access** in AuthHub (`AdAccountSharingInstructions`) |
+| Client ↔ agency Business Portfolio link | **Manual** | No Graph mutation until a live path is proven |
+| Instagram, catalogs, pixels & datasets | **Manual** | Meta Business Settings partner/assignment steps |
+| Validate Page (`pages_read_engagement`) | **Validation only** | Dates-only feed; no post text; no agency manage claim |
+| System user (`assigned_users` when shown) | **Labeled separately** | Not a substitute for Partner share or human agency-owner Ads Manager access |
+
+Grant UI (`MetaPartnerGrantNarrative`, grant checklist) and agency Meta settings (`MetaPartnerDurabilityPanel`) use the same labels: **Automatic** vs **Manual**.
+
 ## Allowed usage text drafts
 
 These are local draft statements, not text entered into Meta. Keep them out of the live submission until the exact production path, live calls, and video match them.
 
-- `business_management`: “AuthHub uses this permission to list the client's Meta Business Portfolios and their assets during an access request. The client selects the exact portfolio and assets. AuthHub checks that selection and shows the correct next step for sharing access. Partner sharing remains a manual Meta Business Settings step where the product says it is manual.”
-- `pages_show_list`: “When a client has no Meta Business Portfolio, AuthHub uses this permission to check which Pages the signed-in client manages. The client can select a Page before AuthHub enables guided Business Portfolio creation. For clients who already have a Business Portfolio, AuthHub lists Pages through that portfolio's asset view.”
-- `pages_read_engagement`: “After the client selects a Page, AuthHub validates its identity and management tasks. AuthHub reads limited Page metadata and the IDs and dates of up to three recent feed items, then shows the Page identity, available metadata, and post dates. AuthHub does not fetch post text or profiles of people who engage with the Page.”
-- `ads_management`: “After the client selects ad accounts, AuthHub shows **Manual** partner-share steps in Meta Business Settings: the agency's Business Portfolio ID, Assign Partner on each ad account, and **Check access** to read Meta's verification per account (verified, partial, or still waiting). Durable agency access is Partner share on the client's ad accounts, not automatic in-app assignment. If the agency also targets a system user via `assigned_users`, that assignment is shown separately and does not prove the agency owner's human Ads Manager access. Submit this wording only when the recorded production flow matches Manual partner share plus Check access.”
+- `business_management`: “AuthHub uses this permission so a signed-in client can list Meta Business Portfolios and business-scoped assets during an access request. The client selects the portfolio and assets to share. For **Facebook Pages**, AuthHub may **automatically** add the agency Business Portfolio as Partner (Graph partner mutation with read-back) and assign requested Page tasks via `assigned_users`. **Ad account** Partner share stays **Manual** in Meta Business Settings with Check access in AuthHub. Client OAuth tokens **orchestrate** these steps; durable Partner access remains on Meta until someone **removes the Partner**. AuthHub does not retrieve profiles of people who engage with client assets.”
+- `pages_show_list`: “When a client has no Meta Business Portfolio, AuthHub uses this permission to call `GET /me/accounts` and list Pages the signed-in user manages before guided Business Portfolio creation. OAuth login **orchestrates** that discovery; durable agency access still requires Partner steps on selected assets. For clients who already have a Business Portfolio, AuthHub lists Pages through that portfolio's business-scoped asset view under `business_management`.”
+- `pages_read_engagement`: “After the client selects a Page, AuthHub **Validate Page access** reads Page identity, managed tasks, connected Instagram if present, and the IDs and dates of up to three recent public feed items. AuthHub does not fetch post text or profiles of people who engage with the Page. This step validates engagement read access only; it does not grant the agency Page management rights or prove Partner Page access.”
+- `ads_management`: “After the client selects ad accounts, AuthHub shows **Manual** partner-share steps in Meta Business Settings: the agency's Business Portfolio ID, Assign Partner on each ad account, and **Check access** to read Meta's verification per account (verified, partial, or still waiting). Durable agency access is Partner share on the client's ad accounts, not automatic in-app assignment while the Manual path is live. If the agency also targets a system user via `assigned_users`, that assignment is shown separately and does not prove the agency owner's human Ads Manager access. Submit this wording only when the recorded production flow matches Manual partner share plus Check access.”
 - Marketing API Access Tier: “AuthHub uses Marketing API calls as part of real client onboarding: it discovers ad accounts, reads the selected account's basic status, and verifies selected agency access. It does not create calls only to raise a usage counter or place ads to prove access. The required rolling call volume and success rate must be rechecked in Meta before submission.”
 
 Review these statements against the production deployment before copying them into Meta. Remove any statement that the recorded flow does not demonstrate.
