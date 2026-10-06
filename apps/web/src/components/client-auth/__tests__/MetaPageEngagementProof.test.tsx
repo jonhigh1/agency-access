@@ -55,7 +55,8 @@ describe('MetaPageEngagementProof', () => {
     expect(await screen.findByText(/page access validated for main page/i)).toBeInTheDocument();
     expect(screen.getByText('MANAGE, ADVERTISE')).toBeInTheDocument();
     expect(screen.getByText('@mainpage')).toBeInTheDocument();
-    expect(screen.getByText('Recent Page post')).toBeInTheDocument();
+    expect(screen.getByText('Recent public post date')).toBeInTheDocument();
+    expect(screen.getByText(/does not grant your agency page management rights/i)).toBeInTheDocument();
     expect(document.querySelector('time')?.getAttribute('datetime')).toBe('2026-09-21T00:00:00+0000');
     expect(captureMock).toHaveBeenCalledWith('client_meta_page_proof_started', {
       connection_id: 'conn-1',
@@ -131,6 +132,46 @@ describe('MetaPageEngagementProof', () => {
     expect(await screen.findByText(/page access validated for main page/i)).toBeInTheDocument();
     expect(screen.getByText('No recent public posts were returned.')).toBeInTheDocument();
     expect(screen.queryByText('Recent Page post')).not.toBeInTheDocument();
+  });
+
+  it('never renders post message or story text when the API mistakenly includes them', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue({
+        ok: true,
+        text: async () =>
+          JSON.stringify({
+            data: {
+              page: { id: 'page_1', name: 'Main Page', managedTasks: ['MANAGE'] },
+              posts: [
+                {
+                  id: 'post_1',
+                  createdTime: '2026-09-21T00:00:00+0000',
+                  message: 'This caption must never appear',
+                  story: 'This story must never appear',
+                },
+              ],
+            },
+            error: null,
+          }),
+      } as Response)
+    );
+
+    render(
+      <MetaPageEngagementProof
+        selectedPage={{ id: 'page_1', name: 'Main Page' }}
+        connectionId="conn-1"
+        accessRequestToken="token-1"
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /validate page access/i }));
+
+    expect(await screen.findByText(/page access validated for main page/i)).toBeInTheDocument();
+    expect(screen.getByText('Recent public post date')).toBeInTheDocument();
+    expect(screen.queryByText(/this caption must never appear/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/this story must never appear/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/partner page manage grants are separate/i)).toBeInTheDocument();
   });
 
   it('shows a reconnect instruction when Meta rejects the user or Page token', async () => {

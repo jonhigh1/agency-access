@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { resolveApiUrl } from '@/lib/api/api-env';
 import { ApiResponseError, parseJsonResponse } from '@/lib/api/parse-json-response';
 import { capturePosthogEvent } from '@/lib/analytics/capture-posthog';
+import { sanitizeMetaPageEngagementProofForDisplay } from '@/lib/meta/sanitize-page-engagement-proof';
 
 interface MetaPageEngagementProofProps {
   selectedPage: Pick<PageProof['page'], 'id' | 'name'>;
@@ -54,7 +55,7 @@ export function MetaPageEngagementProof({
         return;
       }
 
-      setProof(json.data);
+      setProof(sanitizeMetaPageEngagementProofForDisplay(json.data));
       void capturePosthogEvent('client_meta_page_proof_succeeded', {
         connection_id: connectionId,
         page_id: selectedPage.id,
@@ -82,7 +83,12 @@ export function MetaPageEngagementProof({
           Validate Page access
         </h4>
         <p className="text-sm text-muted-foreground">
-          AuthHub will validate this Page, its management tasks, connected Instagram account, and recent public post dates.
+          AuthHub validates that it can read this Page&apos;s identity, your managed tasks, connected Instagram (if any),
+          and up to three recent public post dates. Post text and engager profiles are never shown.
+        </p>
+        <p className="mt-2 text-sm text-muted-foreground">
+          This check confirms <span className="font-medium text-[var(--ink)]">pages_read_engagement</span> access only.
+          It does not grant your agency Page management rights or prove they can publish on your Page.
         </p>
       </div>
 
@@ -136,7 +142,7 @@ export function MetaPageEngagementProof({
             <ul className="space-y-2 text-sm text-[var(--ink)]">
               {proof.posts.map((post) => (
                 <li key={post.id} className="border-t border-black/20 pt-2 dark:border-white/20">
-                  <span className="font-mono text-xs text-muted-foreground">Recent Page post</span>
+                  <span className="font-mono text-xs text-muted-foreground">Recent public post date</span>
                   <p>
                     <time dateTime={post.createdTime}>
                       {post.createdTime ? new Date(post.createdTime).toLocaleDateString() : 'Date unavailable'}
@@ -146,6 +152,10 @@ export function MetaPageEngagementProof({
               ))}
             </ul>
           )}
+          <p className="mt-3 border-t border-black/20 pt-2 text-xs text-muted-foreground dark:border-white/20">
+            Validation succeeded for engagement read access. Partner Page manage grants are separate and are not
+            proven by this step.
+          </p>
         </div>
       ) : null}
     </section>
