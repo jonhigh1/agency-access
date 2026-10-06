@@ -1,0 +1,317 @@
+
+> @agency-platform/api@0.1.0 test:run
+> vitest run src/lib/__tests__/authorization-metadata.test.ts src/routes/client-auth/__tests__/assets.meta.test.ts src/routes/client-auth/__tests__/assets.tiktok.test.ts src/services/__tests__/meta-asset-creation.service.test.ts src/services/__tests__/connection.service.test.ts --maxWorkers=2
+
+
+ RUN  v4.0.16 /Users/jon.high/agency-access/apps/api
+
+stdout | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > creates the business, persists selection with source "created", merges discovery, appends grantedAssets, and audits
+[INFO] Creating Meta business {
+  connectionId: 'conn-1',
+  businessName: 'Acme Business',
+  vertical: 'OTHER',
+  primaryPageId: 'page-1'
+}
+
+stdout | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > creates the business, persists selection with source "created", merges discovery, appends grantedAssets, and audits
+[INFO] Meta business created successfully {
+  connectionId: 'conn-1',
+  businessId: 'biz-new',
+  businessName: 'Acme Business'
+}
+
+stdout | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > initializes an empty meta metadata block when none exists yet
+[INFO] Creating Meta business {
+  connectionId: 'conn-1',
+  businessName: 'First Business',
+  vertical: 'OTHER',
+  primaryPageId: 'page-1'
+}
+
+stdout | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > initializes an empty meta metadata block when none exists yet
+[INFO] Meta business created successfully {
+  connectionId: 'conn-1',
+  businessId: 'biz-first',
+  businessName: 'First Business'
+}
+
+stdout | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > replays a stored creation result without calling Meta again
+[INFO] Creating Meta business {
+  connectionId: 'conn-1',
+  businessName: 'Acme',
+  vertical: 'OTHER',
+  primaryPageId: 'page-1'
+}
+
+stdout | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > treats a concurrent unique-claim conflict as in progress without calling Meta
+[INFO] Creating Meta business {
+  connectionId: 'conn-1',
+  businessName: 'Acme',
+  vertical: 'OTHER',
+  primaryPageId: 'page-1'
+}
+
+ ✓ src/services/__tests__/connection.service.test.ts (40 tests) 15ms
+stdout | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > marks an abandoned in-progress claim unknown and requires asset discovery
+[INFO] Creating Meta business {
+  connectionId: 'conn-1',
+  businessName: 'Acme',
+  vertical: 'OTHER',
+  primaryPageId: 'page-1'
+}
+
+stdout | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > does not retry a Meta creation with unknown outcome
+[INFO] Creating Meta business {
+  connectionId: 'conn-1',
+  businessName: 'Acme',
+  vertical: 'OTHER',
+  primaryPageId: 'page-1'
+}
+
+stderr | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > does not retry a Meta creation with unknown outcome
+[ERROR] Failed to create Meta business { connectionId: 'conn-1', error: 'fetch failed' }
+
+stdout | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > does not retry a Meta creation with unknown outcome
+[INFO] Creating Meta business {
+  connectionId: 'conn-1',
+  businessName: 'Acme',
+  vertical: 'OTHER',
+  primaryPageId: 'page-1'
+}
+
+stdout | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > does not retry after Meta returns a 5xx creation response
+[INFO] Creating Meta business {
+  connectionId: 'conn-1',
+  businessName: 'Acme',
+  vertical: 'OTHER',
+  primaryPageId: 'page-1'
+}
+
+stderr | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > does not retry after Meta returns a 5xx creation response
+[ERROR] Failed to create Meta business {
+  connectionId: 'conn-1',
+  error: 'Meta business creation failed: Internal Server Error'
+}
+
+stdout | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > does not retry after Meta returns a 5xx creation response
+[INFO] Creating Meta business {
+  connectionId: 'conn-1',
+  businessName: 'Acme',
+  vertical: 'OTHER',
+  primaryPageId: 'page-1'
+}
+
+stdout | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > does not retry after Meta creates a business but local persistence fails
+[INFO] Creating Meta business {
+  connectionId: 'conn-1',
+  businessName: 'Acme',
+  vertical: 'OTHER',
+  primaryPageId: 'page-1'
+}
+
+stdout | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > does not retry after Meta creates a business but local persistence fails
+[INFO] Meta business created successfully { connectionId: 'conn-1', businessId: 'biz-new', businessName: 'Acme' }
+
+stderr | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > does not retry after Meta creates a business but local persistence fails
+[ERROR] Failed to create Meta business { connectionId: 'conn-1', error: 'database unavailable' }
+
+stdout | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > does not retry after Meta creates a business but local persistence fails
+[INFO] Creating Meta business {
+  connectionId: 'conn-1',
+  businessName: 'Acme',
+  vertical: 'OTHER',
+  primaryPageId: 'page-1'
+}
+
+stdout | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > does not replay an idempotency claim under a different Meta authorization
+[INFO] Creating Meta business {
+  connectionId: 'conn-1',
+  businessName: 'Acme',
+  vertical: 'OTHER',
+  primaryPageId: 'page-1'
+}
+
+stdout | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > retries after Meta clearly rejects creation
+[INFO] Creating Meta business {
+  connectionId: 'conn-1',
+  businessName: 'Acme',
+  vertical: 'OTHER',
+  primaryPageId: 'page-1'
+}
+
+stderr | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > retries after Meta clearly rejects creation
+[ERROR] Failed to create Meta business {
+  connectionId: 'conn-1',
+  error: 'Meta business creation failed: permissions error'
+}
+
+stdout | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > retries after Meta clearly rejects creation
+[INFO] Creating Meta business {
+  connectionId: 'conn-1',
+  businessName: 'Acme',
+  vertical: 'OTHER',
+  primaryPageId: 'page-1'
+}
+
+stdout | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > retries after Meta clearly rejects creation
+[INFO] Meta business created successfully { connectionId: 'conn-1', businessId: 'biz-new', businessName: 'Acme' }
+
+stdout | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > returns AUTHORIZATION_NOT_FOUND before touching Meta
+[INFO] Creating Meta business {
+  connectionId: 'conn-1',
+  businessName: 'Acme',
+  vertical: 'OTHER',
+  primaryPageId: 'page-1'
+}
+
+stdout | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > returns AUTHORIZATION_INACTIVE before touching Meta
+[INFO] Creating Meta business {
+  connectionId: 'conn-1',
+  businessName: 'Acme',
+  vertical: 'OTHER',
+  primaryPageId: 'page-1'
+}
+
+stdout | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > returns TOKEN_NOT_FOUND when Infisical retrieval fails
+[INFO] Creating Meta business {
+  connectionId: 'conn-1',
+  businessName: 'Acme',
+  vertical: 'OTHER',
+  primaryPageId: 'page-1'
+}
+
+stderr | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > returns TOKEN_NOT_FOUND when Infisical retrieval fails
+[ERROR] Failed to retrieve Meta tokens from Infisical {
+  connectionId: 'conn-1',
+  secretId: 'secret-1',
+  error: Error: boom
+      at /Users/jon.high/agency-access/apps/api/src/services/__tests__/meta-asset-creation.service.test.ts:475:59
+      at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:145:11
+      at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:915:26
+      at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:1243:20
+      at new Promise (<anonymous>)
+      at runWithTimeout (file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:1209:10)
+      at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:1653:37
+      at Traces.$ (file:///Users/jon.high/agency-access/node_modules/vitest/dist/chunks/traces.U4xDYhzZ.js:115:27)
+      at trace (file:///Users/jon.high/agency-access/node_modules/vitest/dist/chunks/test.B8ej_ZHS.js:239:21)
+      at runTest (file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:1653:12)
+}
+
+stdout | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > returns TOKEN_EXPIRED when the token expiry is in the past
+[INFO] Creating Meta business {
+  connectionId: 'conn-1',
+  businessName: 'Acme',
+  vertical: 'OTHER',
+  primaryPageId: 'page-1'
+}
+
+stdout | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > maps a Meta error to the right code
+[INFO] Creating Meta business {
+  connectionId: 'conn-1',
+  businessName: 'Acme',
+  vertical: 'OTHER',
+  primaryPageId: 'page-1'
+}
+
+stderr | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > maps a Meta error to the right code
+[ERROR] Failed to create Meta business {
+  connectionId: 'conn-1',
+  error: 'Meta business creation failed: You have reached the limit of businesses you can create'
+}
+
+stdout | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > maps a Meta error to the right code
+[INFO] Creating Meta business {
+  connectionId: 'conn-1',
+  businessName: 'Acme',
+  vertical: 'OTHER',
+  primaryPageId: 'page-1'
+}
+
+stderr | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > maps a Meta error to the right code
+[ERROR] Failed to create Meta business {
+  connectionId: 'conn-1',
+  error: 'Meta business creation failed: (#100) Invalid parameter: primary_page is not a Page you administer'
+}
+
+stdout | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > maps a Meta error to the right code
+[INFO] Creating Meta business {
+  connectionId: 'conn-1',
+  businessName: 'Acme',
+  vertical: 'OTHER',
+  primaryPageId: 'page-1'
+}
+
+stderr | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createBusiness > maps a Meta error to the right code
+[ERROR] Failed to create Meta business {
+  connectionId: 'conn-1',
+  error: 'Meta business creation failed: (#200) Permissions error'
+}
+
+stderr | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.getUserPages > returns an error when the Graph call fails (distinct from owning no pages)
+[ERROR] Failed to fetch client user pages {
+  connectionId: 'conn-1',
+  error: 'Failed to fetch user pages: token expired'
+}
+
+stdout | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createProductCatalog > creates one Meta catalog and stores one result for overlapping duplicate requests
+[INFO] Creating Meta product catalog {
+  connectionId: 'conn-1',
+  businessId: 'business-1',
+  catalogName: 'Spring catalog'
+}
+
+stdout | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createProductCatalog > creates one Meta catalog and stores one result for overlapping duplicate requests
+[INFO] Creating Meta product catalog {
+  connectionId: 'conn-1',
+  businessId: 'business-1',
+  catalogName: 'Spring catalog'
+}
+
+stdout | src/services/__tests__/meta-asset-creation.service.test.ts > MetaAssetCreationService.createProductCatalog > creates one Meta catalog and stores one result for overlapping duplicate requests
+[INFO] Meta product catalog created successfully {
+  connectionId: 'conn-1',
+  catalogId: 'catalog-1',
+  catalogName: 'Spring catalog'
+}
+
+ ✓ src/services/__tests__/meta-asset-creation.service.test.ts (21 tests) 15ms
+ ✓ src/routes/client-auth/__tests__/assets.tiktok.test.ts (5 tests) 392ms
+     ✓ returns TikTok assets and logs token read audit event  367ms
+stdout | src/routes/client-auth/__tests__/assets.meta.test.ts > Client Auth Asset Routes - Meta > returns business-scoped Meta assets and persists discovery metadata for the selected client business
+[INFO] Fetching Meta assets for client { businessId: 'biz_client_2' }
+
+stdout | src/routes/client-auth/__tests__/assets.meta.test.ts > Client Auth Asset Routes - Meta > returns business-scoped Meta assets and persists discovery metadata for the selected client business
+[INFO] Successfully fetched Meta assets {
+  adAccountCount: 2,
+  pageCount: 2,
+  instagramAccountCount: 1,
+  productCatalogCount: 0,
+  pixelCount: 0
+}
+
+stdout | src/routes/client-auth/__tests__/assets.meta.test.ts > Client Auth Asset Routes - Meta > returns 400 when the requested Meta business portfolio is unavailable
+[INFO] Fetching Meta assets for client { businessId: 'biz_missing' }
+
+stderr | src/routes/client-auth/__tests__/assets.meta.test.ts > Client Auth Asset Routes - Meta > returns 400 when the requested Meta business portfolio is unavailable
+[ERROR] Failed to fetch Meta assets {
+  error: MetaBusinessPortfolioUnavailableError: Selected Meta business portfolio is not available for this client user
+      at ClientAssetsService.fetchMetaAssets (/Users/jon.high/agency-access/apps/api/src/services/client-assets.service.ts:202:15)
+      at processTicksAndRejections (node:internal/process/task_queues:103:5)
+      at Object.<anonymous> (/Users/jon.high/agency-access/apps/api/src/routes/client-auth/assets.routes.ts:2796:18) {
+    code: 'INVALID_META_BUSINESS_PORTFOLIO',
+    statusCode: 400
+  }
+}
+
+stderr | src/routes/client-auth/__tests__/assets.meta.test.ts > Client Auth Asset Routes - Meta > asks the client to reconnect when Meta rejects the user or Page token
+[ERROR] Meta Page access lookup failed { pageId: 'page_1', status: undefined, code: 190 }
+
+ ✓ src/routes/client-auth/__tests__/assets.meta.test.ts (48 tests) 719ms
+     ✓ creates one durable requirement for each selected Meta asset and recipient  493ms
+ ✓ src/lib/__tests__/authorization-metadata.test.ts (2 tests) 3ms
+
+ Test Files  5 passed (5)
+      Tests  116 passed (116)
+   Start at  14:53:12
+   Duration  1.64s (transform 860ms, setup 35ms, import 1.47s, tests 1.14s, environment 0ms)
+

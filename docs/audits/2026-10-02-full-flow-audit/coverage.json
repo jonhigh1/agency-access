@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "audit_date": "2026-10-02",
-  "coverage_note": "Source inventory with limited browser observations and local API test evidence. No row proves a complete end-to-end production flow. `status` uses the requested values; `observation_status` preserves partial or prerequisite qualifiers. Production mutations and external actions are excluded until separately authorized. Provider OAuth and each supported manual invitation integration now have separate rows. Cross-role, authorization, affiliate/admin, mobile, and recovery scenarios also have explicit rows. Browser evidence records narrow production UI observations only; API validation records local test evidence only. Neither proves full end-to-end persistence or live provider success. Kit and Zapier are manual capabilities; Zapier has no corresponding invite manual route/config/handler in inspected source.",
+  "coverage_note": "Source inventory with limited browser observations and local API test evidence. No row proves a complete end-to-end production flow. `status` uses the requested values; `observation_status` preserves partial or prerequisite qualifiers. Production mutations and external actions are excluded until separately authorized. Provider OAuth and each supported manual invitation integration have separate rows. Cross-role, authorization, affiliate/admin, mobile, and recovery scenarios also have explicit rows. Browser evidence records narrow production UI observations only; API validation records local test evidence only. Neither proves full end-to-end persistence or live provider success. Zapier client invite routing, checklist, manual config, and API handler are implemented and locally exercised; reported manual invitations remain pending until agency confirmation.",
   "flows": [
     {
       "id": "PUB-01",
@@ -102,9 +102,10 @@
       "prerequisites": "Authenticated agency; fixtures for empty and populated states",
       "steps": "Open dashboard; inspect summaries and recent activity",
       "expected_result": "Dashboard reflects scoped agency data and useful empty state",
-      "observed_result": "Production dashboard loaded populated state. Pending count showed 0 while a follow-up banner remained; this mismatch is unresolved. No full route/action coverage.  Remaining end-to-end checks are untested.",
+      "observed_result": "Current production populated dashboard shows 13 requests, one pending, 13 active connections and three platforms. Existing pending/partial requests have follow-up banners. Empty state and full actions remain untested.",
       "evidence": [
-        "browser-observations.json#checks[0]"
+        "browser-observations.json#checks[0]",
+        "production-readonly-oct4.json"
       ],
       "status": "untested",
       "environment_required": "production read-only; empty fixture local",
@@ -378,10 +379,15 @@
       "prerequisites": "Valid invite; assets or manual platform instructions available",
       "steps": "Select allowed assets; submit; complete one manual platform; reload",
       "expected_result": "Only requested assets save; manual instructions and completion state persist",
-      "observed_result": null,
-      "evidence": [],
+      "observed_result": "Local two-platform browser journey: Beehiiv report returned to the invite with WAITING, then the client advanced to the Zapier checklist and submitted its report. Both platform cards showed WAITING and the page displayed \u201cAwaiting agency verification.\u201d PostgreSQL readback retained Beehiiv and Zapier as separate pending manual invitations. This verifies navigation and report persistence in an isolated fixture; provider access and the agency confirmation action remain unverified.",
+      "evidence": [
+        "manual-browser-persisted.json",
+        "manual-concurrency-verification.json#authorizationProgress",
+        "apps/web/src/app/invite/[token]/__tests__/page.test.tsx#advances to Zapier while a reported Beehiiv invite awaits agency verification"
+      ],
       "status": "untested",
-      "environment_required": "local isolated fixture; provider sandbox where applicable"
+      "environment_required": "local isolated fixture; provider sandbox where applicable",
+      "observation_status": "partially_verified"
     },
     {
       "id": "INV-06",
@@ -935,16 +941,21 @@
     },
     {
       "id": "MANUAL-BEEHIIV",
-      "flow": "beehiiv manual invite completion and persistence",
+      "flow": "Beehiiv manual invite report and pending verification",
       "route_source": "apps/web/src/app/invite/[token]/beehiiv/manual/page.tsx; apps/web/src/app/invite/[token]/manual-invite.config.tsx; apps/api/src/routes/client-auth/manual.routes.ts",
       "role": "Client invitee",
       "prerequisites": "Valid invite requests beehiiv; manual target data configured",
-      "steps": "Complete each guidance step; submit completion; reload invitation",
-      "expected_result": "beehiiv manual completion persists once and returns to invitation flow",
-      "observed_result": null,
-      "evidence": [],
+      "steps": "Open Beehiiv checklist; report team invitation; reload invite and inspect pending state",
+      "expected_result": "Beehiiv invitation report persists as pending and remains pending until agency confirms access",
+      "observed_result": "Local browser/API fixture reported the Beehiiv manual invitation. The invitation remained pending, the client page showed WAITING / Awaiting agency verification, and isolated PostgreSQL retained its separate pending record. The agency confirmation workflow is approved and in progress; no provider access or successful confirmation was verified.",
+      "evidence": [
+        "manual-browser-persisted.json",
+        "manual-concurrency-verification.json#authorizationProgress",
+        "manual-verification-proposal.md"
+      ],
       "status": "untested",
-      "environment_required": "local isolated fixture; production mutation excluded"
+      "environment_required": "local browser and isolated PostgreSQL; no live provider actions",
+      "observation_status": "partially_verified"
     },
     {
       "id": "MANUAL-BEEHIIV-ERR",
@@ -1290,23 +1301,37 @@
     },
     {
       "id": "MANUAL-ZAPIER",
-      "flow": "Zapier manual-flow capability and missing route behavior",
-      "route_source": "apps/web/src/lib/client-invite-platforms.ts; apps/api/src/services/connectors/factory.ts; apps/web/src/app/invite/[token]/manual-invite.config.tsx; apps/api/src/routes/client-auth/manual.routes.ts",
-      "role": "Client invitee / agency owner",
-      "prerequisites": "Invitation includes Zapier",
-      "steps": "Attempt selection and follow capability routing; locate route/config/handler for completion",
-      "expected_result": "Capability must route to a supported manual flow; source currently has no Zapier manual route/config/handler and verification is blocked by this implementation gap",
-      "observed_result": "Source inspection: Zapier appears in the agency-side manual platform list and in the connector factory manual-flow comment. The client invite capability classifies manual flows, but has no Zapier route segment; manual invite config and API handler also have no Zapier entry. This establishes a source gap, but not whether client-side Zapier invitation is intended. Confirm product scope before treating as defect.",
+      "flow": "Zapier manual invite report and pending verification",
+      "route_source": "apps/web/src/lib/client-invite-platforms.ts; apps/web/src/app/invite/[token]/zapier/manual/page.tsx; apps/web/src/app/invite/[token]/manual-invite.config.tsx; apps/api/src/routes/client-auth/manual.routes.ts",
+      "role": "Client invitee",
+      "prerequisites": "Valid invite requests Zapier; manual target data configured",
+      "steps": "Open Zapier checklist; report team invitation; reload invite and inspect pending state",
+      "expected_result": "Zapier invitation report persists as pending and remains pending until agency confirms access",
+      "observed_result": "Local browser/API fixture reported the Zapier manual invitation. The invitation remained pending, the client page showed WAITING / Awaiting agency verification, and isolated PostgreSQL retained its separate pending record. The agency confirmation workflow is approved and in progress; no provider access or successful confirmation was verified.",
       "evidence": [
-        "apps/web/src/lib/client-invite-platforms.ts:11-19",
-        "apps/web/src/lib/client-invite-platforms.ts:31-47",
-        "apps/api/src/services/connectors/factory.ts:154",
-        "apps/web/src/app/invite/[token]/manual-invite.config.tsx:96-110",
-        "apps/api/src/routes/client-auth/manual.routes.ts:10-11,161-205"
+        "manual-browser-persisted.json",
+        "manual-concurrency-verification.json#authorizationProgress",
+        "manual-verification-proposal.md"
       ],
       "status": "untested",
-      "environment_required": "source inspection only; local verification blocked",
-      "observation_status": "source_capability_needs_product_confirmation"
+      "environment_required": "local browser and isolated PostgreSQL; no live provider actions",
+      "observation_status": "partially_verified"
+    },
+    {
+      "id": "MANUAL-AGENCY-CONFIRM",
+      "flow": "Agency confirmation of reported manual access",
+      "route_source": "apps/web/src/components/access-request-detail/request-platforms-card.tsx; apps/api/src/routes/access-requests.ts; manual-confirmation.service.ts",
+      "role": "Agency user",
+      "prerequisites": "Pending local manual report; agency checks native access before real confirmation",
+      "steps": "Acknowledge Beehiiv; confirm; acknowledge Zapier; confirm; reload; inspect stored grants and audits",
+      "expected_result": "Partial then completed progress, preserved sibling evidence, actor/time audit, explicit manual review labels",
+      "observed_result": "Local browser and PostgreSQL verified both confirmations, completed after reload, active connection and two audit records",
+      "evidence": [
+        "manual-confirmation-browser.json",
+        "manual-confirmation-persistence.json"
+      ],
+      "status": "verified in browser",
+      "environment_required": "Disposable local PostgreSQL; synthetic development authentication with fixture principal mapping; no provider verification"
     }
   ]
 }

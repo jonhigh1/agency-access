@@ -32,6 +32,7 @@ vi.mock('@/lib/api/access-requests', () => ({
   getAuthorizationUrl: vi.fn((request: any) => `https://app.authhub.co/invite/${request.uniqueToken}`),
   cancelAccessRequest: vi.fn().mockResolvedValue({ data: { success: true } }),
   excludeMetaGrant: vi.fn().mockResolvedValue({ data: { id: 'grant-1', status: 'excluded' } }),
+  confirmManualAccess: vi.fn(),
   sendAccessRequestReminder: vi.fn(),
 }));
 
@@ -59,6 +60,7 @@ import * as inviteReminder from '@/lib/invite-reminder';
 describe('AccessRequestDetailPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(accessRequestsApi.getAccessRequest).mockReset();
   });
 
   it('renders editable actions for pending requests', async () => {
@@ -368,6 +370,71 @@ describe('AccessRequestDetailPage', () => {
     ));
     expect(await screen.findByText('Excluded')).toBeInTheDocument();
     expect(screen.getByText(/Agency owner: Client does not need this assignee/)).toBeInTheDocument();
+  });
+
+  it('refreshes request progress after manual access confirmation succeeds', async () => {
+    const user = userEvent.setup();
+    const baseRequest = {
+      id: 'request-manual',
+      agencyId: 'agency-1',
+      clientName: 'Manual Client',
+      clientEmail: 'manual@client.com',
+      status: 'partial' as const,
+      uniqueToken: 'token-manual',
+      expiresAt: '2026-10-10T00:00:00.000Z',
+      createdAt: '2026-10-01T00:00:00.000Z',
+      updatedAt: '2026-10-01T00:00:00.000Z',
+      platforms: [{
+        platformGroup: 'beehiiv',
+        products: [{ product: 'beehiiv', accessLevel: 'admin' as const, accounts: [] }],
+      }],
+    };
+    vi.mocked(accessRequestsApi.getAccessRequest)
+      .mockResolvedValueOnce({
+        data: {
+          ...baseRequest,
+          manualConfirmations: [{ platform: 'beehiiv', verificationStatus: 'pending' }],
+        },
+      })
+      .mockResolvedValueOnce({
+        data: {
+          ...baseRequest,
+          status: 'completed',
+          authorizationProgress: { completedPlatforms: ['beehiiv'], isComplete: true },
+          manualConfirmations: [{
+            platform: 'beehiiv',
+            verificationStatus: 'verified',
+            verificationMethod: 'manual_review',
+            verifiedAt: '2026-10-04T12:00:00.000Z',
+          }],
+        },
+      });
+    vi.mocked(accessRequestsApi.confirmManualAccess).mockResolvedValue({
+      data: {
+        confirmation: {
+          platform: 'beehiiv',
+          verificationStatus: 'verified',
+          verificationMethod: 'manual_review',
+          verifiedAt: '2026-10-04T12:00:00.000Z',
+        },
+        requestStatus: 'completed',
+      },
+    });
+
+    renderWithProviders(
+      <AccessRequestDetailPage params={Promise.resolve({ id: 'request-manual' })} />
+    );
+
+    await user.click(await screen.findByRole('checkbox', { name: /checked beehiiv access in the native platform/i }));
+    await user.click(screen.getByRole('button', { name: 'Confirm access manually' }));
+
+    await waitFor(() => expect(accessRequestsApi.confirmManualAccess).toHaveBeenCalledWith(
+      'request-manual',
+      'beehiiv',
+      expect.any(Function)
+    ));
+    expect(await screen.findByText('Confirmed by agency')).toBeInTheDocument();
+    expect(accessRequestsApi.getAccessRequest).toHaveBeenCalledTimes(2);
   });
 
   it('renders recovery state when request load fails', async () => {

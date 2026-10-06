@@ -1,0 +1,9 @@
+{
+  "agencyId": "dev_agency_123456789",
+  "clientId": "local-agency-client",
+  "requestId": "local-agency-manual-request",
+  "token": "local-agency-manual-invite",
+  "simulatedAuthentication": true,
+  "providersInvoked": 0,
+  "outboundRequestsDisabled": true
+}

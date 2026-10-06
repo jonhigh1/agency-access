@@ -1,0 +1,75 @@
+
+> @agency-platform/api@0.1.0 test:run
+> vitest run src/routes/__tests__/access-requests.routes.test.ts --maxWorkers=2
+
+
+ RUN  v4.0.16 /Users/jon.high/agency-access/apps/api
+
+ ❯ src/routes/__tests__/access-requests.routes.test.ts (29 tests | 4 failed) 196ms
+       ✓ should default the list limit to 50 when the query omits limit 123ms
+       ✓ should reject an oversized list limit with VALIDATION_ERROR 2ms
+       × rejects non-object JSON null before normalization 7ms
+       × rejects non-object JSON 42 before normalization 4ms
+       × rejects non-object JSON "invalid" before normalization 5ms
+       × rejects non-object JSON [] before normalization 5ms
+       ✓ should accept Record<string, string[]> platform payloads 4ms
+       ✓ should accept flat platform payloads 3ms
+       ✓ should return 400 when normalized platforms are empty 3ms
+       ✓ should ignore empty groups in object payload 2ms
+       ✓ should normalize hierarchical platform structure 2ms
+       ✓ should not require an authorization mode field in the request payload 3ms
+       ✓ logs audit event when Shopify submission details are viewed 2ms
+       ✓ does not log Shopify submission event when submission is pending 1ms
+       ✓ should normalize hierarchical platform payload before update 3ms
+       ✓ should return 400 for non-editable request status errors 2ms
+       ✓ should reject client identity mutations from request edit payloads 3ms
+       ✓ passes audit data into the atomic revoke service 3ms
+       ✓ surfaces database errors from the authorization lookup 2ms
+       ✓ passes the authenticated owner identity and confirmed reason to the service 4ms
+       ✓ rejects an unconfirmed exclusion before the service runs 2ms
+       ✓ should return enriched client payload from service 1ms
+       ✓ should return 404 when request token does not exist 1ms
+       ✓ should return 404 when request token is expired 1ms
+       ✓ should return 404 when request token has been revoked 1ms
+       ✓ sends reminder and writes audit log on success 1ms
+       ✓ returns 403 when agency does not match 1ms
+       ✓ returns 429 with retryAfter on cooldown 1ms
+       ✓ returns 503 when email is not configured 1ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 4 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/routes/__tests__/access-requests.routes.test.ts > Access Requests Routes - Platform Connection Validation > POST /access-requests - payload normalization > rejects non-object JSON null before normalization
+ FAIL  src/routes/__tests__/access-requests.routes.test.ts > Access Requests Routes - Platform Connection Validation > POST /access-requests - payload normalization > rejects non-object JSON 42 before normalization
+ FAIL  src/routes/__tests__/access-requests.routes.test.ts > Access Requests Routes - Platform Connection Validation > POST /access-requests - payload normalization > rejects non-object JSON "invalid" before normalization
+ FAIL  src/routes/__tests__/access-requests.routes.test.ts > Access Requests Routes - Platform Connection Validation > POST /access-requests - payload normalization > rejects non-object JSON [] before normalization
+AssertionError: expected 500 to be 400 // Object.is equality
+
+- Expected
++ Received
+
+- 400
++ 500
+
+ ❯ src/routes/__tests__/access-requests.routes.test.ts:129:35
+    127|         method: 'POST', url: '/access-requests', headers: { 'content-t…
+    128|       });
+    129|       expect(response.statusCode).toBe(400);
+       |                                   ^
+    130|       expect(response.json().error.code).toBe('VALIDATION_ERROR');
+    131|       expect(accessRequestService.createAccessRequest).not.toHaveBeenC…
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/4]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  4 failed | 25 passed (29)
+   Start at  15:12:39
+   Duration  775ms (transform 258ms, setup 14ms, import 478ms, tests 196ms, environment 0ms)
+
+npm error Lifecycle script `test:run` failed with error:
+npm error code 1
+npm error path /Users/jon.high/agency-access/apps/api
+npm error workspace @agency-platform/api@0.1.0
+npm error location /Users/jon.high/agency-access/apps/api
+npm error command failed
+npm error command sh -c vitest run src/routes/__tests__/access-requests.routes.test.ts --maxWorkers=2

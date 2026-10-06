@@ -1,0 +1,14 @@
+
+> @agency-platform/api@0.1.0 test:run
+> vitest run src/routes/__tests__/quota.routes.security.test.ts
+
+
+ RUN  v4.0.16 /Users/jon.high/agency-access/apps/api
+
+ ✓ src/routes/__tests__/quota.routes.security.test.ts (15 tests) 137ms
+
+ Test Files  1 passed (1)
+      Tests  15 passed (15)
+   Start at  14:54:57
+   Duration  377ms (transform 81ms, setup 14ms, import 146ms, tests 137ms, environment 0ms)
+

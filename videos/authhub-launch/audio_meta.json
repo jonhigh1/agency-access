@@ -1,0 +1,61 @@
+{
+  "bgm": {
+    "path": "assets/bgm/track.mp3",
+    "volume": 0.9,
+    "query": "percussive kinetic electronic, tight drums, no vocals, tension then a clean resolve",
+    "duration_s": 62
+  },
+  "bgm_pending": false,
+  "voices": [],
+  "sfx": [
+    {
+      "frame": 1,
+      "file": "assets/sfx/tick.mp3",
+      "offset_s": 0,
+      "duration_s": 7.778,
+      "volume": 0.35
+    },
+    {
+      "frame": 1,
+      "file": "assets/sfx/impact.mp3",
+      "offset_s": 0,
+      "duration_s": 5.387,
+      "volume": 0.35
+    },
+    {
+      "frame": 2,
+      "file": "assets/sfx/impact.mp3",
+      "offset_s": 0,
+      "duration_s": 5.387,
+      "volume": 0.35
+    },
+    {
+      "frame": 3,
+      "file": "assets/sfx/whoosh.mp3",
+      "offset_s": 0,
+      "duration_s": 1.58,
+      "volume": 0.35
+    },
+    {
+      "frame": 3,
+      "file": "assets/sfx/click.mp3",
+      "offset_s": 0,
+      "duration_s": 0.24,
+      "volume": 0.35
+    },
+    {
+      "frame": 4,
+      "file": "assets/sfx/tick.mp3",
+      "offset_s": 0,
+      "duration_s": 7.778,
+      "volume": 0.35
+    },
+    {
+      "frame": 5,
+      "file": "assets/sfx/impact.mp3",
+      "offset_s": 0,
+      "duration_s": 5.387,
+      "volume": 0.35
+    }
+  ]
+}

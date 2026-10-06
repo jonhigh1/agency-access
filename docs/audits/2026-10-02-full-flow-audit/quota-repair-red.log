@@ -1,0 +1,205 @@
+
+> @agency-platform/api@0.1.0 test:run
+> vitest run src/routes/__tests__/quota.routes.security.test.ts
+
+
+ RUN  v4.0.16 /Users/jon.high/agency-access/apps/api
+
+stderr | src/routes/__tests__/quota.routes.security.test.ts > quota routes - principal ownership and validation > returns an authentication error when token verification yields null
+Error fetching quota: TypeError: Cannot read properties of null (reading 'orgId')
+    at Object.<anonymous> (/Users/jon.high/agency-access/apps/api/src/routes/quota.routes.ts:36:30)
+    at processTicksAndRejections (node:internal/process/task_queues:103:5)
+
+stderr | src/routes/__tests__/quota.routes.security.test.ts > quota routes - principal ownership and validation > returns an authentication error when token verification yields reject
+Error fetching quota: Error: Invalid token
+    at /Users/jon.high/agency-access/apps/api/src/routes/__tests__/quota.routes.security.test.ts:62:72
+    at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:1026:60
+    at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:145:11
+    at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:915:26
+    at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:1243:20
+    at new Promise (<anonymous>)
+    at runWithTimeout (file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:1209:10)
+    at file:///Users/jon.high/agency-access/node_modules/@vitest/runner/dist/index.js:1653:37
+    at Traces.$ (file:///Users/jon.high/agency-access/node_modules/vitest/dist/chunks/traces.U4xDYhzZ.js:115:27)
+    at trace (file:///Users/jon.high/agency-access/node_modules/vitest/dist/chunks/test.B8ej_ZHS.js:239:21)
+
+stderr | src/routes/__tests__/quota.routes.security.test.ts > quota routes - principal ownership and validation > rejects invalid quota input before checking usage: undefined
+Error checking quota: TypeError: Cannot read properties of undefined (reading 'metric')
+    at Object.<anonymous> (/Users/jon.high/agency-access/apps/api/src/routes/quota.routes.ts:107:60)
+    at processTicksAndRejections (node:internal/process/task_queues:103:5)
+
+ ❯ src/routes/__tests__/quota.routes.security.test.ts (15 tests | 10 failed) 130ms
+     ✓ rejects missing credentials on GET without querying quota 103ms
+     ✓ rejects missing credentials on POST without querying quota 2ms
+     × uses the resolved internal agency ID, not the Clerk organization ID or supplied query 5ms
+     × supports a verified personal account without an organization 1ms
+     × checks quota against the resolved agency with a validated amount 2ms
+     × returns an authentication error when token verification yields null 2ms
+     × returns an authentication error when token verification yields reject 2ms
+     × rejects a principal whose agency cannot be resolved 1ms
+     × rejects invalid quota input before checking usage: undefined 3ms
+     ✓ rejects invalid quota input before checking usage: {} 5ms
+     ✓ rejects invalid quota input before checking usage: {"metric":"unknown"} 1ms
+     × rejects invalid quota input before checking usage: {"metric":"clients","requestedAmount":-1} 1ms
+     × rejects invalid quota input before checking usage: {"metric":"clients","requestedAmount":0} 1ms
+     × rejects invalid quota input before checking usage: {"metric":"clients","requestedAmount":1.5} 1ms
+     ✓ reports missing persisted agency usage honestly 1ms
+
+⎯⎯⎯⎯⎯⎯ Failed Tests 10 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/routes/__tests__/quota.routes.security.test.ts > quota routes - principal ownership and validation > uses the resolved internal agency ID, not the Clerk organization ID or supplied query
+AssertionError: expected "vi.fn()" to be called with arguments: [ 'agency-uuid' ]
+
+Received: 
+
+  1st vi.fn() call:
+
+  [
+-   "agency-uuid",
++   "org-1",
+  ]
+
+
+Number of calls: 1
+
+ ❯ src/routes/__tests__/quota.routes.security.test.ts:44:35
+     42|     expect(response.statusCode).toBe(200);
+     43|     expect(response.json().data.currentTier).toBe('SCALE');
+     44|     expect(quotaService.getUsage).toHaveBeenCalledWith('agency-uuid');
+       |                                   ^
+     45|     expect(resolvePrincipalAgency).toHaveBeenCalledOnce();
+     46|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/10]⎯
+
+ FAIL  src/routes/__tests__/quota.routes.security.test.ts > quota routes - principal ownership and validation > supports a verified personal account without an organization
+AssertionError: expected 400 to be 200 // Object.is equality
+
+- Expected
++ Received
+
+- 200
++ 400
+
+ ❯ src/routes/__tests__/quota.routes.security.test.ts:51:33
+     49|     vi.mocked(verifyToken).mockResolvedValue({ sub: 'user-personal' } …
+     50|     const response = await app.inject({ method: 'GET', url: '/api/quot…
+     51|     expect(response.statusCode).toBe(200);
+       |                                 ^
+     52|     expect(quotaService.getUsage).toHaveBeenCalledWith('agency-uuid');
+     53|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[2/10]⎯
+
+ FAIL  src/routes/__tests__/quota.routes.security.test.ts > quota routes - principal ownership and validation > checks quota against the resolved agency with a validated amount
+AssertionError: expected "vi.fn()" to be called with arguments: [ { agencyId: 'agency-uuid', …(3) } ]
+
+Received: 
+
+  1st vi.fn() call:
+
+  [
+    {
+      "action": "create",
+-     "agencyId": "agency-uuid",
++     "agencyId": "org-1",
+      "metric": "clients",
+      "requestedAmount": 2,
+    },
+  ]
+
+
+Number of calls: 1
+
+ ❯ src/routes/__tests__/quota.routes.security.test.ts:58:37
+     56|     const response = await app.inject({ method: 'POST', url: '/api/quo…
+     57|     expect(response.statusCode).toBe(200);
+     58|     expect(quotaService.checkQuota).toHaveBeenCalledWith({ agencyId: '…
+       |                                     ^
+     59|   });
+     60| 
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[3/10]⎯
+
+ FAIL  src/routes/__tests__/quota.routes.security.test.ts > quota routes - principal ownership and validation > returns an authentication error when token verification yields null
+ FAIL  src/routes/__tests__/quota.routes.security.test.ts > quota routes - principal ownership and validation > returns an authentication error when token verification yields reject
+AssertionError: expected 500 to be 401 // Object.is equality
+
+- Expected
++ Received
+
+- 401
++ 500
+
+ ❯ src/routes/__tests__/quota.routes.security.test.ts:65:33
+     63|     else vi.mocked(verifyToken).mockResolvedValue(null as any);
+     64|     const response = await app.inject({ method: 'GET', url: '/api/quot…
+     65|     expect(response.statusCode).toBe(401);
+       |                                 ^
+     66|     expect(response.json().error.code).toBe('UNAUTHORIZED');
+     67|     expect(resolvePrincipalAgency).not.toHaveBeenCalled();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[4/10]⎯
+
+ FAIL  src/routes/__tests__/quota.routes.security.test.ts > quota routes - principal ownership and validation > rejects a principal whose agency cannot be resolved
+AssertionError: expected 200 to be 403 // Object.is equality
+
+- Expected
++ Received
+
+- 403
++ 200
+
+ ❯ src/routes/__tests__/quota.routes.security.test.ts:74:33
+     72|     vi.mocked(resolvePrincipalAgency).mockResolvedValue({ data: null, …
+     73|     const response = await app.inject({ method: 'GET', url: '/api/quot…
+     74|     expect(response.statusCode).toBe(403);
+       |                                 ^
+     75|     expect(quotaService.getUsage).not.toHaveBeenCalled();
+     76|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[5/10]⎯
+
+ FAIL  src/routes/__tests__/quota.routes.security.test.ts > quota routes - principal ownership and validation > rejects invalid quota input before checking usage: undefined
+AssertionError: expected 500 to be 400 // Object.is equality
+
+- Expected
++ Received
+
+- 400
++ 500
+
+ ❯ src/routes/__tests__/quota.routes.security.test.ts:80:33
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[6/10]⎯
+
+ FAIL  src/routes/__tests__/quota.routes.security.test.ts > quota routes - principal ownership and validation > rejects invalid quota input before checking usage: {"metric":"clients","requestedAmount":-1}
+ FAIL  src/routes/__tests__/quota.routes.security.test.ts > quota routes - principal ownership and validation > rejects invalid quota input before checking usage: {"metric":"clients","requestedAmount":0}
+ FAIL  src/routes/__tests__/quota.routes.security.test.ts > quota routes - principal ownership and validation > rejects invalid quota input before checking usage: {"metric":"clients","requestedAmount":1.5}
+AssertionError: expected 200 to be 400 // Object.is equality
+
+- Expected
++ Received
+
+- 400
++ 200
+
+ ❯ src/routes/__tests__/quota.routes.security.test.ts:80:33
+
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[7/10]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  10 failed | 5 passed (15)
+   Start at  14:54:25
+   Duration  375ms (transform 76ms, setup 14ms, import 146ms, tests 130ms, environment 0ms)
+
+npm error Lifecycle script `test:run` failed with error:
+npm error code 1
+npm error path /Users/jon.high/agency-access/apps/api
+npm error workspace @agency-platform/api@0.1.0
+npm error location /Users/jon.high/agency-access/apps/api
+npm error command failed
+npm error command sh -c vitest run src/routes/__tests__/quota.routes.security.test.ts

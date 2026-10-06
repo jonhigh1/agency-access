@@ -1,0 +1,18 @@
+{
+  "environment": "disposable local fixtures",
+  "platform": "kit",
+  "token": "local-missing-target",
+  "browser": {
+    "url": "http://localhost:3100/invite/local-missing-target/kit/manual",
+    "heading": "This link is not working",
+    "message": "Your agency has not configured a Kit invite email. Contact your agency, then try again.",
+    "retry": "same recoverable state",
+    "placeholderEmailRendered": false
+  },
+  "api": {
+    "status": 409,
+    "code": "MANUAL_INVITE_TARGET_UNAVAILABLE"
+  },
+  "persistedConnectionCount": 0,
+  "providerCalls": false
+}

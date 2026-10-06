@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1920, height=1080">
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js" integrity="sha384-sG0Hv1tP1lZCk9KQmrIbY/XNwi+OY84GQqhMscbnsoBFqAz8KNCil1kvfL3Hbbk2" crossorigin="anonymous"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: #000;
+      }
+      #root {
+        position: relative;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: #FAFAFA;
+      }
+      .scene {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <div data-hf-id="hf-j7pz" id="root" data-composition-id="main" data-start="0" data-duration="30" data-width="1920" data-height="1080">
+      <div data-hf-id="hf-epls" id="el-01-chase" class="scene" data-composition-id="01-chase" data-composition-src="compositions/frames/01-chase.html" data-start="0" data-duration="5.5" data-track-index="1"></div>
+
+      <div data-hf-id="hf-dc5u" id="el-02-claim" class="scene" data-composition-id="02-claim" data-composition-src="compositions/frames/02-claim.html" data-start="5.5" data-duration="5" data-track-index="1"></div>
+
+      <div data-hf-id="hf-5jfr" id="el-03-request" class="scene" data-composition-id="03-request" data-composition-src="compositions/frames/03-request.html" data-start="10.5" data-duration="8" data-track-index="1"></div>
+
+      <div data-hf-id="hf-wkt7" id="el-04-status" class="scene" data-composition-id="04-status" data-composition-src="compositions/frames/04-status.html" data-start="18.5" data-duration="5.5" data-track-index="1"></div>
+
+      <div data-hf-id="hf-4mm8" id="el-05-lockup" class="scene" data-composition-id="05-lockup" data-composition-src="compositions/frames/05-lockup.html" data-start="24" data-duration="6" data-track-index="1"></div>
+
+      <!-- BGM -->
+      <audio data-hf-id="hf-jao1" id="el-bgm" src="assets/bgm/track.mp3" data-start="0" data-duration="30" data-track-index="11" data-volume="0.9"></audio>
+
+      <!-- SFX -->
+      <audio data-hf-id="hf-trqz" id="el-sfx-0" src="assets/sfx/tick.mp3" data-start="0" data-duration="7.778" data-track-index="20" data-volume="0.35"></audio>
+      <audio data-hf-id="hf-7we4" id="el-sfx-1" src="assets/sfx/impact.mp3" data-start="0" data-duration="5.387" data-track-index="21" data-volume="0.35"></audio>
+      <audio data-hf-id="hf-d38k" id="el-sfx-2" src="assets/sfx/impact.mp3" data-start="5.5" data-duration="5.387" data-track-index="22" data-volume="0.35"></audio>
+      <audio data-hf-id="hf-qyzh" id="el-sfx-3" src="assets/sfx/whoosh.mp3" data-start="10.5" data-duration="1.58" data-track-index="23" data-volume="0.35"></audio>
+      <audio data-hf-id="hf-vlw9" id="el-sfx-4" src="assets/sfx/click.mp3" data-start="10.5" data-duration="0.24" data-track-index="24" data-volume="0.35"></audio>
+      <audio data-hf-id="hf-sxj3" id="el-sfx-5" src="assets/sfx/tick.mp3" data-start="18.5" data-duration="7.778" data-track-index="25" data-volume="0.35"></audio>
+      <audio data-hf-id="hf-mc4i" id="el-sfx-6" src="assets/sfx/impact.mp3" data-start="24" data-duration="5.387" data-track-index="26" data-volume="0.35"></audio>
+    </div>
+
+    <script>
+      window.__timelines = window.__timelines || {};
+      window.__timelines["main"] = gsap.timeline({ paused: true });
+    </script>
+  </body>
+</html>

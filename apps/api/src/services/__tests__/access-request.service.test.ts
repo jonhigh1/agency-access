@@ -84,6 +84,7 @@ vi.mock('@/lib/prisma', () => ({
     webhookEvent: {
       create: vi.fn(),
     },
+    $queryRaw: vi.fn(),
     $transaction: vi.fn(),
   },
 }));
@@ -109,6 +110,8 @@ describe('AccessRequestService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     vi.useRealTimers();
+    vi.mocked(prisma.$transaction).mockImplementation(async (callback: any) => callback(prisma));
+    vi.mocked(prisma.$queryRaw).mockResolvedValue([{ id: 'request-1' }] as any);
     vi.mocked(metaAssetsService.getAssignableRecipients).mockResolvedValue({
       data: [{ type: 'human', id: 'person-1', name: 'Jon High' }],
       error: null,
@@ -1276,6 +1279,72 @@ describe('AccessRequestService', () => {
   });
 
   describe('getAccessRequestById', () => {
+    it('returns only the safe manual confirmation projection', async () => {
+      const grantedAssets = {
+        beehiiv: {
+          platform: 'beehiiv',
+          verificationStatus: 'verified',
+          verificationMethod: 'manual_review',
+          verifiedAt: '2026-10-04T16:00:00.000Z',
+          verifiedBy: 'user_1',
+          agencyEmail: 'access@agency.test',
+        },
+        shopify: {
+          platform: 'shopify',
+          verificationStatus: 'pending',
+          shopDomain: 'store.myshopify.com',
+          collaboratorCode: '1234',
+          collaboratorCodeHash: 'hash',
+        },
+        mailchimp: {
+          platform: 'mailchimp',
+          verificationStatus: 'pending',
+          agencyEmail: 'unrequested@agency.test',
+        },
+      };
+      vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue({
+        id: 'request-manual',
+        agencyId: 'agency-1',
+        platforms: [
+          { platform: 'beehiiv', accessLevel: 'manage' },
+          { platform: 'shopify', accessLevel: 'manage' },
+        ],
+      } as any);
+      vi.mocked(prisma.clientConnection.findFirst).mockResolvedValue({
+        id: 'connection-1',
+        createdAt: new Date('2026-10-04T15:00:00.000Z'),
+        grantedAssets,
+      } as any);
+      vi.mocked(prisma.clientConnection.findMany).mockResolvedValue([{
+        status: 'pending_verification',
+        grantedAssets,
+        authorizations: [],
+        metaAssetGrants: [],
+      }] as any);
+
+      const result = await accessRequestService.getAccessRequestById('request-manual');
+
+      expect((result.data as any).manualConfirmations).toEqual([
+        {
+          platform: 'beehiiv',
+          verificationStatus: 'verified',
+          verificationMethod: 'manual_review',
+          verifiedAt: '2026-10-04T16:00:00.000Z',
+        },
+        { platform: 'shopify', verificationStatus: 'pending' },
+      ]);
+      expect((result.data as any).shopifySubmission).toEqual({
+        status: 'submitted',
+        connectionId: 'connection-1',
+        shopDomain: 'store.myshopify.com',
+        collaboratorCode: '1234',
+        submittedAt: '2026-10-04T15:00:00.000Z',
+      });
+      expect(JSON.stringify(result.data)).not.toContain('access@agency.test');
+      expect(JSON.stringify(result.data)).not.toContain('user_1');
+      expect(JSON.stringify(result.data)).not.toContain('unrequested@agency.test');
+    });
+
     it('includes stored intake answers in the agency-facing payload (G2)', async () => {
       vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue({
         id: 'request-1',
@@ -1900,6 +1969,51 @@ describe('AccessRequestService', () => {
   });
 
   describe('markRequestAuthorized', () => {
+    it('locks the request and persists the lifecycle decision in one transaction', async () => {
+      const transaction = {
+        $queryRaw: vi.fn().mockResolvedValue([{ id: 'request-1' }]),
+        accessRequest: {
+          findUnique: vi.fn()
+            .mockResolvedValueOnce({
+              id: 'request-1',
+              status: 'partial',
+              expiresAt: new Date(Date.now() + 100000),
+              platforms: [{ platform: 'beehiiv', accessLevel: 'manage' }],
+              metaAccessConfig: null,
+            })
+            .mockResolvedValueOnce({
+              id: 'request-1',
+              status: 'partial',
+              agencyId: 'agency-1',
+              authorizedAt: null,
+              clientEmail: 'client@example.com',
+              platforms: [{ platform: 'beehiiv', accessLevel: 'manage' }],
+            }),
+          update: vi.fn().mockResolvedValue({ id: 'request-1', status: 'completed' }),
+        },
+        clientConnection: {
+          findMany: vi.fn().mockResolvedValue([{
+            status: 'pending_verification',
+            grantedAssets: { beehiiv: { platform: 'beehiiv', verificationStatus: 'verified' } },
+            authorizations: [],
+            metaAssetGrants: [],
+          }]),
+        },
+      };
+      vi.mocked(prisma.$transaction).mockImplementation(async (callback: any) => callback(transaction));
+
+      const result = await accessRequestService.markRequestAuthorized('request-1');
+
+      expect(result).toMatchObject({ data: { status: 'completed' }, error: null, previousStatus: 'partial' });
+      expect(transaction.$queryRaw).toHaveBeenCalledTimes(1);
+      expect(transaction.clientConnection.findMany).toHaveBeenCalledTimes(1);
+      expect(transaction.accessRequest.update).toHaveBeenCalledWith({
+        where: { id: 'request-1' },
+        data: { status: 'completed', authorizedAt: expect.any(Date) },
+      });
+      expect(prisma.accessRequest.update).not.toHaveBeenCalled();
+    });
+
     it.each([
       ['revoked', 'REQUEST_REVOKED'],
       ['expired', 'REQUEST_EXPIRED'],

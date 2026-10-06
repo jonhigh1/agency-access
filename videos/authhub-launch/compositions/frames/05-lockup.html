@@ -1,0 +1,183 @@
+<template>
+  <div data-hf-id="hf-5vo1" id="root" data-composition-id="05-lockup" data-duration="6" data-width="1920" data-height="1080">
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      #root {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+        container-type: size;
+        isolation: isolate;
+        font-synthesis: none;
+        pointer-events: none;
+      }
+
+      .clip {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+        container-type: size;
+        display: grid;
+        place-items: center;
+        padding-bottom: 17%;
+        background: #09090b;
+      }
+
+      [id="05-lockup-lockup"] {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        width: 100cqw;
+        text-align: center;
+      }
+
+      [id="05-lockup-wordmark"] {
+        display: flex;
+        align-items: baseline;
+        justify-content: center;
+        margin: 0;
+        color: #fafafa;
+        font-family: "Archivo Black", sans-serif;
+        font-size: 15.5cqw;
+        font-weight: 800;
+        line-height: 0.84;
+        letter-spacing: -0.02em;
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+
+      [id^="05-lockup-letter-"] {
+        display: inline-block;
+        flex: 0 0 auto;
+      }
+
+      [id="05-lockup-mark"] {
+        display: inline-block;
+        flex: 0 0 auto;
+        width: 0.28em;
+        height: 0.28em;
+        margin-left: 0.1em;
+        background: #ff6b35;
+        box-shadow: 1.25cqw 1.25cqw 0 #09090b;
+      }
+
+      [id="05-lockup-tagline"] {
+        margin: 2.4cqw 0 0;
+        color: #ff6b35;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 1.7cqw;
+        font-weight: 400;
+        line-height: 1.2;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+      }
+
+      [id="05-lockup-url"] {
+        margin: 1.6cqw 0 0;
+        color: #fafafa;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 1.5cqw;
+        font-weight: 400;
+        line-height: 1;
+        letter-spacing: 0.14em;
+        text-transform: none;
+      }
+    </style>
+
+    <div data-hf-id="hf-jk4p" id="05-lockup-field" class="clip" data-start="0" data-duration="6" data-track-index="0">
+      <div data-hf-id="hf-9b3i" id="05-lockup-lockup">
+        <h1 data-hf-id="hf-y9o5" id="05-lockup-wordmark" aria-label="AUTHHUB" role="img">
+          <span data-hf-id="hf-0k88" id="05-lockup-letter-0" aria-hidden="true">A</span>
+          <span data-hf-id="hf-n14v" id="05-lockup-letter-1" aria-hidden="true">U</span>
+          <span data-hf-id="hf-aaxp" id="05-lockup-letter-2" aria-hidden="true">T</span>
+          <span data-hf-id="hf-zkg6" id="05-lockup-letter-3" aria-hidden="true">H</span>
+          <span data-hf-id="hf-dbm7" id="05-lockup-letter-4" aria-hidden="true">H</span>
+          <span data-hf-id="hf-48sz" id="05-lockup-letter-5" aria-hidden="true">U</span>
+          <span data-hf-id="hf-ab47" id="05-lockup-letter-6" aria-hidden="true">B</span>
+          <span data-hf-id="hf-75xt" id="05-lockup-mark" aria-hidden="true"></span>
+        </h1>
+        <p data-hf-id="hf-mjty" id="05-lockup-tagline">ONE CLIENT LINK</p>
+        <p data-hf-id="hf-wpz3" id="05-lockup-url">authhub.co</p>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <script>
+      (function () {
+        "use strict";
+
+        var wordmark = document.getElementById("05-lockup-wordmark");
+        var letters = [
+          document.getElementById("05-lockup-letter-0"),
+          document.getElementById("05-lockup-letter-1"),
+          document.getElementById("05-lockup-letter-2"),
+          document.getElementById("05-lockup-letter-3"),
+          document.getElementById("05-lockup-letter-4"),
+          document.getElementById("05-lockup-letter-5"),
+          document.getElementById("05-lockup-letter-6"),
+        ];
+        var mark = document.getElementById("05-lockup-mark");
+        var tagline = document.getElementById("05-lockup-tagline");
+        var url = document.getElementById("05-lockup-url");
+        var tl = gsap.timeline({ paused: true });
+
+        tl.fromTo(
+          letters,
+          { opacity: 0, x: "-0.55em", y: "0.42em" },
+          {
+            opacity: 1,
+            x: "0em",
+            y: "0em",
+            duration: 0.95,
+            stagger: { amount: 1.05, from: "start" },
+            ease: "expo.out",
+          },
+          0,
+        );
+
+        tl.fromTo(
+          wordmark,
+          { scale: 1.04, transformOrigin: "50% 100%" },
+          { scale: 1, duration: 2.2, ease: "expo.out" },
+          0,
+        );
+
+        tl.fromTo(
+          mark,
+          { opacity: 0, scale: 1.12, y: "-0.18em", transformOrigin: "50% 100%" },
+          {
+            opacity: 1,
+            scale: 1,
+            y: "0em",
+            duration: 0.62,
+            ease: "power4.out",
+          },
+          1.58,
+        );
+
+        tl.fromTo(
+          tagline,
+          { opacity: 0, y: "0.9em" },
+          { opacity: 1, y: "0em", duration: 1.05, ease: "power3.out" },
+          2.2,
+        );
+
+        tl.fromTo(
+          url,
+          { opacity: 0, scaleX: 1.06, transformOrigin: "50% 50%" },
+          { opacity: 1, scaleX: 1, duration: 0.9, ease: "power2.out" },
+          3.6,
+        );
+
+        tl.seek(0);
+        window.__timelines = window.__timelines || {};
+        window.__timelines["05-lockup"] = tl;
+      })();
+    </script>
+  </div>
+</template>

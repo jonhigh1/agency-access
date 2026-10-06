@@ -92,6 +92,7 @@ function ClientsPageContent() {
 
   const clients = clientsResponse?.data?.data || [];
   const pagination = clientsResponse?.data?.pagination || { total: 0, limit: 50, offset };
+  const isSearchPending = searchQuery !== debouncedSearchQuery;
 
   const handleCreateClientClick = async () => {
     try {
@@ -189,7 +190,10 @@ function ClientsPageContent() {
         </div>
 
         {/* Empty state */}
-        {clients.length === 0 && !searchQuery && (
+        {isSearchPending && (
+          <p role="status" className="mb-4 text-muted-foreground">Updating client search...</p>
+        )}
+        {clients.length === 0 && !searchQuery && !isSearchPending && (
           <EmptyState
             title="No clients yet"
             description="Clients will appear here once they authorize their platforms through access requests."
@@ -199,7 +203,7 @@ function ClientsPageContent() {
         )}
 
         {/* No search results */}
-        {clients.length === 0 && searchQuery && (
+        {clients.length === 0 && searchQuery && !isSearchPending && (
           <div className="border border-black/10 bg-card py-12 text-center">
             <div className="inline-flex p-4 bg-muted rounded-full mb-4">
               <Search className="h-8 w-8 text-muted-foreground" />

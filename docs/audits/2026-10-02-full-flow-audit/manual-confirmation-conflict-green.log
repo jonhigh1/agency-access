@@ -1,0 +1,15 @@
+
+> @agency-platform/api@0.1.0 test:run
+> vitest run src/routes/__tests__/manual-confirmations.routes.test.ts src/services/__tests__/manual-confirmation.service.test.ts --maxWorkers=2
+
+
+ RUN  v4.0.16 /Users/jon.high/agency-access/apps/api
+
+ ✓ src/services/__tests__/manual-confirmation.service.test.ts (11 tests) 10ms
+ ✓ src/routes/__tests__/manual-confirmations.routes.test.ts (7 tests) 127ms
+
+ Test Files  2 passed (2)
+      Tests  18 passed (18)
+   Start at  15:11:08
+   Duration  648ms (transform 267ms, setup 24ms, import 521ms, tests 137ms, environment 0ms)
+

@@ -1,0 +1,66 @@
+{
+  "verifiedReplay": {
+    "response": {
+      "status": 200,
+      "body": {
+        "data": {
+          "connectionId": "4599aa60-b859-4256-b248-38793732e568",
+          "status": "active",
+          "agencyEmail": "team@fixture-agency.invalid",
+          "message": "Manual invitation initiated. Waiting for agency to accept Beehiiv team invite."
+        },
+        "error": null
+      }
+    },
+    "before": {
+      "client_email": "verified-client@fixture-client.invalid",
+      "status": "active",
+      "granted_assets": {
+        "beehiiv": {
+          "platform": "beehiiv",
+          "verifiedAt": "2026-10-02T00:00:00Z",
+          "agencyEmail": "team@fixture-agency.invalid",
+          "invitationSentAt": "2026-10-01T00:00:00Z",
+          "verificationMethod": "manual_review",
+          "verificationStatus": "verified"
+        },
+        "google_ads": {
+          "selectedAccountIds": [
+            "fixture-account"
+          ]
+        }
+      }
+    },
+    "after": {
+      "client_email": "verified-client@fixture-client.invalid",
+      "status": "active",
+      "granted_assets": {
+        "beehiiv": {
+          "platform": "beehiiv",
+          "verifiedAt": "2026-10-02T00:00:00Z",
+          "agencyEmail": "team@fixture-agency.invalid",
+          "invitationSentAt": "2026-10-01T00:00:00Z",
+          "verificationMethod": "manual_review",
+          "verificationStatus": "verified"
+        },
+        "google_ads": {
+          "selectedAccountIds": [
+            "fixture-account"
+          ]
+        }
+      }
+    },
+    "unchanged": true
+  },
+  "completedReplay": {
+    "status": 409,
+    "body": {
+      "data": null,
+      "error": {
+        "code": "REQUEST_COMPLETED",
+        "message": "Access request has already been completed"
+      }
+    }
+  },
+  "boundary": "Real local routes and disposable PostgreSQL, manually seeded verified state; no provider verification"
+}

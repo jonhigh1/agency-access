@@ -1,3 +1,4 @@
+import { mockJsonTransactions } from '../../../__tests__/json-transaction-mock';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { registerAssetRoutes } from '../assets.routes';
@@ -125,8 +126,7 @@ describe('Client Auth Asset Routes - Meta', () => {
     });
     vi.mocked(prisma.metaAssetGrant.findUnique).mockResolvedValue(null);
     vi.mocked(prisma.metaAssetGrant.findMany).mockResolvedValue([] as any);
-    vi.mocked(prisma.$transaction).mockImplementation(async (callback: any) => callback(prisma));
-    vi.mocked(prisma.$queryRaw).mockResolvedValue([{ id: 'conn-1', granted_assets: {} }] as any);
+    mockJsonTransactions(prisma);
 
     vi.mocked(accessRequestService.markRequestAuthorized).mockResolvedValue({
       data: null,
@@ -2567,7 +2567,7 @@ describe('Client Auth Asset Routes - Meta', () => {
         clientEmail: 'client@example.com',
         grantedAssets: { meta_ads: { selectedBusinessId: 'biz_client_2', adAccounts: ['act_1'] } },
       } as any);
-      vi.mocked(prisma.$queryRaw).mockResolvedValue([{
+      vi.mocked(prisma.$queryRaw).mockResolvedValueOnce([{
         id: 'conn-1',
         granted_assets: { meta_ads: { selectedBusinessId: 'biz_client_2', adAccounts: ['act_1'] } },
       }] as any);

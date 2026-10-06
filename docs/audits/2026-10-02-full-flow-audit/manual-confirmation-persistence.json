@@ -1,0 +1,136 @@
+{
+  "environment": {
+    "database": "Disposable loopback PostgreSQL",
+    "port": 55441,
+    "workersEnabled": false,
+    "webhookEndpointsSeeded": 0,
+    "providersInvoked": 0
+  },
+  "cases": [
+    {
+      "name": "first_confirmation_is_partial_and_preserves_siblings",
+      "passed": true,
+      "observed": {
+        "resultStatus": "partial",
+        "persistedStatus": "partial",
+        "siblingStatus": "pending"
+      }
+    },
+    {
+      "name": "repeated_confirmation_is_idempotent_with_one_platform_audit",
+      "passed": true,
+      "observed": {
+        "auditCount": 1,
+        "verifiedAtStable": true
+      }
+    },
+    {
+      "name": "second_confirmation_completes_request_and_records_each_platform",
+      "passed": true,
+      "observed": {
+        "resultStatus": "completed",
+        "persistedStatus": "completed",
+        "auditCount": 2
+      }
+    },
+    {
+      "name": "completed_replay_keeps_single_audits_and_single_local_notification",
+      "passed": true,
+      "observed": {
+        "auditCount": 2,
+        "notificationCalls": 1
+      }
+    },
+    {
+      "name": "request_projection_exposes_only_safe_manual_confirmation_fields",
+      "passed": true,
+      "observed": {
+        "manualConfirmations": [
+          {
+            "platform": "beehiiv",
+            "verificationStatus": "verified",
+            "verificationMethod": "manual_review",
+            "verifiedAt": "2026-10-04T22:02:45.376Z"
+          },
+          {
+            "platform": "mailchimp",
+            "verificationStatus": "verified",
+            "verificationMethod": "manual_review",
+            "verifiedAt": "2026-10-04T22:02:45.409Z"
+          }
+        ],
+        "rawGrantedAssetsPresent": false
+      }
+    },
+    {
+      "name": "tenant_expiry_membership_and_evidence_guards_reject",
+      "passed": true,
+      "observed": {
+        "rejectionCodes": [
+          "NOT_FOUND",
+          "REQUEST_EXPIRED",
+          "PLATFORM_NOT_REQUESTED",
+          "MANUAL_EVIDENCE_NOT_FOUND"
+        ]
+      }
+    },
+    {
+      "name": "audit_failure_rolls_back_confirmation_transaction",
+      "passed": true,
+      "observed": {
+        "errorCode": "INTERNAL_ERROR",
+        "evidenceStatus": "pending",
+        "auditCount": 0
+      }
+    },
+    {
+      "name": "concurrent_confirmations_complete_without_lost_sibling_data",
+      "passed": true,
+      "observed": {
+        "returnedStatuses": [
+          "completed",
+          "partial"
+        ],
+        "persistedStatus": "completed",
+        "auditCount": 2
+      }
+    },
+    {
+      "name": "delayed_older_partial_evaluation_cannot_regress_completed_state",
+      "passed": true,
+      "observed": {
+        "newerBlockedBehindLifecycleLock": true,
+        "olderReturnedStatus": "partial",
+        "newerReturnedStatus": "completed",
+        "persistedStatus": "completed"
+      }
+    }
+  ],
+  "notificationCalls": [
+    {
+      "agencyId": "1ea44a52-304a-4d7c-82f8-2db2a42a8eb1",
+      "accessRequestId": "a9adf6aa-fff1-4552-9543-bb7ecc794c4d",
+      "platforms": [
+        "beehiiv",
+        "mailchimp"
+      ]
+    },
+    {
+      "agencyId": "1ea44a52-304a-4d7c-82f8-2db2a42a8eb1",
+      "accessRequestId": "29d97f7d-bc3b-4b29-a195-59f1d57299b2",
+      "platforms": [
+        "klaviyo",
+        "zapier"
+      ]
+    },
+    {
+      "agencyId": "1ea44a52-304a-4d7c-82f8-2db2a42a8eb1",
+      "accessRequestId": "10929c3a-b08e-4a5f-8961-546227def437",
+      "platforms": [
+        "pinterest",
+        "kit"
+      ]
+    }
+  ],
+  "passed": true
+}

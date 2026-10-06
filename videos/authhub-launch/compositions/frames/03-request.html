@@ -1,0 +1,503 @@
+<template>
+  <div data-hf-id="hf-g0xg" id="root" data-composition-id="03-request" data-duration="8" data-width="1920" data-height="1080">
+    <style>
+      #root,
+      #root * {
+        box-sizing: border-box;
+      }
+
+      #root {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+        container-type: size;
+        color: #09090b;
+        font-family: "Archivo Black", sans-serif;
+        font-weight: 400;
+      }
+
+      #root [data-el="field"],
+      #root [data-el="kicker-clip"],
+      #root [data-el="window-clip"],
+      #root [data-el="sent-clip"] {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+      }
+
+      #root [data-el="field"] {
+        background: #fafafa;
+      }
+
+      #root [data-el="kicker"] {
+        position: absolute;
+        top: 3.3cqw;
+        left: calc(50% - 33cqw);
+        margin: 0;
+        padding: 0.5cqw 1cqw;
+        background: #09090b;
+        color: #fafafa;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 1.5cqw;
+        font-weight: 400;
+        letter-spacing: 0.14em;
+        line-height: 1.2;
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+
+      #root [data-el="stage"] {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 66cqw;
+        height: 50cqh;
+        margin-top: -25cqh;
+        margin-left: -33cqw;
+      }
+
+      #root [data-el="device"] {
+        display: grid;
+        grid-template-rows: auto minmax(0, 1fr);
+        width: 100%;
+        height: 100%;
+        overflow: visible;
+        border: 0.21cqw solid #09090b;
+        background: #fafafa;
+        box-shadow: 1.25cqw 1.25cqw 0 #09090b;
+      }
+
+      #root [data-el="bar"] {
+        display: flex;
+        align-items: center;
+        gap: 1cqw;
+        padding: 1.05cqh 1.4cqw;
+        border-bottom: 0.21cqw solid #09090b;
+        background: #fafafa;
+      }
+
+      #root [data-el="bar"]::after {
+        content: "";
+        flex: 0 0 3.1cqw;
+      }
+
+      #root [data-el="dots"] {
+        display: flex;
+        flex: 0 0 3.1cqw;
+        gap: 0.4cqw;
+      }
+
+      #root [data-el="dots"] i {
+        display: block;
+        width: 0.7cqw;
+        height: 0.7cqw;
+        background: #09090b;
+      }
+
+      #root [data-el="pill"] {
+        display: block;
+        margin: 0 auto;
+        padding: 0.4cqh 1.5cqw;
+        border: 0.1cqw solid #09090b;
+        border-radius: 999px;
+        background: #fafafa;
+        color: #09090b;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 1.4cqw;
+        font-weight: 400;
+        letter-spacing: 0.06em;
+        line-height: 1.2;
+        text-align: center;
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+
+      #root [data-el="screen"] {
+        position: relative;
+        overflow: hidden;
+        min-height: 0;
+        background: #fafafa;
+      }
+
+      #root [data-el="steps"] {
+        position: absolute;
+        z-index: 2;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 12.6cqh;
+        padding: 1.15cqh 1.5cqw 0;
+        border-bottom: 0.21cqw solid #09090b;
+        background: #fafafa;
+      }
+
+      #root [data-el="step-line"] {
+        position: relative;
+        height: 2.1cqh;
+        color: #09090b;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 1.4cqw;
+        font-weight: 400;
+        letter-spacing: 0.14em;
+        line-height: 1.2;
+        text-transform: uppercase;
+      }
+
+      #root [data-el="step-line"] span {
+        position: absolute;
+        top: 0;
+        left: 0;
+      }
+
+      #root [data-el="tabs"] {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 0.4cqw;
+        margin-top: 0.7cqh;
+      }
+
+      #root [data-el="tab"] {
+        margin: 0;
+        padding: 0.65cqh 0.25cqw;
+        border: 0.21cqw solid #09090b;
+        background: #fafafa;
+        color: #2a2a2a;
+        font-family: "Archivo Black", sans-serif;
+        font-size: 1.4cqw;
+        font-weight: 400;
+        letter-spacing: -0.01em;
+        line-height: 0.92;
+        text-align: center;
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+
+      #root [data-tab="fundamentals"] {
+        background: #ff6b35;
+        color: #09090b;
+      }
+
+      #root [data-el="strip"] {
+        display: flex;
+        width: 300%;
+        height: 100%;
+      }
+
+      #root [data-el="pane"] {
+        flex: 0 0 33.333333%;
+        width: 33.333333%;
+        height: 100%;
+        min-width: 0;
+      }
+
+      #root [data-pane="fundamentals"],
+      #root [data-pane="platforms"] {
+        display: flex;
+        flex-direction: column;
+        gap: 0.85cqh;
+        padding: 13.4cqh 1.6cqw 1.3cqh;
+      }
+
+      #root [data-pane="sent"] {
+        display: flex;
+        align-items: center;
+        padding: 1.6cqh 1.6cqw;
+      }
+
+      #root [data-el="heading"] {
+        margin: 0;
+        color: #09090b;
+        font-family: "Archivo Black", sans-serif;
+        font-size: 1.77cqw;
+        font-weight: 400;
+        letter-spacing: -0.01em;
+        line-height: 0.92;
+        text-transform: uppercase;
+      }
+
+      #root [data-el="client-row"],
+      #root [data-el="platform"] {
+        display: flex;
+        align-items: center;
+        min-height: 0;
+        margin: 0;
+        padding: 0 1.3cqw;
+        border: 0.21cqw solid #09090b;
+        background: #fafafa;
+        color: #09090b;
+        font-family: "Archivo Black", sans-serif;
+        font-size: 1.7cqw;
+        font-weight: 400;
+        letter-spacing: -0.01em;
+        line-height: 0.92;
+        text-transform: uppercase;
+      }
+
+      #root [data-el="client-row"] {
+        flex: 0 0 auto;
+        min-height: 7.2cqh;
+        border-left-color: #ff6b35;
+        border-left-width: 0.55cqw;
+      }
+
+      #root [data-el="client-row"],
+      #root [data-el="platform"] {
+        transform-origin: 0% 50%;
+      }
+
+      #root [data-el="platform"] {
+        flex: 1 1 0;
+      }
+
+      #root [data-el="request-row"] {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1.2cqw;
+        width: 100%;
+        margin: 0;
+        padding: 1.7cqh 1.5cqw;
+        border: 0.21cqw solid #09090b;
+        background: #fafafa;
+      }
+
+      #root [data-el="request-name"] {
+        color: #09090b;
+        font-family: "Archivo Black", sans-serif;
+        font-size: 2cqw;
+        font-weight: 400;
+        letter-spacing: -0.01em;
+        line-height: 0.92;
+        text-transform: uppercase;
+      }
+
+      #root [data-el="date"] {
+        color: #09090b;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 1.5cqw;
+        font-weight: 400;
+        letter-spacing: 0.06em;
+        line-height: 1.2;
+      }
+
+      #root [data-el="chip"] {
+        display: inline-block;
+        padding: 0.55cqh 0.85cqw;
+        border: 0.21cqw solid #09090b;
+        background: #ff6b35;
+        color: #09090b;
+        font-family: "Archivo Black", sans-serif;
+        font-size: 1.4cqw;
+        font-weight: 400;
+        letter-spacing: -0.01em;
+        line-height: 0.92;
+        text-transform: uppercase;
+      }
+
+      #root [data-el="sent"] {
+        position: absolute;
+        top: 50%;
+        left: 4.2cqw;
+        margin: 0;
+        margin-top: -1.3cqw;
+        padding-bottom: 0.3cqw;
+        border-bottom: 0.21cqw solid #09090b;
+        color: #09090b;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 2.4cqw;
+        font-weight: 400;
+        letter-spacing: 0.14em;
+        line-height: 1;
+        text-transform: uppercase;
+      }
+    </style>
+
+    <div data-hf-id="hf-hzl3" class="clip" data-el="field" data-start="0" data-duration="8" data-track-index="0"></div>
+
+    <div data-hf-id="hf-udq8" class="clip" data-el="kicker-clip" data-start="0" data-duration="8" data-track-index="1">
+      <p data-hf-id="hf-tlma" id="03-request-kicker" class="03-request-kicker" data-el="kicker">New Access Request</p>
+    </div>
+
+    <div data-hf-id="hf-s9e2" class="clip" data-el="window-clip" data-start="0" data-duration="8" data-track-index="2">
+      <div data-hf-id="hf-4gfo" id="03-request-stage" class="03-request-stage" data-el="stage" data-layout-allow-overflow="">
+        <div data-hf-id="hf-b8j1" data-el="device" role="img" aria-label="AuthHub access request">
+          <div data-hf-id="hf-ysp5" data-el="bar">
+            <span data-hf-id="hf-aanc" data-el="dots" aria-hidden="true"><i data-hf-id="hf-wt6k"></i><i data-hf-id="hf-zeb8"></i><i data-hf-id="hf-y7e5"></i></span>
+            <span data-hf-id="hf-6ns5" data-el="pill">authhub.co</span>
+          </div>
+          <div data-hf-id="hf-dnzm" data-el="screen">
+            <div data-hf-id="hf-c8wf" id="03-request-steps" class="03-request-steps" data-el="steps" data-layout-allow-overflow="">
+              <div data-hf-id="hf-bhbb" data-el="step-line">
+                <span data-hf-id="hf-dwvo" id="03-request-step-1">Step 1 of 4</span>
+                <span data-hf-id="hf-zvcu" id="03-request-step-2">Step 2 of 4</span>
+              </div>
+              <div data-hf-id="hf-zp8a" data-el="tabs">
+                <p data-hf-id="hf-gq9p" id="03-request-tab-fundamentals" data-el="tab" data-tab="fundamentals">Fundamentals</p>
+                <p data-hf-id="hf-omt3" id="03-request-tab-platforms" data-el="tab" data-tab="platforms">Platforms</p>
+                <p data-hf-id="hf-t6kt" data-el="tab">Customize</p>
+                <p data-hf-id="hf-zh3a" data-el="tab">Review</p>
+              </div>
+            </div>
+            <div data-hf-id="hf-63zc" id="03-request-strip" class="03-request-strip" data-el="strip" data-layout-allow-overflow="">
+              <section data-hf-id="hf-v8b4" data-el="pane" data-pane="fundamentals">
+                <h2 data-hf-id="hf-g7x4" data-el="heading">Select Client</h2>
+                <p data-hf-id="hf-uvud" id="03-request-client" class="03-request-client" data-el="client-row">Acme Growth</p>
+              </section>
+              <section data-hf-id="hf-gvrw" data-el="pane" data-pane="platforms">
+                <h2 data-hf-id="hf-x24z" data-el="heading">Platforms</h2>
+                <p data-hf-id="hf-rocw" id="03-request-platform-google" class="03-request-platform" data-el="platform">Google</p>
+                <p data-hf-id="hf-qx10" id="03-request-platform-meta" class="03-request-platform" data-el="platform">Meta</p>
+                <p data-hf-id="hf-yzr6" id="03-request-platform-shopify" class="03-request-platform" data-el="platform">Shopify</p>
+                <p data-hf-id="hf-770y" id="03-request-platform-klaviyo" class="03-request-platform" data-el="platform">Klaviyo</p>
+              </section>
+              <section data-hf-id="hf-a3mu" data-el="pane" data-pane="sent">
+                <div data-hf-id="hf-gbbq" data-el="request-row">
+                  <span data-hf-id="hf-kkun" data-el="request-name">Acme Growth</span>
+                  <span data-hf-id="hf-2onj" data-el="date">9/30/2026</span>
+                  <span data-hf-id="hf-pz3s" data-el="chip">Pending</span>
+                </div>
+              </section>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div data-hf-id="hf-o8xp" class="clip" data-el="sent-clip" data-start="0" data-duration="8" data-track-index="3">
+      <p data-hf-id="hf-bt9u" id="03-request-sent" class="03-request-sent" data-el="sent">Sent</p>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <script>
+      (function () {
+        "use strict";
+
+        var kicker = document.getElementById("03-request-kicker");
+        var stage = document.getElementById("03-request-stage");
+        var steps = document.getElementById("03-request-steps");
+        var strip = document.getElementById("03-request-strip");
+        var step1 = document.getElementById("03-request-step-1");
+        var step2 = document.getElementById("03-request-step-2");
+        var tabFundamentals = document.getElementById("03-request-tab-fundamentals");
+        var tabPlatforms = document.getElementById("03-request-tab-platforms");
+        var clientRow = document.getElementById("03-request-client");
+        var sent = document.getElementById("03-request-sent");
+        var platforms = [
+          document.getElementById("03-request-platform-google"),
+          document.getElementById("03-request-platform-meta"),
+          document.getElementById("03-request-platform-shopify"),
+          document.getElementById("03-request-platform-klaviyo"),
+        ];
+
+        gsap.set(stage, { x: "96cqw" });
+        gsap.set(strip, { x: "0%" });
+        gsap.set(steps, { x: "0%" });
+        gsap.set(step2, { opacity: 0 });
+        gsap.set(clientRow, { opacity: 0, y: "1.2cqw", scale: 0.96 });
+        gsap.set(sent, { opacity: 0, x: "2.4cqw" });
+        platforms.forEach(function (row) {
+          gsap.set(row, { opacity: 0, y: "1.1cqw", scale: 0.96 });
+        });
+
+        var tl = gsap.timeline({ paused: true });
+
+        tl.fromTo(
+          kicker,
+          { opacity: 0, y: "1.4cqw" },
+          { opacity: 1, y: "0cqw", duration: 0.42, ease: "power3.out" },
+          0
+        );
+
+        tl.fromTo(
+          stage,
+          { x: "96cqw" },
+          { x: "0cqw", duration: 0.75, ease: "power3.out", immediateRender: false },
+          1.4
+        );
+
+        tl.fromTo(
+          clientRow,
+          { opacity: 0, y: "1.2cqw", scale: 0.96 },
+          {
+            opacity: 1,
+            y: "0cqw",
+            scale: 1,
+            duration: 0.4,
+            ease: "power3.out",
+            immediateRender: false,
+          },
+          2.15
+        );
+
+        tl.to(strip, { x: "-33.333%", duration: 0.48, ease: "power3.out" }, 3.2);
+
+        tl.fromTo(
+          step1,
+          { opacity: 1 },
+          { opacity: 0, duration: 0.24, ease: "power1.out", immediateRender: false },
+          3.2
+        );
+        tl.fromTo(
+          step2,
+          { opacity: 0 },
+          { opacity: 1, duration: 0.24, ease: "power1.out", immediateRender: false },
+          3.2
+        );
+        tl.fromTo(
+          tabFundamentals,
+          { backgroundColor: "#FF6B35", color: "#09090B" },
+          {
+            backgroundColor: "#FAFAFA",
+            color: "#2A2A2A",
+            duration: 0.28,
+            ease: "power1.out",
+            immediateRender: false,
+          },
+          3.2
+        );
+        tl.fromTo(
+          tabPlatforms,
+          { backgroundColor: "#FAFAFA", color: "#2A2A2A" },
+          {
+            backgroundColor: "#FF6B35",
+            color: "#09090B",
+            duration: 0.28,
+            ease: "power1.out",
+            immediateRender: false,
+          },
+          3.2
+        );
+
+        platforms.forEach(function (row, index) {
+          tl.fromTo(
+            row,
+            { opacity: 0, y: "1.1cqw", scale: 0.96 },
+            {
+              opacity: 1,
+              y: "0cqw",
+              scale: 1,
+              duration: 0.38,
+              ease: "power3.out",
+              immediateRender: false,
+            },
+            3.48 + index * 0.16
+          );
+        });
+
+        tl.to(strip, { x: "-66.666%", duration: 0.48, ease: "power3.out" }, 5.2);
+        tl.to(steps, { x: "-110%", duration: 0.48, ease: "power3.out" }, 5.2);
+
+        tl.fromTo(
+          sent,
+          { opacity: 0, x: "2.4cqw" },
+          { opacity: 1, x: "0cqw", duration: 0.4, ease: "power3.out", immediateRender: false },
+          5.72
+        );
+
+        tl.seek(0);
+        window.__timelines = window.__timelines || {};
+        window.__timelines["03-request"] = tl;
+      })();
+    </script>
+  </div>
+</template>

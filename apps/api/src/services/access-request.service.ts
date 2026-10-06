@@ -29,6 +29,8 @@ import {
   type MetaFulfillmentStatus,
   type MetaAssetDecline,
   type UnresolvedProductReason,
+  ManualConfirmationPlatformSchema,
+  type ManualConfirmation,
 } from '@agency-platform/shared';
 import { invalidateDashboardCache } from '@/lib/cache.js';
 import { env } from '@/lib/env.js';
@@ -140,7 +142,7 @@ function isUniqueConstraintError(error: unknown): boolean {
 /**
  * Create a new access request
  */
-export async function createAccessRequest(input: CreateAccessRequestInput, request?: FastifyRequest) {
+export async function createAccessRequest(input: unknown, request?: FastifyRequest) {
   try {
     const validated = createAccessRequestSchema.parse(input);
 
@@ -1354,11 +1356,15 @@ export async function emitAccessRequestLifecycleWebhook(input: {
   }
 }
 
-export async function setAccessRequestLifecycleStatus(
+type AccessRequestLifecycleStatus = 'pending' | 'partial' | 'completed';
+type AccessRequestLifecycleClient = Pick<Prisma.TransactionClient, 'accessRequest'>;
+
+async function persistAccessRequestLifecycleStatus(
+  client: AccessRequestLifecycleClient,
   requestId: string,
-  nextStatus: 'pending' | 'partial' | 'completed'
+  nextStatus: AccessRequestLifecycleStatus
 ) {
-  const existing = await prisma.accessRequest.findUnique({
+  const existing = await client.accessRequest.findUnique({
     where: { id: requestId },
     select: {
       id: true,
@@ -1381,7 +1387,7 @@ export async function setAccessRequestLifecycleStatus(
   }
 
   if (existing.status === nextStatus) {
-    const currentRequest = await prisma.accessRequest.findUnique({
+    const currentRequest = await client.accessRequest.findUnique({
       where: { id: requestId },
     });
 
@@ -1389,10 +1395,12 @@ export async function setAccessRequestLifecycleStatus(
       data: currentRequest,
       error: null,
       previousStatus: existing.status,
+      changed: false,
+      existing,
     };
   }
 
-  const accessRequest = await prisma.accessRequest.update({
+  const accessRequest = await client.accessRequest.update({
     where: { id: requestId },
     data: {
       status: nextStatus,
@@ -1401,6 +1409,26 @@ export async function setAccessRequestLifecycleStatus(
         : {}),
     },
   });
+
+  return {
+    data: accessRequest,
+    error: null,
+    previousStatus: existing.status,
+    changed: true,
+    existing,
+  };
+}
+
+async function runAccessRequestLifecycleTransitionEffects(
+  requestId: string,
+  nextStatus: AccessRequestLifecycleStatus,
+  existing: {
+    status: string;
+    agencyId: string;
+    clientEmail: string;
+    platforms: Prisma.JsonValue;
+  }
+) {
 
   await invalidateDashboardCache(existing.agencyId);
   await emitAccessRequestLifecycleWebhook({
@@ -1427,11 +1455,23 @@ export async function setAccessRequestLifecycleStatus(
       });
     }
   }
+}
+
+export async function setAccessRequestLifecycleStatus(
+  requestId: string,
+  nextStatus: AccessRequestLifecycleStatus
+) {
+  const transition = await persistAccessRequestLifecycleStatus(prisma, requestId, nextStatus);
+  if (transition.error || !transition.data || !transition.existing) return transition;
+
+  if (transition.changed) {
+    await runAccessRequestLifecycleTransitionEffects(requestId, nextStatus, transition.existing);
+  }
 
   return {
-    data: accessRequest,
-    error: null,
-    previousStatus: existing.status,
+    data: transition.data,
+    error: transition.error,
+    previousStatus: transition.previousStatus,
   };
 }
 
@@ -1462,6 +1502,44 @@ function getIdentityFromConnection(connection: {
     businessId: connection.businessId || metadataBusinessId,
     shopDomain: metadataShopDomain,
   };
+}
+
+function buildManualConfirmations(
+  connections: Array<{ grantedAssets: unknown }>,
+  requestedProducts: Set<string>
+): ManualConfirmation[] {
+  const confirmations: ManualConfirmation[] = [];
+
+  for (const platform of ManualConfirmationPlatformSchema.options) {
+    if (!requestedProducts.has(platform)) continue;
+    for (const connection of connections) {
+      const grantedAssets = connection.grantedAssets &&
+        typeof connection.grantedAssets === 'object' &&
+        !Array.isArray(connection.grantedAssets)
+        ? connection.grantedAssets as Record<string, unknown>
+        : null;
+      const value = grantedAssets?.[platform];
+      const grant = value && typeof value === 'object' && !Array.isArray(value)
+        ? value as Record<string, unknown>
+        : null;
+      if (!grant || grant.platform !== platform) continue;
+      if (grant.verificationStatus !== 'pending' && grant.verificationStatus !== 'verified') continue;
+
+      confirmations.push({
+        platform,
+        verificationStatus: grant.verificationStatus,
+        ...(grant.verificationStatus === 'verified' && grant.verificationMethod === 'manual_review'
+          ? { verificationMethod: 'manual_review' as const }
+          : {}),
+        ...(grant.verificationStatus === 'verified' && typeof grant.verifiedAt === 'string'
+          ? { verifiedAt: grant.verifiedAt }
+          : {}),
+      });
+      break;
+    }
+  }
+
+  return confirmations;
 }
 
 /**
@@ -1605,6 +1683,10 @@ export async function getAccessRequestById(id: string, agencyId?: string) {
       accessRequest.metaAccessConfig
     );
     const metaFulfillment = buildMetaFulfillment(accessRequest, clientConnections as any);
+    const manualConfirmations = buildManualConfirmations(
+      clientConnections,
+      new Set(requestedProducts.map((product) => product.product))
+    );
 
     return {
       data: {
@@ -1613,6 +1695,7 @@ export async function getAccessRequestById(id: string, agencyId?: string) {
         platforms: hierarchicalPlatforms,
         authorizationProgress,
         metaFulfillment,
+        manualConfirmations,
         ...(shopifySubmission ? { shopifySubmission } : {}),
       },
       error: null,
@@ -2197,76 +2280,103 @@ export async function updateAccessRequest(
  */
 export async function markRequestAuthorized(requestId: string) {
   try {
-    const accessRequest = await prisma.accessRequest.findUnique({
-      where: { id: requestId },
-      select: {
-        id: true,
-        status: true,
-        expiresAt: true,
-        platforms: true,
-        metaAccessConfig: true,
-      },
-    });
+    const transition = await prisma.$transaction(async (tx) => {
+      const locked = await tx.$queryRaw<Array<{ id: string }>>(Prisma.sql`
+        SELECT id
+        FROM access_requests
+        WHERE id = ${requestId}
+        FOR UPDATE
+      `);
+      if (!locked[0]) {
+        return {
+          data: null,
+          error: {
+            code: 'REQUEST_NOT_FOUND',
+            message: 'Access request not found',
+          },
+        };
+      }
 
-    if (!accessRequest) {
-      return {
-        data: null,
-        error: {
-          code: 'REQUEST_NOT_FOUND',
-          message: 'Access request not found',
+      const accessRequest = await tx.accessRequest.findUnique({
+        where: { id: requestId },
+        select: {
+          id: true,
+          status: true,
+          expiresAt: true,
+          platforms: true,
+          metaAccessConfig: true,
         },
-      };
-    }
+      });
+      if (!accessRequest) {
+        return {
+          data: null,
+          error: {
+            code: 'REQUEST_NOT_FOUND',
+            message: 'Access request not found',
+          },
+        };
+      }
+      if (accessRequest.status === 'revoked') {
+        return { data: null, error: { code: 'REQUEST_REVOKED', message: 'Access request has been revoked' } };
+      }
+      if (accessRequest.status === 'expired' || accessRequest.expiresAt < new Date()) {
+        return { data: null, error: { code: 'REQUEST_EXPIRED', message: 'Access request has expired' } };
+      }
 
-    if (accessRequest.status === 'revoked') {
-      return { data: null, error: { code: 'REQUEST_REVOKED', message: 'Access request has been revoked' } };
-    }
-    if (accessRequest.status === 'expired' || accessRequest.expiresAt < new Date()) {
-      return { data: null, error: { code: 'REQUEST_EXPIRED', message: 'Access request has expired' } };
-    }
-
-    const clientConnections = await prisma.clientConnection.findMany({
-      where: { accessRequestId: requestId },
-      select: {
-        status: true,
-        grantedAssets: true,
-        authorizations: {
-          select: {
-            platform: true,
-            status: true,
-            authorizationEpoch: true,
+      const clientConnections = await tx.clientConnection.findMany({
+        where: { accessRequestId: requestId },
+        select: {
+          status: true,
+          grantedAssets: true,
+          authorizations: {
+            select: {
+              platform: true,
+              status: true,
+              authorizationEpoch: true,
+            },
+          },
+          metaAssetGrants: {
+            select: {
+              assetKind: true,
+              assetId: true,
+              status: true,
+              recipientType: true,
+              recipientId: true,
+              requestedTasks: true,
+              verifiedTasks: true,
+              nextActor: true,
+              verifiedAuthorizationEpoch: true,
+              authorization: { select: { authorizationEpoch: true, status: true, expiresAt: true } },
+              destination: { select: { businessId: true, agencyConnection: { select: { status: true, businessId: true } } } },
+            },
           },
         },
-        metaAssetGrants: {
-          select: {
-            assetKind: true,
-            assetId: true,
-            status: true,
-            recipientType: true,
-            recipientId: true,
-            requestedTasks: true,
-            verifiedTasks: true,
-            nextActor: true,
-            verifiedAuthorizationEpoch: true,
-            authorization: { select: { authorizationEpoch: true, status: true, expiresAt: true } },
-            destination: { select: { businessId: true, agencyConnection: { select: { status: true, businessId: true } } } },
-          },
-        },
-      },
+      });
+      const authorizationProgress = evaluateAuthorizationProgress(
+        extractRequestedProducts(accessRequest.platforms),
+        clientConnections as any,
+        [],
+        accessRequest.metaAccessConfig
+      );
+
+      return persistAccessRequestLifecycleStatus(
+        tx,
+        requestId,
+        authorizationProgress.isComplete ? 'completed' : 'partial'
+      );
     });
 
-    const requestedProducts = extractRequestedProducts(accessRequest.platforms);
-    const authorizationProgress = evaluateAuthorizationProgress(
-      requestedProducts,
-      clientConnections as any,
-      [],
-      accessRequest.metaAccessConfig
-    );
+    if (transition.error || !transition.data || !transition.existing) return transition;
+    const nextStatus = transition.data.status as AccessRequestLifecycleStatus;
+    if (transition.changed) {
+      await runAccessRequestLifecycleTransitionEffects(requestId, nextStatus, transition.existing);
+    }
 
-    return await setAccessRequestLifecycleStatus(
-      requestId,
-      authorizationProgress.isComplete ? 'completed' : 'partial'
-    );
+    return {
+      data: transition.data,
+      error: transition.error,
+      previousStatus: transition.previousStatus,
+    };
   } catch (error) {
     if (error instanceof Error && error.message.includes('Record to update not found')) {
       return {

@@ -1,0 +1,50 @@
+{
+  "environment": "Disposable loopback API with real routes; synthetic authentication",
+  "cases": [
+    {
+      "input": null,
+      "status": 400,
+      "response": {
+        "data": null,
+        "error": {
+          "code": "VALIDATION_ERROR",
+          "message": "Request body must be a JSON object"
+        }
+      }
+    },
+    {
+      "input": 42,
+      "status": 400,
+      "response": {
+        "data": null,
+        "error": {
+          "code": "VALIDATION_ERROR",
+          "message": "Request body must be a JSON object"
+        }
+      }
+    },
+    {
+      "input": "invalid",
+      "status": 400,
+      "response": {
+        "data": null,
+        "error": {
+          "code": "VALIDATION_ERROR",
+          "message": "Request body must be a JSON object"
+        }
+      }
+    },
+    {
+      "input": [],
+      "status": 400,
+      "response": {
+        "data": null,
+        "error": {
+          "code": "VALIDATION_ERROR",
+          "message": "Request body must be a JSON object"
+        }
+      }
+    }
+  ],
+  "passed": true
+}

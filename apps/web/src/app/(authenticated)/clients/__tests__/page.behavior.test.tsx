@@ -64,6 +64,8 @@ describe('Clients page behavior', () => {
     fireEvent.change(search, { target: { value: 'missing' } });
     expect(await screen.findByText('No clients found')).toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Clear search' }));
+    expect(screen.queryByText('No clients yet')).not.toBeInTheDocument();
+    expect(screen.getByRole('status')).toHaveTextContent('Updating client search');
     expect(await screen.findByText('Client 0')).toBeInTheDocument();
   });
 });

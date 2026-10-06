@@ -1,0 +1,208 @@
+
+> @agency-platform/api@0.1.0 lint
+> eslint src --ext .ts
+
+
+/Users/jon.high/agency-access/apps/api/src/lib/job-handlers.ts
+   8:15  warning  'PgBoss' is defined but never used                                     @typescript-eslint/no-unused-vars
+  24:54  warning  'job' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/api/src/lib/pg-boss.ts
+   14:41  warning  'Job' is defined but never used                                            @typescript-eslint/no-unused-vars
+  209:3   warning  'options' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  250:3   warning  'options' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/api/src/lib/queue-helpers.ts
+  9:27  warning  'JobOptions' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/api/src/middleware/auth.ts
+  113:14  warning  'err' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/api/src/middleware/performance.ts
+  10:3  warning  'FastifyReply' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/api/src/routes/access-requests.ts
+  19:10  warning  'agencyPlatformService' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/api/src/routes/agency-platforms/connection.routes.ts
+  113:14  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/api/src/routes/agency-platforms/oauth.routes.ts
+  216:16  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+  340:14  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/api/src/routes/agent-grants.ts
+  1:32  warning  'FastifyReply' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/api/src/routes/client-auth/assets.routes.ts
+    45:10  warning  'MetaConnector' is defined but never used          @typescript-eslint/no-unused-vars
+  2116:15  warning  'rootMetadata' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/api/src/routes/client-auth/oauth-state.routes.ts
+  5:10  warning  'env' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/api/src/routes/client-offboarding.routes.ts
+  2:32  warning  'FastifyReply' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/api/src/routes/clients.ts
+  12:3   warning  'getClients' is defined but never used      @typescript-eslint/no-unused-vars
+  19:3   warning  'ClientError' is defined but never used     @typescript-eslint/no-unused-vars
+  21:15  warning  'ClientLanguage' is defined but never used  @typescript-eslint/no-unused-vars
+  22:10  warning  'prisma' is defined but never used          @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/api/src/routes/platform-authorization.ts
+  146:43  warning  'confirmationData' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  168:17  warning  'group' is assigned a value but never used             @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/api/src/routes/sentry-webhooks.ts
+  466:23  warning  'reply' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  498:23  warning  'reply' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/api/src/routes/subscriptions.ts
+  16:55  warning  'sendNotFound' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/api/src/services/access-request.service.ts
+    15:8   warning  'Platform' is defined but never used  @typescript-eslint/no-unused-vars
+  1703:12  warning  'error' is defined but never used     @typescript-eslint/no-unused-vars
+  1983:12  warning  'error' is defined but never used     @typescript-eslint/no-unused-vars
+  2041:12  warning  'error' is defined but never used     @typescript-eslint/no-unused-vars
+  2111:12  warning  'error' is defined but never used     @typescript-eslint/no-unused-vars
+  2642:12  warning  'error' is defined but never used     @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/api/src/services/agency-platform.service.ts
+   54:12  warning  'error' is defined but never used                                         @typescript-eslint/no-unused-vars
+   75:12  warning  'error' is defined but never used                                         @typescript-eslint/no-unused-vars
+  310:16  warning  'error' is defined but never used                                         @typescript-eslint/no-unused-vars
+  364:13  warning  'partnerAdminSystemUserTokenSecretId' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  364:50  warning  'partnerAdminSystemUserScopes' is assigned a value but never used         @typescript-eslint/no-unused-vars
+  364:80  warning  'partnerAdminSystemUserProvisionedAt' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  479:12  warning  'error' is defined but never used                                         @typescript-eslint/no-unused-vars
+  505:12  warning  'error' is defined but never used                                         @typescript-eslint/no-unused-vars
+  540:12  warning  'error' is defined but never used                                         @typescript-eslint/no-unused-vars
+  593:12  warning  'error' is defined but never used                                         @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/api/src/services/agency.service.ts
+  450:12  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+  519:12  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+  626:12  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+  766:12  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+  823:12  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+  975:12  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/api/src/services/agent-access-operations.service.ts
+  466:13  warning  'idempotencyKey' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/api/src/services/audit.service.ts
+   36:12  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+   70:12  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+  104:12  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+  138:12  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+  172:12  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+  211:12  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+  262:12  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+  298:12  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+  338:12  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/api/src/services/authorization-verification.service.ts
+   23:7   warning  'initiateVerificationSchema' is assigned a value but only used as a type          @typescript-eslint/no-unused-vars
+  306:3   warning  'verificationId' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  410:12  warning  'error' is defined but never used                                                 @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/api/src/services/connection-aggregation.service.ts
+  94:12  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/api/src/services/connection.service.ts
+  242:12  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+  273:12  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+  295:12  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+  350:12  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+  409:12  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+  535:12  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+  580:12  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+  646:12  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+  687:12  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+  771:12  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+  814:12  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+  931:12  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/api/src/services/connectors/base.connector.ts
+  5:15  warning  'PlatformConnector' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/api/src/services/connectors/google-ads.ts
+   17:11  warning  'GoogleAdsUserAccess' is defined but never used          @typescript-eslint/no-unused-vars
+  298:13  warning  'accessLevelMapping' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/api/src/services/connectors/google.ts
+  3:3  warning  'AccessLevel' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/api/src/services/connectors/klaviyo.ts
+  9:8  warning  'crypto' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/api/src/services/google-native-access.service.ts
+  21:15  warning  'ServiceError' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/api/src/services/google-native-grant.service.ts
+  3:15  warning  'ServiceError' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/api/src/services/google-offboarding-executor.ts
+  13:3  warning  'revokeBusinessLocationAdmin' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/api/src/services/identity-verification.service.ts
+  145:3   warning  'identity' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+  160:12  warning  'error' is defined but never used                                           @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/api/src/services/instruction-generation.service.ts
+  259:12  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/api/src/services/meta-asset-creation.service.ts
+  583:15  warning  'platformAuth' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/api/src/services/meta-assets.service.ts
+  238:15  warning  'partnerAdminSystemUserTokenSecretId' is assigned a value but never used     @typescript-eslint/no-unused-vars
+  239:15  warning  'partnerAdminSystemUserScopes' is assigned a value but never used            @typescript-eslint/no-unused-vars
+  240:15  warning  'partnerAdminSystemUserProvisionedAt' is assigned a value but never used     @typescript-eslint/no-unused-vars
+  280:17  warning  'partnerAdminSystemUserTokenSecretId' is assigned a value but never used     @typescript-eslint/no-unused-vars
+  281:17  warning  'partnerAdminSystemUserScopes' is assigned a value but never used            @typescript-eslint/no-unused-vars
+  282:17  warning  'partnerAdminSystemUserProvisionedAt' is assigned a value but never used     @typescript-eslint/no-unused-vars
+  315:17  warning  'partnerAdminSystemUserLastAttemptAt' is assigned a value but never used     @typescript-eslint/no-unused-vars
+  316:17  warning  'partnerAdminSystemUserLastErrorCode' is assigned a value but never used     @typescript-eslint/no-unused-vars
+  317:17  warning  'partnerAdminSystemUserLastErrorMessage' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/api/src/services/onboarding-email.service.ts
+  274:12  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+  370:12  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+  400:12  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/api/src/services/quota.service.ts
+  237:31  warning  'action' is assigned a value but never used     @typescript-eslint/no-unused-vars
+  444:13  warning  'yearStart' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/api/src/services/subscription.service.ts
+  124:14  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+  156:14  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/api/src/services/template.service.ts
+   63:12  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+   96:12  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+  364:12  warning  'error' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/api/src/services/token-lifecycle.service.ts
+  9:15  warning  'ServiceError' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/api/src/services/webhook-delivery.service.ts
+  7:15  warning  'ServiceError' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/api/src/services/webhook-endpoint.service.ts
+  8:15  warning  'ServiceError' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/api/src/services/webhook-event.service.ts
+  89:3  warning  'authorizationStatuses' is defined but never used. Allowed unused args must match /^_/u  @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/api/src/services/webhook-management.service.ts
+  5:15  warning  'ServiceError' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/jon.high/agency-access/apps/api/src/services/webhook.service.ts
+  58:10  warning  'addMonths' is defined but never used  @typescript-eslint/no-unused-vars
+
+✖ 111 problems (0 errors, 111 warnings)
+

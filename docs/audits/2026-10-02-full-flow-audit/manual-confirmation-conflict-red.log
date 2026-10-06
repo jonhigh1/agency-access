@@ -1,0 +1,50 @@
+
+> @agency-platform/api@0.1.0 test:run
+> vitest run src/routes/__tests__/manual-confirmations.routes.test.ts --maxWorkers=2
+
+
+ RUN  v4.0.16 /Users/jon.high/agency-access/apps/api
+
+ ❯ src/routes/__tests__/manual-confirmations.routes.test.ts (7 tests | 1 failed) 118ms
+     ✓ uses the verified principal for the confirmation actor 97ms
+     × returns a conflict when the connection is unavailable 6ms
+     ✓ rejects another tenant before confirmation 3ms
+     ✓ rejects an invalid acknowledgment or platform 4ms
+     ✓ rejects an invalid acknowledgment or platform 2ms
+     ✓ rejects a non-user principal before confirmation 2ms
+     ✓ accepts the exact development bypass user only in development 2ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/routes/__tests__/manual-confirmations.routes.test.ts > POST /access-requests/:id/manual-confirmations/:platform > returns a conflict when the connection is unavailable
+AssertionError: expected 500 to be 409 // Object.is equality
+
+- Expected
++ Received
+
+- 409
++ 500
+
+ ❯ src/routes/__tests__/manual-confirmations.routes.test.ts:99:33
+     97|     });
+     98|     const response = await app.inject({ method: 'POST', url: '/access-…
+     99|     expect(response.statusCode).toBe(409);
+       |                                 ^
+    100|     expect(response.json().error.code).toBe('MANUAL_CONNECTION_UNAVAIL…
+    101|   });
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 6 passed (7)
+   Start at  15:10:50
+   Duration  633ms (transform 216ms, setup 16ms, import 417ms, tests 118ms, environment 0ms)
+
+npm error Lifecycle script `test:run` failed with error:
+npm error code 1
+npm error path /Users/jon.high/agency-access/apps/api
+npm error workspace @agency-platform/api@0.1.0
+npm error location /Users/jon.high/agency-access/apps/api
+npm error command failed
+npm error command sh -c vitest run src/routes/__tests__/manual-confirmations.routes.test.ts --maxWorkers=2

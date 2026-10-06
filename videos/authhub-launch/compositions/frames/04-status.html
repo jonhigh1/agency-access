@@ -1,0 +1,230 @@
+<template>
+  <div data-hf-id="hf-d6zw" id="root" data-composition-id="04-status" data-duration="5.5" data-width="1920" data-height="1080">
+    <style>
+      #root,
+      #root *,
+      #root *::before,
+      #root *::after {
+        box-sizing: border-box;
+      }
+
+      #root {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+        container-type: size;
+      }
+
+      .clip {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+      }
+
+      [id="04-status-ground"] {
+        background: #fafafa;
+        container-type: size;
+      }
+
+      [id="04-status-kicker-clip"] {
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        padding-top: 7.2cqh;
+      }
+
+      .f04-status-kicker {
+        margin: 0;
+        padding: 0.5cqw 1cqw;
+        background: #09090b;
+        color: #fafafa;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 1.25cqw;
+        font-weight: 400;
+        line-height: 1.2;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        transform-origin: 50% 50%;
+      }
+
+      .f04-status-row {
+        position: absolute;
+        left: 10cqw;
+        top: 20cqh;
+        width: 80cqw;
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 1.5cqw;
+      }
+
+      .f04-status-cell {
+        aspect-ratio: 1 / 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        align-items: flex-start;
+        min-width: 0;
+        padding: 1.7cqw;
+        border: 0.4cqw solid #09090b;
+        border-radius: 0;
+        box-shadow: 0.95cqw 0.95cqw 0 #09090b;
+        transform-origin: 50% 50%;
+      }
+
+      .f04-status-cell-requests {
+        background: #a92d00;
+        color: #fafafa;
+      }
+
+      .f04-status-cell-pending {
+        background: #09090b;
+        color: #fafafa;
+      }
+
+      .f04-status-cell-active {
+        background: #ff6b35;
+        color: #fafafa;
+      }
+
+      .f04-status-cell-platforms {
+        background: #fafafa;
+        color: #09090b;
+      }
+
+      .f04-status-num {
+        display: block;
+        font-family: "Archivo Black", sans-serif;
+        font-size: 6.4cqw;
+        font-weight: 400;
+        font-variant-numeric: tabular-nums;
+        line-height: 0.88;
+        letter-spacing: -0.01em;
+        transform-origin: 0% 50%;
+      }
+
+      .f04-status-label {
+        max-width: 100%;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 1.25cqw;
+        font-weight: 400;
+        line-height: 1.15;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+      }
+
+      .f04-status-line {
+        position: absolute;
+        left: 10cqw;
+        top: 59.5cqh;
+        width: 80cqw;
+        margin: 0;
+        padding: 0.65cqw 1.2cqw;
+        background: #09090b;
+        color: #fafafa;
+        font-family: "Archivo Black", sans-serif;
+        font-size: 4.2cqw;
+        font-weight: 400;
+        line-height: 0.92;
+        letter-spacing: -0.01em;
+        text-align: center;
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+    </style>
+
+    <div data-hf-id="hf-fjcf" id="04-status-ground" class="clip" data-start="0" data-duration="5.5" data-track-index="0"></div>
+
+    <div data-hf-id="hf-9r6v" id="04-status-kicker-clip" class="clip" data-start="0" data-duration="5.5" data-track-index="1">
+      <p data-hf-id="hf-ubrj" id="04-status-kicker" class="f04-status-kicker">WHAT YOU SEE</p>
+    </div>
+
+    <div data-hf-id="hf-td8f" id="04-status-row-clip" class="clip" data-start="0" data-duration="5.5" data-track-index="2">
+      <div data-hf-id="hf-lzpe" class="f04-status-row">
+        <div data-hf-id="hf-dbki" id="04-status-cell-0" class="f04-status-cell f04-status-cell-requests">
+          <span data-hf-id="hf-at3k" id="04-status-num-0" class="f04-status-num">0</span>
+          <span data-hf-id="hf-ypjd" class="f04-status-label">TOTAL REQUESTS</span>
+        </div>
+        <div data-hf-id="hf-2uuu" id="04-status-cell-1" class="f04-status-cell f04-status-cell-pending">
+          <span data-hf-id="hf-o9a3" id="04-status-num-1" class="f04-status-num">0</span>
+          <span data-hf-id="hf-etbo" class="f04-status-label">PENDING</span>
+        </div>
+        <div data-hf-id="hf-ai3k" id="04-status-cell-2" class="f04-status-cell f04-status-cell-active">
+          <span data-hf-id="hf-zjy6" id="04-status-num-2" class="f04-status-num">0</span>
+          <span data-hf-id="hf-tsb2" class="f04-status-label">ACTIVE CONNECTIONS</span>
+        </div>
+        <div data-hf-id="hf-2v1d" id="04-status-cell-3" class="f04-status-cell f04-status-cell-platforms">
+          <span data-hf-id="hf-vzep" id="04-status-num-3" class="f04-status-num">0</span>
+          <span data-hf-id="hf-4m0c" class="f04-status-label">PLATFORMS CONNECTED</span>
+        </div>
+      </div>
+    </div>
+
+    <div data-hf-id="hf-jew6" id="04-status-line-clip" class="clip" data-start="0" data-duration="5.5" data-track-index="3">
+      <p data-hf-id="hf-v65e" id="04-status-line" class="f04-status-line">NO MORE CHASING</p>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <script>
+      (function () {
+        "use strict";
+
+        var POP = 0.45;
+        var COUNT = 0.45;
+        var STARTS = [1.0, 1.67, 2.33, 3.0];
+        var TARGETS = [2, 1, 1, 2];
+
+        var kicker = document.getElementById("04-status-kicker");
+        var line = document.getElementById("04-status-line");
+        var tl = gsap.timeline({ paused: true });
+
+        tl.fromTo(
+          kicker,
+          { scale: 0, opacity: 0 },
+          { scale: 1, opacity: 1, duration: 0.42, ease: "power3.out" },
+          0.06,
+        );
+
+        TARGETS.forEach(function (target, index) {
+          var cell = document.getElementById("04-status-cell-" + index);
+          var num = document.getElementById("04-status-num-" + index);
+          var at = STARTS[index];
+
+          tl.fromTo(
+            cell,
+            { scale: 0, opacity: 0, y: 16 },
+            { scale: 1, opacity: 1, y: 0, duration: POP, ease: "power3.out" },
+            at,
+          );
+
+          tl.fromTo(
+            num,
+            { scale: 0.55 },
+            { scale: 1, duration: COUNT, ease: "power3.out" },
+            at,
+          );
+
+          tl.to(
+            num,
+            {
+              innerText: target,
+              duration: COUNT,
+              ease: "power3.out",
+              snap: { innerText: 1 },
+            },
+            at,
+          );
+        });
+
+        tl.fromTo(
+          line,
+          { opacity: 0, y: 16 },
+          { opacity: 1, y: 0, duration: 0.42, ease: "power3.out" },
+          3.6,
+        );
+
+        window.__timelines = window.__timelines || {};
+        window.__timelines["04-status"] = tl;
+      })();
+    </script>
+  </div>
+</template>

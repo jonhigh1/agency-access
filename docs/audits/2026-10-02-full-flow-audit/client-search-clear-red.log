@@ -1,0 +1,44 @@
+
+> @agency-platform/web@0.1.0 test:run
+> vitest run src/app/(authenticated)/clients/__tests__/page.behavior.test.tsx --maxWorkers=2
+
+
+ RUN  v4.0.16 /Users/jon.high/agency-access/apps/web
+
+ ❯ src/app/(authenticated)/clients/__tests__/page.behavior.test.tsx (2 tests | 1 failed) 490ms
+     ✓ omits unsupported filters and exposes every API page 190ms
+     × clears a search when it produces no clients 299ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/app/(authenticated)/clients/__tests__/page.behavior.test.tsx > Clients page behavior > clears a search when it produces no clients
+Error: expect(element).not.toBeInTheDocument()
+
+expected document not to contain element, found <h3
+  class="text-lg font-medium text-ink"
+>
+  No clients yet
+</h3> instead
+ ❯ src/app/(authenticated)/clients/__tests__/page.behavior.test.tsx:67:54
+     65|     expect(await screen.findByText('No clients found')).toBeInTheDocum…
+     66|     fireEvent.click(screen.getByRole('button', { name: 'Clear search' …
+     67|     expect(screen.queryByText('No clients yet')).not.toBeInTheDocument…
+       |                                                      ^
+     68|     expect(screen.getByRole('status')).toHaveTextContent('Updating cli…
+     69|     expect(await screen.findByText('Client 0')).toBeInTheDocument();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  1 failed | 1 passed (2)
+   Start at  15:17:19
+   Duration  2.69s (transform 258ms, setup 239ms, import 830ms, tests 490ms, environment 1.03s)
+
+npm error Lifecycle script `test:run` failed with error:
+npm error code 1
+npm error path /Users/jon.high/agency-access/apps/web
+npm error workspace @agency-platform/web@0.1.0
+npm error location /Users/jon.high/agency-access/apps/web
+npm error command failed
+npm error command sh -c vitest run 'src/app/(authenticated)/clients/__tests__/page.behavior.test.tsx' --maxWorkers=2

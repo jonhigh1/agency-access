@@ -1,0 +1,228 @@
+{
+  "/api/dashboard?agencyId=dev_agency_123456789": {
+    "status": 200,
+    "body": {
+      "data": {
+        "agency": {
+          "id": "dev_agency_123456789",
+          "name": "Dev Test Agency",
+          "email": "dev-bypass@agency-access.local"
+        },
+        "stats": {
+          "totalRequests": 1,
+          "pendingRequests": 0,
+          "activeConnections": 1,
+          "totalPlatforms": 0
+        },
+        "requests": [
+          {
+            "id": "local-agency-manual-request",
+            "clientId": "local-agency-client",
+            "clientName": "Local Manual Client",
+            "clientEmail": "client@agency-fixture.invalid",
+            "status": "completed",
+            "createdAt": "2026-10-04T22:04:13.975Z",
+            "uniqueToken": "local-agency-manual-invite",
+            "platforms": [
+              "beehiiv",
+              "zapier"
+            ]
+          }
+        ],
+        "connections": [
+          {
+            "id": "6ba2e801-8483-45ad-bb6a-cd525a207dd6",
+            "clientId": "local-agency-client",
+            "clientEmail": "client@agency-fixture.invalid",
+            "status": "active",
+            "createdAt": "2026-10-04T22:07:19.105Z",
+            "platforms": []
+          }
+        ],
+        "meta": {
+          "requests": {
+            "limit": 10,
+            "returned": 1,
+            "total": 1,
+            "hasMore": false
+          },
+          "connections": {
+            "limit": 10,
+            "returned": 1,
+            "total": 1,
+            "hasMore": false
+          }
+        },
+        "onboardingStatus": {
+          "completed": false,
+          "status": "activated",
+          "lifecycle": {},
+          "step": {
+            "profile": true,
+            "members": false,
+            "firstRequest": true
+          }
+        },
+        "trialBanner": null
+      },
+      "error": null
+    }
+  },
+  "/api/dashboard/stats?agencyId=dev_agency_123456789": {
+    "status": 200,
+    "body": {
+      "data": {
+        "totalRequests": 1,
+        "pendingRequests": 0,
+        "activeConnections": 1,
+        "totalPlatforms": 0
+      },
+      "error": null
+    }
+  },
+  "/api/clients?agencyId=dev_agency_123456789": {
+    "status": 200,
+    "body": {
+      "data": {
+        "data": [
+          {
+            "id": "local-agency-client",
+            "name": "Local Manual Client",
+            "email": "client@agency-fixture.invalid",
+            "company": "Fixture Company",
+            "platforms": [],
+            "status": "active",
+            "connectionCount": 1,
+            "requestCount": 1,
+            "lastActivityAt": "2026-10-04T22:04:13.975Z",
+            "createdAt": "2026-10-04T22:04:13.967Z"
+          }
+        ],
+        "pagination": {
+          "total": 1,
+          "limit": 50,
+          "offset": 0
+        }
+      }
+    }
+  },
+  "/api/clients/local-agency-client/detail": {
+    "status": 200,
+    "body": {
+      "data": {
+        "client": {
+          "id": "local-agency-client",
+          "name": "Local Manual Client",
+          "company": "Fixture Company",
+          "email": "client@agency-fixture.invalid",
+          "website": null,
+          "language": "en",
+          "createdAt": "2026-10-04T22:04:13.967Z",
+          "updatedAt": "2026-10-04T22:04:13.967Z"
+        },
+        "stats": {
+          "totalRequests": 1,
+          "activeConnections": 1,
+          "pendingConnections": 0,
+          "expiredConnections": 0
+        },
+        "platformGroups": [
+          {
+            "platformGroup": "beehiiv",
+            "status": "connected",
+            "fulfilledCount": 1,
+            "requestedCount": 1,
+            "latestRequestId": "local-agency-manual-request",
+            "latestRequestName": "Local Manual Client",
+            "latestRequestedAt": "2026-10-04T22:04:13.975Z",
+            "products": [
+              {
+                "product": "beehiiv",
+                "status": "connected",
+                "latestRequestId": "local-agency-manual-request"
+              }
+            ]
+          },
+          {
+            "platformGroup": "zapier",
+            "status": "connected",
+            "fulfilledCount": 1,
+            "requestedCount": 1,
+            "latestRequestId": "local-agency-manual-request",
+            "latestRequestName": "Local Manual Client",
+            "latestRequestedAt": "2026-10-04T22:04:13.975Z",
+            "products": [
+              {
+                "product": "zapier",
+                "status": "connected",
+                "latestRequestId": "local-agency-manual-request"
+              }
+            ]
+          }
+        ],
+        "accessRequests": [
+          {
+            "id": "local-agency-manual-request",
+            "name": "Local Manual Client",
+            "platforms": [],
+            "status": "completed",
+            "createdAt": "2026-10-04T22:04:13.975Z",
+            "authorizedAt": "2026-10-04T22:07:53.962Z",
+            "connectionId": "6ba2e801-8483-45ad-bb6a-cd525a207dd6",
+            "connectionStatus": "active"
+          }
+        ],
+        "activity": [
+          {
+            "id": "request-local-agency-manual-request-authorized",
+            "type": "request_completed",
+            "description": "Client authorized access for \"Local Manual Client\"",
+            "timestamp": "2026-10-04T22:07:53.962Z",
+            "metadata": {
+              "requestName": "Local Manual Client",
+              "platforms": [],
+              "status": "completed"
+            }
+          },
+          {
+            "id": "connection-6ba2e801-8483-45ad-bb6a-cd525a207dd6-created",
+            "type": "connection_created",
+            "description": "Connection established for \"Local Manual Client\"",
+            "timestamp": "2026-10-04T22:07:19.105Z",
+            "metadata": {
+              "requestName": "Local Manual Client",
+              "platforms": []
+            }
+          },
+          {
+            "id": "request-local-agency-manual-request-created",
+            "type": "request_created",
+            "description": "Access request \"Local Manual Client\" was created",
+            "timestamp": "2026-10-04T22:04:13.975Z",
+            "metadata": {
+              "requestName": "Local Manual Client",
+              "platforms": []
+            }
+          }
+        ]
+      }
+    }
+  },
+  "/api/agencies/dev_agency_123456789/templates": {
+    "status": 200,
+    "body": {
+      "data": [],
+      "error": null
+    }
+  },
+  "/api/usage?agencyId=dev_agency_123456789": {
+    "status": 404,
+    "body": {
+      "data": null,
+      "error": {
+        "code": "TIER_NOT_FOUND",
+        "message": "Subscription tier not found"
+      }
+    }
+  }
+}

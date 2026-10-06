@@ -1,0 +1,259 @@
+{
+  "typography": [
+    {
+      "role": "display",
+      "fontFamily": "Manrope",
+      "fontSize": "132px",
+      "fontWeight": "600",
+      "lineHeight": "116.16px",
+      "letterSpacing": "-9.9px",
+      "color": "#171713",
+      "sampleText": "Build videoswith your coding agent."
+    },
+    {
+      "role": "heading",
+      "fontFamily": "Manrope",
+      "fontSize": "58px",
+      "fontWeight": "600",
+      "lineHeight": "58px",
+      "letterSpacing": "-3.19px",
+      "color": "#F3F2EC",
+      "sampleText": "From intent to editable video"
+    },
+    {
+      "role": "heading-2",
+      "fontFamily": "Manrope",
+      "fontSize": "52px",
+      "fontWeight": "700",
+      "lineHeight": "52px",
+      "letterSpacing": "-2.6px",
+      "color": "#171713",
+      "sampleText": "What is Agent Motion?"
+    },
+    {
+      "role": "heading-3",
+      "fontFamily": "Manrope",
+      "fontSize": "32px",
+      "fontWeight": "700",
+      "lineHeight": "normal",
+      "letterSpacing": "-1px",
+      "color": "#F3F2EC",
+      "sampleText": "Describe"
+    },
+    {
+      "role": "link",
+      "fontFamily": "Manrope",
+      "fontSize": "20px",
+      "fontWeight": "800",
+      "lineHeight": "normal",
+      "letterSpacing": "-1.2px",
+      "color": "#171713",
+      "sampleText": "agent/motion"
+    },
+    {
+      "role": "body",
+      "fontFamily": "Manrope",
+      "fontSize": "18px",
+      "fontWeight": "400",
+      "lineHeight": "28.8px",
+      "letterSpacing": "normal",
+      "color": "#65645D",
+      "sampleText": "Give Codex, Claude Code, and Cursor tested, editable video c"
+    },
+    {
+      "role": "code",
+      "fontFamily": "DM Mono",
+      "fontSize": "11px",
+      "fontWeight": "400",
+      "lineHeight": "normal",
+      "letterSpacing": "normal",
+      "color": "#171713",
+      "sampleText": "npx @agent-motion/cli list"
+    }
+  ],
+  "spacing": {
+    "observed": [
+      8,
+      10,
+      12,
+      13,
+      15,
+      16,
+      18,
+      20,
+      24,
+      26,
+      28,
+      34,
+      36,
+      40,
+      70
+    ],
+    "baseUnit": 4
+  },
+  "radius": [
+    "999px"
+  ],
+  "shadows": [
+    {
+      "value": "rgba(0, 0, 0, 0.3) 0px 18px 60px 0px",
+      "count": 1
+    }
+  ],
+  "buttons": [
+    {
+      "label": "Explore video components",
+      "background": "#171713",
+      "backgroundImage": "",
+      "backdropFilter": "",
+      "color": "#FFFFFF",
+      "padding": "12px 17px",
+      "borderRadius": "999px",
+      "border": "0px none rgb(255, 255, 255)",
+      "boxShadow": "none",
+      "fontSize": "12px",
+      "fontWeight": "700",
+      "height": "41px"
+    },
+    {
+      "label": "npx @agent-motion/cli list",
+      "background": "#F2F0E9",
+      "backgroundImage": "",
+      "backdropFilter": "",
+      "color": "#171713",
+      "padding": "14px 18px",
+      "borderRadius": "999px",
+      "border": "1px solid rgb(203, 200, 189)",
+      "boxShadow": "none",
+      "fontSize": "16px",
+      "fontWeight": "400",
+      "height": "47px"
+    },
+    {
+      "label": "Decline",
+      "background": "transparent",
+      "backgroundImage": "",
+      "backdropFilter": "",
+      "color": "#F2F0E9",
+      "padding": "10px 13px",
+      "borderRadius": "0px",
+      "border": "1px solid rgb(92, 92, 83)",
+      "boxShadow": "none",
+      "fontSize": "11px",
+      "fontWeight": "700",
+      "height": "37px"
+    },
+    {
+      "label": "Allow analytics",
+      "background": "#C7FF4A",
+      "backgroundImage": "",
+      "backdropFilter": "",
+      "color": "#171713",
+      "padding": "10px 13px",
+      "borderRadius": "0px",
+      "border": "1px solid rgb(199, 255, 74)",
+      "boxShadow": "none",
+      "fontSize": "11px",
+      "fontWeight": "700",
+      "height": "37px"
+    }
+  ],
+  "cards": [
+    {
+      "label": "card",
+      "background": "transparent",
+      "backgroundImage": "",
+      "backdropFilter": "",
+      "color": "#F3F2EC",
+      "padding": "34px 34px 40px",
+      "borderRadius": "0px",
+      "border": "",
+      "boxShadow": "none",
+      "fontSize": "16px",
+      "fontWeight": "400",
+      "height": "320px"
+    },
+    {
+      "label": "card",
+      "background": "transparent",
+      "backgroundImage": "",
+      "backdropFilter": "",
+      "color": "#F3F2EC",
+      "padding": "34px 34px 40px",
+      "borderRadius": "0px",
+      "border": "0px none rgb(243, 242, 236)",
+      "boxShadow": "none",
+      "fontSize": "16px",
+      "fontWeight": "400",
+      "height": "320px"
+    }
+  ],
+  "nav": {
+    "label": "navigation",
+    "background": "transparent",
+    "backgroundImage": "",
+    "backdropFilter": "",
+    "color": "#171713",
+    "padding": "0px 86.4px",
+    "borderRadius": "0px",
+    "border": "",
+    "boxShadow": "none",
+    "fontSize": "16px",
+    "fontWeight": "400",
+    "height": "76px"
+  },
+  "chips": [
+    {
+      "label": "npx @agent-motion/cli li",
+      "background": "#F2F0E9",
+      "color": "#171713",
+      "padding": "14px 18px",
+      "borderRadius": "999px",
+      "border": "1px solid rgb(203, 200, 189)",
+      "boxShadow": "none",
+      "fontSize": "16px",
+      "fontWeight": "400",
+      "height": "47px"
+    },
+    {
+      "label": "Explore video components",
+      "background": "#171713",
+      "color": "#FFFFFF",
+      "padding": "12px 17px",
+      "borderRadius": "999px",
+      "border": "0px none rgb(255, 255, 255)",
+      "boxShadow": "none",
+      "fontSize": "12px",
+      "fontWeight": "700",
+      "height": "41px"
+    },
+    {
+      "label": "About",
+      "background": "transparent",
+      "color": "#171713",
+      "padding": "0px 9px",
+      "borderRadius": "999px",
+      "border": "1px solid rgb(203, 200, 189)",
+      "boxShadow": "none",
+      "fontSize": "11px",
+      "fontWeight": "400",
+      "height": "26px"
+    },
+    {
+      "label": "02",
+      "background": "transparent",
+      "color": "#F3F2EC",
+      "padding": "0px 9px",
+      "borderRadius": "999px",
+      "border": "1px solid rgb(65, 65, 60)",
+      "boxShadow": "none",
+      "fontSize": "11px",
+      "fontWeight": "400",
+      "height": "26px"
+    }
+  ],
+  "statCells": [],
+  "tabs": [],
+  "backgrounds": [],
+  "glass": []
+}

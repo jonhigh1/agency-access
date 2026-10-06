@@ -13,9 +13,15 @@ import {
   trackInviteLinkCopyAndSent,
   trackInviteSent,
 } from '@/lib/analytics/invite-events';
-import { excludeMetaGrant, getAccessRequest, getAuthorizationUrl } from '@/lib/api/access-requests';
+import {
+  confirmManualAccess,
+  excludeMetaGrant,
+  getAccessRequest,
+  getAuthorizationUrl,
+} from '@/lib/api/access-requests';
 import { executeSendInviteReminder } from '@/lib/invite-reminder';
 import type { AccessRequest } from '@/lib/api/access-requests';
+import type { ManualConfirmationPlatform } from '@agency-platform/shared';
 import {
   RequestActionsBar,
   MetaFulfillmentCard,
@@ -225,6 +231,17 @@ export default function AccessRequestDetailPage({ params }: AccessRequestDetailP
     return null;
   };
 
+  const handleConfirmManualAccess = async (platform: ManualConfirmationPlatform) => {
+    if (!accessRequest) return 'Could not load access request.';
+    const result = await confirmManualAccess(accessRequest.id, platform, resolveApiToken);
+    if (result.error) return result.error.message;
+
+    const refreshed = await getAccessRequest(accessRequest.id, resolveApiToken);
+    if (!refreshed.data) return refreshed.error?.message || 'Access was confirmed, but updated progress could not be loaded. Try again.';
+    setAccessRequest(refreshed.data);
+    return null;
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-paper flex items-center justify-center">
@@ -328,7 +345,10 @@ export default function AccessRequestDetailPage({ params }: AccessRequestDetailP
           }
         />
 
-        <RequestPlatformsCard request={accessRequest} />
+        <RequestPlatformsCard
+          request={accessRequest}
+          onConfirmManualAccess={handleConfirmManualAccess}
+        />
 
         <MetaFulfillmentCard
           results={accessRequest.metaFulfillment || []}

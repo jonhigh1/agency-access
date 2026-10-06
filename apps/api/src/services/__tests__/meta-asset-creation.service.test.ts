@@ -1,3 +1,4 @@
+import { mockJsonTransactions } from '../../__tests__/json-transaction-mock';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createHash } from 'node:crypto';
 
@@ -76,10 +77,7 @@ describe('MetaAssetCreationService.createBusiness', () => {
     vi.mocked(prisma.metaAssetCreation.create).mockImplementation(async (args: any) => ({ id: 'creation-1', ...args.data }) as never);
     vi.mocked(prisma.metaAssetCreation.update).mockResolvedValue({} as never);
     vi.mocked(prisma.metaAssetCreation.updateMany).mockResolvedValue({ count: 1 } as never);
-    vi.mocked(prisma.$transaction).mockImplementation(async (callback: any) => callback(prisma));
-    vi.mocked(prisma.$queryRaw).mockResolvedValue([
-      { id: connectionId, granted_assets: { meta: { createdAdAccounts: [{ id: 'act-1' }] } } },
-    ] as never);
+    mockJsonTransactions(prisma, { [connectionId]: { meta: { createdAdAccounts: [{ id: 'act-1' }] } } });
     vi.mocked(infisical.getOAuthTokens).mockResolvedValue({
       accessToken: 'client-token',
       refreshToken: null,

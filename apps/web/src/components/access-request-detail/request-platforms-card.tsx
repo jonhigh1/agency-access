@@ -1,12 +1,16 @@
 'use client';
 
-import { Card } from '@/components/ui';
+import { useState } from 'react';
+import { AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Button, Card } from '@/components/ui';
 import type { AccessRequest } from '@/lib/api/access-requests';
+import type { ManualConfirmationPlatform } from '@agency-platform/shared';
 import { PLATFORM_NAMES } from '@agency-platform/shared';
 import { ShopifySubmissionPanel } from './shopify-submission-panel';
 
 interface RequestPlatformsCardProps {
   request: AccessRequest;
+  onConfirmManualAccess?: (platform: ManualConfirmationPlatform) => Promise<string | null>;
 }
 
 type UnresolvedProduct = NonNullable<
@@ -32,13 +36,26 @@ function formatUnresolvedReason(reason: string): string {
   }
 }
 
-export function RequestPlatformsCard({ request }: RequestPlatformsCardProps) {
+export function RequestPlatformsCard({ request, onConfirmManualAccess }: RequestPlatformsCardProps) {
+  const [acknowledgedPlatforms, setAcknowledgedPlatforms] = useState<Record<string, boolean>>({});
+  const [submittingPlatform, setSubmittingPlatform] = useState<string | null>(null);
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const shopifyRequested = request.platforms.some(
     (group) =>
       group.platformGroup === 'shopify' ||
       group.products.some((product) => product.product === 'shopify')
   );
   const unresolvedProducts = request.authorizationProgress?.unresolvedProducts || [];
+  const manualConfirmations = request.manualConfirmations || [];
+
+  const submitManualConfirmation = async (platform: ManualConfirmationPlatform) => {
+    if (!onConfirmManualAccess || !acknowledgedPlatforms[platform] || submittingPlatform) return;
+    setSubmittingPlatform(platform);
+    setErrors((current) => ({ ...current, [platform]: '' }));
+    const error = await onConfirmManualAccess(platform);
+    if (error) setErrors((current) => ({ ...current, [platform]: error }));
+    setSubmittingPlatform(null);
+  };
 
   return (
     <Card className="border-black/10 shadow-sm">
@@ -82,6 +99,74 @@ export function RequestPlatformsCard({ request }: RequestPlatformsCardProps) {
                 </li>
               ))}
             </ul>
+          </div>
+        )}
+
+        {manualConfirmations.length > 0 && (
+          <div className="mt-5 space-y-3" aria-label="Manual access confirmations">
+            {manualConfirmations.map((confirmation) => {
+              const platformName = formatGroup(confirmation.platform);
+              if (confirmation.verificationStatus === 'verified') {
+                return (
+                  <div
+                    key={confirmation.platform}
+                    className="flex items-start gap-3 border border-teal/30 bg-teal/10 p-4"
+                  >
+                    <CheckCircle2 className="mt-0.5 h-5 w-5 shrink-0 text-success-ink" />
+                    <div>
+                      <p className="text-sm font-semibold text-ink">{platformName}</p>
+                      <p className="mt-1 text-sm font-medium text-success-ink">Confirmed by agency</p>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Manual review recorded. This is not automated provider verification.
+                      </p>
+                    </div>
+                  </div>
+                );
+              }
+
+              const error = errors[confirmation.platform];
+              const isSubmitting = submittingPlatform === confirmation.platform;
+              return (
+                <div
+                  key={confirmation.platform}
+                  className="border border-[var(--warning)] bg-[var(--warning)]/10 p-4"
+                >
+                  <p className="text-sm font-semibold text-ink">{platformName} access needs agency review</p>
+                  <p className="mt-1 text-sm text-muted-foreground">
+                    Check access in {platformName}, then record your manual confirmation.
+                  </p>
+                  <label className="mt-3 flex min-h-[44px] cursor-pointer items-center gap-3 text-sm font-medium text-ink">
+                    <input
+                      type="checkbox"
+                      className="h-5 w-5 accent-coral"
+                      checked={Boolean(acknowledgedPlatforms[confirmation.platform])}
+                      disabled={Boolean(submittingPlatform)}
+                      onChange={(event) => setAcknowledgedPlatforms((current) => ({
+                        ...current,
+                        [confirmation.platform]: event.target.checked,
+                      }))}
+                    />
+                    I checked {platformName} access in the native platform.
+                  </label>
+                  {error && (
+                    <p role="alert" className="mt-2 flex items-start gap-2 text-sm text-danger-ink">
+                      <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                      {error}
+                    </p>
+                  )}
+                  <Button
+                    className="mt-3"
+                    size="sm"
+                    variant="secondary"
+                    isLoading={isSubmitting}
+                    disabled={!acknowledgedPlatforms[confirmation.platform] || Boolean(submittingPlatform)}
+                    onClick={() => void submitManualConfirmation(confirmation.platform)}
+                  >
+                    {error ? 'Try confirmation again' : 'Confirm access manually'}
+                  </Button>
+                </div>
+              );
+            })}
           </div>
         )}
 

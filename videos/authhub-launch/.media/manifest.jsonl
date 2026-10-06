@@ -1,0 +1,5 @@
+{"id":"bgm_001","type":"bgm","path":"assets/bgm/track.mp3","source":"search","description":"percussive kinetic electronic, tight drums, no vocals, tension then a clean resolve","duration":62,"provenance":{"provider":"heygen","prompt":"percussive kinetic electronic, tight drums, no vocals, tension then a clean resolve"}}
+{"id":"sfx_001","type":"sfx","path":"assets/sfx/tick.mp3","source":"search","description":"tick","duration":7.8,"provenance":{"provider":"heygen","prompt":"tick"}}
+{"id":"sfx_002","type":"sfx","path":"assets/sfx/impact.mp3","source":"search","description":"impact","duration":5.4,"provenance":{"provider":"heygen","prompt":"impact"}}
+{"id":"sfx_003","type":"sfx","path":"assets/sfx/whoosh.mp3","source":"search","description":"whoosh","duration":1.6,"provenance":{"provider":"heygen","prompt":"whoosh"}}
+{"id":"sfx_004","type":"sfx","path":"assets/sfx/click.mp3","source":"search","description":"click","duration":0.2,"provenance":{"provider":"heygen","prompt":"click"}}

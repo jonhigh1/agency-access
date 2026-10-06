@@ -219,6 +219,40 @@ export type HealthStatus = z.infer<typeof HealthStatusSchema>;
 export const AccessRequestStatusSchema = z.enum(['pending', 'partial', 'completed', 'expired', 'revoked']);
 export type AccessRequestStatus = z.infer<typeof AccessRequestStatusSchema>;
 
+export const ManualConfirmationPlatformSchema = z.enum([
+  'beehiiv',
+  'kit',
+  'mailchimp',
+  'klaviyo',
+  'zapier',
+  'pinterest',
+  'shopify',
+]);
+export type ManualConfirmationPlatform = z.infer<typeof ManualConfirmationPlatformSchema>;
+
+export const ManualConfirmationRequestSchema = z.object({
+  confirmed: z.literal(true),
+});
+export type ManualConfirmationRequest = z.infer<typeof ManualConfirmationRequestSchema>;
+
+export const ManualConfirmationSchema = z.object({
+  platform: ManualConfirmationPlatformSchema,
+  verificationStatus: z.enum(['pending', 'verified']),
+  verificationMethod: z.literal('manual_review').optional(),
+  verifiedAt: z.string().datetime().optional(),
+});
+export type ManualConfirmation = z.infer<typeof ManualConfirmationSchema>;
+
+export const ManualConfirmationResponseDataSchema = z.object({
+  confirmation: ManualConfirmationSchema.extend({
+    verificationStatus: z.literal('verified'),
+    verificationMethod: z.literal('manual_review'),
+    verifiedAt: z.string().datetime(),
+  }),
+  requestStatus: AccessRequestStatusSchema,
+});
+export type ManualConfirmationResponseData = z.infer<typeof ManualConfirmationResponseDataSchema>;
+
 // Connection status
 export const ConnectionStatusSchema = z.enum(['active', 'revoked', 'expired']);
 export type ConnectionStatus = z.infer<typeof ConnectionStatusSchema>;

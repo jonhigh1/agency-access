@@ -122,6 +122,15 @@ describe('Access Requests Routes - Platform Connection Validation', () => {
   });
 
   describe('POST /access-requests - payload normalization', () => {
+    it.each(['null', '42', '"invalid"', '[]'])('rejects non-object JSON %s before normalization', async (payload) => {
+      const response = await app.inject({
+        method: 'POST', url: '/access-requests', headers: { 'content-type': 'application/json' }, payload,
+      });
+      expect(response.statusCode).toBe(400);
+      expect(response.json().error.code).toBe('VALIDATION_ERROR');
+      expect(accessRequestService.createAccessRequest).not.toHaveBeenCalled();
+    });
+
     it('should accept Record<string, string[]> platform payloads', async () => {
       vi.mocked(accessRequestService.createAccessRequest).mockResolvedValue({
         data: { id: 'req-1', agencyId: 'agency-1' } as any,

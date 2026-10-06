@@ -1,0 +1,16 @@
+
+> @agency-platform/web@0.1.0 test:run
+> vitest run src/app/(authenticated)/clients/__tests__/page.behavior.test.tsx src/app/(authenticated)/clients/__tests__/page.design.test.tsx --maxWorkers=2
+
+
+ RUN  v4.0.16 /Users/jon.high/agency-access/apps/web
+
+ ✓ src/app/(authenticated)/clients/__tests__/page.design.test.tsx (3 tests) 2ms
+ ✓ src/app/(authenticated)/clients/__tests__/page.behavior.test.tsx (2 tests) 730ms
+     ✓ clears a search when it produces no clients  578ms
+
+ Test Files  2 passed (2)
+      Tests  5 passed (5)
+   Start at  15:17:35
+   Duration  2.09s (transform 191ms, setup 163ms, import 377ms, tests 732ms, environment 1.43s)
+

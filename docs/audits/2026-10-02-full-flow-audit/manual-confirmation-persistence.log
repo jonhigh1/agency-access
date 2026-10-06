@@ -1,0 +1,10 @@
+prisma:error 
+Invalid `tx.auditLog.create()` invocation in
+/Users/jon.high/agency-access/apps/api/src/services/manual-confirmation.service.ts:154:25
+
+  151     } as Prisma.InputJsonObject,
+  152   },
+  153 });
+→ 154 await tx.auditLog.create(
+Error occurred during query execution:
+ConnectorError(ConnectorError { user_facing_error: None, kind: QueryError(PostgresError { code: "P0001", message: "injected audit failure", severity: "ERROR", detail: None, column: None, hint: None }), transient: false })

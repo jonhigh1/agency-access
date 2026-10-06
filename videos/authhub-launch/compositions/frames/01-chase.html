@@ -1,0 +1,355 @@
+<template>
+  <div data-hf-id="hf-3ghz" id="root" data-composition-id="01-chase" data-duration="5.5" data-width="1920" data-height="1080">
+    <style>
+      #root {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+        container-type: size;
+        color: #fafafa;
+      }
+
+      #root *,
+      #root *::before,
+      #root *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+
+      #root > .clip {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+      }
+
+      [id="01-chase-field"] {
+        z-index: 0;
+        background: #09090b;
+        container-type: size;
+      }
+
+      [id="01-chase-kicker-clip"] {
+        z-index: 1;
+      }
+
+      [id="01-chase-line-clip"] {
+        z-index: 2;
+      }
+
+      [id="01-chase-hero-clip"] {
+        z-index: 3;
+      }
+
+      [id="01-chase-kicker"] {
+        position: absolute;
+        left: 50%;
+        top: 12%;
+        color: #fafafa;
+        font-family: "JetBrains Mono";
+        font-size: 1.25cqw;
+        font-weight: 400;
+        letter-spacing: 0.14em;
+        line-height: 1;
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+
+      [id="01-chase-line"] {
+        position: absolute;
+        left: 10cqw;
+        top: 470px;
+        display: flex;
+        align-items: center;
+        gap: 0.26em;
+        color: #fafafa;
+        font-family: "Archivo Black";
+        font-size: 5.2cqw;
+        font-weight: 400;
+        letter-spacing: -0.01em;
+        line-height: 1;
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+
+      [id="01-chase-prefix"] {
+        position: relative;
+        display: inline-block;
+        flex: 0 0 auto;
+      }
+
+      [id="01-chase-prefix-sizer"] {
+        visibility: hidden;
+      }
+
+      [id="01-chase-prefix-text"] {
+        position: absolute;
+        left: 0;
+        top: 0;
+      }
+
+      [id="01-chase-slot"] {
+        display: inline-block;
+        flex: 0 0 auto;
+        height: 1em;
+        overflow: hidden;
+        color: #fafafa;
+        vertical-align: middle;
+      }
+
+      [id="01-chase-stack"] {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      [id^="01-chase-word-"] {
+        display: flex;
+        align-items: center;
+        height: 1em;
+        line-height: 1;
+        white-space: nowrap;
+      }
+
+      [id="01-chase-hero"],
+      [data-ghost] {
+        position: absolute;
+        left: 960px;
+        top: 470px;
+        color: #ff6b35;
+        font-family: "Archivo Black";
+        font-size: 15.5cqw;
+        font-weight: 400;
+        letter-spacing: -0.02em;
+        line-height: 0.84;
+        text-transform: uppercase;
+        white-space: nowrap;
+      }
+    </style>
+
+    <div data-hf-id="hf-nwex" id="01-chase-field" class="clip" data-start="0" data-duration="5.5" data-track-index="0"></div>
+
+    <div data-hf-id="hf-xydu" id="01-chase-kicker-clip" class="clip" data-start="0" data-duration="5.5" data-track-index="1">
+      <div data-hf-id="hf-v4i0" id="01-chase-kicker">STILL CHASING</div>
+    </div>
+
+    <div data-hf-id="hf-cmiu" id="01-chase-line-clip" class="clip" data-start="0" data-duration="5.5" data-track-index="2">
+      <div data-hf-id="hf-eebg" id="01-chase-line">
+        <span data-hf-id="hf-vrh3" id="01-chase-prefix">
+          <span data-hf-id="hf-85d6" id="01-chase-prefix-sizer">SEND THE</span>
+          <span data-hf-id="hf-cgp9" id="01-chase-prefix-text"></span>
+        </span>
+        <span data-hf-id="hf-uy67" id="01-chase-slot">
+          <span data-hf-id="hf-70w1" id="01-chase-stack">
+            <span data-hf-id="hf-5iul" id="01-chase-word-0">PASSWORD</span>
+            <span data-hf-id="hf-r9rk" id="01-chase-word-1">INVITE</span>
+            <span data-hf-id="hf-k4qq" id="01-chase-word-2">SCREENSHOT</span>
+            <span data-hf-id="hf-6y0g" id="01-chase-word-3" aria-hidden="true">SCREENSHOT</span>
+          </span>
+        </span>
+      </div>
+    </div>
+
+    <div data-hf-id="hf-2ok5" id="01-chase-hero-clip" class="clip" data-start="0" data-duration="5.5" data-track-index="3">
+      <div data-hf-id="hf-ogfk" id="01-chase-ghost-3" data-ghost="3" aria-hidden="true">ONE LINK</div>
+      <div data-hf-id="hf-ok88" id="01-chase-ghost-2" data-ghost="2" aria-hidden="true">ONE LINK</div>
+      <div data-hf-id="hf-o6og" id="01-chase-ghost-1" data-ghost="1" aria-hidden="true">ONE LINK</div>
+      <div data-hf-id="hf-gn4m" id="01-chase-hero">ONE LINK</div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <script>
+      (function () {
+        "use strict";
+
+        var root = document.getElementById("root");
+        var kicker = document.getElementById("01-chase-kicker");
+        var line = document.getElementById("01-chase-line");
+        var prefixText = document.getElementById("01-chase-prefix-text");
+        var slot = document.getElementById("01-chase-slot");
+        var stack = document.getElementById("01-chase-stack");
+        var hero = document.getElementById("01-chase-hero");
+        var ghosts = [
+          document.getElementById("01-chase-ghost-1"),
+          document.getElementById("01-chase-ghost-2"),
+          document.getElementById("01-chase-ghost-3"),
+        ];
+        var words = [
+          document.getElementById("01-chase-word-0"),
+          document.getElementById("01-chase-word-1"),
+          document.getElementById("01-chase-word-2"),
+          document.getElementById("01-chase-word-3"),
+        ];
+
+        var measured = parseFloat(window.getComputedStyle(line).fontSize);
+        var rootWidth = root.getBoundingClientRect().width;
+        if (!(rootWidth > 0)) rootWidth = 1920;
+        var fontSize = measured > 8 ? measured : rootWidth * 0.052;
+        var itemHeight = fontSize;
+        slot.style.height = itemHeight + "px";
+        words.forEach(function (word) {
+          word.style.height = itemHeight + "px";
+        });
+
+        var fullPrefix = "SEND THE";
+        var springs = [{ p: 0 }, { p: 0 }];
+
+        function applyTicker() {
+          var sum = springs[0].p + springs[1].p;
+          gsap.set(stack, { y: -sum * itemHeight });
+        }
+
+        gsap.set(kicker, { xPercent: -50, y: 0, opacity: 1 });
+        gsap.set(line, { x: 0, y: 0, yPercent: -50, rotation: 0, opacity: 0 });
+        gsap.set(hero, {
+          xPercent: -50,
+          yPercent: -50,
+          x: 2200,
+          y: 0,
+          scale: 1,
+          rotation: -8,
+          opacity: 0,
+        });
+        ghosts.forEach(function (ghost, index) {
+          var i = index + 1;
+          gsap.set(ghost, {
+            xPercent: -50,
+            yPercent: -50,
+            x: 2200 + i * 28,
+            y: 0,
+            scale: 1,
+            rotation: -8,
+            opacity: 0,
+          });
+        });
+        applyTicker();
+
+        var tl = gsap.timeline({ paused: true });
+
+        tl.fromTo(
+          line,
+          { x: 0, y: 22, yPercent: -50, rotation: 0, opacity: 0 },
+          {
+            x: 0,
+            y: 0,
+            yPercent: -50,
+            rotation: 0,
+            opacity: 1,
+            duration: 0.32,
+            ease: "power2.out",
+            immediateRender: true,
+          },
+          1.1,
+        );
+
+        var typer = { v: 0 };
+        tl.to(
+          typer,
+          {
+            v: fullPrefix.length,
+            duration: 0.48,
+            ease: "power1.inOut",
+            onUpdate: function () {
+              prefixText.textContent = fullPrefix.substring(0, Math.floor(typer.v));
+            },
+          },
+          1.1,
+        );
+
+        var stepDur = [0.46, 0.5];
+        var stepAt = [1.22, 1.64];
+        var bounce = [1.6, 1.85];
+        springs.forEach(function (spring, index) {
+          tl.to(
+            spring,
+            {
+              p: 1,
+              duration: stepDur[index],
+              ease: "back.out(" + bounce[index] + ")",
+              onUpdate: applyTicker,
+            },
+            stepAt[index],
+          );
+        });
+
+        var driver = { p: 0 };
+        tl.to(
+          driver,
+          {
+            p: 1,
+            duration: 1,
+            ease: "power2.out",
+            onUpdate: function () {
+              var p = driver.p;
+              var intruderX = 2200 * (1 - p);
+              var intruderOpacity = Math.min(1, p * 6);
+              var intruderRot = -8 * (1 - p);
+              gsap.set(hero, {
+                xPercent: -50,
+                yPercent: -50,
+                x: intruderX,
+                y: 0,
+                scale: 1,
+                rotation: intruderRot,
+                opacity: intruderOpacity,
+              });
+              ghosts.forEach(function (ghost, index) {
+                var i = index + 1;
+                gsap.set(ghost, {
+                  xPercent: -50,
+                  yPercent: -50,
+                  x: intruderX + i * 28 * (1 - p),
+                  y: 0,
+                  scale: 1,
+                  rotation: intruderRot,
+                  opacity: (0.48 / i) * (1 - p),
+                });
+              });
+              var victimP = Math.min(1, p / 0.45);
+              gsap.set(line, {
+                x: -1800 * victimP,
+                y: 0,
+                yPercent: -50,
+                rotation: victimP * -16,
+                opacity: 1,
+              });
+            },
+          },
+          3.2,
+        );
+
+        var phase = { p: 0 };
+        var idleCycles = 0.55;
+        tl.to(
+          phase,
+          {
+            p: Math.PI * 2 * idleCycles,
+            duration: 1.1,
+            ease: "none",
+            onUpdate: function () {
+              var t = phase.p / (Math.PI * 2 * idleCycles);
+              var env = t < 0.68 ? 1 : (1 - t) / 0.32;
+              if (env < 0) env = 0;
+              var scaleWave = Math.sin(phase.p);
+              var spinWave = Math.sin(phase.p * 2.4);
+              gsap.set(hero, {
+                xPercent: -50,
+                yPercent: -50,
+                x: 0,
+                y: 0,
+                scale: 1 + scaleWave * 0.012 * env,
+                rotation: spinWave * 0.4 * env,
+                opacity: 1,
+              });
+            },
+          },
+          4.4,
+        );
+
+        tl.seek(0);
+        window.__timelines = window.__timelines || {};
+        window.__timelines["01-chase"] = tl;
+      })();
+    </script>
+  </div>
+</template>

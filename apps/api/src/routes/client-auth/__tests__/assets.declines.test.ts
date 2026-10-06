@@ -1,3 +1,4 @@
+import { mockJsonTransactions } from '../../../__tests__/json-transaction-mock';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Prisma } from '@prisma/client';
 import Fastify, { type FastifyInstance } from 'fastify';
@@ -138,8 +139,7 @@ describe('save-assets explicit asset-type declines', () => {
     app = Fastify();
     await registerAssetRoutes(app);
     vi.clearAllMocks();
-    vi.mocked(prisma.$transaction).mockImplementation(async (callback: any) => callback(prisma));
-    vi.mocked(prisma.$queryRaw).mockResolvedValue([{ id: 'conn-1', granted_assets: {} }] as any);
+    mockJsonTransactions(prisma);
     vi.mocked(prisma.clientConnection.update).mockResolvedValue({ id: 'conn-1' } as any);
     vi.mocked(prisma.platformAuthorization.update).mockResolvedValue({ id: 'pa-1' } as any);
     vi.mocked(prisma.metaAgencyDestination.upsert).mockResolvedValue({ id: 'destination-1' } as any);

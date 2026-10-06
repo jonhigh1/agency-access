@@ -1,0 +1,68 @@
+
+> @agency-platform/api@0.1.0 test:run
+> vitest run src/services/__tests__/manual-confirmation.service.test.ts --maxWorkers=2
+
+
+ RUN  v4.0.16 /Users/jon.high/agency-access/apps/api
+
+ ❯ src/services/__tests__/manual-confirmation.service.test.ts (11 tests | 2 failed) 12ms
+     ✓ locks the connection, preserves evidence and siblings, audits, and recomputes progress 4ms
+     ✓ is idempotent after verification and does not duplicate the audit 1ms
+     ✓ rejects a non-user actor before opening a transaction 1ms
+     ✓ allows only the exact development bypass actor in development 0ms
+     ✓ rejects another tenant 0ms
+     ✓ rejects an unrequested platform 0ms
+     ✓ rejects a revoked request 0ms
+     ✓ rejects an expired request 0ms
+     × rejects a revoked connection without confirming its evidence 3ms
+     × rejects a expired connection without confirming its evidence 1ms
+     ✓ rejects a connection without matching pending evidence 0ms
+
+⎯⎯⎯⎯⎯⎯⎯ Failed Tests 2 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/services/__tests__/manual-confirmation.service.test.ts > manualConfirmationService > rejects a revoked connection without confirming its evidence
+ FAIL  src/services/__tests__/manual-confirmation.service.test.ts > manualConfirmationService > rejects a expired connection without confirming its evidence
+AssertionError: expected { data: { …(2) }, error: null } to match object { data: null, …(1) }
+
+- Expected
++ Received
+
+  {
+-   "data": null,
+-   "error": {
+-     "code": "MANUAL_CONNECTION_UNAVAILABLE",
++   "data": {
++     "confirmation": {
++       "platform": "beehiiv",
++       "verificationMethod": "manual_review",
++       "verificationStatus": "verified",
++       "verifiedAt": "2026-10-04T16:00:00.000Z",
+      },
++     "requestStatus": "partial",
++   },
++   "error": null,
+  }
+
+ ❯ src/services/__tests__/manual-confirmation.service.test.ts:230:20
+    228|       actorEmail: 'owner@agency.test', ipAddress: '127.0.0.1', userAge…
+    229|     });
+    230|     expect(result).toMatchObject({ data: null, error: { code: 'MANUAL_…
+       |                    ^
+    231|     expect(tx.clientConnection.update).not.toHaveBeenCalled();
+    232|     expect(tx.auditLog.create).not.toHaveBeenCalled();
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/2]⎯
+
+
+ Test Files  1 failed (1)
+      Tests  2 failed | 9 passed (11)
+   Start at  15:08:49
+   Duration  200ms (transform 74ms, setup 14ms, import 89ms, tests 12ms, environment 0ms)
+
+npm error Lifecycle script `test:run` failed with error:
+npm error code 1
+npm error path /Users/jon.high/agency-access/apps/api
+npm error workspace @agency-platform/api@0.1.0
+npm error location /Users/jon.high/agency-access/apps/api
+npm error command failed
+npm error command sh -c vitest run src/services/__tests__/manual-confirmation.service.test.ts --maxWorkers=2

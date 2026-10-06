@@ -1,0 +1,22 @@
+{
+  "environment": "Disposable loopback PostgreSQL 55442; no providers or tokens",
+  "cases": [
+    {
+      "name": "concurrent_product_saves_preserve_both_selections",
+      "passed": true
+    },
+    {
+      "name": "discovery_save_preserves_root_selection_and_saved_assets",
+      "passed": true
+    },
+    {
+      "name": "metadata_update_waits_for_real_authorization_row_lock",
+      "passed": true
+    },
+    {
+      "name": "status_and_metadata_commit_together_without_erasing_selections",
+      "passed": true
+    }
+  ],
+  "passed": true
+}

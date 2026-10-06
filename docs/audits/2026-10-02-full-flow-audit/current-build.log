@@ -1,0 +1,131 @@
+
+> agency-access-platform@0.1.0 build
+> npm run build --workspace=packages/shared && npm run build --workspace=apps/api && npm run build --workspace=apps/web
+
+
+> @agency-platform/shared@0.1.0 build
+> tsc
+
+
+> @agency-platform/api@0.1.0 build
+> tsc && tsc-alias --resolve-full-paths
+
+
+> @agency-platform/web@0.1.0 build
+> next build
+
+▲ Next.js 16.3.6 (Turbopack)
+- Environments: .env.local
+[@sentry/nextjs] ACTION REQUIRED: To instrument navigations, the Sentry SDK requires you to export an `onRouterTransitionStart` hook from your `instrumentation-client.(js|ts)` file. You can do so by adding `export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;` to the file.
+✓ Running next.config.ts took 371ms
+- Experiments (use with caution):
+  · clientTraceMetadata
+
+  Creating an optimized production build ...
+[@sentry/nextjs] ACTION REQUIRED: To instrument navigations, the Sentry SDK requires you to export an `onRouterTransitionStart` hook from your `instrumentation-client.(js|ts)` file. You can do so by adding `export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;` to the file.
+✓ Compiled successfully in 3.7s
+  Running next.config.js provided runAfterProductionCompile ...
+✓ Completed runAfterProductionCompile in 397ms
+  Running TypeScript ...
+  Finished TypeScript in 9.5s ...
+  Collecting page data using 9 workers ...
+[blog-data] Invalid category "undefined" in leadsie-vs-authhub-comparison.md, defaulting to "tutorials"
+[blog-data] Invalid stage "undefined" in leadsie-vs-authhub-comparison.md, defaulting to "consideration"
+  Generating static pages using 9 workers (0/78) ...
+[blog-data] Invalid category "undefined" in leadsie-vs-authhub-comparison.md, defaulting to "tutorials"
+[blog-data] Invalid stage "undefined" in leadsie-vs-authhub-comparison.md, defaulting to "consideration"
+[blog-data] Invalid category "undefined" in leadsie-vs-authhub-comparison.md, defaulting to "tutorials"
+[blog-data] Invalid stage "undefined" in leadsie-vs-authhub-comparison.md, defaulting to "consideration"
+[blog-data] Invalid category "undefined" in leadsie-vs-authhub-comparison.md, defaulting to "tutorials"
+[blog-data] Invalid stage "undefined" in leadsie-vs-authhub-comparison.md, defaulting to "consideration"
+  Generating static pages using 9 workers (19/78) 
+[blog-data] Invalid category "undefined" in leadsie-vs-authhub-comparison.md, defaulting to "tutorials"
+[blog-data] Invalid stage "undefined" in leadsie-vs-authhub-comparison.md, defaulting to "consideration"
+  Generating static pages using 9 workers (38/78) 
+  Generating static pages using 9 workers (58/78) 
+✓ Generating static pages using 9 workers (78/78) in 1182ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ○ /about
+├ ƒ /access-requests/[id]
+├ ƒ /access-requests/[id]/edit
+├ ƒ /access-requests/[id]/success
+├ ○ /access-requests/new
+├ ○ /affiliate
+├ ƒ /agent-operations/[id]
+├ ƒ /authorize/[token]
+├ ƒ /blog
+├   /blog/[slug]
+│ ├ ● /blog/mcp-oauth-client-access-agencies
+│ ├ ● /blog/best-leadsie-alternatives-2026
+│ ├ ● /blog/leadsie-vs-agencyaccess
+│ └ ● [+23 more paths]
+├ ○ /checkout/cancel
+├ ○ /checkout/success
+├ ƒ /client/[token]
+├ ○ /clients
+├ ƒ /clients/[id]
+├   /compare/[slug]
+│ ├ ● /compare/leadsie-alternative
+│ ├ ● /compare/agencyaccess-alternative
+│ ├ ● /compare/clientinvite-alternative
+│ └ ● [+2 more paths]
+├ ○ /connections
+├ ○ /contact
+├ ○ /dashboard
+├ ○ /design-system
+├ ○ /dev
+├ ○ /dev/client-detail
+├ ○ /dev/offboarding-preview
+├ ○ /dev/redesign-prototype
+├ ○ /features/white-label
+├ ○ /guides/google-ads-access
+├ ○ /guides/meta-ads-access
+├ ○ /hero-copy-rewrite
+├ ○ /internal/admin
+├ ○ /internal/admin/affiliates
+├ ○ /internal/admin/agencies
+├ ○ /internal/admin/subscriptions
+├ ○ /internal/admin/webhooks
+├ ƒ /invite/[token]
+├ ƒ /invite/[token]/beehiiv/manual
+├ ƒ /invite/[token]/kit/manual
+├ ƒ /invite/[token]/klaviyo/manual
+├ ƒ /invite/[token]/mailchimp/manual
+├ ƒ /invite/[token]/pinterest/manual
+├ ƒ /invite/[token]/shopify/manual
+├ ƒ /invite/[token]/zapier/manual
+├ ○ /invite/oauth-callback
+├ ○ /onboarding/agency
+├ ○ /onboarding/platforms
+├ ○ /onboarding/unified
+├ ○ /opengraph-image-pwu6ef.png
+├ ○ /opengraph-image.png
+├ ○ /partners
+├ ○ /perf/dashboard-bootstrap
+├ ○ /platforms/callback
+├ ○ /pricing
+├ ○ /privacy-policy
+├ ƒ /r/[code]
+├ ○ /robots.txt
+├ ○ /settings
+├ ○ /settings/platforms
+├ ƒ /sign-in/[[...sign-in]]
+├ ƒ /sign-up/[[...sign-up]]
+├ ○ /sitemap.xml
+├ ○ /terms
+├ ○ /test/access-request
+├ ○ /test/asset-creation
+├ ○ /token-health
+└ ○ /twitter-image.png
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+●  (SSG)      prerendered as static HTML (uses generateStaticParams)
+ƒ  (Dynamic)  server-rendered on demand
+

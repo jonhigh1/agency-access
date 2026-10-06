@@ -1,0 +1,16 @@
+
+> @agency-platform/api@0.1.0 test:run
+> vitest run src/services/__tests__/manual-confirmation.service.test.ts src/routes/__tests__/manual-confirmations.routes.test.ts --maxWorkers=2
+
+
+ RUN  v4.0.16 /Users/jon.high/agency-access/apps/api
+
+ ✓ src/services/__tests__/manual-confirmation.service.test.ts (11 tests) 9ms
+ ✓ src/routes/__tests__/manual-confirmations.routes.test.ts (6 tests) 347ms
+     ✓ uses the verified principal for the confirmation actor  318ms
+
+ Test Files  2 passed (2)
+      Tests  17 passed (17)
+   Start at  15:09:21
+   Duration  940ms (transform 319ms, setup 53ms, import 585ms, tests 356ms, environment 0ms)
+

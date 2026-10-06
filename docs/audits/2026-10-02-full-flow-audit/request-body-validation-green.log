@@ -1,0 +1,14 @@
+
+> @agency-platform/api@0.1.0 test:run
+> vitest run src/routes/__tests__/access-requests.routes.test.ts --maxWorkers=2
+
+
+ RUN  v4.0.16 /Users/jon.high/agency-access/apps/api
+
+ ✓ src/routes/__tests__/access-requests.routes.test.ts (29 tests) 175ms
+
+ Test Files  1 passed (1)
+      Tests  29 passed (29)
+   Start at  15:12:56
+   Duration  749ms (transform 260ms, setup 15ms, import 472ms, tests 175ms, environment 0ms)
+

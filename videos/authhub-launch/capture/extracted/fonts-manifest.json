@@ -1,0 +1,174 @@
+{
+  "files": [
+    {
+      "file": "aFTR7PB1QTsUX8KYvumzEY2tbYf-Vlh3uA.woff2",
+      "family": "DM Mono",
+      "rawFamily": "DM Mono Medium",
+      "subfamily": "Regular",
+      "postscript": "DMMono-Medium",
+      "weight": 500,
+      "style": "normal",
+      "variationAxes": [],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "aFTR7PB1QTsUX8KYvumzEYOtbYf-Vlg.woff2",
+      "family": "DM Mono",
+      "rawFamily": "DM Mono Medium",
+      "subfamily": "Regular",
+      "postscript": "DMMono-Medium",
+      "weight": 500,
+      "style": "normal",
+      "variationAxes": [],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "aFTU7PB1QTsUX8KYthSQBK6PYK3EXw.woff2",
+      "family": "DM Mono",
+      "rawFamily": "DM Mono",
+      "subfamily": "Regular",
+      "postscript": "DMMono-Regular",
+      "weight": 400,
+      "style": "normal",
+      "variationAxes": [],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "aFTU7PB1QTsUX8KYthqQBK6PYK0.woff2",
+      "family": "DM Mono",
+      "rawFamily": "DM Mono",
+      "subfamily": "Regular",
+      "postscript": "DMMono-Regular",
+      "weight": 400,
+      "style": "normal",
+      "variationAxes": [],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "xn7gYHE41ni1AdIRggOxSvfedN62Zw.woff2",
+      "family": "Manrope",
+      "rawFamily": "Manrope ExtraLight",
+      "subfamily": "Regular",
+      "postscript": "Manrope-ExtraLight",
+      "weight": 200,
+      "style": "normal",
+      "variationAxes": [
+        "wght"
+      ],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "xn7gYHE41ni1AdIRggSxSvfedN62Zw.woff2",
+      "family": "Manrope",
+      "rawFamily": "Manrope ExtraLight",
+      "subfamily": "Regular",
+      "postscript": "Manrope-ExtraLight",
+      "weight": 200,
+      "style": "normal",
+      "variationAxes": [
+        "wght"
+      ],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "xn7gYHE41ni1AdIRggexSvfedN4.woff2",
+      "family": "Manrope",
+      "rawFamily": "Manrope ExtraLight",
+      "subfamily": "Regular",
+      "postscript": "Manrope-ExtraLight",
+      "weight": 200,
+      "style": "normal",
+      "variationAxes": [
+        "wght"
+      ],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "xn7gYHE41ni1AdIRggixSvfedN62Zw.woff2",
+      "family": "Manrope",
+      "rawFamily": "Manrope ExtraLight",
+      "subfamily": "Regular",
+      "postscript": "Manrope-ExtraLight",
+      "weight": 200,
+      "style": "normal",
+      "variationAxes": [
+        "wght"
+      ],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "xn7gYHE41ni1AdIRggmxSvfedN62Zw.woff2",
+      "family": "Manrope",
+      "rawFamily": "Manrope ExtraLight",
+      "subfamily": "Regular",
+      "postscript": "Manrope-ExtraLight",
+      "weight": 200,
+      "style": "normal",
+      "variationAxes": [
+        "wght"
+      ],
+      "identified": true,
+      "isIcon": false
+    },
+    {
+      "file": "xn7gYHE41ni1AdIRggqxSvfedN62Zw.woff2",
+      "family": "Manrope",
+      "rawFamily": "Manrope ExtraLight",
+      "subfamily": "Regular",
+      "postscript": "Manrope-ExtraLight",
+      "weight": 200,
+      "style": "normal",
+      "variationAxes": [
+        "wght"
+      ],
+      "identified": true,
+      "isIcon": false
+    }
+  ],
+  "families": [
+    {
+      "family": "DM Mono",
+      "weights": [
+        400,
+        500
+      ],
+      "variable": false,
+      "fileCount": 4,
+      "files": [
+        "aFTR7PB1QTsUX8KYvumzEY2tbYf-Vlh3uA.woff2",
+        "aFTR7PB1QTsUX8KYvumzEYOtbYf-Vlg.woff2",
+        "aFTU7PB1QTsUX8KYthSQBK6PYK3EXw.woff2",
+        "aFTU7PB1QTsUX8KYthqQBK6PYK0.woff2"
+      ]
+    },
+    {
+      "family": "Manrope",
+      "weights": [
+        200
+      ],
+      "variable": true,
+      "fileCount": 6,
+      "files": [
+        "xn7gYHE41ni1AdIRggOxSvfedN62Zw.woff2",
+        "xn7gYHE41ni1AdIRggSxSvfedN62Zw.woff2",
+        "xn7gYHE41ni1AdIRggexSvfedN4.woff2",
+        "xn7gYHE41ni1AdIRggixSvfedN62Zw.woff2",
+        "xn7gYHE41ni1AdIRggmxSvfedN62Zw.woff2",
+        "xn7gYHE41ni1AdIRggqxSvfedN62Zw.woff2"
+      ]
+    }
+  ],
+  "unidentified": [],
+  "meta": {
+    "generatedAt": "2026-10-02T00:57:27.152Z",
+    "tool": "fontkit"
+  }
+}

@@ -8,6 +8,9 @@
 import { PlatformGroupConfig } from '@/lib/transform-platforms';
 import type {
   IntakeField,
+  ManualConfirmation,
+  ManualConfirmationPlatform,
+  ManualConfirmationResponseData,
   MetaAccessConfig,
   MetaFulfillmentDeclines,
   MetaFulfillmentResult,
@@ -79,6 +82,7 @@ export interface AccessRequest {
   metaFulfillment?: MetaFulfillmentResult[];
   metaDeclines?: MetaFulfillmentDeclines;
   authorizationLinkChanged?: boolean;
+  manualConfirmations?: ManualConfirmation[];
 }
 
 export interface UpdateAccessRequestPayload {
@@ -265,6 +269,34 @@ export async function excludeMetaGrant(
         getToken: getToken ?? (async () => null),
       }
     );
+    return { data: response.data };
+  } catch (err) {
+    if (err instanceof AuthorizedApiError) {
+      return { error: { code: err.code, message: err.message, details: err.details } };
+    }
+    return {
+      error: {
+        code: 'NETWORK_ERROR',
+        message: err instanceof Error ? err.message : 'Network error. Please try again.',
+      },
+    };
+  }
+}
+
+export async function confirmManualAccess(
+  accessRequestId: string,
+  platform: ManualConfirmationPlatform,
+  getToken?: TokenProvider
+): Promise<{ data?: ManualConfirmationResponseData; error?: ApiError }> {
+  try {
+    const response = await authorizedApiFetch<{
+      data: ManualConfirmationResponseData;
+      error: null;
+    }>(`/api/access-requests/${accessRequestId}/manual-confirmations/${platform}`, {
+      method: 'POST',
+      body: JSON.stringify({ confirmed: true }),
+      getToken: getToken ?? (async () => null),
+    });
     return { data: response.data };
   } catch (err) {
     if (err instanceof AuthorizedApiError) {

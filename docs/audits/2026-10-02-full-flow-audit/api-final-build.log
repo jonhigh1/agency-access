@@ -1,0 +1,4 @@
+
+> @agency-platform/api@0.1.0 build
+> tsc && tsc-alias --resolve-full-paths
+

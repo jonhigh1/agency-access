@@ -7,16 +7,25 @@
 
 import { FastifyInstance } from 'fastify';
 import { z } from 'zod';
+import {
+  ManualConfirmationPlatformSchema,
+  ManualConfirmationRequestSchema,
+} from '@agency-platform/shared';
 import { accessRequestService } from '../services/access-request.service.js';
+import {
+  isManualConfirmationActorId,
+  manualConfirmationService,
+} from '../services/manual-confirmation.service.js';
 import { agencyPlatformService } from '../services/agency-platform.service.js';
 import { auditService } from '../services/audit.service.js';
 import { accessRequestReminderService } from '../services/access-request-reminder.service.js';
 import { quotaEnforcementMiddleware } from '../middleware/quota-enforcement.js';
 import { authenticate } from '@/middleware/auth.js';
-import { assertAgencyAccess } from '@/lib/authorization.js';
+import { assertAgencyAccess, resolveAuthenticatedUserEmail } from '@/lib/authorization.js';
 import { requirePrincipalAgency } from '@/lib/agency-guard.js';
 import { sendError } from '../lib/response.js';
 import { DEFAULT_LIST_LIMIT, MAX_LIST_LIMIT } from '@/lib/list-pagination.js';
+import { extractClientIp } from '@/lib/ip.js';
 
 const listAccessRequestsQuerySchema = z.object({
   status: z.string().optional(),
@@ -109,7 +118,11 @@ export async function accessRequestRoutes(fastify: FastifyInstance) {
       ],
     },
     async (request, reply) => {
-    const requestBody = request.body as any;
+    const bodyValidation = z.record(z.unknown()).safeParse(request.body);
+    if (!bodyValidation.success) {
+      return sendError(reply, 'VALIDATION_ERROR', 'Request body must be a JSON object', 400);
+    }
+    const requestBody = bodyValidation.data;
     const originalPlatforms = requestBody.platforms ?? [];
     const transformedPlatforms = normalizePlatformsPayload(originalPlatforms);
     const principalAgencyId = (request as any).principalAgencyId as string;
@@ -331,6 +344,65 @@ export async function accessRequestRoutes(fastify: FastifyInstance) {
         data: null,
         error: result.error,
       });
+    }
+
+    return reply.send(result);
+  });
+
+  fastify.post('/access-requests/:id/manual-confirmations/:platform', {
+    onRequest: [authenticate(), requirePrincipalAgency],
+  }, async (request, reply) => {
+    const params = z.object({
+      id: z.string().min(1),
+      platform: ManualConfirmationPlatformSchema,
+    }).safeParse(request.params);
+    const body = ManualConfirmationRequestSchema.safeParse(request.body);
+    if (!params.success || !body.success) {
+      return sendError(reply, 'VALIDATION_ERROR', 'A supported platform and explicit confirmation are required', 400);
+    }
+
+    const existing = await accessRequestService.getAccessRequestOwnershipById(params.data.id);
+    if (existing.error || !existing.data) {
+      const statusCode = existing.error?.code === 'NOT_FOUND' ? 404 : 500;
+      return reply.code(statusCode).send(existing);
+    }
+
+    const agencyId = (request as any).principalAgencyId as string;
+    const accessError = assertAgencyAccess(existing.data.agencyId, agencyId);
+    if (accessError) {
+      return reply.code(403).send({ data: null, error: accessError });
+    }
+
+    const actorEmail = await resolveAuthenticatedUserEmail((request as any).user);
+    if (!actorEmail) {
+      return sendError(reply, 'USER_EMAIL_REQUIRED', 'Authenticated user email is required to confirm manual access', 401);
+    }
+    const actorId = (request as any).user?.sub;
+    if (!isManualConfirmationActorId(actorId)) {
+      return sendError(reply, 'AGENCY_USER_REQUIRED', 'A verified agency user is required to confirm manual access', 403);
+    }
+
+    const result = await manualConfirmationService.confirmManualAccess({
+      accessRequestId: params.data.id,
+      agencyId,
+      platform: params.data.platform,
+      actorId,
+      actorEmail,
+      ipAddress: extractClientIp(request),
+      userAgent: (request.headers['user-agent'] as string | undefined) || 'unknown',
+    });
+    if (result.error) {
+      const statusByCode: Record<string, number> = {
+        NOT_FOUND: 404,
+        REQUEST_REVOKED: 409,
+        REQUEST_EXPIRED: 409,
+        PLATFORM_NOT_REQUESTED: 400,
+        MANUAL_EVIDENCE_NOT_FOUND: 409,
+        MANUAL_EVIDENCE_ALREADY_VERIFIED: 409,
+        MANUAL_CONNECTION_UNAVAILABLE: 409,
+        AGENCY_USER_REQUIRED: 403,
+      };
+      return reply.code(statusByCode[result.error.code] ?? 500).send(result);
     }
 
     return reply.send(result);

@@ -16,6 +16,7 @@ import {
 import { infisical } from '../../lib/infisical.js';
 import { prisma } from '../../lib/prisma.js';
 import { updateGrantedAssets } from '../../lib/granted-assets.js';
+import { updateAuthorizationMetadata } from '../../lib/authorization-metadata.js';
 import { readMetaAuthorizationMetadata } from '../../lib/meta-authorization-metadata.js';
 import {
   type MetaAssetKind,
@@ -778,8 +779,6 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
       });
 
       if (existingAuth) {
-        const existingMetadata = (existingAuth.metadata as any) || {};
-        const priorMetaAdsMetadata = existingMetadata.selectedAssets?.meta_ads || {};
         const tiktokSelection =
           authPlatform === 'tiktok'
             ? {
@@ -796,37 +795,35 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
               }
             : undefined;
 
-        const updatedMetadata = {
-          ...existingMetadata,
-          ...(platformStr === 'meta_ads' ? {
-            meta: {
-              ...((existingMetadata.meta as any) || {}),
-              declinedAssetKinds: effectiveDeclines,
-            },
-          } : {}),
-          selectedAssets: {
-            ...(existingMetadata.selectedAssets || {}),
-            ...(instagramSelection ? {
-              meta_ads: {
-                ...(priorMetaAdsMetadata.selectedBusinessId === selectedMetaBusinessId ? priorMetaAdsMetadata : {}),
-                ...instagramSelection,
+        await updateAuthorizationMetadata(existingAuth.id, (existingMetadata: any) => {
+          const priorMetaAdsMetadata = existingMetadata.selectedAssets?.meta_ads || {};
+          return {
+            ...existingMetadata,
+            ...(platformStr === 'meta_ads' ? {
+              meta: {
+                ...((existingMetadata.meta as any) || {}),
+                declinedAssetKinds: effectiveDeclines,
               },
             } : {}),
-            [platform]: resolvedSelectedAssets,
-          },
-          ...(tiktokSelection
-            ? {
-                tiktok: {
-                  ...(existingMetadata.tiktok || {}),
-                  ...tiktokSelection,
+            selectedAssets: {
+              ...(existingMetadata.selectedAssets || {}),
+              ...(instagramSelection ? {
+                meta_ads: {
+                  ...(priorMetaAdsMetadata.selectedBusinessId === selectedMetaBusinessId ? priorMetaAdsMetadata : {}),
+                  ...instagramSelection,
                 },
-              }
-            : {}),
-        };
-
-        await prisma.platformAuthorization.update({
-          where: { id: existingAuth.id },
-          data: { metadata: updatedMetadata },
+              } : {}),
+              [platform]: resolvedSelectedAssets,
+            },
+            ...(tiktokSelection
+              ? {
+                  tiktok: {
+                    ...(existingMetadata.tiktok || {}),
+                    ...tiktokSelection,
+                  },
+                }
+              : {}),
+          };
         });
 
         if (metaRequirementContext) {
@@ -1518,36 +1515,36 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
         ['catalog', currentRecipientGrantResults.filter((result) => result.assetType === 'catalog')],
         ['dataset', currentRecipientGrantResults.filter((result) => result.assetType === 'dataset')],
       ];
-      const mergedAssetGrantResults = sortMetaAssetGrantResults(
-        requestedGrantResultsByType.reduce(
-          (acc, [assetType, nextResults]) =>
-          requestedAssetTypes.has(assetType)
-            ? mergeMetaAssetGrantResults(acc, nextResults, assetType)
-            : acc,
-          metaMetadata.obo?.assetGrantResults || []
-        )
-      );
+      const verificationCompletedAt = new Date().toISOString();
+      let mergedAssetGrantResults: MetaAssetGrantResult[] = [];
+      await updateAuthorizationMetadata(platformAuth.id, (currentMetadata) => {
+        const { rootMetadata: currentRoot, metaMetadata: currentMeta } =
+          readMetaAuthorizationMetadata(currentMetadata);
+        mergedAssetGrantResults = sortMetaAssetGrantResults(
+          requestedGrantResultsByType.reduce(
+            (acc, [assetType, nextResults]) =>
+              requestedAssetTypes.has(assetType)
+                ? mergeMetaAssetGrantResults(acc, nextResults, assetType)
+                : acc,
+            currentMeta.obo?.assetGrantResults || []
+          )
+        );
+        return {
+          ...currentRoot,
+          meta: {
+            ...currentMeta,
+            obo: {
+              ...(currentMeta.obo || {}),
+              managedBusinessLink: managedBusinessLinkResult.data,
+              assetGrantResults: mergedAssetGrantResults,
+              lastVerifiedAt: verificationCompletedAt,
+            },
+          },
+        };
+      });
       const verificationStatus = skippedExcludedGrant
         ? 'partial'
         : buildMetaGrantVerificationStatus(mergedAssetGrantResults);
-      const verificationCompletedAt = new Date().toISOString();
-      await prisma.platformAuthorization.update({
-        where: { id: platformAuth.id },
-        data: {
-          metadata: {
-            ...rootMetadata,
-            meta: {
-              ...metaMetadata,
-              obo: {
-                ...(metaMetadata.obo || {}),
-                managedBusinessLink: managedBusinessLinkResult.data,
-                assetGrantResults: mergedAssetGrantResults,
-                lastVerifiedAt: verificationCompletedAt,
-              },
-            },
-          },
-        },
-      });
 
       const pageResults = mergedAssetGrantResults.filter((result) => result.assetType === 'page');
       const adAccountResults = mergedAssetGrantResults.filter(
@@ -1938,12 +1935,6 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
         partnerBusinessId,
         requestedAdAccountTasks
       );
-      const mergedGrantResults = sortMetaAssetGrantResults(
-        mergeMetaAssetGrantResults(metaMetadata.obo?.assetGrantResults, adAccountGrantResults, 'ad_account')
-      );
-      const verificationStatus = skippedExcludedGrant
-        ? 'partial'
-        : buildMetaGrantVerificationStatus(mergedGrantResults);
       const verificationCompletedAt = new Date().toISOString();
 
       await metaAssetGrantService.recordOutcomes({
@@ -1952,6 +1943,28 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
         results: adAccountGrantResults,
         attemptVersions,
       });
+      let mergedGrantResults: MetaAssetGrantResult[] = [];
+      await updateAuthorizationMetadata(platformAuth.id, (currentMetadata) => {
+        const { rootMetadata: currentRoot, metaMetadata: currentMeta } =
+          readMetaAuthorizationMetadata(currentMetadata);
+        mergedGrantResults = sortMetaAssetGrantResults(
+          mergeMetaAssetGrantResults(currentMeta.obo?.assetGrantResults, adAccountGrantResults, 'ad_account')
+        );
+        return {
+          ...currentRoot,
+          meta: {
+            ...currentMeta,
+            obo: {
+              ...(currentMeta.obo || {}),
+              assetGrantResults: mergedGrantResults,
+              lastVerifiedAt: verificationCompletedAt,
+            },
+          },
+        };
+      });
+      const verificationStatus = skippedExcludedGrant
+        ? 'partial'
+        : buildMetaGrantVerificationStatus(mergedGrantResults);
       const pageResults = mergedGrantResults.filter((result) => result.assetType === 'page');
       const mergedAdAccountResults = mergedGrantResults.filter(
         (result) => result.assetType === 'ad_account'
@@ -1961,23 +1974,6 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
       const adAccountsAccessGranted = !skippedExcludedGrant &&
         mergedAdAccountResults.length > 0 &&
         mergedAdAccountResults.every((result) => result.status === 'verified');
-
-      await prisma.platformAuthorization.update({
-        where: { id: platformAuth.id },
-        data: {
-          metadata: {
-            ...rootMetadata,
-            meta: {
-              ...metaMetadata,
-              obo: {
-                ...(metaMetadata.obo || {}),
-                assetGrantResults: mergedGrantResults,
-                lastVerifiedAt: verificationCompletedAt,
-              },
-            },
-          } as any,
-        },
-      });
 
       await updateGrantedAssets(connectionId, (currentGrantedAssets) => {
         const currentMetaGrantedAssets =
@@ -2279,20 +2275,29 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
         if (failed?.status === 'rejected') throw failed.reason;
       }
 
-      const mergedResults = sortMetaAssetGrantResults(
-        mergeMetaAssetGrantResults(metaMetadata.obo?.assetGrantResults, results, 'dataset')
-      );
       const allVerified = results.length === datasetIds.length * (parsedConfig.data.recipients.length + 1) &&
         results.every((result) => result.status === 'verified');
       const anyVerified = results.some((result) => result.status === 'verified');
       const status = allVerified ? 'verified' : anyVerified ? 'partial' : 'manual_action_required';
       const verifiedAt = new Date().toISOString();
-      await prisma.platformAuthorization.update({
-        where: { id: platformAuth.id },
-        data: { metadata: {
-          ...rootMetadata,
-          meta: { ...metaMetadata, obo: { ...(metaMetadata.obo || {}), assetGrantResults: mergedResults, lastVerifiedAt: verifiedAt } },
-        } },
+      let mergedResults: MetaAssetGrantResult[] = [];
+      await updateAuthorizationMetadata(platformAuth.id, (currentMetadata) => {
+        const { rootMetadata: currentRoot, metaMetadata: currentMeta } =
+          readMetaAuthorizationMetadata(currentMetadata);
+        mergedResults = sortMetaAssetGrantResults(
+          mergeMetaAssetGrantResults(currentMeta.obo?.assetGrantResults, results, 'dataset')
+        );
+        return {
+          ...currentRoot,
+          meta: {
+            ...currentMeta,
+            obo: {
+              ...(currentMeta.obo || {}),
+              assetGrantResults: mergedResults,
+              lastVerifiedAt: verifiedAt,
+            },
+          },
+        };
       });
       await updateGrantedAssets(connectionId, (existingGranted) => ({
         ...existingGranted,
@@ -2407,33 +2412,24 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
           verified: false,
         }));
 
-        const mergedResults = mergeTikTokShareResults(
-          tiktokMetadata.partnerSharing?.results,
-          failedResults
-        );
-
-        const updatedMetadata = {
-          ...authMetadata,
-          tiktok: {
-            ...tiktokMetadata,
-            selectedAdvertiserIds: effectiveAdvertiserIds,
-            selectedBusinessCenterId: clientBusinessCenterId,
-            partnerSharing: {
-              ...(tiktokMetadata.partnerSharing || {}),
-              agencyBusinessCenterId: null,
-              clientBusinessCenterId,
-              lastAttemptAt: new Date().toISOString(),
-              results: mergedResults,
-              partialFailure: true,
+        await updateAuthorizationMetadata(platformAuth.id, (currentMetadata: any) => {
+          const currentTikTok = currentMetadata.tiktok || {};
+          return {
+            ...currentMetadata,
+            tiktok: {
+              ...currentTikTok,
+              selectedAdvertiserIds: effectiveAdvertiserIds,
+              selectedBusinessCenterId: clientBusinessCenterId,
+              partnerSharing: {
+                ...(currentTikTok.partnerSharing || {}),
+                agencyBusinessCenterId: null,
+                clientBusinessCenterId,
+                lastAttemptAt: new Date().toISOString(),
+                results: mergeTikTokShareResults(currentTikTok.partnerSharing?.results, failedResults),
+                partialFailure: true,
+              },
             },
-          },
-        };
-
-        await prisma.platformAuthorization.update({
-          where: { id: platformAuth.id },
-          data: {
-            metadata: updatedMetadata as any,
-          },
+          };
         });
 
         await auditService.createAuditLog({
@@ -2519,34 +2515,25 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
       );
 
       const success = verifiedResults.every((item) => item.status !== 'failed');
-      const mergedResults = mergeTikTokShareResults(
-        tiktokMetadata.partnerSharing?.results,
-        verifiedResults
-      );
-
-      const updatedMetadata = {
-        ...authMetadata,
-        tiktok: {
-          ...tiktokMetadata,
-          selectedAdvertiserIds: effectiveAdvertiserIds,
-          selectedBusinessCenterId: clientBusinessCenterId,
-          partnerSharing: {
-            ...(tiktokMetadata.partnerSharing || {}),
-            agencyBusinessCenterId,
-            clientBusinessCenterId,
-            advertiserRole,
-            lastAttemptAt: new Date().toISOString(),
-            results: mergedResults,
-            partialFailure: !success,
+      await updateAuthorizationMetadata(platformAuth.id, (currentMetadata: any) => {
+        const currentTikTok = currentMetadata.tiktok || {};
+        return {
+          ...currentMetadata,
+          tiktok: {
+            ...currentTikTok,
+            selectedAdvertiserIds: effectiveAdvertiserIds,
+            selectedBusinessCenterId: clientBusinessCenterId,
+            partnerSharing: {
+              ...(currentTikTok.partnerSharing || {}),
+              agencyBusinessCenterId,
+              clientBusinessCenterId,
+              advertiserRole,
+              lastAttemptAt: new Date().toISOString(),
+              results: mergeTikTokShareResults(currentTikTok.partnerSharing?.results, verifiedResults),
+              partialFailure: !success,
+            },
           },
-        },
-      };
-
-      await prisma.platformAuthorization.update({
-        where: { id: platformAuth.id },
-        data: {
-          metadata: updatedMetadata as any,
-        },
+        };
       });
 
       await auditService.createAuditLog({
@@ -2680,28 +2667,22 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
       );
 
       const success = results.every((item) => item.status !== 'failed');
-      const mergedResults = mergeTikTokShareResults(shareMetadata.results, results);
-
-      const updatedMetadata = {
-        ...authMetadata,
-        tiktok: {
-          ...tiktokMetadata,
-          partnerSharing: {
-            ...shareMetadata,
-            agencyBusinessCenterId,
-            clientBusinessCenterId,
-            lastVerifiedAt: new Date().toISOString(),
-            results: mergedResults,
-            partialFailure: !success,
+      await updateAuthorizationMetadata(platformAuth.id, (currentMetadata: any) => {
+        const currentTikTok = currentMetadata.tiktok || {};
+        return {
+          ...currentMetadata,
+          tiktok: {
+            ...currentTikTok,
+            partnerSharing: {
+              ...(currentTikTok.partnerSharing || {}),
+              agencyBusinessCenterId,
+              clientBusinessCenterId,
+              lastVerifiedAt: new Date().toISOString(),
+              results: mergeTikTokShareResults(currentTikTok.partnerSharing?.results, results),
+              partialFailure: !success,
+            },
           },
-        },
-      };
-
-      await prisma.platformAuthorization.update({
-        where: { id: platformAuth.id },
-        data: {
-          metadata: updatedMetadata as any,
-        },
+        };
       });
 
       await auditService.createAuditLog({
@@ -2817,46 +2798,46 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
       const platformStr = String(platform);
 
       if (platform === 'meta_ads' || platform === 'meta_pages') {
-        const { rootMetadata, metaMetadata } = readMetaAuthorizationMetadata(
+        const { metaMetadata } = readMetaAuthorizationMetadata(
           platformAuth.metadata
         );
         const effectiveBusinessId =
           businessId || metaMetadata.selection?.clientBusinessId;
 
-        assets = await clientAssetsService.fetchMetaAssets(
+        const discoveredAssets = await clientAssetsService.fetchMetaAssets(
           tokens.accessToken,
           effectiveBusinessId
         );
 
+        assets = discoveredAssets;
         const discoveryTimestamp = new Date().toISOString();
-        const nextMeta: MetaClientAuthorizationMetadata = {
-          ...metaMetadata,
-          discovery: {
-            availableBusinesses: assets.businesses || [],
-            discoveredAt: discoveryTimestamp,
-          },
-        };
-
-        if (assets.selectedBusinessId) {
-          nextMeta.selection = {
-            clientBusinessId: assets.selectedBusinessId,
-            clientBusinessName: assets.selectedBusinessName,
-            selectedAt: discoveryTimestamp,
-            source: businessId ? 'user_selection' : metaMetadata.selection?.source || 'auto_selected',
-          };
-        }
-
-        if (!metaDiscoveryContentUnchanged(metaMetadata, nextMeta)) {
-          await prisma.platformAuthorization.update({
-            where: { id: platformAuth.id },
-            data: {
-              metadata: {
-                ...rootMetadata,
-                meta: nextMeta,
-              } as any,
+        await updateAuthorizationMetadata(platformAuth.id, (currentMetadata) => {
+          const { rootMetadata: currentRoot, metaMetadata: currentMeta } =
+            readMetaAuthorizationMetadata(currentMetadata);
+          const nextMeta: MetaClientAuthorizationMetadata = {
+            ...currentMeta,
+            discovery: {
+              ...currentMeta.discovery,
+              availableBusinesses: discoveredAssets.businesses || [],
+              discoveredAt: discoveryTimestamp,
             },
-          });
-        }
+          };
+
+          if (discoveredAssets.selectedBusinessId && (
+            businessId || !currentMeta.selection ||
+            currentMeta.selection.clientBusinessId === effectiveBusinessId
+          )) {
+            nextMeta.selection = {
+              clientBusinessId: discoveredAssets.selectedBusinessId,
+              clientBusinessName: discoveredAssets.selectedBusinessName,
+              selectedAt: discoveryTimestamp,
+              source: businessId ? 'user_selection' : currentMeta.selection?.source || 'auto_selected',
+            };
+          }
+
+          if (metaDiscoveryContentUnchanged(currentMeta, nextMeta)) return undefined;
+          return { ...currentRoot, meta: nextMeta };
+        });
       } else if (platform === 'linkedin_ads') {
         assets = await clientAssetsService.fetchLinkedInAdAccounts(tokens.accessToken);
       } else if (platform === 'linkedin_pages') {

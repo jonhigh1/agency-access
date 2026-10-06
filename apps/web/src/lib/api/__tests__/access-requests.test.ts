@@ -4,6 +4,7 @@ import {
   getAccessRequest,
   updateAccessRequest,
   cancelAccessRequest,
+  confirmManualAccess,
   sendAccessRequestReminder,
 } from '../access-requests';
 
@@ -105,6 +106,37 @@ describe('access-requests api client', () => {
       expect.objectContaining({
         method: 'POST',
         headers: expect.any(Object),
+      })
+    );
+    const [, requestOptions] = fetchMock.mock.calls[0];
+    expect(getAuthorizationHeader(requestOptions.headers)).toBe('Bearer token-123');
+  });
+
+  it('confirms manual access with the required acknowledgment', async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        data: {
+          confirmation: {
+            platform: 'shopify',
+            verificationStatus: 'verified',
+            verificationMethod: 'manual_review',
+            verifiedAt: '2026-10-04T12:00:00.000Z',
+          },
+          requestStatus: 'completed',
+        },
+        error: null,
+      }),
+    });
+
+    const result = await confirmManualAccess('request-456', 'shopify', async () => 'token-123');
+
+    expect(result.data?.confirmation.verificationMethod).toBe('manual_review');
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://api.example.com/api/access-requests/request-456/manual-confirmations/shopify',
+      expect.objectContaining({
+        method: 'POST',
+        body: JSON.stringify({ confirmed: true }),
       })
     );
     const [, requestOptions] = fetchMock.mock.calls[0];

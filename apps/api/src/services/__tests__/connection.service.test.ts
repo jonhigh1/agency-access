@@ -1,3 +1,4 @@
+import { mockJsonTransactions } from '../../__tests__/json-transaction-mock';
 /**
  * Connection Service Unit Tests
  *
@@ -53,6 +54,7 @@ vi.mock('@/lib/prisma', () => ({
       findUnique: vi.fn(),
     },
     $transaction: vi.fn(),
+    $queryRaw: vi.fn(),
   },
 }));
 
@@ -106,6 +108,7 @@ vi.mock('@/services/audit.service', async (importOriginal) => {
 describe('ConnectionService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockJsonTransactions(prisma);
     getConnectorMock.mockReturnValue({
       verifyToken: verifyTokenMock,
       revokeToken: metaRevokeTokenMock,
@@ -1012,7 +1015,7 @@ describe('ConnectionService', () => {
       expect(metaRevokeTokenMock).toHaveBeenCalledTimes(2);
       expect(infisical.deleteSecret).toHaveBeenCalledWith('meta-secret');
       expect(prisma.platformAuthorization.update).toHaveBeenLastCalledWith({
-        where: { id: 'auth-meta' }, data: { status: 'revoked' },
+        where: { id: 'auth-meta' }, data: { status: 'revoked', metadata: expect.objectContaining({ providerRevokedAt: expect.any(String) }) },
       });
     });
 

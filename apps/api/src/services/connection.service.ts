@@ -22,6 +22,7 @@ import {
 import { invalidateDashboardCache } from '@/lib/cache.js';
 import { resolveListLimit, resolveListOffset } from '@/lib/list-pagination.js';
 import { readPendingSecretDeletionIds } from '@/lib/meta-authorization-metadata.js';
+import { updateAuthorizationMetadata } from '@/lib/authorization-metadata.js';
 
 /** One day in milliseconds, used for the day-granular countdown field. */
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -103,10 +104,7 @@ async function revokeMetaProviderAccess(authorization: {
   if (!revokeToken) throw new Error(`Meta connector cannot revoke authorization for ${authorization.platform}`);
   await revokeToken.call(connector, tokens.accessToken);
   const providerRevokedAt = new Date().toISOString();
-  await prisma.platformAuthorization.update({
-    where: { id: authorization.id },
-    data: { metadata: { ...metadata, providerRevokedAt } },
-  });
+  await updateAuthorizationMetadata(authorization.id, (current) => ({ ...current, providerRevokedAt }));
   return providerRevokedAt;
 }
 
@@ -468,23 +466,25 @@ export async function revokeConnection(
       }
 
       let metaProviderStep = isMetaPlatform(auth.platform);
-      let providerRevokedAt: string | null = null;
       try {
-        if (metaProviderStep) providerRevokedAt = await revokeMetaProviderAccess(auth, connectionId, auditContext);
+        if (metaProviderStep) await revokeMetaProviderAccess(auth, connectionId, auditContext);
         metaProviderStep = false;
         await infisical.deleteSecret(auth.secretId);
         for (const secretId of readPendingSecretDeletionIds(auth.metadata)) {
           await infisical.deleteSecret(secretId);
         }
-        await prisma.platformAuthorization.update({
-          where: { id: auth.id },
-          data: {
-            status: 'revoked',
-            ...(isMetaPlatform(auth.platform) && readPendingSecretDeletionIds(auth.metadata).length > 0
-              ? { metadata: { ...(auth.metadata as Record<string, unknown>), pendingSecretDeletion: [], ...(providerRevokedAt ? { providerRevokedAt } : {}) } }
-              : {}),
-          },
-        });
+        if (isMetaPlatform(auth.platform)) {
+          const deletedIds = readPendingSecretDeletionIds(auth.metadata);
+          await updateAuthorizationMetadata(auth.id, (current) => ({
+            ...current,
+            ...(deletedIds.length ? {
+              pendingSecretDeletion: readPendingSecretDeletionIds(current)
+                .filter((secretId) => !deletedIds.includes(secretId)),
+            } : {}),
+          }), 'revoked');
+        } else {
+          await prisma.platformAuthorization.update({ where: { id: auth.id }, data: { status: 'revoked' } });
+        }
       } catch (error) {
         const metaFailure = metaProviderStep;
         await prisma.platformAuthorization.update({
@@ -846,9 +846,8 @@ export async function revokePlatformAuthorization(
     }
 
     let metaProviderStep = isMetaPlatform(platform);
-    let providerRevokedAt: string | null = null;
     try {
-      if (metaProviderStep) providerRevokedAt = await revokeMetaProviderAccess(authorization, connectionId, auditContext);
+      if (metaProviderStep) await revokeMetaProviderAccess(authorization, connectionId, auditContext);
       metaProviderStep = false;
       await infisical.deleteSecret(authorization.secretId);
       for (const secretId of readPendingSecretDeletionIds(authorization.metadata)) {
@@ -908,15 +907,19 @@ export async function revokePlatformAuthorization(
     }
 
     // Update authorization status
-    const updated = await prisma.platformAuthorization.update({
-      where: { id: authorization.id },
-      data: {
-        status: 'revoked',
-        ...(isMetaPlatform(platform) && readPendingSecretDeletionIds(authorization.metadata).length > 0
-          ? { metadata: { ...(authorization.metadata as Record<string, unknown>), pendingSecretDeletion: [], ...(providerRevokedAt ? { providerRevokedAt } : {}) } }
-          : {}),
-      },
-    });
+    const deletedIds = readPendingSecretDeletionIds(authorization.metadata);
+    const updated = isMetaPlatform(platform)
+      ? await updateAuthorizationMetadata(authorization.id, (current) => ({
+          ...current,
+          ...(deletedIds.length ? {
+            pendingSecretDeletion: readPendingSecretDeletionIds(current)
+              .filter((secretId) => !deletedIds.includes(secretId)),
+          } : {}),
+        }), 'revoked')
+      : await prisma.platformAuthorization.update({
+          where: { id: authorization.id },
+          data: { status: 'revoked' },
+        });
 
     const connection = await prisma.clientConnection.findUnique({
       where: { id: connectionId },

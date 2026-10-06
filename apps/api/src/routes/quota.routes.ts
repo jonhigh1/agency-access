@@ -1,139 +1,46 @@
-/**
- * Quota Routes
- *
- * API endpoints for quota checking and usage tracking.
- *
- * Endpoints:
- * - GET /api/quota - Get current usage snapshot
- * - POST /api/quota/check - Check if action is allowed
- */
-
-import { FastifyInstance } from 'fastify';
+/** Quota endpoints resolve verified Clerk principals to internal agency IDs. */
+import type { FastifyInstance } from 'fastify';
+import { z } from 'zod';
+import { MetricTypeSchema } from '@agency-platform/shared';
 import { quotaService } from '@/services/quota.service';
-import { verifyAuthToken } from '@/middleware/auth';
-import { type MetricType, MetricTypeSchema } from '@agency-platform/shared';
+import { authenticate } from '@/middleware/auth';
+import { requirePrincipalAgency } from '@/lib/agency-guard';
+import { sendError } from '@/lib/response';
+
+const quotaCheckSchema = z.object({
+  metric: MetricTypeSchema,
+  requestedAmount: z.number().int().positive().optional(),
+});
 
 export async function quotaRoutes(fastify: FastifyInstance) {
-  // ============================================================
-  // GET /api/quota - Get current usage snapshot
-  // ============================================================
+  const onRequest = [authenticate(), requirePrincipalAgency];
 
-  fastify.get('/api/quota', async (request, reply) => {
+  fastify.get('/api/quota', { onRequest }, async (request, reply) => {
     try {
-      // Verify Clerk JWT
-      const token = request.headers.authorization?.replace('Bearer ', '');
-      if (!token) {
-        return reply.code(401).send({
-          error: {
-            code: 'UNAUTHORIZED',
-            message: 'Authorization token required',
-          } as any,
-        });
-      }
-
-      const verified = (await verifyAuthToken(token)) as Record<string, unknown>;
-
-      const orgId = verified.orgId as string | undefined;
-      if (!orgId || typeof orgId !== 'string') {
-        return reply.code(400).send({
-          error: {
-            code: 'INVALID_REQUEST',
-            message: 'Organization ID not found in token',
-          } as any,
-        });
-      }
-
-      // Get usage snapshot
-      const usage = await quotaService.getUsage(orgId);
-
-      if (!usage) {
-        return reply.code(404).send({
-          error: {
-            code: 'NOT_FOUND',
-            message: 'Agency not found',
-          },
-        } as any);
-      }
-
-      return reply.send({
-        data: usage,
-      });
-    } catch (error) {
-      console.error('Error fetching quota:', error);
-      return reply.code(500).send({
-        error: {
-          code: 'INTERNAL_ERROR',
-          message: 'Failed to fetch quota information',
-        } as any,
-      });
+      const usage = await quotaService.getUsage((request as any).principalAgencyId);
+      if (!usage) return sendError(reply, 'NOT_FOUND', 'Agency not found', 404);
+      return reply.send({ data: usage });
+    } catch {
+      return sendError(reply, 'INTERNAL_ERROR', 'Failed to fetch quota information', 500);
     }
   });
 
-  // ============================================================
-  // POST /api/quota/check - Check if action is allowed
-  // ============================================================
+  fastify.post('/api/quota/check', { onRequest }, async (request, reply) => {
+    const validated = quotaCheckSchema.safeParse(request.body);
+    if (!validated.success) {
+      return sendError(reply, 'VALIDATION_ERROR', 'Invalid quota check input', 400, validated.error.errors);
+    }
 
-  fastify.post('/api/quota/check', async (request, reply) => {
     try {
-      // Verify Clerk JWT
-      const token = request.headers.authorization?.replace('Bearer ', '');
-      if (!token) {
-        return reply.code(401).send({
-          error: {
-            code: 'UNAUTHORIZED',
-            message: 'Authorization token required',
-          } as any,
-        });
-      }
-
-      const verified = (await verifyAuthToken(token)) as Record<string, unknown>;
-
-      const orgId = verified.orgId as string | undefined;
-      if (!orgId || typeof orgId !== 'string') {
-        return reply.code(400).send({
-          error: {
-            code: 'INVALID_REQUEST',
-            message: 'Organization ID not found in token',
-          } as any,
-        });
-      }
-
-      // Validate request body
-      const body = request.body as {
-        metric: MetricType;
-        requestedAmount?: number;
-      };
-
-      const metricResult = MetricTypeSchema.safeParse(body.metric);
-      if (!metricResult.success) {
-        return reply.code(400).send({
-          error: {
-            code: 'VALIDATION_ERROR',
-            message: 'Invalid metric type',
-            details: metricResult.error.errors,
-          } as any,
-        });
-      }
-
-      // Check quota
       const result = await quotaService.checkQuota({
-        agencyId: orgId,
-        metric: body.metric,
+        agencyId: (request as any).principalAgencyId,
+        metric: validated.data.metric,
         action: 'create',
-        requestedAmount: body.requestedAmount || 1,
+        requestedAmount: validated.data.requestedAmount ?? 1,
       });
-
-      return reply.send({
-        data: result,
-      } as any);
-    } catch (error) {
-      console.error('Error checking quota:', error);
-      return reply.code(500).send({
-        error: {
-          code: 'INTERNAL_ERROR',
-          message: 'Failed to check quota',
-        },
-      });
+      return reply.send({ data: result });
+    } catch {
+      return sendError(reply, 'INTERNAL_ERROR', 'Failed to check quota', 500);
     }
   });
 }

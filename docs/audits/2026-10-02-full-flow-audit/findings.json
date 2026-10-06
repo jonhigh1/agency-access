@@ -289,13 +289,14 @@
     "expected": "Each manual report persists separately and remains pending until verified",
     "observed": "Root evidence overwrote siblings and read as fulfilled; Zapier manual route missing",
     "root_cause": "Single root grantedAssets representation, missing platform route and guard, optimistic browser callback",
-    "status": "fixed locally",
+    "status": "verified in browser",
     "evidence": [
       "125 focused API and 17 focused web checks passed",
       "Real Beehiiv report persists pending; API progress returns pending and no completedPlatforms",
-      "Browser returned pending checklist instead of completion"
+      "Browser returned pending checklist instead of completion",
+      "October 3 local browser: Beehiiv pending allowed Zapier checklist; Zapier report returned both platforms WAITING and Awaiting agency verification. Real PostgreSQL readback preserved both pending records."
     ],
-    "verification_boundary": "Additional concurrent loss and platform queue blocker discovered; complete multi-platform verification not yet passed"
+    "verification_boundary": "Local reports and navigation verified; native provider access not exercised. Missing agency confirmation workflow separately approved for local implementation."
   },
   {
     "id": "F-022",
@@ -304,12 +305,13 @@
     "expected": "Concurrent reports for two requested platforms both persist",
     "observed": "Concurrent Beehiiv and Zapier POSTs both200 with same connection ID; PostgreSQL retained only Beehiiv",
     "root_cause": "Read/merge/update on one JSON document loses concurrent writes",
-    "status": "failed",
+    "status": "passed",
     "evidence": [
       "Real isolated Fastify routes and PostgreSQL, ThreadPoolExecutor(2), reserved invalid fixture identities",
-      "SQL granted_assets readback after both responses shows only beehiiv"
+      "SQL granted_assets readback after both responses shows only beehiiv",
+      "manual-concurrency-verification.json: real first-create and existing-update races retained both platform records. granted-assets-concurrency.json: real PostgreSQL helper/manual interleaving and concurrent Meta appends passed."
     ],
-    "verification_boundary": "Local real persistence defect; repair delegated"
+    "verification_boundary": "Real disposable PostgreSQL concurrency proof; no production/provider access."
   },
   {
     "id": "F-023",
@@ -318,10 +320,156 @@
     "expected": "Pending report allows remaining actionable platforms without false completion",
     "observed": "Beehiiv pending keeps Resume Beehiiv active; no way to advance to Zapier",
     "root_cause": "Queue chooses first unfinished platform even when waiting on verification",
-    "status": "failed",
+    "status": "verified in browser",
     "evidence": [
-      "Local two-platform fixture after Beehiiv report; browser shows Waiting Beehiiv and Connect Zapier but only Beehiiv action"
+      "Local two-platform fixture after Beehiiv report; browser shows Waiting Beehiiv and Connect Zapier but only Beehiiv action",
+      "Local browser completed Beehiiv report then Zapier report, displayed both WAITING, and no false Done screen. manual-browser-persisted.json records database evidence."
     ],
-    "verification_boundary": "Local browser defect; repair delegated"
+    "verification_boundary": "Local browser and real isolated API persistence; not deployed."
+  },
+  {
+    "id": "F-024",
+    "severity": "high",
+    "flow": "Manual invitation missing agency target",
+    "expected": "Missing configured agency email prevents placeholder submission and explains recovery",
+    "observed": "A missing target rendered a placeholder contact email and allowed an impossible checklist",
+    "root_cause": "Unconditional placeholder and missing API target guard",
+    "status": "verified in browser",
+    "evidence": [
+      "Local Kit missing-target fixture renders contact-agency explanation and Try again; no checklist or placeholder email.",
+      "Real POST returns 409 MANUAL_INVITE_TARGET_UNAVAILABLE; PostgreSQL connection count remains 0."
+    ],
+    "verification_boundary": "Local browser plus current real API and disposable PostgreSQL; no provider calls."
+  },
+  {
+    "id": "F-025",
+    "severity": "high",
+    "flow": "Agency confirmation of reported manual access",
+    "expected": "Agency can confirm checked native access and allow request completion",
+    "observed": "Client reports remain pending; no implemented client-connection verification writer exists",
+    "root_cause": "Fulfillment requires verified manual evidence but the agency confirmation operation is absent",
+    "status": "verified in browser",
+    "evidence": [
+      "User approved local implementation",
+      "manual-confirmation-browser.json: acknowledgement, partial, completed, reload and PostgreSQL records",
+      "manual-confirmation-persistence.json: nine cases including concurrency and rollback",
+      "manual-confirmation-status-red.log and manual-confirmation-status-green.log"
+    ],
+    "verification_boundary": "Local code, disposable PostgreSQL, synthetic development identity with fixture principal mapping. Native provider checks and production authentication were not exercised."
+  },
+  {
+    "id": "F-026",
+    "severity": "high",
+    "flow": "Mixed provider and manual access persistence",
+    "expected": "Concurrent grants and asset creation appends preserve every update",
+    "observed": "Whole JSON writes could erase a sibling provider or manual record",
+    "root_cause": "Multiple callers merged stale grantedAssets outside a shared row lock",
+    "status": "passed",
+    "evidence": [
+      "Nine writers now use updateGrantedAssets under PostgreSQL SELECT FOR UPDATE.",
+      "granted-assets-concurrency.json: real helper/manual interleaving preserves beehiiv and google_ads; two simultaneous Meta append calls preserve act-1 and act-2."
+    ],
+    "verification_boundary": "Real disposable PostgreSQL with imported current helper; providers not exercised."
+  },
+  {
+    "id": "F-027",
+    "severity": "high",
+    "flow": "Meta explicit declines and resumed grant instructions",
+    "expected": "Explicit declines save without assets; resumed grant panels recover saved asset IDs and business ID",
+    "observed": "Declines nested in wrong payload; all-declined CTA blocked; resume panels lacked saved IDs and business",
+    "root_cause": "UI payload and fulfillment resume contract incomplete",
+    "status": "fixed locally",
+    "evidence": [
+      "Focused CTA, checklist, wizard, page and API service tests pass.",
+      "Safe metaResumeSelections projection exposes connectionId and clientBusinessId only; no authorization metadata or credentials."
+    ],
+    "verification_boundary": "Current local tests and types only; browser/provider grant verification still pending."
+  },
+  {
+    "id": "F-028",
+    "severity": "high",
+    "flow": "Manual report replay and agency Pinterest identity edit",
+    "expected": "Replay preserves verified evidence; completed request rejects new report; business-only Pinterest edit saves",
+    "observed": "Replay could downgrade verified evidence; Pinterest PATCH dereferenced absent invitationEmail",
+    "root_cause": "Unconditional pending rewrite and unsafe optional email normalization",
+    "status": "fixed locally",
+    "evidence": [
+      "Manual API replay/completed guards and agency Pinterest focused regressions pass."
+    ],
+    "verification_boundary": "Current local unit tests; real persistence and browser replay verification pending."
+  },
+  {
+    "id": "F-029",
+    "severity": "high",
+    "flow": "Concurrent authorization metadata updates",
+    "expected": "Preserve sibling product selections, discovery and metadata",
+    "observed": "Whole JSON replacements erased sibling metadata",
+    "root_cause": "Writers merged stale metadata outside an authorization row lock",
+    "status": "fixed locally",
+    "evidence": [
+      "authorization-metadata-concurrency.json",
+      "metadata-repair-focused.log"
+    ],
+    "verification_boundary": "Local regression tests and disposable PostgreSQL evidence; provider and production verification remains outside this proof."
+  },
+  {
+    "id": "F-030",
+    "severity": "high",
+    "flow": "Quota identity and input validation",
+    "expected": "Resolve authenticated agency to internal ID and reject invalid amounts",
+    "observed": "Quota routes used external identity as internal agency ID and mishandled invalid payloads",
+    "root_cause": "Routes duplicated authentication and skipped canonical agency resolution",
+    "status": "fixed locally",
+    "evidence": [
+      "quota-repair-red.log",
+      "quota-repair-green.log",
+      "manual-confirmation-browser.json: real local quota GET"
+    ],
+    "verification_boundary": "Local regression tests and disposable PostgreSQL evidence; provider and production verification remains outside this proof."
+  },
+  {
+    "id": "F-031",
+    "severity": "high",
+    "flow": "Manual connection activation",
+    "expected": "Activate a pending verification connection after agency confirms access",
+    "observed": "Verified grants retained pending_verification on connection",
+    "root_cause": "Confirmation updated grant metadata without connection lifecycle",
+    "status": "fixed locally",
+    "evidence": [
+      "manual-confirmation-status-red.log",
+      "manual-confirmation-status-green.log",
+      "manual-confirmation-browser.json"
+    ],
+    "verification_boundary": "Local regression tests and disposable PostgreSQL evidence; provider and production verification remains outside this proof."
+  },
+  {
+    "id": "F-032",
+    "severity": "medium",
+    "flow": "Request creation invalid JSON",
+    "expected": "Return 400 validation error without persistence for non-object JSON",
+    "observed": "Null, scalar and array JSON failed before service validation",
+    "root_cause": "Route mutated unvalidated request body during normalization",
+    "status": "fixed locally",
+    "evidence": [
+      "request-body-validation-red.log",
+      "request-body-validation-green.log",
+      "request-body-validation-http.json"
+    ],
+    "verification_boundary": "Four real local HTTP requests and 29 route tests. Malformed JSON cannot originate from the normal UI; production route behavior remains unverified."
+  },
+  {
+    "id": "F-033",
+    "severity": "low",
+    "flow": "Clear client search",
+    "expected": "Show pending search until the unfiltered results return",
+    "observed": "Production briefly showed No clients yet after clearing a no-results search, before restoring existing client",
+    "root_cause": "Empty-state rendering used raw search text while data still represented the debounced query",
+    "status": "fixed locally",
+    "evidence": [
+      "production-readonly-oct4.json",
+      "client-search-clear-red.log",
+      "client-search-clear-green.log"
+    ],
+    "verification_boundary": "Original defect observed in authenticated production browser. Local behavior and design tests pass. Changed local client page requires real Clerk authentication for browser verification."
   }
 ]

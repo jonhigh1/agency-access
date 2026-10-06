@@ -1,0 +1,211 @@
+<template>
+  <div data-hf-id="hf-ct0p" id="root" data-composition-id="02-claim" data-duration="5" data-fps="30" data-width="1920" data-height="1080">
+    <style>
+      #root {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+        container-type: size;
+        color: #fafafa;
+        font-family: "Archivo Black", sans-serif;
+        font-weight: 800;
+        text-transform: uppercase;
+      }
+
+      [id="02-claim-ground"],
+      [id="02-claim-claim"],
+      [id="02-claim-stamp"] {
+        position: absolute;
+        inset: 0;
+      }
+
+      [id="02-claim-ground"] {
+        background: #09090b;
+      }
+
+      [id="02-claim-claim"],
+      [id="02-claim-stamp"] {
+        transform-origin: 50% 43.52%;
+      }
+
+      [id="02-claim-one-link"] {
+        position: absolute;
+        left: 960px;
+        top: 470px;
+        margin: 0;
+        color: #ff6b35;
+        font-size: 11cqw;
+        font-weight: 800;
+        line-height: 0.9;
+        letter-spacing: -0.01em;
+        white-space: nowrap;
+        text-align: center;
+      }
+
+      [id="02-claim-stage"] {
+        position: absolute;
+        left: 960px;
+        top: 579px;
+        width: max-content;
+        max-width: 78cqw;
+      }
+
+      [id="02-claim-slam"] {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        margin: 0;
+        color: #fafafa;
+        font-size: 8cqw;
+        font-weight: 800;
+        line-height: 0.9;
+        letter-spacing: -0.01em;
+        text-align: center;
+        white-space: nowrap;
+        transform-origin: 50% 50%;
+      }
+
+      [id="02-claim-acid"] {
+        position: absolute;
+        left: 960px;
+        top: 470px;
+        width: 80cqw;
+        height: 28cqh;
+        background: #ccff00;
+      }
+
+      [id="02-claim-word"] {
+        position: absolute;
+        left: 960px;
+        top: 470px;
+        margin: 0;
+        color: #fafafa;
+        font-size: 15.5cqw;
+        font-weight: 800;
+        line-height: 0.84;
+        letter-spacing: -0.02em;
+        white-space: nowrap;
+        text-align: center;
+        -webkit-text-stroke: 4px #09090b;
+        paint-order: stroke fill;
+        text-shadow: 1.25cqw 1.25cqw 0 #ff6b35;
+      }
+
+      [id="02-claim-kicker"] {
+        position: absolute;
+        left: 960px;
+        top: 648px;
+        margin: 0;
+        color: #ff6b35;
+        font-family: "JetBrains Mono", monospace;
+        font-size: 1.25cqw;
+        font-weight: 400;
+        line-height: 1;
+        letter-spacing: 0.14em;
+        white-space: nowrap;
+        text-align: center;
+      }
+    </style>
+
+    <div data-hf-id="hf-kaas" id="02-claim-ground" class="clip" data-start="0" data-duration="5" data-track-index="0"></div>
+
+    <div data-hf-id="hf-zb5e" id="02-claim-claim" class="clip" data-start="0" data-duration="5" data-track-index="1">
+      <p data-hf-id="hf-zr3r" id="02-claim-one-link">ONE LINK</p>
+      <div data-hf-id="hf-69ud" id="02-claim-stage">
+        <p data-hf-id="hf-6sgp" id="02-claim-slam">
+          <span data-hf-id="hf-46pr">REPLACES THE</span>
+          <span data-hf-id="hf-8rlh">ACCESS CHASE</span>
+        </p>
+      </div>
+    </div>
+
+    <div data-hf-id="hf-u068" id="02-claim-stamp" class="clip" data-start="0" data-duration="5" data-track-index="2">
+      <div data-hf-id="hf-j7y6" id="02-claim-acid"></div>
+      <p data-hf-id="hf-cb0v" id="02-claim-word">AUTHHUB</p>
+    </div>
+
+    <p data-hf-id="hf-5k2f" id="02-claim-kicker" class="clip" data-start="0" data-duration="5" data-track-index="3">
+      ONE CLIENT LINK
+    </p>
+
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.2/dist/gsap.min.js"></script>
+    <script>
+      (function () {
+        "use strict";
+
+        var script = document.currentScript;
+        var claim = document.getElementById("02-claim-claim");
+        var oneLink = document.getElementById("02-claim-one-link");
+        var stage = document.getElementById("02-claim-stage");
+        var slam = document.getElementById("02-claim-slam");
+        var stamp = document.getElementById("02-claim-stamp");
+        var acid = document.getElementById("02-claim-acid");
+        var word = document.getElementById("02-claim-word");
+        var kicker = document.getElementById("02-claim-kicker");
+        var landAt = 1.18;
+        var shakeFrame = 1 / 30;
+        var tl = gsap.timeline({ paused: true });
+
+        tl.set(stage, { xPercent: -50, yPercent: -50, x: 0, y: 0 }, 0);
+        tl.set(word, { xPercent: -50, yPercent: -50 }, 0);
+        tl.set(acid, { xPercent: -50, yPercent: -50, opacity: 0 }, 0);
+        tl.set(kicker, { xPercent: -50, yPercent: -50, opacity: 0 }, 0);
+        tl.set(claim, { scale: 1, opacity: 1, filter: "blur(0px)" }, 0);
+        tl.set(stamp, { scale: 1, opacity: 0, filter: "blur(0px)" }, 0);
+        tl.set(slam, { scale: 1.6, opacity: 0, y: 64 }, 0);
+
+        tl.fromTo(
+          oneLink,
+          { xPercent: -50, yPercent: -50, y: 0, scale: 1, opacity: 1 },
+          { xPercent: -50, yPercent: -50, y: 0, scale: 1, opacity: 1, duration: 0.6, ease: "none" },
+          0,
+        );
+
+        tl.fromTo(
+          oneLink,
+          { y: 0 },
+          { y: -152, duration: 0.58, ease: "expo.out", immediateRender: false },
+          0.6,
+        );
+
+        tl.fromTo(
+          slam,
+          { scale: 1.6, opacity: 0, y: 64 },
+          { scale: 1, opacity: 1, y: 0, duration: 0.58, ease: "expo.out", immediateRender: false },
+          0.6,
+        );
+
+        tl.to(stage, { x: "0.55cqw", y: "-0.3cqh", duration: shakeFrame, ease: "power2.out" }, landAt);
+        tl.to(stage, { x: "-0.38cqw", y: "0.2cqh", duration: shakeFrame, ease: "power2.out" });
+        tl.to(stage, { x: 0, y: 0, duration: shakeFrame, ease: "power2.out" });
+
+        tl.to(claim, { scale: 0.8, duration: 0.2, ease: "power3.in" }, 2.2);
+        tl.to(claim, { filter: "blur(10px)", duration: 0.2, ease: "power3.in" }, 2.2);
+        tl.to(claim, { opacity: 0.15, duration: 0.2, ease: "none" }, 2.2);
+        tl.set(claim, { opacity: 0 }, 2.4);
+
+        tl.set(acid, { opacity: 1 }, 2.4);
+        tl.fromTo(
+          stamp,
+          { opacity: 0.15, scale: 1.25, filter: "blur(10px)" },
+          {
+            opacity: 1,
+            scale: 1,
+            filter: "blur(0px)",
+            duration: 0.5,
+            ease: "expo.out",
+            immediateRender: false,
+          },
+          2.4,
+        );
+
+        tl.set(acid, { opacity: 0 }, 3.6);
+        tl.set(kicker, { opacity: 1 }, 3.6);
+
+        tl.seek(0);
+        window.__timelines = window.__timelines || {};
+        window.__timelines["02-claim"] = tl;
+      })();
+    </script>
+  </div>
+</template>

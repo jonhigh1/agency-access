@@ -1,0 +1,307 @@
+[span] agent
+[span] motion
+[a] Registry
+[a] Video planner
+[a] For agents
+[a] Explore video components
+[div] Tested video building blocks · Agent ready
+[h1] Build videos
+[h1] with your
+[em] coding agent.
+[p] Give Codex, Claude Code, and Cursor tested, editable video components for product demos, walkthroughs, charts, launches, and more. Currently built for Remotion.
+[a] Explore video components
+[code] npx @agent-motion/cli list
+[span] tested components
+[strong] MIT
+[span] editable source
+[span] Agent Motion keys
+[span] About
+[h2] What is Agent Motion?
+[strong] Agent Motion gives coding agents a catalog of open-source, editable video building blocks.
+[p] Instead of generating every animation from scratch, an agent can discover tested scenes for product demos, interface walkthroughs, charts, terminal recordings, launches, and more.
+[p] Today, Agent Motion components are built for Remotion and delivered as editable TypeScript source. Codex, Claude Code, Cursor, and other coding agents can inspect each component, choose it by intent, and install it directly into a video project without an account or API key.
+[p] All
+[p] registry components passed TypeScript validation and first-, middle-, and last-frame render checks. Registry updated
+[time] August 28, 2026
+[h2] From intent to editable video
+[p] Describe the scene you need. Your coding agent can find a tested building block, understand its constraints, and compose it into your project.
+[h3] Describe
+[p] Ask for a product walkthrough, launch scene, chart, terminal demo, or other video moment.
+[code] search("product walkthrough")
+[h3] Choose
+[p] The agent previews tested components and reads their props, timing, and usage guidance.
+[code] get("browser-spotlight")
+[h3] Compose
+[p] The agent installs editable source and adapts it to your story, product, and brand.
+[code] add("browser-spotlight")
+[h2] One manifest.
+[h2] No guesswork.
+[p] The registry contract describes timing, dimensions, props, dependencies, files, and usage guidance. The website and CLI consume the same document.
+[a] Open registry.json
+[code] {
+  "name": "animated-captions",
+  "version": "0.2.0",
+  "durationInFrames": 90,
+  "props": {
+    "captions": {
+      "type": "object[]",
+      "description": "Ordered Remotion Caption objects containing text, startMs, endMs, timestampMs, and confidence.",
+      "required": true,
+      "default": [
+        {
+          "text": "Build",
+          "startMs": 0,
+          "endMs": 420,
+          "timestampMs": 0,
+          "confidence": 1
+        },
+        {
+          "text": " reusable",
+          "startMs": 420,
+          "endMs": 920,
+          "timestampMs": 420,
+          "confidence": 1
+        },
+        {
+          "text": " motion",
+          "startMs": 920,
+          "endMs": 1420,
+          "timestampMs": 920,
+          "confidence": 1
+        },
+        {
+          "text": " components",
+          "startMs": 1420,
+          "endMs": 2200,
+          "timestampMs": 1420,
+          "confidence": 1
+        }
+      ],
+      "minItems": 1,
+      "maxItems": 1000,
+      "examples": [
+        [
+          {
+            "text": "Hello",
+            "startMs": 0,
+            "endMs": 500,
+            "timestampMs": 0,
+            "confidence": 1
+          }
+        ]
+      ]
+    },
+    "preset": {
+      "type": "string",
+      "description": "Named bundle of documented public caption-style props. Explicit props override the selected preset.",
+      "default": "karaoke",
+      "enum": [
+        "karaoke",
+        "boxed",
+        "minimal"
+      ],
+      "examples": [
+        "boxed"
+      ]
+    },
+    "accent": {
+      "type": "color",
+      "description": "Color applied to the currently spoken word.",
+      "examples": [
+        "#67e8f9"
+      ]
+    },
+    "textColor": {
+      "type": "color",
+      "description": "Base caption text color.",
+      "examples": [
+        "#111111"
+      ]
+    },
+    "wordsPerPage": {
+      "type": "number",
+      "description": "Maximum number of caption tokens grouped into the visible page.",
+      "minimum": 1,
+      "maximum": 20,
+      "examples": [
+        6
+      ]
+    },
+    "position": {
+      "type": "string",
+      "description": "Vertical placement within the resolved component box.",
+      "enum": [
+        "top",
+        "center",
+        "bottom"
+      ],
+      "examples": [
+        "center"
+      ]
+    },
+    "fontSize": {
+      "type": "number",
+      "description": "Caption text size in pixels.",
+      "minimum": 8,
+      "maximum": 400,
+      "examples": [
+        72
+      ]
+    },
+    "backgroundColor": {
+      "type": "string",
+      "description": "CSS color used behind the complete visible caption page.",
+      "minLength": 1,
+      "maxLength": 80,
+      "examples": [
+        "rgba(6,8,10,.82)"
+      ]
+    },
+    "backgroundPaddingXPercent": {
+      "type": "number",
+      "description": "Horizontal page padding as a percentage of fontSize.",
+      "minimum": 0,
+      "maximum": 200,
+      "examples": [
+        42
+      ]
+    },
+    "backgroundPaddingYPercent": {
+      "type": "number",
+      "description": "Vertical page padding as a percentage of fontSize.",
+      "minimum": 0,
+      "maximum": 200,
+      "examples": [
+        30
+      ]
+    },
+    "backgroundRadiusPercent": {
+      "type": "number",
+      "description": "Page corner radius as a percentage of fontSize.",
+      "minimum": 0,
+      "maximum": 200,
+      "examples": [
+        28
+      ]
+    },
+    "backgroundShadow": {
+      "type": "string",
+      "description": "CSS box-shadow applied to the complete caption page.",
+      "minLength": 1,
+      "maxLength": 160,
+      "examples": [
+        "0 18px 55px rgba(0,0,0,.28)"
+      ]
+    },
+    "fontWeight": {
+      "type": "number",
+      "description": "Font weight used by every caption token.",
+      "minimum": 100,
+      "maximum": 900,
+      "examples": [
+        820
+      ]
+    },
+    "activeTextUsesAccent": {
+      "type": "boolean",
+      "description": "Uses accent as the active token text color when enabled.",
+      "examples": [
+        false
+      ]
+    },
+    "activeBackgroundEnabled": {
+      "type": "boolean",
+      "description": "Uses accent as the active token background when enabled.",
+      "examples": [
+        true
+      ]
+    },
+    "activeRadiusPercent": {
+      "type": "number",
+      "description": "Active token corner radius as a percentage of fontSize.",
+      "minimum": 0,
+      "maximum": 200,
+      "examples": [
+        13
+      ]
+    },
+    "activePaddingXPercent": {
+      "type": "number",
+      "description": "Active token horizontal padding as a percentage of fontSize.",
+      "minimum": 0,
+      "maximum": 200,
+      "examples": [
+        12
+      ]
+    },
+    "textShadow": {
+      "type": "string",
+      "description": "CSS text-shadow applied to all caption tokens.",
+      "minLength": 1,
+      "maxLength": 160,
+      "examples": [
+        "0 4px 22px rgba(0,0,0,.6)"
+      ]
+    },
+    "activeScale": {
+      "type": "number",
+      "description": "Scale multiplier applied to the active caption token.",
+      "minimum": 0.5,
+      "maximum": 2,
+      "examples": [
+        1.08
+      ]
+    },
+    "rowGapPercent": {
+      "type": "number",
+      "description": "Gap between wrapped caption rows as a percentage of fontSize.",
+      "minimum": 0,
+      "maximum": 200,
+      "examples": [
+        16
+      ]
+    },
+    "x": {
+      "type": "number",
+      "description": "Horizontal position from the composition left edge; centered when omitted.",
+      "minimum": -8192,
+      "maximum": 8192,
+      "examples": [
+        108
+      ]
+    },
+    "y": {
+      "type": "number",
+      "description": "Vertical position from the composition top edge; centered when omitted.",
+      "minimum": -8192,
+      "maximum": 8192,
+      "examples": [
+        192
+      ]
+    },
+    "width": {
+      "type": "number",
+      "description": "Caption region width; defaults to eighty percent of composition width.",
+      "minimum": 64,
+      "maximum": 8192,
+      "examples": [
+        864
+      ]
+    },
+    "height": {
+      "type": "number",
+      "description": "Caption region height; defaults to eighty percent of composition height.",
+      "minimum": 64,
+      "maximum": 8192,
+      "examples": [
+        1536
+      ]
+    }
+  },
+  "agentHints": [
+    "Pass standard Remotion Caption objects in chronological order and preserve leading spaces when importing tokenized transcript data.",
+    "Presets are reproducible bundles of public props: use karaoke for social video, boxed for strong contrast over footage, and minimal for restrained editorial work."
+  ]
+}
+[p] Composable video infrastructure for humans and agents.
+[span] Registry schema v

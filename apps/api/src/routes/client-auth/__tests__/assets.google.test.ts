@@ -1,3 +1,4 @@
+import { mockJsonTransactions } from '../../../__tests__/json-transaction-mock';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import Fastify, { type FastifyInstance } from 'fastify';
 import { registerAssetRoutes } from '../assets.routes';
@@ -55,8 +56,7 @@ describe('Client Auth Asset Routes - Google', () => {
     app = Fastify();
     await registerAssetRoutes(app);
     vi.clearAllMocks();
-    vi.mocked(prisma.$transaction).mockImplementation(async (callback: any) => callback(prisma));
-    vi.mocked(prisma.$queryRaw).mockResolvedValue([{ id: 'conn-1', granted_assets: {} }] as any);
+    mockJsonTransactions(prisma);
     env.GOOGLE_ADS_DEVELOPER_TOKEN = 'test-google-ads-developer-token';
 
     vi.mocked(accessRequestService.getAccessRequestByToken).mockResolvedValue({

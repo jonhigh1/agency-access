@@ -1,0 +1,159 @@
+{
+  "environment": "Disposable local PostgreSQL; existing development authentication with fixture principal mapping; no native provider verification",
+  "browserUrl": "http://localhost:3100/access-requests/local-agency-manual-request",
+  "browserObservations": [
+    "Confirm buttons disabled before platform-specific acknowledgement",
+    "First confirmation showed PARTIALLY FULFILLED",
+    "Second confirmation showed COMPLETED",
+    "Reload retained COMPLETED and both Confirmed by agency labels",
+    "Both labels explicitly disclaimed automated provider verification"
+  ],
+  "persisted": {
+    "requestStatus": "completed",
+    "authorizedAtPresent": true,
+    "connectionStatus": "active",
+    "beehiiv": {
+      "platform": "beehiiv",
+      "authMethod": "manual_team_invitation",
+      "verifiedAt": "2026-10-04T22:07:43.231Z",
+      "verifiedBy": "dev_user_test_123456789",
+      "agencyEmail": "team@agency-fixture.invalid",
+      "clientEmail": "client@agency-fixture.invalid",
+      "invitationSentAt": "2026-10-04T22:07:19.100Z",
+      "verificationMethod": "manual_review",
+      "verificationStatus": "verified"
+    },
+    "zapier": {
+      "platform": "zapier",
+      "authMethod": "manual_team_invitation",
+      "verifiedAt": "2026-10-04T22:07:53.957Z",
+      "verifiedBy": "dev_user_test_123456789",
+      "agencyEmail": "team@agency-fixture.invalid",
+      "clientEmail": "client@agency-fixture.invalid",
+      "invitationSentAt": "2026-10-04T22:07:19.139Z",
+      "verificationMethod": "manual_review",
+      "verificationStatus": "verified"
+    },
+    "auditCount": 2
+  },
+  "detail": {
+    "data": {
+      "metaDeclines": [],
+      "id": "local-agency-manual-request",
+      "agencyId": "dev_agency_123456789",
+      "clientId": "local-agency-client",
+      "clientName": "Local Manual Client",
+      "clientEmail": "client@agency-fixture.invalid",
+      "externalReference": null,
+      "platforms": [
+        {
+          "platformGroup": "beehiiv",
+          "products": [
+            {
+              "product": "beehiiv",
+              "accessLevel": "admin",
+              "accounts": []
+            }
+          ]
+        },
+        {
+          "platformGroup": "zapier",
+          "products": [
+            {
+              "product": "zapier",
+              "accessLevel": "admin",
+              "accounts": []
+            }
+          ]
+        }
+      ],
+      "status": "completed",
+      "uniqueToken": "local-agency-manual-invite",
+      "expiresAt": "2030-01-01T00:00:00.000Z",
+      "createdAt": "2026-10-04T22:04:13.975Z",
+      "intakeFields": [],
+      "intakeResponses": null,
+      "branding": null,
+      "metaAccessConfig": null,
+      "authorizedAt": "2026-10-04T22:07:53.962Z",
+      "lastReminderSentAt": null,
+      "authorizationProgress": {
+        "fulfilledProducts": [
+          {
+            "product": "beehiiv",
+            "platformGroup": "beehiiv"
+          },
+          {
+            "product": "zapier",
+            "platformGroup": "zapier"
+          }
+        ],
+        "unresolvedProducts": [],
+        "googleProductFulfillment": [],
+        "completedPlatforms": [
+          "beehiiv",
+          "zapier"
+        ],
+        "isComplete": true
+      },
+      "metaFulfillment": [],
+      "manualConfirmations": [
+        {
+          "platform": "beehiiv",
+          "verificationStatus": "verified",
+          "verificationMethod": "manual_review",
+          "verifiedAt": "2026-10-04T22:07:43.231Z"
+        },
+        {
+          "platform": "zapier",
+          "verificationStatus": "verified",
+          "verificationMethod": "manual_review",
+          "verifiedAt": "2026-10-04T22:07:53.957Z"
+        }
+      ]
+    },
+    "error": null
+  },
+  "quota": {
+    "data": {
+      "currentTier": "STARTER",
+      "updatedAt": "2026-10-04T22:08:20.618Z",
+      "accessRequests": {
+        "limit": 3,
+        "used": 0,
+        "remaining": 3
+      },
+      "clients": {
+        "limit": 1,
+        "used": 1,
+        "remaining": 0
+      },
+      "members": {
+        "limit": 1,
+        "used": 0,
+        "remaining": 1
+      },
+      "templates": {
+        "limit": 1,
+        "used": 0,
+        "remaining": 1
+      },
+      "clientOnboards": {
+        "limit": 3,
+        "used": 0,
+        "remaining": 3
+      },
+      "platformAudits": {
+        "limit": 10,
+        "used": 0,
+        "remaining": 10
+      },
+      "teamSeats": {
+        "limit": 1,
+        "used": 0,
+        "remaining": 1
+      }
+    }
+  },
+  "passed": true
+}

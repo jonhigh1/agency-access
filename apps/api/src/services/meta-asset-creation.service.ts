@@ -12,6 +12,7 @@ import { infisical } from '../lib/infisical.js';
 import { readMetaAuthorizationMetadata } from '../lib/meta-authorization-metadata.js';
 import { prisma } from '../lib/prisma.js';
 import { updateGrantedAssets } from '../lib/granted-assets.js';
+import { updateAuthorizationMetadata } from '@/lib/authorization-metadata.js';
 import { auditService } from './audit.service.js';
 import { MetaGraphMutationError, metaConnector } from './connectors/meta.js';
 
@@ -665,39 +666,33 @@ class MetaAssetCreationService {
 
       // Persist selection + discovery into PlatformAuthorization.metadata.meta so
       // grant-meta-access can run against the new business without a re-selection.
-      const { rootMetadata, metaMetadata: currentMeta } = readMetaAuthorizationMetadata(
-        platformAuth.metadata
-      );
-
-      const existingBusinesses = currentMeta.discovery?.availableBusinesses ?? [];
-      const alreadyListed = existingBusinesses.some((b) => b.id === createdBusiness.id);
-      const availableBusinesses = alreadyListed
-        ? existingBusinesses
-        : [
-            ...existingBusinesses,
-            { id: createdBusiness.id, name: createdBusiness.name, verificationStatus: 'unverified' },
-          ];
-
-      await prisma.platformAuthorization.update({
-        where: { id: platformAuth.id },
-        data: {
-          metadata: {
-            ...rootMetadata,
-            meta: {
-              ...currentMeta,
-              discovery: {
-                availableBusinesses,
-                discoveredAt: new Date().toISOString(),
-              },
-              selection: {
-                clientBusinessId: createdBusiness.id,
-                clientBusinessName: createdBusiness.name,
-                selectedAt: new Date().toISOString(),
-                source: 'created',
-              },
+      await updateAuthorizationMetadata(platformAuth.id, (metadata) => {
+        const { rootMetadata, metaMetadata: currentMeta } = readMetaAuthorizationMetadata(metadata);
+        const existingBusinesses = currentMeta.discovery?.availableBusinesses ?? [];
+        const availableBusinesses = existingBusinesses.some((business) => business.id === createdBusiness.id)
+          ? existingBusinesses
+          : [...existingBusinesses, {
+              id: createdBusiness.id,
+              name: createdBusiness.name,
+              verificationStatus: 'unverified' as const,
+            }];
+        return {
+          ...rootMetadata,
+          meta: {
+            ...currentMeta,
+            discovery: {
+              ...currentMeta.discovery,
+              availableBusinesses,
+              discoveredAt: new Date().toISOString(),
+            },
+            selection: {
+              clientBusinessId: createdBusiness.id,
+              clientBusinessName: createdBusiness.name,
+              selectedAt: new Date().toISOString(),
+              source: 'created',
             },
           },
-        },
+        };
       });
 
       // Append to ClientConnection.grantedAssets (mirrors createdAdAccounts)

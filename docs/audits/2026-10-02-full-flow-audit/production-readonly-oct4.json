@@ -1,0 +1,31 @@
+{
+  "environment": "Production, selected Codex browser ID 2; tab 3; retained authenticated session",
+  "mutationsPerformed": false,
+  "observations": [
+    {
+      "url": "https://authhub.co/dashboard",
+      "visible": "Authenticated dashboard: 13 total requests, 1 pending, 13 active connections, 3 platforms; recent request detail navigation succeeds"
+    },
+    {
+      "url": "https://authhub.co/access-requests/56284501-9d14-4205-9cc2-a9a8dc42159d",
+      "visible": "Pending Meta request shows Meta Ads, Meta Pages and Instagram selection required; editor navigation succeeds"
+    },
+    {
+      "url": "https://authhub.co/access-requests/56284501-9d14-4205-9cc2-a9a8dc42159d/edit",
+      "visible": "Editor hydrates 3 selected Meta products and saved recipient/task selections. Discard returns to details; no edits or save."
+    },
+    {
+      "url": "https://authhub.co/settings",
+      "visible": "General settings show agency profile and Free/no subscription state. Form not edited."
+    },
+    {
+      "url": "https://authhub.co/settings?tab=billing",
+      "visible": "Billing shows Free/no subscription, three plan options and usage 13/3 requests, 1/1 clients, 1/1 members, 0/1 templates. No checkout, trial or subscription action taken."
+    },
+    {
+      "url": "https://authhub.co/clients",
+      "visible": "One active client; no-match search showed No clients found and Clear search. Clear restored existing client after briefly showing No clients yet; reproduced F-033."
+    }
+  ],
+  "boundary": "Read-only visible observations. Local fixes are not claimed deployed. Save, external reminders, payment and provider permission operations remain untested."
+}
