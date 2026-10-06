@@ -12,6 +12,7 @@ import {
   ManualConfirmationRequestSchema,
 } from '@agency-platform/shared';
 import { accessRequestService } from '../services/access-request.service.js';
+import { metaAutoAssignService } from '../services/meta-auto-assign.service.js';
 import {
   isManualConfirmationActorId,
   manualConfirmationService,
@@ -469,6 +470,36 @@ export async function accessRequestRoutes(fastify: FastifyInstance) {
     }
 
     return reply.send(result);
+  });
+
+  // Post-Partner Auto-Assign for agency team (ticket 08)
+  fastify.post('/access-requests/:id/meta/auto-assign', {
+    onRequest: [authenticate(), requirePrincipalAgency],
+  }, async (request, reply) => {
+    const { id } = request.params as { id: string };
+    const agencyId = (request as any).principalAgencyId as string;
+
+    const existing = await accessRequestService.getAccessRequestOwnershipById(id);
+    if (existing.error) {
+      return reply.code(existing.error.code === 'NOT_FOUND' ? 404 : 500).send({ data: null, error: existing.error });
+    }
+    const accessError = assertAgencyAccess(existing.data!.agencyId, agencyId);
+    if (accessError) {
+      return reply.code(403).send({ data: null, error: accessError });
+    }
+
+    const result = await metaAutoAssignService.runForAccessRequest(id, agencyId, request);
+    if (result.error) {
+      const statusCode =
+        result.error.code === 'NOT_FOUND'
+          ? 404
+          : result.error.code === 'AUTO_ASSIGN_DISABLED' || result.error.code === 'PARTNER_ACCESS_NOT_VERIFIED'
+            ? 400
+            : 502;
+      return reply.code(statusCode).send({ data: null, error: result.error });
+    }
+
+    return reply.send({ data: { results: result.data }, error: null });
   });
 
   // Exclude one Meta grant

@@ -12,6 +12,7 @@ import type {
   ManualConfirmationPlatform,
   ManualConfirmationResponseData,
   MetaAccessConfig,
+  MetaAutoAssignResult,
   MetaFulfillmentDeclines,
   MetaFulfillmentResult,
 } from '@agency-platform/shared';
@@ -80,6 +81,8 @@ export interface AccessRequest {
     }>;
   };
   metaFulfillment?: MetaFulfillmentResult[];
+  metaAutoAssignResults?: MetaAutoAssignResult[];
+  metaAutoAssignEnabled?: boolean;
   metaDeclines?: MetaFulfillmentDeclines;
   authorizationLinkChanged?: boolean;
   manualConfirmations?: ManualConfirmation[];
@@ -245,6 +248,32 @@ export async function updateAccessRequest(
       };
     }
 
+    return {
+      error: {
+        code: 'NETWORK_ERROR',
+        message: err instanceof Error ? err.message : 'Network error. Please try again.',
+      },
+    };
+  }
+}
+
+export async function runMetaAutoAssign(
+  accessRequestId: string,
+  getToken?: TokenProvider,
+): Promise<{ data?: MetaAutoAssignResult[]; error?: ApiError }> {
+  try {
+    const response = await authorizedApiFetch<{ data: { results: MetaAutoAssignResult[] }; error: null }>(
+      `/api/access-requests/${accessRequestId}/meta/auto-assign`,
+      {
+        method: 'POST',
+        getToken: getToken ?? (async () => null),
+      },
+    );
+    return { data: response.data.results };
+  } catch (err) {
+    if (err instanceof AuthorizedApiError) {
+      return { error: { code: err.code, message: err.message, details: err.details } };
+    }
     return {
       error: {
         code: 'NETWORK_ERROR',

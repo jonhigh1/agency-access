@@ -55,6 +55,22 @@ function buildSettingsResponse(): Response {
   } as Response;
 }
 
+function handleMetaAutoAssignApi(url: string): Response | null {
+  if (url.includes('auto-assign-preferences')) {
+    return {
+      ok: true,
+      json: async () => ({ data: { enabled: false, recipients: [] } }),
+    } as Response;
+  }
+  if (url.includes('/agency-platforms/meta/assignees')) {
+    return {
+      ok: true,
+      json: async () => ({ data: [] }),
+    } as Response;
+  }
+  return null;
+}
+
 function buildConnectionResponse(): Response {
   return {
     ok: true,
@@ -164,6 +180,9 @@ describe('MetaUnifiedSettings', () => {
         } as Response;
       }
 
+      const autoAssign = handleMetaAutoAssignApi(url);
+      if (autoAssign) return autoAssign;
+
       return {
         ok: true,
         json: async () => ({ data: null }),
@@ -212,6 +231,8 @@ describe('MetaUnifiedSettings', () => {
         return buildConnectionResponse();
       }
 
+      const autoAssign = handleMetaAutoAssignApi(url);
+      if (autoAssign) return autoAssign;
       return { ok: true, json: async () => ({ data: null }) } as Response;
     });
 
@@ -252,6 +273,8 @@ describe('MetaUnifiedSettings', () => {
         return buildConnectionResponse();
       }
 
+      const autoAssign = handleMetaAutoAssignApi(url);
+      if (autoAssign) return autoAssign;
       return { ok: true, json: async () => ({ data: null }) } as Response;
     });
 
@@ -290,6 +313,8 @@ describe('MetaUnifiedSettings', () => {
         return buildConnectionResponse();
       }
 
+      const autoAssign = handleMetaAutoAssignApi(url);
+      if (autoAssign) return autoAssign;
       return { ok: true, json: async () => ({ data: null }) } as Response;
     });
 
@@ -310,6 +335,8 @@ describe('MetaUnifiedSettings', () => {
       }
       if (url.includes('/agency-platforms/meta/asset-settings')) return buildSettingsResponse();
       if (url.includes('/agency-platforms/available')) return buildConnectionResponse();
+      const autoAssign = handleMetaAutoAssignApi(url);
+      if (autoAssign) return autoAssign;
       return { ok: true, json: async () => ({ data: null }) } as Response;
     });
     vi.stubGlobal('fetch', fetchMock);
@@ -346,7 +373,9 @@ describe('MetaUnifiedSettings', () => {
           return buildConnectionResponse();
         }
 
-        return { ok: true, json: async () => ({ data: null }) } as Response;
+        const autoAssign = handleMetaAutoAssignApi(url);
+      if (autoAssign) return autoAssign;
+      return { ok: true, json: async () => ({ data: null }) } as Response;
       });
 
     vi.stubGlobal('fetch', fetchMock);

@@ -11,6 +11,7 @@ import { agencyPlatformsRoutes } from '../agency-platforms.js';
 import { agencyPlatformService } from '../../services/agency-platform.service.js';
 import { oauthStateService } from '../../services/oauth-state.service.js';
 import { metaAssetsService } from '../../services/meta-assets.service.js';
+import { metaAutoAssignService } from '../../services/meta-auto-assign.service.js';
 import { googleAssetsService } from '../../services/google-assets.service.js';
 import { MetaConnector } from '../../services/connectors/meta.js';
 import { SnapchatConnector } from '../../services/connectors/snapchat.js';
@@ -41,6 +42,12 @@ vi.mock('../../services/meta-assets.service.js', () => ({
     saveAssetSettings: vi.fn(),
     getAssetSettings: vi.fn(),
     getAssignableRecipients: vi.fn(),
+  },
+}));
+vi.mock('../../services/meta-auto-assign.service.js', () => ({
+  metaAutoAssignService: {
+    getPreferences: vi.fn(),
+    savePreferences: vi.fn(),
   },
 }));
 vi.mock('../../services/google-assets.service.js', () => ({
@@ -1445,6 +1452,46 @@ describe('Agency Platforms Routes', () => {
       });
 
       expect(response.statusCode).toBe(400);
+    });
+  });
+
+  describe('GET /agency-platforms/meta/auto-assign-preferences', () => {
+    it('returns saved Auto-Assign preferences', async () => {
+      vi.mocked(metaAutoAssignService.getPreferences).mockResolvedValue({
+        data: { enabled: true, recipients: [{ type: 'human', id: '42', name: 'Alex' }] },
+        error: null,
+      });
+
+      const response = await app.inject({
+        method: 'GET',
+        url: '/agency-platforms/meta/auto-assign-preferences?agencyId=agency-1',
+      });
+
+      expect(response.statusCode).toBe(200);
+      expect(response.json().data.enabled).toBe(true);
+    });
+  });
+
+  describe('PATCH /agency-platforms/meta/auto-assign-preferences', () => {
+    it('persists Auto-Assign preferences for the agency', async () => {
+      const preferences = { enabled: true, recipients: [{ type: 'human', id: '42' }] };
+      vi.mocked(metaAutoAssignService.savePreferences).mockResolvedValue({
+        data: preferences,
+        error: null,
+      });
+
+      const response = await app.inject({
+        method: 'PATCH',
+        url: '/agency-platforms/meta/auto-assign-preferences',
+        payload: { agencyId: 'agency-1', preferences },
+      });
+
+      expect(response.statusCode).toBe(200);
+      expect(metaAutoAssignService.savePreferences).toHaveBeenCalledWith(
+        'agency-1',
+        preferences,
+        expect.anything(),
+      );
     });
   });
 

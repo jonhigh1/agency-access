@@ -42,6 +42,8 @@ import {
   isMetaPermissionTrackValid,
   MetaPermissionSchema,
   MetaAccessConfigSchema,
+  MetaAutoAssignPreferencesSchema,
+  MetaAutoAssignResultSchema,
   getDefaultMetaAccessTasks,
   buildMetaClientAllowedAssetTypes,
   PLATFORM_SCOPES,
@@ -201,6 +203,27 @@ describe('Phase 5: Shared Types - TDD Tests', () => {
     expect(() => MetaAccessConfigSchema.parse({
       recipients: [{ type: 'business', id: 'business-1' }],
     })).toThrow();
+  });
+
+  it('validates agency Meta Auto-Assign preferences and result rows', () => {
+    expect(
+      MetaAutoAssignPreferencesSchema.parse({
+        enabled: true,
+        recipients: [{ type: 'human', id: '42', name: 'Owner' }],
+      }).enabled
+    ).toBe(true);
+    expect(
+      MetaAutoAssignResultSchema.parse({
+        assetKind: 'page',
+        assetId: 'page-1',
+        recipientType: 'system_user',
+        recipientId: '99',
+        requestedTasks: ['ADVERTISE'],
+        verifiedTasks: ['ADVERTISE'],
+        status: 'verified',
+        attemptedAt: new Date().toISOString(),
+      }).status
+    ).toBe('verified');
   });
 
   it('derives least-privilege Meta tasks from requested products', () => {

@@ -11,6 +11,7 @@
 
 import { META_GRAPH_VERSION } from '@/lib/meta-constants';
 import { metaGraphFetch } from '@/lib/meta-graph-instrumentation.js';
+import type { MetaGraphTokenClass } from '@agency-platform/shared';
 
 export interface MetaAssignedUserVerificationResult {
   verified: boolean;
@@ -27,12 +28,13 @@ class MetaPartnerService {
   private async graphRequest(
     url: string,
     accessToken: string,
-    init: RequestInit
+    init: RequestInit,
+    tokenClass: MetaGraphTokenClass = 'client_user',
   ): Promise<Response> {
     return metaGraphFetch(url, {
       ...init,
       accessToken,
-      tokenClass: 'client_user',
+      tokenClass,
       signal: AbortSignal.timeout(this.REQUEST_TIMEOUT_MS),
     });
   }
@@ -50,18 +52,23 @@ class MetaPartnerService {
     accessToken: string;
     systemUserId: string;
     tasks: string[];
+    businessId?: string;
+    tokenClass?: MetaGraphTokenClass;
   }): Promise<void> {
     const url = `${this.META_GRAPH_URL}/${input.assetId}/assigned_users`;
     const formData = new URLSearchParams();
     formData.append('user', input.systemUserId);
     formData.append('tasks', JSON.stringify(input.tasks));
+    if (input.businessId) {
+      formData.append('business', input.businessId);
+    }
     const response = await this.graphRequest(url, input.accessToken, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
       },
       body: formData.toString(),
-    });
+    }, input.tokenClass ?? 'client_user');
 
     if (!response.ok) {
       let errorMessage = 'Unknown error';
@@ -328,6 +335,48 @@ class MetaPartnerService {
       systemUserId: agencySystemUserId,
       tasks,
     });
+  }
+
+  /**
+   * Assign an agency person or system user to a partner-shared asset using the agency token.
+   * Post-Partner Auto-Assign (ticket 08) — never substitutes for Partner share.
+   */
+  async assignAgencyRecipientToAsset(input: {
+    agencyAccessToken: string;
+    tokenClass?: MetaGraphTokenClass;
+    agencyBusinessId: string;
+    assetId: string;
+    recipientId: string;
+    tasks: string[];
+  }): Promise<void> {
+    await this.postAssignedUserAccess({
+      assetId: input.assetId,
+      accessToken: input.agencyAccessToken,
+      systemUserId: input.recipientId,
+      tasks: input.tasks,
+      businessId: input.agencyBusinessId,
+      tokenClass: input.tokenClass ?? 'client_user',
+    });
+  }
+
+  async verifyAgencyRecipientOnAsset(input: {
+    agencyAccessToken: string;
+    tokenClass?: MetaGraphTokenClass;
+    agencyBusinessId: string;
+    assetId: string;
+    recipientId: string;
+    expectedTasks: string[];
+  }): Promise<MetaAssignedUserVerificationResult> {
+    const assignedUsers = await this.getAssignedUsers(
+      input.agencyAccessToken,
+      input.assetId,
+      input.agencyBusinessId,
+    );
+    const assignedUser = assignedUsers.find((item) => item.id === input.recipientId);
+    const assignedTasks = this.normalizeTasks(assignedUser?.tasks);
+    const verified = assignedTasks.length >= input.expectedTasks.length &&
+      input.expectedTasks.every((task) => assignedTasks.includes(task));
+    return { verified, assignedTasks };
   }
 
   async verifyPageAccess(
