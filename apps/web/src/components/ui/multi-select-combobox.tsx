@@ -295,9 +295,18 @@ export function MultiSelectCombobox({
               {visibleSelected.map((option) => (
                 <span
                   key={option.id}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-[rgb(var(--coral))]/10 border border-[rgb(var(--coral))] rounded-md text-sm text-[rgb(var(--coral))]"
+                  className="inline-flex max-w-full items-center gap-1.5 rounded-md border border-[rgb(var(--coral))] bg-[rgb(var(--coral))]/10 px-2.5 py-1 text-sm text-[rgb(var(--coral))]"
                 >
-                  <span className="font-medium">{option.name}</span>
+                  <span
+                    className="min-w-0 max-w-full break-words font-medium"
+                    title={
+                      option.description
+                        ? `${option.name.trim() || option.id} · ${option.description}`
+                        : option.name.trim() || option.id
+                    }
+                  >
+                    {option.name.trim() || option.id}
+                  </span>
                   <button
                     onClick={(e) => removeItem(option.id, e)}
                     className="hover:bg-[rgb(var(--coral))]/20 rounded p-0.5 transition-colors"
