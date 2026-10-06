@@ -14,6 +14,7 @@ import { extractApiErrorMessage } from '@/lib/api/extract-error';
 import { startAgencyMetaOAuth } from '@/lib/agency-meta-oauth';
 import { Loader2, ChevronDown, AlertCircle, Info, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { MetaPartnerDurabilityPanel } from '@/components/meta/MetaPartnerDurabilityPanel';
 
 interface MetaUnifiedSettingsProps {
   agencyId: string;
@@ -240,6 +241,8 @@ export function MetaUnifiedSettings({ agencyId }: MetaUnifiedSettingsProps) {
 
   return (
     <div className="space-y-6">
+      <MetaPartnerDurabilityPanel />
+
       <ManageAssetsSectionCard
         eyebrow="Primary control"
         title="Business Portfolio"

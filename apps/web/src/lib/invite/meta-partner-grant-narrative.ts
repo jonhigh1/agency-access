@@ -1,4 +1,5 @@
 import type { MetaAssetKind } from '@agency-platform/shared';
+import { META_PARTNER_DURABILITY } from '@/lib/content/meta-partner-durability';
 
 export type MetaGrantAutomationMode = 'automatic' | 'manual';
 
@@ -12,6 +13,8 @@ export interface MetaPartnerGrantNarrativeInput {
 export interface MetaPartnerGrantNarrative {
   headline: string;
   body: string;
+  oauthOrchestrationNote: string;
+  revokeNote: string;
   agencyPartnerLine: string | null;
   clientPortfolioLine: string | null;
   /** Explicit: business-scoped discovery is not the zero-portfolio Page list. */
@@ -25,8 +28,8 @@ export const META_GRANT_AUTOMATION_LABEL: Record<MetaGrantAutomationMode, string
 };
 
 /**
- * Live automation matrix (ticket 06): Pages may be automatic via assigned_users;
- * Partner Business Portfolio share stays Manual until ticket 07 proves Graph mutation.
+ * Live automation matrix (tickets 04/07): Pages automatic via assigned_users + Page
+ * partner Graph mutation with read-back; ad accounts Manual partner share + Check access.
  */
 export function resolveMetaGrantAutomationMode(assetKind: MetaAssetKind): MetaGrantAutomationMode {
   switch (assetKind) {
@@ -63,8 +66,9 @@ export function buildMetaPartnerGrantNarrative(
 
   return {
     headline: 'Partner access for your agency',
-    body:
-      'Durable access means your agency\'s Business Portfolio is added as a Partner on the assets you select. You keep ownership; revoke Partner access anytime in Meta Business Settings.',
+    body: META_PARTNER_DURABILITY.durableOutcomeLead,
+    oauthOrchestrationNote: META_PARTNER_DURABILITY.oauthOrchestration,
+    revokeNote: META_PARTNER_DURABILITY.revokePartner,
     agencyPartnerLine,
     clientPortfolioLine,
     discoveryNote:
