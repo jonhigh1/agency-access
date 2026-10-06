@@ -17,6 +17,7 @@ import { metaGraphGet } from '../lib/meta-graph-request.js';
 import { getRecordedMetaGraphOps, metaGraphFetch } from '../lib/meta-graph-instrumentation.js';
 import {
   formatMetaGraphOpCaption,
+  tryMapThrownMetaError,
   type MetaAssetKind,
   type MetaPageEngagementProof,
   type MetaProductCatalog,
@@ -249,6 +250,10 @@ class ClientAssetsService {
       logger.error('Failed to fetch Meta assets', { error });
       if (error instanceof MetaBusinessPortfolioUnavailableError) {
         throw error;
+      }
+      const mapped = tryMapThrownMetaError(error);
+      if (mapped) {
+        throw mapped;
       }
       throw new Error(
         `Failed to fetch Meta assets: ${error instanceof Error ? error.message : 'Unknown error'}`

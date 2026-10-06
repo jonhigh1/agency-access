@@ -19,6 +19,12 @@ import { updateGrantedAssets } from '../../lib/granted-assets.js';
 import { updateAuthorizationMetadata } from '../../lib/authorization-metadata.js';
 import { readMetaAuthorizationMetadata } from '../../lib/meta-authorization-metadata.js';
 import {
+  metaOAuthIncompletePresentation,
+  readMetaOAuthScopeGap,
+  sendMetaConnectionError,
+} from '../../lib/meta-connection-error-response.js';
+import { mapMetaConnectionErrorFromApi, MetaConnectionError } from '@agency-platform/shared';
+import {
   type MetaAssetKind,
   MetaAccessConfigSchema,
   type MetaAssetGrantResult,
@@ -2755,6 +2761,16 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
       return sendError(reply, 'AUTHORIZATION_INACTIVE', 'Platform authorization is not active', 403);
     }
 
+    if (authPlatform === 'meta') {
+      const scopeGap = readMetaOAuthScopeGap(platformAuth.metadata);
+      if (scopeGap) {
+        return sendMetaConnectionError(
+          reply,
+          metaOAuthIncompletePresentation(scopeGap.missingOAuthScopes),
+        );
+      }
+    }
+
     try {
       const tokenReadAction =
         authPlatform === 'tiktok'
@@ -2883,6 +2899,18 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
         error: null,
       });
     } catch (error) {
+      const isMetaAssetFetch =
+        platform === 'meta_ads' || platform === 'meta_pages' || authPlatform === 'meta';
+
+      if (isMetaAssetFetch && error instanceof MetaConnectionError) {
+        return sendMetaConnectionError(reply, error.presentation);
+      }
+
+      if (isMetaAssetFetch && error instanceof MetaBusinessPortfolioUnavailableError) {
+        const presentation = mapMetaConnectionErrorFromApi(error.code, error.message);
+        return sendMetaConnectionError(reply, presentation);
+      }
+
       if (error instanceof MetaBusinessPortfolioUnavailableError) {
         return sendError(reply, error.code, error.message, error.statusCode);
       }

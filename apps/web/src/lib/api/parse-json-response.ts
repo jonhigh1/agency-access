@@ -1,7 +1,11 @@
 import { extractMessageFromBody } from './extract-error';
 
 export class ApiResponseError extends Error {
-  constructor(message: string, readonly code?: string) {
+  constructor(
+    message: string,
+    readonly code?: string,
+    readonly details?: unknown,
+  ) {
     super(message);
     this.name = 'ApiResponseError';
   }
@@ -49,7 +53,8 @@ export async function parseJsonResponse<T>(
       : {};
     throw new ApiResponseError(
       extractMessageFromBody(payload, response.statusText || fallbackErrorMessage),
-      typeof error.code === 'string' ? error.code : undefined
+      typeof error.code === 'string' ? error.code : undefined,
+      error.details,
     );
   }
 
