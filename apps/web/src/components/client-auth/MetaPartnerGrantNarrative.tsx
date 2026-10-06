@@ -64,27 +64,21 @@ export function MetaPartnerGrantNarrative({
   return (
     <section
       aria-label="Partner access narrative"
-      className="border-l-2 border-black bg-[rgb(var(--card))] p-4 space-y-3 dark:border-white"
+      className="space-y-4 border border-black/20 bg-[rgb(var(--card))] p-5 dark:border-white/20"
     >
-      <div>
+      <div className="space-y-2">
         <p className="label-micro">How your agency gets access</p>
-        <h3 className="mt-1 font-display text-base font-bold text-ink">{narrative.headline}</h3>
-        <p className="mt-1 text-sm text-muted-foreground">{narrative.body}</p>
-        <p className="mt-2 text-sm text-muted-foreground">{narrative.oauthOrchestrationNote}</p>
-        <p className="mt-2 text-sm text-muted-foreground">{narrative.revokeNote}</p>
+        {narrative.clientPortfolioLine ? (
+          <p className="text-sm font-medium text-ink">{narrative.clientPortfolioLine}</p>
+        ) : null}
+        {narrative.agencyPartnerLine ? (
+          <p className="text-sm font-medium text-ink">{narrative.agencyPartnerLine}</p>
+        ) : agencyBusinessId === null ? (
+          <p className="text-sm text-muted-foreground" role="status">
+            Loading agency Business Portfolio ID…
+          </p>
+        ) : null}
       </div>
-
-      {narrative.clientPortfolioLine ? (
-        <p className="text-sm font-medium text-ink">{narrative.clientPortfolioLine}</p>
-      ) : null}
-
-      {narrative.agencyPartnerLine ? (
-        <p className="text-sm font-medium text-ink">{narrative.agencyPartnerLine}</p>
-      ) : agencyBusinessId === null ? (
-        <p className="text-sm text-muted-foreground" role="status">
-          Loading agency Business Portfolio ID…
-        </p>
-      ) : null}
 
       {uniqueKinds.length > 0 ? (
         <ul className="space-y-2 text-sm">
@@ -105,10 +99,20 @@ export function MetaPartnerGrantNarrative({
         </ul>
       ) : null}
 
-      <p className="text-xs text-muted-foreground">{narrative.discoveryNote}</p>
-      {showZeroPortfolioNote ? (
-        <p className="text-xs text-muted-foreground">{narrative.zeroPortfolioPagesNote}</p>
-      ) : null}
+      <details className="group border-t border-black/10 pt-3 dark:border-white/10">
+        <summary className="cursor-pointer text-sm font-semibold text-ink marker:content-none list-none [&::-webkit-details-marker]:hidden">
+          <span className="underline decoration-black/20 underline-offset-2 group-open:decoration-coral dark:decoration-white/30">
+            How access stays durable on Meta
+          </span>
+        </summary>
+        <div className="mt-3 space-y-2 text-sm text-muted-foreground">
+          <p className="font-display text-base font-bold text-ink">{narrative.headline}</p>
+          <p>{narrative.body}</p>
+          <p>{narrative.oauthOrchestrationNote}</p>
+          <p>{narrative.revokeNote}</p>
+          {showZeroPortfolioNote ? <p>{narrative.zeroPortfolioPagesNote}</p> : null}
+        </div>
+      </details>
     </section>
   );
 }

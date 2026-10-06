@@ -7,7 +7,7 @@ import { formatMetaPageChipDisplay } from '@/lib/invite/meta-entity-identity';
 import { getApiBaseUrl } from '@/lib/api/api-env';
 import { ApiResponseError, parseJsonResponse } from '@/lib/api/parse-json-response';
 import { capturePosthogEvent } from '@/lib/analytics/capture-posthog';
-import { Button } from '@/components/ui/button';
+import { ClientGrantPrimaryButton } from './client-grant-button';
 import { PlatformIcon } from '@/components/ui/platform-icon';
 
 interface Page {
@@ -211,7 +211,7 @@ export function AutomaticPagesGrant({
   const hasFailed = grantResults?.some((r) => r.status === 'failed');
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       <div>
         <p className="label-micro">{content.title}</p>
         <p className="text-sm text-muted-foreground">{content.subtitle}</p>
@@ -251,8 +251,8 @@ export function AutomaticPagesGrant({
         </div>
       ) : null}
 
-      <div className="p-6">
-        <div className="flex items-start gap-4 mb-4">
+      <div className="space-y-4">
+        <div className="flex items-start gap-3">
           <div className="w-10 h-10 rounded-none bg-coral/20 flex items-center justify-center flex-shrink-0">
             <PlatformIcon platform="meta_pages" size="sm" />
           </div>
@@ -267,11 +267,11 @@ export function AutomaticPagesGrant({
         </div>
 
         {/* Account Selector */}
-        <div className="mb-4">
-          <label className="block text-sm font-semibold text-foreground mb-2">
-            Select Accounts
+        <div>
+          <label className="mb-2 block text-sm font-semibold text-foreground">
+            Select accounts
           </label>
-          <div className="flex min-h-[60px] flex-wrap gap-2 rounded-none border border-black/10 p-3 dark:border-white/10">
+          <div className="flex min-h-9 flex-wrap items-center gap-2 rounded-none border border-black/10 p-2 dark:border-white/10">
             {displayPages.length === 0 ? (
               <span className="text-muted-foreground text-sm">No pages selected</span>
             ) : (
@@ -285,7 +285,7 @@ export function AutomaticPagesGrant({
                 return (
                   <div
                     key={page.id}
-                    className={`inline-flex max-w-full items-center gap-2 rounded-none border-2 px-3 py-1.5 ${
+                    className={`inline-flex max-w-full min-h-9 items-center gap-2 rounded-none border px-3 py-1 ${
                       isGranted
                         ? 'bg-[rgb(var(--teal))]/10 border-[rgb(var(--teal))]/40'
                         : isFailed
@@ -318,17 +318,14 @@ export function AutomaticPagesGrant({
           </div>
         </div>
 
-        {/* Grant Access Button */}
-        <Button
+        <ClientGrantPrimaryButton
           data-testid="automatic-pages-grant-button"
           onClick={() => void handleGrantAccess()}
           disabled={isGranting || displayPages.length === 0 || hasGranted}
-          variant={isGranting || displayPages.length === 0 || hasGranted ? 'secondary' : 'primary'}
-          size="lg"
           className={
             isGranting || displayPages.length === 0 || hasGranted
-              ? 'w-full px-6 py-3 bg-muted/40 text-ink/70'
-              : 'w-full px-6 py-3'
+              ? 'bg-muted/40 text-ink/70 hover:bg-muted/40'
+              : undefined
           }
         >
           {isGranting ? (
@@ -346,7 +343,7 @@ export function AutomaticPagesGrant({
           ) : (
             content.facebookPages.grantButton
           )}
-        </Button>
+        </ClientGrantPrimaryButton>
       </div>
     </div>
   );

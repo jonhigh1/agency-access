@@ -164,7 +164,7 @@ describe('MetaGrantChecklist', () => {
       .closest('[data-checklist-kind="page"]') as HTMLElement;
     expect(pagesItem).not.toBeNull();
     expect(pagesItem).toHaveTextContent(/Leads Access/);
-    expect(pagesItem).toHaveTextContent('leads_retrieval');
+    expect(pagesItem).not.toHaveTextContent('leads_retrieval');
     expect(
       screen.getByRole('link', { name: 'Open Meta Business Settings for Leads Access' })
     ).toHaveAttribute('href', 'https://business.facebook.com/settings/client-bm-1');

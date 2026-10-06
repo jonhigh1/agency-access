@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import type { MetaPageEngagementProof as PageProof } from '@agency-platform/shared';
-import { Button } from '@/components/ui/button';
+import { ClientGrantPrimaryButton } from './client-grant-button';
 import { resolveApiUrl } from '@/lib/api/api-env';
 import { ApiResponseError, parseJsonResponse } from '@/lib/api/parse-json-response';
 import { capturePosthogEvent } from '@/lib/analytics/capture-posthog';
@@ -80,15 +80,15 @@ export function MetaPageEngagementProof({
     <section className="border-t border-black/10 pt-4 dark:border-white/10" aria-labelledby={`meta-page-proof-title-${selectedPage.id}`}>
       <div className="mb-3">
         <h4 id={`meta-page-proof-title-${selectedPage.id}`} className="text-lg font-bold text-[var(--ink)] font-display">
-          Validate Page access
+          Validate page access
         </h4>
         <p className="text-sm text-muted-foreground">
           AuthHub validates that it can read this Page&apos;s identity, your managed tasks, connected Instagram (if any),
           and up to three recent public post dates. Post text and engager profiles are never shown.
         </p>
         <p className="mt-2 text-sm text-muted-foreground">
-          This check confirms <span className="font-medium text-[var(--ink)]">pages_read_engagement</span> access only.
-          It does not grant your agency Page management rights or prove they can publish on your Page.
+          This check confirms AuthHub can read public Page details for validation. It does not grant your agency Page
+          management rights or prove they can publish on your Page.
         </p>
       </div>
 
@@ -97,16 +97,10 @@ export function MetaPageEngagementProof({
         <p className="font-mono text-xs text-muted-foreground">Page ID: {selectedPage.id}</p>
       </div>
 
-      <Button
-        type="button"
-        onClick={handleVerify}
-        disabled={isLoading}
-        variant="brutalist"
-        size="sm"
-      >
+      <ClientGrantPrimaryButton type="button" onClick={() => void handleVerify()} disabled={isLoading}>
         {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : null}
-        {isLoading ? 'Validating Page…' : 'Validate Page access'}
-      </Button>
+        {isLoading ? 'Validating page…' : 'Validate page access'}
+      </ClientGrantPrimaryButton>
 
       {error ? (
         <div className="mt-3 flex gap-2 border border-danger-ink bg-[rgb(var(--coral))]/10 p-3 text-sm text-danger-ink" role="alert">

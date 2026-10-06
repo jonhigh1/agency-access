@@ -17,8 +17,8 @@
  * into that panel's props.
  */
 
-import { useCallback, useEffect, useMemo, useRef, type ReactNode } from 'react';
-import { Button } from '@/components/ui/button';
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { ClientGrantSecondaryButton } from './client-grant-button';
 import { StatusBadge, type StatusVariant } from '@/components/ui/status-badge';
 import { trackClientGrantItemCompleted } from '@/lib/analytics/invite-events';
 import { AutomaticPagesGrant } from './AutomaticPagesGrant';
@@ -176,17 +176,42 @@ export function MetaGrantChecklist({
     [rows, declines, selectedAssets, overlay]
   );
 
+  const actionableItems = useMemo(
+    () => checklist.items.filter(isActionable),
+    [checklist.items]
+  );
+  const [focusedItemKey, setFocusedItemKey] = useState<string | null>(null);
+  const activeItemKey = focusedItemKey ?? actionableItems[0]?.key ?? null;
+
+  useEffect(() => {
+    if (focusedItemKey && !actionableItems.some((item) => item.key === focusedItemKey)) {
+      setFocusedItemKey(null);
+    }
+  }, [actionableItems, focusedItemKey]);
+
+  const advanceToNextActionable = useCallback(
+    (completedKey: string) => {
+      const index = actionableItems.findIndex((item) => item.key === completedKey);
+      const next = index >= 0 ? actionableItems[index + 1] : undefined;
+      setFocusedItemKey(next?.key ?? null);
+    },
+    [actionableItems]
+  );
+
   // Single completion funnel for panel settles: only a `done` settle counts
   // as completed — an `action_required` settle is a failure, not a completion.
   // Stable identity: see the callback contract note above.
   const settleItem = useCallback(
-    (kind: string, state: MetaGrantItemState) => {
+    (kind: string, state: MetaGrantItemState, itemKey?: string) => {
       if (state === 'done') {
         trackClientGrantItemCompleted({ item_kind: kind, source: 'panel' });
+        if (itemKey) {
+          advanceToNextActionable(itemKey);
+        }
       }
       onItemSettled(kind, state);
     },
-    [onItemSettled]
+    [onItemSettled, advanceToNextActionable]
   );
 
   // Server-truth completions: a refetch can flip an item to `done` without any
@@ -218,14 +243,18 @@ export function MetaGrantChecklist({
   const handlePagesGrantComplete = useCallback(
     (results: Array<{ status: string }>) => {
       const allGranted = results.length > 0 && results.every((result) => result.status === 'granted');
-      settleItem('page', allGranted ? 'done' : 'action_required');
+      settleItem('page', allGranted ? 'done' : 'action_required', 'page');
     },
     [settleItem]
   );
 
   const handleAdAccountComplete = useCallback(
     (result: ManualMetaShareCompletionResult) => {
-      settleItem('ad_account', result.status === 'verified' ? 'done' : 'action_required');
+      settleItem(
+        'ad_account',
+        result.status === 'verified' ? 'done' : 'action_required',
+        'ad_account'
+      );
     },
     [settleItem]
   );
@@ -394,9 +423,9 @@ export function MetaGrantChecklist({
               <div className="border-t border-black/10 pt-4 dark:border-white/10">
                 <h5 className="text-sm font-semibold text-ink">Leads Access</h5>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  This request includes the Manage Leads Access Page task. We attempt the assignment and report what Meta confirms. We never read lead records or request <code>leads_retrieval</code>. If Meta does not confirm it, assign it in Business Settings and it stays pending until we can confirm it.
+                  This request includes lead access for your Page. AuthHub assigns what Meta allows and reports the result. AuthHub never reads lead records. If Meta does not confirm access, assign it in Business Settings and it stays pending until we can confirm it.
                 </p>
-                <Button asChild variant="secondary" className="mt-3">
+                <ClientGrantSecondaryButton asChild className="mt-3">
                   <a
                     href={`https://business.facebook.com/settings/${encodeURIComponent(clientBusinessId)}`}
                     target="_blank"
@@ -404,7 +433,7 @@ export function MetaGrantChecklist({
                   >
                     Open Meta Business Settings for Leads Access
                   </a>
-                </Button>
+                </ClientGrantSecondaryButton>
               </div>
             ) : null}
           </div>
@@ -415,6 +444,7 @@ export function MetaGrantChecklist({
           <GrantMethodPanelIntro grantMethod="manual">
             {businessId ? (
               <AdAccountSharingInstructions
+                embedded
                 businessId={businessId}
                 businessName={businessName || undefined}
                 selectedAdAccounts={selectedAdAccounts}
@@ -477,7 +507,7 @@ export function MetaGrantChecklist({
   };
 
   return (
-    <section aria-label="Finish Meta access" className="space-y-3">
+    <section aria-label="Finish Meta access" className="space-y-6">
       <MetaPartnerGrantNarrative
         agencyBusinessId={businessId}
         agencyBusinessName={businessName}
@@ -491,6 +521,8 @@ export function MetaGrantChecklist({
       />
       <p className="label-micro">Finish Meta access</p>
       {checklist.items.map((item) => {
+        const isFocusedActionable = isActionable(item) && item.key === activeItemKey;
+        const isDeferredActionable = isActionable(item) && item.key !== activeItemKey;
         const kindRows = (rows || []).filter((row) => row.assetKind === item.assetKind);
         const selectedCount = selectedCountByKind[item.assetKind] ?? 0;
         const verifiedCount = verifiedCountForKind(
@@ -505,9 +537,10 @@ export function MetaGrantChecklist({
         return (
         <div
           key={item.key}
-          className="border-2 border-black p-4 dark:border-white"
+          className="border border-black/20 p-5 dark:border-white/20"
           data-checklist-kind={item.assetKind}
           data-primary-status={item.primaryStatus}
+          data-grant-step-focused={isFocusedActionable ? 'true' : undefined}
         >
           <div
             className={
@@ -539,7 +572,14 @@ export function MetaGrantChecklist({
               </StatusBadge>
             </div>
           </div>
-          {panelFor(item)}
+          {isDeferredActionable ? (
+            <div className="pt-3">
+              <ClientGrantSecondaryButton type="button" onClick={() => setFocusedItemKey(item.key)}>
+                Continue with {item.label.toLowerCase()}
+              </ClientGrantSecondaryButton>
+            </div>
+          ) : null}
+          {isFocusedActionable ? panelFor(item) : null}
         </div>
         );
       })}

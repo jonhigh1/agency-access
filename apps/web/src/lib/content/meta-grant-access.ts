@@ -17,7 +17,7 @@ export const META_GRANT_ACCESS = {
       facebookPages: {
         title: 'Facebook Pages',
         accessLevel: 'Admin', // or from access request
-        grantButton: 'Grant Access',
+        grantButton: 'Grant access',
         granting: 'Granting...',
         success: 'Access granted successfully',
         readBackSuccessTitle: 'Partner access confirmed',

@@ -1501,8 +1501,11 @@ describe('PlatformAuthWizard', () => {
     await waitFor(() => expect(reselectedShareButton).toBeEnabled());
     fireEvent.click(reselectedShareButton);
 
-    // The save lands on the checklist step, which hosts the Instagram panel.
+    // The save lands on the checklist step; Pages focus first, then Instagram.
     expect(await screen.findByRole('heading', { name: /meta signed in|connected/i })).toBeInTheDocument();
+    fireEvent.click(
+      await screen.findByRole('button', { name: /continue with instagram accounts/i })
+    );
     expect(
       await screen.findByRole('button', { name: /verify agency instagram access/i })
     ).toBeInTheDocument();
@@ -1917,6 +1920,9 @@ describe('PlatformAuthWizard', () => {
       expect(
         await screen.findByRole('button', { name: /^automatic pages grant$/i })
       ).toBeInTheDocument();
+      fireEvent.click(
+        await screen.findByRole('button', { name: /continue with instagram accounts/i })
+      );
       expect(
         await screen.findByRole('button', { name: /verify agency instagram access/i })
       ).toBeInTheDocument();
@@ -1999,7 +2005,7 @@ describe('PlatformAuthWizard', () => {
       expect(await screen.findByText('Done')).toBeInTheDocument();
       expect(screen.getByText('Needs you')).toBeInTheDocument();
       expect(
-        screen.getByRole('button', { name: /finish — 1 item left/i })
+        screen.getByRole('button', { name: /finish when done \(1 left\)/i })
       ).toBeInTheDocument();
     });
 
@@ -2088,7 +2094,7 @@ describe('PlatformAuthWizard', () => {
 
       // 2 selected ad accounts, 0 verified rows: the count stays truthful.
       expect(
-        screen.getByRole('button', { name: /finish — 2 items left/i })
+        screen.getByRole('button', { name: /finish when done \(2 left\)/i })
       ).toBeInTheDocument();
     });
 
@@ -2119,7 +2125,7 @@ describe('PlatformAuthWizard', () => {
       fireEvent.click(await screen.findByRole('button', { name: /share access/i }));
 
       expect(await screen.findByRole('heading', { name: /meta signed in|connected/i })).toBeInTheDocument();
-      expect(screen.getByRole('button', { name: /finish — 2 items left/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /finish when done \(2 left\)/i })).toBeInTheDocument();
       expect(screen.getByText(/finish sharing below/i)).toBeInTheDocument();
       expect(
         screen.queryByText('Access granted to the accounts you selected.')
@@ -2153,7 +2159,7 @@ describe('PlatformAuthWizard', () => {
 
       expect(await screen.findByRole('heading', { name: /meta signed in|connected/i })).toBeInTheDocument();
       expect(
-        screen.getByRole('button', { name: /finish — 1 item left/i })
+        screen.getByRole('button', { name: /finish when done \(1 left\)/i })
       ).toBeInTheDocument();
     });
 
@@ -2183,7 +2189,7 @@ describe('PlatformAuthWizard', () => {
       fireEvent.click(await screen.findByRole('button', { name: /share access/i }));
 
       const finishButton = await screen.findByRole('button', {
-        name: /finish — 1 item left/i,
+        name: /finish when done \(1 left\)/i,
       });
       fireEvent.click(finishButton);
 
