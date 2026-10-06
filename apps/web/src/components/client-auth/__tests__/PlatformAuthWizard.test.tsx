@@ -1011,6 +1011,7 @@ describe('PlatformAuthWizard', () => {
         platformName="Meta"
         products={[
           { product: 'meta_ads', accessLevel: 'admin' },
+          { product: 'meta_pages', accessLevel: 'admin' },
           { product: 'instagram', accessLevel: 'admin' },
         ]}
         accessRequestToken="token-1"
@@ -1023,17 +1024,70 @@ describe('PlatformAuthWizard', () => {
     fireEvent.click(screen.getByRole('button', { name: /select meta assets/i }));
     const shareButton = await screen.findByRole('button', { name: /share access/i });
 
-    // The selected ad account is shareable on its own. Instagram stays unshared.
+    // Ads alone are enough. Empty pages/IG secondary products must not be POSTed.
     await waitFor(() => expect(shareButton).toBeEnabled());
     fireEvent.click(shareButton);
 
-    await waitFor(() => {
-      const saveCall = vi.mocked(fetch).mock.calls.find(([url]) => String(url).includes('/save-assets'));
-      expect(saveCall).toBeDefined();
-      const body = JSON.parse(String(saveCall?.[1]?.body));
-      expect(body.selectedAssets.adAccounts.length).toBeGreaterThan(0);
-      expect(body.selectedAssets.instagramAccounts ?? []).toHaveLength(0);
-    });
+    // Wait for the post-save step so every sequential save has finished
+    // before asserting which platforms were posted.
+    await screen.findByText('Connected');
+
+    const saveBodies = vi.mocked(fetch).mock.calls
+      .filter(([url]) => String(url).includes('/save-assets'))
+      .map(([, options]) => JSON.parse(String(options?.body)));
+    expect(saveBodies).toEqual([
+      expect.objectContaining({
+        platform: 'meta_ads',
+        selectedAssets: expect.objectContaining({
+          adAccounts: expect.arrayContaining(['act_1']),
+          pages: [],
+          instagramAccounts: [],
+        }),
+      }),
+    ]);
+  });
+
+  it('still saves Instagram when Instagram accounts are selected', async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      text: async () => JSON.stringify({ data: { success: true }, error: null }),
+    } as Response);
+
+    render(
+      <PlatformAuthWizard
+        platform="meta"
+        platformName="Meta"
+        products={[
+          { product: 'meta_ads', accessLevel: 'admin' },
+          { product: 'instagram', accessLevel: 'admin' },
+        ]}
+        accessRequestToken="token-1"
+        onComplete={onCompleteMock}
+        initialConnectionId="conn-1"
+        initialStep={2}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /select meta pages and instagram assets/i }));
+    const shareButton = await screen.findByRole('button', { name: /share access/i });
+    await waitFor(() => expect(shareButton).toBeEnabled());
+    fireEvent.click(shareButton);
+
+    await screen.findByText('Connected');
+
+    const saveBodies = vi.mocked(fetch).mock.calls
+      .filter(([url]) => String(url).includes('/save-assets'))
+      .map(([, options]) => JSON.parse(String(options?.body)));
+    expect(saveBodies).toEqual([
+      expect.objectContaining({
+        platform: 'meta_ads',
+        selectedAssets: expect.objectContaining({ pages: ['page_1'], instagramAccounts: ['ig_1'] }),
+      }),
+      expect.objectContaining({
+        platform: 'instagram',
+        selectedAssets: expect.objectContaining({ instagramAccounts: ['ig_1'] }),
+      }),
+    ]);
   });
 
   it('shows one Meta selection area for a grouped request and says what happens after sharing', async () => {

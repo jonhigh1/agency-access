@@ -13,28 +13,38 @@ describe("Leadsie pricing SEO page", () => {
 
   it("uses approved SEO metadata and verification date", () => {
     expect(leadsiePricingPage.metaTitle).toBe(
-      "Leadsie Pricing (2026): Plans, Credits & Real Cost",
+      "Leadsie Pricing 2026: $59–$299/mo + What Overages Really Cost",
     );
     expect(leadsiePricingPage.metaDescription).toBe(
-      "Leadsie plans start at $59/mo for 3 client credits. See credit rules, $50 overages, and busy-month cost vs AuthHub fixed tiers.",
+      "Leadsie costs $59, $129 or $299/mo. We priced busy months at 5, 10, 20 and 50 new clients — including $50 overage packs — then matched AuthHub active-client tiers. Checked Oct 2026.",
     );
     expect(leadsiePricingPage.title).toBe(
-      "Leadsie Pricing (2026): Plans, Credits, and Real Monthly Cost",
+      "Leadsie Pricing 2026: Plans, Credits, and What a Busy Month Really Costs",
     );
-    expect(leadsiePricingPage.lastVerified).toBe("2026-09-23");
-    expect(leadsiePricingPage.openGraphDescription).toMatch(/Starter, Agency, Pro/);
+    expect(leadsiePricingPage.lastVerified).toBe("2026-10-05");
+    expect(leadsiePricingPage.lastVerifiedDisplay).toMatch(/October 5, 2026/);
+  });
+
+  it("does not claim 10–20 new clients stay on AuthHub Growth $79", () => {
+    const serialized = JSON.stringify(leadsiePricingPage);
+    expect(serialized).not.toMatch(/10–20 new clients stay on Growth/i);
+    expect(serialized).not.toMatch(/10-20 new clients stay on Growth/i);
+    const busyMonthFaq = leadsiePricingPage.faqs.find((f) =>
+      f.question.includes("busy month"),
+    );
+    expect(busyMonthFaq?.answer).toMatch(/does not auto-fit Growth/i);
   });
 
   it("keeps verified Leadsie and AuthHub list prices in worked examples", () => {
     expect(leadsiePricingPage.workedExamples).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          newClients: "5",
+          label: "A",
           leadsieCost: "$109",
           authHubCost: "$29",
         }),
         expect.objectContaining({
-          newClients: "50",
+          label: "E",
           leadsieCost: "$299",
           authHubCost: "$149",
         }),
@@ -54,6 +64,7 @@ describe("Leadsie pricing SEO page", () => {
     expect(schema).toMatch(/"@type":"Article"/);
     expect(schema).toMatch(/"@type":"FAQPage"/);
     expect(schema).toMatch(/compare\/leadsie-pricing/);
-    expect(leadsiePricingPage.faqs).toHaveLength(5);
+    expect(schema).toMatch(/2026-10-05/);
+    expect(leadsiePricingPage.faqs).toHaveLength(6);
   });
 });

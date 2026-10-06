@@ -648,6 +648,17 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
         }
 
         if (requirements.length === 0 && effectiveDeclines.length === 0) {
+          // Secondary Meta products share the selector blob with meta_ads. When
+          // the client selected ads/pages but left Instagram (or Pages) empty,
+          // that product has nothing to persist — return a no-op success so the
+          // batch save can complete. meta_ads still requires a real selection
+          // or an explicit decline.
+          if (platformStr === 'instagram' || platformStr === 'meta_pages') {
+            return reply.send({
+              data: { success: true, skipped: true },
+              error: null,
+            });
+          }
           return sendError(reply, 'NO_SELECTED_ASSETS', 'Select at least one Meta asset', 400);
         }
 

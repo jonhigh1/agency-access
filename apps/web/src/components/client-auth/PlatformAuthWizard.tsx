@@ -129,8 +129,36 @@ const SAVE_REQUEST_TIMEOUT_MS = 45_000;
 const SAVE_REQUEST_TIMEOUT_MESSAGE =
   'Saving is taking longer than expected. Check your connection and try again.';
 
-function isMetaAssetProduct(product: string): boolean {
+function isMetaAssetProduct(
+  product: string
+): product is 'meta_ads' | 'meta_pages' | 'instagram' {
   return product === 'meta_ads' || product === 'meta_pages' || product === 'instagram';
+}
+
+/**
+ * Meta products share one selector blob, but save-assets is product-scoped.
+ * Skip secondary products that have nothing of their own to persist so an
+ * empty Instagram/Pages save cannot fail a successful ads/pages share.
+ */
+function shouldPersistMetaProductSave(
+  product: 'meta_ads' | 'meta_pages' | 'instagram',
+  assets: MetaSelectionBlob
+): boolean {
+  switch (product) {
+    case 'meta_ads':
+      return (
+        getSelectedAssetCount('meta_ads', assets) > 0 ||
+        (assets.declinedAssetKinds?.length ?? 0) > 0
+      );
+    case 'meta_pages':
+      return (assets.pages?.length ?? 0) > 0;
+    case 'instagram':
+      return (assets.instagramAccounts?.length ?? 0) > 0;
+    default: {
+      const _exhaustive: never = product;
+      return _exhaustive;
+    }
+  }
 }
 
 function hasRetainedMetaSelection(
@@ -871,6 +899,12 @@ export function PlatformAuthWizard({
       try {
         for (const p of products) {
           const selectedAssets = groupAssets[p.product] || {};
+          if (
+            isMetaAssetProduct(p.product) &&
+            !shouldPersistMetaProductSave(p.product, selectedAssets)
+          ) {
+            continue;
+          }
           const response = await fetch(
             `${apiBaseUrl}/api/client/${accessRequestToken}/save-assets`,
             {

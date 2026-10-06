@@ -2607,13 +2607,67 @@ describe('Client Auth Asset Routes - Meta', () => {
       }));
     });
 
-    it('rejects an empty Instagram selection before reading the Meta token', async () => {
+    it('no-ops an empty Instagram selection without reading the Meta token', async () => {
       mockSavePrereqs();
 
       const response = await app.inject({
         method: 'POST',
         url: '/client/token-a/save-assets',
-        payload: { connectionId: 'conn-1', platform: 'instagram', selectedAssets: {} },
+        payload: {
+          connectionId: 'conn-1',
+          platform: 'instagram',
+          selectedAssets: {
+            selectedBusinessId: 'biz_client_2',
+            adAccounts: ['act_1'],
+            pages: ['page_2'],
+            instagramAccounts: [],
+          },
+        },
+      });
+
+      expect(response.statusCode).toBe(200);
+      expect(response.json()).toEqual({
+        data: { success: true, skipped: true },
+        error: null,
+      });
+      expect(infisical.getOAuthTokens).not.toHaveBeenCalled();
+      expect(prisma.clientConnection.update).not.toHaveBeenCalled();
+      expect(prisma.metaAssetGrant.upsert).not.toHaveBeenCalled();
+    });
+
+    it('no-ops an empty meta_pages selection without reading the Meta token', async () => {
+      mockSavePrereqs();
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/client/token-a/save-assets',
+        payload: {
+          connectionId: 'conn-1',
+          platform: 'meta_pages',
+          selectedAssets: {
+            selectedBusinessId: 'biz_client_2',
+            adAccounts: ['act_1'],
+            pages: [],
+          },
+        },
+      });
+
+      expect(response.statusCode).toBe(200);
+      expect(response.json()).toEqual({
+        data: { success: true, skipped: true },
+        error: null,
+      });
+      expect(infisical.getOAuthTokens).not.toHaveBeenCalled();
+      expect(prisma.clientConnection.update).not.toHaveBeenCalled();
+    });
+
+    it('still rejects an empty meta_ads selection before reading the Meta token', async () => {
+      mockSavePrereqs();
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/client/token-a/save-assets',
+        payload: { connectionId: 'conn-1', platform: 'meta_ads', selectedAssets: {} },
       });
 
       expect(response.statusCode).toBe(400);
