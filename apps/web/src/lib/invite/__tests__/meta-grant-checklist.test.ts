@@ -43,6 +43,16 @@ function decline(assetKind: MetaAssetDecline['assetKind']): MetaAssetDecline {
 }
 
 describe('buildMetaGrantChecklist', () => {
+  it('labels ad accounts Manual and Pages Automatic for the honest automation matrix', () => {
+    const result = buildMetaGrantChecklist({
+      selectedKinds: kinds({ adAccounts: 1, pages: 1 }),
+    });
+
+    expect(result.items.find((item) => item.assetKind === 'ad_account')?.grantMethod).toBe('manual');
+    expect(result.items.find((item) => item.assetKind === 'page')?.grantMethod).toBe('automatic');
+    expect(result.items.find((item) => item.assetKind === 'instagram_account')?.grantMethod).toBeUndefined();
+  });
+
   it('rolls a kind up across multiple rows and recipients', () => {
     const result = buildMetaGrantChecklist({
       rows: [
@@ -58,6 +68,7 @@ describe('buildMetaGrantChecklist', () => {
       key: 'ad_account',
       assetKind: 'ad_account',
       label: 'Ad accounts',
+      grantMethod: 'manual',
       state: 'pending',
       remainingCount: 1,
       declined: false,

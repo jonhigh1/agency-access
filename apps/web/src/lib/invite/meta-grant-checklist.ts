@@ -41,6 +41,18 @@ import type {
 /** The four states a checklist row can be in. */
 export type MetaGrantItemState = 'done' | 'pending' | 'action_required' | 'declined';
 
+/** How AuthHub fulfills access for this checklist kind (honest automation matrix). */
+export type MetaGrantMethod = 'automatic' | 'manual';
+
+/**
+ * Live grant method per checklist kind. Ad accounts stay manual partner share
+ * until Graph partner-share is proven; Pages use assigned_users automation.
+ */
+export const META_CHECKLIST_GRANT_METHOD: Partial<Record<MetaAssetKind, MetaGrantMethod>> = {
+  ad_account: 'manual',
+  page: 'automatic',
+};
+
 /** Selection counts per kind, keyed by the wizard's field names. */
 export interface MetaGrantSelectedKinds {
   adAccounts: number;
@@ -55,6 +67,8 @@ export interface MetaGrantChecklistItem {
   key: string;
   assetKind: MetaAssetKind;
   label: string;
+  /** When set, UI must show Automatic vs Manual to match the live path. */
+  grantMethod?: MetaGrantMethod;
   state: MetaGrantItemState;
   /** Selected assets of this kind not yet verified. */
   remainingCount: number;
@@ -230,6 +244,7 @@ export function buildMetaGrantChecklist(input: MetaGrantChecklistInput): MetaGra
       key: assetKind,
       assetKind,
       label,
+      grantMethod: META_CHECKLIST_GRANT_METHOD[assetKind],
       state,
       remainingCount: declined ? 0 : Math.max(0, unverifiedCount),
       declined,
