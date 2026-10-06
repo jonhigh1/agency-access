@@ -314,7 +314,7 @@ class ClientAssetsService {
     }
 
     const feedData = (await feedResponse.json()) as {
-      data?: Array<{ id?: string; created_time?: string }>;
+      data?: Array<{ id?: string; created_time?: string; message?: string; story?: string }>;
     };
 
     return {
