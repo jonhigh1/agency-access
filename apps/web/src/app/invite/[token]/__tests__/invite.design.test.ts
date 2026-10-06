@@ -194,6 +194,7 @@ const BORDER2_BUDGET_BY_SOURCE_PATH: Record<string, number> = {
   'components/client-auth/PlatformAuthWizard.tsx': 17,
   'components/client-auth/PlatformStepProgress.tsx': 1,
   'components/client-auth/PortfolioSelector.tsx': 1,
+  'components/client-auth/ZeroPortfolioPageDiscovery.tsx': 1,
   'components/client-auth/SelectionResetConfirmDialog.tsx': 1,
   'components/client-auth/TikTokAssetSelector.tsx': 2,
   'components/flow/invite-load-state-card.tsx': 1,

@@ -265,7 +265,7 @@ export function MetaBusinessCreator({
       </div>
 
       {fixedPrimaryPageId ? (
-        <div className="rounded-none border-2 border-black bg-[rgb(var(--card))] p-4 dark:border-white">
+        <div className="rounded-none bg-[rgb(var(--warm-gray))]/30 p-4">
           <p className="text-sm font-bold text-[var(--ink)] font-display uppercase tracking-wide">
             Primary Page
           </p>

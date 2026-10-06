@@ -62,7 +62,7 @@ export function ZeroPortfolioPageDiscovery({
   return (
     <section
       aria-label="Your Facebook Pages"
-      className="bg-[rgb(var(--warm-gray))]/20 p-6 space-y-4 border-2 border-black dark:border-white"
+      className="bg-[rgb(var(--warm-gray))]/20 p-6 space-y-4"
     >
       <div>
         <span className="label-micro">Page discovery</span>
@@ -79,7 +79,7 @@ export function ZeroPortfolioPageDiscovery({
         {pages.map((page) => (
           <li
             key={page.id}
-            className="border-2 border-black bg-[rgb(var(--card))] p-3 dark:border-white"
+            className="border border-black bg-[rgb(var(--card))] p-3 dark:border-white"
           >
             <p className="font-display font-bold text-[rgb(var(--ink))]">{page.name}</p>
             <p className="font-mono text-xs text-[rgb(var(--muted-foreground))] mt-0.5">
@@ -111,7 +111,7 @@ export function ZeroPortfolioPageDiscovery({
       </div>
 
       {primaryPageId ? (
-        <div className="pt-2 border-t-2 border-black dark:border-white">{businessCreator}</div>
+        <div className="pt-2 border-t border-black dark:border-white">{businessCreator}</div>
       ) : (
         <p role="status" className="text-sm text-[rgb(var(--muted-foreground))]">
           Select a primary Page to continue with Business Portfolio creation.
