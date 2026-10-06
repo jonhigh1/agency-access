@@ -111,6 +111,34 @@ function userPagesResponse(pages: Array<{ id: string; name: string }>): Response
   return jsonResponse({ data: { pages }, error: null });
 }
 
+function metaCreationLinksResponse(): Response {
+  return jsonResponse({
+    data: {
+      pageCreationUrl: 'https://business.facebook.com/pages/creation/?business_id=biz-1',
+      pixelCreationUrl: 'https://business.facebook.com/events_manager2/pixel/new/?business_id=biz-1',
+      adAccountCreationUrl: 'https://business.facebook.com/settings/biz-1/ad_accounts',
+    },
+    error: null,
+  });
+}
+
+/** Intercepts creation-link fetches so asset mocks keep stable call indices. */
+function stubFetchWithCreationLinks(fetchMock: ReturnType<typeof vi.fn>) {
+  vi.stubGlobal(
+    'fetch',
+    vi.fn((url: string, init?: RequestInit) => {
+      if (String(url).includes('/create/meta/links')) {
+        return Promise.resolve(metaCreationLinksResponse());
+      }
+      return fetchMock(url, init);
+    })
+  );
+}
+
+function fetchCallUrl(fetchMock: ReturnType<typeof vi.fn>, index: number): string | undefined {
+  return fetchMock.mock.calls[index]?.[0] as string | undefined;
+}
+
 describe('MetaAssetSelector - zero Business Portfolio branch', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -124,7 +152,7 @@ describe('MetaAssetSelector - zero Business Portfolio branch', () => {
       .mockResolvedValueOnce(userPagesResponse([])) // user pages: none yet
       .mockResolvedValueOnce(userPagesResponse([{ id: 'page-1', name: 'Acme Main' }])); // after refresh
 
-    vi.stubGlobal('fetch', fetchMock);
+    stubFetchWithCreationLinks(fetchMock);
 
     render(
       <MetaAssetSelector
@@ -139,8 +167,7 @@ describe('MetaAssetSelector - zero Business Portfolio branch', () => {
     expect(await screen.findByText(/Guided Redirect/i)).toBeInTheDocument();
 
     await waitFor(() => {
-      expect(fetchMock).toHaveBeenNthCalledWith(
-        2,
+      expect(fetchCallUrl(fetchMock, 1)).toBe(
         'https://api.example.com/api/client/token-1/create/meta/user-pages?connectionId=conn-1'
       );
     });
@@ -159,7 +186,7 @@ describe('MetaAssetSelector - zero Business Portfolio branch', () => {
       .mockResolvedValueOnce(assetsResponse())
       .mockResolvedValueOnce(userPagesResponse([{ id: 'page-1', name: 'Acme Main' }]));
 
-    vi.stubGlobal('fetch', fetchMock);
+    stubFetchWithCreationLinks(fetchMock);
 
     render(
       <MetaAssetSelector
@@ -178,6 +205,44 @@ describe('MetaAssetSelector - zero Business Portfolio branch', () => {
     expect(await screen.findByText(/Meta Business Creator/i)).toBeInTheDocument();
   });
 
+  it('does not open the ad-account creator when the request does not need ad accounts', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValueOnce(assetsResponse())
+      .mockResolvedValueOnce(userPagesResponse([{ id: 'page-1', name: 'Acme Main' }]))
+      .mockResolvedValueOnce(
+        assetsResponse({
+          businesses: [{ id: 'biz_new', name: 'New Business', verificationStatus: 'unverified' }],
+          selectionRequired: false,
+          selectedBusinessId: 'biz_new',
+          selectedBusinessName: 'New Business',
+        })
+      );
+
+    stubFetchWithCreationLinks(fetchMock);
+
+    render(
+      <MetaAssetSelector
+        sessionId="conn-1"
+        accessRequestToken="token-1"
+        allowedAssetTypes={['page']}
+        onSelectionChange={() => {}}
+      />
+    );
+
+    fireEvent.click(await screen.findByRole('combobox', { name: 'Primary Facebook Page' }));
+    fireEvent.click(await screen.findByRole('option', { name: /Acme Main/ }));
+    fireEvent.click(await screen.findByText(/Meta Business Creator/i));
+
+    await waitFor(() => {
+      expect(fetchCallUrl(fetchMock, fetchMock.mock.calls.length - 1)).toBe(
+        'https://api.example.com/api/client/token-1/assets/meta_ads?connectionId=conn-1&businessId=biz_new'
+      );
+    });
+
+    expect(screen.queryByText(/Meta Asset Creator/i)).not.toBeInTheDocument();
+  });
+
   it('flows straight from business creation into the ad-account creator without a reselect journey', async () => {
     const fetchMock = vi
       .fn()
@@ -192,7 +257,7 @@ describe('MetaAssetSelector - zero Business Portfolio branch', () => {
         })
       );
 
-    vi.stubGlobal('fetch', fetchMock);
+    stubFetchWithCreationLinks(fetchMock);
 
     render(
       <MetaAssetSelector
@@ -207,7 +272,7 @@ describe('MetaAssetSelector - zero Business Portfolio branch', () => {
     fireEvent.click(await screen.findByText(/Meta Business Creator/i));
 
     await waitFor(() => {
-      expect(fetchMock).toHaveBeenLastCalledWith(
+      expect(fetchCallUrl(fetchMock, fetchMock.mock.calls.length - 1)).toBe(
         'https://api.example.com/api/client/token-1/assets/meta_ads?connectionId=conn-1&businessId=biz_new'
       );
     });
@@ -224,7 +289,7 @@ describe('MetaAssetSelector - zero Business Portfolio branch', () => {
       .mockResolvedValueOnce(assetsResponse())
       .mockResolvedValueOnce(userPagesResponse([{ id: 'page-1', name: 'Acme Main' }]))
       .mockResolvedValueOnce(jsonResponse({ data: null, error: { message: 'Meta asset discovery failed' } }));
-    vi.stubGlobal('fetch', fetchMock);
+    stubFetchWithCreationLinks(fetchMock);
 
     render(
       <MetaAssetSelector
@@ -239,7 +304,7 @@ describe('MetaAssetSelector - zero Business Portfolio branch', () => {
     fireEvent.click(await screen.findByText(/Meta Business Creator/i));
 
     await waitFor(() => {
-      expect(fetchMock).toHaveBeenLastCalledWith(
+      expect(fetchCallUrl(fetchMock, fetchMock.mock.calls.length - 1)).toBe(
         'https://api.example.com/api/client/token-1/assets/meta_ads?connectionId=conn-1&businessId=biz_new'
       );
     });
@@ -256,7 +321,7 @@ describe('MetaAssetSelector - zero Business Portfolio branch', () => {
         businesses: [{ id: 'biz-recovered', name: 'Recovered Business' }],
         selectionRequired: true,
       }));
-    vi.stubGlobal('fetch', fetchMock);
+    stubFetchWithCreationLinks(fetchMock);
 
     render(
       <MetaAssetSelector
@@ -272,8 +337,7 @@ describe('MetaAssetSelector - zero Business Portfolio branch', () => {
 
     expect(await screen.findByText(/which business are we sharing from/i)).toBeInTheDocument();
     expect(screen.getByRole('status')).toHaveTextContent(/creation is unconfirmed/i);
-    expect(fetchMock).toHaveBeenNthCalledWith(
-      3,
+    expect(fetchCallUrl(fetchMock, 2)).toBe(
       'https://api.example.com/api/client/token-1/assets/meta_ads?connectionId=conn-1'
     );
   });
@@ -291,7 +355,7 @@ describe('MetaAssetSelector - zero Business Portfolio branch', () => {
         selectedBusinessName: 'Client',
         adAccounts: [],
       }));
-    vi.stubGlobal('fetch', fetchMock);
+    stubFetchWithCreationLinks(fetchMock);
 
     render(
       <MetaAssetSelector
@@ -306,8 +370,7 @@ describe('MetaAssetSelector - zero Business Portfolio branch', () => {
 
     expect(await screen.findByText(/creation is unconfirmed/i)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /create ad account/i })).not.toBeInTheDocument();
-    expect(fetchMock).toHaveBeenNthCalledWith(
-      2,
+    expect(fetchCallUrl(fetchMock, 1)).toBe(
       'https://api.example.com/api/client/token-1/assets/meta_ads?connectionId=conn-1&businessId=biz-1'
     );
   });
@@ -325,7 +388,7 @@ describe('MetaAssetSelector - zero Business Portfolio branch', () => {
         selectedBusinessId: 'biz-b',
         selectedBusinessName: 'Business B',
       }));
-    vi.stubGlobal('fetch', fetchMock);
+    stubFetchWithCreationLinks(fetchMock);
 
     render(
       <MetaAssetSelector
@@ -367,7 +430,7 @@ describe('MetaAssetSelector - zero Business Portfolio branch', () => {
       })
     );
 
-    vi.stubGlobal('fetch', fetchMock);
+    stubFetchWithCreationLinks(fetchMock);
 
     render(
       <MetaAssetSelector
@@ -390,7 +453,7 @@ describe('MetaAssetSelector - zero Business Portfolio branch', () => {
         pages: [{ id: 'page-biz', name: 'Portfolio Page' }],
       })
     );
-    vi.stubGlobal('fetch', fetchMock);
+    stubFetchWithCreationLinks(fetchMock);
 
     render(
       <MetaAssetSelector
@@ -418,7 +481,7 @@ describe('MetaAssetSelector - zero Business Portfolio branch', () => {
       })
     );
 
-    vi.stubGlobal('fetch', fetchMock);
+    stubFetchWithCreationLinks(fetchMock);
 
     render(
       <MetaAssetSelector
@@ -457,7 +520,7 @@ describe('MetaAssetSelector - catalog creation', () => {
         selectedBusinessName: 'Client',
         productCatalogs: [{ id: 'catalog-new', name: 'Spring Catalog', catalogType: 'commerce' }],
       }));
-    vi.stubGlobal('fetch', fetchMock);
+    stubFetchWithCreationLinks(fetchMock);
 
     render(
       <MetaAssetSelector
@@ -473,16 +536,14 @@ describe('MetaAssetSelector - catalog creation', () => {
     fireEvent.click(screen.getByRole('button', { name: /^create catalog$/i }));
 
     expect(await screen.findByText(/was created and rediscovered\. select it below/i)).toBeInTheDocument();
-    expect(fetchMock).toHaveBeenNthCalledWith(
-      2,
-      'https://api.example.com/api/client/token-1/create/meta/product-catalog',
-      expect.objectContaining({
-        method: 'POST',
-        body: JSON.stringify({ connectionId: 'conn-1', businessId: 'biz-1', name: 'Spring Catalog' }),
-      })
+    expect(fetchCallUrl(fetchMock, 1)).toBe(
+      'https://api.example.com/api/client/token-1/create/meta/product-catalog'
     );
-    expect(fetchMock).toHaveBeenNthCalledWith(
-      3,
+    expect(fetchMock.mock.calls[1]?.[1]).toEqual(expect.objectContaining({
+      method: 'POST',
+      body: JSON.stringify({ connectionId: 'conn-1', businessId: 'biz-1', name: 'Spring Catalog' }),
+    }));
+    expect(fetchCallUrl(fetchMock, 2)).toBe(
       'https://api.example.com/api/client/token-1/assets/meta_ads?connectionId=conn-1&businessId=biz-1'
     );
     expect(onSelectionChange.mock.calls.at(-1)?.[0].catalogs).toEqual([]);
@@ -505,7 +566,7 @@ describe('MetaAssetSelector - catalog creation', () => {
         selectedBusinessName: 'Client',
         productCatalogs: [{ id: 'catalog-new', name: 'Spring Catalog', catalogType: 'commerce' }],
       }));
-    vi.stubGlobal('fetch', fetchMock);
+    stubFetchWithCreationLinks(fetchMock);
 
     render(
       <MetaAssetSelector
@@ -546,7 +607,7 @@ describe('MetaAssetSelector - catalog creation', () => {
         selectedBusinessName: 'Client',
         productCatalogs: [],
       }));
-    vi.stubGlobal('fetch', fetchMock);
+    stubFetchWithCreationLinks(fetchMock);
 
     render(
       <MetaAssetSelector
@@ -586,7 +647,7 @@ describe('MetaAssetSelector - catalog creation', () => {
         selectedBusinessName: 'Business A',
         productCatalogs: [{ id: 'catalog-new', name: 'Spring Catalog', catalogType: 'commerce' }],
       }));
-    vi.stubGlobal('fetch', fetchMock);
+    stubFetchWithCreationLinks(fetchMock);
 
     render(
       <MetaAssetSelector
