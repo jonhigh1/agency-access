@@ -24,6 +24,27 @@ describe("blog-data", () => {
     expect(post?.tags.length).toBeGreaterThan(0);
   });
 
+  it("parses snapchat refresh fields and spend-ready section", () => {
+    const post = getBlogPostBySlug("snapchat-ads-access-agencies");
+
+    expect(post).toMatchObject({
+      slug: "snapchat-ads-access-agencies",
+      publishedAt: "2026-09-11",
+      updatedAt: "2026-10-06",
+      suppressArticleFooter: true,
+      canonical: "https://authhub.co/blog/snapchat-ads-access-agencies",
+    });
+    expect(post?.metaDescription).toContain("Organization not spend ready");
+    expect(post?.content).toContain(
+      '"Organization not spend ready" (PERMISSION_DENIED)'
+    );
+    expect(post?.content).toContain("we don't fix or detect this error");
+    expect(post?.content).toContain(
+      "Ready to simplify Snapchat (and every other) client invite?"
+    );
+    expect(post?.content).not.toContain("Agency Access Platform");
+  });
+
   it("sorts posts newest first and filters by category", () => {
     const posts = getBlogPosts();
     const securityPosts = getBlogPostsByCategory("security");

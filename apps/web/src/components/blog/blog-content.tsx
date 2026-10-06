@@ -208,6 +208,16 @@ export function BlogContent({ post }: BlogContentProps) {
               day: 'numeric',
               year: 'numeric',
             })}
+            {post.updatedAt && post.updatedAt !== post.publishedAt && (
+              <span className="text-teal font-bold">
+                · Updated{' '}
+                {formatBlogDate(post.updatedAt, {
+                  month: 'long',
+                  day: 'numeric',
+                  year: 'numeric',
+                })}
+              </span>
+            )}
           </span>
           <span className="flex items-center gap-2">
             <Clock size={16} />
@@ -255,21 +265,23 @@ export function BlogContent({ post }: BlogContentProps) {
       </div>
 
       {/* Article footer */}
-      <footer className="mt-16 pt-8 border-t-2 border-black">
-        <div className="bg-coral/10 border-2 border-coral p-6 rounded-none">
-          <h3 className="font-dela text-xl text-ink mb-2">
-            Ready to transform your client onboarding?
-          </h3>
-          <p className="font-mono text-gray-700 mb-4">
-            Teams save hundreds of hours every month with Agency Access Platform.
-          </p>
-          <SignUpButton mode="modal">
-            <Button variant="brutalist" size="lg" onClick={handleTrialSignup}>
-              Start Your Free Trial
-            </Button>
-          </SignUpButton>
-        </div>
-      </footer>
+      {!post.suppressArticleFooter && (
+        <footer className="mt-16 pt-8 border-t-2 border-black">
+          <div className="bg-coral/10 border-2 border-coral p-6 rounded-none">
+            <h3 className="font-dela text-xl text-ink mb-2">
+              Ready to transform your client onboarding?
+            </h3>
+            <p className="font-mono text-gray-700 mb-4">
+              Teams save hundreds of hours every month with Agency Access Platform.
+            </p>
+            <SignUpButton mode="modal">
+              <Button variant="brutalist" size="lg" onClick={handleTrialSignup}>
+                Start Your Free Trial
+              </Button>
+            </SignUpButton>
+          </div>
+        </footer>
+      )}
     </article>
   );
 }

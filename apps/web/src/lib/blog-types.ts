@@ -29,6 +29,8 @@ export interface BlogPost {
   category: BlogCategory;
   stage: BlogStage;
   publishedAt: string;
+  /** When set and different from publishedAt, shown in byline and Article dateModified */
+  updatedAt?: string;
   readTime: number;
   author: BlogAuthor;
   featuredImage?: string;
@@ -38,6 +40,8 @@ export interface BlogPost {
   /** Optional OG description when it should differ from metaDescription */
   openGraphDescription?: string;
   canonical?: string;
+  /** Skip the default article footer CTA (use in-body CTA instead) */
+  suppressArticleFooter?: boolean;
   relatedPosts?: string[];
 }
 

@@ -91,7 +91,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
       },
     },
     datePublished: post.publishedAt,
-    dateModified: post.publishedAt,
+    dateModified: post.updatedAt ?? post.publishedAt,
     mainEntityOfPage: {
       "@type": "WebPage",
       "@id": `https://authhub.co/blog/${slug}`,
@@ -228,6 +228,68 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
           acceptedAnswer: {
             "@type": "Answer",
             text: "Stay on Leadsie if you rely on broader platform set, prospect-audit workflows, Meta helpers, multi-brand Pro features, or credit pooling on annual plans. Switch when credits and overages, branding depth, intake-in-link, or automatic token refresh become the bottleneck.",
+          },
+        },
+      ],
+    },
+    "snapchat-ads-access-agencies": {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      mainEntity: [
+        {
+          "@type": "Question",
+          name: "Can I request Snapchat ad account access as an agency?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "No. Snapchat has no inbound request system. The client must invite you as an Organization member and assign ad account roles.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "What is the minimum access an agency needs?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "Organization Member plus Campaign Manager on the ad account. Add Data Analyst for reporting-only staff.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "Does my client need a Public Profile before I can run ads?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "Yes. Snapchat requires a Public Profile for all advertising. Create it before assigning ad account access.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "Can multiple agencies work in the same Snapchat ad account?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "Yes, but each member gets their own role assignment. Snapchat's Agency Admin role is designed for exactly this. It cannot change business details.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "Can the client and agency both pay for spend?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "Not in the same ad account. Snapchat allows one funding source per ad account. Use separate accounts for separate billing arrangements.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "How do I remove agency access later?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "Remove ad account roles, Public Profile roles, and Organization membership, in that order. Verify all three.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: 'What does "Organization not spend ready" (PERMISSION_DENIED) mean on Snapchat?',
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "Most likely, the Organization that owns the ad account or Public Profile isn't set up to spend yet — usually a missing billing address, payment method, or business details. Snapchat doesn't publish an official definition. An Organization Admin on that org (almost always the client) completes Business Details + Billing & Payments, then retries. Agencies invited as Members usually can't clear it themselves.",
           },
         },
       ],

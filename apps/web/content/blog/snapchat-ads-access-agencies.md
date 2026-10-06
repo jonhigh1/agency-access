@@ -22,9 +22,11 @@ tags:
   - agency operations
 metaTitle: 'Snapchat Business Manager Access for Agencies: Roles & Permissions (2026)'
 metaDescription: >-
-  How to get Snapchat Business Manager access for your agency: Organization
-  roles, ad account permissions, and Public Profile setup — the exact steps
-  that work.
+  How to get Snapchat Business Manager access: Organization roles, ad account
+  permissions, Public Profile setup, and fixing "Organization not spend ready."
+updatedAt: '2026-10-06'
+canonical: https://authhub.co/blog/snapchat-ads-access-agencies
+suppressArticleFooter: true
 relatedPosts:
   - meta-ads-access-guide
   - tiktok-ads-access-guide
@@ -168,6 +170,24 @@ Untangle this immediately. Have the client change their password, then invite yo
 
 Snapchat allows one funding source per ad account. If the client wants to keep their billing, run campaigns in their account. If your agency will pay for spend, the client creates a new ad account under their Organization with your card as funding, then assigns your team to that account.
 
+### "Organization not spend ready" (PERMISSION_DENIED)
+
+"PERMISSION_DENIED: Organization not spend ready" most likely means the Organization that owns the ad account or Public Profile isn't set up to spend — missing billing address, payment method, or business details. An Organization Admin on the client's org must fix it; agencies invited as Members usually can't.
+
+Snapchat does not publish a definition of this error. Community reports (and the wording of the message) point to incomplete Organization billing setup — treat that as the first place to look, not as official Snap documentation.
+
+**Fix it in this order:**
+
+1. Confirm which Organization the ad account or Public Profile sits under (Ads Manager account picker / Business Dashboard). The org that owns the asset is the one that must be spend-ready.
+2. In **Business Dashboard → Business Details**, complete business info and add a billing address (**+ New Address**). Snap requires a billing address before you can add a payment method.
+3. In **Ads Manager → Billing & Payments**, add a valid payment method and link it to the ad account. Prepaid cards do not work, and a card already used in another Organization will be rejected.
+4. Retry the action that failed (campaign launch, Public Profile / Spotlight upload, etc.). If the error appeared on a web upload, try the same upload from the Snapchat mobile app.
+5. Still stuck? Contact Snap Business Support with the Organization name, ad account ID, and the exact `PERMISSION_DENIED: Organization not spend ready` string.
+
+**Agency angle:** If your team was invited as an Organization Member (or Agency Admin), you usually cannot clear this yourself — billing address, payment method, and business details live on the client's Organization. Ask the client's Organization Admin. Remember Snapchat allows one funding source per ad account: client-direct vs agency-pass-through decides whose card goes in (see "We need to run spend on our own card" above).
+
+AuthHub guides the Snapchat invite steps in one client link; billing address and payment method stay on Snap's Business Dashboard and Ads Manager — we don't fix or detect this error.
+
 ### "Access disappeared after we finished onboarding"
 
 Snapchat does not expire access on its own, but client staff turnover does. If the person who invited you leaves and someone "cleans up" members, you lose access. Track who granted it and when, so you know who to contact when it lapses.
@@ -212,3 +232,13 @@ Not in the same ad account. Snapchat allows one funding source per ad account. U
 
 **How do I remove agency access later?**
 Remove ad account roles, Public Profile roles, and Organization membership, in that order. Verify all three.
+
+**What does "Organization not spend ready" (PERMISSION_DENIED) mean on Snapchat?**
+
+Most likely, the Organization that owns the ad account or Public Profile isn't set up to spend yet — usually a missing billing address, payment method, or business details. Snapchat doesn't publish an official definition. An Organization Admin on that org (almost always the client) completes Business Details + Billing & Payments, then retries. Agencies invited as Members usually can't clear it themselves.
+
+### Ready to simplify Snapchat (and every other) client invite?
+
+AuthHub sends one branded link that walks each client through the invite steps — no shared logins, no multi-day email threads.
+
+[Start Your Free Trial](https://authhub.co/) · [See pricing](https://authhub.co/pricing)
