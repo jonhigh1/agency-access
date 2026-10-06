@@ -22,6 +22,8 @@ describe('meta-partner-grant-narrative', () => {
     });
 
     expect(narrative.headline).toMatch(/Partner/i);
+    expect(narrative.oauthOrchestrationNote).toMatch(/orchestr/i);
+    expect(narrative.revokeNote).toMatch(/remove the Partner/i);
     expect(narrative.agencyPartnerLine).toContain('3808519629379919');
     expect(narrative.agencyPartnerLine).toMatch(/Partner recipient/i);
     expect(narrative.clientPortfolioLine).toContain('biz_client_2');

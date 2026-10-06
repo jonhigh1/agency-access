@@ -70,6 +70,8 @@ export function MetaPartnerGrantNarrative({
         <p className="label-micro">How your agency gets access</p>
         <h3 className="mt-1 font-display text-base font-bold text-ink">{narrative.headline}</h3>
         <p className="mt-1 text-sm text-muted-foreground">{narrative.body}</p>
+        <p className="mt-2 text-sm text-muted-foreground">{narrative.oauthOrchestrationNote}</p>
+        <p className="mt-2 text-sm text-muted-foreground">{narrative.revokeNote}</p>
       </div>
 
       {narrative.clientPortfolioLine ? (
