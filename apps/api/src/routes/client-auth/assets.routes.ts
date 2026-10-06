@@ -2850,17 +2850,6 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
         assets = await clientAssetsService.fetchLinkedInAdAccounts(tokens.accessToken);
       } else if (platform === 'linkedin_pages') {
         assets = await clientAssetsService.fetchLinkedInPages(tokens.accessToken);
-      } else if (platform === 'mailchimp') {
-        const metadata = (platformAuth.metadata as any) || {};
-        const dc = metadata.dc;
-        if (!dc) {
-          return sendError(reply, 'MISSING_METADATA', 'Mailchimp data center (dc) not found in authorization metadata', 400);
-        }
-        assets = await clientAssetsService.fetchMailchimpAssets(tokens.accessToken, dc);
-      } else if (platform === 'pinterest') {
-        assets = await clientAssetsService.fetchPinterestAssets(tokens.accessToken);
-      } else if (platform === 'klaviyo') {
-        assets = await clientAssetsService.fetchKlaviyoAssets(tokens.accessToken);
       } else if (platform === 'shopify') {
         const metadata = (platformAuth.metadata as any) || {};
         const shop = metadata.shop;

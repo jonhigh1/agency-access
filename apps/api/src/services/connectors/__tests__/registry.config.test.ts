@@ -14,24 +14,16 @@ import {
 import { metaConnector } from '../meta.js';
 import { googleConnector } from '../google.js';
 import { linkedinConnector } from '../linkedin.js';
-import { mailchimpConnector } from '../mailchimp.js';
-import { pinterestConnector } from '../pinterest.js';
-import { klaviyoConnector } from '../klaviyo.js';
 import { shopifyConnector } from '../shopify.js';
 import { tiktokConnector } from '../tiktok.js';
 import { snapchatConnector } from '../snapchat.js';
 
 describe('connector registry', () => {
-  it('repairs pinterest with documented v5 OAuth endpoints', () => {
-    const config = getPlatformConfig('pinterest');
-    expect(config.authUrl).toBe('https://www.pinterest.com/oauth/');
-    expect(config.tokenUrl).toBe('https://api.pinterest.com/v5/oauth/token');
-    // Connector relies on refresh tokens (continuous); flag must be truthful
-    expect(config.supportsRefreshTokens).toBe(true);
-  });
-
-  it('throws typed error for non-OAuth platforms without registry entries', () => {
-    for (const platform of ['kit', 'beehiiv', 'zapier'] as Platform[]) {
+  it('throws typed error for manual platforms without registry entries', () => {
+    // Klaviyo, Mailchimp, and Pinterest joined the manual invitation flow —
+    // their OAuth credentials no longer exist and their registry entries
+    // were removed with the orphaned connectors.
+    for (const platform of ['kit', 'beehiiv', 'zapier', 'mailchimp', 'pinterest', 'klaviyo'] as Platform[]) {
       expect(() => getPlatformConfig(platform)).toThrow(PlatformNotConfiguredError);
       expect(PLATFORM_CONFIGS[platform]).toBeUndefined();
     }
@@ -53,9 +45,6 @@ describe('connector registry', () => {
       'tiktok_ads',
       'snapchat',
       'snapchat_ads',
-      'mailchimp',
-      'pinterest',
-      'klaviyo',
       'shopify',
     ];
     for (const platform of oauthPlatforms) {
@@ -87,9 +76,6 @@ describe('connector registry', () => {
       metaConnector,
       googleConnector,
       linkedinConnector,
-      mailchimpConnector,
-      pinterestConnector,
-      klaviyoConnector,
       shopifyConnector,
       tiktokConnector,
       snapchatConnector,

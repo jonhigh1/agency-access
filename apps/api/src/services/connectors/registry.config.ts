@@ -291,53 +291,6 @@ export const PLATFORM_CONFIGS: Partial<Record<Platform, PlatformOAuthConfig>> = 
   },
 
   // ========================================================================
-  // MAILCHIMP PLATFORMS
-  // ========================================================================
-
-  mailchimp: {
-    name: 'Mailchimp',
-    authUrl: 'https://login.mailchimp.com/oauth2/authorize',
-    tokenUrl: 'https://login.mailchimp.com/oauth2/token',
-    scopeSeparator: ',',
-    userInfoUrl: 'https://login.mailchimp.com/oauth2/metadata', // Metadata endpoint for server prefix
-    supportsRefreshTokens: false, // Tokens never expire
-    defaultScopes: [], // Mailchimp uses account-level permissions, no scopes
-  },
-
-  // ========================================================================
-  // PINTEREST PLATFORMS
-  // ========================================================================
-
-  pinterest: {
-    name: 'Pinterest',
-    // Pinterest v5 OAuth endpoints
-    authUrl: 'https://www.pinterest.com/oauth/',
-    tokenUrl: 'https://api.pinterest.com/v5/oauth/token',
-    scopeSeparator: ',',
-    userInfoUrl: 'https://api.pinterest.com/v5/user_account',
-    // Access tokens expire in 30 days; refresh tokens are continuous
-    supportsRefreshTokens: true,
-    defaultScopes: ['ads:read', 'ads:write', 'user_accounts:read'],
-  },
-
-  // ========================================================================
-  // KLAVIYO PLATFORMS
-  // ========================================================================
-
-  klaviyo: {
-    name: 'Klaviyo',
-    authUrl: 'https://www.klaviyo.com/oauth/authorize',
-    tokenUrl: 'https://a.klaviyo.com/oauth/token', // NOTE: a.klaviyo.com subdomain
-    scopeSeparator: ' ',
-    userInfoUrl: 'https://a.klaviyo.com/api/accounts/',
-    supportsRefreshTokens: true, // Refresh tokens expire after 90 days of no-use
-    // Klaviyo requires PKCE (Proof Key for Code Exchange)
-    // This flag is checked in the connector to add code_challenge parameters
-    requiresPKCE: true,
-    defaultScopes: ['lists:write', 'campaigns:write', 'metrics:read', 'events:read'],
-  },
-
-  // ========================================================================
   // SHOPIFY PLATFORMS
   // ========================================================================
 

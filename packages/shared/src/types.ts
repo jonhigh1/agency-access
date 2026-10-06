@@ -18,13 +18,13 @@ export const PlatformSchema = z.enum([
   'snapchat',
   'snapchat_ads',
   'instagram',
-  'kit', // Kit (ConvertKit) - OAuth 2.0
+  'kit', // Kit (ConvertKit) - manual invitation flow
   'beehiiv', // Beehiiv - API key authentication (team invitation workflow)
-  'mailchimp', // Mailchimp - OAuth 2.0
-  'pinterest', // Pinterest Ads - OAuth 2.0
-  'klaviyo', // Klaviyo - OAuth 2.0 with PKCE
-  'shopify', // Shopify - OAuth 2.0 with shop context
-  'zapier', // Zapier - OAuth 2.0
+  'mailchimp', // Mailchimp - manual invitation flow
+  'pinterest', // Pinterest Ads - manual invitation flow (Business ID)
+  'klaviyo', // Klaviyo - manual invitation flow
+  'shopify', // Shopify - manual collaborator request
+  'zapier', // Zapier - manual invitation flow
 ]);
 export type Platform = z.infer<typeof PlatformSchema>;
 

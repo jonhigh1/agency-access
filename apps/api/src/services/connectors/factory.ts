@@ -5,9 +5,6 @@ import { ga4Connector } from './ga4.js';
 import { googleConnector } from './google.js';
 import { linkedinConnector } from './linkedin.js';
 import { beehiivConnector } from './beehiiv.js';
-import { mailchimpConnector } from './mailchimp.js';
-import { pinterestConnector } from './pinterest.js';
-import { klaviyoConnector } from './klaviyo.js';
 import { shopifyConnector } from './shopify.js';
 import { tiktokConnector } from './tiktok.js';
 import { snapchatConnector } from './snapchat.js';
@@ -147,11 +144,8 @@ const connectors: Partial<Record<Platform, PlatformConnector>> = {
   tiktok_ads: tiktokConnector, // Alias for same connector
   snapchat: snapchatConnector,
   snapchat_ads: snapchatConnector, // Alias for same connector
-  mailchimp: mailchimpConnector,
-  pinterest: pinterestConnector,
-  klaviyo: klaviyoConnector,
   shopify: shopifyConnector,
-  // kit / zapier: manual invitation flow, not OAuth
+  // kit / zapier / mailchimp / pinterest / klaviyo: manual invitation flow, not OAuth
 };
 
 /**

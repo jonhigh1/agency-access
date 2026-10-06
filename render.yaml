@@ -87,18 +87,6 @@ services:
         sync: false
       - key: TIKTOK_APP_SECRET
         sync: false
-      - key: MAILCHIMP_CLIENT_ID
-        sync: false
-      - key: MAILCHIMP_CLIENT_SECRET
-        sync: false
-      - key: PINTEREST_CLIENT_ID
-        sync: false
-      - key: PINTEREST_CLIENT_SECRET
-        sync: false
-      - key: KLAVIYO_CLIENT_ID
-        sync: false
-      - key: KLAVIYO_CLIENT_SECRET
-        sync: false
       - key: SHOPIFY_API_KEY
         sync: false
       - key: SHOPIFY_API_SECRET_KEY

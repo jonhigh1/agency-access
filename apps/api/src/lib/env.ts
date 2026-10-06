@@ -119,21 +119,9 @@ const envSchema = z.object({
   TIKTOK_APP_ID: z.string().optional(),
   TIKTOK_APP_SECRET: z.string().optional(),
 
-  // Mailchimp OAuth
-  MAILCHIMP_CLIENT_ID: z.string().optional(),
-  MAILCHIMP_CLIENT_SECRET: z.string().optional(),
-
   // Snapchat OAuth
   SNAPCHAT_CLIENT_ID: z.string().optional(),
   SNAPCHAT_CLIENT_SECRET: z.string().optional(),
-
-  // Pinterest OAuth
-  PINTEREST_CLIENT_ID: z.string().optional(),
-  PINTEREST_CLIENT_SECRET: z.string().optional(),
-
-  // Klaviyo OAuth
-  KLAVIYO_CLIENT_ID: z.string().optional(),
-  KLAVIYO_CLIENT_SECRET: z.string().optional(),
 
   // Shopify OAuth
   SHOPIFY_API_KEY: z.string().optional(),
