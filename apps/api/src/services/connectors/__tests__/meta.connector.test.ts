@@ -809,6 +809,18 @@ describe('MetaConnector Business Creation', () => {
         'https://business.facebook.com/settings/biz-123/payment'
       );
     });
+
+    it('returns page, pixel, and ad account creation deep links scoped to the business', () => {
+      expect(connector.getPageCreationUrl('biz-123')).toBe(
+        'https://business.facebook.com/pages/creation/?business_id=biz-123'
+      );
+      expect(connector.getPixelCreationUrl('biz-123')).toBe(
+        'https://business.facebook.com/events_manager2/pixel/new/?business_id=biz-123'
+      );
+      expect(connector.getAdAccountCreationUrl('biz-123')).toBe(
+        'https://business.facebook.com/settings/biz-123/ad_accounts'
+      );
+    });
   });
 });
 

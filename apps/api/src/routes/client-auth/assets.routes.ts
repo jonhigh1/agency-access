@@ -1205,11 +1205,22 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
           assetType: 'page' | 'ad_account' | 'catalog',
           requestedTasks: string[]
         ): Promise<MetaAssetGrantResult> => {
+          if (assetType === 'ad_account') {
+            return {
+              assetId,
+              assetType,
+              recipientType: recipient.type,
+              recipientId: recipient.id,
+              requestedTasks,
+              status: 'unresolved',
+              errorCode: 'MANUAL_SHARE_PENDING',
+              errorMessage:
+                'Ad account access uses Manual partner share in Meta Business Settings. Use Check access after sharing.',
+            };
+          }
           const verifyAccess = () => assetType === 'page'
             ? metaPartnerService.verifyPageAccess(clientAccessToken, assetId, recipient.id, requestedTasks)
-            : assetType === 'ad_account'
-              ? metaPartnerService.verifyAdAccountAccess(clientAccessToken, assetId, recipient.id, requestedTasks)
-              : metaPartnerService.verifyCatalogAccess(clientAccessToken, assetId, recipient.id, requestedTasks);
+            : metaPartnerService.verifyCatalogAccess(clientAccessToken, assetId, recipient.id, requestedTasks);
           const attemptVersion = attemptVersions.get(`${assetType}:${assetId}`);
           const grantedAt = new Date().toISOString();
           try {
@@ -1245,8 +1256,6 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
 
             if (assetType === 'page') {
               await metaPartnerService.grantPageAccess(clientAccessToken, assetId, recipient.id, requestedTasks);
-            } else if (assetType === 'ad_account') {
-              await metaPartnerService.grantAdAccountAccess(clientAccessToken, assetId, recipient.id, requestedTasks);
             } else {
               await metaPartnerService.grantCatalogAccess(clientAccessToken, assetId, recipient.id, requestedTasks);
             }
@@ -1317,15 +1326,135 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
         });
       }
 
+      const pageAgencyPartnerRecipient = {
+        type: 'business' as const,
+        id: partnerBusinessId,
+        grantMethod: 'automatic_agency_partner',
+      };
+      const pageAgencyRequirements = requestedAssetTypes.has('page')
+        ? selectedPageIds.map((assetId) => ({
+            assetId,
+            assetKind: 'page' as const,
+            requestedTasks: pageTasks,
+          }))
+        : [];
+      const pageAgencyAttempts = pageAgencyRequirements.length > 0
+        ? await metaAssetGrantService.claimAttempts({
+            ...grantContext,
+            requirements: pageAgencyRequirements,
+            recipient: pageAgencyPartnerRecipient,
+          })
+        : new Map<string, number>();
+      skippedExcludedGrant ||= [...pageAgencyAttempts.values()].includes(0);
+      const pageAgencyResults = await mapInChunks(
+        selectedPageIds.filter((id) => pageAgencyAttempts.get(`page:${id}`) !== 0),
+        async (pageId): Promise<MetaAssetGrantResult> => {
+          const manualFallbackMessage =
+            'Automatic Page partner share failed. Add the agency as a Partner on this Page in Meta Business Settings, then grant again.';
+          try {
+            if ((pageAgencyAttempts.get(`page:${pageId}`) ?? 0) > 1) {
+              let priorGrant: Awaited<ReturnType<typeof metaPartnerService.verifyAgencyPartnerAccess>>;
+              try {
+                priorGrant = await metaPartnerService.verifyAgencyPartnerAccess(
+                  clientAccessToken,
+                  pageId,
+                  partnerBusinessId,
+                  pageTasks,
+                );
+              } catch {
+                return {
+                  assetId: pageId,
+                  assetType: 'page',
+                  recipientType: 'business',
+                  recipientId: partnerBusinessId,
+                  requestedTasks: pageTasks,
+                  status: 'failed',
+                  errorCode: 'META_PREVIOUS_ASSIGNMENT_UNVERIFIED',
+                  errorMessage:
+                    'Meta could not confirm the previous Page partner share. Retry verification before another assignment is attempted.',
+                };
+              }
+              if (priorGrant.verified) {
+                return {
+                  assetId: pageId,
+                  assetType: 'page',
+                  recipientType: 'business',
+                  recipientId: partnerBusinessId,
+                  requestedTasks: pageTasks,
+                  verifiedTasks: priorGrant.assignedTasks,
+                  status: 'verified',
+                  verifiedAt: new Date().toISOString(),
+                };
+              }
+            }
+
+            await metaPartnerService.grantAgencyPartnerAccess(
+              clientAccessToken,
+              pageId,
+              partnerBusinessId,
+              pageTasks,
+            );
+            const readBack = await metaPartnerService.verifyAgencyPartnerAccess(
+              clientAccessToken,
+              pageId,
+              partnerBusinessId,
+              pageTasks,
+            );
+            return {
+              assetId: pageId,
+              assetType: 'page',
+              recipientType: 'business',
+              recipientId: partnerBusinessId,
+              requestedTasks: pageTasks,
+              verifiedTasks: readBack.assignedTasks,
+              status: readBack.verified ? 'verified' : 'failed',
+              grantedAt: new Date().toISOString(),
+              ...(readBack.verified
+                ? { verifiedAt: new Date().toISOString() }
+                : {
+                    errorCode: 'META_ASSET_VERIFICATION_FAILED',
+                    errorMessage: manualFallbackMessage,
+                  }),
+            };
+          } catch (error) {
+            return {
+              assetId: pageId,
+              assetType: 'page',
+              recipientType: 'business',
+              recipientId: partnerBusinessId,
+              requestedTasks: pageTasks,
+              status: 'failed',
+              errorCode: 'META_ASSET_GRANT_FAILED',
+              errorMessage: error instanceof Error ? error.message : manualFallbackMessage,
+            };
+          }
+        },
+      );
+      currentRecipientGrantResults.push(...pageAgencyResults);
+      if (pageAgencyResults.length > 0) {
+        await metaAssetGrantService.recordOutcomes({
+          ...grantContext,
+          recipient: pageAgencyPartnerRecipient,
+          results: pageAgencyResults,
+          attemptVersions: pageAgencyAttempts,
+        });
+      }
+
       const businessRecipient = { type: 'business' as const, id: partnerBusinessId, grantMethod: 'manual_business_share' };
+      const manualBusinessKinds = new Set<MetaAssetKind>(['ad_account', 'instagram_account', 'dataset']);
       const businessGrantRequirements = grantRequirements
-        .filter((item) => item.assetKind !== 'catalog')
-        .map((item) => ({ ...item, requestedTasks: [] }));
-      const businessAttemptVersions = await metaAssetGrantService.claimAttempts({
-        ...grantContext,
-        requirements: businessGrantRequirements,
-        recipient: businessRecipient,
-      });
+        .filter((item) => item.assetKind !== 'catalog' && manualBusinessKinds.has(item.assetKind))
+        .map((item) => ({
+          ...item,
+          requestedTasks: item.assetKind === 'dataset' ? datasetPartnerTasks : [],
+        }));
+      const businessAttemptVersions = businessGrantRequirements.length > 0
+        ? await metaAssetGrantService.claimAttempts({
+            ...grantContext,
+            requirements: businessGrantRequirements,
+            recipient: businessRecipient,
+          })
+        : new Map<string, number>();
       skippedExcludedGrant ||= [...businessAttemptVersions.values()].includes(0);
       const shouldVerifyBusiness = (kind: string, id: string) => businessAttemptVersions.get(`${kind}:${id}`) !== 0;
       const businessAssetsNeedVerification = businessGrantRequirements.some((item) =>
@@ -1344,7 +1473,6 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
               : Promise.resolve(null),
           ])
         : [null, null];
-      const visiblePageIds = new Set((agencyAssets?.data?.pages || []).map((asset) => String(asset.id)));
       const visibleAdAccountIds = new Set((agencyAssets?.data?.adAccounts || [])
         .filter((asset) => asset.sharedWithBusiness === true)
         .map((asset) => String(asset.id)));
@@ -1354,17 +1482,6 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
           ? managedBusinessLinkResult.data.nextAction
           : 'Share this asset with the agency Business Portfolio, then verify again');
       const businessResults: MetaAssetGrantResult[] = [
-        ...selectedPageIds.filter((id) => shouldVerifyBusiness('page', id)).map((assetId): MetaAssetGrantResult => ({
-          assetId,
-          assetType: 'page',
-          recipientType: 'business',
-          recipientId: partnerBusinessId,
-          requestedTasks: [],
-          status: visiblePageIds.has(assetId) ? 'verified' : 'unresolved',
-          ...(visiblePageIds.has(assetId)
-            ? { verifiedAt: new Date().toISOString() }
-            : { errorCode: 'MANUAL_SHARE_PENDING', errorMessage: businessVerificationError }),
-        })),
         ...selectedAdAccountIds.filter((id) => shouldVerifyBusiness('ad_account', id)).map((assetId): MetaAssetGrantResult => ({
           assetId,
           assetType: 'ad_account',
@@ -1405,12 +1522,14 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
         })),
       ];
       currentRecipientGrantResults.push(...businessResults);
-      await metaAssetGrantService.recordOutcomes({
-        ...grantContext,
-        recipient: businessRecipient,
-        results: businessResults,
-        attemptVersions: businessAttemptVersions,
-      });
+      if (businessResults.length > 0) {
+        await metaAssetGrantService.recordOutcomes({
+          ...grantContext,
+          recipient: businessRecipient,
+          results: businessResults,
+          attemptVersions: businessAttemptVersions,
+        });
+      }
 
       const catalogBusinessRecipient = {
         type: 'business' as const,

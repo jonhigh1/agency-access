@@ -153,6 +153,41 @@ describe('AutomaticPagesGrant', () => {
     expect(captureMock).not.toHaveBeenCalledWith('client_meta_grant_completed', expect.anything());
   });
 
+  it('shows Manual fallback copy when read-back fails for a Page', async () => {
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      text: async () =>
+        JSON.stringify({
+          data: {
+            assetGrantResults: [
+              {
+                assetId: 'page_1',
+                assetType: 'page',
+                status: 'failed',
+                errorMessage: 'Meta returned fewer tasks than this request requires',
+              },
+            ],
+          },
+          error: null,
+        }),
+    } as Response);
+
+    render(
+      <AutomaticPagesGrant
+        selectedPages={[{ id: 'page_1', name: 'Main Page' }]}
+        connectionId="conn-1"
+        accessRequestToken="token-1"
+        onGrantComplete={vi.fn()}
+      />
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /grant access/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/Add the agency as a Partner on these Pages/i)).toBeInTheDocument();
+    });
+  });
+
   it('fails an unreported selected Page when another Page verifies', async () => {
     const onGrantComplete = vi.fn();
     vi.mocked(fetch).mockResolvedValue({

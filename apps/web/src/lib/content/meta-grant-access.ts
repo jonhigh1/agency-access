@@ -21,6 +21,8 @@ export const META_GRANT_ACCESS = {
         granting: 'Granting...',
         success: 'Access granted successfully',
         error: 'Failed to grant access',
+        manualFallback:
+          'Automatic assignment did not complete. Add the agency as a Partner on these Pages in Meta Business Settings, then try Grant Access again or ask the agency to verify.',
       },
     },
     manual: {

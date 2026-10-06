@@ -251,6 +251,7 @@ describe('Client Auth Asset Creation Routes - Business', () => {
       vi.mocked(metaAssetCreationService.getAssetCreationLinks).mockReturnValue({
         pageCreationUrl: 'https://business.facebook.com/pages/creation/?business_id=biz-1',
         pixelCreationUrl: 'https://business.facebook.com/events_manager2/pixel/new/?business_id=biz-1',
+        adAccountCreationUrl: 'https://business.facebook.com/settings/biz-1/ad_accounts',
         businessVerificationUrl: 'https://business.facebook.com/settings/biz-1/security_center',
         paymentMethodUrl: 'https://business.facebook.com/settings/biz-1/payment',
       });
