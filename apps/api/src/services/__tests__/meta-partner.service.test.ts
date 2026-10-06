@@ -316,6 +316,41 @@ describe('MetaPartnerService', () => {
     expect(result).toEqual({ verified: true, assignedTasks: ['ADVERTISE', 'AA_ANALYZE'] });
   });
 
+  it('shares a Page with the agency portfolio via agencies edge and verifies permitted tasks', async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ success: true }) } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: [{ id: 'agency-bm-1', permitted_tasks: ['MANAGE', 'ADVERTISE'] }],
+        }),
+      } as Response);
+
+    await metaPartnerService.grantAgencyPartnerAccess(
+      'client-token',
+      'page_123',
+      'agency-bm-1',
+      ['MANAGE', 'ADVERTISE'],
+    );
+    const result = await metaPartnerService.verifyAgencyPartnerAccess(
+      'client-token',
+      'page_123',
+      'agency-bm-1',
+      ['MANAGE', 'ADVERTISE'],
+    );
+
+    expect(fetch).toHaveBeenNthCalledWith(
+      1,
+      'https://graph.facebook.com/v25.0/page_123/agencies',
+      expect.objectContaining({ method: 'POST' }),
+    );
+    const request = vi.mocked(fetch).mock.calls[0]?.[1] as RequestInit;
+    const params = new URLSearchParams(request.body as string);
+    expect(params.get('business')).toBe('agency-bm-1');
+    expect(params.get('permitted_tasks')).toBe(JSON.stringify(['MANAGE', 'ADVERTISE']));
+    expect(result).toEqual({ verified: true, assignedTasks: ['MANAGE', 'ADVERTISE'] });
+  });
+
   it('shares a catalog with the agency portfolio and verifies the agency edge', async () => {
     vi.mocked(fetch)
       .mockResolvedValueOnce({ ok: true, json: async () => ({ success: true }) } as Response)

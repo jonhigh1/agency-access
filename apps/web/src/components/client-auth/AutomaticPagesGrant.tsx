@@ -274,8 +274,9 @@ export function AutomaticPagesGrant({
             )}
           </div>
           {hasFailed && (
-            <div className="mt-2 text-sm text-danger-ink">
-              Some pages failed to grant access. Please try again.
+            <div className="mt-2 space-y-2 text-sm text-danger-ink">
+              <p>Some pages failed to grant access. Please try again.</p>
+              <p className="text-muted-foreground">{content.facebookPages.manualFallback}</p>
             </div>
           )}
         </div>
