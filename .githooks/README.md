@@ -13,6 +13,12 @@ bash scripts/setup/install-git-hooks.sh
 This runs `git config core.hooksPath .githooks` (idempotent — safe to
 re-run). From then on, git reads hooks from here instead of `.git/hooks/`.
 
+**Keep `pre-push` as the thin delegate only** (`exec …/pre-push.pre-entire`).
+The Entire CLI may rewrite `.githooks/pre-push` when it installs hooks with
+`core.hooksPath` pointed here; that wrapper calls Entire again without
+forwarding stdin, so Entire runs twice and the main build gate is skipped.
+Restore the delegate before committing hook changes.
+
 ## What `pre-push` does
 
 1. **Delegates to the Entire CLI hook first, unchanged.** The hook this file
