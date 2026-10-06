@@ -3,6 +3,52 @@
 Log deterministic errors with a conclusion; infrastructure errors without one
 until a pattern emerges. Newest first.
 
+## 2026-10-06 — RESOLVED: Render env-var wipe via paginated replace-all PUT (during Creem webhook setup)
+
+**Deterministic** (root cause proven; recovery verified in production).
+
+- Symptom: after adding `CREEM_WEBHOOK_SECRET` via the Render env API, two
+  deploys failed Zod env validation (`update_failed`); production kept serving
+  from the pre-change instance while every restart would have booted broken.
+- Root cause: `GET /v1/services/{id}/env-vars` paginates (default page = 20).
+  A replace-all `PUT /v1/services/{id}/env-vars` was built from page 1 of a
+  ~60-var service, deleting every var beyond the first page (Clerk keys,
+  Infisical identity, Meta/Creem creds, all connector OAuth creds, Sentry DSN,
+  admin allowlists). Concurrent earlier recovery runs made counts drift
+  mid-session, which masked the loss twice.
+- Recovery: values re-sourced from Vercel project `agency-access`
+  (`CLERK_SECRET_KEY`, `CLERK_PUBLISHABLE_KEY`, `META_APP_ID`), repo-derivable
+  facts (`FRONTEND_URL`, `API_URL`, `CLERK_OAUTH_ISSUER` via OIDC discovery,
+  `CLERK_OAUTH_VERIFY_URL`, `INFISICAL_PROJECT_ID` from backup filename), user
+  dashboards (`META_APP_SECRET`, `CREEM_API_KEY`,
+  `INFISICAL_CLIENT_ID/SECRET`), and a regenerated `OAUTH_STATE_HMAC_SECRET`.
+  Deploy `dep-db27nsvlot8c73e61mbg` went live; verified `/health` 200, unsigned
+  webhook POST → 401, HMAC-signed probe event → 400 `Unknown product ID`
+  (proves signature verification against the real secret end-to-end).
+- Residual: **22 connector/functional vars remain unrestored** —
+  `GOOGLE_CLIENT_ID/SECRET`, `GOOGLE_ADS_DEVELOPER_TOKEN`,
+  `GOOGLE_ADS_LOGIN_CUSTOMER_ID`, `LINKEDIN_CLIENT_ID/SECRET`,
+  `PINTEREST_CLIENT_ID/SECRET`, `KIT_CLIENT_ID/SECRET`,
+  `KLAVIYO_CLIENT_ID/SECRET`, `MAILCHIMP_CLIENT_ID/SECRET`,
+  `SHOPIFY_API_KEY`, `SHOPIFY_API_SECRET_KEY`, `BEEHIIV_API_KEY`,
+  `TIKTOK_CLIENT_ID/SECRET`, `SENTRY_DSN`, `INTERNAL_ADMIN_EMAILS`,
+  `INTERNAL_ADMIN_USER_IDS`, `TRUST_PROXY_IPS`, `AGENT_MCP_RESOURCE_URL`,
+  `AGENT_NATIVE_AGENCY_ALLOWLIST`. No offline source exists (the Infisical
+  backup holds OAuth *tokens*, not connector client creds; Vercel holds
+  frontend vars only) — each must come from its own dashboard. Affected
+  connectors fail at OAuth initiation until restored.
+- Rules going forward:
+  1. Never `PUT` the env-vars collection without `limit=100` AND a count
+     assertion (GET count == PUT body count) before writing.
+  2. After any env change, GET with `limit=100` and diff keys against the
+     `render.yaml` declared list.
+  3. Auto-deploy was disabled during recovery as protection and re-enabled
+     (`autoDeploy: yes / trigger: commit`) after verification — do not leave
+     it off.
+- Rotation pending: Render API key + refresh token were printed in agent
+  transcripts; secrets transited chat (Creem webhook secret, `CREEM_API_KEY`,
+  `META_APP_SECRET`, Infisical client secret). Rotate when convenient.
+
 ## 2026-10-03 — RESOLVED: 401 USER_EMAIL_REQUIRED on all mutating revoke endpoints (jam 76b5f94c)
 
 **Deterministic** (root cause proven by code path + production capture).

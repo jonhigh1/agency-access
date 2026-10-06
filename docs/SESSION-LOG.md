@@ -1,3 +1,24 @@
+## Session: 2026-10-05/06 — Creem production webhook: wired, then env-incident and full recovery
+
+### What was done
+- Confirmed `POST /api/webhooks/creem` is the sole writer of subscription state (tier, status, Clerk metadata); production endpoint is `https://agency-access.onrender.com/api/webhooks/creem`.
+- Added `CREEM_WEBHOOK_SECRET` to local `apps/api/.env` (gitignored) and to the Render service; **my replace-all env PUT hit the API's pagination (page size 20) and deleted ~43 of ~60 service env vars** — see `docs/ERRORS.md` 2026-10-06 entry for full RCA.
+- Recovered all 10 boot-critical vars across runs: Vercel (Clerk keys, `META_APP_ID`), repo-derivable (`FRONTEND_URL`, `API_URL`, `CLERK_OAUTH_*`, `INFISICAL_PROJECT_ID`), user dashboards (`META_APP_SECRET`, `CREEM_API_KEY`, `INFISICAL_CLIENT_ID/SECRET`), regenerated `OAUTH_STATE_HMAC_SECRET`.
+- Deployed `dep-db27nsvlot8c73e61mbg` — **live**. Verified: `/health` 200; unsigned webhook POST → 401; HMAC-signed probe → 400 `Unknown product ID` (signature secret matches Creem; end-to-end confirmed).
+- Re-enabled auto-deploy (`autoDeploy: yes / trigger: commit`); it had been disabled as incident protection.
+- Local `apps/api/.env` now carries the recovered prod values for local dev (still missing `DATABASE_URL`, Redis, connector creds for a full local boot).
+- Cleaned all secret-bearing temp files (Vercel env pulls, decrypted Infisical backup) from `/tmp`.
+
+### Decisions
+- Billing secrets stay as Render env vars (not Infisical) per `docs/RENDER_DEPLOYMENT.md`; Infisical remains the OAuth-token vault.
+- `OAUTH_STATE_HMAC_SECRET` is a new value; in-flight OAuth handshakes from incident time are invalid (self-heals).
+
+### Next steps
+- Restore 22 connector/functional vars from their own dashboards (list in `docs/ERRORS.md`): Google/LinkedIn/Pinterest/Kit/Klaviyo/Mailchimp/Shopify/Beehiiv/TikTok-Login-Kit creds, `SENTRY_DSN`, `INTERNAL_ADMIN_EMAILS/USER_IDS`, `TRUST_PROXY_IPS`, `AGENT_MCP_RESOURCE_URL`, `AGENT_NATIVE_AGENCY_ALLOWLIST`.
+- Confirm the Creem dashboard endpoint URL + event subscriptions (only dashboard-side piece unverifiable from here).
+- Rotate Render API key + refresh token (printed in agent transcripts) and consider rotating the chat-transited secrets.
+- Log render-env pagination hazard into `docs/solutions/` if a Render-var runbook is written.
+
 ## Session: 2026-10-03 — Meta invite flow: decoupled confirm/complete, step-3 grant checklist, declines, resume (Phase 4 polish)
 
 ### What was done
