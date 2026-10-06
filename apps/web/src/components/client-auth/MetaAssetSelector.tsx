@@ -26,7 +26,12 @@ import {
 } from '@/lib/analytics/invite-events';
 import { AssetGroup, type Asset } from './AssetGroup';
 import { MultiSelectCombobox } from '@/components/ui/multi-select-combobox';
-import { AssetSelectorLoading, AssetSelectorError } from './AssetSelectorStates';
+import { AssetSelectorLoading } from './AssetSelectorStates';
+import { MetaConnectionErrorPanel } from './MetaConnectionErrorPanel';
+import {
+  mapMetaConnectionErrorFromApi,
+  type MetaConnectionErrorPresentation,
+} from '@agency-platform/shared';
 import { MetaAssetCreator } from './MetaAssetCreator';
 import { MetaBusinessCreator } from './MetaBusinessCreator';
 import { MetaBusinessSetupChecklist } from './MetaBusinessSetupChecklist';
@@ -133,7 +138,7 @@ export function MetaAssetSelector({
 }: MetaAssetSelectorProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [assets, setAssets] = useState<MetaAssets | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const [connectionError, setConnectionError] = useState<MetaConnectionErrorPresentation | null>(null);
   const [selectedBusinessId, setSelectedBusinessId] = useState<string | null>(null);
   const [selectedBusinessName, setSelectedBusinessName] = useState<string | null>(null);
   // Opened from PortfolioSelector's zero-business card (onCreateBusiness);
@@ -390,7 +395,7 @@ export function MetaAssetSelector({
     const fetchVersion = ++assetFetchVersion.current;
     try {
       setIsLoading(true);
-      setError(null);
+      setConnectionError(null);
 
       const apiUrl = getApiBaseUrl();
       const query = new URLSearchParams({
@@ -404,15 +409,19 @@ export function MetaAssetSelector({
       const response = await fetch(
         `${apiUrl}/api/client/${accessRequestToken}/assets/meta_ads?${query.toString()}`
       );
-      const json = await parseJsonResponse<{ data?: MetaAssets; error?: { message?: string } }>(
-        response,
-        {
-          fallbackErrorMessage: 'Failed to load accounts',
-        }
-      );
+      const json = await parseJsonResponse<{
+        data?: MetaAssets;
+        error?: { code?: string; message?: string; details?: unknown };
+      }>(response, {
+        fallbackErrorMessage: 'Failed to load accounts',
+      });
 
       if (json.error) {
-        throw new Error(json.error.message || 'Failed to load accounts');
+        throw new ApiResponseError(
+          json.error.message || 'Failed to load accounts',
+          json.error.code,
+          json.error.details,
+        );
       }
 
       const fetchedAssets = json.data || { adAccounts: [], pages: [], instagramAccounts: [] };
@@ -442,9 +451,15 @@ export function MetaAssetSelector({
       return fetchedAssets;
     } catch (err) {
       if (fetchVersion !== assetFetchVersion.current) return null;
-      const errorMessage = err instanceof Error ? err.message : 'Failed to load accounts';
-      setError(errorMessage);
-      onError?.(errorMessage);
+      const presentation =
+        err instanceof ApiResponseError
+          ? mapMetaConnectionErrorFromApi(err.code ?? 'ASSET_FETCH_ERROR', err.message, err.details)
+          : mapMetaConnectionErrorFromApi(
+              'ASSET_FETCH_ERROR',
+              err instanceof Error ? err.message : 'Failed to load accounts',
+            );
+      setConnectionError(presentation);
+      onError?.(presentation.message);
       return null;
     } finally {
       if (fetchVersion === assetFetchVersion.current) setIsLoading(false);
@@ -529,7 +544,7 @@ export function MetaAssetSelector({
   // Lazy-fetch user pages once when the creation branch is opened from the
   // portfolio selector's zero-business card.
   useEffect(() => {
-    if (isLoading || error || !assets) return;
+    if (isLoading || connectionError || !assets) return;
     if (!businessCreationOpen) return;
 
     const fetchKey = `${sessionId}`;
@@ -538,7 +553,7 @@ export function MetaAssetSelector({
       void fetchUserPages();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [assets, isLoading, error, businessCreationOpen, sessionId]);
+  }, [assets, isLoading, connectionError, businessCreationOpen, sessionId]);
 
   // Business created → refetch scoped to the new portfolio and open the
   // ad-account creator inline: one pass, no return-and-reselect journey.
@@ -668,12 +683,13 @@ export function MetaAssetSelector({
   }
 
   // Error state
-  if (error) {
+  if (connectionError) {
     return (
-      <AssetSelectorError
-        title="Couldn't load Meta accounts"
-        message={error}
-        onRetry={fetchAssets}
+      <MetaConnectionErrorPanel
+        error={connectionError}
+        onRetry={() => {
+          void fetchAssets(selectedBusinessId || undefined);
+        }}
       />
     );
   }

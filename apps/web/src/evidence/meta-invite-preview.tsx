@@ -1,4 +1,9 @@
 import ReactDOM from 'react-dom/client';
+import {
+  mapMetaGraphError,
+  mapMetaOAuthIncompletePermissions,
+  type MetaConnectionErrorPresentation,
+} from '@agency-platform/shared';
 import { PlatformAuthWizard } from '@/components/client-auth/PlatformAuthWizard';
 import '@/app/globals.css';
 
@@ -6,13 +11,23 @@ type PreviewScenario =
   | 'portfolio-selection'
   | 'grant-in-progress'
   | 'verified-success'
-  | 'partial-follow-up';
+  | 'partial-follow-up'
+  | 'error-incomplete-permissions'
+  | 'error-not-admin'
+  | 'error-2fa-required'
+  | 'error-page-ownership'
+  | 'error-bm-mismatch';
 
 const SCENARIOS: PreviewScenario[] = [
   'portfolio-selection',
   'grant-in-progress',
   'verified-success',
   'partial-follow-up',
+  'error-incomplete-permissions',
+  'error-not-admin',
+  'error-2fa-required',
+  'error-page-ownership',
+  'error-bm-mismatch',
 ];
 
 const AGENCY_BUSINESS = {
@@ -40,6 +55,61 @@ function buildJsonResponse(body: unknown, status = 200): Response {
       'Content-Type': 'application/json',
     },
   });
+}
+
+function isMetaConnectionErrorScenario(
+  scenario: PreviewScenario,
+): scenario is Extract<PreviewScenario, `error-${string}`> {
+  return scenario.startsWith('error-');
+}
+
+function presentationForErrorScenario(scenario: PreviewScenario): MetaConnectionErrorPresentation {
+  switch (scenario) {
+    case 'error-incomplete-permissions':
+      return mapMetaOAuthIncompletePermissions(['ads_management', 'business_management']);
+    case 'error-not-admin':
+      return mapMetaGraphError({
+        message: '(#200) Permissions error: User must be an admin of the ad account',
+        code: 200,
+      })!;
+    case 'error-2fa-required':
+      return mapMetaGraphError({
+        message: 'Two-factor authentication is required to access this ad account',
+        code: 190,
+        error_subcode: 1340092,
+      })!;
+    case 'error-page-ownership':
+      return mapMetaGraphError({
+        message: 'This Page is owned by another business and cannot be accessed',
+        code: 100,
+      })!;
+    case 'error-bm-mismatch':
+      return mapMetaGraphError({
+        message: 'The Instagram account must belong to the same Business Manager as the ad account',
+        code: 100,
+      })!;
+    default:
+      return mapMetaOAuthIncompletePermissions(['ads_management']);
+  }
+}
+
+function buildMetaAssetFetchError(scenario: PreviewScenario): Response {
+  const presentation = presentationForErrorScenario(scenario);
+  return buildJsonResponse(
+    {
+      data: null,
+      error: {
+        code: presentation.code,
+        message: presentation.message,
+        details: {
+          title: presentation.title,
+          nextSteps: [...presentation.nextSteps],
+          supportCode: presentation.code,
+        },
+      },
+    },
+    presentation.httpStatus,
+  );
 }
 
 function getMetaAssetsForScenario(scenario: PreviewScenario, businessId: string | null) {
@@ -124,6 +194,10 @@ function installFetchMock(scenario: PreviewScenario): void {
     }
 
     if (pathname.endsWith('/assets/meta_ads')) {
+      if (isMetaConnectionErrorScenario(scenario)) {
+        return buildMetaAssetFetchError(scenario);
+      }
+
       return buildJsonResponse({
         data: getMetaAssetsForScenario(scenario, url.searchParams.get('businessId')),
         error: null,
@@ -252,6 +326,31 @@ function getScenarioCopy(scenario: PreviewScenario) {
         title: 'Meta Partial Follow-Up',
         description:
           'Final confirmation state after page verification succeeds but Meta ad-account sharing and Instagram support still need follow-up.',
+      };
+    case 'error-incomplete-permissions':
+      return {
+        title: 'Meta connection error — incomplete permissions',
+        description: 'Fixture API returns META_CONNECTION_INCOMPLETE_PERMISSIONS on asset discovery.',
+      };
+    case 'error-not-admin':
+      return {
+        title: 'Meta connection error — not admin',
+        description: 'Fixture API returns META_CONNECTION_NOT_ADMIN on asset discovery.',
+      };
+    case 'error-2fa-required':
+      return {
+        title: 'Meta connection error — 2FA required',
+        description: 'Fixture API returns META_CONNECTION_2FA_REQUIRED on asset discovery.',
+      };
+    case 'error-page-ownership':
+      return {
+        title: 'Meta connection error — Page ownership',
+        description: 'Fixture API returns META_CONNECTION_PAGE_OWNERSHIP on asset discovery.',
+      };
+    case 'error-bm-mismatch':
+      return {
+        title: 'Meta connection error — BM mismatch',
+        description: 'Fixture API returns META_CONNECTION_BM_MISMATCH on asset discovery.',
       };
     case 'portfolio-selection':
     default:
