@@ -3,7 +3,7 @@
   "checkpoint_id": "01M48TV1MJ2C6E6W0Z29FPACJJ",
   "strategy": "manual-commit",
   "branch": "main",
-  "checkpoints_count": 5,
+  "checkpoints_count": 11,
   "files_touched": [
     "apps/api/src/routes/client-auth/assets.routes.ts",
     "packages/shared/src/types.ts"
@@ -22,6 +22,13 @@
       "compact_transcript": "/1/transcript.jsonl",
       "content_hash": "/1/content_hash.txt",
       "prompt": "/1/prompt.txt"
+    },
+    {
+      "metadata": "/2/metadata.json",
+      "transcript": "/2/full.jsonl",
+      "compact_transcript": "/2/transcript.jsonl",
+      "content_hash": "/2/content_hash.txt",
+      "prompt": "/2/prompt.txt"
     }
   ]
 }
