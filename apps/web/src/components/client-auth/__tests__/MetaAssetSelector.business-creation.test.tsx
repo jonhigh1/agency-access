@@ -134,10 +134,7 @@ describe('MetaAssetSelector - zero Business Portfolio branch', () => {
       />
     );
 
-    expect(await screen.findByText(/no business portfolio yet/i)).toBeInTheDocument();
-
-    // The zero-business card routes into the creation flow (onCreateBusiness).
-    fireEvent.click(screen.getByRole('button', { name: /create a business portfolio/i }));
+    expect(await screen.findByText(/no business portfolio found/i)).toBeInTheDocument();
 
     expect(await screen.findByText(/Guided Redirect/i)).toBeInTheDocument();
 
@@ -150,6 +147,9 @@ describe('MetaAssetSelector - zero Business Portfolio branch', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /refresh page list/i }));
 
+    expect(await screen.findByText(/Page ID: page-1/i)).toBeInTheDocument();
+    fireEvent.click(screen.getByRole('combobox', { name: 'Primary Facebook Page' }));
+    fireEvent.click(screen.getByRole('option', { name: /Acme Main/ }));
     expect(await screen.findByText(/Meta Business Creator/i)).toBeInTheDocument();
   });
 
@@ -169,7 +169,11 @@ describe('MetaAssetSelector - zero Business Portfolio branch', () => {
       />
     );
 
-    fireEvent.click(await screen.findByRole('button', { name: /create a business portfolio/i }));
+    expect(await screen.findByText(/Page ID: page-1/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Meta Business Creator/i)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('combobox', { name: 'Primary Facebook Page' }));
+    fireEvent.click(screen.getByRole('option', { name: /Acme Main/ }));
 
     expect(await screen.findByText(/Meta Business Creator/i)).toBeInTheDocument();
   });
@@ -198,7 +202,8 @@ describe('MetaAssetSelector - zero Business Portfolio branch', () => {
       />
     );
 
-    fireEvent.click(await screen.findByRole('button', { name: /create a business portfolio/i }));
+    fireEvent.click(await screen.findByRole('combobox', { name: 'Primary Facebook Page' }));
+    fireEvent.click(await screen.findByRole('option', { name: /Acme Main/ }));
     fireEvent.click(await screen.findByText(/Meta Business Creator/i));
 
     await waitFor(() => {
@@ -229,7 +234,8 @@ describe('MetaAssetSelector - zero Business Portfolio branch', () => {
       />
     );
 
-    fireEvent.click(await screen.findByRole('button', { name: /create a business portfolio/i }));
+    fireEvent.click(await screen.findByRole('combobox', { name: 'Primary Facebook Page' }));
+    fireEvent.click(await screen.findByRole('option', { name: /Acme Main/ }));
     fireEvent.click(await screen.findByText(/Meta Business Creator/i));
 
     await waitFor(() => {
@@ -260,7 +266,8 @@ describe('MetaAssetSelector - zero Business Portfolio branch', () => {
       />
     );
 
-    fireEvent.click(await screen.findByRole('button', { name: /create a business portfolio/i }));
+    fireEvent.click(await screen.findByRole('combobox', { name: 'Primary Facebook Page' }));
+    fireEvent.click(await screen.findByRole('option', { name: /Acme Page/ }));
     fireEvent.click(await screen.findByRole('button', { name: /refresh business portfolios/i }));
 
     expect(await screen.findByText(/which business are we sharing from/i)).toBeInTheDocument();
@@ -373,6 +380,32 @@ describe('MetaAssetSelector - zero Business Portfolio branch', () => {
     expect(await screen.findByText(/setup checklist for biz_1/i)).toBeInTheDocument();
   });
 
+  it('does not call user-pages when the client already has a Business Portfolio', async () => {
+    const fetchMock = vi.fn().mockResolvedValueOnce(
+      assetsResponse({
+        businesses: [{ id: 'biz_1', name: 'Client One', verificationStatus: 'verified' }],
+        selectedBusinessId: 'biz_1',
+        selectedBusinessName: 'Client One',
+        adAccounts: [{ id: 'act_1', name: 'Account' }],
+        pages: [{ id: 'page-biz', name: 'Portfolio Page' }],
+      })
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    render(
+      <MetaAssetSelector
+        sessionId="conn-1"
+        accessRequestToken="token-1"
+        businessId="biz_1"
+        onSelectionChange={() => {}}
+      />
+    );
+
+    await findSharingReceipt('Client One');
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(String(fetchMock.mock.calls[0]?.[0])).not.toContain('/user-pages');
+  });
+
   it('renders none of the creation UI when businesses exist (regression guard)', async () => {
     const fetchMock = vi.fn().mockResolvedValueOnce(
       assetsResponse({
@@ -396,7 +429,7 @@ describe('MetaAssetSelector - zero Business Portfolio branch', () => {
     );
 
     await findSharingReceipt('Client One');
-    expect(screen.queryByText(/no business portfolio yet/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/no business portfolio found/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/Meta Business Creator/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/setup checklist/i)).not.toBeInTheDocument();
     expect(fetchMock).toHaveBeenCalledTimes(1);

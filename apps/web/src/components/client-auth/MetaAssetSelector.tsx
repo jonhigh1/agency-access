@@ -34,6 +34,7 @@ import {
 } from '@agency-platform/shared';
 import { MetaAssetCreator } from './MetaAssetCreator';
 import { MetaBusinessCreator } from './MetaBusinessCreator';
+import { ZeroPortfolioPageDiscovery } from './ZeroPortfolioPageDiscovery';
 import { MetaBusinessSetupChecklist } from './MetaBusinessSetupChecklist';
 import { GuidedRedirectCard } from './GuidedRedirectModal';
 import { SelectionResetConfirmDialog } from './SelectionResetConfirmDialog';
@@ -141,9 +142,7 @@ export function MetaAssetSelector({
   const [connectionError, setConnectionError] = useState<MetaConnectionErrorPresentation | null>(null);
   const [selectedBusinessId, setSelectedBusinessId] = useState<string | null>(null);
   const [selectedBusinessName, setSelectedBusinessName] = useState<string | null>(null);
-  // Opened from PortfolioSelector's zero-business card (onCreateBusiness);
-  // hosts the existing guided Page prerequisite and business creator.
-  const [businessCreationOpen, setBusinessCreationOpen] = useState(false);
+  const [zeroPortfolioPrimaryPageId, setZeroPortfolioPrimaryPageId] = useState('');
 
   // A resume prefill can arrive after this component mounts. Consume each
   // value once for its session after fresh assets are available.
@@ -301,7 +300,7 @@ export function MetaAssetSelector({
     const refreshed = await fetchAssets();
     if (refreshed) {
       setBusinessCreationNeedsReview(true);
-      if ((refreshed.businesses || []).length > 0) setBusinessCreationOpen(false);
+      if ((refreshed.businesses || []).length > 0) setZeroPortfolioPrimaryPageId('');
     }
     return Boolean(refreshed);
   };
@@ -510,10 +509,12 @@ export function MetaAssetSelector({
     setSelectedCatalogs(new Set());
     setSelectedDatasets(new Set());
     setResolvedPrefillSessionKey(initialSelectionSessionKey);
+    userPagesFetchedFor.current = null;
+    setUserPages(null);
+    setZeroPortfolioPrimaryPageId('');
   }, [initialSelectionSessionKey, sessionId]);
 
-  // Fetch the client user's own Pages — only needed in the zero-portfolio
-  // branch (guided Page prerequisite for Business creation).
+  // Fetch the client user's own Pages — zero-portfolio branch (pages_show_list).
   const fetchUserPages = async () => {
     try {
       setUserPagesLoading(true);
@@ -541,25 +542,32 @@ export function MetaAssetSelector({
     }
   };
 
-  // Lazy-fetch user pages once when the creation branch is opened from the
-  // portfolio selector's zero-business card.
+  // Zero-portfolio clients: user Page discovery (GET /me/accounts) as soon as
+  // asset load confirms no Business Portfolio — not gated on a separate CTA.
   useEffect(() => {
     if (isLoading || connectionError || !assets) return;
-    if (!businessCreationOpen) return;
 
-    const fetchKey = `${sessionId}`;
-    if (userPagesFetchedFor.current !== fetchKey) {
-      userPagesFetchedFor.current = fetchKey;
-      void fetchUserPages();
-    }
+    const availableBusinesses = assets.businesses || [];
+    const requiresSelection = Boolean(
+      assets.selectionRequired && !selectedBusinessId && availableBusinesses.length > 0
+    );
+    const scopedBusinessId = selectedBusinessId || businessId;
+    const noBusinessPortfolio =
+      !requiresSelection && !scopedBusinessId && availableBusinesses.length === 0;
+    if (!noBusinessPortfolio) return;
+
+    const fetchKey = sessionId;
+    if (userPagesFetchedFor.current === fetchKey) return;
+    userPagesFetchedFor.current = fetchKey;
+    void fetchUserPages();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [assets, isLoading, connectionError, businessCreationOpen, sessionId]);
+  }, [assets, isLoading, connectionError, sessionId, selectedBusinessId, businessId]);
 
   // Business created → refetch scoped to the new portfolio and open the
   // ad-account creator inline: one pass, no return-and-reselect journey.
   const handleBusinessCreated = (business: { id: string; name: string }) => {
     const creationVersion = ++businessCreationVersion.current;
-    setBusinessCreationOpen(false);
+    setZeroPortfolioPrimaryPageId('');
     void fetchAssets(business.id).then((fetchedAssets) => {
       if (!fetchedAssets || businessCreationVersion.current !== creationVersion) return;
       setCreatedBusiness(business);
@@ -820,7 +828,7 @@ export function MetaAssetSelector({
     setShowPageCreator(false);
     setCreatedBusiness(null);
     setBusinessCreationNeedsReview(false);
-    setBusinessCreationOpen(false);
+    setZeroPortfolioPrimaryPageId('');
     if (!options.keepBusiness) {
       setSelectedBusinessId(null);
       setSelectedBusinessName(null);
@@ -851,8 +859,6 @@ export function MetaAssetSelector({
     }
     applyBusinessSelection(business);
   };
-
-  const openBusinessCreation = () => setBusinessCreationOpen(true);
 
   /**
    * Per-type skip control. Only for an allowed kind (each call site sits inside
@@ -903,7 +909,6 @@ export function MetaAssetSelector({
         selectionRequired={Boolean(assets?.selectionRequired)}
         fetchBusinesses={fetchPortfolioBusinessList}
         onBusinessConfirmed={handleBusinessConfirmed}
-        onCreateBusiness={openBusinessCreation}
       />
 
       {selectedBusinessId && !hasNoBusinessPortfolio ? (
@@ -924,17 +929,9 @@ export function MetaAssetSelector({
         />
       ) : null}
 
-      {businessCreationOpen ? (
-        <div className="bg-[rgb(var(--warm-gray))]/20 p-6 space-y-4">
-          {userPagesError ? (
-            <div className="border border-[rgb(var(--warning))] bg-[rgb(var(--warning))]/10 p-4 text-sm text-[rgb(var(--warning))]">
-              {userPagesError}
-            </div>
-          ) : userPagesLoading ? (
-            <p className="text-sm text-[rgb(var(--muted-foreground))]">
-              Checking your Facebook Pages...
-            </p>
-          ) : userPages && userPages.length === 0 ? (
+      {hasNoBusinessPortfolio ? (
+        <div className="space-y-4">
+          {userPages && userPages.length === 0 && !userPagesLoading && !userPagesError ? (
             <GuidedRedirectCard
               title="Create a Facebook Page first"
               description="A Business Portfolio needs a primary Facebook Page. Pages are created on Facebook — follow these steps:"
@@ -946,7 +943,7 @@ export function MetaAssetSelector({
               ]}
               onRefresh={fetchUserPages}
             />
-          ) : userPages && userPages.length > 0 ? (
+          ) : (
             <>
               <p className="text-xs text-[rgb(var(--muted-foreground))]">
                 {buildMetaPartnerGrantNarrative({
@@ -954,16 +951,26 @@ export function MetaAssetSelector({
                   clientBusinessId: null,
                 }).zeroPortfolioPagesNote}
               </p>
-              <MetaBusinessCreator
-                connectionId={sessionId}
-                accessRequestToken={accessRequestToken}
-                userPages={userPages}
-                onSuccess={handleBusinessCreated}
-                onError={onError}
-                onReconcile={handleBusinessReconcile}
+              <ZeroPortfolioPageDiscovery
+                pages={userPages}
+                loading={userPagesLoading}
+                error={userPagesError}
+                primaryPageId={zeroPortfolioPrimaryPageId}
+                onPrimaryPageChange={setZeroPortfolioPrimaryPageId}
+                businessCreator={
+                  <MetaBusinessCreator
+                    connectionId={sessionId}
+                    accessRequestToken={accessRequestToken}
+                    userPages={userPages ?? []}
+                    fixedPrimaryPageId={zeroPortfolioPrimaryPageId}
+                    onSuccess={handleBusinessCreated}
+                    onError={onError}
+                    onReconcile={handleBusinessReconcile}
+                  />
+                }
               />
             </>
-          ) : null}
+          )}
         </div>
       ) : null}
 

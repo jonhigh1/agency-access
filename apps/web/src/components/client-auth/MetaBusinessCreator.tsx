@@ -59,6 +59,8 @@ interface MetaBusinessCreatorProps {
   connectionId: string;
   accessRequestToken: string;
   userPages: Array<UserPage>;
+  /** When set (zero-portfolio discovery), primary Page is chosen upstream. */
+  fixedPrimaryPageId?: string;
   onSuccess?: (business: { id: string; name: string }) => void;
   onError?: (error: string) => void;
   onReconcile?: () => Promise<boolean>;
@@ -70,6 +72,7 @@ export function MetaBusinessCreator({
   connectionId,
   accessRequestToken,
   userPages,
+  fixedPrimaryPageId,
   onSuccess,
   onError,
   onReconcile,
@@ -83,8 +86,14 @@ export function MetaBusinessCreator({
   // Form state
   const [businessName, setBusinessName] = useState('');
   const [primaryPageId, setPrimaryPageId] = useState(
-    userPages.length === 1 ? userPages[0].id : ''
+    fixedPrimaryPageId || (userPages.length === 1 ? userPages[0].id : '')
   );
+
+  useEffect(() => {
+    if (fixedPrimaryPageId) {
+      setPrimaryPageId(fixedPrimaryPageId);
+    }
+  }, [fixedPrimaryPageId]);
   const [timezoneId, setTimezoneId] = useState('');
   const [vertical, setVertical] = useState('OTHER');
 
@@ -255,30 +264,41 @@ export function MetaBusinessCreator({
         </p>
       </div>
 
-      {/* Primary Page */}
-      <div>
-        <label
-          htmlFor="primary-page"
-          className="block text-sm font-bold text-[var(--ink)] mb-2 font-display uppercase tracking-wide"
-        >
-          Primary Page
-        </label>
-        <SingleSelect
-          options={userPages.map((page) => ({
-            value: page.id,
-            label: page.category ? `${page.name} — ${page.category}` : page.name,
-          }))}
-          value={primaryPageId}
-          onChange={(v) => setPrimaryPageId(v)}
-          placeholder="Select a Page..."
-          disabled={state === 'loading'}
-          triggerClassName="border-2 border-black dark:border-white shadow-brutalist-sm focus:shadow-brutalist"
-          ariaLabel="Primary Page"
-        />
-        <p className="text-xs text-muted-foreground mt-1">
-          The Page that represents this business on Facebook.
-        </p>
-      </div>
+      {fixedPrimaryPageId ? (
+        <div className="rounded-none border-2 border-black bg-[rgb(var(--card))] p-4 dark:border-white">
+          <p className="text-sm font-bold text-[var(--ink)] font-display uppercase tracking-wide">
+            Primary Page
+          </p>
+          <p className="mt-1 text-sm text-[var(--ink)]">
+            {userPages.find((page) => page.id === fixedPrimaryPageId)?.name ?? 'Selected Page'}
+          </p>
+          <p className="font-mono text-xs text-muted-foreground mt-1">Page ID: {fixedPrimaryPageId}</p>
+        </div>
+      ) : (
+        <div>
+          <label
+            htmlFor="primary-page"
+            className="block text-sm font-bold text-[var(--ink)] mb-2 font-display uppercase tracking-wide"
+          >
+            Primary Page
+          </label>
+          <SingleSelect
+            options={userPages.map((page) => ({
+              value: page.id,
+              label: page.category ? `${page.name} — ${page.category}` : page.name,
+            }))}
+            value={primaryPageId}
+            onChange={(v) => setPrimaryPageId(v)}
+            placeholder="Select a Page..."
+            disabled={state === 'loading'}
+            triggerClassName="border-2 border-black dark:border-white shadow-brutalist-sm focus:shadow-brutalist"
+            ariaLabel="Primary Page"
+          />
+          <p className="text-xs text-muted-foreground mt-1">
+            The Page that represents this business on Facebook.
+          </p>
+        </div>
+      )}
 
       {/* Timezone */}
       <div>
