@@ -423,4 +423,32 @@ describe('env contract', () => {
       }))).resolves.toBeDefined();
     });
   });
+
+  describe('META_MARKETING_API_TIER_CRON_BURST', () => {
+    it('enables burst only for true or 1', async () => {
+      const enabledTrue = await importEnvWith(withRequiredBase({
+        META_MARKETING_API_TIER_CRON_BURST: 'true',
+      }));
+      expect(enabledTrue.env.META_MARKETING_API_TIER_CRON_BURST).toBe(true);
+
+      vi.resetModules();
+      process.env = { ...ORIGINAL_ENV };
+      const enabledOne = await importEnvWith(withRequiredBase({
+        META_MARKETING_API_TIER_CRON_BURST: '1',
+      }));
+      expect(enabledOne.env.META_MARKETING_API_TIER_CRON_BURST).toBe(true);
+    });
+
+    it('defaults burst off for false, empty, or yes', async () => {
+      const disabled = await importEnvWith(withRequiredBase({
+        META_MARKETING_API_TIER_CRON_BURST: 'yes',
+      }));
+      expect(disabled.env.META_MARKETING_API_TIER_CRON_BURST).toBe(false);
+
+      vi.resetModules();
+      process.env = { ...ORIGINAL_ENV };
+      const unset = await importEnvWith(withRequiredBase({}));
+      expect(unset.env.META_MARKETING_API_TIER_CRON_BURST).toBe(false);
+    });
+  });
 });

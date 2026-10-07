@@ -346,8 +346,14 @@ export async function scheduleRecurringJobs(): Promise<void> {
   // Trial expiration - daily at 3 AM UTC
   await scheduleJob('trial-expiration-check', '0 3 * * *', { type: 'check-expired-trials' });
 
-  // Meta Marketing API tier exercise — daily 06:00 UTC (Review test ad account, read-only)
-  await scheduleJob('meta-marketing-api-tier-daily', '0 6 * * *', {
+  const { resolveMetaMarketingApiTierCronSchedule } = await import('@agency-platform/shared');
+  const { env } = await import('./env.js');
+  const tierCronPattern = resolveMetaMarketingApiTierCronSchedule(
+    env.META_MARKETING_API_TIER_CRON_BURST,
+  );
+
+  // Meta Marketing API tier exercise (Review test ad account, read-only). pg-boss upserts schedule on boot.
+  await scheduleJob('meta-marketing-api-tier-daily', tierCronPattern, {
     type: 'run-daily-tier-exercise',
   });
 

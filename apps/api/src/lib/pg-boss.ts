@@ -220,8 +220,8 @@ export async function scheduleJob<K extends JobName>(
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      await pgBoss.schedule(name, cronPattern, data);
-      logger.info(`Scheduled recurring job: ${name}`, { cronPattern });
+      await pgBoss.schedule(name, cronPattern, data, { tz: 'UTC' });
+      logger.info(`Scheduled recurring job: ${name}`, { cronPattern, tz: 'UTC' });
       return;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
