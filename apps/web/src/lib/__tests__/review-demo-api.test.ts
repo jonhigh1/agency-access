@@ -1,11 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
+  ensureReviewDemoAdAccountPartner,
   exchangeReviewDemoMetaOAuth,
   fetchReviewDemoSession,
   fetchReviewDemoStep,
   initiateReviewDemoMetaOAuth,
-  pauseReviewDemoTestAd,
-  resumeReviewDemoTestAd,
 } from '../review-demo-api';
 
 const authorizedApiFetchMock = vi.fn();
@@ -47,15 +46,9 @@ describe('review-demo-api', () => {
       expect.objectContaining({ method: 'POST' })
     );
 
-    await pauseReviewDemoTestAd(getToken);
+    await ensureReviewDemoAdAccountPartner(getToken);
     expect(authorizedApiFetchMock).toHaveBeenCalledWith(
-      '/api/review-demo/steps/ads_management/pause',
-      expect.objectContaining({ method: 'POST' })
-    );
-
-    await resumeReviewDemoTestAd(getToken, 'ad-1');
-    expect(authorizedApiFetchMock).toHaveBeenCalledWith(
-      '/api/review-demo/steps/ads_management/resume',
+      '/api/review-demo/steps/ads_management/ensure-partner',
       expect.objectContaining({ method: 'POST' })
     );
   });

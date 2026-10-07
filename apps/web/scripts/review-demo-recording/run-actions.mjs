@@ -19,12 +19,14 @@ export async function runRecordingAction(page, action) {
     case 'hold':
       await page.waitForTimeout(action.ms ?? 1000);
       return;
-    case 'pauseAd':
-      await page.getByTestId('review-demo-pause-ad').click();
+    case 'ensureAdPartner': {
+      const button = page.getByTestId('review-demo-ensure-ad-partner');
+      await button.waitFor({ state: 'visible', timeout: 30_000 });
+      if (await button.isEnabled()) {
+        await button.click();
+      }
       return;
-    case 'resumeAd':
-      await page.getByTestId('review-demo-resume-ad').click();
-      return;
+    }
     default: {
       const unknown = /** @type {never} */ (action.type);
       throw new Error(`Unknown recording action: ${String(unknown)}`);

@@ -32,7 +32,7 @@ vi.mock('@/services/review-demo.service.js', () => ({
         businessManagerId: '695982475048959',
         adAccountId: 'act_557538895783894',
         pageId: '61595193599205',
-        catalogId: '1858948598873838',
+        agencyBusinessId: '3808519629379919',
       },
     })),
     loadStepPayload: vi.fn(async () => ({

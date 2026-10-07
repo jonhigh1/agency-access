@@ -58,35 +58,36 @@ export const ReviewDemoPageSchema = z.object({
   pictureUrl: z.string().url().optional(),
 });
 
-export const ReviewDemoPostSchema = z.object({
+export const ReviewDemoPageEngagementPageSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  category: z.string().optional(),
+  managedTasks: z.array(z.string()),
+  fanCount: z.number().optional(),
+  followerCount: z.number().optional(),
+});
+
+export const ReviewDemoPageEngagementPostSchema = z.object({
   id: z.string(),
   createdTime: z.string().optional(),
-  messagePreview: z.string().optional(),
 });
 
-export const ReviewDemoCampaignSchema = z.object({
+export const ReviewDemoConnectedInstagramSchema = z.object({
   id: z.string(),
-  name: z.string(),
-  status: z.string().optional(),
-  effectiveStatus: z.string().optional(),
+  username: z.string(),
 });
 
-export const ReviewDemoAdSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  status: z.string().optional(),
-  effectiveStatus: z.string().optional(),
-});
-
-export const ReviewDemoCatalogSchema = z.object({
-  id: z.string(),
-  name: z.string(),
+export const ReviewDemoAgencyPartnerSchema = z.object({
+  businessId: z.string(),
+  name: z.string().optional(),
+  permittedTasks: z.array(z.string()),
+  verified: z.boolean(),
 });
 
 export const ReviewDemoBusinessAssetSchema = z.object({
   id: z.string(),
   name: z.string(),
-  kind: z.enum(['business', 'page', 'ad_account', 'catalog']),
+  kind: z.enum(['business', 'page', 'ad_account']),
 });
 
 export const ReviewDemoStepPayloadSchema = z.discriminatedUnion('stepId', [
@@ -97,25 +98,26 @@ export const ReviewDemoStepPayloadSchema = z.discriminatedUnion('stepId', [
   }),
   z.object({
     stepId: z.literal('pages_read_engagement'),
-    page: ReviewDemoPageSchema,
-    posts: z.array(ReviewDemoPostSchema),
+    page: ReviewDemoPageEngagementPageSchema,
+    posts: z.array(ReviewDemoPageEngagementPostSchema),
+    connectedInstagram: ReviewDemoConnectedInstagramSchema.optional(),
     graphCaptions: z.array(z.string()),
   }),
   z.object({
     stepId: z.literal('ads_management'),
     adAccountId: z.string(),
     adAccountName: z.string().optional(),
-    campaigns: z.array(ReviewDemoCampaignSchema),
-    ads: z.array(ReviewDemoAdSchema),
-    pauseTargetAd: ReviewDemoAdSchema.optional(),
-    pausedAd: ReviewDemoAdSchema.optional(),
+    agencyPartner: ReviewDemoAgencyPartnerSchema,
     graphCaptions: z.array(z.string()),
   }),
   z.object({
     stepId: z.literal('business_management'),
     business: ReviewDemoBusinessAssetSchema,
-    catalogs: z.array(ReviewDemoCatalogSchema),
     assets: z.array(ReviewDemoBusinessAssetSchema),
+    agencyPartner: ReviewDemoAgencyPartnerSchema.extend({
+      assetId: z.string(),
+      assetKind: z.literal('ad_account'),
+    }),
     graphCaptions: z.array(z.string()),
   }),
 ]);
@@ -133,8 +135,11 @@ export const ReviewDemoSessionSchema = z.object({
     businessManagerId: z.string(),
     adAccountId: z.string(),
     pageId: z.string(),
-    catalogId: z.string(),
+    agencyBusinessId: z.string(),
   }),
 });
 
 export type ReviewDemoSession = z.infer<typeof ReviewDemoSessionSchema>;
+
+/** Default partner tasks for review-lab ad account agency share (matches production defaults). */
+export const REVIEW_DEMO_AD_ACCOUNT_PARTNER_TASKS = ['ADVERTISE', 'ANALYZE'] as const;

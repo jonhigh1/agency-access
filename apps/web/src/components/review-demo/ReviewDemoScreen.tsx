@@ -12,11 +12,10 @@ import {
 } from '@agency-platform/shared';
 import { Button } from '@/components/ui/button';
 import {
+  ensureReviewDemoAdAccountPartner,
   fetchReviewDemoSession,
   fetchReviewDemoStep,
   initiateReviewDemoMetaOAuth,
-  pauseReviewDemoTestAd,
-  resumeReviewDemoTestAd,
 } from '@/lib/review-demo-api';
 
 interface ReviewDemoScreenProps {
@@ -30,7 +29,7 @@ export function ReviewDemoScreen({ initialStep = 'pages_show_list' }: ReviewDemo
   const [stepPayload, setStepPayload] = useState<ReviewDemoStepPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionError, setActionError] = useState<string | null>(null);
-  const [pauseProof, setPauseProof] = useState<string | null>(null);
+  const [partnerActionPending, setPartnerActionPending] = useState(false);
 
   const stepIndex = useMemo(
     () => REVIEW_DEMO_STEP_ORDER.indexOf(activeStep),
@@ -72,29 +71,19 @@ export function ReviewDemoScreen({ initialStep = 'pages_show_list' }: ReviewDemo
   };
 
   const goToStep = (step: ReviewDemoStepId) => {
-    setPauseProof(null);
     setActiveStep(step);
   };
 
-  const handlePause = async (adId?: string) => {
+  const handleEnsureAdAccountPartner = async () => {
     setActionError(null);
+    setPartnerActionPending(true);
     try {
-      const result = await pauseReviewDemoTestAd(getToken, adId);
-      setPauseProof(`Paused ad ${result.adId} (${result.effectiveStatus})`);
-      await reload();
+      const payload = await ensureReviewDemoAdAccountPartner(getToken);
+      setStepPayload(payload);
     } catch (error) {
-      setActionError(error instanceof Error ? error.message : 'Failed to pause test ad');
-    }
-  };
-
-  const handleResume = async (adId?: string) => {
-    setActionError(null);
-    try {
-      const result = await resumeReviewDemoTestAd(getToken, adId);
-      setPauseProof(`Resumed ad ${result.adId} (${result.effectiveStatus})`);
-      await reload();
-    } catch (error) {
-      setActionError(error instanceof Error ? error.message : 'Failed to resume test ad');
+      setActionError(error instanceof Error ? error.message : 'Failed to assign agency partner');
+    } finally {
+      setPartnerActionPending(false);
     }
   };
 
@@ -221,14 +210,30 @@ export function ReviewDemoScreen({ initialStep = 'pages_show_list' }: ReviewDemo
 
               {stepPayload.stepId === 'pages_read_engagement' ? (
                 <div className="space-y-4">
-                  <h2 className="font-display text-xl font-bold">Page posts & engagement</h2>
-                  <p className="font-semibold">{stepPayload.page.name}</p>
+                  <h2 className="font-display text-xl font-bold">Validate Page access</h2>
+                  <p className="text-sm text-muted-foreground">
+                    Same proof path as production client onboarding — Page metadata plus recent post dates (no post text).
+                  </p>
+                  <div data-testid="review-demo-page-engagement-proof">
+                    <p className="font-semibold">{stepPayload.page.name}</p>
+                    <p className="font-mono text-xs text-muted-foreground">{stepPayload.page.id}</p>
+                    {stepPayload.page.category ? (
+                      <p className="text-sm text-muted-foreground">Category: {stepPayload.page.category}</p>
+                    ) : null}
+                    {stepPayload.page.managedTasks.length > 0 ? (
+                      <p className="text-sm">Managed tasks: {stepPayload.page.managedTasks.join(', ')}</p>
+                    ) : null}
+                    {stepPayload.connectedInstagram ? (
+                      <p className="text-sm">
+                        Instagram: @{stepPayload.connectedInstagram.username} ({stepPayload.connectedInstagram.id})
+                      </p>
+                    ) : null}
+                  </div>
                   <ul className="space-y-2" data-testid="review-demo-posts-list">
                     {stepPayload.posts.map((post) => (
                       <li key={post.id} className="border border-black/15 p-3 text-sm">
                         <p className="font-mono text-xs text-muted-foreground">{post.id}</p>
-                        {post.createdTime ? <p>{post.createdTime}</p> : null}
-                        {post.messagePreview ? <p className="mt-1">{post.messagePreview}</p> : null}
+                        {post.createdTime ? <p>Created {post.createdTime}</p> : null}
                       </li>
                     ))}
                   </ul>
@@ -237,76 +242,59 @@ export function ReviewDemoScreen({ initialStep = 'pages_show_list' }: ReviewDemo
 
               {stepPayload.stepId === 'ads_management' ? (
                 <div className="space-y-5">
-                  <h2 className="font-display text-xl font-bold">Campaigns & test ad control</h2>
+                  <h2 className="font-display text-xl font-bold">Ad account agency partner</h2>
                   <p className="text-sm text-muted-foreground">
-                    Ad account {stepPayload.adAccountName ?? stepPayload.adAccountId}
+                    AuthHub adds the agency Business Portfolio as a partner on the client ad account — not ad pause/resume.
                   </p>
-                  <div>
-                    <h3 className="label-micro mb-2">Campaigns</h3>
-                    <ul className="space-y-2" data-testid="review-demo-campaigns-list">
-                      {stepPayload.campaigns.map((campaign) => (
-                        <li key={campaign.id} className="border border-black/15 p-3 text-sm">
-                          <p className="font-semibold">{campaign.name}</p>
-                          <p className="font-mono text-xs">{campaign.id}</p>
-                          {campaign.effectiveStatus ? (
-                            <p className="text-muted-foreground">Status: {campaign.effectiveStatus}</p>
-                          ) : null}
-                        </li>
-                      ))}
-                    </ul>
+                  <div className="border border-black/15 p-4 text-sm" data-testid="review-demo-ad-account-summary">
+                    <p className="font-semibold">{stepPayload.adAccountName ?? stepPayload.adAccountId}</p>
+                    <p className="font-mono text-xs text-muted-foreground">{stepPayload.adAccountId}</p>
                   </div>
-                  <div>
-                    <h3 className="label-micro mb-2">Ads</h3>
-                    <ul className="space-y-2" data-testid="review-demo-ads-list">
-                      {stepPayload.ads.map((ad) => (
-                        <li key={ad.id} className="border border-black/15 p-3 text-sm">
-                          <p className="font-semibold">{ad.name}</p>
-                          <p className="font-mono text-xs">{ad.id}</p>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div className="flex flex-wrap gap-3">
-                    <Button
-                      data-testid="review-demo-pause-ad"
-                      onClick={() => void handlePause(stepPayload.pauseTargetAd?.id)}
-                      disabled={!stepPayload.pauseTargetAd}
-                    >
-                      Pause test ad (reversible)
-                    </Button>
-                    <Button
-                      variant="secondary"
-                      data-testid="review-demo-resume-ad"
-                      onClick={() => void handleResume(stepPayload.pausedAd?.id ?? stepPayload.pauseTargetAd?.id)}
-                    >
-                      Resume test ad
-                    </Button>
-                  </div>
-                  {pauseProof ? (
-                    <p className="border-2 border-success-ink bg-[rgb(var(--teal))]/10 p-3 text-sm" data-testid="review-demo-pause-proof">
-                      {pauseProof}
+                  <div
+                    className="border border-black/15 p-4 text-sm"
+                    data-testid="review-demo-partner-proof"
+                  >
+                    <p className="label-micro mb-2">Agency partner readback</p>
+                    <p className="font-semibold">
+                      {stepPayload.agencyPartner.name ?? 'Agency Business Portfolio'}{' '}
+                      <span className="font-mono text-xs font-normal text-muted-foreground">
+                        ({stepPayload.agencyPartner.businessId})
+                      </span>
                     </p>
-                  ) : null}
+                    <p className="mt-2">
+                      Permitted tasks:{' '}
+                      {stepPayload.agencyPartner.permittedTasks.length > 0
+                        ? stepPayload.agencyPartner.permittedTasks.join(', ')
+                        : 'None reported yet'}
+                    </p>
+                    <p
+                      className="mt-2 font-semibold"
+                      data-testid="review-demo-partner-status"
+                    >
+                      {stepPayload.agencyPartner.verified ? 'Partner access verified' : 'Partner not verified yet'}
+                    </p>
+                  </div>
+                  <Button
+                    data-testid="review-demo-ensure-ad-partner"
+                    onClick={() => void handleEnsureAdAccountPartner()}
+                    disabled={partnerActionPending || stepPayload.agencyPartner.verified}
+                  >
+                    {stepPayload.agencyPartner.verified
+                      ? 'Agency already assigned'
+                      : partnerActionPending
+                        ? 'Assigning partner…'
+                        : 'Add agency as ad account partner'}
+                  </Button>
                 </div>
               ) : null}
 
               {stepPayload.stepId === 'business_management' ? (
                 <div className="space-y-4">
-                  <h2 className="font-display text-xl font-bold">Business Manager assets & catalog</h2>
+                  <h2 className="font-display text-xl font-bold">Client Business Portfolio</h2>
                   <p className="font-semibold">{stepPayload.business.name}</p>
+                  <p className="font-mono text-xs text-muted-foreground">{stepPayload.business.id}</p>
                   <div>
-                    <h3 className="label-micro mb-2">Catalogs</h3>
-                    <ul className="space-y-2" data-testid="review-demo-catalog-list">
-                      {stepPayload.catalogs.map((catalog) => (
-                        <li key={catalog.id} className="border border-black/15 p-3 text-sm">
-                          <p className="font-semibold">{catalog.name}</p>
-                          <p className="font-mono text-xs">{catalog.id}</p>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div>
-                    <h3 className="label-micro mb-2">BM assets</h3>
+                    <h3 className="label-micro mb-2">Portfolio assets (production discovery path)</h3>
                     <ul className="space-y-2" data-testid="review-demo-bm-assets-list">
                       {stepPayload.assets.map((asset) => (
                         <li key={`${asset.kind}-${asset.id}`} className="border border-black/15 p-3 text-sm">
@@ -317,6 +305,19 @@ export function ReviewDemoScreen({ initialStep = 'pages_show_list' }: ReviewDemo
                         </li>
                       ))}
                     </ul>
+                  </div>
+                  <div className="border border-black/15 p-4 text-sm" data-testid="review-demo-bm-partner-proof">
+                    <p className="label-micro mb-2">Agency partner on review ad account</p>
+                    <p className="font-semibold">
+                      {stepPayload.agencyPartner.name ?? 'Agency Business Portfolio'} on{' '}
+                      {stepPayload.agencyPartner.assetId}
+                    </p>
+                    <p className="mt-1">
+                      Tasks: {stepPayload.agencyPartner.permittedTasks.join(', ') || 'None reported'}
+                    </p>
+                    <p className="mt-1 font-semibold">
+                      {stepPayload.agencyPartner.verified ? 'Verified via Graph readback' : 'Pending partner share'}
+                    </p>
                   </div>
                 </div>
               ) : null}

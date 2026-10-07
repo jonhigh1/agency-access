@@ -5,13 +5,6 @@ vi.mock('@/services/audit.service.js', () => ({
   auditService: { createAuditLog: vi.fn(async () => ({ data: {}, error: null })) },
 }));
 
-vi.mock('@/lib/infisical.js', () => ({
-  infisical: {
-    getPlainSecret: vi.fn(async () => null),
-    storePlainSecret: vi.fn(async () => 'review_demo_meta_user_test'),
-  },
-}));
-
 const createStateMock = vi.fn(async () => ({ data: 'oauth-state-token', error: null }));
 const getAuthUrlMock = vi.fn((_state: string, _scopes: string[], redirectUri: string) => {
   const url = new URL('https://www.facebook.com/v21.0/dialog/oauth');
@@ -38,13 +31,25 @@ vi.mock('@/routes/client-auth/redirect-uri.js', () => ({
   resolveClientInviteCallbackUrl: () => 'https://review.authhub.co/invite/oauth-callback',
 }));
 
+vi.mock('@/lib/infisical.js', () => ({
+  infisical: {
+    getPlainSecret: vi.fn(async () =>
+      JSON.stringify({
+        accessToken: 'client-token',
+        identity: { id: '61595281164997', name: 'Alex Reviewer' },
+      })
+    ),
+    storePlainSecret: vi.fn(async () => 'review_demo_meta_user_test'),
+  },
+}));
+
 vi.mock('@/lib/env.js', () => ({
   env: {
     META_REVIEW_DEMO_MOCK_GRAPH: true,
     META_REVIEW_BM_ID: '695982475048959',
     META_REVIEW_AD_ACCOUNT_ID: '557538895783894',
     META_REVIEW_PAGE_ID: '61595193599205',
-    META_REVIEW_CATALOG_ID: '1858948598873838',
+    META_REVIEW_AGENCY_BM_ID: '3808519629379919',
     META_REVIEW_LAB_AGENCY_ID: 'review-lab-agency',
   },
 }));
