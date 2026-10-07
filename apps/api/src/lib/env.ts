@@ -176,6 +176,18 @@ const envSchema = z.object({
     return randomBytes(32).toString('hex');
   }),
 
+  // Meta App Review Lab (/review-demo)
+  META_REVIEW_DEMO_ENABLED: booleanish(false),
+  META_REVIEW_LAB_USER_IDS: z.string().optional(),
+  META_REVIEW_LAB_EMAILS: z.string().optional(),
+  META_REVIEW_DEMO_MOCK_GRAPH: booleanish(false),
+  META_REVIEW_BM_ID: z.string().optional(),
+  META_REVIEW_AD_ACCOUNT_ID: z.string().optional(),
+  META_REVIEW_PAGE_ID: z.string().optional(),
+  META_REVIEW_CATALOG_ID: z.string().optional(),
+  META_REVIEW_TEST_AD_ID: z.string().optional(),
+  META_REVIEW_LAB_AGENCY_ID: z.string().optional(),
+
   // Internal Admin Access Control (comma-separated allowlists)
   INTERNAL_ADMIN_USER_IDS: z.string().optional(),
   INTERNAL_ADMIN_EMAILS: z.string().optional(),
@@ -299,6 +311,8 @@ const CORS_ALLOWED_ORIGINS = parseCsvList(parsedEnv.CORS_ALLOWED_ORIGINS);
 const API_URL = parsedEnv.API_URL ?? `http://localhost:${parsedEnv.PORT}`;
 const INTERNAL_ADMIN_USER_IDS = parseCsvList(parsedEnv.INTERNAL_ADMIN_USER_IDS);
 const INTERNAL_ADMIN_EMAILS = parseCsvList(parsedEnv.INTERNAL_ADMIN_EMAILS);
+const META_REVIEW_LAB_USER_IDS = parseCsvList(parsedEnv.META_REVIEW_LAB_USER_IDS);
+const META_REVIEW_LAB_EMAILS = parseCsvList(parsedEnv.META_REVIEW_LAB_EMAILS);
 const TRUST_PROXY_IPS = parseCsvList(parsedEnv.TRUST_PROXY_IPS);
 const DASHBOARD_SUMMARY_LIMITS_ENABLED =
   parsedEnv.DASHBOARD_SUMMARY_LIMITS_ENABLED ?? true;
@@ -325,6 +339,8 @@ export const env = {
   API_URL,
   INTERNAL_ADMIN_USER_IDS,
   INTERNAL_ADMIN_EMAILS,
+  META_REVIEW_LAB_USER_IDS,
+  META_REVIEW_LAB_EMAILS,
   TRUST_PROXY_IPS,
   DASHBOARD_SUMMARY_LIMITS_ENABLED,
   CLERK_OAUTH_ISSUER,

@@ -1,0 +1,45 @@
+import { describe, expect, it, vi, beforeEach } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import { ReviewDemoScreen } from '../ReviewDemoScreen';
+
+vi.mock('@clerk/nextjs', () => ({
+  useAuth: () => ({ getToken: async () => 'test-token' }),
+}));
+
+vi.mock('@/lib/review-demo-api', () => ({
+  fetchReviewDemoSession: vi.fn(async () => ({
+    connected: true,
+    identity: { id: '61595281164997', name: 'Alex Reviewer' },
+    grantedPermissions: ['pages_show_list', 'pages_read_engagement', 'ads_management', 'business_management'],
+    activeStep: 'pages_show_list',
+    stepIndex: 0,
+    stepCount: 4,
+    sandbox: {
+      businessManagerId: '695982475048959',
+      adAccountId: 'act_557538895783894',
+      pageId: '61595193599205',
+      catalogId: '1858948598873838',
+    },
+  })),
+  fetchReviewDemoStep: vi.fn(async () => ({
+    stepId: 'pages_show_list',
+    pages: [{ id: '61595193599205', name: 'Ah-Review-Page' }],
+    graphCaptions: ['GET /me/accounts'],
+  })),
+  initiateReviewDemoMetaOAuth: vi.fn(),
+  pauseReviewDemoTestAd: vi.fn(),
+  resumeReviewDemoTestAd: vi.fn(),
+}));
+
+describe('ReviewDemoScreen', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it('shows the active permission label prominently for captions', async () => {
+    render(<ReviewDemoScreen initialStep="pages_show_list" />);
+    expect(await screen.findByTestId('review-demo-permission-banner')).toHaveTextContent('pages_show_list');
+    expect(screen.getByTestId('review-demo-identity-name')).toHaveTextContent('Alex Reviewer');
+    expect(screen.getByTestId('review-demo-pages-list')).toBeInTheDocument();
+  });
+});

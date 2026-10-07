@@ -183,6 +183,8 @@ await fastify.register(agencyPlatformsRoutes);
 await fastify.register(beehiivRoutes);
 await fastify.register(subscriptionRoutes, { prefix: '/api' });
 await fastify.register(internalAdminRoutes, { prefix: '/api' });
+const { reviewDemoRoutes } = await import('./routes/review-demo.routes.js');
+await fastify.register(reviewDemoRoutes, { prefix: '/api' });
 await fastify.register(quotaRoutes, { prefix: '/api' });
 await fastify.register(contactRoutes);
 await fastify.register(helpScoutRoutes, { prefix: '/api' });
