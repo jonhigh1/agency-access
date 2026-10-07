@@ -19,6 +19,10 @@ export const MetaGraphOpRecordSchema = z.object({
   tokenClass: MetaGraphTokenClassSchema,
   outcome: MetaGraphOpOutcomeSchema,
   metaCode: z.number().int().optional(),
+  metaMessage: z.string().optional(),
+  metaType: z.string().optional(),
+  metaErrorSubcode: z.number().int().optional(),
+  fbtraceId: z.string().optional(),
 });
 
 export type MetaGraphOpRecord = z.infer<typeof MetaGraphOpRecordSchema>;
@@ -54,8 +58,12 @@ export function normalizeMetaGraphEdge(urlOrPath: string): string {
 
 export function formatMetaGraphOpCaption(record: MetaGraphOpRecord): string {
   const base = `${record.method} ${record.edge} · ${record.tokenClass} · ${record.outcome}`;
-  if (record.outcome === 'error' && record.metaCode !== undefined) {
-    return `${base} (${record.metaCode})`;
+  if (record.outcome !== 'error') {
+    return base;
+  }
+  if (record.metaCode !== undefined) {
+    const detail = record.metaMessage ? `: ${record.metaMessage}` : '';
+    return `${base} (${record.metaCode}${detail})`;
   }
   return base;
 }

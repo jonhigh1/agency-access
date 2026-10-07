@@ -229,16 +229,32 @@ export function ReviewDemoScreen({ initialStep = 'pages_show_list' }: ReviewDemo
                     {stepPayload.page.category ? (
                       <p className="text-sm text-muted-foreground">Category: {stepPayload.page.category}</p>
                     ) : null}
-                    {stepPayload.page.managedTasks.length > 0 ? (
-                      <p className="text-sm">Managed tasks: {stepPayload.page.managedTasks.join(', ')}</p>
+                    {typeof stepPayload.page.fanCount === 'number' ? (
+                      <p className="text-sm" data-testid="review-demo-page-fan-count">
+                        Fans: {stepPayload.page.fanCount.toLocaleString()}
+                      </p>
                     ) : null}
-                    {stepPayload.connectedInstagram ? (
-                      <p className="text-sm">
-                        Instagram: @{stepPayload.connectedInstagram.username} ({stepPayload.connectedInstagram.id})
+                    {typeof stepPayload.page.followerCount === 'number' ? (
+                      <p className="text-sm" data-testid="review-demo-page-follower-count">
+                        Followers: {stepPayload.page.followerCount.toLocaleString()}
                       </p>
                     ) : null}
                   </div>
+                  {stepPayload.feedError ? (
+                    <div
+                      className="border-2 border-danger-ink bg-[rgb(var(--coral))]/10 p-4 text-sm"
+                      role="alert"
+                      data-testid="review-demo-feed-error"
+                    >
+                      {stepPayload.feedError.displayMessage}
+                    </div>
+                  ) : null}
                   <ul className="space-y-2" data-testid="review-demo-posts-list">
+                    {stepPayload.posts.length === 0 && !stepPayload.feedError ? (
+                      <li className="border border-black/15 p-3 text-sm text-muted-foreground">
+                        No recent posts returned (empty feed is valid proof).
+                      </li>
+                    ) : null}
                     {stepPayload.posts.map((post) => (
                       <li key={post.id} className="border border-black/15 p-3 text-sm">
                         <p className="font-mono text-xs text-muted-foreground">{post.id}</p>
@@ -270,8 +286,18 @@ export function ReviewDemoScreen({ initialStep = 'pages_show_list' }: ReviewDemo
                   <h2 className="font-display text-xl font-bold">Client Business Portfolio</h2>
                   <p className="font-semibold">{stepPayload.business.name}</p>
                   <p className="font-mono text-xs text-muted-foreground">{stepPayload.business.id}</p>
+                  {stepPayload.sandboxMisconfigured ? (
+                    <p
+                      className="border-2 border-danger-ink bg-[rgb(var(--coral))]/10 p-4 text-sm"
+                      role="alert"
+                      data-testid="review-demo-bm-misconfigured"
+                    >
+                      {stepPayload.sandboxMisconfiguredMessage ??
+                        'Review sandbox IDs are not configured on the API service.'}
+                    </p>
+                  ) : null}
                   <div>
-                    <h3 className="label-micro mb-2">Portfolio assets (production discovery path)</h3>
+                    <h3 className="label-micro mb-2">Review sandbox assets (scoped)</h3>
                     <ul className="space-y-2" data-testid="review-demo-bm-assets-list">
                       {stepPayload.assets.map((asset) => (
                         <li key={`${asset.kind}-${asset.id}`} className="border border-black/15 p-3 text-sm">

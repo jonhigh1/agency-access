@@ -17,8 +17,11 @@ import { metaGraphGet } from '../lib/meta-graph-request.js';
 import { getRecordedMetaGraphOps, metaGraphFetch } from '../lib/meta-graph-instrumentation.js';
 import {
   formatMetaGraphOpCaption,
+  parseMetaGraphApiErrorText,
+  sanitizeMetaGraphErrorMessage,
   tryMapThrownMetaError,
   type MetaAssetKind,
+  type MetaPageEngagementFeedError,
   type MetaPageEngagementProof,
   type MetaProductCatalog,
 } from '@agency-platform/shared';
@@ -119,24 +122,40 @@ export class MetaPageReauthorizationError extends Error {
   }
 }
 
-function metaPageRequestError(operation: string, body: string, pageId: string, status: number): Error {
-  let code: number | undefined;
-  let subcode: number | undefined;
-  try {
-    const error = (JSON.parse(body) as { error?: { code?: unknown; error_subcode?: unknown } } | null)?.error;
-    if (typeof error?.code === 'number') code = error.code;
-    if (typeof error?.error_subcode === 'number') subcode = error.error_subcode;
-  } catch {
-    // Meta can return non-JSON errors. Never expose the response body.
-  }
+function metaPageRequestError(
+  operation: string,
+  body: string,
+  pageId: string,
+  status: number,
+  options?: { exposeDetailedGraphErrors?: boolean }
+): Error {
+  const graphError = parseMetaGraphApiErrorText(body);
   logger.error(operation, {
     pageId,
     status,
-    ...(code !== undefined ? { code } : {}),
-    ...(subcode !== undefined ? { subcode } : {}),
+    ...(graphError.code !== undefined ? { code: graphError.code } : {}),
+    ...(graphError.errorSubcode !== undefined ? { subcode: graphError.errorSubcode } : {}),
+    ...(graphError.type ? { type: graphError.type } : {}),
+    ...(graphError.message ? { message: sanitizeMetaGraphErrorMessage(graphError.message) } : {}),
+    ...(graphError.fbtraceId ? { fbtrace_id: graphError.fbtraceId } : {}),
   });
-  if (code === 190) return new MetaPageReauthorizationError();
+  if (graphError.code === 190) return new MetaPageReauthorizationError();
+  if (options?.exposeDetailedGraphErrors) {
+    return new Error(graphError.displayMessage);
+  }
   return new Error('AuthHub could not validate this Page. Confirm your Page access in Meta, then try again.');
+}
+
+function toFeedError(body: string): MetaPageEngagementFeedError {
+  const graphError = parseMetaGraphApiErrorText(body);
+  return {
+    code: graphError.code,
+    errorSubcode: graphError.errorSubcode,
+    message: graphError.message,
+    type: graphError.type,
+    fbtraceId: graphError.fbtraceId,
+    displayMessage: graphError.displayMessage,
+  };
 }
 
 export interface TikTokAssets {
@@ -263,14 +282,12 @@ class ClientAssetsService {
 
   async fetchPageEngagementProof(
     accessToken: string,
-    pageId: string
+    pageId: string,
+    options?: { exposeDetailedGraphErrors?: boolean }
   ): Promise<MetaPageEngagementProof> {
     const opsStart = getRecordedMetaGraphOps().length;
     const pageUrl = new URL(`${this.GRAPH_API_BASE}/${pageId}`);
-    pageUrl.searchParams.set(
-      'fields',
-      'id,name,category,tasks,fan_count,followers_count,instagram_business_account{id,username},access_token'
-    );
+    pageUrl.searchParams.set('fields', 'id,name,category,fan_count,followers_count');
 
     const pageResponse = await metaGraphFetch(pageUrl.toString(), {
       method: 'GET',
@@ -280,68 +297,100 @@ class ClientAssetsService {
     });
     if (!pageResponse.ok) {
       const error = await pageResponse.text();
-      throw metaPageRequestError('Meta Page access lookup failed', error, pageId, pageResponse.status);
+      throw metaPageRequestError(
+        'Meta Page access lookup failed',
+        error,
+        pageId,
+        pageResponse.status,
+        options
+      );
     }
 
     const page = (await pageResponse.json()) as {
       id?: string;
       name?: string;
       category?: string;
-      tasks?: string[];
       fan_count?: number;
       followers_count?: number;
-      instagram_business_account?: { id?: string; username?: string };
-      access_token?: string;
     };
 
-    if (!page?.id || !page.name || !page.access_token) {
-      throw new Error('Meta did not return a Page access token for the selected Page');
+    if (!page?.id || !page.name) {
+      throw new Error('Meta did not return Page metadata for the selected Page');
+    }
+
+    const pageTokenUrl = new URL(`${this.GRAPH_API_BASE}/${pageId}`);
+    pageTokenUrl.searchParams.set('fields', 'access_token');
+    const pageTokenResponse = await metaGraphFetch(pageTokenUrl.toString(), {
+      method: 'GET',
+      accessToken,
+      tokenClass: 'client_user',
+      signal: AbortSignal.timeout(15_000),
+    });
+
+    let pageAccessToken: string | undefined;
+    if (pageTokenResponse.ok) {
+      const tokenBody = (await pageTokenResponse.json()) as { access_token?: string };
+      if (tokenBody.access_token) {
+        pageAccessToken = tokenBody.access_token;
+      }
     }
 
     const feedUrl = new URL(`${this.GRAPH_API_BASE}/${pageId}/feed`);
     feedUrl.searchParams.set('fields', 'id,created_time');
     feedUrl.searchParams.set('limit', '3');
 
+    const feedToken = pageAccessToken ?? accessToken;
+    const feedTokenClass = pageAccessToken ? 'selected_page' : 'client_user';
+
     const feedResponse = await metaGraphFetch(feedUrl.toString(), {
       method: 'GET',
-      accessToken: page.access_token,
-      tokenClass: 'selected_page',
+      accessToken: feedToken,
+      tokenClass: feedTokenClass,
       signal: AbortSignal.timeout(15_000),
     });
-    if (!feedResponse.ok) {
-      const error = await feedResponse.text();
-      throw metaPageRequestError('Meta Page content access failed', error, pageId, feedResponse.status);
-    }
 
-    const feedData = (await feedResponse.json()) as {
-      data?: Array<{ id?: string; created_time?: string; message?: string; story?: string }>;
-    };
+    let posts: MetaPageEngagementProof['posts'] = [];
+    let feedError: MetaPageEngagementFeedError | undefined;
+    if (!feedResponse.ok) {
+      const errorBody = await feedResponse.text();
+      feedError = toFeedError(errorBody);
+      if (feedError.code === 190) {
+        throw new MetaPageReauthorizationError();
+      }
+      logger.error('Meta Page feed lookup failed (degraded proof)', {
+        pageId,
+        status: feedResponse.status,
+        ...(feedError.code !== undefined ? { code: feedError.code } : {}),
+        ...(feedError.errorSubcode !== undefined ? { subcode: feedError.errorSubcode } : {}),
+        ...(feedError.type ? { type: feedError.type } : {}),
+        ...(feedError.message ? { message: feedError.message } : {}),
+        ...(feedError.fbtraceId ? { fbtrace_id: feedError.fbtraceId } : {}),
+      });
+    } else {
+      const feedData = (await feedResponse.json()) as {
+        data?: Array<{ id?: string; created_time?: string; message?: string; story?: string }>;
+      };
+      posts = (feedData.data || [])
+        .filter((post): post is { id: string; created_time?: string } => Boolean(post.id))
+        .map((post) => ({
+          id: post.id,
+          ...(post.created_time ? { createdTime: post.created_time } : {}),
+        }));
+    }
 
     return {
       page: {
         id: page.id,
         name: page.name,
-        managedTasks: page.tasks || [],
+        managedTasks: [],
         ...(page.category ? { category: page.category } : {}),
         ...(typeof page.fan_count === 'number' ? { fanCount: page.fan_count } : {}),
         ...(typeof page.followers_count === 'number'
           ? { followerCount: page.followers_count }
           : {}),
       },
-      ...(page.instagram_business_account?.id && page.instagram_business_account.username
-        ? {
-            connectedInstagram: {
-              id: page.instagram_business_account.id,
-              username: page.instagram_business_account.username,
-            },
-          }
-        : {}),
-      posts: (feedData.data || [])
-        .filter((post): post is { id: string; created_time?: string } => Boolean(post.id))
-        .map((post) => ({
-          id: post.id,
-          ...(post.created_time ? { createdTime: post.created_time } : {}),
-        })),
+      posts,
+      ...(feedError ? { feedError } : {}),
       graphOperationCaptions: getRecordedMetaGraphOps()
         .slice(opsStart)
         .map((op) => formatMetaGraphOpCaption(op)),

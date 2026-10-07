@@ -773,9 +773,11 @@ describe('Client Auth Asset Routes - Meta', () => {
           id: 'page_1',
           name: 'Client Page',
           category: 'Local business',
-          tasks: ['MANAGE'],
-          access_token: 'page-token-secret',
         }),
+      } as any)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ access_token: 'page-token-secret' }),
       } as any)
       .mockResolvedValueOnce({
         ok: true,
@@ -796,11 +798,12 @@ describe('Client Auth Asset Routes - Meta', () => {
           id: 'page_1',
           name: 'Client Page',
           category: 'Local business',
-          managedTasks: ['MANAGE'],
+          managedTasks: [],
         },
         posts: [{ id: 'post_1', createdTime: '2026-09-21T00:00:00+0000' }],
         graphOperationCaptions: [
           expect.stringContaining('GET'),
+          expect.stringContaining('client_user'),
           expect.stringContaining('selected_page'),
         ],
       },

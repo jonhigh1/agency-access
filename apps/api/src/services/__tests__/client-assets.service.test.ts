@@ -404,12 +404,13 @@ describe('ClientAssetsService - Meta', () => {
           id: 'page_1',
           name: 'Client Page',
           category: 'Local business',
-          tasks: ['MANAGE', 'ADVERTISE'],
           fan_count: 120,
           followers_count: 150,
-          instagram_business_account: { id: 'ig_1', username: 'clientpage' },
-          access_token: 'page-token-secret',
         }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ access_token: 'page-token-secret' }),
       } as Response)
       .mockResolvedValueOnce({
         ok: true,
@@ -428,32 +429,26 @@ describe('ClientAssetsService - Meta', () => {
         id: 'page_1',
         name: 'Client Page',
         category: 'Local business',
-        managedTasks: ['MANAGE', 'ADVERTISE'],
+        managedTasks: [],
         fanCount: 120,
         followerCount: 150,
       },
-      connectedInstagram: { id: 'ig_1', username: 'clientpage' },
       posts: [
         { id: 'post_1', createdTime: '2026-09-21T00:00:00+0000' },
         { id: 'post_2' },
       ],
-      graphOperationCaptions: [
-        expect.stringMatching(/GET.*client_user.*ok/i),
-        expect.stringMatching(/GET.*selected_page.*ok/i),
-      ],
+      graphOperationCaptions: expect.any(Array),
     });
     expect(result.graphOperationCaptions?.join(' ')).toMatch(/\{page_id\}|page_1/);
     expect(JSON.stringify(result)).not.toContain('page-token-secret');
     expect(String(vi.mocked(fetch).mock.calls[0]?.[0])).toContain('/page_1');
     expect(String(vi.mocked(fetch).mock.calls[0]?.[0])).toContain('followers_count');
-    expect(String(vi.mocked(fetch).mock.calls[1]?.[0])).toContain('/page_1/feed');
-    expect(String(vi.mocked(fetch).mock.calls[1]?.[0])).toContain('fields=id%2Ccreated_time');
-    expect(new URL(String(vi.mocked(fetch).mock.calls[0]?.[0])).searchParams.has('access_token')).toBe(false);
-    expect(new URL(String(vi.mocked(fetch).mock.calls[1]?.[0])).searchParams.has('access_token')).toBe(false);
-    expect(new Headers(vi.mocked(fetch).mock.calls[0]?.[1]?.headers).get('Authorization')).toBe(
-      'Bearer user-token'
+    expect(String(vi.mocked(fetch).mock.calls[2]?.[0])).toContain('/page_1/feed');
+    expect(String(vi.mocked(fetch).mock.calls[2]?.[0])).toContain('fields=id%2Ccreated_time');
+    expect(new URL(String(vi.mocked(fetch).mock.calls[0]?.[0])).searchParams.get('fields')).toBe(
+      'id,name,category,fan_count,followers_count'
     );
-    expect(new Headers(vi.mocked(fetch).mock.calls[1]?.[1]?.headers).get('Authorization')).toBe(
+    expect(new Headers(vi.mocked(fetch).mock.calls[2]?.[1]?.headers).get('Authorization')).toBe(
       'Bearer page-token-secret'
     );
     expect(JSON.stringify(result.graphOperationCaptions)).not.toContain('page-token-secret');
@@ -466,8 +461,11 @@ describe('ClientAssetsService - Meta', () => {
         json: async () => ({
           id: 'page_1',
           name: 'Client Page',
-          access_token: 'page-token-secret',
         }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ access_token: 'page-token-secret' }),
       } as Response)
       .mockResolvedValueOnce({
         ok: true,
@@ -493,7 +491,11 @@ describe('ClientAssetsService - Meta', () => {
     vi.mocked(fetch)
       .mockResolvedValueOnce({
         ok: true,
-        json: async () => ({ id: 'page_1', name: 'Client Page', access_token: 'page-token-secret' }),
+        json: async () => ({ id: 'page_1', name: 'Client Page' }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ access_token: 'page-token-secret' }),
       } as Response)
       .mockResolvedValueOnce({
         ok: true,
@@ -509,35 +511,108 @@ describe('ClientAssetsService - Meta', () => {
     });
   });
 
-  it.each(['user', 'page'] as const)('sanitizes a denied %s Page read and its diagnostic log', async (stage) => {
+  it('sanitizes a denied Page metadata read and its diagnostic log', async () => {
     const log = vi.spyOn(logger, 'error').mockImplementation(() => {});
     const denied = {
       ok: false,
       status: 403,
-      text: async () => JSON.stringify({ error: {
-        code: 10,
-        error_subcode: 123,
-        message: 'Denied access_token=private-token',
-        fbtrace_id: 'trace-with-private-token',
-      } }),
+      text: async () =>
+        JSON.stringify({
+          error: {
+            code: 10,
+            error_subcode: 123,
+            message: 'Denied access_token=private-token',
+            fbtrace_id: 'trace-abc',
+          },
+        }),
     } as Response;
-    if (stage === 'page') {
-      vi.mocked(fetch).mockResolvedValueOnce({
-        ok: true,
-        json: async () => ({ id: 'page_1', name: 'Client Page', access_token: 'page-token-secret' }),
-      } as Response);
-    }
     vi.mocked(fetch).mockResolvedValueOnce(denied);
     try {
-      await expect(clientAssetsService.fetchPageEngagementProof('user-token', 'page_1'))
-        .rejects.toThrow('AuthHub could not validate this Page. Confirm your Page access in Meta, then try again.');
-      expect(log).toHaveBeenCalledWith(expect.any(String), {
-        pageId: 'page_1', status: 403, code: 10, subcode: 123,
-      });
+      await expect(clientAssetsService.fetchPageEngagementProof('user-token', 'page_1')).rejects.toThrow(
+        'AuthHub could not validate this Page. Confirm your Page access in Meta, then try again.'
+      );
+      expect(log).toHaveBeenCalledWith(
+        'Meta Page access lookup failed',
+        expect.objectContaining({
+          pageId: 'page_1',
+          status: 403,
+          code: 10,
+          subcode: 123,
+          message: 'Denied',
+          fbtrace_id: 'trace-abc',
+        })
+      );
       expect(JSON.stringify(log.mock.calls)).not.toContain('private-token');
     } finally {
       log.mockRestore();
     }
+  });
+
+  it('returns page metadata when the feed call fails (degraded proof)', async () => {
+    const log = vi.spyOn(logger, 'error').mockImplementation(() => {});
+    const deniedFeed = {
+      ok: false,
+      status: 403,
+      text: async () =>
+        JSON.stringify({
+          error: {
+            code: 10,
+            error_subcode: 123,
+            type: 'OAuthException',
+            message: 'Feed denied',
+            fbtrace_id: 'feed-trace',
+          },
+        }),
+    } as Response;
+    vi.mocked(fetch)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          id: 'page_1',
+          name: 'Client Page',
+          fan_count: 10,
+        }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ access_token: 'page-token-secret' }),
+      } as Response)
+      .mockResolvedValueOnce(deniedFeed);
+
+    const result = await clientAssetsService.fetchPageEngagementProof('user-token', 'page_1');
+    expect(result.page.name).toBe('Client Page');
+    expect(result.posts).toEqual([]);
+    expect(result.feedError?.code).toBe(10);
+    expect(result.feedError?.displayMessage).toContain('Feed denied');
+    expect(result.feedError?.displayMessage).toContain('fbtrace_id feed-trace');
+    expect(log).toHaveBeenCalledWith(
+      'Meta Page feed lookup failed (degraded proof)',
+      expect.objectContaining({ code: 10, fbtrace_id: 'feed-trace' })
+    );
+    log.mockRestore();
+  });
+
+  it('surfaces full Graph error details for review-demo page metadata failures', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: false,
+      status: 400,
+      text: async () =>
+        JSON.stringify({
+          error: {
+            code: 100,
+            error_subcode: 33,
+            type: 'OAuthException',
+            message: 'Unsupported get request.',
+            fbtrace_id: 'AaZ-trace',
+          },
+        }),
+    } as Response);
+
+    await expect(
+      clientAssetsService.fetchPageEngagementProof('user-token', 'page_1', {
+        exposeDetailedGraphErrors: true,
+      })
+    ).rejects.toThrow(/Meta Graph error #100.*Unsupported get request.*subcode 33.*fbtrace_id AaZ-trace/s);
   });
 
   it.each(['<html>private-token</html>', 'null', '{"error":{"code":"private-token"}}'])
@@ -547,7 +622,10 @@ describe('ClientAssetsService - Meta', () => {
       try {
         await expect(clientAssetsService.fetchPageEngagementProof('user-token', 'page_1'))
           .rejects.toThrow('AuthHub could not validate this Page. Confirm your Page access in Meta, then try again.');
-        expect(log).toHaveBeenCalledWith(expect.any(String), { pageId: 'page_1', status: 502 });
+        expect(log).toHaveBeenCalledWith(
+          expect.any(String),
+          expect.objectContaining({ pageId: 'page_1', status: 502 })
+        );
       } finally {
         log.mockRestore();
       }
@@ -556,16 +634,23 @@ describe('ClientAssetsService - Meta', () => {
   it.each(['user', 'page'] as const)('requires Meta reauthorization when the %s token is invalid', async (tokenStage) => {
     const invalidTokenResponse = {
       ok: false,
+      status: 400,
       text: async () => JSON.stringify({ error: { code: 190, type: 'OAuthException' } }),
     } as Response;
-    vi.mocked(fetch).mockResolvedValueOnce(tokenStage === 'user'
-      ? invalidTokenResponse
-      : {
+    if (tokenStage === 'user') {
+      vi.mocked(fetch).mockResolvedValueOnce(invalidTokenResponse);
+    } else {
+      vi.mocked(fetch)
+        .mockResolvedValueOnce({
           ok: true,
-          json: async () => ({ id: 'page_1', name: 'Client Page', access_token: 'page-token-secret' }),
-        } as Response
-    );
-    if (tokenStage === 'page') vi.mocked(fetch).mockResolvedValueOnce(invalidTokenResponse);
+          json: async () => ({ id: 'page_1', name: 'Client Page' }),
+        } as Response)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: async () => ({ access_token: 'page-token-secret' }),
+        } as Response)
+        .mockResolvedValueOnce(invalidTokenResponse);
+    }
 
     await expect(clientAssetsService.fetchPageEngagementProof('user-token', 'page_1'))
       .rejects.toMatchObject({

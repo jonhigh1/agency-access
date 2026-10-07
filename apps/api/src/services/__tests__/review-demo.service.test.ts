@@ -214,3 +214,102 @@ describe('reviewDemoService manual ad account check access', () => {
     ).rejects.toThrow('Meta Graph error #3: Application does not have the capability to make this API call');
   });
 });
+
+describe('reviewDemoService business_management sandbox scope', () => {
+  beforeEach(() => {
+    vi.resetModules();
+    clearRecordedMetaGraphOps();
+    verifyAdAccountAgencyAccessMock.mockReset();
+  });
+
+  it('returns only configured sandbox assets instead of the full BM inventory', async () => {
+    vi.doMock('@/lib/env.js', () => ({
+      env: {
+        META_REVIEW_DEMO_MOCK_GRAPH: false,
+        META_REVIEW_BM_ID: '695982475048959',
+        META_REVIEW_AD_ACCOUNT_ID: '557538895783894',
+        META_REVIEW_PAGE_ID: '1373353139192376',
+        META_REVIEW_AGENCY_BM_ID: '3808519629379919',
+        META_REVIEW_LAB_AGENCY_ID: 'review-lab-agency',
+      },
+    }));
+
+    verifyAdAccountAgencyAccessMock.mockResolvedValue({
+      verified: true,
+      assignedTasks: ['ADVERTISE', 'ANALYZE'],
+    });
+
+    vi.doMock('@/lib/meta-graph-instrumentation.js', () => ({
+      getRecordedMetaGraphOps: () => [],
+      metaGraphFetch: vi.fn(async (url: string) => {
+        if (url.includes('695982475048959?fields')) {
+          return { ok: true, json: async () => ({ id: '695982475048959', name: 'Review BM' }) };
+        }
+        if (url.includes('1373353139192376?fields')) {
+          return { ok: true, json: async () => ({ id: '1373353139192376', name: 'Ah-Review-Page' }) };
+        }
+        if (url.includes('act_557538895783894?fields')) {
+          return {
+            ok: true,
+            json: async () => ({ id: 'act_557538895783894', name: 'Review Ad Account' }),
+          };
+        }
+        if (url.includes('3808519629379919?fields')) {
+          return { ok: true, json: async () => ({ id: '3808519629379919', name: 'Agency BM' }) };
+        }
+        throw new Error(`Unexpected graph URL: ${url}`);
+      }),
+    }));
+
+    const { reviewDemoService } = await import('../review-demo.service.js');
+    const payload = await reviewDemoService.loadStepPayload({
+      clerkUserId: 'user_test',
+      userEmail: 'lab@test.example',
+      stepId: 'business_management',
+    });
+
+    expect(payload.stepId).toBe('business_management');
+    if (payload.stepId === 'business_management') {
+      expect(payload.assets).toHaveLength(3);
+      expect(payload.assets.map((asset) => asset.id)).toEqual([
+        '695982475048959',
+        '1373353139192376',
+        'act_557538895783894',
+      ]);
+      expect(payload.assets.some((asset) => asset.name.includes('ATX'))).toBe(false);
+    }
+  });
+
+  it('returns a misconfigured state when sandbox env ids are missing', async () => {
+    vi.doMock('@/lib/env.js', () => ({
+      env: {
+        META_REVIEW_DEMO_MOCK_GRAPH: false,
+        META_REVIEW_BM_ID: '',
+        META_REVIEW_AD_ACCOUNT_ID: '',
+        META_REVIEW_PAGE_ID: '',
+        META_REVIEW_AGENCY_BM_ID: '3808519629379919',
+        META_REVIEW_LAB_AGENCY_ID: 'review-lab-agency',
+      },
+    }));
+
+    vi.doMock('@/lib/meta-graph-instrumentation.js', () => ({
+      getRecordedMetaGraphOps: () => [],
+      metaGraphFetch: vi.fn(async () => {
+        throw new Error('Graph should not be called when sandbox is misconfigured');
+      }),
+    }));
+
+    const { reviewDemoService } = await import('../review-demo.service.js');
+    const payload = await reviewDemoService.loadStepPayload({
+      clerkUserId: 'user_test',
+      userEmail: 'lab@test.example',
+      stepId: 'business_management',
+    });
+
+    expect(payload.stepId).toBe('business_management');
+    if (payload.stepId === 'business_management') {
+      expect(payload.sandboxMisconfigured).toBe(true);
+      expect(payload.assets).toEqual([]);
+    }
+  });
+});

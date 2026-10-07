@@ -1589,6 +1589,15 @@ export interface MetaPage {
   tasks: string[];
 }
 
+export interface MetaPageEngagementFeedError {
+  code?: number;
+  errorSubcode?: number;
+  message: string;
+  type?: string;
+  fbtraceId?: string;
+  displayMessage: string;
+}
+
 export interface MetaPageEngagementProof {
   page: Pick<MetaPage, 'id' | 'name'> & {
     category?: string;
@@ -1601,6 +1610,7 @@ export interface MetaPageEngagementProof {
     id: string;
     createdTime?: string;
   }>;
+  feedError?: MetaPageEngagementFeedError;
   /** Sanitized Graph operation summaries for screencast captions (no secrets). */
   graphOperationCaptions?: string[];
 }
