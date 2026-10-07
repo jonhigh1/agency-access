@@ -1,6 +1,6 @@
 # Meta App Review — Playwright recording harness
 
-Agent-owned screencast capture for `/review-demo` (issue **#132**, build spec **#135** §D). The screencast **verifier** lives in #133.
+Agent-owned screencast capture for `/review-demo` (issue **#132**, build spec **#135** §D). The screencast **verifier** is issue **#133** / §E.
 
 ## Outputs
 
@@ -8,7 +8,9 @@ Agent-owned screencast capture for `/review-demo` (issue **#132**, build spec **
 |------|----------|
 | Run folder | `artifacts/meta-app-review/screencasts/<run-id>/` (override with `META_REVIEW_RECORDING_OUT_DIR`) |
 | Per-permission video | `<permission>.webm` — `pages_show_list`, `pages_read_engagement`, `ads_management`, `business_management` |
-| Run manifest | `manifest.json` — permission → file, width/height, 1080p flag |
+| Run manifest | `manifest.json` — permission → file, width/height, 1080p flag, burned-in `captionPrimary`, optional duration/hash |
+| Verification report | `verification-report.txt` — human-readable pass/fail (written by verifier) |
+| Submit pack marker | `submit-pack-ready.json` — only when verify passes with `--mark-submit-pack-ready` |
 
 Videos are recorded at **1920×1080** viewport with a **burned-in caption bar** (`data-testid="review-demo-recording-caption"`) naming the permission and action. Step driving uses stable `/review-demo` test ids (see `apps/web/scripts/review-demo-recording/manifest.mjs`).
 
@@ -71,6 +73,27 @@ export META_REVIEW_RECORDING_BASE_URL=http://127.0.0.1:3000   # or https://revie
 npm run review-demo:record
 ```
 
+### Verify screencasts (blocks submit pack when red)
+
+From `apps/web`:
+
+```bash
+# After recording — pass the run folder or latest run under artifacts/
+npm run review-demo:verify -- --run-dir ../../artifacts/meta-app-review/screencasts/<run-id>
+
+# Or pin run id (same env as recording)
+export META_REVIEW_RECORDING_RUN_ID=<run-id>
+npm run review-demo:verify
+
+# Latest run folder that contains manifest.json
+npm run review-demo:verify -- --latest
+
+# Optional: write submit-pack-ready.json when green (never submits to Meta)
+npm run review-demo:verify -- --latest --mark-submit-pack-ready
+```
+
+**Green verifier exit = submit pack may be marked ready for CEO Meta Submit.** Red exit = do not mark ready; fix recordings and re-run. The verifier checks all four permissions (or one with `--smoke`), file presence, ≥1080p (ffprobe or harness manifest), and caption metadata (`captionPrimary` / sidecar) — not Meta upload.
+
 Smoke (first permission only, shorter CI/agent check when stack + auth are up):
 
 ```bash
@@ -84,6 +107,7 @@ Optional env:
 | `META_REVIEW_RECORDING_RUN_ID` | Stable folder name under artifacts root |
 | `META_REVIEW_RECORDING_OUT_DIR` | Override artifacts root |
 | `META_REVIEW_RECORDING_HEADLESS=false` | Headful capture (recommended for Meta submission) |
+| `META_REVIEW_MIN_VIDEO_DURATION_SEC` | Minimum seconds per clip (default `3`; requires ffprobe or manifest `durationSec`) |
 
 ## Headful on box / CI agent desktop
 

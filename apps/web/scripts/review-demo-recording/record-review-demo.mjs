@@ -4,6 +4,7 @@
  *
  * Produces one WebM per permission (≥1080p viewport) with burned-in caption overlay.
  */
+import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { chromium } from 'playwright';
@@ -17,7 +18,8 @@ import {
   writeRunManifest,
 } from './paths.mjs';
 import { ensureClerkSignedIn, resolveBaseUrl } from './clerk-auth.mjs';
-import { meetsMin1080p, probeVideoDimensions } from './video-probe.mjs';
+import { expectedCaptionPrimaryForPermission } from './caption-expectations.mjs';
+import { meetsMin1080p, probeVideoDimensions, probeVideoFile } from './video-probe.mjs';
 
 const VIEWPORT = { width: 1920, height: 1080 };
 const HEADLESS = process.env.META_REVIEW_RECORDING_HEADLESS !== 'false';
@@ -38,6 +40,11 @@ async function finalizeVideo(rawPath, targetPath) {
     await fs.copyFile(rawPath, targetPath);
     await fs.rm(rawPath, { force: true });
   }
+}
+
+async function fileSha256(filePath) {
+  const buffer = await fs.readFile(filePath);
+  return crypto.createHash('sha256').update(buffer).digest('hex');
 }
 
 async function recordPermissionVideo(browser, plan, runDir, baseUrl, storageState) {
@@ -126,13 +133,25 @@ async function main() {
 
   await writeRunManifest(
     runDir,
-    entries.map((entry) => ({
-      permission: entry.permission,
-      file: path.basename(entry.path),
-      width: entry.probe.width,
-      height: entry.probe.height,
-      meets1080p: entry.probe.ok ? meetsMin1080p(entry.probe.width, entry.probe.height) : null,
-    }))
+    await Promise.all(
+      entries.map(async (entry) => {
+        const fileStat = await fs.stat(entry.path);
+        const fullProbe = probeVideoFile(entry.path);
+        const width = fullProbe.ok ? fullProbe.width : entry.probe.width;
+        const height = fullProbe.ok ? fullProbe.height : entry.probe.height;
+        return {
+          permission: entry.permission,
+          file: path.basename(entry.path),
+          width,
+          height,
+          meets1080p: meetsMin1080p(width, height),
+          durationSec: fullProbe.durationSec,
+          captionPrimary: expectedCaptionPrimaryForPermission(entry.permission),
+          fileSizeBytes: fileStat.size,
+          sha256: await fileSha256(entry.path),
+        };
+      })
+    )
   );
 
   console.log(`Meta review demo screencasts written to ${runDir}`);
