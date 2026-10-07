@@ -65,4 +65,37 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public
 ALTER DEFAULT PRIVILEGES IN SCHEMA public
   GRANT SELECT ON SEQUENCES TO aap_app_readonly;
 
+-- pg-boss job queue (separate schema). Prisma migration 20261007120000_pgboss_runtime_grants
+-- applies the same grants in deploy pipelines; keep this block for manual owner-run hardening.
+CREATE SCHEMA IF NOT EXISTS pgboss;
+
+DO $$
+DECLARE
+  runtime_role name;
+BEGIN
+  FOR runtime_role IN
+    SELECT rolname
+    FROM pg_roles
+    WHERE rolname IN ('agency_access_runtime', 'aap_app_runtime')
+  LOOP
+    EXECUTE format('GRANT USAGE ON SCHEMA pgboss TO %I', runtime_role);
+    EXECUTE format(
+      'GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA pgboss TO %I',
+      runtime_role
+    );
+    EXECUTE format(
+      'GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA pgboss TO %I',
+      runtime_role
+    );
+    EXECUTE format(
+      'ALTER DEFAULT PRIVILEGES IN SCHEMA pgboss GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO %I',
+      runtime_role
+    );
+    EXECUTE format(
+      'ALTER DEFAULT PRIVILEGES IN SCHEMA pgboss GRANT USAGE, SELECT ON SEQUENCES TO %I',
+      runtime_role
+    );
+  END LOOP;
+END $$;
+
 COMMIT;
