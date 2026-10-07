@@ -19,8 +19,8 @@ export async function runRecordingAction(page, action) {
     case 'hold':
       await page.waitForTimeout(action.ms ?? 1000);
       return;
-    case 'ensureAdPartner': {
-      const button = page.getByTestId('review-demo-ensure-ad-partner');
+    case 'checkAdAccess': {
+      const button = page.getByTestId('review-demo-check-ad-access');
       await button.waitFor({ state: 'visible', timeout: 30_000 });
       if (await button.isEnabled()) {
         await button.click();

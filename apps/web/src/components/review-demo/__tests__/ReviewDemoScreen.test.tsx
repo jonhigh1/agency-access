@@ -17,17 +17,17 @@ vi.mock('@/lib/review-demo-api', () => ({
     sandbox: {
       businessManagerId: '695982475048959',
       adAccountId: 'act_557538895783894',
-      pageId: '61595193599205',
+      pageId: '1373353139192376',
       agencyBusinessId: '3808519629379919',
     },
   })),
   fetchReviewDemoStep: vi.fn(async () => ({
     stepId: 'pages_show_list',
-    pages: [{ id: '61595193599205', name: 'Ah-Review-Page' }],
+    pages: [{ id: '1373353139192376', name: 'Ah-Review-Page' }],
     graphCaptions: ['GET /me/accounts'],
   })),
   initiateReviewDemoMetaOAuth: vi.fn(),
-  ensureReviewDemoAdAccountPartner: vi.fn(),
+  checkReviewDemoAdAccountAccess: vi.fn(),
 }));
 
 describe('ReviewDemoScreen', () => {
@@ -40,5 +40,11 @@ describe('ReviewDemoScreen', () => {
     expect(await screen.findByTestId('review-demo-permission-banner')).toHaveTextContent('pages_show_list');
     expect(screen.getByTestId('review-demo-identity-name')).toHaveTextContent('Alex Reviewer');
     expect(screen.getByTestId('review-demo-pages-list')).toBeInTheDocument();
+  });
+
+  it('does not flash Not connected before the session fetch resolves', () => {
+    render(<ReviewDemoScreen initialStep="pages_show_list" />);
+    expect(screen.getByTestId('review-demo-identity-name')).toHaveTextContent('Loading session…');
+    expect(screen.queryByTestId('review-demo-connect-meta')).not.toBeInTheDocument();
   });
 });

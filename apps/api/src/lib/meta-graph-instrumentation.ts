@@ -2,6 +2,8 @@ import {
   assertNoTokenMaterialInSerializedGraphOps,
   formatMetaGraphOpCaption,
   normalizeMetaGraphEdge,
+  parseMetaGraphApiErrorText,
+  sanitizeMetaGraphErrorMessage,
   serializeMetaGraphOp,
   type MetaGraphOpRecord,
   type MetaGraphTokenClass,
@@ -29,17 +31,27 @@ export function recordMetaGraphOp(record: MetaGraphOpRecord): void {
   logger.info('meta_graph_op', { graphOp: record });
 }
 
-async function parseMetaErrorCode(response: Response): Promise<number | undefined> {
-  if (response.ok) return undefined;
+async function parseMetaGraphErrorFields(
+  response: Response
+): Promise<Pick<
+  MetaGraphOpRecord,
+  'metaCode' | 'metaMessage' | 'metaType' | 'metaErrorSubcode' | 'fbtraceId'
+>> {
+  if (response.ok) return {};
   try {
     const readable = typeof response.clone === 'function' ? response.clone() : response;
-    if (typeof readable.text !== 'function') return undefined;
-    const body = JSON.parse(await readable.text()) as { error?: { code?: number } };
-    if (typeof body.error?.code === 'number') return body.error.code;
+    if (typeof readable.text !== 'function') return {};
+    const details = parseMetaGraphApiErrorText(await readable.text());
+    return {
+      ...(details.code !== undefined ? { metaCode: details.code } : {}),
+      ...(details.message ? { metaMessage: sanitizeMetaGraphErrorMessage(details.message) } : {}),
+      ...(details.type ? { metaType: details.type } : {}),
+      ...(details.errorSubcode !== undefined ? { metaErrorSubcode: details.errorSubcode } : {}),
+      ...(details.fbtraceId ? { fbtraceId: details.fbtraceId } : {}),
+    };
   } catch {
-    // Non-JSON error bodies are ignored for metaCode extraction.
+    return {};
   }
-  return undefined;
 }
 
 export type MetaGraphFetchOptions = RequestInit & {
@@ -67,13 +79,13 @@ export async function metaGraphFetch(url: string, options: MetaGraphFetchOptions
     headers,
   });
 
-  const metaCode = await parseMetaErrorCode(response);
+  const metaErrorFields = await parseMetaGraphErrorFields(response);
   recordMetaGraphOp({
     method,
     edge: normalizeMetaGraphEdge(parsedUrl.toString()),
     tokenClass,
     outcome: response.ok ? 'ok' : 'error',
-    ...(metaCode !== undefined ? { metaCode } : {}),
+    ...metaErrorFields,
   });
 
   return response;

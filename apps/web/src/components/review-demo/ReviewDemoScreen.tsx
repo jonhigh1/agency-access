@@ -12,11 +12,12 @@ import {
 } from '@agency-platform/shared';
 import { Button } from '@/components/ui/button';
 import {
-  ensureReviewDemoAdAccountPartner,
+  checkReviewDemoAdAccountAccess,
   fetchReviewDemoSession,
   fetchReviewDemoStep,
   initiateReviewDemoMetaOAuth,
 } from '@/lib/review-demo-api';
+import { ReviewDemoManualAdAccountPanel } from './ReviewDemoManualAdAccountPanel';
 
 interface ReviewDemoScreenProps {
   initialStep?: ReviewDemoStepId;
@@ -29,7 +30,8 @@ export function ReviewDemoScreen({ initialStep = 'pages_show_list' }: ReviewDemo
   const [stepPayload, setStepPayload] = useState<ReviewDemoStepPayload | null>(null);
   const [loading, setLoading] = useState(true);
   const [actionError, setActionError] = useState<string | null>(null);
-  const [partnerActionPending, setPartnerActionPending] = useState(false);
+  const [checkAccessPending, setCheckAccessPending] = useState(false);
+  const sessionLoading = loading && session === null;
 
   const stepIndex = useMemo(
     () => REVIEW_DEMO_STEP_ORDER.indexOf(activeStep),
@@ -74,16 +76,16 @@ export function ReviewDemoScreen({ initialStep = 'pages_show_list' }: ReviewDemo
     setActiveStep(step);
   };
 
-  const handleEnsureAdAccountPartner = async () => {
+  const handleCheckAdAccountAccess = async () => {
     setActionError(null);
-    setPartnerActionPending(true);
+    setCheckAccessPending(true);
     try {
-      const payload = await ensureReviewDemoAdAccountPartner(getToken);
+      const payload = await checkReviewDemoAdAccountAccess(getToken);
       setStepPayload(payload);
     } catch (error) {
-      setActionError(error instanceof Error ? error.message : 'Failed to assign agency partner');
+      setActionError(error instanceof Error ? error.message : 'Failed to check ad account access');
     } finally {
-      setPartnerActionPending(false);
+      setCheckAccessPending(false);
     }
   };
 
@@ -159,12 +161,19 @@ export function ReviewDemoScreen({ initialStep = 'pages_show_list' }: ReviewDemo
             <div>
               <p className="label-micro">Connected Meta identity</p>
               <p className="font-display text-2xl font-bold" data-testid="review-demo-identity-name">
-                {session?.identity?.name ?? 'Not connected'}
+                {sessionLoading
+                  ? 'Loading session…'
+                  : session?.identity?.name ?? 'Not connected'}
               </p>
+              {sessionLoading ? (
+                <p className="text-sm text-muted-foreground" data-testid="review-demo-session-loading">
+                  Checking Meta connection…
+                </p>
+              ) : null}
               {session?.identity?.id ? (
                 <p className="font-mono text-xs text-muted-foreground">ID {session.identity.id}</p>
               ) : null}
-              {!session?.connected ? (
+              {!sessionLoading && session && !session.connected ? (
                 <Button className="mt-3" onClick={() => void connectMeta()} data-testid="review-demo-connect-meta">
                   Connect Meta for review demo
                 </Button>
@@ -220,16 +229,32 @@ export function ReviewDemoScreen({ initialStep = 'pages_show_list' }: ReviewDemo
                     {stepPayload.page.category ? (
                       <p className="text-sm text-muted-foreground">Category: {stepPayload.page.category}</p>
                     ) : null}
-                    {stepPayload.page.managedTasks.length > 0 ? (
-                      <p className="text-sm">Managed tasks: {stepPayload.page.managedTasks.join(', ')}</p>
+                    {typeof stepPayload.page.fanCount === 'number' ? (
+                      <p className="text-sm" data-testid="review-demo-page-fan-count">
+                        Fans: {stepPayload.page.fanCount.toLocaleString()}
+                      </p>
                     ) : null}
-                    {stepPayload.connectedInstagram ? (
-                      <p className="text-sm">
-                        Instagram: @{stepPayload.connectedInstagram.username} ({stepPayload.connectedInstagram.id})
+                    {typeof stepPayload.page.followerCount === 'number' ? (
+                      <p className="text-sm" data-testid="review-demo-page-follower-count">
+                        Followers: {stepPayload.page.followerCount.toLocaleString()}
                       </p>
                     ) : null}
                   </div>
+                  {stepPayload.feedError ? (
+                    <div
+                      className="border-2 border-danger-ink bg-[rgb(var(--coral))]/10 p-4 text-sm"
+                      role="alert"
+                      data-testid="review-demo-feed-error"
+                    >
+                      {stepPayload.feedError.displayMessage}
+                    </div>
+                  ) : null}
                   <ul className="space-y-2" data-testid="review-demo-posts-list">
+                    {stepPayload.posts.length === 0 && !stepPayload.feedError ? (
+                      <li className="border border-black/15 p-3 text-sm text-muted-foreground">
+                        No recent posts returned (empty feed is valid proof).
+                      </li>
+                    ) : null}
                     {stepPayload.posts.map((post) => (
                       <li key={post.id} className="border border-black/15 p-3 text-sm">
                         <p className="font-mono text-xs text-muted-foreground">{post.id}</p>
@@ -241,51 +266,19 @@ export function ReviewDemoScreen({ initialStep = 'pages_show_list' }: ReviewDemo
               ) : null}
 
               {stepPayload.stepId === 'ads_management' ? (
-                <div className="space-y-5">
-                  <h2 className="font-display text-xl font-bold">Ad account agency partner</h2>
-                  <p className="text-sm text-muted-foreground">
-                    AuthHub adds the agency Business Portfolio as a partner on the client ad account — not ad pause/resume.
-                  </p>
-                  <div className="border border-black/15 p-4 text-sm" data-testid="review-demo-ad-account-summary">
-                    <p className="font-semibold">{stepPayload.adAccountName ?? stepPayload.adAccountId}</p>
-                    <p className="font-mono text-xs text-muted-foreground">{stepPayload.adAccountId}</p>
-                  </div>
-                  <div
-                    className="border border-black/15 p-4 text-sm"
-                    data-testid="review-demo-partner-proof"
-                  >
-                    <p className="label-micro mb-2">Agency partner readback</p>
-                    <p className="font-semibold">
-                      {stepPayload.agencyPartner.name ?? 'Agency Business Portfolio'}{' '}
-                      <span className="font-mono text-xs font-normal text-muted-foreground">
-                        ({stepPayload.agencyPartner.businessId})
-                      </span>
-                    </p>
-                    <p className="mt-2">
-                      Permitted tasks:{' '}
-                      {stepPayload.agencyPartner.permittedTasks.length > 0
-                        ? stepPayload.agencyPartner.permittedTasks.join(', ')
-                        : 'None reported yet'}
-                    </p>
-                    <p
-                      className="mt-2 font-semibold"
-                      data-testid="review-demo-partner-status"
-                    >
-                      {stepPayload.agencyPartner.verified ? 'Partner access verified' : 'Partner not verified yet'}
-                    </p>
-                  </div>
-                  <Button
-                    data-testid="review-demo-ensure-ad-partner"
-                    onClick={() => void handleEnsureAdAccountPartner()}
-                    disabled={partnerActionPending || stepPayload.agencyPartner.verified}
-                  >
-                    {stepPayload.agencyPartner.verified
-                      ? 'Agency already assigned'
-                      : partnerActionPending
-                        ? 'Assigning partner…'
-                        : 'Add agency as ad account partner'}
-                  </Button>
-                </div>
+                <ReviewDemoManualAdAccountPanel
+                  agencyBusinessId={stepPayload.agencyPartner.businessId}
+                  agencyBusinessName={stepPayload.agencyPartner.name}
+                  adAccountId={stepPayload.adAccountId}
+                  adAccountName={stepPayload.adAccountName}
+                  verified={stepPayload.agencyPartner.verified}
+                  permittedTasks={stepPayload.agencyPartner.permittedTasks}
+                  pendingMessage={stepPayload.agencyPartner.pendingMessage}
+                  metaErrorCode={stepPayload.agencyPartner.metaErrorCode}
+                  metaErrorMessage={stepPayload.agencyPartner.metaErrorMessage}
+                  checking={checkAccessPending}
+                  onCheckAccess={() => void handleCheckAdAccountAccess()}
+                />
               ) : null}
 
               {stepPayload.stepId === 'business_management' ? (
@@ -293,8 +286,18 @@ export function ReviewDemoScreen({ initialStep = 'pages_show_list' }: ReviewDemo
                   <h2 className="font-display text-xl font-bold">Client Business Portfolio</h2>
                   <p className="font-semibold">{stepPayload.business.name}</p>
                   <p className="font-mono text-xs text-muted-foreground">{stepPayload.business.id}</p>
+                  {stepPayload.sandboxMisconfigured ? (
+                    <p
+                      className="border-2 border-danger-ink bg-[rgb(var(--coral))]/10 p-4 text-sm"
+                      role="alert"
+                      data-testid="review-demo-bm-misconfigured"
+                    >
+                      {stepPayload.sandboxMisconfiguredMessage ??
+                        'Review sandbox IDs are not configured on the API service.'}
+                    </p>
+                  ) : null}
                   <div>
-                    <h3 className="label-micro mb-2">Portfolio assets (production discovery path)</h3>
+                    <h3 className="label-micro mb-2">Review sandbox assets (scoped)</h3>
                     <ul className="space-y-2" data-testid="review-demo-bm-assets-list">
                       {stepPayload.assets.map((asset) => (
                         <li key={`${asset.kind}-${asset.id}`} className="border border-black/15 p-3 text-sm">

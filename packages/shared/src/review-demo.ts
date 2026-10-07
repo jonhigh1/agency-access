@@ -72,6 +72,15 @@ export const ReviewDemoPageEngagementPostSchema = z.object({
   createdTime: z.string().optional(),
 });
 
+export const ReviewDemoPageFeedErrorSchema = z.object({
+  code: z.number().optional(),
+  errorSubcode: z.number().optional(),
+  message: z.string(),
+  type: z.string().optional(),
+  fbtraceId: z.string().optional(),
+  displayMessage: z.string(),
+});
+
 export const ReviewDemoConnectedInstagramSchema = z.object({
   id: z.string(),
   username: z.string(),
@@ -82,6 +91,9 @@ export const ReviewDemoAgencyPartnerSchema = z.object({
   name: z.string().optional(),
   permittedTasks: z.array(z.string()),
   verified: z.boolean(),
+  metaErrorCode: z.number().optional(),
+  metaErrorMessage: z.string().optional(),
+  pendingMessage: z.string().optional(),
 });
 
 export const ReviewDemoBusinessAssetSchema = z.object({
@@ -100,6 +112,7 @@ export const ReviewDemoStepPayloadSchema = z.discriminatedUnion('stepId', [
     stepId: z.literal('pages_read_engagement'),
     page: ReviewDemoPageEngagementPageSchema,
     posts: z.array(ReviewDemoPageEngagementPostSchema),
+    feedError: ReviewDemoPageFeedErrorSchema.optional(),
     connectedInstagram: ReviewDemoConnectedInstagramSchema.optional(),
     graphCaptions: z.array(z.string()),
   }),
@@ -114,6 +127,8 @@ export const ReviewDemoStepPayloadSchema = z.discriminatedUnion('stepId', [
     stepId: z.literal('business_management'),
     business: ReviewDemoBusinessAssetSchema,
     assets: z.array(ReviewDemoBusinessAssetSchema),
+    sandboxMisconfigured: z.boolean().optional(),
+    sandboxMisconfiguredMessage: z.string().optional(),
     agencyPartner: ReviewDemoAgencyPartnerSchema.extend({
       assetId: z.string(),
       assetKind: z.literal('ad_account'),

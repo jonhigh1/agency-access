@@ -137,11 +137,11 @@ export async function reviewDemoRoutes(fastify: FastifyInstance) {
     }
   });
 
-  fastify.post('/review-demo/steps/ads_management/ensure-partner', async (request, reply) => {
+  fastify.post('/review-demo/steps/ads_management/check-access', async (request, reply) => {
     const labUser = (request as any).labReviewUser as { userId: string };
     const userEmail = (await resolveAuthenticatedUserEmail((request as any).user)) ?? 'review-demo@unknown';
     try {
-      const payload = await reviewDemoService.ensureAdAccountAgencyPartner({
+      const payload = await reviewDemoService.checkAdAccountAgencyPartner({
         clerkUserId: labUser.userId,
         userEmail,
         ipAddress: extractClientIp(request),
@@ -151,8 +151,8 @@ export async function reviewDemoRoutes(fastify: FastifyInstance) {
     } catch (error) {
       return sendError(
         reply,
-        'REVIEW_DEMO_PARTNER_ASSIGN_FAILED',
-        error instanceof Error ? error.message : 'Failed to assign agency partner on review ad account',
+        'REVIEW_DEMO_PARTNER_CHECK_FAILED',
+        error instanceof Error ? error.message : 'Failed to verify agency partner on review ad account',
         502
       );
     }

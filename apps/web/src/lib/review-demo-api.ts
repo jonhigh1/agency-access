@@ -55,11 +55,11 @@ export async function exchangeReviewDemoMetaOAuth(
   });
 }
 
-export async function ensureReviewDemoAdAccountPartner(
+export async function checkReviewDemoAdAccountAccess(
   getToken: () => Promise<string | null>
 ): Promise<ReviewDemoStepPayload> {
   const json = await authorizedApiFetch<{ data: ReviewDemoStepPayload }>(
-    '/api/review-demo/steps/ads_management/ensure-partner',
+    '/api/review-demo/steps/ads_management/check-access',
     {
       getToken,
       method: 'POST',
