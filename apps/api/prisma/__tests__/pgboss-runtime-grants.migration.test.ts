@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 const migrationPath = join(
   import.meta.dirname,
-  '../20261007120000_pgboss_runtime_grants/migration.sql'
+  '../migrations/20261007120000_pgboss_runtime_grants/migration.sql'
 );
 
 const RUNTIME_ROLES = ['agency_access_runtime', 'aap_app_runtime'] as const;
