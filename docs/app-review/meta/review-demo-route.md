@@ -32,6 +32,10 @@ Tokens are stored in Infisical under `review_demo_meta_{clerkUserId}` (not Postg
 
 Set `META_REVIEW_DEMO_MOCK_GRAPH=true` on the API to serve fixture step payloads without live Graph. Production review host should keep this `false`.
 
+## Marketing API tier daily cron
+
+See [marketing-api-tier-cron.md](./marketing-api-tier-cron.md) for pg-boss schedule, Graph endpoints, env vars, and how to read the tier day-count audit log (#134 / #135 §F).
+
 ## Playwright screencast harness
 
 See [review-demo-recording-harness.md](./review-demo-recording-harness.md) for ≥1080p capture, caption overlay, artifact paths, and env vars (issue #132).

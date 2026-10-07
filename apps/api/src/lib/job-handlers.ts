@@ -301,6 +301,16 @@ export async function startGoogleClientOffboardingHandler(): Promise<void> {
 }
 
 /**
+ * Meta Marketing API tier daily cron (#134)
+ */
+export async function startMetaMarketingApiTierCronHandler(): Promise<void> {
+  await registerHandler('meta-marketing-api-tier-daily', async () => {
+    const { runMetaMarketingApiTierCronJob } = await import('../jobs/meta-marketing-api-tier-cron.js');
+    await runMetaMarketingApiTierCronJob();
+  }, { teamSize: 1, teamConcurrency: 1 });
+}
+
+/**
  * Start all job handlers
  */
 export async function startAllHandlers(): Promise<void> {
@@ -314,6 +324,7 @@ export async function startAllHandlers(): Promise<void> {
     startGoogleNativeGrantHandler(),
     startAuthorizationVerificationHandler(),
     startGoogleClientOffboardingHandler(),
+    startMetaMarketingApiTierCronHandler(),
   ]);
 
   logger.info('All pg-boss job handlers started');
@@ -334,6 +345,11 @@ export async function scheduleRecurringJobs(): Promise<void> {
 
   // Trial expiration - daily at 3 AM UTC
   await scheduleJob('trial-expiration-check', '0 3 * * *', { type: 'check-expired-trials' });
+
+  // Meta Marketing API tier exercise — daily 06:00 UTC (Review test ad account, read-only)
+  await scheduleJob('meta-marketing-api-tier-daily', '0 6 * * *', {
+    type: 'run-daily-tier-exercise',
+  });
 
   logger.info('Recurring jobs scheduled');
 }
