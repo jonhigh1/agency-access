@@ -11,7 +11,6 @@ import {
   type ReviewDemoStepPayload,
 } from '@agency-platform/shared';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
 import {
   fetchReviewDemoSession,
   fetchReviewDemoStep,
@@ -122,22 +121,19 @@ export function ReviewDemoScreen({ initialStep = 'pages_show_list' }: ReviewDemo
               const isActive = step === activeStep;
               return (
                 <li key={step}>
-                  <button
+                  <Button
                     type="button"
+                    variant={isActive ? 'primary' : 'secondary'}
                     data-testid={`review-demo-step-tab-${step}`}
-                    className={cn(
-                      'w-full border-2 px-4 py-3 text-left transition-transform',
-                      isActive
-                        ? 'border-[var(--ink)] bg-[rgb(var(--coral))]/15 shadow-brutalist-sm translate-x-0'
-                        : 'border-black/20 bg-white hover:border-[var(--ink)]'
-                    )}
+                    className="h-auto w-full justify-start px-4 py-3 text-left"
+                    aria-current={isActive ? 'step' : undefined}
                     onClick={() => goToStep(step)}
                   >
-                    <span className="label-nano block text-muted-foreground">
+                    <span className="label-nano block w-full text-muted-foreground">
                       Step {index + 1} of {REVIEW_DEMO_STEP_ORDER.length}
                     </span>
                     <span className="font-mono text-sm font-semibold">{REVIEW_DEMO_STEP_LABELS[step]}</span>
-                  </button>
+                  </Button>
                 </li>
               );
             })}
