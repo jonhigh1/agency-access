@@ -68,3 +68,27 @@ export async function checkReviewDemoAdAccountAccess(
   );
   return json.data;
 }
+
+export async function disconnectReviewDemoMeta(
+  getToken: () => Promise<string | null>
+): Promise<void> {
+  await authorizedApiFetch('/api/review-demo/meta/disconnect', {
+    getToken,
+    method: 'POST',
+    body: JSON.stringify({}),
+  });
+}
+
+export async function addReviewDemoPagePartner(
+  getToken: () => Promise<string | null>
+): Promise<ReviewDemoStepPayload> {
+  const json = await authorizedApiFetch<{ data: ReviewDemoStepPayload }>(
+    '/api/review-demo/steps/business_management/add-page-partner',
+    {
+      getToken,
+      method: 'POST',
+      body: JSON.stringify({}),
+    }
+  );
+  return json.data;
+}

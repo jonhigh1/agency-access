@@ -206,12 +206,16 @@ describe('reviewDemoService manual ad account check access', () => {
     }));
 
     const { reviewDemoService } = await import('../review-demo.service.js');
-    await expect(
-      reviewDemoService.checkAdAccountAgencyPartner({
-        clerkUserId: 'user_test',
-        userEmail: 'lab@test.example',
-      })
-    ).rejects.toThrow('Meta Graph error #3: Application does not have the capability to make this API call');
+    const payload = await reviewDemoService.checkAdAccountAgencyPartner({
+      clerkUserId: 'user_test',
+      userEmail: 'lab@test.example',
+    });
+
+    expect(payload.stepId).toBe('ads_management');
+    if (payload.stepId === 'ads_management') {
+      expect(payload.emptyState?.code).toBe('graph_error');
+      expect(payload.agencyPartner.metaErrorCode).toBe(3);
+    }
   });
 });
 

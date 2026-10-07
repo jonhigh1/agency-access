@@ -1,15 +1,21 @@
 import {
   META_CORE_PERMISSIONS,
   META_GRAPH_VERSION,
+  META_REVIEW_DEFAULT_SANDBOX_META_USER_ID,
   REVIEW_DEMO_AD_ACCOUNT_PARTNER_TASKS,
+  REVIEW_DEMO_PAGE_PARTNER_TASKS,
   REVIEW_DEMO_STEP_ORDER,
+  parseMetaGraphApiErrorText,
   type ReviewDemoIdentity,
+  type ReviewDemoMetaGraphError,
+  type ReviewDemoPagePartnerResult,
   type ReviewDemoSession,
   type ReviewDemoStepId,
   type ReviewDemoStepPayload,
 } from '@agency-platform/shared';
 import { env } from '@/lib/env.js';
 import { infisical } from '@/lib/infisical.js';
+import { reviewDemoMetaSecretName } from '@/lib/review-demo-secrets.js';
 import { formatMetaGraphOpCaption } from '@agency-platform/shared';
 import { getRecordedMetaGraphOps, metaGraphFetch } from '@/lib/meta-graph-instrumentation.js';
 import { MetaConnector } from '@/services/connectors/meta.js';
@@ -18,6 +24,11 @@ import { oauthStateService } from '@/services/oauth-state.service.js';
 import { resolveClientInviteCallbackUrl } from '@/routes/client-auth/redirect-uri.js';
 import { clientAssetsService } from '@/services/client-assets.service.js';
 import { metaPartnerService } from '@/services/meta-partner.service.js';
+import {
+  isReviewDemoSandboxMetaUser,
+  reviewDemoContextService,
+  type ReviewDemoResolvedAssets,
+} from '@/services/review-demo-context.service.js';
 import {
   formatMetaGraphApiError,
   readMetaGraphApiError,
@@ -31,10 +42,6 @@ interface ReviewDemoStoredToken {
   expiresAt?: string;
   scope?: string;
   identity?: ReviewDemoIdentity;
-}
-
-function reviewDemoSecretName(clerkUserId: string): string {
-  return `review_demo_meta_${clerkUserId}`;
 }
 
 function defaultSandboxIds() {
@@ -94,7 +101,7 @@ function normalizeAdAccountId(value: string): string {
 
 async function readStoredToken(clerkUserId: string): Promise<ReviewDemoStoredToken | null> {
   try {
-    const raw = await infisical.getPlainSecret(reviewDemoSecretName(clerkUserId));
+    const raw = await infisical.getPlainSecret(reviewDemoMetaSecretName(clerkUserId));
     return JSON.parse(raw) as ReviewDemoStoredToken;
   } catch {
     return null;
@@ -102,7 +109,35 @@ async function readStoredToken(clerkUserId: string): Promise<ReviewDemoStoredTok
 }
 
 async function writeStoredToken(clerkUserId: string, value: ReviewDemoStoredToken): Promise<void> {
-  await infisical.storePlainSecret(reviewDemoSecretName(clerkUserId), JSON.stringify(value));
+  await infisical.storePlainSecret(reviewDemoMetaSecretName(clerkUserId), JSON.stringify(value));
+}
+
+function toMetaGraphError(raw: string): ReviewDemoMetaGraphError {
+  const parsed = parseMetaGraphApiErrorText(raw);
+  return {
+    ...(parsed.code !== undefined ? { code: parsed.code } : {}),
+    ...(parsed.errorSubcode !== undefined ? { errorSubcode: parsed.errorSubcode } : {}),
+    message: parsed.message,
+    ...(parsed.type ? { type: parsed.type } : {}),
+    ...(parsed.fbtraceId ? { fbtraceId: parsed.fbtraceId } : {}),
+    rawBody: raw,
+  };
+}
+
+function businessStepCaption(input: {
+  pagePartner?: ReviewDemoPagePartnerResult;
+  adAccountPartnerVerified: boolean;
+}): string {
+  if (input.pagePartner?.verified) {
+    return 'AuthHub added the agency to the Page as a partner and verified access via Graph readback.';
+  }
+  if (input.pagePartner?.graphError?.code === 3) {
+    return 'Manual ad-account partner share was verified via Graph readback. Page partner add is not available for this app capability.';
+  }
+  if (input.adAccountPartnerVerified) {
+    return 'Manual ad-account partner share verified via Graph readback. Use Add agency to Page to run the production Page partner POST when a Page is connected.';
+  }
+  return 'Client Business Portfolio assets scoped to this session, manual ad-account partner verification, and optional Page partner add.';
 }
 
 function graphCaptionsSince(start: number): string[] {
@@ -122,31 +157,55 @@ export class ReviewDemoService {
     const sandbox = defaultSandboxIds();
 
     const mockIdentity: ReviewDemoIdentity = {
-      id: '61595281164997',
+      id: META_REVIEW_DEFAULT_SANDBOX_META_USER_ID,
       name: 'AuthHub Review User (mock)',
     };
+
+    const identity = stored?.identity ?? (env.META_REVIEW_DEMO_MOCK_GRAPH ? mockIdentity : null);
+    const usesSandboxAssets =
+      env.META_REVIEW_DEMO_MOCK_GRAPH || isReviewDemoSandboxMetaUser(identity?.id);
 
     if (env.META_REVIEW_DEMO_MOCK_GRAPH) {
       return {
         connected: true,
-        identity: stored?.identity ?? mockIdentity,
+        identity,
         grantedPermissions: [...META_CORE_PERMISSIONS],
         activeStep,
         stepIndex: stepIndex >= 0 ? stepIndex : 0,
         stepCount: REVIEW_DEMO_STEP_ORDER.length,
         sandbox,
+        usesSandboxAssets: true,
       };
     }
 
     return {
       connected: Boolean(stored?.accessToken),
-      identity: stored?.identity ?? null,
+      identity,
       grantedPermissions: [...META_CORE_PERMISSIONS],
       activeStep,
       stepIndex: stepIndex >= 0 ? stepIndex : 0,
       stepCount: REVIEW_DEMO_STEP_ORDER.length,
       sandbox,
+      usesSandboxAssets,
     };
+  }
+
+  async disconnectMeta(input: {
+    clerkUserId: string;
+    userEmail: string;
+    ipAddress?: string;
+    userAgent?: string;
+  }): Promise<void> {
+    await infisical.deleteSecret(reviewDemoMetaSecretName(input.clerkUserId));
+    await auditService.createAuditLog({
+      userEmail: input.userEmail,
+      action: 'access_revoked',
+      resourceType: 'review_demo',
+      resourceId: input.clerkUserId,
+      ipAddress: input.ipAddress ?? '0.0.0.0',
+      userAgent: input.userAgent,
+      metadata: { surface: 'review_demo_disconnect_meta' },
+    });
   }
 
   async createMetaAuthUrl(input: {
@@ -297,21 +356,23 @@ export class ReviewDemoService {
       input.ipAddress,
       input.userAgent
     );
-    const opsStart = getRecordedMetaGraphOps().length;
-    const sandbox = defaultSandboxIds();
-    const agencyBusinessId = requireAgencyBusinessIdForLiveGraph();
+    const stored = await readStoredToken(input.clerkUserId);
+    const assetContext = await reviewDemoContextService.resolveAssets({
+      accessToken,
+      identity: stored?.identity ?? null,
+    });
 
     switch (input.stepId) {
       case 'pages_show_list':
-        return this.loadPagesShowList(accessToken, opsStart);
+        return this.loadPagesShowList(accessToken);
       case 'pages_read_engagement':
-        return this.loadPagesReadEngagement(accessToken, sandbox.pageId, opsStart);
+        return this.loadPagesReadEngagement(accessToken, assetContext);
       case 'ads_management':
-        return this.loadAdsManagement(accessToken, sandbox.adAccountId, agencyBusinessId, opsStart, {
+        return this.loadAdsManagement(accessToken, assetContext, {
           includePartnerReadback: false,
         });
       case 'business_management':
-        return this.loadBusinessManagement(accessToken, sandbox, opsStart);
+        return this.loadBusinessManagement(accessToken, assetContext);
       default: {
         const _exhaustive: never = input.stepId;
         throw new Error(`Unsupported review demo step: ${String(_exhaustive)}`);
@@ -348,10 +409,13 @@ export class ReviewDemoService {
       input.userAgent
     );
     const opsStart = getRecordedMetaGraphOps().length;
-    const sandbox = defaultSandboxIds();
-    const agencyBusinessId = requireAgencyBusinessIdForLiveGraph();
+    const stored = await readStoredToken(input.clerkUserId);
+    const assetContext = await reviewDemoContextService.resolveAssets({
+      accessToken,
+      identity: stored?.identity ?? null,
+    });
 
-    const payload = await this.loadAdsManagement(accessToken, sandbox.adAccountId, agencyBusinessId, opsStart, {
+    const payload = await this.loadAdsManagement(accessToken, assetContext, {
       includePartnerReadback: true,
     });
 
@@ -364,14 +428,92 @@ export class ReviewDemoService {
       userAgent: input.userAgent,
       metadata: {
         surface: 'review_demo_check_ad_account_partner',
-        adAccountId: sandbox.adAccountId,
-        agencyBusinessId,
+        adAccountId: assetContext.adAccountId,
+        agencyBusinessId: assetContext.agencyBusinessId,
         verified: payload.stepId === 'ads_management' ? payload.agencyPartner.verified : false,
         graphCaptions: graphCaptionsSince(opsStart),
       },
     });
 
     return payload;
+  }
+
+  async addAgencyToPagePartner(input: {
+    clerkUserId: string;
+    userEmail: string;
+    ipAddress?: string;
+    userAgent?: string;
+  }): Promise<ReviewDemoStepPayload> {
+    if (env.META_REVIEW_DEMO_MOCK_GRAPH) {
+      const base = this.loadMockStepPayload('business_management');
+      if (base.stepId !== 'business_management') {
+        return base;
+      }
+      return {
+        ...base,
+        pagePartner: {
+          businessId: defaultSandboxIds().agencyBusinessId,
+          permittedTasks: [...REVIEW_DEMO_PAGE_PARTNER_TASKS],
+          verified: true,
+          assetId: defaultSandboxIds().pageId,
+          assetKind: 'page',
+          granted: true,
+        },
+        stepCaption: businessStepCaption({
+          pagePartner: {
+            businessId: defaultSandboxIds().agencyBusinessId,
+            permittedTasks: [...REVIEW_DEMO_PAGE_PARTNER_TASKS],
+            verified: true,
+            assetId: defaultSandboxIds().pageId,
+            assetKind: 'page',
+          },
+          adAccountPartnerVerified: base.agencyPartner.verified,
+        }),
+      };
+    }
+
+    const accessToken = await this.getAccessToken(
+      input.clerkUserId,
+      input.userEmail,
+      input.ipAddress,
+      input.userAgent
+    );
+    const stored = await readStoredToken(input.clerkUserId);
+    const assetContext = await reviewDemoContextService.resolveAssets({
+      accessToken,
+      identity: stored?.identity ?? null,
+    });
+
+    const basePayload = await this.loadBusinessManagement(accessToken, assetContext);
+    if (basePayload.stepId !== 'business_management') {
+      return basePayload;
+    }
+
+    const pageId = assetContext.pageId;
+    if (!pageId) {
+      return {
+        ...basePayload,
+        emptyState: {
+          code: 'no_pages',
+          message: 'Connect a Meta account that granted at least one Page to run the Page partner add.',
+        },
+      };
+    }
+
+    const pagePartner = await this.runPagePartnerGrantAndReadback(
+      accessToken,
+      pageId,
+      assetContext.agencyBusinessId
+    );
+
+    return {
+      ...basePayload,
+      pagePartner,
+      stepCaption: businessStepCaption({
+        pagePartner,
+        adAccountPartnerVerified: basePayload.agencyPartner.verified,
+      }),
+    };
   }
 
   private async fetchAgencyBusinessName(
@@ -390,78 +532,158 @@ export class ReviewDemoService {
     return body.name;
   }
 
-  private async loadPagesShowList(accessToken: string, opsStart: number): Promise<ReviewDemoStepPayload> {
+  private async loadPagesShowList(accessToken: string): Promise<ReviewDemoStepPayload> {
+    const opsStart = getRecordedMetaGraphOps().length;
     const response = await metaGraphFetch(
       `${GRAPH_BASE}/me/accounts?fields=id,name,picture`,
       { method: 'GET', accessToken, tokenClass: 'client_user' }
     );
     if (!response.ok) {
-      throw new Error(await response.text());
+      const raw = await response.text();
+      return {
+        stepId: 'pages_show_list',
+        pages: [],
+        emptyState: {
+          code: 'graph_error',
+          message: formatMetaGraphApiError(raw).displayMessage,
+        },
+        graphCaptions: graphCaptionsSince(opsStart),
+      };
     }
     const data = (await response.json()) as {
       data?: Array<{ id?: string; name?: string; picture?: { data?: { url?: string } } }>;
     };
 
+    const pages = (data.data ?? [])
+      .filter((page): page is { id: string; name: string; picture?: { data?: { url?: string } } } =>
+        Boolean(page.id && page.name)
+      )
+      .map((page) => ({
+        id: page.id,
+        name: page.name,
+        ...(page.picture?.data?.url ? { pictureUrl: page.picture.data.url } : {}),
+      }));
+
     return {
       stepId: 'pages_show_list',
-      pages: (data.data ?? [])
-        .filter((page): page is { id: string; name: string; picture?: { data?: { url?: string } } } =>
-          Boolean(page.id && page.name)
-        )
-        .map((page) => ({
-          id: page.id,
-          name: page.name,
-          ...(page.picture?.data?.url ? { pictureUrl: page.picture.data.url } : {}),
-        })),
+      pages,
+      ...(pages.length === 0
+        ? {
+            emptyState: {
+              code: 'no_pages' as const,
+              message: 'No Facebook Pages were returned for this token. Grant pages_show_list on at least one Page.',
+            },
+          }
+        : {}),
       graphCaptions: graphCaptionsSince(opsStart),
     };
   }
 
   private async loadPagesReadEngagement(
     accessToken: string,
-    pageId: string,
-    _opsStart: number
+    assetContext: ReviewDemoResolvedAssets
   ): Promise<ReviewDemoStepPayload> {
-    const proof = await clientAssetsService.fetchPageEngagementProof(accessToken, pageId, {
-      exposeDetailedGraphErrors: true,
-      includeFeed: false,
-    });
-    return {
-      stepId: 'pages_read_engagement',
-      page: {
-        id: proof.page.id,
-        name: proof.page.name,
-        managedTasks: proof.page.managedTasks,
-        ...(proof.page.category ? { category: proof.page.category } : {}),
-        ...(typeof proof.page.fanCount === 'number' ? { fanCount: proof.page.fanCount } : {}),
-        ...(typeof proof.page.followerCount === 'number'
-          ? { followerCount: proof.page.followerCount }
-          : {}),
-      },
-      posts: [],
-      graphCaptions: proof.graphOperationCaptions ?? [],
-    };
+    const pageId = assetContext.pageId;
+    if (!pageId) {
+      return {
+        stepId: 'pages_read_engagement',
+        posts: [],
+        emptyState: {
+          code: 'no_pages',
+          message:
+            'No Page is available for this session. Grant pages_show_list on a Page during consent, or use the lab sandbox account.',
+        },
+        graphCaptions: [],
+      };
+    }
+
+    try {
+      const proof = await clientAssetsService.fetchPageEngagementProof(accessToken, pageId, {
+        exposeDetailedGraphErrors: true,
+        includeFeed: false,
+      });
+      return {
+        stepId: 'pages_read_engagement',
+        page: {
+          id: proof.page.id,
+          name: proof.page.name,
+          managedTasks: proof.page.managedTasks,
+          ...(proof.page.category ? { category: proof.page.category } : {}),
+          ...(typeof proof.page.fanCount === 'number' ? { fanCount: proof.page.fanCount } : {}),
+          ...(typeof proof.page.followerCount === 'number'
+            ? { followerCount: proof.page.followerCount }
+            : {}),
+        },
+        posts: [],
+        graphCaptions: proof.graphOperationCaptions ?? [],
+      };
+    } catch (error) {
+      const raw = error instanceof Error ? error.message : String(error);
+      return {
+        stepId: 'pages_read_engagement',
+        posts: [],
+        emptyState: {
+          code: 'graph_error',
+          message: formatMetaGraphApiError(raw).displayMessage,
+        },
+        graphCaptions: graphCaptionsSince(getRecordedMetaGraphOps().length),
+      };
+    }
   }
 
   private async loadAdsManagement(
     accessToken: string,
-    adAccountId: string,
-    agencyBusinessId: string,
-    opsStart: number,
+    assetContext: ReviewDemoResolvedAssets,
     options: { includePartnerReadback: boolean }
   ): Promise<ReviewDemoStepPayload> {
+    const opsStart = getRecordedMetaGraphOps().length;
+    const agencyBusinessId = assetContext.agencyBusinessId;
+    const partnerTasks = [...REVIEW_DEMO_AD_ACCOUNT_PARTNER_TASKS];
+    const agencyName = await this.fetchAgencyBusinessName(accessToken, agencyBusinessId);
+
+    const emptyPartner = {
+      businessId: agencyBusinessId,
+      ...(agencyName ? { name: agencyName } : {}),
+      permittedTasks: [] as string[],
+      verified: false,
+    };
+
+    const adAccountId = assetContext.adAccountId;
+    if (!adAccountId) {
+      return {
+        stepId: 'ads_management',
+        agencyPartner: emptyPartner,
+        emptyState: {
+          code: 'no_ad_accounts',
+          message:
+            'No ad account is available for this session. Grant ads_management on an ad account during consent, or use the lab sandbox account.',
+        },
+        graphCaptions: graphCaptionsSince(opsStart),
+      };
+    }
+
     const accountResponse = await metaGraphFetch(
       `${GRAPH_BASE}/${adAccountId}?fields=id,name,account_status`,
       { method: 'GET', accessToken, tokenClass: 'client_user' }
     );
     if (!accountResponse.ok) {
       const graphError = await readMetaGraphApiError(accountResponse);
-      throw new Error(graphError.displayMessage);
+      return {
+        stepId: 'ads_management',
+        adAccountId,
+        agencyPartner: {
+          ...emptyPartner,
+          metaErrorCode: graphError.code,
+          metaErrorMessage: graphError.message,
+        },
+        emptyState: {
+          code: 'graph_error',
+          message: graphError.displayMessage,
+        },
+        graphCaptions: graphCaptionsSince(opsStart),
+      };
     }
     const account = (await accountResponse.json()) as { id?: string; name?: string };
-
-    const partnerTasks = [...REVIEW_DEMO_AD_ACCOUNT_PARTNER_TASKS];
-    const agencyName = await this.fetchAgencyBusinessName(accessToken, agencyBusinessId);
 
     let permittedTasks: string[] = [];
     let verified = false;
@@ -489,7 +711,23 @@ export class ReviewDemoService {
         );
         metaErrorCode = graphError.code;
         metaErrorMessage = graphError.message;
-        throw new Error(graphError.displayMessage);
+        return {
+          stepId: 'ads_management',
+          adAccountId,
+          ...(account.name ? { adAccountName: account.name } : {}),
+          agencyPartner: {
+            ...emptyPartner,
+            permittedTasks,
+            verified,
+            metaErrorCode,
+            metaErrorMessage,
+          },
+          emptyState: {
+            code: 'graph_error',
+            message: graphError.displayMessage,
+          },
+          graphCaptions: graphCaptionsSince(opsStart),
+        };
       }
     }
 
@@ -510,6 +748,90 @@ export class ReviewDemoService {
     };
   }
 
+  private async runPagePartnerGrantAndReadback(
+    accessToken: string,
+    pageId: string,
+    agencyBusinessId: string
+  ): Promise<ReviewDemoPagePartnerResult> {
+    const partnerTasks = [...REVIEW_DEMO_PAGE_PARTNER_TASKS];
+    const agencyName = await this.fetchAgencyBusinessName(accessToken, agencyBusinessId);
+
+    try {
+      const prior = await metaPartnerService.verifyAgencyPartnerAccess(
+        accessToken,
+        pageId,
+        agencyBusinessId,
+        partnerTasks
+      );
+      if (prior.verified) {
+        return {
+          businessId: agencyBusinessId,
+          ...(agencyName ? { name: agencyName } : {}),
+          permittedTasks: prior.assignedTasks,
+          verified: true,
+          assetId: pageId,
+          assetKind: 'page',
+          granted: false,
+        };
+      }
+
+      let rawGraphResponse: string | undefined;
+      try {
+        await metaPartnerService.grantAgencyPartnerAccess(
+          accessToken,
+          pageId,
+          agencyBusinessId,
+          partnerTasks
+        );
+        rawGraphResponse = JSON.stringify({ success: true });
+      } catch (error) {
+        const raw = error instanceof Error ? error.message : String(error);
+        const graphError = toMetaGraphError(raw);
+        return {
+          businessId: agencyBusinessId,
+          ...(agencyName ? { name: agencyName } : {}),
+          permittedTasks: [],
+          verified: false,
+          assetId: pageId,
+          assetKind: 'page',
+          granted: false,
+          graphError,
+          rawGraphResponse: raw,
+        };
+      }
+
+      const readBack = await metaPartnerService.verifyAgencyPartnerAccess(
+        accessToken,
+        pageId,
+        agencyBusinessId,
+        partnerTasks
+      );
+
+      return {
+        businessId: agencyBusinessId,
+        ...(agencyName ? { name: agencyName } : {}),
+        permittedTasks: readBack.assignedTasks,
+        verified: readBack.verified,
+        assetId: pageId,
+        assetKind: 'page',
+        granted: true,
+        rawGraphResponse,
+      };
+    } catch (error) {
+      const raw = error instanceof Error ? error.message : String(error);
+      return {
+        businessId: agencyBusinessId,
+        ...(agencyName ? { name: agencyName } : {}),
+        permittedTasks: [],
+        verified: false,
+        assetId: pageId,
+        assetKind: 'page',
+        graphError: toMetaGraphError(raw),
+        rawGraphResponse: raw,
+      };
+    }
+  }
+
   private async fetchGraphAssetName(
     accessToken: string,
     assetId: string
@@ -528,84 +850,236 @@ export class ReviewDemoService {
 
   private async loadBusinessManagement(
     accessToken: string,
-    _sandbox: ReturnType<typeof defaultSandboxIds>,
-    opsStart: number
+    assetContext: ReviewDemoResolvedAssets
   ): Promise<ReviewDemoStepPayload> {
-    const sandboxConfig = resolveReviewDemoSandbox(false);
-    if (!sandboxConfig.configured) {
+    const opsStart = getRecordedMetaGraphOps().length;
+    const agencyBusinessId = assetContext.agencyBusinessId;
+    const partnerTasks = [...REVIEW_DEMO_AD_ACCOUNT_PARTNER_TASKS];
+
+    if (assetContext.mode === 'sandbox') {
+      const sandboxConfig = resolveReviewDemoSandbox(false);
+      if (!sandboxConfig.configured) {
+        return {
+          stepId: 'business_management',
+          assets: [],
+          sandboxMisconfigured: true,
+          sandboxMisconfiguredMessage:
+            'Set META_REVIEW_BM_ID, META_REVIEW_PAGE_ID, and META_REVIEW_AD_ACCOUNT_ID on the API service.',
+          agencyPartner: {
+            businessId: env.META_REVIEW_AGENCY_BM_ID?.trim() ?? 'unconfigured',
+            permittedTasks: [],
+            verified: false,
+            assetId: 'unconfigured',
+            assetKind: 'ad_account',
+          },
+          graphCaptions: graphCaptionsSince(opsStart),
+        };
+      }
+
+      const { businessManagerId, pageId, adAccountId } = sandboxConfig;
+
+      const [businessName, pageName, adAccountName] = await Promise.all([
+        this.fetchGraphAssetName(accessToken, businessManagerId),
+        this.fetchGraphAssetName(accessToken, pageId),
+        this.fetchGraphAssetName(accessToken, adAccountId),
+      ]);
+
+      const assets = [
+        {
+          id: businessManagerId,
+          name: businessName ?? 'AuthHub Review Business Manager',
+          kind: 'business' as const,
+        },
+        {
+          id: pageId,
+          name: pageName ?? 'AuthHub Review Page',
+          kind: 'page' as const,
+        },
+        {
+          id: adAccountId,
+          name: adAccountName ?? 'AuthHub Review Ad Account',
+          kind: 'ad_account' as const,
+        },
+      ];
+
+      let partnerAccess = { assignedTasks: [] as string[], verified: false };
+      try {
+        partnerAccess = await metaPartnerService.verifyAdAccountAgencyAccess(
+          accessToken,
+          adAccountId,
+          agencyBusinessId,
+          partnerTasks
+        );
+      } catch {
+        partnerAccess = { assignedTasks: [], verified: false };
+      }
+
+      const agencyName = await this.fetchAgencyBusinessName(accessToken, agencyBusinessId);
+      let pagePartner: ReviewDemoPagePartnerResult | undefined;
+      try {
+        const pageAccess = await metaPartnerService.verifyAgencyPartnerAccess(
+          accessToken,
+          pageId,
+          agencyBusinessId,
+          [...REVIEW_DEMO_PAGE_PARTNER_TASKS]
+        );
+        pagePartner = {
+          businessId: agencyBusinessId,
+          ...(agencyName ? { name: agencyName } : {}),
+          permittedTasks: pageAccess.assignedTasks,
+          verified: pageAccess.verified,
+          assetId: pageId,
+          assetKind: 'page',
+        };
+      } catch {
+        pagePartner = undefined;
+      }
+
+      const agencyPartner = {
+        businessId: agencyBusinessId,
+        ...(agencyName ? { name: agencyName } : {}),
+        permittedTasks: partnerAccess.assignedTasks,
+        verified: partnerAccess.verified,
+        assetId: adAccountId,
+        assetKind: 'ad_account' as const,
+      };
+
       return {
         stepId: 'business_management',
         business: {
-          id: 'review-sandbox-unconfigured',
-          name: 'Review sandbox not configured',
+          id: businessManagerId,
+          name: businessName ?? 'AuthHub Review Business Manager',
           kind: 'business',
         },
+        assets,
+        agencyPartner,
+        ...(pagePartner ? { pagePartner } : {}),
+        stepCaption: businessStepCaption({
+          pagePartner,
+          adAccountPartnerVerified: agencyPartner.verified,
+        }),
+        graphCaptions: graphCaptionsSince(opsStart),
+      };
+    }
+
+    const businessManagerId = assetContext.businessManagerId;
+    if (!businessManagerId) {
+      return {
+        stepId: 'business_management',
         assets: [],
-        sandboxMisconfigured: true,
-        sandboxMisconfiguredMessage:
-          'Set META_REVIEW_BM_ID, META_REVIEW_PAGE_ID, and META_REVIEW_AD_ACCOUNT_ID on the API service.',
+        emptyState: {
+          code: 'no_business',
+          message:
+            'No Business Portfolio is available for this token. Grant business_management during consent or connect a business-enabled account.',
+        },
         agencyPartner: {
-          businessId: env.META_REVIEW_AGENCY_BM_ID?.trim() ?? 'unconfigured',
+          businessId: agencyBusinessId,
           permittedTasks: [],
           verified: false,
-          assetId: 'unconfigured',
+          assetId: assetContext.adAccountId ?? 'unknown',
           assetKind: 'ad_account',
         },
         graphCaptions: graphCaptionsSince(opsStart),
       };
     }
 
-    const { businessManagerId, pageId, adAccountId, agencyBusinessId } = sandboxConfig;
-    const partnerTasks = [...REVIEW_DEMO_AD_ACCOUNT_PARTNER_TASKS];
-
-    const [businessName, pageName, adAccountName] = await Promise.all([
-      this.fetchGraphAssetName(accessToken, businessManagerId),
-      this.fetchGraphAssetName(accessToken, pageId),
-      this.fetchGraphAssetName(accessToken, adAccountId),
-    ]);
-
-    const assets = [
+    const businessName = await this.fetchGraphAssetName(accessToken, businessManagerId);
+    const assets: Array<{ id: string; name: string; kind: 'business' | 'page' | 'ad_account' }> = [
       {
         id: businessManagerId,
-        name: businessName ?? 'AuthHub Review Business Manager',
-        kind: 'business' as const,
-      },
-      {
-        id: pageId,
-        name: pageName ?? 'AuthHub Review Page',
-        kind: 'page' as const,
-      },
-      {
-        id: adAccountId,
-        name: adAccountName ?? 'AuthHub Review Ad Account',
-        kind: 'ad_account' as const,
+        name: businessName ?? 'Business Portfolio',
+        kind: 'business',
       },
     ];
 
-    const partnerAccess = await metaPartnerService.verifyAdAccountAgencyAccess(
-      accessToken,
-      adAccountId,
-      agencyBusinessId,
-      partnerTasks
-    );
+    if (assetContext.pageId) {
+      const pageName = await this.fetchGraphAssetName(accessToken, assetContext.pageId);
+      assets.push({
+        id: assetContext.pageId,
+        name: pageName ?? 'Facebook Page',
+        kind: 'page',
+      });
+    }
+
+    if (assetContext.adAccountId) {
+      const adAccountName = await this.fetchGraphAssetName(accessToken, assetContext.adAccountId);
+      assets.push({
+        id: assetContext.adAccountId,
+        name: adAccountName ?? 'Ad account',
+        kind: 'ad_account',
+      });
+    }
+
     const agencyName = await this.fetchAgencyBusinessName(accessToken, agencyBusinessId);
+    let partnerAccess = { assignedTasks: [] as string[], verified: false };
+    if (assetContext.adAccountId) {
+      try {
+        partnerAccess = await metaPartnerService.verifyAdAccountAgencyAccess(
+          accessToken,
+          assetContext.adAccountId,
+          agencyBusinessId,
+          partnerTasks
+        );
+      } catch {
+        partnerAccess = { assignedTasks: [], verified: false };
+      }
+    }
+
+    let pagePartner: ReviewDemoPagePartnerResult | undefined;
+    if (assetContext.pageId) {
+      try {
+        const pageAccess = await metaPartnerService.verifyAgencyPartnerAccess(
+          accessToken,
+          assetContext.pageId,
+          agencyBusinessId,
+          [...REVIEW_DEMO_PAGE_PARTNER_TASKS]
+        );
+        pagePartner = {
+          businessId: agencyBusinessId,
+          ...(agencyName ? { name: agencyName } : {}),
+          permittedTasks: pageAccess.assignedTasks,
+          verified: pageAccess.verified,
+          assetId: assetContext.pageId,
+          assetKind: 'page',
+        };
+      } catch (error) {
+        const raw = error instanceof Error ? error.message : String(error);
+        pagePartner = {
+          businessId: agencyBusinessId,
+          ...(agencyName ? { name: agencyName } : {}),
+          permittedTasks: [],
+          verified: false,
+          assetId: assetContext.pageId,
+          assetKind: 'page',
+          graphError: toMetaGraphError(raw),
+          rawGraphResponse: raw,
+        };
+      }
+    }
+
+    const agencyPartner = {
+      businessId: agencyBusinessId,
+      ...(agencyName ? { name: agencyName } : {}),
+      permittedTasks: partnerAccess.assignedTasks,
+      verified: partnerAccess.verified,
+      assetId: assetContext.adAccountId ?? 'unknown',
+      assetKind: 'ad_account' as const,
+    };
 
     return {
       stepId: 'business_management',
       business: {
         id: businessManagerId,
-        name: businessName ?? 'AuthHub Review Business Manager',
+        name: businessName ?? 'Business Portfolio',
         kind: 'business',
       },
       assets,
-      agencyPartner: {
-        businessId: agencyBusinessId,
-        ...(agencyName ? { name: agencyName } : {}),
-        permittedTasks: partnerAccess.assignedTasks,
-        verified: partnerAccess.verified,
-        assetId: adAccountId,
-        assetKind: 'ad_account',
-      },
+      agencyPartner,
+      ...(pagePartner ? { pagePartner } : {}),
+      stepCaption: businessStepCaption({
+        pagePartner,
+        adAccountPartnerVerified: agencyPartner.verified,
+      }),
       graphCaptions: graphCaptionsSince(opsStart),
     };
   }
@@ -668,6 +1142,16 @@ export class ReviewDemoService {
             assetId: sandbox.adAccountId,
             assetKind: 'ad_account',
           },
+          pagePartner: {
+            businessId: sandbox.agencyBusinessId,
+            name: 'AuthHub Agency BM (mock)',
+            permittedTasks: [...REVIEW_DEMO_PAGE_PARTNER_TASKS],
+            verified: false,
+            assetId: sandbox.pageId,
+            assetKind: 'page',
+          },
+          stepCaption:
+            'Page partner add (production POST) plus manual ad-account partner share verification — scoped to this session’s assets.',
           graphCaptions: ['GET /{business-id}/owned_pages (mock)', 'GET /act_{id}/agencies (mock)'],
         };
       default: {

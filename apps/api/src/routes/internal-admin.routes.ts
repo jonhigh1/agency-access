@@ -625,4 +625,22 @@ export async function internalAdminRoutes(
       return sendError(reply, 'INTERNAL_ERROR', 'Failed to adjust affiliate commission', 500);
     }
   });
+
+  fastify.post('/internal-admin/meta/seed-tier-cron-token', async (_request, reply) => {
+    try {
+      const { seedMetaTierCronTokenFromReviewDemo } = await import(
+        '@/services/meta-tier-cron-token.service.js'
+      );
+      const result = await seedMetaTierCronTokenFromReviewDemo();
+      return sendSuccess(reply, {
+        seeded: result.seeded,
+        alreadyPresent: result.alreadyPresent,
+        sourceClerkUserId: result.sourceClerkUserId,
+        ...(result.reason ? { reason: result.reason } : {}),
+      });
+    } catch (error) {
+      fastify.log.error({ error }, 'Error in POST /internal-admin/meta/seed-tier-cron-token');
+      return sendError(reply, 'INTERNAL_ERROR', 'Failed to seed meta tier cron token', 500);
+    }
+  });
 }

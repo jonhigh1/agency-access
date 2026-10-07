@@ -18,7 +18,9 @@
     "db:migrate:deploy": "node ./scripts/migrate-deploy.mjs",
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "seed:meta-tier-cron-token": "tsx scripts/seed-meta-tier-cron-token.ts",
+    "ops:review-demo-page-partner": "tsx scripts/review-demo-page-partner-ops.ts"
   },
   "dependencies": {
     "@agency-platform/shared": "^0.1.0",

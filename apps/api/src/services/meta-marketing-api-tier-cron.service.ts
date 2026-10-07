@@ -9,7 +9,6 @@ import {
 } from '@agency-platform/shared';
 import * as Sentry from '@sentry/node';
 import { env } from '@/lib/env.js';
-import { infisical } from '@/lib/infisical.js';
 import { logger } from '@/lib/logger.js';
 import { metaGraphFetch } from '@/lib/meta-graph-instrumentation.js';
 import { prisma } from '@/lib/prisma.js';
@@ -20,6 +19,7 @@ import {
   hasSuccessfulTierUtcDate,
   META_MARKETING_API_TIER_SENTRY_ALERT_KIND,
 } from '@/services/meta-marketing-api-tier-cron.queries.js';
+import { readMetaTierCronAccessToken } from '@/services/meta-tier-cron-token.service.js';
 
 const GRAPH_BASE = `https://graph.facebook.com/${META_GRAPH_VERSION}`;
 
@@ -48,32 +48,10 @@ function tierUtcDateFrom(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
 
-function reviewDemoSecretName(clerkUserId: string): string {
-  return `review_demo_meta_${clerkUserId}`;
-}
-
-function resolveLabClerkUserId(): string | null {
-  if (env.META_MARKETING_API_TIER_CRON_LAB_USER_ID?.trim()) {
-    return env.META_MARKETING_API_TIER_CRON_LAB_USER_ID.trim();
-  }
-  const first = env.META_REVIEW_LAB_USER_IDS[0];
-  return first?.trim() ? first.trim() : null;
-}
-
 function resolveAllowedAdAccountId(): string {
   return normalizeMetaAdAccountId(
     env.META_REVIEW_AD_ACCOUNT_ID ?? META_REVIEW_DEFAULT_AD_ACCOUNT_NUMERIC,
   );
-}
-
-async function readLabAccessToken(clerkUserId: string): Promise<string | null> {
-  try {
-    const raw = await infisical.getPlainSecret(reviewDemoSecretName(clerkUserId));
-    const parsed = JSON.parse(raw) as { accessToken?: string };
-    return parsed.accessToken?.trim() ? parsed.accessToken.trim() : null;
-  } catch {
-    return null;
-  }
 }
 
 async function findTodaySuccessLog(tierUtcDate: string) {
@@ -215,68 +193,30 @@ export async function runMetaMarketingApiTierDailyCron(
     }
   }
 
-  const clerkUserId = resolveLabClerkUserId();
-  if (!clerkUserId) {
-    const failureMetadata = {
-      metaAppId,
-      adAccountId,
-      success: false,
-      tierUtcDate,
-      error: 'missing_lab_clerk_user_id',
-      targetTierDays: META_MARKETING_API_TIER_TARGET_DAYS,
-    };
-    await auditService.createAuditLog({
-      action: META_MARKETING_API_TIER_DAILY_AUDIT_ACTION,
-      resourceType: 'meta_marketing_api_tier',
-      resourceId: adAccountId,
-      agencyId: env.META_REVIEW_LAB_AGENCY_ID,
-      metadata: failureMetadata,
-      ipAddress: '127.0.0.1',
-      userAgent: 'meta-marketing-api-tier-cron',
-    });
-    logger.error('meta_marketing_api_tier_daily', failureMetadata);
-    return {
-      success: false,
-      calls: [],
-      tierDayCount: await countSuccessfulTierDays(),
-      consecutiveFailures: await countConsecutiveFailuresIncludingToday(false),
-      alertedConsecutiveFailures: false,
-    };
-  }
-
-  const accessToken = await readLabAccessToken(clerkUserId);
+  const accessToken = await readMetaTierCronAccessToken();
   if (!accessToken) {
-    const failureMetadata = {
+    const skipMetadata = {
       metaAppId,
       adAccountId,
       success: false,
       tierUtcDate,
-      error: 'missing_lab_access_token',
-      clerkUserId,
+      error: 'missing_meta_tier_cron_token',
+      secretName: 'meta_tier_cron_token',
       targetTierDays: META_MARKETING_API_TIER_TARGET_DAYS,
     };
-    await auditService.createAuditLog({
-      action: META_MARKETING_API_TIER_DAILY_AUDIT_ACTION,
-      resourceType: 'meta_marketing_api_tier',
-      resourceId: adAccountId,
-      agencyId: env.META_REVIEW_LAB_AGENCY_ID,
-      metadata: failureMetadata,
-      ipAddress: '127.0.0.1',
-      userAgent: 'meta-marketing-api-tier-cron',
+    Sentry.captureMessage('Meta Marketing API tier cron skipped: missing meta_tier_cron_token', {
+      level: 'warning',
+      extra: skipMetadata,
     });
-    logger.error('meta_marketing_api_tier_daily', failureMetadata);
-    const consecutiveFailures = await countConsecutiveFailuresIncludingToday(false);
-    const alerted = await maybeAlertConsecutiveFailures(consecutiveFailures, now, {
-      metaAppId,
-      adAccountId,
-      tierUtcDate,
-    });
+    logger.warn('meta_marketing_api_tier_daily_skipped', skipMetadata);
     return {
+      skipped: true,
+      skipReason: 'missing_meta_tier_cron_token',
       success: false,
       calls: [],
       tierDayCount: await countSuccessfulTierDays(),
-      consecutiveFailures,
-      alertedConsecutiveFailures: alerted,
+      consecutiveFailures: 0,
+      alertedConsecutiveFailures: false,
     };
   }
 
@@ -296,7 +236,7 @@ export async function runMetaMarketingApiTierDailyCron(
     tierDayCount,
     targetTierDays: META_MARKETING_API_TIER_TARGET_DAYS,
     graphCalls: calls,
-    clerkUserId,
+    tokenSecret: 'meta_tier_cron_token',
   };
 
   await auditService.createAuditLog({

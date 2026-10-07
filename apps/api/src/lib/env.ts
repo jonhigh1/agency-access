@@ -206,6 +206,8 @@ const envSchema = z.object({
   /** Agency sandbox Business Portfolio id used for partner assignment in review demo. */
   META_REVIEW_AGENCY_BM_ID: z.string().optional(),
   META_REVIEW_LAB_AGENCY_ID: z.string().optional(),
+  /** Meta user id for the lab sandbox Facebook account; other users drive steps from granted assets. */
+  META_REVIEW_SANDBOX_META_USER_ID: z.string().optional(),
 
   // Daily Marketing API tier exercise (#134) — pg-boss cron on API service
   META_MARKETING_API_TIER_CRON_ENABLED: booleanish(false),
