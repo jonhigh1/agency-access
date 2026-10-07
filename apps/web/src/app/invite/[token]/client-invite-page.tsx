@@ -31,6 +31,7 @@ import {
 import { buildInvitePlatformQueue } from '@/lib/invite-platform-queue';
 import { buildInvitePlatformChecklist } from '@/lib/invite/platform-status';
 import { toDisplayName } from '@/lib/display-name';
+import { buildInviteRequestIdentity } from '@/lib/invite/invite-request-identity';
 import {
   buildMetaSelectionPrefill,
   hasOpenMetaFulfillment,
@@ -172,6 +173,17 @@ export default function ClientAuthorizationPage({
   );
   const securitySummary = useMemo(() => getInviteSecuritySummary(requestedPlatforms), [requestedPlatforms]);
   const platformSummary = useMemo(() => buildPlatformSummary(requestedPlatforms), [requestedPlatforms]);
+  const requestIdentity = useMemo(() => {
+    if (!data?.id) {
+      return null;
+    }
+    return buildInviteRequestIdentity({
+      agencyName: data.agencyName,
+      id: data.id,
+      createdAt: data.createdAt,
+      externalReference: data.externalReference,
+    });
+  }, [data?.agencyName, data?.createdAt, data?.externalReference, data?.id]);
 
   const isComplete = useMemo(() => {
     if (!data?.platforms?.length) return false;
@@ -765,6 +777,7 @@ export default function ClientAuthorizationPage({
           description={phaseCopy.description}
           logoUrl={data.branding?.logoUrl}
           logoAlt={`${agencyDisplayName} logo`}
+          requestIdentity={requestIdentity ?? undefined}
         />
       }
       checklist={progressChecklist}

@@ -2048,4 +2048,55 @@ describe('Invite Flow Page', () => {
       expect(calls).toEqual(['refresh', 'complete-1', 'refresh', 'complete-2']);
     });
   });
+
+  it('shows agency and request identity on the Meta platform step so two invites differ', async () => {
+    sessionStorage.setItem('invite-progress:token-123', JSON.stringify(['google']));
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({
+        ok: true,
+        json: async () => ({
+          data: {
+            id: 'f25a641e-8b2a-4c1d-9e0a-1b2c3d4e5f6a',
+            agencyId: 'agency-1',
+            agencyName: 'northwind media',
+            clientName: 'Client',
+            clientEmail: 'client@test.com',
+            status: 'pending',
+            uniqueToken: 'token-123',
+            createdAt: '2026-10-01T12:00:00.000Z',
+            externalReference: 'Q4 Meta onboarding',
+            expiresAt: new Date().toISOString(),
+            intakeFields: [],
+            branding: {},
+            platforms: [
+              {
+                platformGroup: 'google',
+                products: [{ product: 'google_ads', accessLevel: 'admin' }],
+              },
+              {
+                platformGroup: 'meta',
+                products: [{ product: 'meta_ads', accessLevel: 'admin' }],
+              },
+            ],
+            manualInviteTargets: { google: {}, meta: {} },
+            authorizationProgress: { completedPlatforms: ['google'], isComplete: false },
+          },
+          error: null,
+        }),
+      }))
+    );
+
+    render(<InvitePage />);
+
+    await waitFor(() => {
+      expect(screen.getByText('Active platform: Meta')).toBeInTheDocument();
+    });
+
+    expect(screen.getByText('Northwind Media')).toBeInTheDocument();
+    expect(screen.getByText(/Q4 Meta onboarding/i)).toBeInTheDocument();
+    expect(screen.getByText(/Ref f25a641e/i)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /complete meta access/i })).toBeInTheDocument();
+  });
 });

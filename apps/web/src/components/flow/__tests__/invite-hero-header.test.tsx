@@ -16,4 +16,20 @@ describe('InviteHeroHeader', () => {
     expect(screen.getByText(/passwords are never requested/i)).toBeInTheDocument();
     expect(screen.getByText(/2 platforms/i)).toBeInTheDocument();
   });
+
+  it('renders stable agency and request identity above the step title', () => {
+    render(
+      <InviteHeroHeader
+        title="Complete Meta access"
+        requestIdentity={{
+          agencyName: 'Northwind Media',
+          requestLabel: 'Q4 Meta onboarding · Sent 10/1/2026 · Ref 3d8a85dc',
+        }}
+      />
+    );
+
+    expect(screen.getByText('Northwind Media')).toBeInTheDocument();
+    expect(screen.getByText(/Q4 Meta onboarding · Sent 10\/1\/2026 · Ref 3d8a85dc/)).toBeInTheDocument();
+    expect(screen.getByRole('heading', { name: /complete meta access/i })).toBeInTheDocument();
+  });
 });

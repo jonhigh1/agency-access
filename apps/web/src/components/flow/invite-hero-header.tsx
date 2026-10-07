@@ -1,4 +1,5 @@
 import { Lock, ShieldCheck } from 'lucide-react';
+import type { InviteRequestIdentity } from '@/lib/invite/invite-request-identity';
 
 interface InviteHeroHeaderProps {
   title: string;
@@ -6,6 +7,8 @@ interface InviteHeroHeaderProps {
   badge?: string;
   logoUrl?: string | null;
   logoAlt?: string;
+  /** Stable agency + request label shown on every invite step (CF-05). */
+  requestIdentity?: InviteRequestIdentity;
 }
 
 /**
@@ -18,6 +21,7 @@ export function InviteHeroHeader({
   badge,
   logoUrl,
   logoAlt,
+  requestIdentity,
 }: InviteHeroHeaderProps) {
   return (
     <div>
@@ -28,6 +32,14 @@ export function InviteHeroHeader({
           alt={logoAlt || 'Agency logo'}
           className="mb-4 h-10 w-auto max-h-10 object-contain"
         />
+      ) : null}
+      {requestIdentity ? (
+        <div className="mb-3 space-y-1 border-b-2 border-black pb-3">
+          <p className="text-lg font-semibold leading-tight text-ink font-display">
+            {requestIdentity.agencyName}
+          </p>
+          <p className="label-nano text-muted-foreground">{requestIdentity.requestLabel}</p>
+        </div>
       ) : null}
       <h1 className="text-2xl font-bold leading-tight tracking-tight text-ink font-display">
         {title}

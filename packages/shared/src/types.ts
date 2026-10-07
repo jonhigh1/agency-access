@@ -2275,6 +2275,7 @@ export interface ClientAccessRequestPayload {
   clientName: string;
   clientEmail: string;
   externalReference?: string;
+  createdAt: string;
   status: AccessRequestStatus;
   uniqueToken: string;
   expiresAt: string;
