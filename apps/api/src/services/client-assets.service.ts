@@ -283,8 +283,9 @@ class ClientAssetsService {
   async fetchPageEngagementProof(
     accessToken: string,
     pageId: string,
-    options?: { exposeDetailedGraphErrors?: boolean }
+    options?: { exposeDetailedGraphErrors?: boolean; includeFeed?: boolean }
   ): Promise<MetaPageEngagementProof> {
+    const includeFeed = options?.includeFeed !== false;
     const opsStart = getRecordedMetaGraphOps().length;
     const pageUrl = new URL(`${this.GRAPH_API_BASE}/${pageId}`);
     pageUrl.searchParams.set('fields', 'id,name,category,fan_count,followers_count');
@@ -316,6 +317,25 @@ class ClientAssetsService {
 
     if (!page?.id || !page.name) {
       throw new Error('Meta did not return Page metadata for the selected Page');
+    }
+
+    if (!includeFeed) {
+      return {
+        page: {
+          id: page.id,
+          name: page.name,
+          managedTasks: [],
+          ...(page.category ? { category: page.category } : {}),
+          ...(typeof page.fan_count === 'number' ? { fanCount: page.fan_count } : {}),
+          ...(typeof page.followers_count === 'number'
+            ? { followerCount: page.followers_count }
+            : {}),
+        },
+        posts: [],
+        graphOperationCaptions: getRecordedMetaGraphOps()
+          .slice(opsStart)
+          .map((op) => formatMetaGraphOpCaption(op)),
+      };
     }
 
     const pageTokenUrl = new URL(`${this.GRAPH_API_BASE}/${pageId}`);

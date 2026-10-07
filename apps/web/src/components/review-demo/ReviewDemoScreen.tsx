@@ -220,8 +220,9 @@ export function ReviewDemoScreen({ initialStep = 'pages_show_list' }: ReviewDemo
               {stepPayload.stepId === 'pages_read_engagement' ? (
                 <div className="space-y-4">
                   <h2 className="font-display text-xl font-bold">Validate Page access</h2>
-                  <p className="text-sm text-muted-foreground">
-                    Same proof path as production client onboarding — Page metadata plus recent post dates (no post text).
+                  <p className="text-sm text-muted-foreground" data-testid="review-demo-page-proof-purpose">
+                    AuthHub reads these Page details to confirm it&apos;s the right Page before your agency is
+                    added.
                   </p>
                   <div data-testid="review-demo-page-engagement-proof">
                     <p className="font-semibold">{stepPayload.page.name}</p>
@@ -240,28 +241,6 @@ export function ReviewDemoScreen({ initialStep = 'pages_show_list' }: ReviewDemo
                       </p>
                     ) : null}
                   </div>
-                  {stepPayload.feedError ? (
-                    <div
-                      className="border-2 border-danger-ink bg-[rgb(var(--coral))]/10 p-4 text-sm"
-                      role="alert"
-                      data-testid="review-demo-feed-error"
-                    >
-                      {stepPayload.feedError.displayMessage}
-                    </div>
-                  ) : null}
-                  <ul className="space-y-2" data-testid="review-demo-posts-list">
-                    {stepPayload.posts.length === 0 && !stepPayload.feedError ? (
-                      <li className="border border-black/15 p-3 text-sm text-muted-foreground">
-                        No recent posts returned (empty feed is valid proof).
-                      </li>
-                    ) : null}
-                    {stepPayload.posts.map((post) => (
-                      <li key={post.id} className="border border-black/15 p-3 text-sm">
-                        <p className="font-mono text-xs text-muted-foreground">{post.id}</p>
-                        {post.createdTime ? <p>Created {post.createdTime}</p> : null}
-                      </li>
-                    ))}
-                  </ul>
                 </div>
               ) : null}
 

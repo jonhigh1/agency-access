@@ -396,6 +396,29 @@ describe('ClientAssetsService - Meta', () => {
       .rejects.toThrow(`Meta API error (${edge}?`);
   });
 
+  it('returns Page metadata only when includeFeed is false (review-demo path)', async () => {
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        id: 'page_1',
+        name: 'Client Page',
+        category: 'Local business',
+        fan_count: 120,
+        followers_count: 150,
+      }),
+    } as Response);
+
+    const result = await clientAssetsService.fetchPageEngagementProof('user-token', 'page_1', {
+      includeFeed: false,
+    });
+
+    expect(result.posts).toEqual([]);
+    expect(result.feedError).toBeUndefined();
+    expect(vi.mocked(fetch).mock.calls).toHaveLength(1);
+    expect(String(vi.mocked(fetch).mock.calls[0]?.[0])).toContain('fan_count');
+    expect(String(vi.mocked(fetch).mock.calls[0]?.[0])).not.toContain('/feed');
+  });
+
   it('reads selected Page content with a Page access token without returning the token', async () => {
     vi.mocked(fetch)
       .mockResolvedValueOnce({

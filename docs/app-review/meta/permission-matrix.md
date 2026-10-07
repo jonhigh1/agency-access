@@ -32,7 +32,7 @@ Product law for this submission track:
 | Ad accounts | **Manual** | Assign Partner in Meta Business Settings + **Check access** in AuthHub (`AdAccountSharingInstructions`) |
 | Client ↔ agency Business Portfolio link | **Manual** | No Graph mutation until a live path is proven |
 | Instagram, catalogs, pixels & datasets | **Manual** | Meta Business Settings partner/assignment steps |
-| Validate Page (`pages_read_engagement`) | **Validation only** | Dates-only feed; no post text; no agency manage claim |
+| Validate Page (`pages_read_engagement`) | **Validation only** | Production: dates-only feed; no post text; no agency manage claim. **Review Lab `/review-demo`:** Page metadata only (`GET /{page-id}?fields=id,name,category,fan_count,followers_count`) — no `/feed` (reviewer token has no app role). |
 | System user (`assigned_users` when shown) | **Labeled separately** | Not a substitute for Partner share or human agency-owner Ads Manager access |
 
 Grant UI (`MetaPartnerGrantNarrative`, grant checklist) and agency Meta settings (`MetaPartnerDurabilityPanel`) use the same labels: **Automatic** vs **Manual**.

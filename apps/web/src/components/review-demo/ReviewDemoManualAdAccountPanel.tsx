@@ -38,7 +38,9 @@ export function ReviewDemoManualAdAccountPanel({
 }: ReviewDemoManualAdAccountPanelProps) {
   const content = META_AD_ACCOUNT_INSTRUCTIONS.en;
   const { copied, copy } = useCopyToClipboard();
+  const { copied: step2Copied, copy: copyStep2Id } = useCopyToClipboard();
   const agencyLabel = agencyBusinessName ?? 'the agency';
+  const agencyIdConfigured = agencyBusinessId.trim().length > 0;
 
   return (
     <div className="space-y-5" data-testid="review-demo-manual-ad-checklist">
@@ -63,22 +65,55 @@ export function ReviewDemoManualAdAccountPanel({
           <p className="mt-1 text-sm text-muted-foreground">{agencyBusinessName}</p>
         ) : null}
         <div className="mt-2 flex flex-wrap items-center gap-3">
-          <span
-            className="break-all font-mono text-sm font-bold"
-            data-testid="review-demo-agency-bm-id"
-          >
-            {agencyBusinessId}
-          </span>
-          <ClientGrantSecondaryButton type="button" onClick={() => void copy(agencyBusinessId)}>
-            {copied ? <Check className="h-4 w-4 text-success-ink" aria-hidden="true" /> : <Copy className="h-4 w-4" aria-hidden="true" />}
-            {copied ? content.copyCard.copied : content.copyCard.copyButton}
-          </ClientGrantSecondaryButton>
+          {agencyIdConfigured ? (
+            <>
+              <span
+                className="break-all font-mono text-sm font-bold"
+                data-testid="review-demo-agency-bm-id"
+              >
+                {agencyBusinessId}
+              </span>
+              <ClientGrantSecondaryButton type="button" onClick={() => void copy(agencyBusinessId)}>
+                {copied ? (
+                  <Check className="h-4 w-4 text-success-ink" aria-hidden="true" />
+                ) : (
+                  <Copy className="h-4 w-4" aria-hidden="true" />
+                )}
+                {copied ? content.copyCard.copied : content.copyCard.copyButton}
+              </ClientGrantSecondaryButton>
+            </>
+          ) : (
+            <span className="text-sm font-semibold text-[rgb(var(--coral))]" data-testid="review-demo-agency-bm-not-configured">
+              Agency Business ID not configured
+            </span>
+          )}
         </div>
       </div>
 
       <ol className="list-decimal space-y-2 pl-5 text-sm">
         <li>{content.step2.substeps[0]}</li>
-        <li>{content.step2.substeps[1]}</li>
+        <li>
+          {content.step2.substeps[1]}{' '}
+          {agencyIdConfigured ? (
+            <span className="inline-flex flex-wrap items-center gap-2">
+              <span className="font-mono font-bold" data-testid="review-demo-step2-partner-bm-id">
+                {agencyBusinessId}
+              </span>
+              <ClientGrantSecondaryButton type="button" onClick={() => void copyStep2Id(agencyBusinessId)}>
+                {step2Copied ? (
+                  <Check className="h-4 w-4 text-success-ink" aria-hidden="true" />
+                ) : (
+                  <Copy className="h-4 w-4" aria-hidden="true" />
+                )}
+                {step2Copied ? content.copyCard.copied : content.copyCard.copyButton}
+              </ClientGrantSecondaryButton>
+            </span>
+          ) : (
+            <span className="font-semibold text-[rgb(var(--coral))]" data-testid="review-demo-step2-partner-bm-not-configured">
+              Agency Business ID not configured
+            </span>
+          )}
+        </li>
         <li>{content.step2.substeps[2]}</li>
         <li>{content.step2.substeps[3]}</li>
         <li>{content.step2.substeps[4]}</li>
