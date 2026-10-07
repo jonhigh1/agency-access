@@ -33,6 +33,17 @@ export async function initiateReviewDemoMetaOAuth(
   return json.data;
 }
 
+export async function fetchReviewDemoOAuthFlowHint(
+  getToken: () => Promise<string | null>,
+  state: string
+): Promise<boolean> {
+  const json = await authorizedApiFetch<{ data: { reviewDemo: boolean } }>(
+    `/review-demo/meta/oauth-flow?state=${encodeURIComponent(state)}`,
+    { getToken }
+  );
+  return json.data.reviewDemo;
+}
+
 export async function exchangeReviewDemoMetaOAuth(
   getToken: () => Promise<string | null>,
   input: { code: string; state: string }

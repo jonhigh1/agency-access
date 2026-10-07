@@ -165,6 +165,126 @@ async function createState(
 }
 
 /**
+ * Read OAuth state without consuming (for routing hints before exchange).
+ */
+async function peekState(
+  stateToken: string
+): Promise<{ data: OAuthState | null; error: { code: string; message?: string } | null }> {
+  try {
+    if (!stateToken || stateToken.trim() === '') {
+      return {
+        data: null,
+        error: {
+          code: 'INVALID_STATE_TOKEN',
+          message: 'State token cannot be empty',
+        },
+      };
+    }
+
+    const statelessStateData = decodeStatelessStateToken(stateToken);
+    if (statelessStateData) {
+      if (process.env.NODE_ENV === 'production') {
+        return {
+          data: null,
+          error: {
+            code: 'STATE_STORAGE_REQUIRED',
+            message: 'Durable OAuth state storage is required in production',
+          },
+        };
+      }
+
+      const age = Date.now() - statelessStateData.timestamp;
+      if (age > STATE_MAX_AGE_MS) {
+        return {
+          data: null,
+          error: {
+            code: 'STATE_EXPIRED',
+            message: 'State token has expired',
+          },
+        };
+      }
+
+      return { data: statelessStateData, error: null };
+    }
+
+    const stateRecord = await prisma.oAuthStateToken.findUnique({
+      where: { stateToken },
+    });
+
+    if (!stateRecord) {
+      return { data: null, error: null };
+    }
+
+    if (stateRecord.consumedAt) {
+      return {
+        data: null,
+        error: {
+          code: 'STATE_ALREADY_CONSUMED',
+          message: 'State token has already been used',
+        },
+      };
+    }
+
+    if (stateRecord.expiresAt < new Date()) {
+      return {
+        data: null,
+        error: {
+          code: 'STATE_EXPIRED',
+          message: 'State token has expired',
+        },
+      };
+    }
+
+    if (!stateRecord.signature || !verifyStateSignature(stateToken, stateRecord.signature)) {
+      return {
+        data: null,
+        error: {
+          code: 'INVALID_STATE_SIGNATURE',
+          message: 'State token signature verification failed',
+        },
+      };
+    }
+
+    const age = Date.now() - Number(stateRecord.timestamp);
+    if (age > STATE_MAX_AGE_MS) {
+      return {
+        data: null,
+        error: {
+          code: 'STATE_EXPIRED',
+          message: 'State token has expired',
+        },
+      };
+    }
+
+    const stateData: OAuthState = {
+      agencyId: stateRecord.agencyId ?? '',
+      platform: stateRecord.platform,
+      userEmail: stateRecord.userEmail ?? '',
+      redirectUrl: stateRecord.redirectUrl ?? undefined,
+      timestamp: Number(stateRecord.timestamp),
+      accessRequestId: stateRecord.accessRequestId ?? undefined,
+      accessRequestToken: stateRecord.accessRequestToken ?? undefined,
+      clientEmail: stateRecord.clientEmail ?? undefined,
+      shop: stateRecord.shop ?? undefined,
+      ...(stateRecord.metadata as Record<string, unknown> ?? {}),
+    };
+
+    return { data: stateData, error: null };
+  } catch (error) {
+    logger.error('OAuth state peek failed', {
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return {
+      data: null,
+      error: {
+        code: 'STATE_PEEK_FAILED',
+        message: 'Failed to read OAuth state token',
+      },
+    };
+  }
+}
+
+/**
  * Validate and consume OAuth state token (one-time use)
  * Returns state data if valid, null if invalid or expired
  *
@@ -376,6 +496,7 @@ async function cleanupExpiredTokens(): Promise<{ deleted: number }> {
 // Export as service object for easier mocking in tests
 export const oauthStateService = {
   createState,
+  peekState,
   validateState,
   cleanupExpiredTokens,
 };

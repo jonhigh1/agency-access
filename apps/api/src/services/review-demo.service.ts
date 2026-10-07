@@ -108,16 +108,14 @@ export class ReviewDemoService {
     userEmail: string;
     headers: { origin?: string | string[]; referer?: string | string[] };
   }): Promise<{ authUrl: string; state: string }> {
-    const callbackBase = resolveClientInviteCallbackUrl(input.headers);
-    const redirectUrl = new URL(callbackBase);
-    redirectUrl.searchParams.set('flow', 'review-demo');
+    const redirectUri = resolveClientInviteCallbackUrl(input.headers);
 
     const agencyId = env.META_REVIEW_LAB_AGENCY_ID ?? 'review-lab-agency';
     const stateResult = await oauthStateService.createState({
       agencyId,
       platform: 'meta',
       userEmail: input.userEmail,
-      redirectUrl: redirectUrl.toString(),
+      redirectUrl: redirectUri,
       timestamp: Date.now(),
       reviewDemo: true,
       clerkUserId: input.clerkUserId,
@@ -128,9 +126,17 @@ export class ReviewDemoService {
     }
 
     const connector = new MetaConnector();
-    const authUrl = connector.getAuthUrl(stateResult.data, [...META_CORE_PERMISSIONS], redirectUrl.toString());
+    const authUrl = connector.getAuthUrl(stateResult.data, [...META_CORE_PERMISSIONS], redirectUri);
 
     return { authUrl, state: stateResult.data };
+  }
+
+  async isReviewDemoOAuthState(stateToken: string): Promise<boolean> {
+    const peek = await oauthStateService.peekState(stateToken);
+    if (peek.error || !peek.data) {
+      return false;
+    }
+    return peek.data.reviewDemo === true;
   }
 
   async completeMetaOAuth(input: {

@@ -12,6 +12,32 @@ vi.mock('@/lib/infisical.js', () => ({
   },
 }));
 
+const createStateMock = vi.fn(async () => ({ data: 'oauth-state-token', error: null }));
+const getAuthUrlMock = vi.fn((_state: string, _scopes: string[], redirectUri: string) => {
+  const url = new URL('https://www.facebook.com/v21.0/dialog/oauth');
+  url.searchParams.set('redirect_uri', redirectUri);
+  url.searchParams.set('state', 'oauth-state-token');
+  return url.toString();
+});
+
+vi.mock('@/services/oauth-state.service.js', () => ({
+  oauthStateService: {
+    createState: (...args: unknown[]) => createStateMock(...args),
+    peekState: vi.fn(async () => ({ data: null, error: null })),
+    validateState: vi.fn(async () => ({ data: null, error: null })),
+  },
+}));
+
+vi.mock('@/services/connectors/meta.js', () => ({
+  MetaConnector: class {
+    getAuthUrl = getAuthUrlMock;
+  },
+}));
+
+vi.mock('@/routes/client-auth/redirect-uri.js', () => ({
+  resolveClientInviteCallbackUrl: () => 'https://review.authhub.co/invite/oauth-callback',
+}));
+
 vi.mock('@/lib/env.js', () => ({
   env: {
     META_REVIEW_DEMO_MOCK_GRAPH: true,
@@ -26,6 +52,8 @@ vi.mock('@/lib/env.js', () => ({
 describe('reviewDemoService mock graph payloads', () => {
   beforeEach(() => {
     clearRecordedMetaGraphOps();
+    createStateMock.mockClear();
+    getAuthUrlMock.mockClear();
   });
 
   it('reports a connected mock session without Infisical tokens when mock graph is enabled', async () => {
@@ -35,6 +63,27 @@ describe('reviewDemoService mock graph payloads', () => {
     expect(session.connected).toBe(true);
     expect(session.identity?.name).toContain('Review');
     expect(session.grantedPermissions).toContain('pages_show_list');
+  });
+
+  it('builds Meta OAuth redirect_uri without query params for App Review lab connect', async () => {
+    const { reviewDemoService } = await import('../review-demo.service.js');
+    const result = await reviewDemoService.createMetaAuthUrl({
+      clerkUserId: 'user_test',
+      userEmail: 'lab@test.example',
+      headers: { origin: 'https://review.authhub.co' },
+    });
+
+    const authUrl = new URL(result.authUrl);
+    expect(authUrl.searchParams.get('redirect_uri')).toBe('https://review.authhub.co/invite/oauth-callback');
+    expect(authUrl.searchParams.get('redirect_uri')).not.toContain('flow=');
+
+    expect(createStateMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        reviewDemo: true,
+        clerkUserId: 'user_test',
+        redirectUrl: 'https://review.authhub.co/invite/oauth-callback',
+      })
+    );
   });
 
   it('returns sandbox-friendly pages_show_list proof', async () => {
