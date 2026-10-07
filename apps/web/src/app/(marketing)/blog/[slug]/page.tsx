@@ -433,7 +433,7 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
             <Button variant="brutalist" size="lg" asChild>
               <a href="https://authhub.co/">Start Your Free Trial</a>
             </Button>
-            <Button variant="outline" size="lg" className="bg-transparent text-white border-white hover:bg-white/10" asChild>
+            <Button variant="secondary" size="lg" className="bg-transparent text-white border-white hover:bg-white/10" asChild>
               <a href="https://authhub.co/pricing">See pricing</a>
             </Button>
           </div>
