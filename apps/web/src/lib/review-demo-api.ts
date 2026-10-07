@@ -6,7 +6,7 @@ export async function fetchReviewDemoSession(
   step: ReviewDemoStepId
 ): Promise<ReviewDemoSession> {
   const json = await authorizedApiFetch<{ data: ReviewDemoSession }>(
-    `/review-demo/session?step=${encodeURIComponent(step)}`,
+    `/api/review-demo/session?step=${encodeURIComponent(step)}`,
     { getToken }
   );
   return json.data;
@@ -17,7 +17,7 @@ export async function fetchReviewDemoStep(
   stepId: ReviewDemoStepId
 ): Promise<ReviewDemoStepPayload> {
   const json = await authorizedApiFetch<{ data: ReviewDemoStepPayload }>(
-    `/review-demo/steps/${encodeURIComponent(stepId)}`,
+    `/api/review-demo/steps/${encodeURIComponent(stepId)}`,
     { getToken }
   );
   return json.data;
@@ -27,7 +27,7 @@ export async function initiateReviewDemoMetaOAuth(
   getToken: () => Promise<string | null>
 ): Promise<{ authUrl: string }> {
   const json = await authorizedApiFetch<{ data: { authUrl: string } }>(
-    '/review-demo/meta/initiate',
+    '/api/review-demo/meta/initiate',
     { getToken, method: 'POST', body: JSON.stringify({}) }
   );
   return json.data;
@@ -37,7 +37,7 @@ export async function exchangeReviewDemoMetaOAuth(
   getToken: () => Promise<string | null>,
   input: { code: string; state: string }
 ): Promise<void> {
-  await authorizedApiFetch('/review-demo/meta/exchange', {
+  await authorizedApiFetch('/api/review-demo/meta/exchange', {
     getToken,
     method: 'POST',
     body: JSON.stringify(input),
@@ -49,7 +49,7 @@ export async function pauseReviewDemoTestAd(
   adId?: string
 ): Promise<{ adId: string; effectiveStatus: string }> {
   const json = await authorizedApiFetch<{ data: { adId: string; effectiveStatus: string } }>(
-    '/review-demo/steps/ads_management/pause',
+    '/api/review-demo/steps/ads_management/pause',
     {
       getToken,
       method: 'POST',
@@ -64,7 +64,7 @@ export async function resumeReviewDemoTestAd(
   adId?: string
 ): Promise<{ adId: string; effectiveStatus: string }> {
   const json = await authorizedApiFetch<{ data: { adId: string; effectiveStatus: string } }>(
-    '/review-demo/steps/ads_management/resume',
+    '/api/review-demo/steps/ads_management/resume',
     {
       getToken,
       method: 'POST',

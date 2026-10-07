@@ -106,8 +106,10 @@ function AuthenticatedLayoutInner({
     runPerfAgencyCheck ? undefined : sharedAgency?.id
   );
 
-  // Redirect unauthenticated users (skip in bypass mode)
-  if (!isDevelopmentBypass && isLoaded && !userId) {
+  const isReviewDemoPath = pathname?.startsWith('/review-demo') ?? false;
+
+  // Redirect unauthenticated users (skip in bypass mode and review lab)
+  if (!isDevelopmentBypass && isLoaded && !userId && !isReviewDemoPath) {
     redirect('/');
   }
 
@@ -120,8 +122,13 @@ function AuthenticatedLayoutInner({
       }
       previousPathname.current = pathname;
 
-      // Skip if already on onboarding page
-      if (!pathname || pathname.startsWith('/onboarding') || isDashboardRootPath) {
+      // Skip if already on onboarding page or Meta review lab (no agency required)
+      if (
+        !pathname ||
+        pathname.startsWith('/onboarding') ||
+        pathname.startsWith('/review-demo') ||
+        isDashboardRootPath
+      ) {
         return;
       }
 
