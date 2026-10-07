@@ -18,7 +18,7 @@ vi.mock('@/lib/review-demo-api', () => ({
       businessManagerId: '695982475048959',
       adAccountId: 'act_557538895783894',
       pageId: '61595193599205',
-      catalogId: '1858948598873838',
+      agencyBusinessId: '3808519629379919',
     },
   })),
   fetchReviewDemoStep: vi.fn(async () => ({
@@ -27,8 +27,7 @@ vi.mock('@/lib/review-demo-api', () => ({
     graphCaptions: ['GET /me/accounts'],
   })),
   initiateReviewDemoMetaOAuth: vi.fn(),
-  pauseReviewDemoTestAd: vi.fn(),
-  resumeReviewDemoTestAd: vi.fn(),
+  ensureReviewDemoAdAccountPartner: vi.fn(),
 }));
 
 describe('ReviewDemoScreen', () => {

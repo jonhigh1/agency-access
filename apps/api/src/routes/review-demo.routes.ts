@@ -13,10 +13,6 @@ const exchangeBodySchema = z.object({
   state: z.string().min(1),
 });
 
-const pauseBodySchema = z.object({
-  adId: z.string().optional(),
-});
-
 async function requireLabReview(request: FastifyRequest, reply: FastifyReply): Promise<boolean> {
   const authMiddleware = authenticate();
   await authMiddleware(request, reply);
@@ -141,55 +137,22 @@ export async function reviewDemoRoutes(fastify: FastifyInstance) {
     }
   });
 
-  fastify.post('/review-demo/steps/ads_management/pause', async (request, reply) => {
+  fastify.post('/review-demo/steps/ads_management/ensure-partner', async (request, reply) => {
     const labUser = (request as any).labReviewUser as { userId: string };
-    const parsed = pauseBodySchema.safeParse(request.body ?? {});
-    if (!parsed.success) {
-      return sendValidationError(reply, 'Invalid pause payload');
-    }
-
     const userEmail = (await resolveAuthenticatedUserEmail((request as any).user)) ?? 'review-demo@unknown';
     try {
-      const result = await reviewDemoService.pauseTestAd({
+      const payload = await reviewDemoService.ensureAdAccountAgencyPartner({
         clerkUserId: labUser.userId,
         userEmail,
-        adId: parsed.data.adId,
         ipAddress: extractClientIp(request),
         userAgent: extractUserAgent(request),
       });
-      return reply.send({ data: result, error: null });
+      return reply.send({ data: payload, error: null });
     } catch (error) {
       return sendError(
         reply,
-        'REVIEW_DEMO_PAUSE_FAILED',
-        error instanceof Error ? error.message : 'Failed to pause test ad',
-        502
-      );
-    }
-  });
-
-  fastify.post('/review-demo/steps/ads_management/resume', async (request, reply) => {
-    const labUser = (request as any).labReviewUser as { userId: string };
-    const parsed = pauseBodySchema.safeParse(request.body ?? {});
-    if (!parsed.success) {
-      return sendValidationError(reply, 'Invalid resume payload');
-    }
-
-    const userEmail = (await resolveAuthenticatedUserEmail((request as any).user)) ?? 'review-demo@unknown';
-    try {
-      const result = await reviewDemoService.resumeTestAd({
-        clerkUserId: labUser.userId,
-        userEmail,
-        adId: parsed.data.adId,
-        ipAddress: extractClientIp(request),
-        userAgent: extractUserAgent(request),
-      });
-      return reply.send({ data: result, error: null });
-    } catch (error) {
-      return sendError(
-        reply,
-        'REVIEW_DEMO_RESUME_FAILED',
-        error instanceof Error ? error.message : 'Failed to resume test ad',
+        'REVIEW_DEMO_PARTNER_ASSIGN_FAILED',
+        error instanceof Error ? error.message : 'Failed to assign agency partner on review ad account',
         502
       );
     }

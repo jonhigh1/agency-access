@@ -8,7 +8,8 @@ Lab-only guided Meta App Review screencast surface (issue #131 / build spec #135
 
 - `META_REVIEW_DEMO_ENABLED=true`
 - `META_REVIEW_LAB_USER_IDS` — Clerk user ids for lab reviewer/agency accounts
-- Optional sandbox overrides: `META_REVIEW_BM_ID`, `META_REVIEW_AD_ACCOUNT_ID`, `META_REVIEW_PAGE_ID`, `META_REVIEW_CATALOG_ID`, `META_REVIEW_TEST_AD_ID`
+- Optional sandbox overrides: `META_REVIEW_BM_ID`, `META_REVIEW_AD_ACCOUNT_ID`, `META_REVIEW_PAGE_ID`
+- **Required for live Graph partner proof:** `META_REVIEW_AGENCY_BM_ID` — agency sandbox Business Portfolio id assigned as partner on the review ad account
 - `META_REVIEW_LAB_AGENCY_ID` — agency id stored in OAuth state for review-demo Meta connect
 
 **Web (`apps/web`)**

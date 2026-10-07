@@ -1,6 +1,7 @@
 import {
   META_CORE_PERMISSIONS,
   META_GRAPH_VERSION,
+  REVIEW_DEMO_AD_ACCOUNT_PARTNER_TASKS,
   REVIEW_DEMO_STEP_ORDER,
   type ReviewDemoIdentity,
   type ReviewDemoSession,
@@ -15,6 +16,8 @@ import { MetaConnector } from '@/services/connectors/meta.js';
 import { auditService } from '@/services/audit.service.js';
 import { oauthStateService } from '@/services/oauth-state.service.js';
 import { resolveClientInviteCallbackUrl } from '@/routes/client-auth/redirect-uri.js';
+import { clientAssetsService } from '@/services/client-assets.service.js';
+import { metaPartnerService } from '@/services/meta-partner.service.js';
 
 const GRAPH_BASE = `https://graph.facebook.com/${META_GRAPH_VERSION}`;
 
@@ -23,7 +26,6 @@ interface ReviewDemoStoredToken {
   refreshToken?: string;
   expiresAt?: string;
   scope?: string;
-  pausedAdId?: string;
   identity?: ReviewDemoIdentity;
 }
 
@@ -36,8 +38,18 @@ function defaultSandboxIds() {
     businessManagerId: env.META_REVIEW_BM_ID ?? '695982475048959',
     adAccountId: normalizeAdAccountId(env.META_REVIEW_AD_ACCOUNT_ID ?? '557538895783894'),
     pageId: env.META_REVIEW_PAGE_ID ?? '61595193599205',
-    catalogId: env.META_REVIEW_CATALOG_ID ?? '1858948598873838',
+    agencyBusinessId: env.META_REVIEW_AGENCY_BM_ID ?? '3808519629379919',
   };
+}
+
+function requireAgencyBusinessIdForLiveGraph(): string {
+  const configured = env.META_REVIEW_AGENCY_BM_ID?.trim();
+  if (!configured) {
+    throw new Error(
+      'META_REVIEW_AGENCY_BM_ID must be set to the agency sandbox Business Portfolio id for review-demo partner assignment'
+    );
+  }
+  return configured;
 }
 
 function normalizeAdAccountId(value: string): string {
@@ -253,6 +265,7 @@ export class ReviewDemoService {
     );
     const opsStart = getRecordedMetaGraphOps().length;
     const sandbox = defaultSandboxIds();
+    const agencyBusinessId = requireAgencyBusinessIdForLiveGraph();
 
     switch (input.stepId) {
       case 'pages_show_list':
@@ -260,7 +273,7 @@ export class ReviewDemoService {
       case 'pages_read_engagement':
         return this.loadPagesReadEngagement(accessToken, sandbox.pageId, opsStart);
       case 'ads_management':
-        return this.loadAdsManagement(accessToken, sandbox.adAccountId, input.clerkUserId, opsStart);
+        return this.loadAdsManagement(accessToken, sandbox.adAccountId, agencyBusinessId, opsStart);
       case 'business_management':
         return this.loadBusinessManagement(accessToken, sandbox, opsStart);
       default: {
@@ -270,43 +283,33 @@ export class ReviewDemoService {
     }
   }
 
-  async pauseTestAd(input: {
+  async ensureAdAccountAgencyPartner(input: {
     clerkUserId: string;
     userEmail: string;
-    adId?: string;
     ipAddress?: string;
     userAgent?: string;
-  }): Promise<{ adId: string; effectiveStatus: string }> {
+  }): Promise<ReviewDemoStepPayload> {
     if (env.META_REVIEW_DEMO_MOCK_GRAPH) {
-      const adId = input.adId ?? 'mock-ad-1';
-      return { adId, effectiveStatus: 'PAUSED' };
+      return this.loadMockStepPayload('ads_management');
     }
 
-    const stored = await readStoredToken(input.clerkUserId);
-    if (!stored?.accessToken) {
-      throw new Error('Connect Meta before pausing a test ad');
-    }
-
-    const targetAdId = input.adId ?? env.META_REVIEW_TEST_AD_ID ?? stored.pausedAdId;
-    if (!targetAdId) {
-      throw new Error('No test ad available to pause');
-    }
-
+    const accessToken = await this.getAccessToken(
+      input.clerkUserId,
+      input.userEmail,
+      input.ipAddress,
+      input.userAgent
+    );
     const opsStart = getRecordedMetaGraphOps().length;
-    const response = await metaGraphFetch(`${GRAPH_BASE}/${targetAdId}`, {
-      method: 'POST',
-      body: new URLSearchParams({ status: 'PAUSED' }),
-      accessToken: stored.accessToken,
-      tokenClass: 'client_user',
-    });
+    const sandbox = defaultSandboxIds();
+    const agencyBusinessId = requireAgencyBusinessIdForLiveGraph();
+    const partnerTasks = [...REVIEW_DEMO_AD_ACCOUNT_PARTNER_TASKS];
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Meta ad pause failed: ${errorText}`);
-    }
-
-    const body = (await response.json()) as { effective_status?: string; id?: string };
-    await writeStoredToken(input.clerkUserId, { ...stored, pausedAdId: targetAdId });
+    await this.idempotentAdAccountAgencyPartnerGrant(
+      accessToken,
+      sandbox.adAccountId,
+      agencyBusinessId,
+      partnerTasks
+    );
 
     await auditService.createAuditLog({
       userEmail: input.userEmail,
@@ -316,70 +319,70 @@ export class ReviewDemoService {
       ipAddress: input.ipAddress ?? '0.0.0.0',
       userAgent: input.userAgent,
       metadata: {
-        surface: 'review_demo_pause_ad',
-        adId: targetAdId,
+        surface: 'review_demo_ensure_ad_account_partner',
+        adAccountId: sandbox.adAccountId,
+        agencyBusinessId,
         graphCaptions: graphCaptionsSince(opsStart),
       },
     });
 
-    return {
-      adId: targetAdId,
-      effectiveStatus: body.effective_status ?? 'PAUSED',
-    };
+    return this.loadAdsManagement(accessToken, sandbox.adAccountId, agencyBusinessId, opsStart);
   }
 
-  async resumeTestAd(input: {
-    clerkUserId: string;
-    userEmail: string;
-    adId?: string;
-    ipAddress?: string;
-    userAgent?: string;
-  }): Promise<{ adId: string; effectiveStatus: string }> {
-    if (env.META_REVIEW_DEMO_MOCK_GRAPH) {
-      const adId = input.adId ?? 'mock-ad-1';
-      return { adId, effectiveStatus: 'ACTIVE' };
+  private async idempotentAdAccountAgencyPartnerGrant(
+    clientToken: string,
+    adAccountId: string,
+    agencyBusinessId: string,
+    partnerTasks: string[]
+  ): Promise<void> {
+    const initial = await metaPartnerService.verifyAdAccountAgencyAccess(
+      clientToken,
+      adAccountId,
+      agencyBusinessId,
+      partnerTasks
+    );
+    if (initial.verified) {
+      return;
     }
 
-    const stored = await readStoredToken(input.clerkUserId);
-    if (!stored?.accessToken) {
-      throw new Error('Connect Meta before resuming a test ad');
+    try {
+      await metaPartnerService.grantAgencyPartnerAccess(
+        clientToken,
+        adAccountId,
+        agencyBusinessId,
+        partnerTasks
+      );
+    } catch {
+      // Meta may reject duplicate partner shares; read back instead of failing the lab flow.
     }
 
-    const targetAdId = input.adId ?? stored.pausedAdId ?? env.META_REVIEW_TEST_AD_ID;
-    if (!targetAdId) {
-      throw new Error('No paused test ad to resume');
+    const readBack = await metaPartnerService.verifyAdAccountAgencyAccess(
+      clientToken,
+      adAccountId,
+      agencyBusinessId,
+      partnerTasks
+    );
+    if (!readBack.verified) {
+      throw new Error(
+        'Agency partner is not visible on the review ad account yet. Confirm the agency Business Portfolio id or share manually in Meta Business Settings.'
+      );
     }
+  }
 
-    const response = await metaGraphFetch(`${GRAPH_BASE}/${targetAdId}`, {
-      method: 'POST',
-      body: new URLSearchParams({ status: 'ACTIVE' }),
-      accessToken: stored.accessToken,
+  private async fetchAgencyBusinessName(
+    accessToken: string,
+    agencyBusinessId: string
+  ): Promise<string | undefined> {
+    const response = await metaGraphFetch(`${GRAPH_BASE}/${agencyBusinessId}?fields=id,name`, {
+      method: 'GET',
+      accessToken,
       tokenClass: 'client_user',
     });
-
     if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Meta ad resume failed: ${errorText}`);
+      return undefined;
     }
-
-    const body = (await response.json()) as { effective_status?: string };
-    const { pausedAdId: _removed, ...rest } = stored;
-    await writeStoredToken(input.clerkUserId, rest);
-
-    await auditService.createAuditLog({
-      userEmail: input.userEmail,
-      action: 'token_viewed',
-      resourceType: 'review_demo',
-      resourceId: input.clerkUserId,
-      ipAddress: input.ipAddress ?? '0.0.0.0',
-      userAgent: input.userAgent,
-      metadata: { surface: 'review_demo_resume_ad', adId: targetAdId },
-    });
-
-    return {
-      adId: targetAdId,
-      effectiveStatus: body.effective_status ?? 'ACTIVE',
-    };
+    const body = (await response.json()) as { name?: string };
+    return body.name;
   }
 
   private async loadPagesShowList(accessToken: string, opsStart: number): Promise<ReviewDemoStepPayload> {
@@ -412,61 +415,33 @@ export class ReviewDemoService {
   private async loadPagesReadEngagement(
     accessToken: string,
     pageId: string,
-    opsStart: number
+    _opsStart: number
   ): Promise<ReviewDemoStepPayload> {
-    const pageResponse = await metaGraphFetch(
-      `${GRAPH_BASE}/${pageId}?fields=id,name,picture,access_token`,
-      { method: 'GET', accessToken, tokenClass: 'client_user' }
-    );
-    if (!pageResponse.ok) {
-      throw new Error(await pageResponse.text());
-    }
-    const page = (await pageResponse.json()) as {
-      id?: string;
-      name?: string;
-      picture?: { data?: { url?: string } };
-      access_token?: string;
-    };
-    if (!page.id || !page.name || !page.access_token) {
-      throw new Error('Meta did not return Page access for engagement proof');
-    }
-
-    const feedResponse = await metaGraphFetch(
-      `${GRAPH_BASE}/${pageId}/feed?fields=id,created_time,message&limit=5`,
-      { method: 'GET', accessToken: page.access_token, tokenClass: 'selected_page' }
-    );
-    if (!feedResponse.ok) {
-      throw new Error(await feedResponse.text());
-    }
-    const feed = (await feedResponse.json()) as {
-      data?: Array<{ id?: string; created_time?: string; message?: string }>;
-    };
-
+    const proof = await clientAssetsService.fetchPageEngagementProof(accessToken, pageId);
     return {
       stepId: 'pages_read_engagement',
       page: {
-        id: page.id,
-        name: page.name,
-        ...(page.picture?.data?.url ? { pictureUrl: page.picture.data.url } : {}),
+        id: proof.page.id,
+        name: proof.page.name,
+        managedTasks: proof.page.managedTasks,
+        ...(proof.page.category ? { category: proof.page.category } : {}),
+        ...(typeof proof.page.fanCount === 'number' ? { fanCount: proof.page.fanCount } : {}),
+        ...(typeof proof.page.followerCount === 'number'
+          ? { followerCount: proof.page.followerCount }
+          : {}),
       },
-      posts: (feed.data ?? [])
-        .filter((post): post is { id: string; created_time?: string; message?: string } => Boolean(post.id))
-        .map((post) => ({
-          id: post.id,
-          ...(post.created_time ? { createdTime: post.created_time } : {}),
-          ...(post.message ? { messagePreview: post.message.slice(0, 120) } : {}),
-        })),
-      graphCaptions: graphCaptionsSince(opsStart),
+      posts: proof.posts,
+      ...(proof.connectedInstagram ? { connectedInstagram: proof.connectedInstagram } : {}),
+      graphCaptions: proof.graphOperationCaptions ?? [],
     };
   }
 
   private async loadAdsManagement(
     accessToken: string,
     adAccountId: string,
-    clerkUserId: string,
+    agencyBusinessId: string,
     opsStart: number
   ): Promise<ReviewDemoStepPayload> {
-    const stored = await readStoredToken(clerkUserId);
     const accountResponse = await metaGraphFetch(
       `${GRAPH_BASE}/${adAccountId}?fields=id,name,account_status`,
       { method: 'GET', accessToken, tokenClass: 'client_user' }
@@ -476,65 +451,25 @@ export class ReviewDemoService {
     }
     const account = (await accountResponse.json()) as { id?: string; name?: string };
 
-    const campaignsResponse = await metaGraphFetch(
-      `${GRAPH_BASE}/${adAccountId}/campaigns?fields=id,name,status,effective_status&limit=25`,
-      { method: 'GET', accessToken, tokenClass: 'client_user' }
+    const partnerTasks = [...REVIEW_DEMO_AD_ACCOUNT_PARTNER_TASKS];
+    const partnerAccess = await metaPartnerService.verifyAdAccountAgencyAccess(
+      accessToken,
+      adAccountId,
+      agencyBusinessId,
+      partnerTasks
     );
-    if (!campaignsResponse.ok) {
-      throw new Error(await campaignsResponse.text());
-    }
-    const campaignsData = (await campaignsResponse.json()) as {
-      data?: Array<{ id?: string; name?: string; status?: string; effective_status?: string }>;
-    };
-
-    const adsResponse = await metaGraphFetch(
-      `${GRAPH_BASE}/${adAccountId}/ads?fields=id,name,status,effective_status&limit=25`,
-      { method: 'GET', accessToken, tokenClass: 'client_user' }
-    );
-    if (!adsResponse.ok) {
-      throw new Error(await adsResponse.text());
-    }
-    const adsData = (await adsResponse.json()) as {
-      data?: Array<{ id?: string; name?: string; status?: string; effective_status?: string }>;
-    };
-
-    const ads = (adsData.data ?? [])
-      .filter((ad): ad is { id: string; name: string; status?: string; effective_status?: string } =>
-        Boolean(ad.id && ad.name)
-      )
-      .map((ad) => ({
-        id: ad.id,
-        name: ad.name,
-        ...(ad.status ? { status: ad.status } : {}),
-        ...(ad.effective_status ? { effectiveStatus: ad.effective_status } : {}),
-      }));
-
-    const pauseTarget =
-      ads.find((ad) => ad.effectiveStatus === 'ACTIVE') ??
-      ads.find((ad) => ad.id === env.META_REVIEW_TEST_AD_ID) ??
-      ads[0];
-
-    const pausedAd = stored?.pausedAdId
-      ? ads.find((ad) => ad.id === stored.pausedAdId)
-      : undefined;
+    const agencyName = await this.fetchAgencyBusinessName(accessToken, agencyBusinessId);
 
     return {
       stepId: 'ads_management',
       adAccountId,
       ...(account.name ? { adAccountName: account.name } : {}),
-      campaigns: (campaignsData.data ?? [])
-        .filter((campaign): campaign is { id: string; name: string; status?: string; effective_status?: string } =>
-          Boolean(campaign.id && campaign.name)
-        )
-        .map((campaign) => ({
-          id: campaign.id,
-          name: campaign.name,
-          ...(campaign.status ? { status: campaign.status } : {}),
-          ...(campaign.effective_status ? { effectiveStatus: campaign.effective_status } : {}),
-        })),
-      ads,
-      ...(pauseTarget ? { pauseTargetAd: pauseTarget } : {}),
-      ...(pausedAd ? { pausedAd } : {}),
+      agencyPartner: {
+        businessId: agencyBusinessId,
+        ...(agencyName ? { name: agencyName } : {}),
+        permittedTasks: partnerAccess.assignedTasks,
+        verified: partnerAccess.verified,
+      },
       graphCaptions: graphCaptionsSince(opsStart),
     };
   }
@@ -544,75 +479,61 @@ export class ReviewDemoService {
     sandbox: ReturnType<typeof defaultSandboxIds>,
     opsStart: number
   ): Promise<ReviewDemoStepPayload> {
-    const businessResponse = await metaGraphFetch(
-      `${GRAPH_BASE}/${sandbox.businessManagerId}?fields=id,name`,
-      { method: 'GET', accessToken, tokenClass: 'client_user' }
-    );
-    if (!businessResponse.ok) {
-      throw new Error(await businessResponse.text());
-    }
-    const business = (await businessResponse.json()) as { id?: string; name?: string };
+    const agencyBusinessId = requireAgencyBusinessIdForLiveGraph();
+    const partnerTasks = [...REVIEW_DEMO_AD_ACCOUNT_PARTNER_TASKS];
 
-    const catalogsResponse = await metaGraphFetch(
-      `${GRAPH_BASE}/${sandbox.businessManagerId}/owned_product_catalogs?fields=id,name&limit=25`,
-      { method: 'GET', accessToken, tokenClass: 'client_user' }
-    );
-    if (!catalogsResponse.ok) {
-      throw new Error(await catalogsResponse.text());
-    }
-    const catalogsData = (await catalogsResponse.json()) as {
-      data?: Array<{ id?: string; name?: string }>;
-    };
+    const scopedAssets = await clientAssetsService.fetchMetaAssets(accessToken, sandbox.businessManagerId, [
+      'ad_account',
+      'page',
+    ]);
 
-    const pagesResponse = await metaGraphFetch(
-      `${GRAPH_BASE}/${sandbox.businessManagerId}/owned_pages?fields=id,name&limit=25`,
-      { method: 'GET', accessToken, tokenClass: 'client_user' }
-    );
-    const pagesData = pagesResponse.ok
-      ? ((await pagesResponse.json()) as { data?: Array<{ id?: string; name?: string }> })
-      : { data: [] };
-
-    const adAccountsResponse = await metaGraphFetch(
-      `${GRAPH_BASE}/${sandbox.businessManagerId}/owned_ad_accounts?fields=id,name&limit=25`,
-      { method: 'GET', accessToken, tokenClass: 'client_user' }
-    );
-    const adAccountsData = adAccountsResponse.ok
-      ? ((await adAccountsResponse.json()) as { data?: Array<{ id?: string; name?: string }> })
-      : { data: [] };
+    const businessName =
+      scopedAssets.selectedBusinessName ??
+      scopedAssets.businesses?.find((item) => item.id === sandbox.businessManagerId)?.name ??
+      'AuthHub Review Business Manager';
 
     const assets = [
-      ...(business.id && business.name
-        ? [{ id: business.id, name: business.name, kind: 'business' as const }]
-        : []),
-      ...(pagesData.data ?? [])
-        .filter((page): page is { id: string; name: string } => Boolean(page.id && page.name))
-        .map((page) => ({ id: page.id, name: page.name, kind: 'page' as const })),
-      ...(adAccountsData.data ?? [])
-        .filter((account): account is { id: string; name: string } => Boolean(account.id && account.name))
-        .map((account) => ({
-          id: account.id,
-          name: account.name,
-          kind: 'ad_account' as const,
-        })),
+      {
+        id: sandbox.businessManagerId,
+        name: businessName,
+        kind: 'business' as const,
+      },
+      ...scopedAssets.pages.map((page) => ({
+        id: page.id,
+        name: page.name,
+        kind: 'page' as const,
+      })),
+      ...scopedAssets.adAccounts.map((account) => ({
+        id: account.id,
+        name: account.name,
+        kind: 'ad_account' as const,
+      })),
     ];
 
-    const catalogs = (catalogsData.data ?? [])
-      .filter((catalog): catalog is { id: string; name: string } => Boolean(catalog.id && catalog.name))
-      .map((catalog) => ({ id: catalog.id, name: catalog.name }));
-
-    if (!catalogs.some((catalog) => catalog.id === sandbox.catalogId)) {
-      catalogs.unshift({ id: sandbox.catalogId, name: 'AuthHub Review Catalog' });
-    }
+    const partnerAccess = await metaPartnerService.verifyAdAccountAgencyAccess(
+      accessToken,
+      sandbox.adAccountId,
+      agencyBusinessId,
+      partnerTasks
+    );
+    const agencyName = await this.fetchAgencyBusinessName(accessToken, agencyBusinessId);
 
     return {
       stepId: 'business_management',
       business: {
-        id: business.id ?? sandbox.businessManagerId,
-        name: business.name ?? 'AuthHub Review Business Manager',
+        id: sandbox.businessManagerId,
+        name: businessName,
         kind: 'business',
       },
-      catalogs,
       assets,
+      agencyPartner: {
+        businessId: agencyBusinessId,
+        ...(agencyName ? { name: agencyName } : {}),
+        permittedTasks: partnerAccess.assignedTasks,
+        verified: partnerAccess.verified,
+        assetId: sandbox.adAccountId,
+        assetKind: 'ad_account',
+      },
       graphCaptions: graphCaptionsSince(opsStart),
     };
   }
@@ -629,33 +550,49 @@ export class ReviewDemoService {
       case 'pages_read_engagement':
         return {
           stepId,
-          page: { id: sandbox.pageId, name: 'Ah-Review-Page' },
-          posts: [
-            { id: 'post_1', createdTime: '2026-10-01T12:00:00+0000', messagePreview: 'Review sandbox post' },
-          ],
-          graphCaptions: ['GET /{page-id}/feed (mock)'],
+          page: {
+            id: sandbox.pageId,
+            name: 'Ah-Review-Page',
+            managedTasks: ['ADVERTISE', 'ANALYZE'],
+            category: 'Software',
+          },
+          posts: [{ id: 'post_1', createdTime: '2026-10-01T12:00:00+0000' }],
+          graphCaptions: ['GET /{page-id}?fields=…', 'GET /{page-id}/feed?fields=id,created_time (mock)'],
         };
       case 'ads_management':
         return {
           stepId,
           adAccountId: sandbox.adAccountId,
           adAccountName: 'AuthHub Review Ad Account',
-          campaigns: [{ id: 'camp_1', name: 'Review Test Campaign', effectiveStatus: 'ACTIVE' }],
-          ads: [{ id: 'ad_1', name: 'Review Test Ad', effectiveStatus: 'ACTIVE' }],
-          pauseTargetAd: { id: 'ad_1', name: 'Review Test Ad', effectiveStatus: 'ACTIVE' },
-          graphCaptions: ['GET /act_{id}/campaigns (mock)'],
+          agencyPartner: {
+            businessId: sandbox.agencyBusinessId,
+            name: 'AuthHub Agency BM (mock)',
+            permittedTasks: ['ADVERTISE', 'ANALYZE'],
+            verified: true,
+          },
+          graphCaptions: [
+            'GET /act_{id}?fields=id,name',
+            'GET /act_{id}/agencies?fields=id,permitted_tasks (mock)',
+          ],
         };
       case 'business_management':
         return {
           stepId,
           business: { id: sandbox.businessManagerId, name: 'AuthHub Review BM', kind: 'business' },
-          catalogs: [{ id: sandbox.catalogId, name: 'AuthHub Review Catalog' }],
           assets: [
             { id: sandbox.businessManagerId, name: 'AuthHub Review BM', kind: 'business' },
             { id: sandbox.pageId, name: 'Ah-Review-Page', kind: 'page' },
             { id: sandbox.adAccountId, name: 'AuthHub Review Ad Account', kind: 'ad_account' },
           ],
-          graphCaptions: ['GET /{business-id}/owned_product_catalogs (mock)'],
+          agencyPartner: {
+            businessId: sandbox.agencyBusinessId,
+            name: 'AuthHub Agency BM (mock)',
+            permittedTasks: ['ADVERTISE', 'ANALYZE'],
+            verified: true,
+            assetId: sandbox.adAccountId,
+            assetKind: 'ad_account',
+          },
+          graphCaptions: ['GET /{business-id}/owned_pages (mock)', 'GET /act_{id}/agencies (mock)'],
         };
       default: {
         const _exhaustive: never = stepId;

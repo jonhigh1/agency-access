@@ -55,31 +55,15 @@ export async function exchangeReviewDemoMetaOAuth(
   });
 }
 
-export async function pauseReviewDemoTestAd(
-  getToken: () => Promise<string | null>,
-  adId?: string
-): Promise<{ adId: string; effectiveStatus: string }> {
-  const json = await authorizedApiFetch<{ data: { adId: string; effectiveStatus: string } }>(
-    '/api/review-demo/steps/ads_management/pause',
+export async function ensureReviewDemoAdAccountPartner(
+  getToken: () => Promise<string | null>
+): Promise<ReviewDemoStepPayload> {
+  const json = await authorizedApiFetch<{ data: ReviewDemoStepPayload }>(
+    '/api/review-demo/steps/ads_management/ensure-partner',
     {
       getToken,
       method: 'POST',
-      body: JSON.stringify(adId ? { adId } : {}),
-    }
-  );
-  return json.data;
-}
-
-export async function resumeReviewDemoTestAd(
-  getToken: () => Promise<string | null>,
-  adId?: string
-): Promise<{ adId: string; effectiveStatus: string }> {
-  const json = await authorizedApiFetch<{ data: { adId: string; effectiveStatus: string } }>(
-    '/api/review-demo/steps/ads_management/resume',
-    {
-      getToken,
-      method: 'POST',
-      body: JSON.stringify(adId ? { adId } : {}),
+      body: JSON.stringify({}),
     }
   );
   return json.data;

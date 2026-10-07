@@ -9,7 +9,7 @@ export const REVIEW_DEMO_RECORDING_STEPS = [
   'business_management',
 ];
 
-/** @typedef {'caption' | 'click' | 'wait' | 'hold' | 'pauseAd' | 'resumeAd'} RecordingActionType */
+/** @typedef {'caption' | 'click' | 'wait' | 'hold' | 'ensureAdPartner'} RecordingActionType */
 
 /**
  * @typedef {Object} RecordingAction
@@ -50,9 +50,10 @@ export const REVIEW_DEMO_RECORDING_PLAN = [
       {
         type: 'caption',
         primary: 'Permission: pages_read_engagement',
-        secondary: 'Show Page posts and engagement-visible content',
+        secondary: 'Validate Page access — metadata and recent post dates (production proof path)',
       },
       { type: 'click', testId: 'review-demo-step-tab-pages_read_engagement' },
+      { type: 'wait', testId: 'review-demo-page-engagement-proof' },
       { type: 'wait', testId: 'review-demo-posts-list' },
       { type: 'hold', ms: 2500 },
     ],
@@ -64,20 +65,13 @@ export const REVIEW_DEMO_RECORDING_PLAN = [
       {
         type: 'caption',
         primary: 'Permission: ads_management',
-        secondary: 'List campaigns on test ad account → pause test ad (reversible)',
+        secondary: 'Review ad account → add agency BM as partner → Graph readback',
       },
       { type: 'click', testId: 'review-demo-step-tab-ads_management' },
-      { type: 'wait', testId: 'review-demo-campaigns-list' },
-      { type: 'pauseAd' },
-      { type: 'wait', testId: 'review-demo-pause-proof' },
-      { type: 'hold', ms: 2000 },
-      {
-        type: 'caption',
-        primary: 'Permission: ads_management',
-        secondary: 'Resume test ad after pause proof',
-      },
-      { type: 'resumeAd' },
-      { type: 'hold', ms: 1500 },
+      { type: 'wait', testId: 'review-demo-ad-account-summary' },
+      { type: 'ensureAdPartner' },
+      { type: 'wait', testId: 'review-demo-partner-proof' },
+      { type: 'hold', ms: 2500 },
     ],
   },
   {
@@ -87,11 +81,11 @@ export const REVIEW_DEMO_RECORDING_PLAN = [
       {
         type: 'caption',
         primary: 'Permission: business_management',
-        secondary: 'Business Manager catalogs and owned assets (Review BM)',
+        secondary: 'Client Business Portfolio assets + agency partner readback',
       },
       { type: 'click', testId: 'review-demo-step-tab-business_management' },
-      { type: 'wait', testId: 'review-demo-catalog-list' },
       { type: 'wait', testId: 'review-demo-bm-assets-list' },
+      { type: 'wait', testId: 'review-demo-bm-partner-proof' },
       { type: 'hold', ms: 2500 },
     ],
   },

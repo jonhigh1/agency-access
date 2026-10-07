@@ -203,6 +203,8 @@ const envSchema = z.object({
   META_REVIEW_PAGE_ID: z.string().optional(),
   META_REVIEW_CATALOG_ID: z.string().optional(),
   META_REVIEW_TEST_AD_ID: z.string().optional(),
+  /** Agency sandbox Business Portfolio id used for partner assignment in review demo. */
+  META_REVIEW_AGENCY_BM_ID: z.string().optional(),
   META_REVIEW_LAB_AGENCY_ID: z.string().optional(),
 
   // Daily Marketing API tier exercise (#134) — pg-boss cron on API service
