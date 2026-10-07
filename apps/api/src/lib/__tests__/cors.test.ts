@@ -44,6 +44,7 @@ describe('getCorsOptions', () => {
       'http://localhost:3000',
       'https://www.authhub.co',
       'https://authhub.co',
+      'https://review.authhub.co',
       'https://agency-access-beta.vercel.app',
     ]);
   });

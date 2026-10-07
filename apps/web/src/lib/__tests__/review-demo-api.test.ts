@@ -1,0 +1,62 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import {
+  exchangeReviewDemoMetaOAuth,
+  fetchReviewDemoSession,
+  fetchReviewDemoStep,
+  initiateReviewDemoMetaOAuth,
+  pauseReviewDemoTestAd,
+  resumeReviewDemoTestAd,
+} from '../review-demo-api';
+
+const authorizedApiFetchMock = vi.fn();
+
+vi.mock('@/lib/api/authorized-api-fetch', () => ({
+  authorizedApiFetch: (...args: unknown[]) => authorizedApiFetchMock(...args),
+}));
+
+describe('review-demo-api', () => {
+  const getToken = async () => 'token';
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    authorizedApiFetchMock.mockResolvedValue({ data: {} });
+  });
+
+  it('calls review demo endpoints under /api/review-demo', async () => {
+    await fetchReviewDemoSession(getToken, 'pages_show_list');
+    expect(authorizedApiFetchMock).toHaveBeenCalledWith(
+      '/api/review-demo/session?step=pages_show_list',
+      expect.any(Object)
+    );
+
+    await fetchReviewDemoStep(getToken, 'pages_show_list');
+    expect(authorizedApiFetchMock).toHaveBeenCalledWith(
+      '/api/review-demo/steps/pages_show_list',
+      expect.any(Object)
+    );
+
+    await initiateReviewDemoMetaOAuth(getToken);
+    expect(authorizedApiFetchMock).toHaveBeenCalledWith(
+      '/api/review-demo/meta/initiate',
+      expect.objectContaining({ method: 'POST' })
+    );
+
+    await exchangeReviewDemoMetaOAuth(getToken, { code: 'c', state: 's' });
+    expect(authorizedApiFetchMock).toHaveBeenCalledWith(
+      '/api/review-demo/meta/exchange',
+      expect.objectContaining({ method: 'POST' })
+    );
+
+    await pauseReviewDemoTestAd(getToken);
+    expect(authorizedApiFetchMock).toHaveBeenCalledWith(
+      '/api/review-demo/steps/ads_management/pause',
+      expect.objectContaining({ method: 'POST' })
+    );
+
+    await resumeReviewDemoTestAd(getToken, 'ad-1');
+    expect(authorizedApiFetchMock).toHaveBeenCalledWith(
+      '/api/review-demo/steps/ads_management/resume',
+      expect.objectContaining({ method: 'POST' })
+    );
+  });
+});
