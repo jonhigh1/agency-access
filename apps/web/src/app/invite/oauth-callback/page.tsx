@@ -2,11 +2,13 @@
 
 import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
+import { useAuth } from '@clerk/nextjs';
 import { AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui';
 import { LogoSpinner } from '@/components/ui/logo-spinner';
 import { getApiBaseUrl } from '@/lib/api/api-env';
 import { parseJsonResponse } from '@/lib/api/parse-json-response';
+import { exchangeReviewDemoMetaOAuth } from '@/lib/review-demo-api';
 import {
   trackClientOAuthExchangeFailure,
   trackClientOAuthExchangeSuccess,
@@ -19,7 +21,9 @@ import {
 function ClientOAuthCallbackContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { getToken } = useAuth();
   const apiBaseUrl = getApiBaseUrl();
+  const reviewDemoFlow = searchParams.get('flow') === 'review-demo';
   const [error, setError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(true);
   const [returnToken, setReturnToken] = useState<string | null>(null);
@@ -74,6 +78,12 @@ function ClientOAuthCallbackContent() {
       }
 
       try {
+        if (reviewDemoFlow) {
+          await exchangeReviewDemoMetaOAuth(getToken, { code, state });
+          router.replace('/review-demo?connected=1');
+          return;
+        }
+
         const response = await fetch(`${apiBaseUrl}/api/client/oauth-exchange`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -120,7 +130,7 @@ function ClientOAuthCallbackContent() {
     }
 
     handleCallback();
-  }, [apiBaseUrl, code, presentation, providerError, providerErrorReason, router, searchParams, state]);
+  }, [apiBaseUrl, code, getToken, presentation, providerError, providerErrorReason, reviewDemoFlow, router, searchParams, state]);
 
   if (error) {
     return (
