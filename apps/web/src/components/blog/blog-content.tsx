@@ -281,7 +281,7 @@ export function BlogContent({ post }: BlogContentProps) {
                   Start Your Free Trial
                 </Button>
               </SignUpButton>
-              <Button variant="outline" size="lg" asChild>
+              <Button variant="secondary" size="lg" asChild>
                 <a href="https://authhub.co/pricing">See pricing</a>
               </Button>
             </div>
