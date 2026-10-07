@@ -41,6 +41,23 @@ function booleanish(defaultValue: boolean) {
   );
 }
 
+/** Strict enable flag: only literal `true` or `1` (string) turn the feature on. */
+function parseStrictTrueOrOne(value: unknown): boolean {
+  if (value === true) return true;
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (trimmed === 'true' || trimmed === '1') return true;
+  }
+  return false;
+}
+
+function strictTrueOrOne(defaultValue: boolean) {
+  return z.preprocess(
+    value => (value === undefined || value === null || value === '' ? defaultValue : parseStrictTrueOrOne(value)),
+    z.boolean().default(defaultValue),
+  );
+}
+
 function isPostgresProtocol(protocol: string): boolean {
   return protocol === 'postgres:' || protocol === 'postgresql:';
 }
@@ -190,6 +207,8 @@ const envSchema = z.object({
 
   // Daily Marketing API tier exercise (#134) — pg-boss cron on API service
   META_MARKETING_API_TIER_CRON_ENABLED: booleanish(false),
+  /** When true, tier cron runs every 10 minutes and may run multiple times per UTC day. */
+  META_MARKETING_API_TIER_CRON_BURST: strictTrueOrOne(false),
   META_MARKETING_API_TIER_CRON_LAB_USER_ID: z.string().optional(),
   META_MARKETING_API_TIER_FAILURE_ALERT_THRESHOLD: z.coerce.number().int().min(1).default(3),
 

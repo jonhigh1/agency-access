@@ -9,7 +9,7 @@ This repo uses **pg-boss** on the `agency-access-api` Render web service (same p
 | Item | Value |
 |------|--------|
 | Job name | `meta-marketing-api-tier-daily` |
-| Cron (UTC) | `0 6 * * *` (daily 06:00) |
+| Cron (UTC) | `0 6 * * *` (daily 06:00), or `*/10 * * * *` when burst mode is on |
 | Handler | `apps/api/src/jobs/meta-marketing-api-tier-cron.ts` |
 | Manual run | `cd apps/api && npx tsx src/jobs/meta-marketing-api-tier-cron.ts` |
 
@@ -42,6 +42,7 @@ Set on the **review/lab API** Render service (secrets via Infisical/env only —
 |----------|---------|
 | `BACKGROUND_WORKERS_ENABLED` | Must be `true` for pg-boss schedule |
 | `META_MARKETING_API_TIER_CRON_ENABLED` | `true` to run daily exercise |
+| `META_MARKETING_API_TIER_CRON_BURST` | `true` or `1` only — 10-minute schedule, no once-per-day success skip (~288 calls/day) |
 | `META_APP_ID` | `1215220247221414` on review host |
 | `META_REVIEW_AD_ACCOUNT_ID` | Test AA (default `557538895783894`) |
 | `META_REVIEW_LAB_USER_IDS` | Lab reviewer Clerk id(s) |

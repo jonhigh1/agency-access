@@ -9,6 +9,7 @@ vi.mock('@/lib/env.js', () => ({
   env: {
     META_APP_ID: '1215220247221414',
     META_MARKETING_API_TIER_CRON_ENABLED: true,
+    META_MARKETING_API_TIER_CRON_BURST: false,
     META_MARKETING_API_TIER_CRON_LAB_USER_ID: 'user_lab_reviewer',
     META_MARKETING_API_TIER_FAILURE_ALERT_THRESHOLD: 3,
     META_REVIEW_DEMO_MOCK_GRAPH: false,
@@ -39,6 +40,7 @@ vi.mock('@/lib/prisma.js', () => ({
     auditLog: {
       findMany: vi.fn(),
     },
+    $queryRaw: vi.fn(),
   },
 }));
 
@@ -53,10 +55,29 @@ import { prisma } from '@/lib/prisma.js';
 import * as Sentry from '@sentry/node';
 import {
   runMetaMarketingApiTierDailyCron,
+  maybeAlertConsecutiveFailures,
   type MetaMarketingApiTierCronDeps,
 } from '../meta-marketing-api-tier-cron.service.js';
+import { META_MARKETING_API_TIER_SENTRY_ALERT_KIND } from '../meta-marketing-api-tier-cron.queries.js';
 
 const allowedAdAccount = normalizeMetaAdAccountId(META_REVIEW_DEFAULT_AD_ACCOUNT_NUMERIC);
+
+function mockTierDayCount(count: number, options?: { todayAlreadySuccessful?: boolean }) {
+  vi.mocked(prisma.$queryRaw).mockImplementation(async (query) => {
+    const strings = Array.isArray(query) ? query : [query];
+    const sql = strings.join(' ');
+    if (sql.includes('COUNT(DISTINCT')) {
+      return [{ count: BigInt(count) }] as never;
+    }
+    if (sql.includes('EXISTS')) {
+      return [{ exists: options?.todayAlreadySuccessful ?? false }] as never;
+    }
+    if (sql.includes("metadata->>'kind'")) {
+      return [] as never;
+    }
+    return [] as never;
+  });
+}
 
 function mockGraphOk() {
   vi.mocked(metaGraphFetch).mockResolvedValue({
@@ -72,6 +93,7 @@ describe('runMetaMarketingApiTierDailyCron', () => {
       JSON.stringify({ accessToken: 'lab-token' }),
     );
     vi.mocked(prisma.auditLog.findMany).mockResolvedValue([]);
+    mockTierDayCount(0);
     vi.mocked(auditService.createAuditLog).mockResolvedValue({ data: {}, error: null });
     mockGraphOk();
   });
@@ -102,12 +124,7 @@ describe('runMetaMarketingApiTierDailyCron', () => {
   });
 
   it('append-only audit log includes app id, ad account, status, and tier day count', async () => {
-    vi.mocked(prisma.auditLog.findMany).mockResolvedValue([
-      {
-        createdAt: new Date('2026-10-05T12:00:00Z'),
-        metadata: { success: true, tierUtcDate: '2026-10-05' },
-      },
-    ] as never);
+    mockTierDayCount(1);
 
     const now = new Date('2026-10-07T06:00:00Z');
     const deps: MetaMarketingApiTierCronDeps = { now: () => now };
@@ -136,14 +153,10 @@ describe('runMetaMarketingApiTierDailyCron', () => {
       status: 403,
     } as Response);
 
-    vi.mocked(prisma.auditLog.findMany).mockImplementation(async (args) => {
-      const take = args?.take ?? 10;
-      if (take === 120) return [];
-      return [
-        { createdAt: new Date('2026-10-06T06:00:00Z'), metadata: { success: false } },
-        { createdAt: new Date('2026-10-05T06:00:00Z'), metadata: { success: false } },
-      ] as never;
-    });
+    vi.mocked(prisma.auditLog.findMany).mockResolvedValue([
+      { createdAt: new Date('2026-10-06T06:00:00Z'), metadata: { success: false } },
+      { createdAt: new Date('2026-10-05T06:00:00Z'), metadata: { success: false } },
+    ] as never);
 
     const result = await runMetaMarketingApiTierDailyCron({
       now: () => new Date('2026-10-07T06:00:00Z'),
@@ -159,7 +172,7 @@ describe('runMetaMarketingApiTierDailyCron', () => {
     );
   });
 
-  it('does not call Graph when today already logged a success', async () => {
+  it('does not call Graph when today already logged a success (burst off)', async () => {
     vi.mocked(prisma.auditLog.findMany).mockResolvedValue([
       {
         createdAt: new Date('2026-10-07T05:00:00Z'),
@@ -174,5 +187,75 @@ describe('runMetaMarketingApiTierDailyCron', () => {
     expect(result.skipped).toBe(true);
     expect(result.tierDayCount).toBe(5);
     expect(metaGraphFetch).not.toHaveBeenCalled();
+  });
+
+  it('calls Graph again same UTC day when burst mode is on', async () => {
+    const { env } = await import('@/lib/env.js');
+    env.META_MARKETING_API_TIER_CRON_BURST = true;
+
+    vi.mocked(prisma.auditLog.findMany).mockResolvedValue([
+      {
+        createdAt: new Date('2026-10-07T05:00:00Z'),
+        metadata: { success: true, tierUtcDate: '2026-10-07', tierDayCount: 5 },
+      },
+    ] as never);
+    mockTierDayCount(1, { todayAlreadySuccessful: true });
+
+    const result = await runMetaMarketingApiTierDailyCron({
+      now: () => new Date('2026-10-07T12:00:00Z'),
+    });
+
+    expect(result.skipped).toBeFalsy();
+    expect(metaGraphFetch).toHaveBeenCalledTimes(2);
+    env.META_MARKETING_API_TIER_CRON_BURST = false;
+  });
+});
+
+describe('maybeAlertConsecutiveFailures', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(auditService.createAuditLog).mockResolvedValue({ data: {}, error: null });
+    vi.mocked(prisma.$queryRaw).mockResolvedValue([] as never);
+  });
+
+  it('sends Sentry at most once per hour', async () => {
+    const now = new Date('2026-10-07T12:00:00Z');
+
+    const first = await maybeAlertConsecutiveFailures(3, now, {
+      metaAppId: '1215220247221414',
+      adAccountId: allowedAdAccount,
+      tierUtcDate: '2026-10-07',
+    });
+    expect(first).toBe(true);
+    expect(Sentry.captureMessage).toHaveBeenCalledTimes(1);
+
+    vi.mocked(prisma.$queryRaw).mockResolvedValue([
+      { created_at: new Date('2026-10-07T11:30:00Z') },
+    ] as never);
+
+    const second = await maybeAlertConsecutiveFailures(3, now, {
+      metaAppId: '1215220247221414',
+      adAccountId: allowedAdAccount,
+      tierUtcDate: '2026-10-07',
+    });
+    expect(second).toBe(false);
+    expect(Sentry.captureMessage).toHaveBeenCalledTimes(1);
+  });
+
+  it('writes alert marker audit row when Sentry fires', async () => {
+    await maybeAlertConsecutiveFailures(4, new Date('2026-10-07T12:00:00Z'), {
+      metaAppId: '1215220247221414',
+      adAccountId: allowedAdAccount,
+      tierUtcDate: '2026-10-07',
+    });
+
+    expect(auditService.createAuditLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        metadata: expect.objectContaining({
+          kind: META_MARKETING_API_TIER_SENTRY_ALERT_KIND,
+          consecutiveFailures: 4,
+        }),
+      }),
+    );
   });
 });

@@ -14,6 +14,12 @@ import { logger } from '@/lib/logger.js';
 import { metaGraphFetch } from '@/lib/meta-graph-instrumentation.js';
 import { prisma } from '@/lib/prisma.js';
 import { auditService } from '@/services/audit.service.js';
+import {
+  countSuccessfulTierDays,
+  findLastConsecutiveFailureSentryAlert,
+  hasSuccessfulTierUtcDate,
+  META_MARKETING_API_TIER_SENTRY_ALERT_KIND,
+} from '@/services/meta-marketing-api-tier-cron.queries.js';
 
 const GRAPH_BASE = `https://graph.facebook.com/${META_GRAPH_VERSION}`;
 
@@ -70,27 +76,6 @@ async function readLabAccessToken(clerkUserId: string): Promise<string | null> {
   }
 }
 
-async function countSuccessfulTierDays(): Promise<number> {
-  const rows = await prisma.auditLog.findMany({
-    where: { action: META_MARKETING_API_TIER_DAILY_AUDIT_ACTION },
-    select: { metadata: true, createdAt: true },
-    orderBy: { createdAt: 'asc' },
-    take: 500,
-  });
-
-  const dates = new Set<string>();
-  for (const row of rows) {
-    const metadata = row.metadata as { success?: boolean; tierUtcDate?: string } | null;
-    if (metadata?.success !== true) continue;
-    const date =
-      typeof metadata.tierUtcDate === 'string'
-        ? metadata.tierUtcDate
-        : tierUtcDateFrom(row.createdAt);
-    dates.add(date);
-  }
-  return dates.size;
-}
-
 async function findTodaySuccessLog(tierUtcDate: string) {
   const rows = await prisma.auditLog.findMany({
     where: { action: META_MARKETING_API_TIER_DAILY_AUDIT_ACTION },
@@ -120,7 +105,8 @@ async function countConsecutiveFailuresIncludingToday(todaySuccess: boolean): Pr
 
   let consecutive = todaySuccess ? 0 : 1;
   for (const row of rows) {
-    const metadata = row.metadata as { success?: boolean } | null;
+    const metadata = row.metadata as { success?: boolean; kind?: string } | null;
+    if (metadata?.kind === META_MARKETING_API_TIER_SENTRY_ALERT_KIND) continue;
     if (metadata?.success === true) break;
     if (metadata?.success === false) consecutive += 1;
   }
@@ -162,6 +148,18 @@ async function executeGraphCalls(
   return results;
 }
 
+async function resolveTierDayCountAfterRun(
+  success: boolean,
+  tierUtcDate: string,
+): Promise<number> {
+  const priorSuccessDays = await countSuccessfulTierDays();
+  if (!success) {
+    return priorSuccessDays;
+  }
+  const todayAlreadyCounted = await hasSuccessfulTierUtcDate(tierUtcDate);
+  return todayAlreadyCounted ? priorSuccessDays : priorSuccessDays + 1;
+}
+
 export async function runMetaMarketingApiTierDailyCron(
   deps: MetaMarketingApiTierCronDeps = {},
 ): Promise<MetaMarketingApiTierCronResult> {
@@ -201,18 +199,20 @@ export async function runMetaMarketingApiTierDailyCron(
     });
   }
 
-  const existingToday = await findTodaySuccessLog(tierUtcDate);
-  if (existingToday) {
-    const metadata = existingToday.metadata as { tierDayCount?: number } | null;
-    return {
-      skipped: true,
-      skipReason: 'already_successful_today',
-      success: true,
-      calls: [],
-      tierDayCount: metadata?.tierDayCount ?? (await countSuccessfulTierDays()),
-      consecutiveFailures: 0,
-      alertedConsecutiveFailures: false,
-    };
+  if (!env.META_MARKETING_API_TIER_CRON_BURST) {
+    const existingToday = await findTodaySuccessLog(tierUtcDate);
+    if (existingToday) {
+      const metadata = existingToday.metadata as { tierDayCount?: number } | null;
+      return {
+        skipped: true,
+        skipReason: 'already_successful_today',
+        success: true,
+        calls: [],
+        tierDayCount: metadata?.tierDayCount ?? (await countSuccessfulTierDays()),
+        consecutiveFailures: 0,
+        alertedConsecutiveFailures: false,
+      };
+    }
   }
 
   const clerkUserId = resolveLabClerkUserId();
@@ -266,7 +266,7 @@ export async function runMetaMarketingApiTierDailyCron(
     });
     logger.error('meta_marketing_api_tier_daily', failureMetadata);
     const consecutiveFailures = await countConsecutiveFailuresIncludingToday(false);
-    const alerted = maybeAlertConsecutiveFailures(consecutiveFailures, {
+    const alerted = await maybeAlertConsecutiveFailures(consecutiveFailures, now, {
       metaAppId,
       adAccountId,
       tierUtcDate,
@@ -284,8 +284,7 @@ export async function runMetaMarketingApiTierDailyCron(
   const success = calls.length > 0 && calls.every((call) => call.success);
   const primaryStatus = calls[0]?.httpStatus ?? 0;
 
-  const priorSuccessDays = await countSuccessfulTierDays();
-  const tierDayCount = success ? priorSuccessDays + 1 : priorSuccessDays;
+  const tierDayCount = await resolveTierDayCountAfterRun(success, tierUtcDate);
 
   const logPayload = {
     timestamp: now.toISOString(),
@@ -317,7 +316,7 @@ export async function runMetaMarketingApiTierDailyCron(
     : await countConsecutiveFailuresIncludingToday(false);
   const alertedConsecutiveFailures = success
     ? false
-    : maybeAlertConsecutiveFailures(consecutiveFailures, {
+    : await maybeAlertConsecutiveFailures(consecutiveFailures, now, {
         metaAppId,
         adAccountId,
         tierUtcDate,
@@ -333,12 +332,24 @@ export async function runMetaMarketingApiTierDailyCron(
   };
 }
 
-function maybeAlertConsecutiveFailures(
+export async function maybeAlertConsecutiveFailures(
   consecutiveFailures: number,
+  now: Date,
   context: Record<string, unknown>,
-): boolean {
+): Promise<boolean> {
   const threshold = env.META_MARKETING_API_TIER_FAILURE_ALERT_THRESHOLD;
   if (consecutiveFailures < threshold) {
+    return false;
+  }
+
+  const recentAlert = await findLastConsecutiveFailureSentryAlert(now);
+  if (recentAlert) {
+    logger.warn('meta_marketing_api_tier_daily_consecutive_failures_alert_throttled', {
+      ...context,
+      consecutiveFailures,
+      threshold,
+      lastAlertAt: recentAlert.toISOString(),
+    });
     return false;
   }
 
@@ -358,5 +369,23 @@ function maybeAlertConsecutiveFailures(
     consecutiveFailures,
     threshold,
   });
+
+  await auditService.createAuditLog({
+    action: META_MARKETING_API_TIER_DAILY_AUDIT_ACTION,
+    resourceType: 'meta_marketing_api_tier',
+    resourceId: typeof context.adAccountId === 'string' ? context.adAccountId : undefined,
+    agencyId: env.META_REVIEW_LAB_AGENCY_ID,
+    metadata: {
+      kind: META_MARKETING_API_TIER_SENTRY_ALERT_KIND,
+      consecutiveFailures,
+      threshold,
+      tierUtcDate: context.tierUtcDate,
+      metaAppId: context.metaAppId,
+      adAccountId: context.adAccountId,
+    },
+    ipAddress: '127.0.0.1',
+    userAgent: 'meta-marketing-api-tier-cron',
+  });
+
   return true;
 }

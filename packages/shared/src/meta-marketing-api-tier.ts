@@ -4,6 +4,18 @@ export const META_MARKETING_API_TIER_DAILY_AUDIT_ACTION = 'META_MARKETING_API_TI
 /** Meta standard/advanced access tier day-count target for App Review readiness. */
 export const META_MARKETING_API_TIER_TARGET_DAYS = 16;
 
+/** pg-boss cron when burst mode is off (daily 06:00 UTC). */
+export const META_MARKETING_API_TIER_CRON_SCHEDULE_DAILY = '0 6 * * *';
+
+/** pg-boss cron when burst mode is on (~288 Graph calls/day at 2 calls/run). */
+export const META_MARKETING_API_TIER_CRON_SCHEDULE_BURST = '*/10 * * * *';
+
+export function resolveMetaMarketingApiTierCronSchedule(burstEnabled: boolean): string {
+  return burstEnabled
+    ? META_MARKETING_API_TIER_CRON_SCHEDULE_BURST
+    : META_MARKETING_API_TIER_CRON_SCHEDULE_DAILY;
+}
+
 /** Locked prod AuthHub Meta app id for Review BM sandbox (issue #135). */
 export const META_REVIEW_LOCKED_APP_ID = '1215220247221414';
 
