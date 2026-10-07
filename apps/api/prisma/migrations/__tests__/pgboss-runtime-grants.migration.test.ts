@@ -7,6 +7,8 @@ const migrationPath = join(
   '../20261007120000_pgboss_runtime_grants/migration.sql'
 );
 
+const RUNTIME_ROLES = ['agency_access_runtime', 'aap_app_runtime'] as const;
+
 describe('pgboss runtime grants migration', () => {
   const sql = readFileSync(migrationPath, 'utf8');
 
@@ -14,23 +16,29 @@ describe('pgboss runtime grants migration', () => {
     expect(sql).toMatch(/CREATE SCHEMA IF NOT EXISTS pgboss/i);
   });
 
-  it('grants runtime role usage on pgboss schema', () => {
-    expect(sql).toMatch(/GRANT USAGE ON SCHEMA pgboss TO aap_app_runtime/i);
-  });
-
-  it('grants runtime role DML on pgboss tables', () => {
+  it.each(RUNTIME_ROLES)('includes %s in the runtime role grant loop', (role) => {
     expect(sql).toMatch(
-      /GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA pgboss TO aap_app_runtime/i
+      new RegExp(
+        `WHERE rolname IN \\('agency_access_runtime', 'aap_app_runtime'\\)[\\s\\S]*${role}`,
+        'i'
+      )
     );
   });
 
-  it('grants runtime role sequence access in pgboss', () => {
+  it('grants schema usage, table DML, and sequence access via dynamic grants', () => {
+    expect(sql).toMatch(/GRANT USAGE ON SCHEMA pgboss TO %I/i);
     expect(sql).toMatch(
-      /GRANT USAGE(?:, SELECT)? ON ALL SEQUENCES IN SCHEMA pgboss TO aap_app_runtime/i
+      /GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA pgboss TO %I/i
     );
+    expect(sql).toMatch(/GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA pgboss TO %I/i);
   });
 
-  it('skips grants safely when the runtime role is absent', () => {
-    expect(sql).toMatch(/IF NOT EXISTS \(SELECT 1 FROM pg_roles WHERE rolname = 'aap_app_runtime'\)/i);
+  it('only targets known runtime roles (no silent hardcoded single-role skip)', () => {
+    expect(sql).not.toMatch(
+      /IF NOT EXISTS \(SELECT 1 FROM pg_roles WHERE rolname = 'aap_app_runtime'\)\s+THEN\s+RETURN/i
+    );
+    expect(sql).not.toMatch(
+      /IF NOT EXISTS \(SELECT 1 FROM pg_roles WHERE rolname = 'agency_access_runtime'\)\s+THEN\s+RETURN/i
+    );
   });
 });

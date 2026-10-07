@@ -59,7 +59,7 @@ CLERK_OAUTH_VERIFY_URL=https://api.clerk.com/v1/oauth_applications/access_tokens
 
 Pre-launch deploys should keep `BACKGROUND_WORKERS_ENABLED=false` to avoid background polling cost while there is no customer traffic. Turn it on only when token refresh, notifications, scheduled webhooks, and other background jobs are intentionally part of the launch posture.
 
-When `DB_ENFORCE_LEAST_PRIVILEGE=true`, the runtime database role (`aap_app_runtime` via `DATABASE_URL`) must have `USAGE` on the `pgboss` schema plus `SELECT`/`INSERT`/`UPDATE`/`DELETE` on its tables and `USAGE`/`SELECT` on its sequences. Prisma migration `20261007120000_pgboss_runtime_grants` applies those grants idempotently during `prisma migrate deploy`. Without it, `BACKGROUND_WORKERS_ENABLED=true` fails at API boot with `permission denied for schema pgboss`.
+When `DB_ENFORCE_LEAST_PRIVILEGE=true`, the runtime database role in `DATABASE_URL` must have `USAGE` on the `pgboss` schema plus `SELECT`/`INSERT`/`UPDATE`/`DELETE` on its tables and `USAGE`/`SELECT` on its sequences. Production uses **`agency_access_runtime`**; Neon hardening may use **`aap_app_runtime`**. Prisma migration `20261007120000_pgboss_runtime_grants` grants both roles idempotently when each role exists (skips missing roles). Without it, `BACKGROUND_WORKERS_ENABLED=true` fails at API boot with `permission denied for schema pgboss`.
 
 Deploy the agent-native migration with `AGENT_NATIVE_ENABLED=false`, verify existing flows and the data invariants in `docs/agent-native-access-operations.md`, then enable only after the Clerk staging matrix and two-host MCP smoke pass. A production-enabled configuration fails startup when the issuer, HTTPS resource, or agency allowlist is missing.
 

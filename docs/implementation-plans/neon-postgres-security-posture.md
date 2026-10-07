@@ -43,7 +43,7 @@ This runbook defines the production security posture for our Neon Postgres deplo
 
 1. Runtime credentials cannot run DDL.
 2. `PUBLIC` cannot create objects in `public` schema.
-3. Runtime app can only read/write required schema objects (including `pgboss` when background workers are enabled — see Prisma migration `20261007120000_pgboss_runtime_grants`).
+3. Runtime app can only read/write required schema objects (including `pgboss` when background workers are enabled — see Prisma migration `20261007120000_pgboss_runtime_grants`, which covers production `agency_access_runtime` and optional `aap_app_runtime`).
 4. Readonly role can only `SELECT`.
 5. Production startup fails if TLS is not enforced in `DATABASE_URL`.
 
