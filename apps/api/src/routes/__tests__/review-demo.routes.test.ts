@@ -34,6 +34,7 @@ vi.mock('@/services/review-demo.service.js', () => ({
         pageId: '1373353139192376',
         agencyBusinessId: '3808519629379919',
       },
+      usesSandboxAssets: true,
     })),
     loadStepPayload: vi.fn(async () => ({
       stepId: 'pages_show_list',

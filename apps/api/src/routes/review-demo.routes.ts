@@ -137,6 +137,48 @@ export async function reviewDemoRoutes(fastify: FastifyInstance) {
     }
   });
 
+  fastify.post('/review-demo/meta/disconnect', async (request, reply) => {
+    const labUser = (request as any).labReviewUser as { userId: string };
+    const userEmail = (await resolveAuthenticatedUserEmail((request as any).user)) ?? 'review-demo@unknown';
+    try {
+      await reviewDemoService.disconnectMeta({
+        clerkUserId: labUser.userId,
+        userEmail,
+        ipAddress: extractClientIp(request),
+        userAgent: extractUserAgent(request),
+      });
+      return reply.send({ data: { disconnected: true }, error: null });
+    } catch (error) {
+      return sendError(
+        reply,
+        'REVIEW_DEMO_DISCONNECT_FAILED',
+        error instanceof Error ? error.message : 'Failed to disconnect Meta',
+        500
+      );
+    }
+  });
+
+  fastify.post('/review-demo/steps/business_management/add-page-partner', async (request, reply) => {
+    const labUser = (request as any).labReviewUser as { userId: string };
+    const userEmail = (await resolveAuthenticatedUserEmail((request as any).user)) ?? 'review-demo@unknown';
+    try {
+      const payload = await reviewDemoService.addAgencyToPagePartner({
+        clerkUserId: labUser.userId,
+        userEmail,
+        ipAddress: extractClientIp(request),
+        userAgent: extractUserAgent(request),
+      });
+      return reply.send({ data: payload, error: null });
+    } catch (error) {
+      return sendError(
+        reply,
+        'REVIEW_DEMO_PAGE_PARTNER_FAILED',
+        error instanceof Error ? error.message : 'Failed to add agency Page partner',
+        502
+      );
+    }
+  });
+
   fastify.post('/review-demo/steps/ads_management/check-access', async (request, reply) => {
     const labUser = (request as any).labReviewUser as { userId: string };
     const userEmail = (await resolveAuthenticatedUserEmail((request as any).user)) ?? 'review-demo@unknown';

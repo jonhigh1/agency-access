@@ -19,10 +19,8 @@ vi.mock('@/lib/env.js', () => ({
   },
 }));
 
-vi.mock('@/lib/infisical.js', () => ({
-  infisical: {
-    getPlainSecret: vi.fn(),
-  },
+vi.mock('@/services/meta-tier-cron-token.service.js', () => ({
+  readMetaTierCronAccessToken: vi.fn(),
 }));
 
 vi.mock('@/lib/meta-graph-instrumentation.js', () => ({
@@ -48,7 +46,7 @@ vi.mock('@sentry/node', () => ({
   captureMessage: vi.fn(),
 }));
 
-import { infisical } from '@/lib/infisical.js';
+import { readMetaTierCronAccessToken } from '@/services/meta-tier-cron-token.service.js';
 import { metaGraphFetch } from '@/lib/meta-graph-instrumentation.js';
 import { auditService } from '@/services/audit.service.js';
 import { prisma } from '@/lib/prisma.js';
@@ -89,9 +87,7 @@ function mockGraphOk() {
 describe('runMetaMarketingApiTierDailyCron', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(infisical.getPlainSecret).mockResolvedValue(
-      JSON.stringify({ accessToken: 'lab-token' }),
-    );
+    vi.mocked(readMetaTierCronAccessToken).mockResolvedValue('lab-tier-cron-token');
     vi.mocked(prisma.auditLog.findMany).mockResolvedValue([]);
     mockTierDayCount(0);
     vi.mocked(auditService.createAuditLog).mockResolvedValue({ data: {}, error: null });
@@ -108,6 +104,16 @@ describe('runMetaMarketingApiTierDailyCron', () => {
     expect(result.skipped).toBe(true);
     expect(metaGraphFetch).not.toHaveBeenCalled();
     env.META_MARKETING_API_TIER_CRON_ENABLED = previous;
+  });
+
+  it('skips without Graph when meta_tier_cron_token is missing', async () => {
+    vi.mocked(readMetaTierCronAccessToken).mockResolvedValue(null);
+
+    const result = await runMetaMarketingApiTierDailyCron();
+
+    expect(result.skipped).toBe(true);
+    expect(result.skipReason).toBe('missing_meta_tier_cron_token');
+    expect(metaGraphFetch).not.toHaveBeenCalled();
   });
 
   it('calls read-only Marketing API edges on the locked test ad account only', async () => {

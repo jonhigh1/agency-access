@@ -46,12 +46,31 @@ Set on the **review/lab API** Render service (secrets via Infisical/env only —
 | `META_APP_ID` | `1215220247221414` on review host |
 | `META_REVIEW_AD_ACCOUNT_ID` | Test AA (default `557538895783894`) |
 | `META_REVIEW_LAB_USER_IDS` | Lab reviewer Clerk id(s) |
-| `META_MARKETING_API_TIER_CRON_LAB_USER_ID` | Optional override for which lab user’s Infisical token to use |
+| `META_MARKETING_API_TIER_CRON_LAB_USER_ID` | Clerk user id whose **review_demo** token is copied during one-off seed (see below) |
 | `META_REVIEW_LAB_AGENCY_ID` | Stored on audit rows for lab context |
 | `META_REVIEW_DEMO_MOCK_GRAPH` | Must be `false` for live Graph |
 | `META_MARKETING_API_TIER_FAILURE_ALERT_THRESHOLD` | Consecutive failed days before Sentry alert (default `3`) |
 | `SENTRY_DSN` | Optional; consecutive-failure alerts |
-| Infisical | Lab token at `review_demo_meta_<clerkUserId>` (same as `/review-demo` OAuth) |
+| Infisical | **`meta_tier_cron_token`** — isolated cron token (never overwritten by `/review-demo` reconnect) |
+
+### Seed the isolated cron token (one-off)
+
+After Alex (or the lab reviewer) has connected Meta on `/review-demo`, copy that token into `meta_tier_cron_token` so daily tier exercise survives reviewer reconnects:
+
+```bash
+# From repo root (requires Infisical Machine Identity env on the API)
+npm run seed:meta-tier-cron-token --workspace=apps/api
+```
+
+Alternatively, as an internal admin (Clerk JWT + allowlist):
+
+```http
+POST /internal-admin/meta/seed-tier-cron-token
+```
+
+The seed is **idempotent** (skips when `meta_tier_cron_token` already has an access token). Responses never include token values.
+
+If `meta_tier_cron_token` is missing, the cron **skips** with `meta_marketing_api_tier_daily_skipped` / Sentry warning — it does **not** fall back to `review_demo_meta_*`.
 
 ## Structured log & day count
 

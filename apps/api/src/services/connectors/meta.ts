@@ -51,6 +51,7 @@ interface MetaDebugTokenResponse {
     is_valid?: boolean;
     scopes?: string[];
     user_id?: string;
+    granular_scopes?: Array<{ scope?: string; target_ids?: string[] }>;
   };
 }
 
@@ -329,6 +330,27 @@ export class MetaConnector {
         : undefined,
       userId: payload?.user_id,
       isValid: payload?.is_valid === true,
+    };
+  }
+
+  async getDebugTokenDetails(accessToken: string): Promise<{
+    userId?: string;
+    isValid: boolean;
+    granularScopes: Array<{ scope: string; target_ids?: string[] }>;
+  }> {
+    const data = await this.fetchDebugToken(accessToken);
+    const payload = data.data;
+    const granularScopes = (payload?.granular_scopes ?? [])
+      .filter((entry): entry is { scope: string; target_ids?: string[] } => Boolean(entry.scope))
+      .map((entry) => ({
+        scope: entry.scope as string,
+        ...(entry.target_ids?.length ? { target_ids: entry.target_ids } : {}),
+      }));
+
+    return {
+      userId: payload?.user_id,
+      isValid: payload?.is_valid === true,
+      granularScopes,
     };
   }
 

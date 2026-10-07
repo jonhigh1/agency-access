@@ -81,7 +81,8 @@ export const REVIEW_DEMO_RECORDING_PLAN = [
       {
         type: 'caption',
         primary: 'Permission: business_management',
-        secondary: 'Client Business Portfolio assets + agency partner readback',
+        secondary:
+          'Scoped Business Portfolio assets → Add agency to Page (production POST + readback) → manual ad-account partner verification',
       },
       { type: 'click', testId: 'review-demo-step-tab-business_management' },
       { type: 'wait', testId: 'review-demo-bm-assets-list' },

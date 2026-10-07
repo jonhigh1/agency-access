@@ -20,6 +20,7 @@ vi.mock('@/lib/review-demo-api', () => ({
       pageId: '1373353139192376',
       agencyBusinessId: '3808519629379919',
     },
+    usesSandboxAssets: true,
   })),
   fetchReviewDemoStep: vi.fn(async () => ({
     stepId: 'pages_show_list',

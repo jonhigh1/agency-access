@@ -12,7 +12,9 @@ import {
 } from '@agency-platform/shared';
 import { Button } from '@/components/ui/button';
 import {
+  addReviewDemoPagePartner,
   checkReviewDemoAdAccountAccess,
+  disconnectReviewDemoMeta,
   fetchReviewDemoSession,
   fetchReviewDemoStep,
   initiateReviewDemoMetaOAuth,
@@ -31,6 +33,7 @@ export function ReviewDemoScreen({ initialStep = 'pages_show_list' }: ReviewDemo
   const [loading, setLoading] = useState(true);
   const [actionError, setActionError] = useState<string | null>(null);
   const [checkAccessPending, setCheckAccessPending] = useState(false);
+  const [pagePartnerPending, setPagePartnerPending] = useState(false);
   const sessionLoading = loading && session === null;
 
   const stepIndex = useMemo(
@@ -74,6 +77,31 @@ export function ReviewDemoScreen({ initialStep = 'pages_show_list' }: ReviewDemo
 
   const goToStep = (step: ReviewDemoStepId) => {
     setActiveStep(step);
+  };
+
+  const handleDisconnectMeta = async () => {
+    setActionError(null);
+    try {
+      await disconnectReviewDemoMeta(getToken);
+      setSession(null);
+      setStepPayload(null);
+      await reload();
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : 'Failed to disconnect Meta');
+    }
+  };
+
+  const handleAddPagePartner = async () => {
+    setActionError(null);
+    setPagePartnerPending(true);
+    try {
+      const payload = await addReviewDemoPagePartner(getToken);
+      setStepPayload(payload);
+    } catch (error) {
+      setActionError(error instanceof Error ? error.message : 'Failed to add agency to Page');
+    } finally {
+      setPagePartnerPending(false);
+    }
   };
 
   const handleCheckAdAccountAccess = async () => {
@@ -178,6 +206,17 @@ export function ReviewDemoScreen({ initialStep = 'pages_show_list' }: ReviewDemo
                   Connect Meta for review demo
                 </Button>
               ) : null}
+              {!sessionLoading && session?.connected ? (
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="mt-3"
+                  data-testid="review-demo-disconnect-meta"
+                  onClick={() => void handleDisconnectMeta()}
+                >
+                  Disconnect Meta
+                </Button>
+              ) : null}
             </div>
           </section>
 
@@ -200,7 +239,14 @@ export function ReviewDemoScreen({ initialStep = 'pages_show_list' }: ReviewDemo
             >
               {stepPayload.stepId === 'pages_show_list' ? (
                 <div className="space-y-4">
-                  <h2 className="font-display text-xl font-bold">Pages list (Review BM sandbox)</h2>
+                  <h2 className="font-display text-xl font-bold">
+                    {session?.usesSandboxAssets ? 'Pages list (Review BM sandbox)' : 'Pages list (granted at consent)'}
+                  </h2>
+                  {stepPayload.emptyState ? (
+                    <p className="text-sm text-muted-foreground" data-testid="review-demo-empty-state">
+                      {stepPayload.emptyState.message}
+                    </p>
+                  ) : null}
                   <ul className="space-y-3" data-testid="review-demo-pages-list">
                     {stepPayload.pages.map((page) => (
                       <li key={page.id} className="flex items-center gap-3 border border-black/15 p-3">
@@ -224,31 +270,44 @@ export function ReviewDemoScreen({ initialStep = 'pages_show_list' }: ReviewDemo
                     AuthHub reads these Page details to confirm it&apos;s the right Page before your agency is
                     added.
                   </p>
-                  <div data-testid="review-demo-page-engagement-proof">
-                    <p className="font-semibold">{stepPayload.page.name}</p>
-                    <p className="font-mono text-xs text-muted-foreground">{stepPayload.page.id}</p>
-                    {stepPayload.page.category ? (
-                      <p className="text-sm text-muted-foreground">Category: {stepPayload.page.category}</p>
-                    ) : null}
-                    {typeof stepPayload.page.fanCount === 'number' ? (
-                      <p className="text-sm" data-testid="review-demo-page-fan-count">
-                        Fans: {stepPayload.page.fanCount.toLocaleString()}
-                      </p>
-                    ) : null}
-                    {typeof stepPayload.page.followerCount === 'number' ? (
-                      <p className="text-sm" data-testid="review-demo-page-follower-count">
-                        Followers: {stepPayload.page.followerCount.toLocaleString()}
-                      </p>
-                    ) : null}
-                  </div>
+                  {stepPayload.emptyState ? (
+                    <p className="text-sm text-muted-foreground" data-testid="review-demo-empty-state">
+                      {stepPayload.emptyState.message}
+                    </p>
+                  ) : null}
+                  {stepPayload.page ? (
+                    <div data-testid="review-demo-page-engagement-proof">
+                      <p className="font-semibold">{stepPayload.page.name}</p>
+                      <p className="font-mono text-xs text-muted-foreground">{stepPayload.page.id}</p>
+                      {stepPayload.page.category ? (
+                        <p className="text-sm text-muted-foreground">Category: {stepPayload.page.category}</p>
+                      ) : null}
+                      {typeof stepPayload.page.fanCount === 'number' ? (
+                        <p className="text-sm" data-testid="review-demo-page-fan-count">
+                          Fans: {stepPayload.page.fanCount.toLocaleString()}
+                        </p>
+                      ) : null}
+                      {typeof stepPayload.page.followerCount === 'number' ? (
+                        <p className="text-sm" data-testid="review-demo-page-follower-count">
+                          Followers: {stepPayload.page.followerCount.toLocaleString()}
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : null}
                 </div>
               ) : null}
 
               {stepPayload.stepId === 'ads_management' ? (
+                <>
+                  {stepPayload.emptyState ? (
+                    <p className="mb-4 text-sm text-muted-foreground" data-testid="review-demo-empty-state">
+                      {stepPayload.emptyState.message}
+                    </p>
+                  ) : null}
                 <ReviewDemoManualAdAccountPanel
                   agencyBusinessId={stepPayload.agencyPartner.businessId}
                   agencyBusinessName={stepPayload.agencyPartner.name}
-                  adAccountId={stepPayload.adAccountId}
+                  adAccountId={stepPayload.adAccountId ?? '—'}
                   adAccountName={stepPayload.adAccountName}
                   verified={stepPayload.agencyPartner.verified}
                   permittedTasks={stepPayload.agencyPartner.permittedTasks}
@@ -258,13 +317,28 @@ export function ReviewDemoScreen({ initialStep = 'pages_show_list' }: ReviewDemo
                   checking={checkAccessPending}
                   onCheckAccess={() => void handleCheckAdAccountAccess()}
                 />
+                </>
               ) : null}
 
               {stepPayload.stepId === 'business_management' ? (
                 <div className="space-y-4">
                   <h2 className="font-display text-xl font-bold">Client Business Portfolio</h2>
-                  <p className="font-semibold">{stepPayload.business.name}</p>
-                  <p className="font-mono text-xs text-muted-foreground">{stepPayload.business.id}</p>
+                  {stepPayload.stepCaption ? (
+                    <p className="text-sm text-muted-foreground" data-testid="review-demo-bm-step-caption">
+                      {stepPayload.stepCaption}
+                    </p>
+                  ) : null}
+                  {stepPayload.business ? (
+                    <>
+                      <p className="font-semibold">{stepPayload.business.name}</p>
+                      <p className="font-mono text-xs text-muted-foreground">{stepPayload.business.id}</p>
+                    </>
+                  ) : null}
+                  {stepPayload.emptyState ? (
+                    <p className="text-sm text-muted-foreground" data-testid="review-demo-empty-state">
+                      {stepPayload.emptyState.message}
+                    </p>
+                  ) : null}
                   {stepPayload.sandboxMisconfigured ? (
                     <p
                       className="border-2 border-danger-ink bg-[rgb(var(--coral))]/10 p-4 text-sm"
@@ -276,7 +350,9 @@ export function ReviewDemoScreen({ initialStep = 'pages_show_list' }: ReviewDemo
                     </p>
                   ) : null}
                   <div>
-                    <h3 className="label-micro mb-2">Review sandbox assets (scoped)</h3>
+                    <h3 className="label-micro mb-2">
+                      {session?.usesSandboxAssets ? 'Review sandbox assets (scoped)' : 'Granted assets (scoped)'}
+                    </h3>
                     <ul className="space-y-2" data-testid="review-demo-bm-assets-list">
                       {stepPayload.assets.map((asset) => (
                         <li key={`${asset.kind}-${asset.id}`} className="border border-black/15 p-3 text-sm">
@@ -287,6 +363,47 @@ export function ReviewDemoScreen({ initialStep = 'pages_show_list' }: ReviewDemo
                         </li>
                       ))}
                     </ul>
+                  </div>
+                  <div className="border border-black/15 p-4 text-sm" data-testid="review-demo-bm-page-partner">
+                    <p className="label-micro mb-2">Add agency to Page</p>
+                    <p className="text-sm text-muted-foreground">
+                      Runs the same production Page partner POST AuthHub uses in client authorization, then Graph
+                      readback.
+                    </p>
+                    <Button
+                      type="button"
+                      variant="primary"
+                      className="mt-3"
+                      data-testid="review-demo-add-page-partner"
+                      disabled={pagePartnerPending}
+                      onClick={() => void handleAddPagePartner()}
+                    >
+                      {pagePartnerPending ? 'Adding…' : 'Add agency to Page'}
+                    </Button>
+                    {stepPayload.pagePartner ? (
+                      <div className="mt-3 space-y-1">
+                        <p className="font-semibold">
+                          Page {stepPayload.pagePartner.assetId} —{' '}
+                          {stepPayload.pagePartner.verified ? 'Verified' : 'Not verified'}
+                        </p>
+                        <p>Tasks: {stepPayload.pagePartner.permittedTasks.join(', ') || 'None reported'}</p>
+                        {stepPayload.pagePartner.graphError ? (
+                          <p className="font-mono text-xs" data-testid="review-demo-page-partner-graph-error">
+                            Meta #{stepPayload.pagePartner.graphError.code ?? '—'} (subcode{' '}
+                            {stepPayload.pagePartner.graphError.errorSubcode ?? '—'}):{' '}
+                            {stepPayload.pagePartner.graphError.message}
+                            {stepPayload.pagePartner.graphError.fbtraceId
+                              ? ` [fbtrace_id ${stepPayload.pagePartner.graphError.fbtraceId}]`
+                              : ''}
+                          </p>
+                        ) : null}
+                        {stepPayload.pagePartner.rawGraphResponse ? (
+                          <pre className="mt-2 max-h-40 overflow-auto whitespace-pre-wrap font-mono text-xs">
+                            {stepPayload.pagePartner.rawGraphResponse}
+                          </pre>
+                        ) : null}
+                      </div>
+                    ) : null}
                   </div>
                   <div className="border border-black/15 p-4 text-sm" data-testid="review-demo-bm-partner-proof">
                     <p className="label-micro mb-2">Agency partner on review ad account</p>
