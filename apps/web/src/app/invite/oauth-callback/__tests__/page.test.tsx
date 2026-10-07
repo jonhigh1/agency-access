@@ -30,6 +30,48 @@ vi.mock('@/components/ui/logo-spinner', () => ({
   LogoSpinner: () => <div>Loading</div>,
 }));
 
+function mockOAuthCallbackFetch(options?: {
+  reviewDemoHint?: boolean;
+  clientExchangeBody?: unknown;
+  clientExchangeOk?: boolean;
+}) {
+  const reviewDemoHint = options?.reviewDemoHint ?? false;
+  const clientExchangeOk = options?.clientExchangeOk ?? true;
+  const clientExchangeBody =
+    options?.clientExchangeBody ??
+    ({
+      data: {
+        connectionId: 'conn-1',
+        token: 'token-1',
+        platform: 'google',
+      },
+      error: null,
+    } as const);
+
+  vi.mocked(fetch).mockImplementation((input: RequestInfo | URL) => {
+    const url = typeof input === 'string' ? input : input.toString();
+    if (url.includes('/api/review-demo/meta/oauth-flow')) {
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({ data: { reviewDemo: reviewDemoHint } }),
+      } as Response);
+    }
+    if (url.includes('/api/review-demo/meta/exchange')) {
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({ data: {} }),
+      } as Response);
+    }
+    if (url.includes('/api/client/oauth-exchange')) {
+      return Promise.resolve({
+        ok: clientExchangeOk,
+        text: async () => JSON.stringify(clientExchangeBody),
+      } as Response);
+    }
+    return Promise.reject(new Error(`Unexpected fetch URL: ${url}`));
+  });
+}
+
 describe('ClientOAuthCallbackPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -43,20 +85,18 @@ describe('ClientOAuthCallbackPage', () => {
   });
 
   it('posts the oauth exchange to the configured API host', async () => {
-    vi.mocked(fetch).mockResolvedValue({
-      ok: true,
-      text: async () =>
-        JSON.stringify({
-          data: {
-            connectionId: 'conn-1',
-            token: 'token-1',
-            platform: 'google',
-          },
-          error: null,
-        }),
-    } as Response);
+    mockOAuthCallbackFetch({ reviewDemoHint: false });
 
     render(<ClientOAuthCallbackPage />);
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith(
+        'https://api.example.com/api/review-demo/meta/oauth-flow?state=oauth-state',
+        expect.objectContaining({
+          headers: expect.any(Headers),
+        })
+      );
+    });
 
     await waitFor(() => {
       expect(fetch).toHaveBeenCalledWith(
@@ -73,6 +113,54 @@ describe('ClientOAuthCallbackPage', () => {
     });
   });
 
+  it('uses review-demo meta exchange when oauth-flow hint returns reviewDemo true', async () => {
+    mockOAuthCallbackFetch({ reviewDemoHint: true });
+
+    render(<ClientOAuthCallbackPage />);
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith(
+        'https://api.example.com/api/review-demo/meta/oauth-flow?state=oauth-state',
+        expect.any(Object)
+      );
+    });
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith(
+        'https://api.example.com/api/review-demo/meta/exchange',
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({ code: 'oauth-code', state: 'oauth-state' }),
+        })
+      );
+    });
+
+    await waitFor(() => {
+      expect(replaceMock).toHaveBeenCalledWith('/review-demo?connected=1');
+    });
+
+    expect(
+      vi.mocked(fetch).mock.calls.some(([url]) => String(url).includes('/api/client/oauth-exchange'))
+    ).toBe(false);
+  });
+
+  it('falls through to client oauth exchange when oauth-flow hint returns reviewDemo false', async () => {
+    mockOAuthCallbackFetch({ reviewDemoHint: false });
+
+    render(<ClientOAuthCallbackPage />);
+
+    await waitFor(() => {
+      expect(fetch).toHaveBeenCalledWith(
+        'https://api.example.com/api/client/oauth-exchange',
+        expect.objectContaining({ method: 'POST' })
+      );
+    });
+
+    expect(
+      vi.mocked(fetch).mock.calls.some(([url]) => String(url).includes('/api/review-demo/meta/exchange'))
+    ).toBe(false);
+  });
+
   it('posts only a safe completion message to the opener for popup OAuth', async () => {
     searchParamGetMock.mockImplementation((param: string) => {
       if (param === 'code') return 'oauth-code';
@@ -83,12 +171,13 @@ describe('ClientOAuthCallbackPage', () => {
     const opener = { postMessage: vi.fn() };
     Object.defineProperty(window, 'opener', { configurable: true, value: opener });
     vi.spyOn(window, 'close').mockImplementation(() => {});
-    vi.mocked(fetch).mockResolvedValue({
-      ok: true,
-      text: async () => JSON.stringify({
-        data: { connectionId: 'conn-1', token: 'invite-secret', platform: 'meta' }, error: null,
-      }),
-    } as Response);
+    mockOAuthCallbackFetch({
+      reviewDemoHint: false,
+      clientExchangeBody: {
+        data: { connectionId: 'conn-1', token: 'invite-secret', platform: 'meta' },
+        error: null,
+      },
+    });
 
     render(<ClientOAuthCallbackPage />);
 
@@ -101,12 +190,22 @@ describe('ClientOAuthCallbackPage', () => {
   });
 
   it('shows a controlled error when the oauth exchange returns non-JSON', async () => {
-    vi.mocked(fetch).mockResolvedValue({
-      ok: true,
-      status: 200,
-      statusText: 'OK',
-      text: async () => '<!doctype html><html><body>Not JSON</body></html>',
-    } as Response);
+    mockOAuthCallbackFetch({ reviewDemoHint: false });
+    vi.mocked(fetch).mockImplementation((input: RequestInfo | URL) => {
+      const url = typeof input === 'string' ? input : input.toString();
+      if (url.includes('/api/review-demo/meta/oauth-flow')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ data: { reviewDemo: false } }),
+        } as Response);
+      }
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        text: async () => '<!doctype html><html><body>Not JSON</body></html>',
+      } as Response);
+    });
 
     render(<ClientOAuthCallbackPage />);
 
@@ -161,11 +260,25 @@ describe('ClientOAuthCallbackPage', () => {
     const opener = { postMessage: vi.fn() };
     Object.defineProperty(window, 'opener', { configurable: true, value: opener });
     vi.spyOn(window, 'close').mockImplementation(() => {});
-    vi.mocked(fetch).mockResolvedValue({
-      ok: false,
-      status,
-      text: async () => JSON.stringify({ data: null, error: { code, message: 'Private failure detail' } }),
-    } as Response);
+    mockOAuthCallbackFetch({
+      reviewDemoHint: false,
+      clientExchangeOk: false,
+      clientExchangeBody: { data: null, error: { code, message: 'Private failure detail' } },
+    });
+    vi.mocked(fetch).mockImplementation((input: RequestInfo | URL) => {
+      const url = typeof input === 'string' ? input : input.toString();
+      if (url.includes('/api/review-demo/meta/oauth-flow')) {
+        return Promise.resolve({
+          ok: true,
+          json: async () => ({ data: { reviewDemo: false } }),
+        } as Response);
+      }
+      return Promise.resolve({
+        ok: false,
+        status,
+        text: async () => JSON.stringify({ data: null, error: { code, message: 'Private failure detail' } }),
+      } as Response);
+    });
 
     render(<ClientOAuthCallbackPage />);
 
