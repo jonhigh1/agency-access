@@ -82,6 +82,9 @@ export const ReviewDemoAgencyPartnerSchema = z.object({
   name: z.string().optional(),
   permittedTasks: z.array(z.string()),
   verified: z.boolean(),
+  metaErrorCode: z.number().optional(),
+  metaErrorMessage: z.string().optional(),
+  pendingMessage: z.string().optional(),
 });
 
 export const ReviewDemoBusinessAssetSchema = z.object({

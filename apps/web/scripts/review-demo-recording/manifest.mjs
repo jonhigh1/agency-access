@@ -9,7 +9,7 @@ export const REVIEW_DEMO_RECORDING_STEPS = [
   'business_management',
 ];
 
-/** @typedef {'caption' | 'click' | 'wait' | 'hold' | 'ensureAdPartner'} RecordingActionType */
+/** @typedef {'caption' | 'click' | 'wait' | 'hold' | 'checkAdAccess'} RecordingActionType */
 
 /**
  * @typedef {Object} RecordingAction
@@ -65,11 +65,11 @@ export const REVIEW_DEMO_RECORDING_PLAN = [
       {
         type: 'caption',
         primary: 'Permission: ads_management',
-        secondary: 'Review ad account → add agency BM as partner → Graph readback',
+        secondary: 'Manual ad account partner share → Check access Graph readback',
       },
       { type: 'click', testId: 'review-demo-step-tab-ads_management' },
-      { type: 'wait', testId: 'review-demo-ad-account-summary' },
-      { type: 'ensureAdPartner' },
+      { type: 'wait', testId: 'review-demo-manual-ad-checklist' },
+      { type: 'checkAdAccess' },
       { type: 'wait', testId: 'review-demo-partner-proof' },
       { type: 'hold', ms: 2500 },
     ],

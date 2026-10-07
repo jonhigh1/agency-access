@@ -18,6 +18,10 @@ import { oauthStateService } from '@/services/oauth-state.service.js';
 import { resolveClientInviteCallbackUrl } from '@/routes/client-auth/redirect-uri.js';
 import { clientAssetsService } from '@/services/client-assets.service.js';
 import { metaPartnerService } from '@/services/meta-partner.service.js';
+import {
+  formatMetaGraphApiError,
+  readMetaGraphApiError,
+} from '@/services/review-demo-graph-errors.js';
 
 const GRAPH_BASE = `https://graph.facebook.com/${META_GRAPH_VERSION}`;
 
@@ -37,7 +41,7 @@ function defaultSandboxIds() {
   return {
     businessManagerId: env.META_REVIEW_BM_ID ?? '695982475048959',
     adAccountId: normalizeAdAccountId(env.META_REVIEW_AD_ACCOUNT_ID ?? '557538895783894'),
-    pageId: env.META_REVIEW_PAGE_ID ?? '61595193599205',
+    pageId: env.META_REVIEW_PAGE_ID ?? '1373353139192376',
     agencyBusinessId: env.META_REVIEW_AGENCY_BM_ID ?? '3808519629379919',
   };
 }
@@ -273,7 +277,9 @@ export class ReviewDemoService {
       case 'pages_read_engagement':
         return this.loadPagesReadEngagement(accessToken, sandbox.pageId, opsStart);
       case 'ads_management':
-        return this.loadAdsManagement(accessToken, sandbox.adAccountId, agencyBusinessId, opsStart);
+        return this.loadAdsManagement(accessToken, sandbox.adAccountId, agencyBusinessId, opsStart, {
+          includePartnerReadback: false,
+        });
       case 'business_management':
         return this.loadBusinessManagement(accessToken, sandbox, opsStart);
       default: {
@@ -283,14 +289,26 @@ export class ReviewDemoService {
     }
   }
 
-  async ensureAdAccountAgencyPartner(input: {
+  async checkAdAccountAgencyPartner(input: {
     clerkUserId: string;
     userEmail: string;
     ipAddress?: string;
     userAgent?: string;
   }): Promise<ReviewDemoStepPayload> {
     if (env.META_REVIEW_DEMO_MOCK_GRAPH) {
-      return this.loadMockStepPayload('ads_management');
+      const base = this.loadMockStepPayload('ads_management');
+      if (base.stepId !== 'ads_management') {
+        return base;
+      }
+      return {
+        ...base,
+        agencyPartner: {
+          ...base.agencyPartner,
+          verified: true,
+          permittedTasks: ['ADVERTISE', 'ANALYZE'],
+          pendingMessage: undefined,
+        },
+      };
     }
 
     const accessToken = await this.getAccessToken(
@@ -302,14 +320,10 @@ export class ReviewDemoService {
     const opsStart = getRecordedMetaGraphOps().length;
     const sandbox = defaultSandboxIds();
     const agencyBusinessId = requireAgencyBusinessIdForLiveGraph();
-    const partnerTasks = [...REVIEW_DEMO_AD_ACCOUNT_PARTNER_TASKS];
 
-    await this.idempotentAdAccountAgencyPartnerGrant(
-      accessToken,
-      sandbox.adAccountId,
-      agencyBusinessId,
-      partnerTasks
-    );
+    const payload = await this.loadAdsManagement(accessToken, sandbox.adAccountId, agencyBusinessId, opsStart, {
+      includePartnerReadback: true,
+    });
 
     await auditService.createAuditLog({
       userEmail: input.userEmail,
@@ -319,54 +333,15 @@ export class ReviewDemoService {
       ipAddress: input.ipAddress ?? '0.0.0.0',
       userAgent: input.userAgent,
       metadata: {
-        surface: 'review_demo_ensure_ad_account_partner',
+        surface: 'review_demo_check_ad_account_partner',
         adAccountId: sandbox.adAccountId,
         agencyBusinessId,
+        verified: payload.stepId === 'ads_management' ? payload.agencyPartner.verified : false,
         graphCaptions: graphCaptionsSince(opsStart),
       },
     });
 
-    return this.loadAdsManagement(accessToken, sandbox.adAccountId, agencyBusinessId, opsStart);
-  }
-
-  private async idempotentAdAccountAgencyPartnerGrant(
-    clientToken: string,
-    adAccountId: string,
-    agencyBusinessId: string,
-    partnerTasks: string[]
-  ): Promise<void> {
-    const initial = await metaPartnerService.verifyAdAccountAgencyAccess(
-      clientToken,
-      adAccountId,
-      agencyBusinessId,
-      partnerTasks
-    );
-    if (initial.verified) {
-      return;
-    }
-
-    try {
-      await metaPartnerService.grantAgencyPartnerAccess(
-        clientToken,
-        adAccountId,
-        agencyBusinessId,
-        partnerTasks
-      );
-    } catch {
-      // Meta may reject duplicate partner shares; read back instead of failing the lab flow.
-    }
-
-    const readBack = await metaPartnerService.verifyAdAccountAgencyAccess(
-      clientToken,
-      adAccountId,
-      agencyBusinessId,
-      partnerTasks
-    );
-    if (!readBack.verified) {
-      throw new Error(
-        'Agency partner is not visible on the review ad account yet. Confirm the agency Business Portfolio id or share manually in Meta Business Settings.'
-      );
-    }
+    return payload;
   }
 
   private async fetchAgencyBusinessName(
@@ -440,25 +415,51 @@ export class ReviewDemoService {
     accessToken: string,
     adAccountId: string,
     agencyBusinessId: string,
-    opsStart: number
+    opsStart: number,
+    options: { includePartnerReadback: boolean }
   ): Promise<ReviewDemoStepPayload> {
     const accountResponse = await metaGraphFetch(
       `${GRAPH_BASE}/${adAccountId}?fields=id,name,account_status`,
       { method: 'GET', accessToken, tokenClass: 'client_user' }
     );
     if (!accountResponse.ok) {
-      throw new Error(await accountResponse.text());
+      const graphError = await readMetaGraphApiError(accountResponse);
+      throw new Error(graphError.displayMessage);
     }
     const account = (await accountResponse.json()) as { id?: string; name?: string };
 
     const partnerTasks = [...REVIEW_DEMO_AD_ACCOUNT_PARTNER_TASKS];
-    const partnerAccess = await metaPartnerService.verifyAdAccountAgencyAccess(
-      accessToken,
-      adAccountId,
-      agencyBusinessId,
-      partnerTasks
-    );
     const agencyName = await this.fetchAgencyBusinessName(accessToken, agencyBusinessId);
+
+    let permittedTasks: string[] = [];
+    let verified = false;
+    let metaErrorCode: number | undefined;
+    let metaErrorMessage: string | undefined;
+    let pendingMessage: string | undefined;
+
+    if (options.includePartnerReadback) {
+      try {
+        const partnerAccess = await metaPartnerService.verifyAdAccountAgencyAccess(
+          accessToken,
+          adAccountId,
+          agencyBusinessId,
+          partnerTasks
+        );
+        permittedTasks = partnerAccess.assignedTasks;
+        verified = partnerAccess.verified;
+        if (!partnerAccess.verified) {
+          pendingMessage =
+            'Ad account has not been shared to the agency business portfolio yet. Complete the manual steps in Meta Business Settings, then run Check access again.';
+        }
+      } catch (error) {
+        const graphError = formatMetaGraphApiError(
+          error instanceof Error ? error.message : String(error)
+        );
+        metaErrorCode = graphError.code;
+        metaErrorMessage = graphError.message;
+        throw new Error(graphError.displayMessage);
+      }
+    }
 
     return {
       stepId: 'ads_management',
@@ -467,8 +468,11 @@ export class ReviewDemoService {
       agencyPartner: {
         businessId: agencyBusinessId,
         ...(agencyName ? { name: agencyName } : {}),
-        permittedTasks: partnerAccess.assignedTasks,
-        verified: partnerAccess.verified,
+        permittedTasks,
+        verified,
+        ...(metaErrorCode !== undefined ? { metaErrorCode } : {}),
+        ...(metaErrorMessage ? { metaErrorMessage } : {}),
+        ...(pendingMessage ? { pendingMessage } : {}),
       },
       graphCaptions: graphCaptionsSince(opsStart),
     };
@@ -567,8 +571,8 @@ export class ReviewDemoService {
           agencyPartner: {
             businessId: sandbox.agencyBusinessId,
             name: 'AuthHub Agency BM (mock)',
-            permittedTasks: ['ADVERTISE', 'ANALYZE'],
-            verified: true,
+            permittedTasks: [],
+            verified: false,
           },
           graphCaptions: [
             'GET /act_{id}?fields=id,name',

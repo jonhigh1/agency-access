@@ -1,8 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
-  ensureReviewDemoAdAccountPartner,
+  checkReviewDemoAdAccountAccess,
   exchangeReviewDemoMetaOAuth,
-  fetchReviewDemoOAuthFlowHint,
   fetchReviewDemoSession,
   fetchReviewDemoStep,
   initiateReviewDemoMetaOAuth,
@@ -41,22 +40,15 @@ describe('review-demo-api', () => {
       expect.objectContaining({ method: 'POST' })
     );
 
-    authorizedApiFetchMock.mockResolvedValueOnce({ data: { reviewDemo: true } });
-    await fetchReviewDemoOAuthFlowHint(getToken, 'oauth-state');
-    expect(authorizedApiFetchMock).toHaveBeenCalledWith(
-      '/api/review-demo/meta/oauth-flow?state=oauth-state',
-      expect.any(Object)
-    );
-
     await exchangeReviewDemoMetaOAuth(getToken, { code: 'c', state: 's' });
     expect(authorizedApiFetchMock).toHaveBeenCalledWith(
       '/api/review-demo/meta/exchange',
       expect.objectContaining({ method: 'POST' })
     );
 
-    await ensureReviewDemoAdAccountPartner(getToken);
+    await checkReviewDemoAdAccountAccess(getToken);
     expect(authorizedApiFetchMock).toHaveBeenCalledWith(
-      '/api/review-demo/steps/ads_management/ensure-partner',
+      '/api/review-demo/steps/ads_management/check-access',
       expect.objectContaining({ method: 'POST' })
     );
   });
