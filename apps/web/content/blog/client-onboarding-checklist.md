@@ -1,13 +1,13 @@
 ---
 id: client-onboarding-checklist
-title: The Complete Client Onboarding Checklist for Agencies (2026)
+title: Client Onboarding Checklist for Agencies (Free Template, 2026)
 excerpt: >-
-  Stop losing days to client onboarding chaos. Get the agency client onboarding
-  checklist with free downloadable PDF. Covers platform access, intake forms,
-  and first-week milestones.
+  The full agency client onboarding checklist: contract to 30-day review, with an
+  owner and due day for every task, plus a copyable template. Free.
 category: onboarding
 stage: consideration
 publishedAt: '2026-03-11'
+updatedAt: '2026-10-07'
 readTime: 15
 author:
   name: Jon High
@@ -17,249 +17,207 @@ tags:
   - agency operations
   - checklist
   - platform access
-metaTitle: 'Client Onboarding Checklist for Agencies [2026]'
+metaTitle: Client Onboarding Checklist for Agencies (2026 Template)
 metaDescription: >-
-  Stop losing days to client onboarding chaos. Get the complete agency client
-  onboarding checklist with free downloadable PDF. Covers platform access,
-  intake forms, and first-week milestones.
+  The full agency client onboarding checklist: contract to 30-day review, with an
+  owner and due day for every task, plus a copyable template. Free.
+canonical: https://authhub.co/blog/client-onboarding-checklist
 relatedPosts:
-  - meta-ads-access-guide
-  - google-ads-access-guide
-  - ga4-access-guide
+  - client-onboarding-questionnaire-27-questions
+  - social-media-access-request-template
+  - how-to-onboard-new-marketing-client
+  - meta-business-manager-access-guide
 ---
-# The Complete Client Onboarding Checklist for Agencies (2026)
+Updated October 7, 2026
 
-A new client signs. You're ready to launch campaigns.
+A client onboarding checklist takes a new marketing client from signed contract to first useful result in about two weeks. Six phases. Every task gets one owner and a due day. The step that stalls most agencies is platform access — treat "done" as verified in-platform, not "client said yes."
 
-Instead, you spend three days chasing:
+## The checklist at a glance
 
-- "Can you grant me Google Ads access?"
-- "Which email should I use?"
-- "I don't see your request."
-- "It says you already have access?"
+Use this as your master sheet. Copy the Markdown/CSV block below into Notion, Linear, Asana, or a spreadsheet. Print the [browser-printable checklist](/downloads/client-onboarding-checklist.html) if you want a desk copy.
 
-Agencies lose **8-12 hours per month** to access chaos—lost billable time, delayed launches, and unprofessional email threads.
+| Phase | Task | Owner | Due | Done when |
+| --- | --- | --- | --- | --- |
+| 1 Close | Countersign contract / SOW | Agency + client | Day 0 | Signed file in shared folder |
+| 1 Close | Collect deposit / send first invoice | Agency (billing) | Day 0 | Payment received or invoice dated |
+| 1 Close | Send welcome + "what happens next" email | Agency AM | Day 0 | Client confirms receipt |
+| 1 Close | Create client record in CRM / PM tool | Agency AM | Day 0 | Workspace + channel exist |
+| 2 Intake | Send intake questionnaire | Agency AM | Day 1 | Form submitted ([27 questions](/blog/client-onboarding-questionnaire-27-questions)) |
+| 2 Intake | Collect brand assets (logo, guidelines, creatives) | Client | Day 2 | Files in shared folder |
+| 2 Intake | Confirm key contacts + single approver | Agency + client | Day 2 | Named approver on record |
+| 2 Intake | Capture goals / KPIs + baseline numbers | Agency AM | Day 3 | Written success metric for Day 30 |
+| 3 Access | Meta Business Manager — Ad Account Advertiser (or Admin only if you handle billing) | Client grants → agency verifies | Day 1–3 | Agency sees + can edit campaigns in Business Suite ([Meta guide](/blog/meta-business-manager-access-guide)) |
+| 3 Access | Google Ads — Standard (or Admin if MCC / linking needed) | Client grants → agency verifies | Day 1–3 | Agency can edit campaigns + see conversions ([Google Ads guide](/blog/google-ads-access-agency)) |
+| 3 Access | GA4 — Editor (or Administrator if property setup) | Client grants → agency verifies | Day 1–3 | Agency opens property + events ([GA4 guide](/blog/ga4-access-agencies)) |
+| 3 Access | LinkedIn Campaign Manager — Creative Manager or Campaign Manager | Client grants → agency verifies | Day 1–3 | Agency can create/edit campaigns ([LinkedIn guide](/blog/linkedin-ads-access-agency)) |
+| 3 Access | TikTok Business Center — Advertiser (or Admin if BC setup) | Client grants → agency verifies | Day 1–3 | Agency sees ad account in BC ([TikTok guide](/blog/tiktok-ads-access-agency)) |
+| 3 Access | Pinterest Ads — Admin or Campaign analyst as scoped | Client grants → agency verifies | Day 1–3 | Agency can edit ads ([Pinterest guide](/blog/pinterest-ads-access-agencies)) |
+| 3 Access | Snapchat Org Member + Campaign Manager on ad account | Client grants → agency verifies | Day 1–3 | Agency can build campaigns ([Snapchat guide](/blog/snapchat-ads-access-agencies)) |
+| 3 Access | Meta Pixel / Google tag / GTM container — ask for admin or publish access | Client | Day 1–3 | Agency can publish tags or confirm client will |
+| 3 Access | Google Search Console — Full user | Client | Day 1–3 | Agency sees property (ask for admin access; no AuthHub flow required) |
+| 3 Access | Shopify / CMS — staff access as needed for landing pages | Client | Day 1–3 | Agency can edit agreed pages (ask for admin access) |
+| 3 Access | Remove previous agency partners where required | Client | Day 2 | Old partners gone; new partner invite accepted |
+| 4 Expectations | Set Slack/email channel + response-time norms | Agency + client | Day 2–4 | Written in kickoff doc |
+| 4 Expectations | Define approval process (ads, landing pages, spend changes) | Agency + client | Day 3 | Single approver + SLA |
+| 4 Expectations | Agree reporting cadence + dashboard owner | Agency AM | Day 4 | First report date on calendar |
+| 4 Expectations | Scope / exclusions read-through | Agency lead | Day 4 | Both sides confirm out-of-scope list |
+| 5 Kickoff | Send agenda ≥24h before call | Agency AM | Day 3–5 | Agenda in invite |
+| 5 Kickoff | Confirm success metric + first deliverable date | Agency + client | Kickoff | Written in recap |
+| 5 Kickoff | Send kickoff recap within 24h | Agency AM | Day +1 | Recap acknowledged |
+| 6 First value | Re-verify all platform roles in-product | Agency AM | Day 7 | Checklist of logins passed |
+| 6 First value | Dashboards live with baseline | Agency | Day 7–10 | Client can open link |
+| 6 First value | Ship first small win (audit, quick test, creative draft) | Agency | Day 7–14 | Client sees tangible output |
+| 6 Review | 30-day review vs success metric | Agency + client | Day 30 | Notes + next-30 plan |
 
-This checklist transforms 3-day onboarding into 5-minute setup.
+**Rule for Phase 3:** "Client said they granted access" is not done. Done = your team logged in and confirmed the role on that platform.
 
-## Phase 1: Before You Send the Access Request (Day 0)
+## Copy this template
 
-### Gather Essential Client Information
+Same rows as plain Markdown (paste into Notion / Docs). Or open the [printable checklist](/downloads/client-onboarding-checklist.html) and use File → Print in your browser (you can save from the print dialog if you want a file). There is no separate `.pdf` asset on the site.
 
-Collect this before sending access requests:
+**Copyable CSV — start**
 
-**Business Basics**
-- [ ] Legal business name
-- [ ] Primary contact (name, email, phone)
-- [ ] Billing contact (if different)
-- [ ] Timezone
-- [ ] Platforms in use (Meta, Google, GA4, TikTok, LinkedIn, Pinterest)
-- [ ] Monthly ad spend budget
-- [ ] Goals for first 30 days (leads, awareness, conversions)
+Phase,Task,Owner,Due,Done when
+1 Close,Countersign contract/SOW,Agency + client,Day 0,Signed file saved
+1 Close,Deposit / first invoice,Agency billing,Day 0,Paid or invoice sent
+1 Close,Welcome + what happens next,Agency AM,Day 0,Client confirms
+1 Close,CRM/PM client record,Agency AM,Day 0,Workspace live
+2 Intake,Intake questionnaire,Agency AM,Day 1,Form submitted
+2 Intake,Brand assets,Client,Day 2,Files in folder
+2 Intake,Key contacts + single approver,Agency + client,Day 2,Approver named
+2 Intake,Goals/KPIs + baselines,Agency AM,Day 3,Day-30 metric written
+3 Access,Meta BM Advertiser (+ assets),Client→Agency verify,Day 1-3,Verified in Business Suite
+3 Access,Google Ads Standard/Admin,Client→Agency verify,Day 1-3,Verified in Google Ads
+3 Access,GA4 Editor/Admin,Client→Agency verify,Day 1-3,Verified in GA4
+3 Access,LinkedIn Campaign Manager role,Client→Agency verify,Day 1-3,Verified in CM
+3 Access,TikTok BC Advertiser/Admin,Client→Agency verify,Day 1-3,Verified in BC
+3 Access,Pinterest Ads role,Client→Agency verify,Day 1-3,Verified in Ads
+3 Access,Snapchat Org + Campaign Manager,Client→Agency verify,Day 1-3,Verified in Ads Manager
+3 Access,Pixel/GTM publish access,Client,Day 1-3,Can publish or client owns publish
+3 Access,Search Console Full user,Client,Day 1-3,Property visible
+3 Access,Shopify/CMS staff access,Client,Day 1-3,Can edit agreed pages
+3 Access,Remove previous agency,Client,Day 2,Old partners removed
+4 Expectations,Comms channel + response times,Both,Day 2-4,Written norms
+4 Expectations,Approval process,Both,Day 3,Approver + SLA
+4 Expectations,Reporting cadence,Agency AM,Day 4,First report dated
+4 Expectations,Scope/exclusions read-through,Agency lead,Day 4,Out-of-scope list agreed
+5 Kickoff,Agenda sent in advance,Agency AM,Day 3-5,In calendar invite
+5 Kickoff,Success metric + first deliverable,Both,Kickoff,In recap
+5 Kickoff,Recap within 24h,Agency AM,Day+1,Acknowledged
+6 First value,Re-verify all access,Agency AM,Day 7,All logins pass
+6 First value,Dashboards live,Agency,Day 7-10,Client can open
+6 First value,First small win shipped,Agency,Day 7-14,Client saw output
+6 Review,30-day review,Both,Day 30,Next-30 plan written
+**Copyable CSV — end**
 
-### Prepare Your Agency Side
+## Phase notes (how to run each block)
 
-Set up internally before reaching out:
+### Phase 1 — Close (Day 0)
 
-- [ ] Create client folder in project management system
-- [ ] Set up client email alias (e.g., clientname@agency.com)
-- [ ] Prepare branded access request template
-- [ ] Confirm your agency Meta Business ID
-- [ ] Create Slack channel or project workspace
+Finish the commercial handoff before you ask for logins. Countersign the SOW, collect deposit or send invoice, and send a short welcome that names the next three things you'll ask for (intake form, brand assets, platform invites). Create the client record the same day so nothing lives in someone's inbox.
 
-## Phase 2: Platform Access Collection (Days 1-2)
+### Phase 2 — Intake (Days 1–3)
 
-### Meta Ads (Facebook & Instagram)
+Access without context wastes the first week. Use the [client onboarding questionnaire (27 questions)](/blog/client-onboarding-questionnaire-27-questions) instead of a blank Google Doc. Require one named approver. Write the Day-30 success metric before kickoff — "more leads" is not a metric.
 
-- [ ] Send Business Manager access request with Business ID
-- [ ] Specify permission level (Admin vs Advertiser)
-- [ ] Request access to: Ad Accounts, Pages, Instagram Accounts, Catalogs
-- [ ] Client confirms request received
-- [ ] Agency accepts invitation in Business Suite
-- [ ] Verify: Can you see campaigns? Can you edit?
-- [ ] Screenshot account overview for records
+### Phase 3 — Platform access (Days 1–3) — the wedge
 
-**Permission Levels**:
-- **Admin**: Full control including billing (only if you manage payment methods)
-- **Ad Account Advertiser**: Create and edit campaigns (recommended)
-- **Analyst**: View-only access
-- **Campaign Analyst**: View specific campaigns only
+This is where agencies lose days. For each platform the client actually uses, ask for the **exact role**, then verify in-product:
 
-### Google Ads & GA4
+- **Meta:** prefer Ad Account **Advertiser**; use Admin only if you must manage billing. Request ad accounts, Pages, Instagram accounts, and catalogs as needed. Guide: [Meta Business Manager access](/blog/meta-business-manager-access-guide).
+- **Google Ads:** **Standard** for day-to-day; Admin if you need account linking / MCC structure. Guide: [Google Ads access](/blog/google-ads-access-agency).
+- **GA4:** separate invite from Google Ads — **Editor** minimum to work in the property. Guide: [GA4 access](/blog/ga4-access-agencies).
+- **LinkedIn:** Campaign Manager roles (Creative Manager / Campaign Manager as scoped). Guide: [LinkedIn ads access](/blog/linkedin-ads-access-agency).
+- **TikTok:** Business Center member with Advertiser (or Admin for BC setup); Spark Ads may need QR authorization. Guide: [TikTok ads access](/blog/tiktok-ads-access-agency).
+- **Pinterest:** Ads account user with edit rights. Guide: [Pinterest ads access](/blog/pinterest-ads-access-agencies).
+- **Snapchat:** Organization Member plus Campaign Manager on the ad account (client invites you — no inbound request). Guide: [Snapchat ads access](/blog/snapchat-ads-access-agencies).
 
-**Google Ads:**
-- [ ] Send invitation (client adds email in Tools & Settings)
-- [ ] Specify access: Admin, Standard, or Read-only
-- [ ] Confirm account or MCC level
-- [ ] Client sends invitation
-- [ ] Accept via email link or in Google Ads
-- [ ] Verify: Can you see conversions? Link accounts?
+For **tag manager / pixel publish**, **Search Console**, and **Shopify/CMS**, ask the client for admin (or staff) access on those products directly. AuthHub's one-link flow covers the major ad platforms above (15+ integrations); these three are still "ask for admin access" checklist rows.
 
-**Google Analytics 4:**
-- [ ] Send GA4 property invitation (separate from Google Ads)
-- [ ] Client adds email in Admin → User Management
-- [ ] Accept via email or in GA4
-- [ ] Verify property access
+**Ownership rule:** the **client owns the ad accounts**. The agency gets partner / user access. Never share passwords; never leave a previous agency's partner seat hanging.
 
-### LinkedIn Ads
+Process overview if you want the narrative version: [How to onboard a new marketing client](/blog/how-to-onboard-new-marketing-client).
 
-- [ ] Send Campaign Manager account ID
-- [ ] Client navigates to Account Settings → Account Users
-- [ ] Client selects role: VIEW, MODIFY, or MANAGER_AD_ACCOUNTS
-- [ ] Client sends invitation
-- [ ] Accept via email link
+### Phase 4 — Set expectations (Days 2–4)
 
-### TikTok Ads
+Document channel, response times, who approves creatives and spend changes, reporting cadence, and what's out of scope. Read the exclusions out loud on the kickoff call.
 
-- [ ] Confirm client has TikTok Business Center account
-- [ ] Send your agency Business Center ID
-- [ ] Client adds you in Business Settings → Member Management
-- [ ] Select permission: Admin, Finance, or Viewer
-- [ ] QR code authorization for Spark Ads (if applicable)
+### Phase 5 — Kickoff (Days 3–5)
 
-### Pinterest & Snapchat
+Agenda in the invite. Confirm the success metric and the date of the first deliverable. Recap within 24 hours so decisions don't evaporate.
 
-**Pinterest:**
-- [ ] Send Ads account ID
-- [ ] Client adds in Account Settings → Account Users
-- [ ] Accept invitation
+### Phase 6 — First value + 30-day review (Days 7–30)
 
-**Snapchat:**
-- [ ] Send Business Manager ID
-- [ ] Client adds in Members
-- [ ] Accept invitation
+Re-verify access (tokens and roles drift). Ship something small early. Hold a Day-30 review against the metric you wrote in Phase 2.
 
-## Phase 3: Client Intake & Information Gathering (Day 1-3)
+## What causes onboarding delays (and how to avoid them)
 
-Access without context is useless. Gather what you need to run effective campaigns.
+### 1. Business Manager vs. personal profile
 
-### Essential Business Information
+Clients try to grant Meta access from a personal Facebook profile instead of Meta Business Suite. Fix: send annotated screenshots of Business Manager / Business Suite, and ask which Business Manager owns the ad account before you send the invite.
 
-- [ ] Website URL
-- [ ] Industry/niche
-- [ ] Target demographics (age, location, interests)
-- [ ] Unique selling proposition
-- [ ] Key competitors
-- [ ] Brand guidelines or style guide
-- [ ] Logo files (PNG, SVG, transparent backgrounds)
-- [ ] Creative assets: images, videos, ad copy examples
+### 2. Wrong permission levels
 
-### Access to Existing Accounts
-
-- [ ] Previous agency account IDs (for migration)
-- [ ] Ad account history (spend, performance data)
-- [ ] Conversion tracking setup (GA4, Pixel, floodlight tags)
-- [ ] Landing page URLs
-- [ ] CMS/platform login (Shopify, WordPress, WooCommerce)
-- [ ] Domain registrar access (if needed)
-- [ ] CRM access (HubSpot, Salesforce)
-
-### Goals & KPIs
-
-- [ ] Primary objective: awareness, lead gen, sales, app installs
-- [ ] Target CPA/CPL goals
-- [ ] Monthly budget range
-- [ ] Geographic targets
-- [ ] Seasonality or promotional calendar
-- [ ] Success metrics (what does "good" look like?)
-
-## Phase 4: First Week Kickoff (Days 4-7)
-
-### Schedule Onboarding Call
-
-- [ ] Send calendar invite (30-60 min)
-- [ ] Include agenda: access verification, goals review, Q&A
-- [ ] Attendees: Agency lead, account manager, client stakeholders
-- [ ] Prepare campaign strategy framework
-- [ ] Prepare onboarding packet (welcome email, expectations doc)
-
-### Verify All Access
-
-- [ ] Log into Meta Business Suite - confirm access
-- [ ] Log into Google Ads - confirm access
-- [ ] Log into GA4 - confirm property access
-- [ ] Log into LinkedIn Ads - confirm access
-- [ ] Log into TikTok Ads - confirm access
-- [ ] Log into other platforms as needed
-- [ ] Document access levels in client folder
-
-### Set Up Reporting & Dashboards
-
-- [ ] Create GA4 Looker Studio report
-- [ ] Set up automated reporting emails
-- [ ] Configure Slack or email alerts
-- [ ] Document report delivery schedule
-
-## What Causes Onboarding Delays (And How to Avoid Them)
-
-### 1. Business Manager vs. Personal Profile
-
-Clients try granting access from their personal Facebook profile instead of Meta Business Suite.
-
-**Fix**: Send annotated screenshots showing exactly where to click in Business Manager.
-
-### 2. Wrong Permission Levels
-
-Client grants "Analyst" when you need "Advertiser" to create campaigns.
-
-**Fix**: Specify exact permission levels in your access request template. Include descriptions.
-
-The right [client onboarding software for agencies](/blog/best-client-onboarding-software-agencies-2026) handles this for you: it states the exact permission each platform needs and collects them all in one flow.
+Client grants Analyst / Viewer when you need Advertiser / Standard to build campaigns. Fix: name the exact role in every request (see Phase 3). "Give us access" is how you get read-only.
 
 ### 3. Multiple Business Managers
 
-Client has ad accounts spread across several Business Managers and doesn't know which to use.
+Ad accounts sit across several BMs and the client picks the wrong one. Fix: ask upfront, "Which Business Manager owns the ad account we'll run?" Request access from each BM that holds an asset you need — or consolidate first.
 
-**Fix**: Ask upfront: "Do you have existing Business Managers for each platform?" Request consolidation or access from each.
+### 4. Previous agency still has access
 
-### 4. Previous Agency Still Has Access
+Some platforms block or confuse partner invites when the old agency is still attached. Fix: checklist item — "Remove previous agency partners before adding us" — with a one-line how-to per platform.
 
-You can't get access because the old agency's connection is still active.
+### 5. Personal email instead of business email
 
-**Fix**: Add checklist item: "Remove previous agency partners before adding us." Include platform-specific instructions.
+Invites land on a personal Gmail the AM doesn't monitor. Fix: specify the agency email (or alias) that must receive every invite, and reject invites that went to the wrong address.
 
-### 5. Personal Email Instead of Business Email
+## How to scale your onboarding process
 
-Access granted to personal Gmail instead of business email, causing confusion.
+| Volume | What usually works |
+| --- | --- |
+| A few new clients / month | This checklist + [access-request email templates](/blog/social-media-access-request-template) + manual follow-ups |
+| Steady pipeline | Standardize intake + one access collection flow (see AuthHub below) + reminders + a shared status board |
+| High volume | Dedicated onboarding owner, stricter templates, API / webhooks into your PM stack, client self-serve where safe |
 
-**Fix**: Specify in template: "Please use your business email address for all platform access."
+Skip invented "hours saved" math. Measure your own: median days from signed SOW → all Phase 3 rows verified.
 
-## How to Scale Your Onboarding Process
+## Access request emails (Phase 3)
 
-### 3-10 clients/month
-- Email templates
-- This checklist
-- Manual follow-up
+Don't rewrite platform emails on this page. Use the copy-paste scripts here:
 
-### 10-50 clients/month
-- Platform that automates access requests (e.g., AuthHub)
-- Intake form templates
-- Automated reminders
-- Centralized dashboard
+**→ [Social media access request template](/blog/social-media-access-request-template)** — Meta, Google Ads, GA4, LinkedIn, TikTok, Pinterest, plus Day 3/5/7 follow-ups.
 
-### 50+ clients/month
-- API integrations
-- Client self-service portal
-- Dedicated onboarding specialist
+Send the right role (from Phase 3), then verify in-platform.
 
-## Free Downloadable Checklist
+## Where AuthHub fits
 
-**Download the printable PDF version.** Customize, print, and use it for every new client.
+Phase 3 can be **one client link** instead of a stack of separate invite emails. The client signs into each platform and approves; your team sees status. AuthHub supports **15+** platform integrations for that flow. Start a free trial from the homepage, or compare plans on [/pricing](/pricing) (**$29 / $79 / $149** monthly for **5 / 20 / 50** active clients).
 
-[📄 Download Client Onboarding Checklist (Print to PDF)](/downloads/client-onboarding-checklist.html)
+AuthHub does not replace your SOW, intake form, or kickoff — it compresses the access-collection step.
 
-Open in browser → Print → Save as PDF. Post it next to your account manager's desk.
+## FAQ
 
----
+**What should a client onboarding checklist include?**  
+Contract/SOW close, intake + brand assets, platform access with exact roles, expectations (comms, approvals, reporting, scope), kickoff with a written success metric, and a first-value path through a 30-day review. Every task needs an owner and a due day.
 
-## Ready to eliminate access chaos?
+**How long should client onboarding take?**  
+Plan about two weeks from signed contract to first useful deliverable if access is verified early. Day 0–3 for close, intake, and access; kickoff by Day 5; first small win inside two weeks; formal review at Day 30.
 
-Onboard clients in 5 minutes instead of 3 days.
+**Who should own client onboarding at an agency?**  
+One accountable owner (usually the account manager), with billing/ops on Close and a strategist on kickoff. "Everyone owns onboarding" means nobody chases the open Phase 3 rows.
 
-**One link. All platforms. No more chasing.**
+**What access do I need from a new marketing client?**  
+Whatever platforms you'll run: typically Meta, Google Ads, GA4, and any of LinkedIn, TikTok, Pinterest, Snapchat in scope — plus pixel/GTM publish rights, Search Console, and CMS/Shopify if you'll touch landing pages. Ask for the role that lets you do the work; verify each one.
 
-[Start Free Trial](/pricing)
+**How do I get access without asking for passwords?**  
+Use each platform's official partner / user invite (Business Manager, Google Ads users, GA4 property access, etc.). Send clear role names. Or send one AuthHub link that walks the client through those official surfaces. Never share logins.
 
----
+**Should the client or the agency own the ad accounts?**  
+The **client owns** the ad accounts. The agency gets partner or user access with the right role. That keeps billing, asset ownership, and offboarding clean when the engagement ends.
 
-*Need platform-specific guides? Check out our [Meta Ads access guide](/guides/meta-ads-access), [Google Ads access guide](/guides/google-ads-access), or [GA4 access guide](/blog/ga4-access-agencies). Comparing tools? Our [agency onboarding software breakdown](/blog/best-client-onboarding-software-agencies-2026) sorts them by the bottleneck each one solves.*
+### Ready to simplify Phase 3?
+
+AuthHub sends one branded link that walks each client through official platform invites — no shared logins, no multi-day permission ping-pong.
+
+[Start Your Free Trial](https://authhub.co/) · [See pricing](https://authhub.co/pricing)

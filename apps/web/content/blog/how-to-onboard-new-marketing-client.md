@@ -99,6 +99,8 @@ This is the phase that destroys timelines. And it's the one most onboarding guid
 
 The client needs to grant your agency access to every platform where they run ads. Fluency's 2025 benchmark report found that 80% of ad strategists manage three or more advertising platforms simultaneously. Each one has a different access flow. Different permission levels. Different invitation methods. Different expiration windows.
 
+For the owner/due-day sheet you can duplicate, open the [client onboarding checklist](/blog/client-onboarding-checklist).
+
 **Meta**: Business Manager partnership request. The client navigates to Business Settings, finds Partners, accepts your request. But they might have multiple Business Managers and grant access to the wrong one. Or grant "Analyst" when you need "Advertiser" to build campaigns.
 
 **Google Ads**: Email invitation through Tools and Settings. The client adds your agency email, selects a permission level, and sends the invite. But they might add a personal Gmail instead of the agency address. Or invite you to the MCC instead of the specific account.
