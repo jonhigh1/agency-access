@@ -22,7 +22,7 @@ Required production controls:
 - `OAUTH_STATE_HMAC_SECRET` is set to a generated 32-byte+ value.
 - `SENTRY_WEBHOOK_SECRET` is set when Sentry webhooks are enabled; `skip` and `disabled` are local-only.
 - `DB_ENFORCE_LEAST_PRIVILEGE=true` with `DATABASE_URL` set to a non-owner runtime database role and `MIGRATE_DATABASE_URL` set to a migration-capable role.
-- `BACKGROUND_WORKERS_ENABLED=false` for pre-launch zero-traffic deploys; turn on deliberately for launch-critical background jobs.
+- `BACKGROUND_WORKERS_ENABLED=false` for pre-launch zero-traffic deploys; turn on deliberately for launch-critical background jobs (requires migration `20261007120000_pgboss_runtime_grants` when using least-privilege `DATABASE_URL`).
 - Render API service uses `npm install --no-audit --include=dev`.
 - While staying on Render Free, `startCommand` runs `DATABASE_URL="${MIGRATE_DATABASE_URL:-$DATABASE_URL}" PRISMA_SCHEMA_DISABLE_ADVISORY_LOCK=1 npx prisma migrate deploy` before `npm start`; keep one instance, and if upgraded to a paid plan later, move migrations to `preDeployCommand`.
 - Vercel web project is linked to the production account/team and has `NEXT_PUBLIC_API_URL`, `NEXT_PUBLIC_APP_URL`, Clerk, Meta Business Login, docs, and PostHog env vars configured.

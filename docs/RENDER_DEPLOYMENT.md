@@ -59,6 +59,8 @@ CLERK_OAUTH_VERIFY_URL=https://api.clerk.com/v1/oauth_applications/access_tokens
 
 Pre-launch deploys should keep `BACKGROUND_WORKERS_ENABLED=false` to avoid background polling cost while there is no customer traffic. Turn it on only when token refresh, notifications, scheduled webhooks, and other background jobs are intentionally part of the launch posture.
 
+When `DB_ENFORCE_LEAST_PRIVILEGE=true`, the runtime database role (`aap_app_runtime` via `DATABASE_URL`) must have `USAGE` on the `pgboss` schema plus `SELECT`/`INSERT`/`UPDATE`/`DELETE` on its tables and `USAGE`/`SELECT` on its sequences. Prisma migration `20261007120000_pgboss_runtime_grants` applies those grants idempotently during `prisma migrate deploy`. Without it, `BACKGROUND_WORKERS_ENABLED=true` fails at API boot with `permission denied for schema pgboss`.
+
 Deploy the agent-native migration with `AGENT_NATIVE_ENABLED=false`, verify existing flows and the data invariants in `docs/agent-native-access-operations.md`, then enable only after the Clerk staging matrix and two-host MCP smoke pass. A production-enabled configuration fails startup when the issuer, HTTPS resource, or agency allowlist is missing.
 
 Production startup fails when `OAUTH_STATE_HMAC_SECRET` is missing or shorter than 32 characters. Sentry webhook delivery also fails closed in production unless `SENTRY_WEBHOOK_SECRET` is configured and incoming requests include a valid signature.
@@ -118,6 +120,15 @@ The advisory lock is disabled for this Free-plan startup path because the previo
 If the service later moves to a paid instance type, prefer Render's `preDeployCommand` for migrations so database changes complete before the new web process starts.
 
 Do not use `prisma db push` against production. Use it only for local development experiments where migration history is not being preserved.
+
+### Enabling background workers (post-merge)
+
+After the `pgboss` runtime-grants migration is deployed to production:
+
+1. Confirm `prisma migrate deploy` succeeded on the latest release (check Render deploy logs for `20261007120000_pgboss_runtime_grants`).
+2. Set `BACKGROUND_WORKERS_ENABLED=true` on the Render API service.
+3. Redeploy the API (or trigger a manual deploy) so pg-boss starts with the runtime role.
+4. Verify startup logs include `pg-boss started successfully` and `pg-boss job handlers started`, and hit `GET /health`.
 
 ## 5. Update External Integrations
 
