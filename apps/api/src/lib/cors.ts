@@ -8,6 +8,7 @@ export function getCorsOptions(
     'http://localhost:3000',
     'https://www.authhub.co',
     'https://authhub.co',
+    'https://review.authhub.co',
     frontendUrl,
     ...additionalOrigins,
   ]
