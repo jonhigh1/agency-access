@@ -57,6 +57,13 @@ services:
         value: prod
       - key: BACKGROUND_WORKERS_ENABLED
         value: false
+      # Enable on review/lab API host with lab Meta token (see docs/app-review/meta/marketing-api-tier-cron.md)
+      - key: META_MARKETING_API_TIER_CRON_ENABLED
+        sync: false
+      - key: META_MARKETING_API_TIER_CRON_LAB_USER_ID
+        sync: false
+      - key: META_MARKETING_API_TIER_FAILURE_ALERT_THRESHOLD
+        value: "3"
       - key: META_APP_ID
         sync: false
       - key: META_APP_SECRET

@@ -188,6 +188,11 @@ const envSchema = z.object({
   META_REVIEW_TEST_AD_ID: z.string().optional(),
   META_REVIEW_LAB_AGENCY_ID: z.string().optional(),
 
+  // Daily Marketing API tier exercise (#134) — pg-boss cron on API service
+  META_MARKETING_API_TIER_CRON_ENABLED: booleanish(false),
+  META_MARKETING_API_TIER_CRON_LAB_USER_ID: z.string().optional(),
+  META_MARKETING_API_TIER_FAILURE_ALERT_THRESHOLD: z.coerce.number().int().min(1).default(3),
+
   // Internal Admin Access Control (comma-separated allowlists)
   INTERNAL_ADMIN_USER_IDS: z.string().optional(),
   INTERNAL_ADMIN_EMAILS: z.string().optional(),

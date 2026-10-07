@@ -75,6 +75,9 @@ export interface JobRegistry {
 
   // Google client offboarding
   'google-client-offboarding': { runId: string };
+
+  // Meta Marketing API tier daily exercise (Review BM test ad account)
+  'meta-marketing-api-tier-daily': { type: 'run-daily-tier-exercise' };
 }
 
 export type JobName = keyof JobRegistry;
@@ -159,6 +162,7 @@ export async function ensureAllQueues(): Promise<void> {
     'google-native-grant',
     'authorization-verification',
     'google-client-offboarding',
+    'meta-marketing-api-tier-daily',
   ];
 
   await Promise.all(queueNames.map(name => ensureQueue(name)));
