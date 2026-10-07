@@ -18,7 +18,8 @@
     "evidence:meta-invite": "node ./scripts/capture-meta-invite-evidence.mjs",
     "evidence:meta-connection-errors": "node ./scripts/capture-meta-connection-error-evidence.mjs",
     "evidence:agent-native": "node ./scripts/capture-agent-native-flow-evidence.mjs",
-    "review-demo:record": "node ./scripts/review-demo-recording/record-review-demo.mjs"
+    "review-demo:record": "node ./scripts/review-demo-recording/record-review-demo.mjs",
+    "review-demo:verify": "node ./scripts/review-demo-recording/verify-review-demo.mjs"
   },
   "dependencies": {
     "@agency-platform/shared": "^0.1.0",
