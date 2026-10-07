@@ -168,9 +168,7 @@ export class ReviewDemoService {
 
     await writeStoredToken(input.clerkUserId, {
       accessToken: tokens.accessToken,
-      refreshToken: tokens.refreshToken,
       expiresAt: tokens.expiresAt?.toISOString(),
-      scope: tokens.scope,
       identity,
     });
 
