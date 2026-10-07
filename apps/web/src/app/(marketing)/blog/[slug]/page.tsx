@@ -11,8 +11,6 @@ import { BlogCard } from "@/components/blog/blog-card";
 import { Button } from "@/components/ui/button";
 import { getRelatedPosts } from "@/lib/blog-data";
 import { Metadata } from "next";
-import { ArticleScheduleDemo } from "@/components/marketing/article-schedule-demo";
-
 interface BlogPostPageProps {
   params: Promise<{ slug: string }>;
 }
@@ -76,8 +74,8 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
   const articleSchema = {
     "@context": "https://schema.org",
     "@type": "Article",
-    headline: post.title,
-    description: post.excerpt,
+    headline: post.metaTitle || post.title,
+    description: post.metaDescription || post.excerpt,
     author: {
       "@type": "Person",
       name: post.author.name,
@@ -129,21 +127,53 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
     "client-onboarding-checklist": {
       "@context": "https://schema.org",
       "@type": "FAQPage",
-      "mainEntity": [
+      mainEntity: [
         {
           "@type": "Question",
-          "name": "What causes client onboarding delays?",
-          "acceptedAnswer": {
+          name: "What should a client onboarding checklist include?",
+          acceptedAnswer: {
             "@type": "Answer",
-            "text": "Common causes include: Business Manager vs personal profile confusion, wrong permission levels granted, multiple Business Managers across platforms, previous agency still has access, and personal email used instead of business email.",
+            text: "Contract/SOW close, intake and brand assets, platform access with exact roles, expectations (comms, approvals, reporting, scope), kickoff with a written success metric, and a first-value path through a 30-day review. Every task needs an owner and a due day.",
           },
         },
         {
           "@type": "Question",
-          "name": "How do I speed up client onboarding?",
-          "acceptedAnswer": {
+          name: "How long should client onboarding take?",
+          acceptedAnswer: {
             "@type": "Answer",
-            "text": "Use automated access request platforms like AuthHub, create standardized templates, use annotated screenshots, and always specify exact permission levels in your requests.",
+            text: "Plan about two weeks from signed contract to first useful deliverable if access is verified early. Day 0–3 for close, intake, and access; kickoff by Day 5; first small win inside two weeks; formal review at Day 30.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "Who should own client onboarding at an agency?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "One accountable owner (usually the account manager), with billing or ops on close and a strategist on kickoff. If everyone owns onboarding, nobody chases open platform-access rows.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "What access do I need from a new marketing client?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "Whatever platforms you will run: typically Meta, Google Ads, GA4, and any of LinkedIn, TikTok, Pinterest, or Snapchat in scope — plus pixel or GTM publish rights, Search Console, and CMS or Shopify access if you will touch landing pages. Ask for the role that lets you do the work, then verify each one in-platform.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "How do I get access without asking for passwords?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "Use each platform's official partner or user invite (Business Manager, Google Ads users, GA4 property access, and similar). Send clear role names. You can also send one AuthHub link that walks the client through those official surfaces. Never share logins.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "Should the client or the agency own the ad accounts?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "The client owns the ad accounts. The agency gets partner or user access with the right role. That keeps billing, asset ownership, and offboarding clean when the engagement ends.",
           },
         },
       ],
@@ -393,17 +423,19 @@ export default async function BlogPostPage({ params }: BlogPostPageProps) {
       <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="border-[3px] border-black bg-ink text-white p-8 md:p-12 rounded-none text-center">
           <h2 className="font-dela text-3xl md:text-4xl mb-4">
-            Ready to Transform Your Client Onboarding?
+            Ready to simplify client access?
           </h2>
           <p className="font-mono text-gray-300 mb-6 max-w-xl mx-auto">
-            Teams use AuthHub to save hundreds of hours every month. Replace
-            47-email onboarding with a single link.
+            AuthHub sends one branded link that walks each client through official
+            platform invites — no shared logins, no multi-day email threads.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button variant="brutalist" size="lg" asChild>
-              <a href="/pricing">Start Free Trial</a>
+              <a href="https://authhub.co/">Start Your Free Trial</a>
             </Button>
-            <ArticleScheduleDemo />
+            <Button variant="secondary" size="lg" className="bg-transparent text-white border-white hover:bg-white/10" asChild>
+              <a href="https://authhub.co/pricing">See pricing</a>
+            </Button>
           </div>
         </div>
       </section>

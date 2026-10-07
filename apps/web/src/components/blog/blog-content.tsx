@@ -269,16 +269,22 @@ export function BlogContent({ post }: BlogContentProps) {
         <footer className="mt-16 pt-8 border-t-2 border-black">
           <div className="bg-coral/10 border-2 border-coral p-6 rounded-none">
             <h3 className="font-dela text-xl text-ink mb-2">
-              Ready to transform your client onboarding?
+              Ready to simplify client access?
             </h3>
             <p className="font-mono text-gray-700 mb-4">
-              Teams save hundreds of hours every month with Agency Access Platform.
+              AuthHub sends one branded link that walks each client through official
+              platform invites — no shared logins, no multi-day email threads.
             </p>
-            <SignUpButton mode="modal">
-              <Button variant="brutalist" size="lg" onClick={handleTrialSignup}>
-                Start Your Free Trial
+            <div className="flex flex-col sm:flex-row gap-3 sm:items-center">
+              <SignUpButton mode="modal">
+                <Button variant="brutalist" size="lg" onClick={handleTrialSignup}>
+                  Start Your Free Trial
+                </Button>
+              </SignUpButton>
+              <Button variant="secondary" size="lg" asChild>
+                <a href="https://authhub.co/pricing">See pricing</a>
               </Button>
-            </SignUpButton>
+            </div>
           </div>
         </footer>
       )}

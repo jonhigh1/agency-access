@@ -67,6 +67,8 @@ If campaigns can't launch because Meta or Google permissions are missing, buying
 
 The step between "contract signed" and "first campaign live." Your account manager needs partner or admin access to the client's Meta Business Manager, Google Ads, GA4, LinkedIn Ads, TikTok Ads, and whatever else the media plan uses. Each platform has its own invite flow, failure mode, and expiry pattern. This is the category most generic listicles bury — and the one that blocks billable work when it stalls.
 
+Pair any access tool with a written [client onboarding checklist](/blog/client-onboarding-checklist) so every SOW still has owners and due days outside the software.
+
 ### Intake / information collection
 
 Business details, brand assets, goals, budgets, audiences, competitors. Forms and document portals live here (Typeform, Content Snare, Formstack — and intake fields inside some access tools).

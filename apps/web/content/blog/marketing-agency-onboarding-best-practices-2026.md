@@ -81,6 +81,8 @@ A [well-designed client onboarding questionnaire](/blog/client-onboarding-questi
 
 **Why it damages trust**: The client is thinking, "Does this agency have their act together? Why is this so disorganized?" They're comparing your five-email access scramble to the smooth onboarding they experienced with their last agency — or with the slick pitch your sales team just gave them.
 
+Use the [client onboarding checklist](/blog/client-onboarding-checklist) so Phase 3 lists the exact role per platform and "done" means verified in-product.
+
 **The best practice**: Send one access request. One link. All platforms at once.
 
 Instead of five separate emails with five sets of instructions, the client receives a single branded page where they grant access to Meta, Google Ads, GA4, LinkedIn, and TikTok in sequence. No back-and-forth. No wrong permissions. No "can you re-send that link, it expired."
