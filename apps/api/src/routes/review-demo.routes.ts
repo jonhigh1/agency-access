@@ -82,6 +82,16 @@ export async function reviewDemoRoutes(fastify: FastifyInstance) {
     }
   });
 
+  fastify.get('/review-demo/meta/oauth-flow', async (request, reply) => {
+    const query = request.query as { state?: string };
+    if (!query.state?.trim()) {
+      return sendValidationError(reply, 'Missing OAuth state');
+    }
+
+    const reviewDemo = await reviewDemoService.isReviewDemoOAuthState(query.state);
+    return reply.send({ data: { reviewDemo }, error: null });
+  });
+
   fastify.post('/review-demo/meta/initiate', async (request, reply) => {
     const labUser = (request as any).labReviewUser as { userId: string };
     const userEmail = (await resolveAuthenticatedUserEmail((request as any).user)) ?? 'review-demo@unknown';

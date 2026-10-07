@@ -8,7 +8,10 @@ import { Button } from '@/components/ui';
 import { LogoSpinner } from '@/components/ui/logo-spinner';
 import { getApiBaseUrl } from '@/lib/api/api-env';
 import { parseJsonResponse } from '@/lib/api/parse-json-response';
-import { exchangeReviewDemoMetaOAuth } from '@/lib/review-demo-api';
+import {
+  exchangeReviewDemoMetaOAuth,
+  fetchReviewDemoOAuthFlowHint,
+} from '@/lib/review-demo-api';
 import {
   trackClientOAuthExchangeFailure,
   trackClientOAuthExchangeSuccess,
@@ -23,7 +26,7 @@ function ClientOAuthCallbackContent() {
   const router = useRouter();
   const { getToken } = useAuth();
   const apiBaseUrl = getApiBaseUrl();
-  const reviewDemoFlow = searchParams.get('flow') === 'review-demo';
+  const reviewDemoFlowQuery = searchParams.get('flow') === 'review-demo';
   const [error, setError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(true);
   const [returnToken, setReturnToken] = useState<string | null>(null);
@@ -78,6 +81,10 @@ function ClientOAuthCallbackContent() {
       }
 
       try {
+        const reviewDemoFlow =
+          reviewDemoFlowQuery ||
+          (state ? await fetchReviewDemoOAuthFlowHint(getToken, state).catch(() => false) : false);
+
         if (reviewDemoFlow) {
           await exchangeReviewDemoMetaOAuth(getToken, { code, state });
           router.replace('/review-demo?connected=1');
@@ -130,7 +137,18 @@ function ClientOAuthCallbackContent() {
     }
 
     handleCallback();
-  }, [apiBaseUrl, code, getToken, presentation, providerError, providerErrorReason, reviewDemoFlow, router, searchParams, state]);
+  }, [
+    apiBaseUrl,
+    code,
+    getToken,
+    presentation,
+    providerError,
+    providerErrorReason,
+    reviewDemoFlowQuery,
+    router,
+    searchParams,
+    state,
+  ]);
 
   if (error) {
     return (
