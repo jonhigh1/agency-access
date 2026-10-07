@@ -57,6 +57,9 @@ Thumbs.db
 scripts/perf/results/
 scripts/perf/traces/
 
+# Meta App Review screencasts (local / agent capture — never commit)
+artifacts/meta-app-review/screencasts/
+
 # Stale Next.js builds
 .next.stale-*
 

@@ -52,4 +52,9 @@ run('web ZeroPortfolioPageDiscovery component', join(root, 'apps/web'), 'npm', [
   'src/components/client-auth/__tests__/ZeroPortfolioPageDiscovery.test.tsx',
 ]);
 
+run('review-demo recording harness wiring', root, 'node', [
+  '--test',
+  'scripts/tests/review-demo-recording.test.mjs',
+]);
+
 console.log('Meta App Review P0 smoke: all gates passed');

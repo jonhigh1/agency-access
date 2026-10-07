@@ -28,6 +28,15 @@ describe('reviewDemoService mock graph payloads', () => {
     clearRecordedMetaGraphOps();
   });
 
+  it('reports a connected mock session without Infisical tokens when mock graph is enabled', async () => {
+    const { reviewDemoService } = await import('../review-demo.service.js');
+    const session = await reviewDemoService.getSession('user_test', 'pages_show_list');
+
+    expect(session.connected).toBe(true);
+    expect(session.identity?.name).toContain('Review');
+    expect(session.grantedPermissions).toContain('pages_show_list');
+  });
+
   it('returns sandbox-friendly pages_show_list proof', async () => {
     const { reviewDemoService } = await import('../review-demo.service.js');
     const payload = await reviewDemoService.loadStepPayload({

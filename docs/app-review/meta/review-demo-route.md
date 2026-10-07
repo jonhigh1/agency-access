@@ -31,3 +31,7 @@ Tokens are stored in Infisical under `review_demo_meta_{clerkUserId}` (not Postg
 ## Offline / CI mock path
 
 Set `META_REVIEW_DEMO_MOCK_GRAPH=true` on the API to serve fixture step payloads without live Graph. Production review host should keep this `false`.
+
+## Playwright screencast harness
+
+See [review-demo-recording-harness.md](./review-demo-recording-harness.md) for ≥1080p capture, caption overlay, artifact paths, and env vars (issue #132).

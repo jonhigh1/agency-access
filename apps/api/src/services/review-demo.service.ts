@@ -75,6 +75,23 @@ export class ReviewDemoService {
     const stepIndex = REVIEW_DEMO_STEP_ORDER.indexOf(activeStep);
     const sandbox = defaultSandboxIds();
 
+    const mockIdentity: ReviewDemoIdentity = {
+      id: '61595281164997',
+      name: 'AuthHub Review User (mock)',
+    };
+
+    if (env.META_REVIEW_DEMO_MOCK_GRAPH) {
+      return {
+        connected: true,
+        identity: stored?.identity ?? mockIdentity,
+        grantedPermissions: [...META_CORE_PERMISSIONS],
+        activeStep,
+        stepIndex: stepIndex >= 0 ? stepIndex : 0,
+        stepCount: REVIEW_DEMO_STEP_ORDER.length,
+        sandbox,
+      };
+    }
+
     return {
       connected: Boolean(stored?.accessToken),
       identity: stored?.identity ?? null,
