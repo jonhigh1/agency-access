@@ -38,7 +38,7 @@ export async function fetchReviewDemoOAuthFlowHint(
   state: string
 ): Promise<boolean> {
   const json = await authorizedApiFetch<{ data: { reviewDemo: boolean } }>(
-    `/review-demo/meta/oauth-flow?state=${encodeURIComponent(state)}`,
+    `/api/review-demo/meta/oauth-flow?state=${encodeURIComponent(state)}`,
     { getToken }
   );
   return json.data.reviewDemo;

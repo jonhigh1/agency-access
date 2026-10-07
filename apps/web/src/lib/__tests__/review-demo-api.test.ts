@@ -1,6 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   exchangeReviewDemoMetaOAuth,
+  fetchReviewDemoOAuthFlowHint,
   fetchReviewDemoSession,
   fetchReviewDemoStep,
   initiateReviewDemoMetaOAuth,
@@ -39,6 +40,13 @@ describe('review-demo-api', () => {
     expect(authorizedApiFetchMock).toHaveBeenCalledWith(
       '/api/review-demo/meta/initiate',
       expect.objectContaining({ method: 'POST' })
+    );
+
+    authorizedApiFetchMock.mockResolvedValueOnce({ data: { reviewDemo: true } });
+    await fetchReviewDemoOAuthFlowHint(getToken, 'oauth-state');
+    expect(authorizedApiFetchMock).toHaveBeenCalledWith(
+      '/api/review-demo/meta/oauth-flow?state=oauth-state',
+      expect.any(Object)
     );
 
     await exchangeReviewDemoMetaOAuth(getToken, { code: 'c', state: 's' });

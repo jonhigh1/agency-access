@@ -83,7 +83,15 @@ function ClientOAuthCallbackContent() {
       try {
         const reviewDemoFlow =
           reviewDemoFlowQuery ||
-          (state ? await fetchReviewDemoOAuthFlowHint(getToken, state).catch(() => false) : false);
+          (state
+            ? await fetchReviewDemoOAuthFlowHint(getToken, state).catch((error) => {
+                console.warn(
+                  'Review demo OAuth flow hint unavailable; continuing with client exchange.',
+                  error
+                );
+                return false;
+              })
+            : false);
 
         if (reviewDemoFlow) {
           await exchangeReviewDemoMetaOAuth(getToken, { code, state });
