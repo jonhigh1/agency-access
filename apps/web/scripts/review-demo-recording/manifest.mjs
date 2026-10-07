@@ -50,11 +50,11 @@ export const REVIEW_DEMO_RECORDING_PLAN = [
       {
         type: 'caption',
         primary: 'Permission: pages_read_engagement',
-        secondary: 'Validate Page access — metadata and recent post dates (production proof path)',
+        secondary: 'Validate Page access — Page metadata only (name, category, fan/follower counts)',
       },
       { type: 'click', testId: 'review-demo-step-tab-pages_read_engagement' },
       { type: 'wait', testId: 'review-demo-page-engagement-proof' },
-      { type: 'wait', testId: 'review-demo-posts-list' },
+      { type: 'wait', testId: 'review-demo-page-proof-purpose' },
       { type: 'hold', ms: 2500 },
     ],
   },

@@ -424,6 +424,7 @@ export class ReviewDemoService {
   ): Promise<ReviewDemoStepPayload> {
     const proof = await clientAssetsService.fetchPageEngagementProof(accessToken, pageId, {
       exposeDetailedGraphErrors: true,
+      includeFeed: false,
     });
     return {
       stepId: 'pages_read_engagement',
@@ -437,8 +438,7 @@ export class ReviewDemoService {
           ? { followerCount: proof.page.followerCount }
           : {}),
       },
-      posts: proof.posts,
-      ...(proof.feedError ? { feedError: proof.feedError } : {}),
+      posts: [],
       graphCaptions: proof.graphOperationCaptions ?? [],
     };
   }
@@ -625,11 +625,15 @@ export class ReviewDemoService {
           page: {
             id: sandbox.pageId,
             name: 'Ah-Review-Page',
-            managedTasks: ['ADVERTISE', 'ANALYZE'],
+            managedTasks: [],
             category: 'Software',
+            fanCount: 42,
+            followerCount: 48,
           },
-          posts: [{ id: 'post_1', createdTime: '2026-10-01T12:00:00+0000' }],
-          graphCaptions: ['GET /{page-id}?fields=…', 'GET /{page-id}/feed?fields=id,created_time (mock)'],
+          posts: [],
+          graphCaptions: [
+            'GET /{page-id}?fields=id,name,category,fan_count,followers_count (mock)',
+          ],
         };
       case 'ads_management':
         return {

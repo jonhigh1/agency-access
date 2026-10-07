@@ -33,6 +33,16 @@ Tokens are stored in Infisical under `review_demo_meta_{clerkUserId}` (not Postg
 
 Set `META_REVIEW_DEMO_MOCK_GRAPH=true` on the API to serve fixture step payloads without live Graph. Production review host should keep this `false`.
 
+## `pages_read_engagement` (review-demo only)
+
+Review Lab does **not** call `GET /{page-id}/feed` or request a Page access token. Alex’s reviewer token has no app role and cannot satisfy feed/PPCA requirements without one.
+
+Live proof is a single Graph read:
+
+`GET /{META_REVIEW_PAGE_ID}?fields=id,name,category,fan_count,followers_count`
+
+The UI shows Page name, category, fan count, and follower count with copy explaining AuthHub uses these fields to confirm the correct Page before agency onboarding. Production client onboarding still uses the full **Validate Page access** path (metadata + dates-only feed) via `fetchPageEngagementProof` with feed enabled.
+
 ## Marketing API tier daily cron
 
 See [marketing-api-tier-cron.md](./marketing-api-tier-cron.md) for pg-boss schedule, Graph endpoints, env vars, and how to read the tier day-count audit log (#134 / #135 §F).
