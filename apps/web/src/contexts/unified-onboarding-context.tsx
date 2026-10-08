@@ -30,6 +30,7 @@ import { getApiErrorMessage } from '@/lib/api/extract-error';
 import { trackAffiliateEvent } from '@/lib/analytics/affiliate';
 import { buildAuthorizeUrl } from '@/lib/app-url';
 import { trackOnboardingEvent } from '@/lib/analytics/onboarding';
+import { setAgencyViewerAnalyticsContext } from '@/lib/analytics/invite-funnel-properties';
 import { getAffiliateClickTokenFromDocument } from '@/lib/affiliate-cookie';
 import {
   resolveOnboardingResumeStep,
@@ -363,6 +364,17 @@ export function UnifiedOnboardingProvider({
   // ============================================================
   // ANALYTICS TRACKING
   // ============================================================
+
+  // Analytics only: tag the onboarding invite copy/send events with the acting
+  // Clerk user and agency so they join the invite funnel.
+  useEffect(() => {
+    if (!userId) return;
+    setAgencyViewerAnalyticsContext({
+      agencyId: state.agencyId ?? null,
+      clerkUserId: userId,
+      isInternal: null,
+    });
+  }, [state.agencyId, userId]);
 
   useEffect(() => {
     trackOnboardingEvent('onboarding_started', {

@@ -12,6 +12,10 @@ import {
   trackClientChecklistResumed,
   trackInviteOpenedOncePerSession,
 } from '@/lib/analytics/invite-events';
+import {
+  buildInviteFunnelProperties,
+  setInviteFunnelContext,
+} from '@/lib/analytics/invite-funnel-properties';
 import { InviteFlowShell } from '@/components/flow/invite-flow-shell';
 import { InviteTerminalCard } from '@/components/flow/invite-terminal-card';
 import { beginRequestDeadline } from '@/lib/invite/request-deadline';
@@ -298,6 +302,52 @@ export default function ClientAuthorizationPage({
       .map(({ label, value }) => ({ label, value }));
   }, [platformQueue.activePlatform?.platformGroup, railIdentities]);
 
+  // Funnel join/exclusion props for every invite_* / client_* event fired while
+  // this request is open. Layout effect so it is registered before any passive
+  // effect below captures an event for the same payload.
+  const inviteFunnelProperties = useMemo(
+    () =>
+      loadedPayload
+        ? buildInviteFunnelProperties({
+            accessRequestId: loadedPayload.id,
+            requestAgencyId: loadedPayload.agencyId,
+            viewerClerkUserId: userId ?? null,
+            viewerAgencyId: viewerAgency?.id ?? null,
+            requestAgencyInternal: loadedPayload.analyticsInternal,
+            viewerInternal: viewerAgency?.analyticsInternal,
+            isDevelopmentBypass: auth.isDevelopmentBypass,
+          })
+        : null,
+    [
+      auth.isDevelopmentBypass,
+      loadedPayload,
+      userId,
+      viewerAgency?.analyticsInternal,
+      viewerAgency?.id,
+    ]
+  );
+
+  useLayoutEffect(() => {
+    if (!inviteFunnelProperties) return;
+    setInviteFunnelContext(inviteFunnelProperties);
+    return () => setInviteFunnelContext(null);
+  }, [inviteFunnelProperties]);
+
+  // invite_opened waits for the viewer-agency lookup (like
+  // client_authorization_started) so agency self-previews carry is_preview.
+  useEffect(() => {
+    if (!loadedPayload || urlStep || startedTrackedRef.current) return;
+    if (!agencyPreviewLookupSettled) return;
+    startedTrackedRef.current = true;
+    trackInviteOpenedOncePerSession({
+      access_request_token: token,
+      access_request_id: loadedPayload.id,
+      status: loadedPayload.authorizationProgress?.isComplete ? 'completed' : 'pending',
+      surface: 'invite_page',
+      platform_count: loadedPayload.platforms?.length || 0,
+    });
+  }, [agencyPreviewLookupSettled, loadedPayload, token, urlStep]);
+
   useEffect(() => {
     if (!loadedPayload) return;
 
@@ -329,17 +379,6 @@ export default function ClientAuthorizationPage({
     // reopens its platform instead of allowing stale state to finalize it.
     for (const unresolved of loadedPayload.authorizationProgress?.unresolvedProducts || []) {
       mergedCompleted.delete(unresolved.platformGroup as Platform);
-    }
-
-    if (!urlStep && !startedTrackedRef.current) {
-      startedTrackedRef.current = true;
-      trackInviteOpenedOncePerSession({
-        access_request_token: token,
-        access_request_id: loadedPayload.id,
-        status: loadedPayload.authorizationProgress?.isComplete ? 'completed' : 'pending',
-        surface: 'invite_page',
-        platform_count: loadedPayload.platforms?.length || 0,
-      });
     }
 
     // A finalization or confirmed completion owns the phase from here on; a
@@ -453,9 +492,6 @@ export default function ClientAuthorizationPage({
     if (!shouldTrackStarted) return;
 
     const startedPlatforms = loadedPayload.platforms?.map((p) => p.platformGroup) || [];
-    const isPreview = Boolean(
-      viewerAgency?.id && viewerAgency.id === loadedPayload.agencyId
-    );
     void capturePosthogEvent('client_authorization_started', {
       access_request_id: loadedPayload.id,
       platform: startedPlatforms[0] ?? null,
@@ -466,17 +502,9 @@ export default function ClientAuthorizationPage({
         !!loadedPayload.branding?.logoUrl ||
         !!loadedPayload.branding?.primaryColor &&
           loadedPayload.branding.primaryColor.toUpperCase() !== '#FF6B35',
-      is_preview: isPreview,
-      is_internal: auth.isDevelopmentBypass,
+      ...inviteFunnelProperties,
     });
-  }, [
-    agencyPreviewLookupSettled,
-    auth.isDevelopmentBypass,
-    loadedPayload,
-    token,
-    urlStep,
-    viewerAgency?.id,
-  ]);
+  }, [agencyPreviewLookupSettled, inviteFunnelProperties, loadedPayload, token, urlStep]);
 
   useEffect(() => {
     // Persist only once hydration has run for this token — an earlier write
@@ -739,6 +767,7 @@ export default function ClientAuthorizationPage({
     });
 
     void capturePosthogEvent('client_platform_authorized', {
+      access_request_id: data?.id ?? null,
       access_request_token: token,
       platform,
       platform_name: PLATFORM_NAMES[platform],

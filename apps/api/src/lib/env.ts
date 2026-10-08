@@ -220,6 +220,10 @@ const envSchema = z.object({
   INTERNAL_ADMIN_USER_IDS: z.string().optional(),
   INTERNAL_ADMIN_EMAILS: z.string().optional(),
 
+  // Analytics exclusion: comma-separated Clerk user ids and/or agency ids whose
+  // invite/grant events are tagged is_internal=true. Never hardcode these ids.
+  ANALYTICS_INTERNAL_IDS: z.string().optional(),
+
   // Affiliate program
   AFFILIATE_COOKIE_TTL_DAYS: z.coerce.number().int().min(1).default(90),
   AFFILIATE_DEFAULT_COMMISSION_BPS: z.coerce.number().int().min(0).max(10000).default(5000),
@@ -339,6 +343,7 @@ const CORS_ALLOWED_ORIGINS = parseCsvList(parsedEnv.CORS_ALLOWED_ORIGINS);
 const API_URL = parsedEnv.API_URL ?? `http://localhost:${parsedEnv.PORT}`;
 const INTERNAL_ADMIN_USER_IDS = parseCsvList(parsedEnv.INTERNAL_ADMIN_USER_IDS);
 const INTERNAL_ADMIN_EMAILS = parseCsvList(parsedEnv.INTERNAL_ADMIN_EMAILS);
+const ANALYTICS_INTERNAL_IDS = parseCsvList(parsedEnv.ANALYTICS_INTERNAL_IDS);
 const META_REVIEW_LAB_USER_IDS = parseCsvList(parsedEnv.META_REVIEW_LAB_USER_IDS);
 const META_REVIEW_LAB_EMAILS = parseCsvList(parsedEnv.META_REVIEW_LAB_EMAILS);
 const TRUST_PROXY_IPS = parseCsvList(parsedEnv.TRUST_PROXY_IPS);
@@ -367,6 +372,7 @@ export const env = {
   API_URL,
   INTERNAL_ADMIN_USER_IDS,
   INTERNAL_ADMIN_EMAILS,
+  ANALYTICS_INTERNAL_IDS,
   META_REVIEW_LAB_USER_IDS,
   META_REVIEW_LAB_EMAILS,
   TRUST_PROXY_IPS,

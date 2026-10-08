@@ -120,6 +120,7 @@ describe('Agency Routes - Security', () => {
           name: 'Owner Agency',
           email: 'owner@example.com',
           clerkUserId: 'user_123',
+          analyticsInternal: false,
         },
       ],
       error: null,

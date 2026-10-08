@@ -38,6 +38,7 @@ import {
 } from '@agency-platform/shared';
 import { invalidateDashboardCache } from '@/lib/cache.js';
 import { env } from '@/lib/env.js';
+import { isAnalyticsInternal } from '@/lib/analytics-internal.js';
 import { logger } from '@/lib/logger.js';
 import { webhookEventService } from '@/services/webhook-event.service.js';
 import { normalizeCustomerId } from '@/services/connectors/google.js';
@@ -1929,7 +1930,7 @@ export async function getAccessRequestByToken(token: string) {
     const [agency, platformConnections, clientConnections] = await Promise.all([
       prisma.agency.findUnique({
         where: { id: accessRequest.agencyId },
-        select: { name: true },
+        select: { name: true, clerkUserId: true },
       }),
       requestedPlatformGroups.length > 0
         ? prisma.agencyPlatformConnection.findMany({
@@ -2065,6 +2066,8 @@ export async function getAccessRequestByToken(token: string) {
         connections,
         metaResumeSelections,
         ...(requestedPlatformGroups.includes('meta') ? { metaCatalogEnabled } : {}),
+        // Analytics only: boolean verdict, never the allowlist itself.
+        analyticsInternal: isAnalyticsInternal([accessRequest.agencyId, agency?.clerkUserId]),
       },
       error: null,
     };
