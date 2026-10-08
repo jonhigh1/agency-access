@@ -19,6 +19,11 @@ vi.mock('@/lib/analytics/invite-events', () => ({
   trackInviteLinkCopyAndSent: vi.fn(),
   trackInviteLinkCopied: vi.fn(),
   trackInviteSent: vi.fn(),
+  trackInviteEmailSent: vi.fn(),
+}));
+
+vi.mock('@clerk/nextjs', () => ({
+  useAuth: () => ({ getToken: vi.fn(async () => 'token-123') }),
 }));
 
 describe('SuccessLinkScreen (wizard Success step)', () => {
@@ -108,5 +113,19 @@ describe('SuccessLinkScreen (wizard Success step)', () => {
     await user.click(screen.getByRole('button', { name: /copy link/i }));
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/could not copy the link/i);
+  });
+  it('offers Send invite with the client email next to Copy Link', () => {
+    render(
+      <SuccessLinkScreen
+        accessLink="https://authhub.co/invite/token-123"
+        agencyName="Growth Agency"
+        accessRequestId="request-123"
+        clientEmail="client@example.com"
+      />
+    );
+
+    expect(screen.getByRole('button', { name: /copy link/i })).toBeInTheDocument();
+    expect(screen.getByLabelText('Client email')).toHaveValue('client@example.com');
+    expect(screen.getByRole('button', { name: /send invite/i })).toBeInTheDocument();
   });
 });

@@ -243,6 +243,7 @@ function OnboardingFlow() {
             agencyName={state.agencyName}
             accessRequestId={state.accessRequestId}
             platforms={Object.values(state.selectedPlatforms).flat()}
+            clientEmail={state.clientEmail || ''}
           />
         );
 

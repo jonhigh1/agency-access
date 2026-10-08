@@ -12,6 +12,7 @@ import * as accessRequestService from '@/services/access-request.service';
 import * as agencyPlatformService from '@/services/agency-platform.service';
 import * as auditService from '@/services/audit.service';
 import * as accessRequestReminderService from '@/services/access-request-reminder.service';
+import { accessRequestInviteEmailService } from '@/services/access-request-invite-email.service';
 import * as authorization from '@/lib/authorization.js';
 
 // Mock services
@@ -20,6 +21,11 @@ vi.mock('@/services/agency-platform.service');
 vi.mock('@/services/access-request-reminder.service', () => ({
   accessRequestReminderService: {
     sendInviteReminder: vi.fn(),
+  },
+}));
+vi.mock('@/services/access-request-invite-email.service', () => ({
+  accessRequestInviteEmailService: {
+    sendInviteEmail: vi.fn(),
   },
 }));
 vi.mock('@/services/audit.service');
@@ -662,6 +668,68 @@ describe('Access Requests Routes - Platform Connection Validation', () => {
 
       expect(response.statusCode).toBe(404);
       expect(response.json().error.code).toBe('REQUEST_REVOKED');
+    });
+  });
+
+  describe('POST /access-requests/:id/invite-email', () => {
+    it('sends the invite for the principal agency with the signed-in user as reply-to', async () => {
+      vi.mocked(authorization.resolveAuthenticatedUserEmail).mockResolvedValue('user@agency.example');
+      vi.mocked(accessRequestInviteEmailService.sendInviteEmail).mockResolvedValue({
+        data: { accessRequestId: 'req-1', sentAt: '2026-10-08T12:00:00.000Z' },
+        error: null,
+      });
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/access-requests/req-1/invite-email',
+        payload: { email: 'client@example.com' },
+      });
+
+      expect(response.statusCode).toBe(200);
+      expect(accessRequestInviteEmailService.sendInviteEmail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          accessRequestId: 'req-1',
+          principalAgencyId: 'agency-1',
+          recipientEmail: 'client@example.com',
+          senderEmail: 'user@agency.example',
+        })
+      );
+    });
+
+    it('rejects a missing email body with 400', async () => {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/access-requests/req-1/invite-email',
+        payload: {},
+      });
+
+      expect(response.statusCode).toBe(400);
+      expect(response.json().error.code).toBe('INVALID_EMAIL');
+      expect(accessRequestInviteEmailService.sendInviteEmail).not.toHaveBeenCalled();
+    });
+
+    it.each([
+      ['FORBIDDEN', 403],
+      ['INVITE_EMAIL_COOLDOWN', 429],
+      ['INVITE_EMAIL_LIMIT', 429],
+      ['INVITE_EMAIL_DELIVERY_FAILED', 502],
+      ['EMAIL_NOT_CONFIGURED', 503],
+      ['REQUEST_EXPIRED', 409],
+    ] as const)('maps %s to HTTP %i', async (code, status) => {
+      vi.mocked(authorization.resolveAuthenticatedUserEmail).mockResolvedValue(undefined);
+      vi.mocked(accessRequestInviteEmailService.sendInviteEmail).mockResolvedValue({
+        data: null,
+        error: { code, message: 'x' },
+      });
+
+      const response = await app.inject({
+        method: 'POST',
+        url: '/access-requests/req-1/invite-email',
+        payload: { email: 'client@example.com' },
+      });
+
+      expect(response.statusCode).toBe(status);
+      expect(response.json().error.code).toBe(code);
     });
   });
 

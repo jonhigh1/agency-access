@@ -14,6 +14,7 @@ import { getPlatformCount } from '@/lib/transform-platforms';
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard';
 import { Button, StatusBadge } from '@/components/ui';
 import { FlowShell } from '@/components/flow/flow-shell';
+import { SendInviteEmailForm } from '@/components/send-invite-email-form';
 import type { AccessRequest } from '@/lib/api/access-requests';
 
 interface SuccessPageProps {
@@ -100,6 +101,7 @@ export default function SuccessPage({ params }: SuccessPageProps) {
       channel: 'email',
       surface: 'success',
       status: accessRequest.status,
+      delivery: 'mailto',
     });
     window.location.assign(
       buildInviteSentMailto({
@@ -175,6 +177,17 @@ export default function SuccessPage({ params }: SuccessPageProps) {
               Email Client
             </Button>
           </div> : null}
+
+          {isOpenRequest ? (
+            <SendInviteEmailForm
+              className="mt-4"
+              accessRequestId={accessRequest.id}
+              surface="success"
+              status={accessRequest.status}
+              defaultEmail={accessRequest.clientEmail}
+              getToken={getToken}
+            />
+          ) : null}
 
           <p className="mt-4 text-center text-sm">
             <button

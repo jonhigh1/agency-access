@@ -9,12 +9,14 @@
 
 import { Copy, Check } from 'lucide-react';
 import { useState } from 'react';
+import { useAuth } from '@clerk/nextjs';
 import { m } from 'framer-motion';
 import { fadeVariants, fadeTransition } from '@/lib/animations';
 import { formatOnboardingStepLabel } from '@/lib/onboarding-steps';
 import { trackInviteLinkCopyAndSent } from '@/lib/analytics/invite-events';
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard';
 import { Button } from '@/components/ui';
+import { SendInviteEmailForm } from '@/components/send-invite-email-form';
 import { WizardClientInvitePreview } from '../wizard-client-invite-preview';
 import { WizardConnectedExample } from '../wizard-connected-example';
 
@@ -23,6 +25,7 @@ interface SuccessLinkScreenProps {
   agencyName?: string;
   accessRequestId?: string;
   platforms?: string[];
+  clientEmail?: string;
 }
 
 function extractAccessToken(accessLink: string): string {
@@ -35,7 +38,9 @@ export function SuccessLinkScreen({
   agencyName,
   accessRequestId,
   platforms = [],
+  clientEmail,
 }: SuccessLinkScreenProps) {
+  const { getToken } = useAuth();
   const { copied, copy } = useCopyToClipboard();
   const [copyError, setCopyError] = useState(false);
   const accessRequestToken = extractAccessToken(accessLink);
@@ -78,14 +83,26 @@ export function SuccessLinkScreen({
           </p>
         </header>
 
-        <Button
-          className="w-full sm:w-auto"
-          onClick={handleCopyLink}
-          leftIcon={copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
-        >
-          {copied ? 'Copied' : 'Copy Link'}
-        </Button>
-        {copyError && <p role="alert" className="text-sm text-danger-ink">We could not copy the link. Copy it from your browser and try again.</p>}
+        <div className="space-y-4">
+          <Button
+            className="w-full sm:w-auto"
+            onClick={handleCopyLink}
+            leftIcon={copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+          >
+            {copied ? 'Copied' : 'Copy Link'}
+          </Button>
+          {copyError && <p role="alert" className="text-sm text-danger-ink">We could not copy the link. Copy it from your browser and try again.</p>}
+          {accessRequestId ? (
+            <SendInviteEmailForm
+              className="max-w-xl"
+              accessRequestId={accessRequestId}
+              surface="onboarding"
+              status="pending"
+              defaultEmail={clientEmail}
+              getToken={getToken}
+            />
+          ) : null}
+        </div>
 
         <div className="grid gap-5 lg:grid-cols-2">
           <WizardClientInvitePreview agencyName={agencyName} accessLink={accessLink} platforms={platforms} />
