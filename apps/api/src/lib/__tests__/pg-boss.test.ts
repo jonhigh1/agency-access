@@ -85,7 +85,7 @@ describe('enqueueJob', () => {
 
   it('creates the retention cleanup queue before workers and schedules start', async () => {
     await ensureAllQueues();
-    expect(createQueueMock).toHaveBeenCalledWith('cleanup-agent-operations');
+    expect(createQueueMock).toHaveBeenCalledWith('cleanup-agent-operations', {});
   });
 
   it('sets short job expiry on the meta tier cron queue', async () => {
