@@ -1,5 +1,6 @@
 import posthog from 'posthog-js';
 import { sanitizeInviteTokenProperties } from '@/lib/analytics/sanitize-invite-token-properties';
+import { analyticsEnvironmentProperties } from '@/lib/analytics/app-environment';
 
 /**
  * Deferred PostHog Initialization
@@ -55,6 +56,12 @@ function initPosthog() {
       debug: process.env.NODE_ENV === 'development',
       sanitize_properties: (properties) => sanitizeInviteTokenProperties(properties),
     });
+    // Staging/preview builds tag every event with `environment`; prod (unset or
+    // "production") registers nothing, so its events are unchanged.
+    const environmentProperties = analyticsEnvironmentProperties(process.env.NEXT_PUBLIC_APP_ENV);
+    if (Object.keys(environmentProperties).length > 0) {
+      posthog.register(environmentProperties);
+    }
   } catch (e) {
     if (process.env.NODE_ENV === 'development') {
       console.warn('[PostHog] Initialization failed:', e);
