@@ -25,6 +25,8 @@ import { Platform, PlatformSelection } from '@agency-platform/shared';
 import { PlatformSelectorGrid } from '../platform-selector-grid';
 import { fadeVariants, fadeTransition } from '@/lib/animations';
 import { formatOnboardingStepLabel } from '@/lib/onboarding-steps';
+import { MetaPortfolioPanel } from '../meta-portfolio-panel';
+import { isMetaGateBlocking, selectionIncludesMeta, type MetaPortfolioReadiness } from '@/lib/onboarding/meta-readiness';
 
 // ============================================================
 // TYPES
@@ -35,6 +37,11 @@ interface PlatformSelectionScreenProps {
   onUpdate: (platforms: PlatformSelection) => void;
   onGenerate: () => void;
   loading: boolean;
+  /** Agency Meta Business Portfolio readiness; the inline panel shows when Meta is selected. */
+  metaReadiness?: MetaPortfolioReadiness;
+  metaJustConnected?: boolean;
+  onConnectMeta?: () => void;
+  onRetryMetaCheck?: () => void;
 }
 
 // ============================================================
@@ -73,6 +80,10 @@ export function PlatformSelectionScreen({
   selectedPlatforms,
   onUpdate,
   loading,
+  metaReadiness,
+  metaJustConnected,
+  onConnectMeta,
+  onRetryMetaCheck,
 }: PlatformSelectionScreenProps) {
   // Convert to flat array for the grid component
   const flatPlatforms = useMemo(() => selectionToFlat(selectedPlatforms), [selectedPlatforms]);
@@ -89,6 +100,8 @@ export function PlatformSelectionScreen({
   );
 
   const platformCount = flatPlatforms.length;
+  const showMetaPanel = Boolean(metaReadiness && onConnectMeta) && selectionIncludesMeta(selectedPlatforms);
+  const metaBlocking = Boolean(metaReadiness) && isMetaGateBlocking(selectedPlatforms, metaReadiness!);
 
   return (
     <m.div
@@ -118,6 +131,16 @@ export function PlatformSelectionScreen({
           disabled={loading}
         />
 
+        {showMetaPanel && metaReadiness && onConnectMeta && (
+          <MetaPortfolioPanel
+            readiness={metaReadiness}
+            justConnected={metaJustConnected}
+            connecting={loading}
+            onConnect={onConnectMeta}
+            onRetry={onRetryMetaCheck ?? (() => undefined)}
+          />
+        )}
+
         {/* Selection Summary */}
         <m.div
           className="mt-6 p-4 bg-paper border-2 border-black rounded-lg shadow-brutalist-sm"
@@ -126,9 +149,14 @@ export function PlatformSelectionScreen({
         >
           <div className="text-sm text-ink">
             <span className="font-semibold">{platformCount} platform(s) selected</span>
-            {platformCount > 0 && (
+            {platformCount > 0 && !metaBlocking && (
               <span className="text-ink/60 ml-2">
                 → Ready to generate access link
+              </span>
+            )}
+            {metaBlocking && (
+              <span className="text-ink/60 ml-2">
+                → Connect your Meta Business Portfolio above (or deselect Meta) to continue
               </span>
             )}
           </div>

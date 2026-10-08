@@ -92,6 +92,7 @@ describe('OAuth Callback Page', () => {
     vi.clearAllMocks();
     mockGetToken.mockResolvedValue('clerk-token');
     global.fetch = vi.fn();
+    window.sessionStorage.clear();
   });
 
   it('shows loading state when params are missing', () => {
@@ -352,5 +353,61 @@ describe('OAuth Callback Page', () => {
 
     expect(await screen.findByRole('alert')).toHaveTextContent(/Meta rejected the connection/i);
     expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  describe('when the Meta connection was started from onboarding', () => {
+    function seedOnboardingIntent() {
+      window.sessionStorage.setItem(
+        'authhub:onboarding-return:v1',
+        JSON.stringify({ v: 1, path: '/onboarding/unified', step: 3, platform: 'meta', createdAt: Date.now() })
+      );
+    }
+
+    it('returns to the onboarding platform step after saving the portfolio', async () => {
+      seedOnboardingIntent();
+      mockMetaCallbackParams();
+      vi.mocked(fetch)
+        .mockResolvedValueOnce(businessAccountsResponse([{ id: 'biz-solo', name: 'Example Portfolio' }]) as Response)
+        .mockResolvedValueOnce(completeOauthResponse() as Response);
+
+      renderWithQueryClient(<CallbackPage />);
+
+      await waitFor(() => {
+        expect(mockPush).toHaveBeenCalledWith('/onboarding/unified?meta=connected');
+      });
+      expect(mockPush).not.toHaveBeenCalledWith('/connections?success=true&platform=meta');
+      // One-shot: a later connect from /connections goes back to /connections.
+      expect(window.sessionStorage.getItem('authhub:onboarding-return:v1')).toBeNull();
+    });
+
+    it('offers a way back to onboarding when the connection fails', () => {
+      seedOnboardingIntent();
+      mockGet.mockImplementation((param: string) => {
+        if (param === 'error') return 'INVALID_STATE';
+        if (param === 'platform') return 'meta';
+        return null;
+      });
+
+      renderWithQueryClient(<CallbackPage />);
+
+      expect(screen.getByRole('link', { name: /back to onboarding/i })).toHaveAttribute(
+        'href',
+        '/onboarding/unified?meta=error'
+      );
+      expect(screen.queryByRole('link', { name: /try again/i })).not.toBeInTheDocument();
+    });
+
+    it('lets the agency leave the portfolio picker and continue onboarding without Meta', async () => {
+      seedOnboardingIntent();
+      mockMetaCallbackParams();
+      vi.mocked(fetch).mockResolvedValueOnce(businessAccountsResponse([]) as Response);
+
+      renderWithQueryClient(<CallbackPage />);
+
+      expect(await screen.findByRole('link', { name: /back to onboarding without meta/i })).toHaveAttribute(
+        'href',
+        '/onboarding/unified?meta=cancelled'
+      );
+    });
   });
 });

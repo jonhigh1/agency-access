@@ -37,6 +37,26 @@ import {
   type AgencyOnboardingStatusData,
 } from '@/lib/query/onboarding';
 import { ONBOARDING_TOTAL_STEPS } from '@/lib/onboarding-steps';
+import { startAgencyMetaOAuth } from '@/lib/agency-meta-oauth';
+import {
+  META_DESTINATION_NOT_READY,
+  isMetaGateBlocking,
+  metaGateMessage,
+  resolveMetaReadinessFromPlatforms,
+  selectionIncludesMeta,
+  type MetaPortfolioReadiness,
+} from '@/lib/onboarding/meta-readiness';
+import {
+  MAX_RESTORABLE_STEP,
+  clearOnboardingDraft,
+  clearOnboardingReturnIntent,
+  getSessionDraftStorage,
+  isOnboardingMetaOutcome,
+  loadOnboardingDraft,
+  resolveRestoredStep,
+  saveOnboardingDraft,
+  setOnboardingReturnIntent,
+} from '@/lib/onboarding/onboarding-draft';
 
 // ============================================================
 // TYPES
@@ -98,6 +118,10 @@ export interface OnboardingState {
   teamInvites: TeamInvite[];
   teamInvitesSent: number;
 
+  // Agency Meta Business Portfolio readiness (gates Meta on the platform step)
+  metaReadiness: MetaPortfolioReadiness;
+  metaJustConnected: boolean;
+
   // Meta state
   loading: boolean;
   error: string | null;
@@ -127,6 +151,8 @@ interface UnifiedOnboardingContextValue {
   createAgencyAndAccessRequest: () => Promise<CreateAgencyAndAccessRequestResult>;
   deferUntilClientReady: () => Promise<void>;
   sendTeamInvites: () => Promise<boolean>;
+  connectMetaPortfolio: () => Promise<void>;
+  refreshMetaReadiness: () => Promise<void>;
 
   // Completion
   completeOnboarding: () => Promise<void>;
@@ -331,6 +357,10 @@ const initialState: OnboardingState = {
   teamInvites: [],
   teamInvitesSent: 0,
 
+  // Agency Meta readiness
+  metaReadiness: { status: 'idle' },
+  metaJustConnected: false,
+
   // Meta
   loading: false,
   error: null,
@@ -344,13 +374,17 @@ interface UnifiedOnboardingProviderProps {
   children: ReactNode;
   onComplete?: () => void; // Optional callback when onboarding completes
   enableProgressHydration?: boolean;
+  /** Persist the pre-link draft in sessionStorage (reload / Meta OAuth round-trip). Defaults to enableProgressHydration. */
+  enableDraftPersistence?: boolean;
 }
 
 export function UnifiedOnboardingProvider({
   children,
   onComplete,
   enableProgressHydration = true,
+  enableDraftPersistence,
 }: UnifiedOnboardingProviderProps) {
+  const draftPersistenceEnabled = enableDraftPersistence ?? enableProgressHydration;
   const router = useRouter();
   const { userId, orgId, getToken } = useAuth();
   const { user } = useUser();
@@ -360,6 +394,98 @@ export function UnifiedOnboardingProvider({
   const completionInFlightRef = useRef(false);
   const completionSucceededRef = useRef(false);
   const navigationInFlightRef = useRef(false);
+  const draftRestoredRef = useRef(false);
+  const [draftReady, setDraftReady] = useState(false);
+  const principalClerkIdForDraft = orgId || userId || null;
+
+  // ============================================================
+  // DRAFT RESTORE (reload / OAuth round-trip)
+  // ============================================================
+
+  // Declared before progress hydration so both run in the same commit and the
+  // hydration result keeps the restored step (it only fills step 0).
+  useEffect(() => {
+    if (!draftPersistenceEnabled || draftReady || !principalClerkIdForDraft) return;
+    const storage = getSessionDraftStorage();
+    const draft = loadOnboardingDraft(storage, principalClerkIdForDraft);
+
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const metaOutcome = params.get('meta');
+      if (isOnboardingMetaOutcome(metaOutcome)) {
+        clearOnboardingReturnIntent(storage);
+        params.delete('meta');
+        const query = params.toString();
+        window.history.replaceState(window.history.state, '', `${window.location.pathname}${query ? `?${query}` : ''}`);
+        setState((prev) => ({
+          ...prev,
+          metaJustConnected: metaOutcome === 'connected',
+          error: metaOutcome === 'error'
+            ? 'The Meta connection did not finish. Try connecting your Business Portfolio again.'
+            : prev.error,
+        }));
+      }
+    }
+
+    if (draft) {
+      draftRestoredRef.current = true;
+      const restoredStep = resolveRestoredStep(draft);
+      setState((prev) => ({
+        ...prev,
+        currentStep: prev.currentStep > 0 ? prev.currentStep : restoredStep,
+        agencyName: draft.agencyName?.trim() ? draft.agencyName : prev.agencyName,
+        agencySettings: {
+          ...prev.agencySettings,
+          ...(draft.agencySettings?.timezone ? { timezone: draft.agencySettings.timezone } : {}),
+          ...(draft.agencySettings?.industry ? { industry: draft.agencySettings.industry } : {}),
+          ...(draft.agencySettings?.website !== undefined ? { website: draft.agencySettings.website } : {}),
+        },
+        clientId: draft.clientId || undefined,
+        clientName: draft.clientName ?? prev.clientName,
+        clientEmail: draft.clientEmail ?? prev.clientEmail,
+        selectedPlatforms: draft.selectedPlatforms,
+      }));
+    }
+    setDraftReady(true);
+  }, [draftPersistenceEnabled, draftReady, principalClerkIdForDraft]);
+
+  // Save the draft while the agency is on a pre-link step; drop it once the link exists.
+  useEffect(() => {
+    if (!draftPersistenceEnabled || !draftReady || !principalClerkIdForDraft) return;
+    const storage = getSessionDraftStorage();
+    if (state.accessRequestId) {
+      clearOnboardingDraft(storage, principalClerkIdForDraft);
+      return;
+    }
+    if (state.currentStep < 1 || state.currentStep > MAX_RESTORABLE_STEP) return;
+    saveOnboardingDraft(storage, principalClerkIdForDraft, {
+      currentStep: state.currentStep,
+      agencyName: state.agencyName,
+      agencySettings: {
+        timezone: state.agencySettings.timezone,
+        industry: state.agencySettings.industry,
+        website: state.agencySettings.website,
+      },
+      clientId: state.clientId,
+      clientName: state.clientName,
+      clientEmail: state.clientEmail,
+      selectedPlatforms: state.selectedPlatforms,
+    });
+  }, [
+    draftPersistenceEnabled,
+    draftReady,
+    principalClerkIdForDraft,
+    state.accessRequestId,
+    state.currentStep,
+    state.agencyName,
+    state.agencySettings.timezone,
+    state.agencySettings.industry,
+    state.agencySettings.website,
+    state.clientId,
+    state.clientName,
+    state.clientEmail,
+    state.selectedPlatforms,
+  ]);
 
   // ============================================================
   // ANALYTICS TRACKING
@@ -485,8 +611,8 @@ export function UnifiedOnboardingProvider({
         return state.agencyName.trim().length >= 2;
       case 2: // Client step requires a real client before link generation
         return isValidClientData(state.clientName, state.clientEmail);
-      case 3: // Platform step can proceed with the default opinionated selection
-        return true;
+      case 3: // Platform step: Meta needs a connected agency Business Portfolio first
+        return !isMetaGateBlocking(state.selectedPlatforms, state.metaReadiness);
       case 4: // Success link display - always can proceed
         return true;
       case 5: // Team invite - optional, always can proceed
@@ -733,6 +859,12 @@ export function UnifiedOnboardingProvider({
       };
     }
 
+    if (!state.accessRequestId && isMetaGateBlocking(state.selectedPlatforms, state.metaReadiness)) {
+      const errorMessage = metaGateMessage(state.metaReadiness);
+      setState((prev) => ({ ...prev, error: errorMessage, loading: false }));
+      return { ok: false, error: errorMessage };
+    }
+
     try {
       setState((prev) => ({ ...prev, loading: true, error: null }));
       if (state.agencyId && state.accessRequestId && state.accessLink) {
@@ -855,7 +987,10 @@ export function UnifiedOnboardingProvider({
         accessLink,
       };
     } catch (err) {
-      const errorMessage = getApiErrorMessage(err, 'Network error. Please try again.');
+      const metaNotReady = err instanceof AuthorizedApiError && err.code === META_DESTINATION_NOT_READY;
+      const errorMessage = metaNotReady
+        ? metaGateMessage({ status: 'not_connected' })
+        : getApiErrorMessage(err, 'Network error. Please try again.');
 
       trackOnboardingEvent('onboarding_step_failed', {
         step: state.currentStep,
@@ -867,6 +1002,8 @@ export function UnifiedOnboardingProvider({
         ...prev,
         error: errorMessage,
         loading: false,
+        // The API disagrees with our cached readiness: re-check so the inline panel shows the fix.
+        ...(metaNotReady ? { metaReadiness: { status: 'idle' as const } } : {}),
       }));
 
       return {
@@ -875,6 +1012,103 @@ export function UnifiedOnboardingProvider({
       };
     }
   }, [flattenSelectedPlatforms, persistOnboardingProgress, resolveAgency, state]);
+
+  // ============================================================
+  // AGENCY META BUSINESS PORTFOLIO (platform step gate)
+  // ============================================================
+
+  const metaSelected = selectionIncludesMeta(state.selectedPlatforms);
+  const metaReadinessRequestRef = useRef(0);
+
+  const refreshMetaReadiness = useCallback(async () => {
+    const requestId = ++metaReadinessRequestRef.current;
+    if (!state.agencyId) {
+      setState((prev) => ({ ...prev, metaReadiness: { status: 'not_connected' } }));
+      return;
+    }
+    setState((prev) => ({ ...prev, metaReadiness: { status: 'loading' } }));
+    try {
+      const json = await authorizedApiFetch<{ data: unknown }>(
+        `/agency-platforms/available?agencyId=${encodeURIComponent(state.agencyId)}`,
+        { getToken }
+      );
+      if (requestId !== metaReadinessRequestRef.current) return;
+      setState((prev) => ({ ...prev, metaReadiness: resolveMetaReadinessFromPlatforms(json.data) }));
+    } catch (err) {
+      if (requestId !== metaReadinessRequestRef.current) return;
+      setState((prev) => ({
+        ...prev,
+        metaReadiness: {
+          status: 'error',
+          message: getApiErrorMessage(err, 'Could not check your Meta connection.'),
+        },
+      }));
+    }
+  }, [getToken, state.agencyId]);
+
+  // Check readiness whenever Meta is selected on the platform step (and again
+  // after the agency id resolves or the API reported it not ready).
+  useEffect(() => {
+    if (state.currentStep !== 3 || !metaSelected) return;
+    if (state.metaReadiness.status !== 'idle') return;
+    void refreshMetaReadiness();
+  }, [metaSelected, refreshMetaReadiness, state.currentStep, state.metaReadiness.status]);
+
+  useEffect(() => {
+    // A newly resolved agency id invalidates a "no agency, so not connected" verdict.
+    setState((prev) => (prev.metaReadiness.status === 'idle' ? prev : { ...prev, metaReadiness: { status: 'idle' } }));
+  }, [state.agencyId]);
+
+  const connectMetaPortfolio = useCallback(async () => {
+    const userEmail = user?.primaryEmailAddress?.emailAddress || user?.emailAddresses?.[0]?.emailAddress;
+    if (!userEmail) {
+      setState((prev) => ({ ...prev, error: 'Unable to resolve your account email from Clerk.' }));
+      return;
+    }
+
+    const storage = getSessionDraftStorage();
+    try {
+      setState((prev) => ({ ...prev, loading: true, error: null }));
+      const { agencyId } = await resolveAgency();
+      if (!agencyId) throw new Error('Unable to set up your agency. Please try again.');
+
+      // Persist everything first: the OAuth redirect leaves the page.
+      const selectedPlatforms = selectionIncludesMeta(state.selectedPlatforms)
+        ? state.selectedPlatforms
+        : { ...state.selectedPlatforms, meta: ['meta'] };
+      saveOnboardingDraft(storage, principalClerkIdForDraft, {
+        currentStep: 3,
+        agencyName: state.agencyName,
+        agencySettings: {
+          timezone: state.agencySettings.timezone,
+          industry: state.agencySettings.industry,
+          website: state.agencySettings.website,
+        },
+        clientId: state.clientId,
+        clientName: state.clientName,
+        clientEmail: state.clientEmail,
+        selectedPlatforms,
+      });
+      setOnboardingReturnIntent(storage, { step: 3, platform: 'meta' });
+      setState((prev) => ({ ...prev, agencyId }));
+
+      trackOnboardingEvent('onboarding_meta_connect_started', {
+        version: 'unified_v1',
+        step: state.currentStep,
+        agencyId,
+        timestamp: Date.now(),
+      });
+
+      await startAgencyMetaOAuth({ agencyId, userEmail, getToken });
+    } catch (err) {
+      clearOnboardingReturnIntent(storage);
+      setState((prev) => ({
+        ...prev,
+        loading: false,
+        error: getApiErrorMessage(err, 'Could not start the Meta connection. Please try again.'),
+      }));
+    }
+  }, [getToken, principalClerkIdForDraft, resolveAgency, state.agencyName, state.agencySettings.industry, state.agencySettings.timezone, state.agencySettings.website, state.clientEmail, state.clientId, state.clientName, state.currentStep, state.selectedPlatforms, user]);
 
   const deferUntilClientReady = useCallback(async () => {
     try {
@@ -913,6 +1147,7 @@ export function UnifiedOnboardingProvider({
         lastVisitedStep: 2,
       });
 
+      clearOnboardingDraft(getSessionDraftStorage(), principalClerkIdForDraft);
       router.push('/dashboard');
     } catch (err) {
       const errorMessage = getApiErrorMessage(err, 'Unable to finish setup right now.');
@@ -923,7 +1158,7 @@ export function UnifiedOnboardingProvider({
         loading: false,
       }));
     }
-  }, [persistOnboardingProgress, resolveAgency, router, state.currentStep, state.startedAt]);
+  }, [persistOnboardingProgress, principalClerkIdForDraft, resolveAgency, router, state.currentStep, state.startedAt]);
 
   const sendTeamInvites = useCallback(async (): Promise<boolean> => {
     if (state.teamInvites.length === 0) {
@@ -1089,8 +1324,11 @@ export function UnifiedOnboardingProvider({
         setState((prev) => ({
           ...prev,
           agencyId: resolvedAgencyId,
-          agencyName: agency.name || prev.agencyName,
-          agencySettings: { ...prev.agencySettings, ...agency.settings },
+          // A restored draft holds what the agency typed before reloading; keep it.
+          agencyName: draftRestoredRef.current && prev.agencyName ? prev.agencyName : agency.name || prev.agencyName,
+          agencySettings: draftRestoredRef.current
+            ? { ...prev.agencySettings, ...agency.settings, ...prev.agencySettings }
+            : { ...prev.agencySettings, ...agency.settings },
         }));
         const onboardingStatus = await authorizedApiFetch<{ data: AgencyOnboardingStatusData; error: null }>(
           `/api/agencies/${resolvedAgencyId}/onboarding-status`,
@@ -1103,6 +1341,7 @@ export function UnifiedOnboardingProvider({
 
         const resumeStep = resolveOnboardingResumeStep(onboardingStatus.data);
         if (onboardingStatus.data.step.firstRequest || resumeStep >= 4) {
+          clearOnboardingDraft(getSessionDraftStorage(), principalClerkId);
           router.replace('/dashboard');
           return;
         }
@@ -1144,10 +1383,8 @@ export function UnifiedOnboardingProvider({
       const email = user.primaryEmailAddress?.emailAddress || user.emailAddresses?.[0]?.emailAddress;
       const suggestedName = getAgencyNameFromEmail(email) || 'My Agency';
 
-      setState((prev) => ({
-        ...prev,
-        agencyName: suggestedName,
-      }));
+      // Functional check: a draft restored in the same commit must win over the suggestion.
+      setState((prev) => (prev.agencyName ? prev : { ...prev, agencyName: suggestedName }));
     }
   }, [user, state.agencyName]);
 
@@ -1173,6 +1410,8 @@ export function UnifiedOnboardingProvider({
     createAgencyAndAccessRequest,
     deferUntilClientReady,
     sendTeamInvites,
+    connectMetaPortfolio,
+    refreshMetaReadiness,
     completeOnboarding,
     skipOnboarding,
     setError,
@@ -1195,6 +1434,8 @@ export function UnifiedOnboardingProvider({
     createAgencyAndAccessRequest,
     deferUntilClientReady,
     sendTeamInvites,
+    connectMetaPortfolio,
+    refreshMetaReadiness,
     completeOnboarding,
     skipOnboarding,
     setError,

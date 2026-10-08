@@ -136,10 +136,10 @@ export function TeamInviteScreen({
 
             {/* Role Selection */}
             <div>
-              <label className="block text-sm font-semibold text-foreground mb-1.5">
+              <p id="team-invite-role-label" className="block text-sm font-semibold text-foreground mb-1.5">
                 Role
-              </label>
-              <div className="grid grid-cols-3 gap-3">
+              </p>
+              <div role="group" aria-labelledby="team-invite-role-label" className="grid grid-cols-3 gap-3">
                 {ROLE_OPTIONS.map((role) => (
                     <button
                       key={role.value}

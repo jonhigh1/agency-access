@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { PlatformSelectorGrid } from '../platform-selector-grid';
 import { PLATFORM_NAMES, SUPPORTED_CONNECTION_PLATFORMS } from '@agency-platform/shared';
 
@@ -47,4 +47,46 @@ describe('PlatformSelectorGrid', () => {
       expect(buttonLabels.some((label) => label.includes(PLATFORM_NAMES[platform]))).toBe(true);
     }
   });
+
+  it('toggles a single-platform group when its heading is clicked, like the card', () => {
+    const onSelectionChange = vi.fn();
+    render(
+      <PlatformSelectorGrid
+        selectedPlatforms={['google']}
+        onSelectionChange={onSelectionChange}
+        showPreSelectedMessage={false}
+      />
+    );
+
+    fireEvent.click(screen.getByTestId('platform-group-heading-meta'));
+    expect(onSelectionChange).toHaveBeenLastCalledWith(['google', 'meta']);
+  });
+
+  it('keeps the last-platform guard when a heading is clicked', () => {
+    const onSelectionChange = vi.fn();
+    render(
+      <PlatformSelectorGrid
+        selectedPlatforms={['google']}
+        onSelectionChange={onSelectionChange}
+        showPreSelectedMessage={false}
+      />
+    );
+
+    fireEvent.click(screen.getByTestId('platform-group-heading-google'));
+    expect(onSelectionChange).not.toHaveBeenCalled();
+  });
+
+  it('exposes selection state on platform cards', () => {
+    render(
+      <PlatformSelectorGrid
+        selectedPlatforms={['google']}
+        onSelectionChange={vi.fn()}
+        showPreSelectedMessage={false}
+      />
+    );
+
+    expect(screen.getByRole('button', { name: /\bGoogle$/, pressed: true })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /\bMeta$/, pressed: false })).toBeInTheDocument();
+  });
 });
+
