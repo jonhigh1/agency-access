@@ -1,11 +1,24 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { metaPartnerService } from '../meta-partner.service.js';
+import { clearRecordedMetaGraphOps, getRecordedMetaGraphOps } from '@/lib/meta-graph-instrumentation.js';
+import {
+  assertNoTokenMaterialInSerializedGraphOps,
+  serializeMetaGraphOp,
+} from '@agency-platform/shared';
+import {
+  MetaPageAccessTokenUnavailableError,
+  metaPartnerService,
+} from '../meta-partner.service.js';
 
 describe('MetaPartnerService', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    clearRecordedMetaGraphOps();
     global.fetch = vi.fn();
+  });
+
+  afterEach(() => {
+    clearRecordedMetaGraphOps();
   });
 
   it('grants page access with the documented user plus tasks mutation shape', async () => {
@@ -316,9 +329,17 @@ describe('MetaPartnerService', () => {
     expect(result).toEqual({ verified: true, assignedTasks: ['ADVERTISE', 'AA_ANALYZE'] });
   });
 
-  it('shares a Page with the agency portfolio via agencies edge and verifies permitted tasks', async () => {
+  it('shares a Page with the agency portfolio via agencies edge using a Page access token', async () => {
     vi.mocked(fetch)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ access_token: 'EAAFAKEPAGETOKEN1234567890' }),
+      } as Response)
       .mockResolvedValueOnce({ ok: true, json: async () => ({ success: true }) } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ access_token: 'EAAFAKEPAGETOKEN1234567890' }),
+      } as Response)
       .mockResolvedValueOnce({
         ok: true,
         json: async () => ({
@@ -331,24 +352,95 @@ describe('MetaPartnerService', () => {
       'page_123',
       'agency-bm-1',
       ['MANAGE', 'ADVERTISE'],
+      { assetKind: 'page' },
     );
     const result = await metaPartnerService.verifyAgencyPartnerAccess(
       'client-token',
       'page_123',
       'agency-bm-1',
       ['MANAGE', 'ADVERTISE'],
+      { assetKind: 'page' },
     );
 
     expect(fetch).toHaveBeenNthCalledWith(
       1,
+      'https://graph.facebook.com/v25.0/page_123?fields=access_token',
+      expect.objectContaining({ method: 'GET' }),
+    );
+    expect(fetch).toHaveBeenNthCalledWith(
+      2,
       'https://graph.facebook.com/v25.0/page_123/agencies',
       expect.objectContaining({ method: 'POST' }),
     );
-    const request = vi.mocked(fetch).mock.calls[0]?.[1] as RequestInit;
-    const params = new URLSearchParams(request.body as string);
+    const postRequest = vi.mocked(fetch).mock.calls[1]?.[1] as RequestInit;
+    expect(new Headers(postRequest.headers).get('Authorization')).toBe(
+      'Bearer EAAFAKEPAGETOKEN1234567890'
+    );
+    const params = new URLSearchParams(postRequest.body as string);
     expect(params.get('business')).toBe('agency-bm-1');
     expect(params.get('permitted_tasks')).toBe(JSON.stringify(['MANAGE', 'ADVERTISE']));
     expect(result).toEqual({ verified: true, assignedTasks: ['MANAGE', 'ADVERTISE'] });
+  });
+
+  it('falls back to me/accounts when page fields returns no access_token', async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ id: 'page_123' }) } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: [{ id: 'page_123', access_token: 'page-from-accounts-token' }],
+        }),
+      } as Response);
+
+    const resolved = await metaPartnerService.obtainPageAccessTokenForAgencies(
+      'client-token',
+      'page_123'
+    );
+
+    expect(resolved.source).toBe('me_accounts');
+    expect(resolved.accessToken).toBe('page-from-accounts-token');
+    expect(fetch).toHaveBeenNthCalledWith(
+      2,
+      expect.stringContaining('/me/accounts?fields='),
+      expect.objectContaining({ method: 'GET' }),
+    );
+  });
+
+  it('throws a structured error when no Page access token can be resolved', async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ id: 'page_123' }) } as Response)
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) } as Response);
+
+    await expect(
+      metaPartnerService.obtainPageAccessTokenForAgencies('client-token', 'page_123')
+    ).rejects.toBeInstanceOf(MetaPageAccessTokenUnavailableError);
+  });
+
+  it('does not leak Page access token material in recorded meta_graph_op envelopes', async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ access_token: 'EAAFAKEPAGETOKEN1234567890' }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ data: [{ id: 'agency-bm-1', permitted_tasks: ['MANAGE'] }] }),
+      } as Response);
+
+    await metaPartnerService.verifyAgencyPartnerAccess(
+      'client-token',
+      'page_123',
+      'agency-bm-1',
+      ['MANAGE'],
+      { assetKind: 'page' },
+    );
+
+    const serialized = getRecordedMetaGraphOps().map(serializeMetaGraphOp).join('\n');
+    assertNoTokenMaterialInSerializedGraphOps(serialized, [
+      'EAAFAKEPAGETOKEN1234567890',
+      'access_token=',
+    ]);
+    expect(getRecordedMetaGraphOps().some((op) => op.tokenClass === 'selected_page')).toBe(true);
   });
 
   it('shares a catalog with the agency portfolio and verifies the agency edge', async () => {
@@ -452,22 +544,28 @@ describe('MetaPartnerService', () => {
 
   it('removes an agency from a Page and verifies that Meta no longer lists it', async () => {
     vi.mocked(fetch)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ access_token: 'page-revoke-token' }),
+      } as Response)
       .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [{ id: 'biz-agency' }] }) } as Response)
       .mockResolvedValueOnce({ ok: true, json: async () => ({ success: true }) } as Response)
       .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) } as Response);
 
-    await metaPartnerService.revokeAgencyAccess('client-token', 'page_123', 'biz-agency');
+    await metaPartnerService.revokeAgencyAccess('client-token', 'page_123', 'biz-agency', {
+      assetKind: 'page',
+    });
 
-    expect(fetch).toHaveBeenNthCalledWith(2,
+    expect(fetch).toHaveBeenNthCalledWith(3,
       'https://graph.facebook.com/v25.0/page_123/agencies',
       expect.objectContaining({ method: 'DELETE' }),
     );
-    const request = vi.mocked(fetch).mock.calls[1]?.[1] as RequestInit;
+    const request = vi.mocked(fetch).mock.calls[2]?.[1] as RequestInit;
     const params = new URLSearchParams(request.body as string);
     expect(params.get('business')).toBe('biz-agency');
     expect(params.get('access_token')).toBeNull();
-    expect(new Headers(request.headers).get('Authorization')).toBe('Bearer client-token');
-    expect(fetch).toHaveBeenCalledTimes(3);
+    expect(new Headers(request.headers).get('Authorization')).toBe('Bearer page-revoke-token');
+    expect(fetch).toHaveBeenCalledTimes(4);
   });
 
   it('removes an agency from a catalog and verifies catalog agency read-back', async () => {

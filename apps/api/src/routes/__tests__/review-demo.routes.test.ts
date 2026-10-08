@@ -23,7 +23,7 @@ vi.mock('@/services/review-demo.service.js', () => ({
   reviewDemoService: {
     getSession: vi.fn(async () => ({
       connected: true,
-      identity: { id: '61595281164997', name: 'Alex Reviewer' },
+      identity: { id: '122095319343509372', name: 'Alex Reviewer' },
       grantedPermissions: ['pages_show_list', 'pages_read_engagement', 'ads_management', 'business_management'],
       activeStep: 'pages_show_list',
       stepIndex: 0,

@@ -33,11 +33,15 @@ vi.mock('@/routes/client-auth/redirect-uri.js', () => ({
 
 const verifyAdAccountAgencyAccessMock = vi.fn();
 const grantAgencyPartnerAccessMock = vi.fn();
+const verifyAgencyPartnerAccessMock = vi.fn();
+const resolvePageAccessTokenPhaseMock = vi.fn();
 
 vi.mock('@/services/meta-partner.service.js', () => ({
   metaPartnerService: {
     verifyAdAccountAgencyAccess: (...args: unknown[]) => verifyAdAccountAgencyAccessMock(...args),
     grantAgencyPartnerAccess: (...args: unknown[]) => grantAgencyPartnerAccessMock(...args),
+    verifyAgencyPartnerAccess: (...args: unknown[]) => verifyAgencyPartnerAccessMock(...args),
+    resolvePageAccessTokenPhase: (...args: unknown[]) => resolvePageAccessTokenPhaseMock(...args),
   },
 }));
 
@@ -46,7 +50,7 @@ vi.mock('@/lib/infisical.js', () => ({
     getPlainSecret: vi.fn(async () =>
       JSON.stringify({
         accessToken: 'client-token',
-        identity: { id: '61595281164997', name: 'Alex Reviewer' },
+        identity: { id: '122095319343509372', name: 'Alex Reviewer' },
       })
     ),
     storePlainSecret: vi.fn(async () => 'review_demo_meta_user_test'),
@@ -61,6 +65,7 @@ vi.mock('@/lib/env.js', () => ({
     META_REVIEW_PAGE_ID: '1373353139192376',
     META_REVIEW_AGENCY_BM_ID: '3808519629379919',
     META_REVIEW_LAB_AGENCY_ID: 'review-lab-agency',
+    META_REVIEW_SANDBOX_META_USER_ID: '122095319343509372',
   },
 }));
 
@@ -224,6 +229,13 @@ describe('reviewDemoService business_management sandbox scope', () => {
     vi.resetModules();
     clearRecordedMetaGraphOps();
     verifyAdAccountAgencyAccessMock.mockReset();
+    verifyAgencyPartnerAccessMock.mockReset();
+    resolvePageAccessTokenPhaseMock.mockReset();
+    resolvePageAccessTokenPhaseMock.mockResolvedValue({ obtained: true, source: 'page_fields' });
+    verifyAgencyPartnerAccessMock.mockResolvedValue({
+      verified: false,
+      assignedTasks: [],
+    });
   });
 
   it('returns only configured sandbox assets instead of the full BM inventory', async () => {
@@ -314,6 +326,61 @@ describe('reviewDemoService business_management sandbox scope', () => {
     if (payload.stepId === 'business_management') {
       expect(payload.sandboxMisconfigured).toBe(true);
       expect(payload.assets).toEqual([]);
+    }
+  });
+
+  it('shows a neutral pending state when Page token cannot be resolved on load', async () => {
+    vi.doMock('@/lib/env.js', () => ({
+      env: {
+        META_REVIEW_DEMO_MOCK_GRAPH: false,
+        META_REVIEW_BM_ID: '695982475048959',
+        META_REVIEW_AD_ACCOUNT_ID: '557538895783894',
+        META_REVIEW_PAGE_ID: '1373353139192376',
+        META_REVIEW_AGENCY_BM_ID: '3808519629379919',
+        META_REVIEW_LAB_AGENCY_ID: 'review-lab-agency',
+      },
+    }));
+
+    verifyAdAccountAgencyAccessMock.mockResolvedValue({
+      verified: true,
+      assignedTasks: ['ADVERTISE', 'ANALYZE'],
+    });
+    resolvePageAccessTokenPhaseMock.mockResolvedValue({ obtained: false });
+
+    vi.doMock('@/lib/meta-graph-instrumentation.js', () => ({
+      getRecordedMetaGraphOps: () => [],
+      metaGraphFetch: vi.fn(async (url: string) => {
+        if (url.includes('695982475048959?fields')) {
+          return { ok: true, json: async () => ({ id: '695982475048959', name: 'Review BM' }) };
+        }
+        if (url.includes('1373353139192376?fields')) {
+          return { ok: true, json: async () => ({ id: '1373353139192376', name: 'Ah-Review-Page' }) };
+        }
+        if (url.includes('act_557538895783894?fields')) {
+          return {
+            ok: true,
+            json: async () => ({ id: 'act_557538895783894', name: 'Review Ad Account' }),
+          };
+        }
+        if (url.includes('3808519629379919?fields')) {
+          return { ok: true, json: async () => ({ id: '3808519629379919', name: 'Agency BM' }) };
+        }
+        throw new Error(`Unexpected graph URL: ${url}`);
+      }),
+    }));
+
+    const { reviewDemoService } = await import('../review-demo.service.js');
+    const payload = await reviewDemoService.loadStepPayload({
+      clerkUserId: 'user_test',
+      userEmail: 'lab@test.example',
+      stepId: 'business_management',
+    });
+
+    expect(verifyAgencyPartnerAccessMock).not.toHaveBeenCalled();
+    expect(payload.stepId).toBe('business_management');
+    if (payload.stepId === 'business_management') {
+      expect(payload.pagePartner?.pendingMessage).toContain('Not checked yet');
+      expect(payload.pagePartner?.graphError).toBeUndefined();
     }
   });
 });

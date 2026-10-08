@@ -18,6 +18,24 @@ export interface MetaAssignedUserVerificationResult {
   assignedTasks: string[];
 }
 
+export type MetaAgencyPartnerAssetKind = 'page' | 'ad_account' | 'catalog' | 'generic';
+
+export type MetaPageAccessTokenSource = 'page_fields' | 'me_accounts';
+
+export interface MetaPageAccessTokenPhaseResult {
+  obtained: boolean;
+  source?: MetaPageAccessTokenSource;
+}
+
+export class MetaPageAccessTokenUnavailableError extends Error {
+  readonly code = 'META_PAGE_ACCESS_TOKEN_UNAVAILABLE';
+
+  constructor(message: string) {
+    super(message);
+    this.name = 'MetaPageAccessTokenUnavailableError';
+  }
+}
+
 const DEFAULT_PAGE_TASKS = ['MANAGE', 'CREATE_CONTENT', 'MODERATE', 'ADVERTISE'];
 const DEFAULT_AD_ACCOUNT_TASKS = ['MANAGE', 'ADVERTISE', 'ANALYZE'];
 
@@ -144,14 +162,19 @@ class MetaPartnerService {
     return assignedUsers;
   }
 
-  private async getAgencyPages<T>(accessToken: string, url: string, failure: string): Promise<T[]> {
+  private async getAgencyPages<T>(
+    accessToken: string,
+    url: string,
+    failure: string,
+    tokenClass: MetaGraphTokenClass = 'client_user'
+  ): Promise<T[]> {
     const agencies: T[] = [];
     let nextUrl: string | null = url;
     const visitedUrls = new Set<string>();
     while (nextUrl) {
       if (visitedUrls.has(nextUrl)) throw new Error('Meta returned a repeated pagination URL');
       visitedUrls.add(nextUrl);
-      const response = await this.graphRequest(nextUrl, accessToken, { method: 'GET' });
+      const response = await this.graphRequest(nextUrl, accessToken, { method: 'GET' }, tokenClass);
       if (!response.ok) throw new Error(`${failure}: ${await response.text()}`);
       const payload = await response.json() as { data?: T[]; paging?: { next?: string } };
       agencies.push(...(payload.data || []));
@@ -164,18 +187,29 @@ class MetaPartnerService {
     return agencies;
   }
 
-  private getAgencies(accessToken: string, assetId: string): Promise<Array<{ id?: string }>> {
-    return this.getAgencyPages(accessToken, `${this.META_GRAPH_URL}/${assetId}/agencies`, 'Failed to read Meta asset agencies');
+  private getAgencies(
+    accessToken: string,
+    assetId: string,
+    tokenClass: MetaGraphTokenClass = 'client_user'
+  ): Promise<Array<{ id?: string }>> {
+    return this.getAgencyPages(
+      accessToken,
+      `${this.META_GRAPH_URL}/${assetId}/agencies`,
+      'Failed to read Meta asset agencies',
+      tokenClass
+    );
   }
 
   private async getAgenciesWithTasks(
     accessToken: string,
-    assetId: string
+    assetId: string,
+    tokenClass: MetaGraphTokenClass = 'client_user'
   ): Promise<Array<{ id?: string; permitted_tasks?: unknown }>> {
     return this.getAgencyPages(
       accessToken,
       `${this.META_GRAPH_URL}/${assetId}/agencies?fields=id,permitted_tasks`,
       'Failed to verify Meta agency permissions',
+      tokenClass
     );
   }
 
@@ -183,9 +217,10 @@ class MetaPartnerService {
     accessToken: string,
     assetId: string,
     agencyBusinessId: string,
-    requiredTasks: string[]
+    requiredTasks: string[],
+    tokenClass: MetaGraphTokenClass = 'client_user'
   ): Promise<MetaAssignedUserVerificationResult> {
-    const agencies = await this.getAgenciesWithTasks(accessToken, assetId);
+    const agencies = await this.getAgenciesWithTasks(accessToken, assetId, tokenClass);
     const agency = agencies.find((item) => item.id === agencyBusinessId);
     const assignedTasks = this.normalizeTasks(agency?.permitted_tasks);
     return {
@@ -194,21 +229,95 @@ class MetaPartnerService {
     };
   }
 
+  /**
+   * Page /{page-id}/agencies requires a Page access token. Resolve one from the user token without logging it.
+   */
+  async obtainPageAccessTokenForAgencies(
+    userToken: string,
+    pageId: string
+  ): Promise<{ accessToken: string; source: MetaPageAccessTokenSource }> {
+    const pageFieldsUrl = `${this.META_GRAPH_URL}/${pageId}?fields=access_token`;
+    const pageFieldsResponse = await this.graphRequest(pageFieldsUrl, userToken, { method: 'GET' }, 'client_user');
+    if (pageFieldsResponse.ok) {
+      const body = (await pageFieldsResponse.json()) as { access_token?: string };
+      const token = body.access_token?.trim();
+      if (token) {
+        return { accessToken: token, source: 'page_fields' };
+      }
+    }
+
+    const accountsUrl = `${this.META_GRAPH_URL}/me/accounts?fields=id,access_token`;
+    const accountsResponse = await this.graphRequest(accountsUrl, userToken, { method: 'GET' }, 'client_user');
+    if (accountsResponse.ok) {
+      const body = (await accountsResponse.json()) as {
+        data?: Array<{ id?: string; access_token?: string }>;
+      };
+      const match = (body.data ?? []).find((row) => row.id === pageId);
+      const token = match?.access_token?.trim();
+      if (token) {
+        return { accessToken: token, source: 'me_accounts' };
+      }
+    }
+
+    throw new MetaPageAccessTokenUnavailableError(
+      `Could not obtain a Page access token for Page ${pageId}. The user token cannot call /${pageId}/agencies — grant pages_show_list and ensure this user manages the Page.`
+    );
+  }
+
+  async resolvePageAccessTokenPhase(
+    userToken: string,
+    pageId: string
+  ): Promise<MetaPageAccessTokenPhaseResult> {
+    try {
+      const resolved = await this.obtainPageAccessTokenForAgencies(userToken, pageId);
+      return { obtained: true, source: resolved.source };
+    } catch (error) {
+      if (error instanceof MetaPageAccessTokenUnavailableError) {
+        return { obtained: false };
+      }
+      throw error;
+    }
+  }
+
+  private async resolveAgenciesCallContext(
+    clientToken: string,
+    assetId: string,
+    assetKind: MetaAgencyPartnerAssetKind = 'generic'
+  ): Promise<{ accessToken: string; tokenClass: MetaGraphTokenClass }> {
+    if (assetKind === 'page') {
+      const pageToken = await this.obtainPageAccessTokenForAgencies(clientToken, assetId);
+      return { accessToken: pageToken.accessToken, tokenClass: 'selected_page' };
+    }
+    return { accessToken: clientToken, tokenClass: 'client_user' };
+  }
+
   async grantAgencyPartnerAccess(
     clientToken: string,
     assetId: string,
     agencyBusinessId: string,
-    tasks: string[]
+    tasks: string[],
+    options?: { assetKind?: MetaAgencyPartnerAssetKind }
   ): Promise<void> {
+    const assetKind = options?.assetKind ?? 'generic';
+    const { accessToken, tokenClass } = await this.resolveAgenciesCallContext(
+      clientToken,
+      assetId,
+      assetKind
+    );
     const formData = new URLSearchParams({
       business: agencyBusinessId,
       permitted_tasks: JSON.stringify(tasks),
     });
-    const response = await this.graphRequest(`${this.META_GRAPH_URL}/${assetId}/agencies`, clientToken, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: formData.toString(),
-    });
+    const response = await this.graphRequest(
+      `${this.META_GRAPH_URL}/${assetId}/agencies`,
+      accessToken,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: formData.toString(),
+      },
+      tokenClass
+    );
     if (!response.ok) {
       throw new Error(`Failed to share Meta asset with agency partner: ${await response.text()}`);
     }
@@ -218,9 +327,16 @@ class MetaPartnerService {
     clientToken: string,
     assetId: string,
     agencyBusinessId: string,
-    requiredTasks: string[] = []
+    requiredTasks: string[] = [],
+    options?: { assetKind?: MetaAgencyPartnerAssetKind }
   ): Promise<MetaAssignedUserVerificationResult> {
-    return this.getAgencyAccess(clientToken, assetId, agencyBusinessId, requiredTasks);
+    const assetKind = options?.assetKind ?? 'generic';
+    const { accessToken, tokenClass } = await this.resolveAgenciesCallContext(
+      clientToken,
+      assetId,
+      assetKind
+    );
+    return this.getAgencyAccess(accessToken, assetId, agencyBusinessId, requiredTasks, tokenClass);
   }
 
   async grantCatalogAgencyAccess(
@@ -229,7 +345,9 @@ class MetaPartnerService {
     agencyBusinessId: string,
     tasks: string[]
   ): Promise<void> {
-    await this.grantAgencyPartnerAccess(clientToken, catalogId, agencyBusinessId, tasks);
+    await this.grantAgencyPartnerAccess(clientToken, catalogId, agencyBusinessId, tasks, {
+      assetKind: 'catalog',
+    });
   }
 
   async verifyCatalogAgencyAccess(
@@ -238,7 +356,13 @@ class MetaPartnerService {
     agencyBusinessId: string,
     requiredTasks: string[] = []
   ): Promise<boolean> {
-    const result = await this.verifyAgencyPartnerAccess(clientToken, catalogId, agencyBusinessId, requiredTasks);
+    const result = await this.verifyAgencyPartnerAccess(
+      clientToken,
+      catalogId,
+      agencyBusinessId,
+      requiredTasks,
+      { assetKind: 'catalog' }
+    );
     return result.verified;
   }
 
@@ -450,8 +574,65 @@ class MetaPartnerService {
     }
   }
 
-  async revokeAgencyAccess(clientToken: string, assetId: string, agencyBusinessId: string): Promise<void> {
-    await this.revokeAgencyFromAsset(clientToken, assetId, agencyBusinessId, this.getAgencies.bind(this), 'asset');
+  async revokeAgencyAccess(
+    clientToken: string,
+    assetId: string,
+    agencyBusinessId: string,
+    options?: { assetKind?: MetaAgencyPartnerAssetKind }
+  ): Promise<void> {
+    const assetKind = options?.assetKind ?? 'generic';
+    const readAgencies = async (token: string, id: string) =>
+      this.getAgencies(token, id, assetKind === 'page' ? 'selected_page' : 'client_user');
+    if (assetKind === 'page') {
+      const { accessToken, tokenClass } = await this.resolveAgenciesCallContext(
+        clientToken,
+        assetId,
+        'page'
+      );
+      await this.revokeAgencyFromAssetWithToken(
+        accessToken,
+        assetId,
+        agencyBusinessId,
+        readAgencies,
+        'asset',
+        tokenClass
+      );
+      return;
+    }
+    await this.revokeAgencyFromAsset(clientToken, assetId, agencyBusinessId, readAgencies, 'asset');
+  }
+
+  private async revokeAgencyFromAssetWithToken(
+    accessToken: string,
+    assetId: string,
+    agencyBusinessId: string,
+    readAgencies: (token: string, id: string) => Promise<Array<{ id?: string }>>,
+    assetType: 'asset' | 'catalog',
+    tokenClass: MetaGraphTokenClass
+  ): Promise<void> {
+    const existing = await readAgencies(accessToken, assetId);
+    if (!existing.some((agency) => agency.id === agencyBusinessId)) return;
+
+    const formData = new URLSearchParams({ business: agencyBusinessId });
+    const response = await this.graphRequest(
+      `${this.META_GRAPH_URL}/${assetId}/agencies`,
+      accessToken,
+      {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: formData.toString(),
+      },
+      tokenClass
+    );
+    const accessType = assetType === 'catalog' ? 'catalog agency' : 'agency';
+    if (!response.ok) {
+      throw new Error(`Failed to revoke Meta ${accessType} access: ${await response.text()}`);
+    }
+
+    const remaining = await readAgencies(accessToken, assetId);
+    if (remaining.some((agency) => agency.id === agencyBusinessId)) {
+      throw new Error(`Meta still reports agency ${agencyBusinessId} assigned to ${assetType} ${assetId}`);
+    }
   }
 
   async revokeCatalogAgencyAccess(clientToken: string, catalogId: string, agencyBusinessId: string): Promise<void> {

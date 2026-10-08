@@ -382,10 +382,22 @@ export function ReviewDemoScreen({ initialStep = 'pages_show_list' }: ReviewDemo
                     </Button>
                     {stepPayload.pagePartner ? (
                       <div className="mt-3 space-y-1">
-                        <p className="font-semibold">
+                        <p
+                          className="font-semibold"
+                          data-testid={
+                            stepPayload.pagePartner.verified
+                              ? 'review-demo-page-partner-verified'
+                              : undefined
+                          }
+                        >
                           Page {stepPayload.pagePartner.assetId} —{' '}
                           {stepPayload.pagePartner.verified ? 'Verified' : 'Not verified'}
                         </p>
+                        {stepPayload.pagePartner.pendingMessage ? (
+                          <p className="text-sm text-muted-foreground" data-testid="review-demo-page-partner-pending">
+                            {stepPayload.pagePartner.pendingMessage}
+                          </p>
+                        ) : null}
                         <p>Tasks: {stepPayload.pagePartner.permittedTasks.join(', ') || 'None reported'}</p>
                         {stepPayload.pagePartner.graphError ? (
                           <p className="font-mono text-xs" data-testid="review-demo-page-partner-graph-error">

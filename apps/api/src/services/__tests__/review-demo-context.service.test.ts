@@ -6,7 +6,7 @@ vi.mock('@/lib/env.js', () => ({
     META_REVIEW_AD_ACCOUNT_ID: '557538895783894',
     META_REVIEW_PAGE_ID: '1373353139192376',
     META_REVIEW_AGENCY_BM_ID: '3808519629379919',
-    META_REVIEW_SANDBOX_META_USER_ID: '61595281164997',
+    META_REVIEW_SANDBOX_META_USER_ID: '122095319343509372',
   },
 }));
 
@@ -53,7 +53,7 @@ describe('reviewDemoContextService', () => {
     const { reviewDemoContextService } = await import('../review-demo-context.service.js');
     const resolved = await reviewDemoContextService.resolveAssets({
       accessToken: 'token',
-      identity: { id: '61595281164997', name: 'Alex' },
+      identity: { id: '122095319343509372', name: 'Alex' },
     });
 
     expect(resolved.mode).toBe('sandbox');
@@ -91,7 +91,7 @@ describe('reviewDemoContextService', () => {
         META_REVIEW_AD_ACCOUNT_ID: '557538895783894',
         META_REVIEW_PAGE_ID: '1373353139192376',
         META_REVIEW_AGENCY_BM_ID: '3808519629379919',
-        META_REVIEW_SANDBOX_META_USER_ID: '61595281164997',
+        META_REVIEW_SANDBOX_META_USER_ID: '122095319343509372',
       },
     }));
     vi.doMock('@/services/connectors/meta.js', () => ({

@@ -30,12 +30,36 @@ async function main(): Promise<void> {
     return;
   }
 
+  const pageTokenOptions = { assetKind: 'page' as const };
   const tasks = [...REVIEW_DEMO_PAGE_PARTNER_TASKS];
+
+  const pageTokenPhase = await metaPartnerService.resolvePageAccessTokenPhase(accessToken, pageId);
+  console.log(
+    JSON.stringify(
+      {
+        phase: 'page_token',
+        obtained: pageTokenPhase.obtained,
+        ...(pageTokenPhase.source ? { source: pageTokenPhase.source } : {}),
+      },
+      null,
+      2
+    )
+  );
+
+  if (!pageTokenPhase.obtained) {
+    console.error(
+      'Could not obtain a Page access token for agencies calls — grant pages_show_list and ensure the token user manages the Page.'
+    );
+    process.exitCode = 1;
+    return;
+  }
+
   const prior = await metaPartnerService.verifyAgencyPartnerAccess(
     accessToken,
     pageId,
     agencyBusinessId,
-    tasks
+    tasks,
+    pageTokenOptions
   );
   console.log(JSON.stringify({ phase: 'readback_before', prior }, null, 2));
 
@@ -49,7 +73,8 @@ async function main(): Promise<void> {
       accessToken,
       pageId,
       agencyBusinessId,
-      tasks
+      tasks,
+      pageTokenOptions
     );
     console.log(JSON.stringify({ phase: 'post', success: true }));
   } catch (error) {
@@ -61,7 +86,8 @@ async function main(): Promise<void> {
     accessToken,
     pageId,
     agencyBusinessId,
-    tasks
+    tasks,
+    pageTokenOptions
   );
   console.log(JSON.stringify({ phase: 'readback_after', after }, null, 2));
 }
