@@ -17,8 +17,12 @@ vi.mock('next/navigation', () => ({
   usePathname: vi.fn(() => '/invite/token-123'),
 }));
 
+const { useUserAgencyMock } = vi.hoisted(() => ({
+  useUserAgencyMock: vi.fn(() => ({ data: undefined, isFetched: true })),
+}));
+
 vi.mock('@/hooks/use-user-agency', () => ({
-  useUserAgency: () => ({ data: undefined }),
+  useUserAgency: () => useUserAgencyMock(),
 }));
 
 vi.mock('@/lib/analytics/capture-posthog', () => ({
@@ -93,6 +97,7 @@ const stubFetch = (
 describe('Invite Flow Page', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    useUserAgencyMock.mockReturnValue({ data: undefined, isFetched: true });
     searchParamGetMock.mockImplementation(() => null);
     vi.useRealTimers();
     sessionStorage.clear();
@@ -244,6 +249,64 @@ describe('Invite Flow Page', () => {
         access_request_id: 'request-1',
       })
     );
+  });
+
+  it('waits for agency lookup before client_authorization_started sets is_preview', async () => {
+    useUserAgencyMock.mockReturnValue({ data: undefined, isFetched: false });
+
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => ({
+        ok: true,
+        json: async () => ({
+          data: {
+            id: 'request-1',
+            agencyId: 'agency-1',
+            agencyName: 'Demo Agency',
+            clientName: 'Client',
+            clientEmail: 'client@test.com',
+            status: 'pending',
+            uniqueToken: 'token-123',
+            expiresAt: new Date().toISOString(),
+            intakeFields: [],
+            branding: {},
+            platforms: [
+              {
+                platformGroup: 'google',
+                products: [{ product: 'google_ads', accessLevel: 'admin' }],
+              },
+            ],
+            manualInviteTargets: { google: {} },
+            authorizationProgress: { completedPlatforms: [], isComplete: false },
+          },
+          error: null,
+        }),
+      }))
+    );
+
+    const { rerender } = render(<InvitePage />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/confirm which accounts to share below/i)).toBeInTheDocument();
+    });
+
+    expect(capturePosthogEvent).not.toHaveBeenCalledWith(
+      'client_authorization_started',
+      expect.anything()
+    );
+
+    useUserAgencyMock.mockReturnValue({ data: { id: 'agency-1' }, isFetched: true });
+    rerender(<InvitePage />);
+
+    await waitFor(() => {
+      expect(capturePosthogEvent).toHaveBeenCalledWith(
+        'client_authorization_started',
+        expect.objectContaining({
+          access_request_id: 'request-1',
+          is_preview: true,
+        })
+      );
+    });
   });
 
   it('shows the security badge only once in the setup hero', async () => {

@@ -5,6 +5,7 @@
  */
 import type posthog from 'posthog-js';
 import { omitSensitiveTokenProperties } from './omit-sensitive-token-properties';
+import { stripPosthogPiiProperties } from './posthog-pii-property-keys';
 
 type PosthogClient = typeof posthog;
 
@@ -41,12 +42,8 @@ function sanitizeCaptureProperties(
 ): Record<string, unknown> | undefined {
   if (!properties) return undefined;
   let sanitized = omitSensitiveTokenProperties(properties);
-  if (event.startsWith('client_')) {
-    const rest = { ...sanitized };
-    delete rest.client_email;
-    delete rest.client_name;
-    delete rest.agency_name;
-    sanitized = rest;
+  if (event.startsWith('client_') || event.startsWith('invite_')) {
+    sanitized = stripPosthogPiiProperties(sanitized);
   }
   return sanitized;
 }

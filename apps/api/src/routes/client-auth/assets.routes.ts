@@ -45,7 +45,11 @@ import {
   tiktokPartnerVerifySchema,
 } from './schemas.js';
 import { metaOBOService } from '@/services/meta-obo.service';
-import { metaPartnerService } from '@/services/meta-partner.service';
+import {
+  META_PAGE_ACCESS_TOKEN_USER_MESSAGE,
+  MetaPageAccessTokenUnavailableError,
+  metaPartnerService,
+} from '@/services/meta-partner.service';
 import { MetaGrantAttemptSupersededError, metaAssetGrantService } from '@/services/meta-asset-grant.service';
 import { metaAssetsService } from '@/services/meta-assets.service';
 import { MetaConnector } from '@/services/connectors/meta';
@@ -1308,6 +1312,7 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
                   }),
             };
           } catch (error) {
+            const pageTokenUnavailable = error instanceof MetaPageAccessTokenUnavailableError;
             return {
               assetId,
               assetType,
@@ -1316,8 +1321,12 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
               requestedTasks,
               status: 'failed',
               grantedAt,
-              errorCode: 'META_ASSET_GRANT_FAILED',
-              errorMessage: error instanceof Error ? error.message : 'Unknown Meta grant error',
+              errorCode: pageTokenUnavailable ? error.code : 'META_ASSET_GRANT_FAILED',
+              errorMessage: pageTokenUnavailable
+                ? META_PAGE_ACCESS_TOKEN_USER_MESSAGE
+                : error instanceof Error
+                  ? error.message
+                  : 'Unknown Meta grant error',
             };
           }
         };

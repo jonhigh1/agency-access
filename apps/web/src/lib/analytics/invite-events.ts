@@ -15,8 +15,6 @@ type InviteOpenedProps = {
   access_request_id?: string | null;
   status?: string | null;
   surface: InviteSurface;
-  agency_name?: string | null;
-  client_name?: string | null;
   platform_count?: number;
 };
 
