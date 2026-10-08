@@ -287,12 +287,10 @@ export async function registerHandler<K extends JobName>(
   const localConcurrency =
     options?.localConcurrency ?? options?.teamSize ?? options?.teamConcurrency ?? 1;
 
-  const workOptions: WorkOptions = {
-    includeMetadata: true,
-    localConcurrency,
-  };
-
-  await pgBoss.work(name, workOptions, async (jobs: JobWithMetadata<unknown>[]) => {
+  await pgBoss.work(
+    name,
+    { includeMetadata: true, localConcurrency } satisfies WorkOptions,
+    async (jobs: JobWithMetadata<unknown>[]) => {
     // Process each job (pg-boss passes an array)
     for (const job of jobs) {
       try {
@@ -311,7 +309,8 @@ export async function registerHandler<K extends JobName>(
         throw error; // Re-throw to trigger retry
       }
     }
-  });
+    },
+  );
 
   logger.info(`Registered handler for job: ${name}`);
 }
