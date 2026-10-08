@@ -13,6 +13,7 @@ import { authenticate } from '../middleware/auth.js';
 import { quotaEnforcementMiddleware } from '../middleware/quota-enforcement.js';
 import { assertAgencyAccess } from '@/lib/authorization.js';
 import { requirePrincipalAgency } from '@/lib/agency-guard.js';
+import { isAnalyticsInternal } from '@/lib/analytics-internal.js';
 
 export async function agencyRoutes(fastify: FastifyInstance) {
   // Add authentication middleware to all agency routes
@@ -106,6 +107,8 @@ export async function agencyRoutes(fastify: FastifyInstance) {
             {
               ...principal.agency,
               clerkUserId: principalId,
+              // Analytics only: boolean verdict, never the allowlist itself.
+              analyticsInternal: isAnalyticsInternal([principal.agency.id, principalId]),
             },
           ],
           error: null,
@@ -127,7 +130,11 @@ export async function agencyRoutes(fastify: FastifyInstance) {
 
       // Ensure we always return a valid response format
       const response = {
-        data: result.data || [],
+        data: (result.data || []).map((agency: { id?: string; clerkUserId?: string | null }) => ({
+          ...agency,
+          // Analytics only: boolean verdict, never the allowlist itself.
+          analyticsInternal: isAnalyticsInternal([agency.id, agency.clerkUserId, principalId]),
+        })),
         error: null,
       };
 

@@ -2329,6 +2329,8 @@ export interface ClientAccessRequestPayload {
   metaResumeSelections?: ClientMetaResumeSelection[];
   manualInviteTargets: Record<string, ManualInviteTarget>;
   authorizationProgress: ClientAuthorizationProgress;
+  /** Analytics only: request's agency is on the internal allowlist (server env). */
+  analyticsInternal?: boolean;
 }
 
 // Platform selection format for hierarchical platform organization

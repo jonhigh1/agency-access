@@ -136,4 +136,34 @@ describe('capture-posthog', () => {
       ['invite_sent', { access_request_id: 'req-1', channel: 'copy', surface: 'detail' }],
     ]);
   });
+
+  it('adds funnel join props at call time and still strips PII and tokens', async () => {
+    const { capturePosthogEvent } = await import('../capture-posthog');
+    const funnel = await import('../invite-funnel-properties');
+    funnel.setInviteFunnelContext(
+      funnel.buildInviteFunnelProperties({
+        accessRequestId: 'req-1',
+        requestAgencyId: 'agency-a',
+        requestAgencyInternal: false,
+      })
+    );
+    const pending = capturePosthogEvent('client_authorization_completed', {
+      access_request_token: 'tok-abc',
+      client_email: 'client@example.com',
+      total_platforms: 1,
+    });
+    // Context cleared before the lazy import settles must not drop the props.
+    funnel.setInviteFunnelContext(null);
+    resolveImport!({ default: { capture: captureMock } });
+    await pending;
+
+    expect(captureMock).toHaveBeenCalledWith('client_authorization_completed', {
+      access_request_id: 'req-1',
+      agency_id: 'agency-a',
+      clerk_user_id: null,
+      is_preview: false,
+      is_internal: false,
+      total_platforms: 1,
+    });
+  });
 });

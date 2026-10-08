@@ -13,6 +13,8 @@
 
 import { useAuth } from '@clerk/nextjs';
 import { useQuery } from '@tanstack/react-query';
+import { useEffect } from 'react';
+import { setAgencyViewerAnalyticsContext } from '@/lib/analytics/invite-funnel-properties';
 import { authorizedApiFetch } from '@/lib/api/authorized-api-fetch';
 import { DEV_BYPASS_TOKEN, useAuthOrBypass } from '@/lib/dev-auth';
 
@@ -28,6 +30,8 @@ export interface UserAgency {
   email?: string;
   clerkUserId?: string;
   settings?: Record<string, unknown> | null;
+  /** Server-side analytics exclusion verdict (env allowlist); analytics only. */
+  analyticsInternal?: boolean;
 }
 
 export interface UseUserAgencyOptions {
@@ -44,7 +48,7 @@ export function useUserAgency(options: UseUserAgencyOptions = {}) {
   const { userId, orgId } = auth;
   const principalClerkId = options.principalClerkId ?? (orgId || userId);
 
-  return useQuery({
+  const query = useQuery({
     queryKey: userAgencyQueryKey(principalClerkId),
     queryFn: async () => {
       if (!principalClerkId) return null;
@@ -62,6 +66,20 @@ export function useUserAgency(options: UseUserAgencyOptions = {}) {
     staleTime: 30 * 60 * 1000, // agency data rarely changes
     gcTime: 60 * 60 * 1000,
   });
+
+  // Analytics only: tag invite/grant events fired on agency surfaces with who
+  // is acting (agency_id, clerk_user_id, is_internal).
+  const agency = query.data;
+  useEffect(() => {
+    if (!agency?.id) return;
+    setAgencyViewerAnalyticsContext({
+      agencyId: agency.id,
+      clerkUserId: userId ?? null,
+      isInternal: typeof agency.analyticsInternal === 'boolean' ? agency.analyticsInternal : null,
+    });
+  }, [agency?.id, agency?.analyticsInternal, userId]);
+
+  return query;
 }
 
 export interface AgencyPlatformConnection {

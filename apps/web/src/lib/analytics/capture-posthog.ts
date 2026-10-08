@@ -6,6 +6,7 @@
 import type posthog from 'posthog-js';
 import { omitSensitiveTokenProperties } from './omit-sensitive-token-properties';
 import { stripPosthogPiiProperties } from './posthog-pii-property-keys';
+import { withInviteFunnelProperties } from './invite-funnel-properties';
 
 type PosthogClient = typeof posthog;
 
@@ -52,14 +53,20 @@ export async function capturePosthogEvent(
   event: string,
   properties?: Record<string, unknown>
 ): Promise<void> {
+  // Resolve funnel context at call time, not when the lazy import settles.
+  const enriched = withInviteFunnelProperties(event, properties);
   await enqueueCapture((posthog) => {
-    posthog.capture(event, sanitizeCaptureProperties(event, properties));
+    posthog.capture(event, sanitizeCaptureProperties(event, enriched));
   });
 }
 
 export async function capturePosthogEvents(events: PosthogCapture[]): Promise<void> {
+  const enrichedEvents = events.map(({ event, properties }) => ({
+    event,
+    properties: withInviteFunnelProperties(event, properties),
+  }));
   await enqueueCapture((posthog) => {
-    for (const { event, properties } of events) {
+    for (const { event, properties } of enrichedEvents) {
       posthog.capture(event, sanitizeCaptureProperties(event, properties));
     }
   });
