@@ -9,6 +9,7 @@ import * as Sentry from "@sentry/node";
 import type { ErrorEvent, EventHint } from "@sentry/node";
 import { nodeProfilingIntegration } from "@sentry/profiling-node";
 import { redactSentryEvent } from "./lib/sentry-redaction.js";
+import { resolveSentryEnvironment } from "./lib/sentry-environment.js";
 
 // Get DSN from environment
 const dsn = process.env.SENTRY_DSN || "https://336d2646d3970e13ba997b0f41a0c8dd@o4511018218946560.ingest.us.sentry.io/4511018267574272";
@@ -43,8 +44,8 @@ if (!dsn || dsn === "") {
       // Enable logs to be sent to Sentry
       enableLogs: true,
 
-      // Environment
-      environment: process.env.NODE_ENV || "development",
+      // Environment: SENTRY_ENVIRONMENT (e.g. "staging"), else NODE_ENV
+      environment: resolveSentryEnvironment(process.env.SENTRY_ENVIRONMENT, process.env.NODE_ENV),
 
       // Release tracking for error correlation
       release: process.env.APP_VERSION || undefined,
