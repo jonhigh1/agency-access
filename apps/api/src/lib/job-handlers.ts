@@ -304,10 +304,16 @@ export async function startGoogleClientOffboardingHandler(): Promise<void> {
  * Meta Marketing API tier daily cron (#134)
  */
 export async function startMetaMarketingApiTierCronHandler(): Promise<void> {
-  await registerHandler('meta-marketing-api-tier-daily', async () => {
-    const { runMetaMarketingApiTierCronJob } = await import('../jobs/meta-marketing-api-tier-cron.js');
-    await runMetaMarketingApiTierCronJob();
-  }, { teamSize: 1, teamConcurrency: 1 });
+  await registerHandler(
+    'meta-marketing-api-tier-daily',
+    async (job) => {
+      const { runMetaMarketingApiTierCronJob } = await import(
+        '../jobs/meta-marketing-api-tier-cron.js'
+      );
+      await runMetaMarketingApiTierCronJob({ jobId: job.id, abortSignal: job.signal });
+    },
+    { localConcurrency: 1 },
+  );
 }
 
 /**
@@ -353,9 +359,19 @@ export async function scheduleRecurringJobs(): Promise<void> {
   );
 
   // Meta Marketing API tier exercise (Review test ad account, read-only). pg-boss upserts schedule on boot.
-  await scheduleJob('meta-marketing-api-tier-daily', tierCronPattern, {
-    type: 'run-daily-tier-exercise',
-  });
+  const { META_MARKETING_API_TIER_CRON_JOB_EXPIRE_SECONDS } = await import(
+    '@agency-platform/shared'
+  );
+
+  await scheduleJob(
+    'meta-marketing-api-tier-daily',
+    tierCronPattern,
+    { type: 'run-daily-tier-exercise' },
+    {
+      expireInSeconds: META_MARKETING_API_TIER_CRON_JOB_EXPIRE_SECONDS,
+      retryLimit: 0,
+    },
+  );
 
   logger.info('Recurring jobs scheduled');
 }

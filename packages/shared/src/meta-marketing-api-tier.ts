@@ -10,6 +10,15 @@ export const META_MARKETING_API_TIER_CRON_SCHEDULE_DAILY = '0 6 * * *';
 /** pg-boss cron when burst mode is on (~288 Graph calls/day at 2 calls/run). */
 export const META_MARKETING_API_TIER_CRON_SCHEDULE_BURST = '*/10 * * * *';
 
+/** Max wait per Graph GET in the tier cron (AbortSignal.timeout). */
+export const META_MARKETING_API_TIER_CRON_GRAPH_TIMEOUT_MS = 15_000;
+
+/**
+ * pg-boss active-job expiry for tier cron runs — must stay below the 10-minute burst interval
+ * so a stuck handler cannot block the next scheduled tick.
+ */
+export const META_MARKETING_API_TIER_CRON_JOB_EXPIRE_SECONDS = 9 * 60;
+
 export function resolveMetaMarketingApiTierCronSchedule(burstEnabled: boolean): string {
   return burstEnabled
     ? META_MARKETING_API_TIER_CRON_SCHEDULE_BURST

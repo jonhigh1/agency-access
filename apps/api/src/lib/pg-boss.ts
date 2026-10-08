@@ -11,7 +11,15 @@
  * - Idempotency via singletonKey
  */
 
-import { PgBoss, type SendOptions, type Job, type JobWithMetadata, type QueueResult } from 'pg-boss';
+import {
+  PgBoss,
+  type QueueOptions,
+  type SendOptions,
+  type Job,
+  type JobWithMetadata,
+  type QueueResult,
+  type WorkOptions,
+} from 'pg-boss';
 import type { AccessLevel } from '@agency-platform/shared';
 import { env } from './env.js';
 import { logger } from './logger.js';
@@ -132,10 +140,13 @@ export async function getPgBoss(): Promise<PgBoss> {
  * Create a queue if it doesn't exist
  * pg-boss requires queues to be created before work() or schedule() can be called
  */
-export async function ensureQueue<K extends JobName>(name: K): Promise<void> {
+export async function ensureQueue<K extends JobName>(
+  name: K,
+  options?: QueueOptions,
+): Promise<void> {
   const pgBoss = await getPgBoss();
   try {
-    await pgBoss.createQueue(name);
+    await pgBoss.createQueue(name, options ?? {});
     logger.debug(`Queue created: ${name}`);
   } catch (error) {
     // Queue may already exist, which is fine
@@ -165,7 +176,20 @@ export async function ensureAllQueues(): Promise<void> {
     'meta-marketing-api-tier-daily',
   ];
 
-  await Promise.all(queueNames.map(name => ensureQueue(name)));
+  const { META_MARKETING_API_TIER_CRON_JOB_EXPIRE_SECONDS } = await import(
+    '@agency-platform/shared'
+  );
+
+  await Promise.all(
+    queueNames.map((name) =>
+      name === 'meta-marketing-api-tier-daily'
+        ? ensureQueue(name, {
+            expireInSeconds: META_MARKETING_API_TIER_CRON_JOB_EXPIRE_SECONDS,
+            retryLimit: 0,
+          })
+        : ensureQueue(name),
+    ),
+  );
   logger.info('All queues ensured');
 }
 
@@ -220,8 +244,8 @@ export async function scheduleJob<K extends JobName>(
 
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      await pgBoss.schedule(name, cronPattern, data, { tz: 'UTC' });
-      logger.info(`Scheduled recurring job: ${name}`, { cronPattern, tz: 'UTC' });
+      await pgBoss.schedule(name, cronPattern, data, { tz: 'UTC', ...options });
+      logger.info(`Scheduled recurring job: ${name}`, { cronPattern, tz: 'UTC', ...options });
       return;
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
@@ -250,12 +274,23 @@ export async function scheduleJob<K extends JobName>(
  */
 export async function registerHandler<K extends JobName>(
   name: K,
-  handler: (job: { data: JobRegistry[K]; id: string; retryCount?: number }) => Promise<void>,
-  options?: { teamSize?: number; teamConcurrency?: number }
+  handler: (job: {
+    data: JobRegistry[K];
+    id: string;
+    retryCount?: number;
+    signal: AbortSignal;
+  }) => Promise<void>,
+  options?: { localConcurrency?: number; teamSize?: number; teamConcurrency?: number },
 ): Promise<void> {
   const pgBoss = await getPgBoss();
 
-  await pgBoss.work(name, { includeMetadata: true }, async (jobs: JobWithMetadata<unknown>[]) => {
+  const localConcurrency =
+    options?.localConcurrency ?? options?.teamSize ?? options?.teamConcurrency ?? 1;
+
+  await pgBoss.work(
+    name,
+    { includeMetadata: true, localConcurrency } satisfies WorkOptions,
+    async (jobs: JobWithMetadata<unknown>[]) => {
     // Process each job (pg-boss passes an array)
     for (const job of jobs) {
       try {
@@ -263,6 +298,7 @@ export async function registerHandler<K extends JobName>(
           data: job.data as JobRegistry[K],
           id: job.id,
           retryCount: job.retryCount,
+          signal: job.signal,
         });
         logger.debug(`Job completed: ${name}`, { jobId: job.id });
       } catch (error) {
@@ -273,7 +309,8 @@ export async function registerHandler<K extends JobName>(
         throw error; // Re-throw to trigger retry
       }
     }
-  });
+    },
+  );
 
   logger.info(`Registered handler for job: ${name}`);
 }

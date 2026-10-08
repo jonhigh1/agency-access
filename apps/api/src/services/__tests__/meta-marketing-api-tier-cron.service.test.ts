@@ -27,6 +27,15 @@ vi.mock('@/lib/meta-graph-instrumentation.js', () => ({
   metaGraphFetch: vi.fn(),
 }));
 
+vi.mock('@/lib/logger.js', () => ({
+  logger: {
+    info: vi.fn(),
+    warn: vi.fn(),
+    error: vi.fn(),
+    debug: vi.fn(),
+  },
+}));
+
 vi.mock('@/services/audit.service.js', () => ({
   auditService: {
     createAuditLog: vi.fn(),
@@ -48,6 +57,8 @@ vi.mock('@sentry/node', () => ({
 
 import { readMetaTierCronAccessToken } from '@/services/meta-tier-cron-token.service.js';
 import { metaGraphFetch } from '@/lib/meta-graph-instrumentation.js';
+import { logger } from '@/lib/logger.js';
+import { META_MARKETING_API_TIER_CRON_GRAPH_TIMEOUT_MS } from '@agency-platform/shared';
 import { auditService } from '@/services/audit.service.js';
 import { prisma } from '@/lib/prisma.js';
 import * as Sentry from '@sentry/node';
@@ -193,6 +204,32 @@ describe('runMetaMarketingApiTierDailyCron', () => {
     expect(result.skipped).toBe(true);
     expect(result.tierDayCount).toBe(5);
     expect(metaGraphFetch).not.toHaveBeenCalled();
+  });
+
+  it('passes a bounded AbortSignal to metaGraphFetch', async () => {
+    await runMetaMarketingApiTierDailyCron();
+
+    expect(metaGraphFetch).toHaveBeenCalled();
+    const init = vi.mocked(metaGraphFetch).mock.calls[0][1];
+    expect(init?.signal).toBeDefined();
+    expect(META_MARKETING_API_TIER_CRON_GRAPH_TIMEOUT_MS).toBe(15_000);
+  });
+
+  it('records timeout as failed call without throwing', async () => {
+    vi.mocked(metaGraphFetch).mockRejectedValue(
+      Object.assign(new Error('The operation was aborted'), { name: 'TimeoutError' }),
+    );
+
+    const result = await runMetaMarketingApiTierDailyCron();
+
+    expect(result.success).toBe(false);
+    expect(result.calls).toHaveLength(1);
+    expect(result.calls[0]?.success).toBe(false);
+    expect(result.calls[0]?.httpStatus).toBe(408);
+    expect(logger.warn).toHaveBeenCalledWith(
+      'meta_marketing_api_tier_graph_call_failed',
+      expect.objectContaining({ timedOut: true }),
+    );
   });
 
   it('calls Graph again same UTC day when burst mode is on', async () => {
