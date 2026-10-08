@@ -30,10 +30,13 @@ export interface MetaPageAccessTokenPhaseResult {
   source?: MetaPageAccessTokenSource;
 }
 
+export const META_PAGE_ACCESS_TOKEN_USER_MESSAGE =
+  "Couldn't get a Page token for this Page — reconnect Meta with Page access or assign people in Business Manager";
+
 export class MetaPageAccessTokenUnavailableError extends Error {
   readonly code = 'META_PAGE_ACCESS_TOKEN_UNAVAILABLE';
 
-  constructor(message: string) {
+  constructor(message: string = META_PAGE_ACCESS_TOKEN_USER_MESSAGE) {
     super(message);
     this.name = 'MetaPageAccessTokenUnavailableError';
   }
@@ -274,9 +277,7 @@ class MetaPartnerService {
       }
     }
 
-    throw new MetaPageAccessTokenUnavailableError(
-      `Could not obtain a Page access token for Page ${pageId}. The user token cannot call /${pageId}/agencies — grant pages_show_list and ensure this user manages the Page.`
-    );
+    throw new MetaPageAccessTokenUnavailableError();
   }
 
   async resolvePageAccessTokenPhase(

@@ -360,7 +360,6 @@ export default function DashboardPage() {
       const trackDashboardView = async () => {
         await capturePosthogEvent('dashboard_viewed', {
           agency_id: agency.id,
-          agency_name: agency.name,
           total_requests: stats.totalRequests,
           pending_requests: stats.pendingRequests,
           active_connections: stats.activeConnections,

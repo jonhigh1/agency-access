@@ -152,6 +152,7 @@ export default function ClientAuthorizationPage({
   const intakeHydratedForTokenRef = useRef<string | null>(null);
   const completionErrorRef = useRef<HTMLDivElement | null>(null);
   const startedTrackedRef = useRef(false);
+  const authorizationStartedTrackedRef = useRef(false);
   const platformStageRef = useRef<HTMLDivElement | null>(null);
 
   const router = useRouter();
@@ -159,7 +160,11 @@ export default function ClientAuthorizationPage({
   const storageKey = `${SESSION_STORAGE_PREFIX}${token}`;
   const clerkAuth = useAuth();
   const auth = useAuthOrBypass(clerkAuth);
-  const { data: viewerAgency } = useUserAgency();
+  const { userId, orgId, isLoaded: authIsLoaded } = auth;
+  const viewerAgencyPrincipalId = orgId || userId;
+  const { data: viewerAgency, isFetched: viewerAgencyFetched } = useUserAgency();
+  const agencyPreviewLookupSettled =
+    authIsLoaded !== false && (!viewerAgencyPrincipalId || viewerAgencyFetched);
 
   const {
     data: loadedPayload,
@@ -327,46 +332,14 @@ export default function ClientAuthorizationPage({
     }
 
     if (!urlStep && !startedTrackedRef.current) {
-      const startedSessionKey = `${CLIENT_AUTHORIZATION_STARTED_PREFIX}${token}`;
-      let shouldTrackStarted = true;
-      try {
-        if (sessionStorage.getItem(startedSessionKey)) {
-          shouldTrackStarted = false;
-        } else {
-          sessionStorage.setItem(startedSessionKey, '1');
-        }
-      } catch {
-        // sessionStorage unavailable — fall back to the ref guard only.
-      }
-
       startedTrackedRef.current = true;
-      const startedPlatforms = loadedPayload.platforms?.map((p) => p.platformGroup) || [];
       trackInviteOpenedOncePerSession({
         access_request_token: token,
+        access_request_id: loadedPayload.id,
         status: loadedPayload.authorizationProgress?.isComplete ? 'completed' : 'pending',
         surface: 'invite_page',
-        agency_name: loadedPayload.agencyName,
-        client_name: loadedPayload.clientName,
         platform_count: loadedPayload.platforms?.length || 0,
       });
-      if (shouldTrackStarted) {
-        const isPreview = Boolean(
-          viewerAgency?.id && viewerAgency.id === loadedPayload.agencyId
-        );
-        void capturePosthogEvent('client_authorization_started', {
-          access_request_id: loadedPayload.id,
-          platform: startedPlatforms[0] ?? null,
-          platform_count: loadedPayload.platforms?.length || 0,
-          platforms: startedPlatforms,
-          has_intake_fields: loadedPayload.intakeFields?.length > 0,
-          has_custom_branding:
-            !!loadedPayload.branding?.logoUrl ||
-            !!loadedPayload.branding?.primaryColor &&
-              loadedPayload.branding.primaryColor.toUpperCase() !== '#FF6B35',
-          is_preview: isPreview,
-          is_internal: auth.isDevelopmentBypass,
-        });
-      }
     }
 
     // A finalization or confirmed completion owns the phase from here on; a
@@ -458,8 +431,51 @@ export default function ClientAuthorizationPage({
     urlPlatform,
     urlStep,
     urlView,
-    viewerAgency?.id,
+  ]);
+
+  useEffect(() => {
+    if (!loadedPayload || urlStep || authorizationStartedTrackedRef.current) return;
+    if (!agencyPreviewLookupSettled) return;
+
+    const startedSessionKey = `${CLIENT_AUTHORIZATION_STARTED_PREFIX}${token}`;
+    let shouldTrackStarted = true;
+    try {
+      if (sessionStorage.getItem(startedSessionKey)) {
+        shouldTrackStarted = false;
+      } else {
+        sessionStorage.setItem(startedSessionKey, '1');
+      }
+    } catch {
+      // sessionStorage unavailable — still attempt once per mount via ref.
+    }
+
+    authorizationStartedTrackedRef.current = true;
+    if (!shouldTrackStarted) return;
+
+    const startedPlatforms = loadedPayload.platforms?.map((p) => p.platformGroup) || [];
+    const isPreview = Boolean(
+      viewerAgency?.id && viewerAgency.id === loadedPayload.agencyId
+    );
+    void capturePosthogEvent('client_authorization_started', {
+      access_request_id: loadedPayload.id,
+      platform: startedPlatforms[0] ?? null,
+      platform_count: loadedPayload.platforms?.length || 0,
+      platforms: startedPlatforms,
+      has_intake_fields: loadedPayload.intakeFields?.length > 0,
+      has_custom_branding:
+        !!loadedPayload.branding?.logoUrl ||
+        !!loadedPayload.branding?.primaryColor &&
+          loadedPayload.branding.primaryColor.toUpperCase() !== '#FF6B35',
+      is_preview: isPreview,
+      is_internal: auth.isDevelopmentBypass,
+    });
+  }, [
+    agencyPreviewLookupSettled,
     auth.isDevelopmentBypass,
+    loadedPayload,
+    token,
+    urlStep,
+    viewerAgency?.id,
   ]);
 
   useEffect(() => {

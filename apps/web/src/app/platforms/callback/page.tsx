@@ -145,7 +145,6 @@ function CallbackPageContent() {
       connection_id: connectionId,
       platform: 'meta',
       business_id: business.id,
-      business_name: business.name,
     });
     completeMetaOauth({ businessId: business.id, businessName: business.name });
   };

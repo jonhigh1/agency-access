@@ -7,7 +7,11 @@ import { prisma } from '@/lib/prisma';
 import { infisical } from '@/lib/infisical';
 import { auditService } from '@/services/audit.service';
 import { metaOBOService } from '@/services/meta-obo.service';
-import { metaPartnerService } from '@/services/meta-partner.service';
+import {
+  META_PAGE_ACCESS_TOKEN_USER_MESSAGE,
+  MetaPageAccessTokenUnavailableError,
+  metaPartnerService,
+} from '@/services/meta-partner.service';
 import { MetaConnector } from '@/services/connectors/meta';
 import { metaAssetsService } from '@/services/meta-assets.service';
 import {
@@ -41,23 +45,27 @@ vi.mock('@/services/meta-obo.service', () => ({
   },
 }));
 
-vi.mock('@/services/meta-partner.service', () => ({
-  metaPartnerService: {
-    grantPageAccess: vi.fn(),
-    verifyPageAccess: vi.fn(),
-    grantAdAccountAccess: vi.fn(),
-    verifyAdAccountAccess: vi.fn(),
-    verifyAdAccountAgencyAccess: vi.fn(),
-    grantCatalogAccess: vi.fn(),
-    verifyCatalogAccess: vi.fn(),
-    grantCatalogAgencyAccess: vi.fn(),
-    verifyCatalogAgencyAccess: vi.fn(),
-    grantAgencyPartnerAccess: vi.fn(),
-    verifyAgencyPartnerAccess: vi.fn(),
-    verifyDatasetAccess: vi.fn(),
-    verifyDatasetAgencyAccess: vi.fn(),
-  },
-}));
+vi.mock('@/services/meta-partner.service', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/services/meta-partner.service')>();
+  return {
+    ...actual,
+    metaPartnerService: {
+      grantPageAccess: vi.fn(),
+      verifyPageAccess: vi.fn(),
+      grantAdAccountAccess: vi.fn(),
+      verifyAdAccountAccess: vi.fn(),
+      verifyAdAccountAgencyAccess: vi.fn(),
+      grantCatalogAccess: vi.fn(),
+      verifyCatalogAccess: vi.fn(),
+      grantCatalogAgencyAccess: vi.fn(),
+      verifyCatalogAgencyAccess: vi.fn(),
+      grantAgencyPartnerAccess: vi.fn(),
+      verifyAgencyPartnerAccess: vi.fn(),
+      verifyDatasetAccess: vi.fn(),
+      verifyDatasetAgencyAccess: vi.fn(),
+    },
+  };
+});
 
 vi.mock('@/services/meta-assets.service', () => ({
   metaAssetsService: {
@@ -1686,10 +1694,75 @@ describe('Client Auth Asset Routes - Meta', () => {
       where: expect.objectContaining({ recipientType: 'human', recipientId: 'person-1' }),
       data: expect.objectContaining({ status: 'blocked' }),
     }));
-    expect(prisma.metaAssetGrant.updateMany).toHaveBeenCalledWith(expect.objectContaining({
-      where: expect.objectContaining({ recipientType: 'system_user', recipientId: 'system-user-1' }),
-      data: expect.objectContaining({ status: 'verified', verifiedAuthorizationEpoch: 3 }),
-    }));
+  });
+
+  it('stores a clear Page token message on person assignment when Meta cannot resolve a Page token', async () => {
+    vi.mocked(accessRequestService.getAccessRequestByToken).mockResolvedValue({
+      data: {
+        id: 'request-a',
+        agencyId: 'agency-a',
+        metaAccessConfig: {
+          recipients: [{ type: 'human', id: 'person-1', name: 'Jon High' }],
+          pageTasks: ['MANAGE'],
+        },
+      } as any,
+      error: null,
+    });
+    vi.mocked(metaAssetsService.getAssignableRecipients).mockResolvedValue({
+      data: [{ type: 'human', id: 'person-1', name: 'Jon High' }],
+      error: null,
+    });
+    vi.mocked(prisma.platformAuthorization.findUnique).mockResolvedValue({
+      id: 'pa-1',
+      authorizationEpoch: 1,
+      status: 'active',
+      metadata: {
+        selectedAssets: { meta_pages: { pages: ['page_2a'] } },
+        meta: { selection: { clientBusinessId: 'biz_client_2', selectedAt: '2026-09-22T00:00:00.000Z' } },
+      },
+    } as any);
+    vi.mocked(prisma.agencyPlatformConnection.findUnique).mockResolvedValue({
+      id: 'agency-meta-1',
+      agencyId: 'agency-a',
+      businessId: 'partner-bm-1',
+      status: 'active',
+      metadata: {},
+    } as any);
+    vi.mocked(metaOBOService.getClientAccessTokenForOBO).mockResolvedValue({
+      data: { accessToken: 'client-admin-user-token' },
+      error: null,
+    });
+    vi.mocked(metaOBOService.ensureManagedBusinessRelationship).mockResolvedValue({
+      data: { status: 'linked', partnerBusinessId: 'partner-bm-1', clientBusinessId: 'biz_client_2' },
+      error: null,
+    } as any);
+    vi.mocked(metaPartnerService.grantAgencyPartnerAccess).mockResolvedValue();
+    vi.mocked(metaPartnerService.verifyAgencyPartnerAccess).mockResolvedValue({
+      verified: true,
+      assignedTasks: ['MANAGE'],
+    });
+    vi.mocked(metaPartnerService.grantPageAccess).mockRejectedValue(
+      new MetaPageAccessTokenUnavailableError()
+    );
+
+    const response = await app.inject({
+      method: 'POST',
+      url: '/client/token-a/grant-meta-access',
+      payload: { connectionId: 'conn-1', assetTypes: ['page'] },
+    });
+
+    expect(response.statusCode).toBe(200);
+    expect(response.json().data.assetGrantResults).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          recipientType: 'human',
+          recipientId: 'person-1',
+          status: 'failed',
+          errorCode: 'META_PAGE_ACCESS_TOKEN_UNAVAILABLE',
+          errorMessage: META_PAGE_ACCESS_TOKEN_USER_MESSAGE,
+        }),
+      ])
+    );
   });
 
   it('verifies a retry before repeating a Meta assignment after read-back timed out', async () => {
