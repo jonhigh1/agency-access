@@ -2249,6 +2249,8 @@ export async function updateAccessRequest(
 
     const validated = updateAccessRequestSchema.parse(input);
     const updateData: Record<string, unknown> = { ...validated };
+    const inputMetaAccessConfig = validated.metaAccessConfig;
+    delete updateData.metaAccessConfig;
 
     const rawPlatforms = validated.platforms ?? existing.platforms;
     const platforms = Array.isArray(rawPlatforms) ? rawPlatforms as Array<Record<string, any>> : [];
@@ -2259,54 +2261,48 @@ export async function updateAccessRequest(
         : typeof platform.platform === 'string' ? [platform.platform] : []
     );
     const requestsMeta = products.some((product) => normalizePlatformGroup(product) === 'meta');
-    const metaConfig = MetaAccessConfigSchema.safeParse(validated.metaAccessConfig ?? existing.metaAccessConfig);
-    const metaConfigData = metaConfig.success ? metaConfig.data : undefined;
 
-    if (requestsMeta && !metaConfigData) {
-      return {
-        data: null,
-        error: {
-          code: 'META_ASSIGNEE_SELECTION_REQUIRED',
-          message: 'Choose the Meta people and optional system users for this request',
-        },
-      };
-    }
-    if (requestsMeta && !metaConfigData?.recipients.some((recipient) => recipient.type === 'human')) {
-      return {
-        data: null,
-        error: {
-          code: 'META_HUMAN_ASSIGNEE_REQUIRED',
-          message: 'Choose at least one Meta person who will use the client assets',
-        },
-      };
-    }
-    if (validated.metaAccessConfig && metaConfigData) {
-      const assignees = await metaAssetsService.getAssignableRecipients(existing.agencyId, request);
-      if (assignees.error || !assignees.data) {
-        return { data: null, error: assignees.error || {
-          code: 'META_ASSIGNEE_DISCOVERY_ERROR',
-          message: 'Failed to validate Meta assignees',
-        } };
-      }
-      const allowed = new Set(assignees.data.map((recipient) => `${recipient.type}:${recipient.id}`));
-      if (metaConfigData.recipients.some((recipient) => !allowed.has(`${recipient.type}:${recipient.id}`))) {
+    if (requestsMeta) {
+      const agency = await prisma.agency.findUnique({
+        where: { id: existing.agencyId },
+        select: { email: true },
+      });
+
+      if (!agency) {
         return {
           data: null,
           error: {
-            code: 'INVALID_META_ASSIGNEE',
-            message: 'A selected Meta assignee does not belong to the agency Business Portfolio',
+            code: 'AGENCY_NOT_FOUND',
+            message: 'Agency not found',
           },
         };
       }
-    }
-    if (validated.metaAccessConfig && requestsMeta && metaConfigData) {
-      const defaults = getDefaultMetaAccessTasks(products);
-      updateData.metaAccessConfig = {
-        ...metaConfigData,
-        pageTasks: metaConfigData.pageTasks.length ? metaConfigData.pageTasks : defaults.pageTasks,
-        adAccountTasks: metaConfigData.adAccountTasks.length ? metaConfigData.adAccountTasks : defaults.adAccountTasks,
-        datasetTasks: metaConfigData.datasetTasks?.length ? metaConfigData.datasetTasks : defaults.datasetTasks,
-      };
+
+      const existingMetaConfig = MetaAccessConfigSchema.safeParse(existing.metaAccessConfig);
+      const metaConfigForResolve =
+        inputMetaAccessConfig !== undefined
+          ? inputMetaAccessConfig
+          : existingMetaConfig.success
+            ? existingMetaConfig.data
+            : undefined;
+
+      const resolvedMeta = await resolveMetaAccessConfigForRequest({
+        agencyId: existing.agencyId,
+        agencyEmail: agency.email,
+        platforms: products.map((platform) => ({ platform })),
+        metaAccessConfig: metaConfigForResolve,
+        request,
+      });
+
+      if (resolvedMeta.error) {
+        return { data: null, error: resolvedMeta.error };
+      }
+
+      if (resolvedMeta.metaAccessConfig) {
+        updateData.metaAccessConfig = resolvedMeta.metaAccessConfig;
+      }
+    } else if (inputMetaAccessConfig !== undefined) {
+      updateData.metaAccessConfig = inputMetaAccessConfig;
     }
     if (validated.status === 'completed') {
       updateData.authorizedAt = new Date();

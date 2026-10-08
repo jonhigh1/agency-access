@@ -2656,6 +2656,88 @@ describe('AccessRequestService', () => {
       expect(prisma.accessRequest.update).not.toHaveBeenCalled();
     });
 
+    it('defaults Meta human recipient on update when no person is supplied', async () => {
+      vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue({
+        id: 'request-1',
+        status: 'pending',
+        agencyId: 'agency-1',
+        platforms: [{ platform: 'meta_ads', accessLevel: 'manage' }],
+        metaAccessConfig: null,
+      } as any);
+      vi.mocked(prisma.agency.findUnique).mockResolvedValue({
+        id: 'agency-1',
+        email: 'owner@agency.test',
+      } as any);
+      vi.mocked(metaAssetsService.getAssignableRecipients).mockResolvedValue({
+        data: [
+          { type: 'human', id: 'person-1', name: 'Agency Owner', email: 'owner@agency.test' },
+          { type: 'system_user', id: 'system-user-1', name: 'Automation' },
+        ],
+        error: null,
+      });
+      vi.mocked(prisma.accessRequest.update).mockResolvedValue({ id: 'request-1', status: 'pending' } as any);
+
+      const result = await accessRequestService.updateAccessRequest('request-1', {
+        metaAccessConfig: {
+          recipients: [],
+          pageTasks: [],
+          adAccountTasks: [],
+          catalogTasks: ['MANAGE'],
+        },
+      } as any);
+
+      expect(result.error).toBeNull();
+      expect(prisma.accessRequest.update).toHaveBeenCalledWith({
+        where: { id: 'request-1' },
+        data: expect.objectContaining({
+          metaAccessConfig: expect.objectContaining({
+            recipients: [{ type: 'human', id: 'person-1', name: 'Agency Owner' }],
+          }),
+        }),
+      });
+    });
+
+    it('keeps an explicit Meta person on update when one is supplied', async () => {
+      vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue({
+        id: 'request-1',
+        status: 'pending',
+        agencyId: 'agency-1',
+        platforms: [{ platform: 'meta_ads', accessLevel: 'manage' }],
+        metaAccessConfig: null,
+      } as any);
+      vi.mocked(prisma.agency.findUnique).mockResolvedValue({
+        id: 'agency-1',
+        email: 'owner@agency.test',
+      } as any);
+      vi.mocked(metaAssetsService.getAssignableRecipients).mockResolvedValue({
+        data: [
+          { type: 'human', id: 'person-1', name: 'Agency Owner', email: 'owner@agency.test' },
+          { type: 'human', id: 'person-2', name: 'Teammate' },
+        ],
+        error: null,
+      });
+      vi.mocked(prisma.accessRequest.update).mockResolvedValue({ id: 'request-1', status: 'pending' } as any);
+
+      const result = await accessRequestService.updateAccessRequest('request-1', {
+        metaAccessConfig: {
+          recipients: [{ type: 'human', id: 'person-2', name: 'Teammate' }],
+          pageTasks: ['MANAGE'],
+          adAccountTasks: ['ANALYZE'],
+          catalogTasks: ['MANAGE'],
+        },
+      } as any);
+
+      expect(result.error).toBeNull();
+      expect(prisma.accessRequest.update).toHaveBeenCalledWith({
+        where: { id: 'request-1' },
+        data: expect.objectContaining({
+          metaAccessConfig: expect.objectContaining({
+            recipients: [{ type: 'human', id: 'person-2', name: 'Teammate' }],
+          }),
+        }),
+      });
+    });
+
     it('should reject updates for non-editable request statuses', async () => {
       vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue({
         id: 'request-1',
