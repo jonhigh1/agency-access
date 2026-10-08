@@ -22,10 +22,15 @@ describe('MetaPartnerService', () => {
   });
 
   it('grants page access with the documented user plus tasks mutation shape', async () => {
-    vi.mocked(fetch).mockResolvedValue({
-      ok: true,
-      json: async () => ({ success: true }),
-    } as Response);
+    vi.mocked(fetch)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ access_token: 'page-token-for-assigned-users' }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ success: true }),
+      } as Response);
 
     await metaPartnerService.grantPageAccess(
       'client-system-user-token',
@@ -42,7 +47,8 @@ describe('MetaPartnerService', () => {
       })
     );
 
-    const request = vi.mocked(fetch).mock.calls[0]?.[1] as RequestInit;
+    const request = vi.mocked(fetch).mock.calls[1]?.[1] as RequestInit;
+    expect(new Headers(request.headers).get('Authorization')).toBe('Bearer page-token-for-assigned-users');
     const params = new URLSearchParams(request.body as string);
 
     expect(params.get('user')).toBe('system-user-42');
@@ -51,7 +57,6 @@ describe('MetaPartnerService', () => {
     );
     expect(params.get('business')).toBeNull();
     expect(params.get('access_token')).toBeNull();
-    expect(new Headers(request.headers).get('Authorization')).toBe('Bearer client-system-user-token');
     expect(request.signal).toBeInstanceOf(AbortSignal);
   });
 
@@ -88,17 +93,22 @@ describe('MetaPartnerService', () => {
   });
 
   it('verifies page access by checking the assigned users list for the expected system user and tasks', async () => {
-    vi.mocked(fetch).mockResolvedValue({
-      ok: true,
-      json: async () => ({
-        data: [
-          {
-            id: 'system-user-42',
-            tasks: ['MANAGE', 'CREATE_CONTENT', 'MODERATE', 'ADVERTISE'],
-          },
-        ],
-      }),
-    } as Response);
+    vi.mocked(fetch)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ access_token: 'page-token' }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: [
+            {
+              id: 'system-user-42',
+              tasks: ['MANAGE', 'CREATE_CONTENT', 'MODERATE', 'ADVERTISE'],
+            },
+          ],
+        }),
+      } as Response);
 
     const result = await metaPartnerService.verifyPageAccess(
       'client-system-user-token',
@@ -124,6 +134,10 @@ describe('MetaPartnerService', () => {
     vi.mocked(fetch)
       .mockResolvedValueOnce({
         ok: true,
+        json: async () => ({ access_token: 'page-token' }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
         json: async () => ({
           data: [{ id: 'other-user', tasks: ['MANAGE'] }],
           paging: { next: 'https://graph.facebook.com/v25.0/page_123/assigned_users?after=cursor-2' },
@@ -138,42 +152,60 @@ describe('MetaPartnerService', () => {
       'client-token', 'page_123', 'system-user-42', ['MANAGE', 'ADVERTISE']
     )).resolves.toEqual({ verified: true, assignedTasks: ['MANAGE', 'ADVERTISE'] });
     expect(fetch).toHaveBeenNthCalledWith(
-      2,
+      3,
       'https://graph.facebook.com/v25.0/page_123/assigned_users?after=cursor-2',
       expect.objectContaining({ method: 'GET', signal: expect.any(AbortSignal) }),
     );
   });
 
   it('does not send the access token to a non-Meta pagination host', async () => {
-    vi.mocked(fetch).mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ data: [], paging: { next: 'https://attacker.example/collect' } }),
-    } as Response);
+    vi.mocked(fetch)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ access_token: 'page-token' }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ data: [], paging: { next: 'https://attacker.example/collect' } }),
+      } as Response);
 
     await expect(metaPartnerService.verifyPageAccess(
       'client-token', 'page_123', 'system-user-42', ['MANAGE']
     )).rejects.toThrow('Meta returned an invalid pagination URL');
-    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(fetch).toHaveBeenCalledTimes(2);
   });
 
   it('stops when Meta repeats an assigned-user pagination URL', async () => {
-    vi.mocked(fetch).mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({
-        data: [],
-        paging: { next: 'https://graph.facebook.com/v25.0/page_123/assigned_users' },
-      }),
-    } as Response);
+    vi.mocked(fetch)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ access_token: 'page-token' }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: [],
+          paging: { next: 'https://graph.facebook.com/v25.0/page_123/assigned_users' },
+        }),
+      } as Response);
 
     await expect(metaPartnerService.verifyPageAccess(
       'client-token', 'page_123', 'system-user-42', ['MANAGE']
     )).rejects.toThrow('Meta returned a repeated pagination URL');
-    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(fetch).toHaveBeenCalledTimes(2);
   });
 
   it('assigns and verifies Leads Access as a separate Page task', async () => {
     vi.mocked(fetch)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ access_token: 'page-token' }),
+      } as Response)
       .mockResolvedValueOnce({ ok: true, json: async () => ({ success: true }) } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ access_token: 'page-token' }),
+      } as Response)
       .mockResolvedValueOnce({
         ok: true,
         json: async () => ({ data: [{ id: 'person-42', tasks: ['MANAGE_LEADS'] }] }),
@@ -184,25 +216,64 @@ describe('MetaPartnerService', () => {
       'client-token', 'page_123', 'person-42', ['MANAGE_LEADS']
     );
 
-    const mutation = vi.mocked(fetch).mock.calls[0]?.[1] as RequestInit;
+    const mutation = vi.mocked(fetch).mock.calls[1]?.[1] as RequestInit;
     expect(new URLSearchParams(mutation.body as string).get('tasks')).toBe(JSON.stringify(['MANAGE_LEADS']));
-    expect(vi.mocked(fetch).mock.calls[1]?.[0]).toBe(
+    expect(vi.mocked(fetch).mock.calls[3]?.[0]).toBe(
       'https://graph.facebook.com/v25.0/page_123/assigned_users'
     );
     expect(result).toEqual({ verified: true, assignedTasks: ['MANAGE_LEADS'] });
   });
 
   it('keeps Leads Access unverified when Meta read-back omits MANAGE_LEADS', async () => {
-    vi.mocked(fetch).mockResolvedValue({
-      ok: true,
-      json: async () => ({ data: [{ id: 'person-42', tasks: ['ADVERTISE'] }] }),
-    } as Response);
+    vi.mocked(fetch)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ access_token: 'page-token' }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ data: [{ id: 'person-42', tasks: ['ADVERTISE'] }] }),
+      } as Response);
 
     const result = await metaPartnerService.verifyPageAccess(
       'client-token', 'page_123', 'person-42', ['MANAGE_LEADS']
     );
 
     expect(result).toEqual({ verified: false, assignedTasks: ['ADVERTISE'] });
+  });
+
+  it('verifies Page assigned_users when Meta returns PROFILE_PLUS_* tasks and extras', async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ access_token: 'page-token' }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: [
+            {
+              id: 'person-42',
+              tasks: [
+                'PROFILE_PLUS_MANAGE',
+                'PROFILE_PLUS_CREATE_CONTENT',
+                'PROFILE_PLUS_ADVERTISE',
+                'PROFILE_PLUS_MODERATE',
+                'PROFILE_PLUS_ANALYZE',
+              ],
+            },
+          ],
+        }),
+      } as Response);
+
+    const result = await metaPartnerService.verifyPageAccess(
+      'client-token',
+      'page_123',
+      'person-42',
+      ['MANAGE', 'CREATE_CONTENT', 'ADVERTISE']
+    );
+
+    expect(result.verified).toBe(true);
   });
 
   it('verifies a Pixel recipient against Meta assigned-user task read-back', async () => {

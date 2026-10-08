@@ -119,14 +119,21 @@ class MetaPartnerService {
     assetId: string,
     systemUserId: string,
     expectedTasks: string[],
-    businessId?: string
+    businessId?: string,
+    options?: {
+      pagePartnerTaskComparison?: boolean;
+      tokenClass?: MetaGraphTokenClass;
+    }
   ): Promise<MetaAssignedUserVerificationResult> {
-    const assignedUsers = await this.getAssignedUsers(accessToken, assetId, businessId);
+    const tokenClass = options?.tokenClass ?? 'client_user';
+    const assignedUsers = await this.getAssignedUsers(accessToken, assetId, businessId, tokenClass);
 
     const assignedUser = assignedUsers.find((item) => item.id === systemUserId);
     const assignedTasks = this.normalizeTasks(assignedUser?.tasks);
-    const verified = assignedTasks.length === expectedTasks.length &&
-      expectedTasks.every((task) => assignedTasks.includes(task));
+    const verified = options?.pagePartnerTaskComparison
+      ? metaPagePartnerPermittedTasksSatisfyRequired(assignedTasks, expectedTasks)
+      : assignedTasks.length === expectedTasks.length &&
+        expectedTasks.every((task) => assignedTasks.includes(task));
 
     return {
       verified,
@@ -137,7 +144,8 @@ class MetaPartnerService {
   private async getAssignedUsers(
     accessToken: string,
     assetId: string,
-    businessId?: string
+    businessId?: string,
+    tokenClass: MetaGraphTokenClass = 'client_user'
   ): Promise<Array<{ id?: string; tasks?: unknown }>> {
     const query = businessId ? `?${new URLSearchParams({ business: businessId })}` : '';
     const url = `${this.META_GRAPH_URL}/${assetId}/assigned_users${query}`;
@@ -147,7 +155,7 @@ class MetaPartnerService {
     while (nextUrl) {
       if (visitedUrls.has(nextUrl)) throw new Error('Meta returned a repeated pagination URL');
       visitedUrls.add(nextUrl);
-      const response = await this.graphRequest(nextUrl, accessToken, { method: 'GET' });
+      const response = await this.graphRequest(nextUrl, accessToken, { method: 'GET' }, tokenClass);
       if (!response.ok) {
         throw new Error(`Failed to verify assigned user access: ${await response.text()}`);
       }
@@ -462,11 +470,13 @@ class MetaPartnerService {
     agencySystemUserId: string,
     tasks: string[] = DEFAULT_PAGE_TASKS
   ): Promise<void> {
+    const { accessToken, tokenClass } = await this.resolvePageAssignedUsersContext(clientToken, pageId);
     await this.postAssignedUserAccess({
       assetId: pageId,
-      accessToken: clientToken,
+      accessToken,
       systemUserId: agencySystemUserId,
       tasks,
+      tokenClass,
     });
   }
 
@@ -518,7 +528,20 @@ class MetaPartnerService {
     systemUserId: string,
     expectedTasks: string[] = DEFAULT_PAGE_TASKS
   ): Promise<MetaAssignedUserVerificationResult> {
-    return this.getAssignedUserAccess(clientToken, pageId, systemUserId, expectedTasks);
+    const { accessToken, tokenClass } = await this.resolvePageAssignedUsersContext(clientToken, pageId);
+    return this.getAssignedUserAccess(accessToken, pageId, systemUserId, expectedTasks, undefined, {
+      pagePartnerTaskComparison: true,
+      tokenClass,
+    });
+  }
+
+  /** Page /{page-id}/assigned_users requires a Page access token, same as /agencies. */
+  private async resolvePageAssignedUsersContext(
+    clientToken: string,
+    pageId: string
+  ): Promise<{ accessToken: string; tokenClass: MetaGraphTokenClass }> {
+    const pageToken = await this.obtainPageAccessTokenForAgencies(clientToken, pageId);
+    return { accessToken: pageToken.accessToken, tokenClass: 'selected_page' };
   }
 
   async verifyAdAccountAccess(

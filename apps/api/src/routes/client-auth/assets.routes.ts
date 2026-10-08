@@ -51,6 +51,11 @@ import { metaAssetsService } from '@/services/meta-assets.service';
 import { MetaConnector } from '@/services/connectors/meta';
 import { sendError, sendSuccess, sendValidationError } from '../../lib/response.js';
 import { applyPostVerifyReevaluation } from '../../lib/authorization-reeval.js';
+import {
+  logMetaClientGrantResult,
+  logMetaClientVerifyResult,
+  parseMetaGraphErrorCodesFromMessage,
+} from '../../lib/meta-client-grant-log.js';
 
 type ShareResultWithVerification = TikTokPartnerShareResultItem & { verified?: boolean };
 
@@ -227,6 +232,32 @@ type ManualMetaAdAccountVerificationResult = {
   errorCode?: string;
   errorMessage?: string;
 };
+
+function isGatingMetaGrantResult(result: MetaAssetGrantResult): boolean {
+  return !(result.assetType === 'page' && result.recipientType !== 'business');
+}
+
+function gatingMetaGrantResults(assetGrantResults: MetaAssetGrantResult[]): MetaAssetGrantResult[] {
+  return assetGrantResults.filter(isGatingMetaGrantResult);
+}
+
+function emitMetaClientGrantResultLogs(
+  results: MetaAssetGrantResult[],
+  mode: 'grant' | 'verify'
+): void {
+  const log = mode === 'grant' ? logMetaClientGrantResult : logMetaClientVerifyResult;
+  for (const result of results) {
+    const codes = result.errorMessage
+      ? parseMetaGraphErrorCodesFromMessage(result.errorMessage)
+      : {};
+    log({
+      assetKind: result.assetType,
+      recipientKind: result.recipientType ?? 'unknown',
+      success: result.status === 'verified',
+      ...codes,
+    });
+  }
+}
 
 function buildMetaGrantVerificationStatus(
   assetGrantResults: MetaAssetGrantResult[]
@@ -1672,16 +1703,23 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
       });
       const verificationStatus = skippedExcludedGrant
         ? 'partial'
-        : buildMetaGrantVerificationStatus(mergedAssetGrantResults);
+        : buildMetaGrantVerificationStatus(gatingMetaGrantResults(mergedAssetGrantResults));
 
       const pageResults = mergedAssetGrantResults.filter((result) => result.assetType === 'page');
       const adAccountResults = mergedAssetGrantResults.filter(
         (result) => result.assetType === 'ad_account'
       );
+      const pagePartnerResults = pageResults.filter((result) => result.recipientType === 'business');
+      const adAccountBusinessResults = adAccountResults.filter(
+        (result) => result.recipientType === 'business'
+      );
       const pagesAccessGranted = !skippedExcludedGrant &&
-        pageResults.length > 0 && pageResults.every((result) => result.status === 'verified');
+        pagePartnerResults.length > 0 &&
+        pagePartnerResults.every((result) => result.status === 'verified');
       const adAccountsAccessGranted = !skippedExcludedGrant &&
-        adAccountResults.length > 0 && adAccountResults.every((result) => result.status === 'verified');
+        adAccountBusinessResults.length > 0 &&
+        adAccountBusinessResults.every((result) => result.status === 'verified');
+      emitMetaClientGrantResultLogs(mergedAssetGrantResults, 'grant');
       await updateGrantedAssets(connectionId, (currentGrantedAssets) => {
         const currentMetaGrantedAssets =
           (currentGrantedAssets.meta as Record<string, unknown> | undefined) || {};
@@ -2071,6 +2109,7 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
         results: adAccountGrantResults,
         attemptVersions,
       });
+      emitMetaClientGrantResultLogs(adAccountGrantResults, 'verify');
       let mergedGrantResults: MetaAssetGrantResult[] = [];
       await updateAuthorizationMetadata(platformAuth.id, (currentMetadata) => {
         const { rootMetadata: currentRoot, metaMetadata: currentMeta } =
@@ -2447,6 +2486,8 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
       });
 
       const requestStatus = await applyPostVerifyReevaluation(accessRequest.id);
+
+      emitMetaClientGrantResultLogs(results, 'verify');
 
       return reply.send({ data: { success: allVerified, partial: anyVerified && !allVerified, status, results, ...(requestStatus ? { requestStatus } : {}) }, error: null });
     } catch (error) {

@@ -97,6 +97,60 @@ describe('buildMetaGrantChecklist', () => {
     });
   });
 
+  it('marks one page done when every recipient row for that asset is verified', () => {
+    const result = buildMetaGrantChecklist({
+      rows: [
+        row({
+          assetKind: 'page',
+          assetId: 'page_1',
+          recipientId: 'biz-a',
+          status: 'verified',
+        }),
+        row({
+          assetKind: 'page',
+          assetId: 'page_1',
+          recipientId: 'person-1',
+          recipientType: 'human',
+          status: 'verified',
+        }),
+      ],
+      selectedKinds: kinds({ pages: 1 }),
+    });
+
+    expect(result.items[0]).toMatchObject({
+      assetKind: 'page',
+      state: 'done',
+      remainingCount: 0,
+    });
+  });
+
+  it('keeps a partially verified page pending with the correct remaining count', () => {
+    const result = buildMetaGrantChecklist({
+      rows: [
+        row({
+          assetKind: 'page',
+          assetId: 'page_1',
+          recipientId: 'biz-a',
+          status: 'verified',
+        }),
+        row({
+          assetKind: 'page',
+          assetId: 'page_1',
+          recipientId: 'person-1',
+          recipientType: 'human',
+          status: 'selected',
+        }),
+      ],
+      selectedKinds: kinds({ pages: 1 }),
+    });
+
+    expect(result.items[0]).toMatchObject({
+      assetKind: 'page',
+      state: 'pending',
+      remainingCount: 1,
+    });
+  });
+
   it('keeps an asset pending until every recipient row is verified', () => {
     const result = buildMetaGrantChecklist({
       rows: [

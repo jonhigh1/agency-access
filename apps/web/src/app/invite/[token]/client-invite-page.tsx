@@ -3,6 +3,9 @@
 import dynamic from 'next/dynamic';
 import { useState, useEffect, useLayoutEffect, useMemo, useRef } from 'react';
 import { useParams, usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { useAuth } from '@clerk/nextjs';
+import { useAuthOrBypass } from '@/lib/dev-auth';
+import { useUserAgency } from '@/hooks/use-user-agency';
 import { Check, Loader2, Lock, RefreshCw } from 'lucide-react';
 import { capturePosthogEvent } from '@/lib/analytics/capture-posthog';
 import {
@@ -69,6 +72,7 @@ export type ClientInvitePageProps = {
 type PagePhase = 'intake' | 'platforms' | 'finalizing' | 'complete';
 
 const SESSION_STORAGE_PREFIX = 'invite-progress:';
+const CLIENT_AUTHORIZATION_STARTED_PREFIX = 'client-authorization-started:';
 
 
 const isAbortError = (error: unknown) => error instanceof Error && error.name === 'AbortError';
@@ -153,6 +157,9 @@ export default function ClientAuthorizationPage({
   const router = useRouter();
   const pathname = usePathname();
   const storageKey = `${SESSION_STORAGE_PREFIX}${token}`;
+  const clerkAuth = useAuth();
+  const auth = useAuthOrBypass(clerkAuth);
+  const { data: viewerAgency } = useUserAgency();
 
   const {
     data: loadedPayload,
@@ -320,6 +327,18 @@ export default function ClientAuthorizationPage({
     }
 
     if (!urlStep && !startedTrackedRef.current) {
+      const startedSessionKey = `${CLIENT_AUTHORIZATION_STARTED_PREFIX}${token}`;
+      let shouldTrackStarted = true;
+      try {
+        if (sessionStorage.getItem(startedSessionKey)) {
+          shouldTrackStarted = false;
+        } else {
+          sessionStorage.setItem(startedSessionKey, '1');
+        }
+      } catch {
+        // sessionStorage unavailable — fall back to the ref guard only.
+      }
+
       startedTrackedRef.current = true;
       const startedPlatforms = loadedPayload.platforms?.map((p) => p.platformGroup) || [];
       trackInviteOpenedOncePerSession({
@@ -330,20 +349,24 @@ export default function ClientAuthorizationPage({
         client_name: loadedPayload.clientName,
         platform_count: loadedPayload.platforms?.length || 0,
       });
-      void capturePosthogEvent('client_authorization_started', {
-        access_request_token: token,
-        platform: startedPlatforms[0] ?? null,
-        agency_name: loadedPayload.agencyName,
-        client_name: loadedPayload.clientName,
-        client_email: loadedPayload.clientEmail,
-        platform_count: loadedPayload.platforms?.length || 0,
-        platforms: startedPlatforms,
-        has_intake_fields: loadedPayload.intakeFields?.length > 0,
-        has_custom_branding:
-          !!loadedPayload.branding?.logoUrl ||
-          !!loadedPayload.branding?.primaryColor &&
-            loadedPayload.branding.primaryColor.toUpperCase() !== '#FF6B35',
-      });
+      if (shouldTrackStarted) {
+        const isPreview = Boolean(
+          viewerAgency?.id && viewerAgency.id === loadedPayload.agencyId
+        );
+        void capturePosthogEvent('client_authorization_started', {
+          access_request_id: loadedPayload.id,
+          platform: startedPlatforms[0] ?? null,
+          platform_count: loadedPayload.platforms?.length || 0,
+          platforms: startedPlatforms,
+          has_intake_fields: loadedPayload.intakeFields?.length > 0,
+          has_custom_branding:
+            !!loadedPayload.branding?.logoUrl ||
+            !!loadedPayload.branding?.primaryColor &&
+              loadedPayload.branding.primaryColor.toUpperCase() !== '#FF6B35',
+          is_preview: isPreview,
+          is_internal: auth.isDevelopmentBypass,
+        });
+      }
     }
 
     // A finalization or confirmed completion owns the phase from here on; a
@@ -427,7 +450,17 @@ export default function ClientAuthorizationPage({
     }
 
     setPhase(landing.phase === 'intake' ? 'intake' : 'platforms');
-  }, [loadedPayload, storageKey, token, urlConnectionId, urlPlatform, urlStep, urlView]);
+  }, [
+    loadedPayload,
+    storageKey,
+    token,
+    urlConnectionId,
+    urlPlatform,
+    urlStep,
+    urlView,
+    viewerAgency?.id,
+    auth.isDevelopmentBypass,
+  ]);
 
   useEffect(() => {
     // Persist only once hydration has run for this token — an earlier write
@@ -470,13 +503,15 @@ export default function ClientAuthorizationPage({
 
       completionConfirmedRef.current = true;
       setCompletionVerified(true);
-      void capturePosthogEvent('client_authorization_completed', {
-        access_request_token: token,
-        agency_name: data?.agencyName,
-        client_name: data?.clientName,
-        platforms_completed: Array.from(completedPlatforms),
-        total_platforms: data?.platforms?.length || 0,
-      });
+      const alreadyComplete =
+        data?.authorizationProgress?.isComplete === true || data?.status === 'completed';
+      if (!alreadyComplete) {
+        void capturePosthogEvent('client_authorization_completed', {
+          access_request_id: data?.id,
+          platforms_completed: Array.from(completedPlatforms),
+          total_platforms: data?.platforms?.length || 0,
+        });
+      }
 
       sessionStorage.removeItem(storageKey);
       setPhase('complete');
@@ -486,6 +521,18 @@ export default function ClientAuthorizationPage({
       if (isTerminalRequestCode(errorCode)) {
         setForcedTerminalCode(errorCode);
         return;
+      }
+
+      if (error instanceof ApiResponseError) {
+        const pendingItemCount =
+          data?.metaFulfillment?.filter(
+            (row) => row.status !== 'verified' && row.status !== 'excluded'
+          ).length ?? 0;
+        void capturePosthogEvent('client_authorization_complete_failed', {
+          access_request_id: data?.id,
+          code: errorCode ?? 'UNKNOWN',
+          pending_item_count: pendingItemCount,
+        });
       }
 
       setCompletionError(

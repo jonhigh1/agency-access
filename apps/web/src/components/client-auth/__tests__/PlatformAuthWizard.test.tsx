@@ -1709,37 +1709,29 @@ describe('PlatformAuthWizard', () => {
         products: [{ product: 'meta_ads', accessLevel: 'admin' }],
       });
 
-      // Blocked while loading.
+      // Loading and saving are not counted as blocked — only real blockers fire.
       await waitFor(() => {
-        expect(trackInviteCtaBlockedMock).toHaveBeenCalledTimes(1);
+        expect(screen.getByText('Preparing your accounts')).toBeInTheDocument();
       });
-      expect(trackInviteCtaBlockedMock).toHaveBeenNthCalledWith(1, {
-        platform: 'meta',
-        reason_kind: 'loading',
-      });
+      expect(trackInviteCtaBlockedMock).not.toHaveBeenCalled();
 
-      // Blocked with the selection demand once assets are loaded.
       fireEvent.click(
         screen.getByRole('button', { name: /emit empty meta selection with available assets/i })
       );
       await screen.findByText('Select at least one ad account to continue');
       await waitFor(() => {
-        expect(trackInviteCtaBlockedMock).toHaveBeenCalledTimes(2);
+        expect(trackInviteCtaBlockedMock).toHaveBeenCalledTimes(1);
       });
-      expect(trackInviteCtaBlockedMock).toHaveBeenNthCalledWith(2, {
+      expect(trackInviteCtaBlockedMock).toHaveBeenNthCalledWith(1, {
         platform: 'meta',
         reason_kind: 'select_required',
       });
 
-      // The action becomes enabled — no further blocked events.
       fireEvent.click(screen.getByRole('button', { name: /select meta assets/i }));
       await waitFor(() => {
         expect(screen.getByRole('button', { name: /share access/i })).toBeEnabled();
       });
-      expect(trackInviteCtaBlockedMock).toHaveBeenCalledTimes(2);
-      expect(trackInviteCtaBlockedMock.mock.calls.every(([properties]) =>
-        ['loading', 'select_required'].includes(properties.reason_kind)
-      )).toBe(true);
+      expect(trackInviteCtaBlockedMock).toHaveBeenCalledTimes(1);
     });
 
     it('fires invite_selection_saved once per successful save (U11)', async () => {

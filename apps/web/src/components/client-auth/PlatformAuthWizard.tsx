@@ -1152,6 +1152,9 @@ export function PlatformAuthWizard({
       lastReportedBlockedKindRef.current = null;
       return;
     }
+    if (ctaBlockedReasonKind === 'loading' || ctaBlockedReasonKind === 'saving') {
+      return;
+    }
     if (lastReportedBlockedKindRef.current === ctaBlockedReasonKind) return;
     lastReportedBlockedKindRef.current = ctaBlockedReasonKind;
     trackInviteCtaBlocked({ platform, reason_kind: ctaBlockedReasonKind });
