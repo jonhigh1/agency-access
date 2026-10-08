@@ -78,6 +78,8 @@ const envSchema = z.object({
   DATABASE_URL: z.string().url(),
   FRONTEND_URL: z.string().url().optional(),
   CORS_ALLOWED_ORIGINS: z.string().optional(),
+  // Staging only: also allow agency-access Vercel preview origins (see lib/cors.ts). Default off.
+  CORS_ALLOW_VERCEL_PREVIEWS: booleanish(false),
   // Backend API URL (for OAuth callbacks)
   API_URL: z.string().url().optional(),
 
