@@ -159,6 +159,42 @@ describe('env contract', () => {
     expect(module.env.API_URL).toBe('http://localhost:3001');
   });
 
+  it.each(['', '   '])(
+    'treats CORS_ALLOW_VERCEL_PREVIEWS=%j as unset instead of failing startup',
+    async (value) => {
+      const module = await importEnvWith(withRequiredBase({ CORS_ALLOW_VERCEL_PREVIEWS: value }));
+      expect(module.env.CORS_ALLOW_VERCEL_PREVIEWS).toBe(false);
+    }
+  );
+
+  it('parses CORS_ALLOW_VERCEL_PREVIEWS=true', async () => {
+    const module = await importEnvWith(withRequiredBase({ CORS_ALLOW_VERCEL_PREVIEWS: 'true' }));
+    expect(module.env.CORS_ALLOW_VERCEL_PREVIEWS).toBe(true);
+  });
+
+  it('parses CORS_PREVIEW_ORIGINS as a trimmed array of preview origins', async () => {
+    const module = await importEnvWith(withRequiredBase({
+      CORS_PREVIEW_ORIGINS:
+        ' https://agency-access-git-staging-jons-projects-1906288f.vercel.app ,,',
+    }));
+    expect(module.env.CORS_PREVIEW_ORIGINS).toEqual([
+      'https://agency-access-git-staging-jons-projects-1906288f.vercel.app',
+    ]);
+  });
+
+  it('defaults CORS_PREVIEW_ORIGINS to an empty list (unset or empty)', async () => {
+    const unset = await importEnvWith(withRequiredBase({ CORS_PREVIEW_ORIGINS: undefined }));
+    expect(unset.env.CORS_PREVIEW_ORIGINS).toEqual([]);
+    const empty = await importEnvWith(withRequiredBase({ CORS_PREVIEW_ORIGINS: '' }));
+    expect(empty.env.CORS_PREVIEW_ORIGINS).toEqual([]);
+  });
+
+  it('fails when CORS_PREVIEW_ORIGINS lists a non-preview origin', async () => {
+    await expect(importEnvWith(withRequiredBase({
+      CORS_PREVIEW_ORIGINS: 'https://evil.example.com',
+    }))).rejects.toThrow(/CORS_PREVIEW_ORIGINS/);
+  });
+
   it('parses additional CORS origins as a trimmed array', async () => {
     const module = await importEnvWith(withRequiredBase({
       CORS_ALLOWED_ORIGINS: ' https://agency-access-beta.vercel.app, https://staging.authhub.co ,,',

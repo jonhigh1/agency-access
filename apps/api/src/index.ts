@@ -80,6 +80,7 @@ await fastify.register(
   cors,
   getCorsOptions(env.FRONTEND_URL, env.CORS_ALLOWED_ORIGINS, {
     allowVercelPreviews: env.CORS_ALLOW_VERCEL_PREVIEWS,
+    previewOrigins: env.CORS_PREVIEW_ORIGINS,
   })
 );
 await fastify.register(fastifyRawBody, {

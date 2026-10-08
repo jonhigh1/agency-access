@@ -1,7 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import Fastify from 'fastify';
 import cors from '@fastify/cors';
-import { getCorsOptions, VERCEL_PREVIEW_ORIGIN_PATTERN } from '@/lib/cors';
+import {
+  getCorsOptions,
+  parseCorsPreviewOrigins,
+  VERCEL_PREVIEW_ORIGIN_PATTERN,
+} from '@/lib/cors';
 
 describe('getCorsOptions', () => {
   it('includes x-agency-id headers and exposes cache headers', () => {
@@ -90,13 +94,24 @@ describe('Vercel preview origins (CORS_ALLOW_VERCEL_PREVIEWS)', () => {
     'https://agency-access-a.b-jons-projects-1906288f.vercel.app',
     'https://agency-access-abc123def-jons-projects-1906288f.vercel.app\nhttps://evil.com',
     'https://agency-access-jons-projects-1906288f.vercel.app',
+    // Outside our own preview URL shapes (deployment hash is exactly 9 chars; branch URLs start with git-).
+    'https://agency-access-x-jons-projects-1906288f.vercel.app',
+    'https://agency-access-abc123defg-jons-projects-1906288f.vercel.app',
+    'https://agency-access-evil-project-jons-projects-1906288f.vercel.app',
+    'https://agency-access--jons-projects-1906288f.vercel.app',
+    'https://agency-access-git--jons-projects-1906288f.vercel.app',
+    'https://agency-access-git-staging--jons-projects-1906288f.vercel.app',
   ];
 
-  async function preflightAllowOrigin(origin: string, allowVercelPreviews: boolean) {
+  async function preflightAllowOrigin(
+    origin: string,
+    allowVercelPreviews: boolean,
+    previewOrigins: string[] = []
+  ) {
     const app = Fastify();
     await app.register(
       cors,
-      getCorsOptions('https://authhub.co', [], { allowVercelPreviews })
+      getCorsOptions('https://authhub.co', [], { allowVercelPreviews, previewOrigins })
     );
     app.get('/ping', async () => ({ ok: true }));
     await app.ready();
@@ -144,5 +159,47 @@ describe('Vercel preview origins (CORS_ALLOW_VERCEL_PREVIEWS)', () => {
   it('still allows the canonical origins when enabled', async () => {
     expect(await preflightAllowOrigin('https://authhub.co', true)).toBe('https://authhub.co');
     expect(await preflightAllowOrigin('https://evil.example.com', true)).toBeUndefined();
+  });
+
+  describe('explicit allowlist (CORS_PREVIEW_ORIGINS)', () => {
+    const staging = 'https://agency-access-git-staging-jons-projects-1906288f.vercel.app';
+    const otherPreview = 'https://agency-access-abc123def-jons-projects-1906288f.vercel.app';
+
+    it('uses only the listed origins (no pattern) when enabled', async () => {
+      const options = getCorsOptions('https://authhub.co', [], {
+        allowVercelPreviews: true,
+        previewOrigins: [staging],
+      });
+      expect((options.origin as unknown[]).some((o) => o instanceof RegExp)).toBe(false);
+      expect(options.origin).toEqual(expect.arrayContaining([staging]));
+
+      expect(await preflightAllowOrigin(staging, true, [staging])).toBe(staging);
+      expect(await preflightAllowOrigin(otherPreview, true, [staging])).toBeUndefined();
+    });
+
+    it('ignores the list while the flag is off', async () => {
+      const options = getCorsOptions('https://authhub.co', [], {
+        allowVercelPreviews: false,
+        previewOrigins: [staging],
+      });
+      expect(options.origin).not.toEqual(expect.arrayContaining([staging]));
+      expect(await preflightAllowOrigin(staging, false, [staging])).toBeUndefined();
+    });
+
+    it('rejects entries that are not agency-access preview origins', () => {
+      expect(() => parseCorsPreviewOrigins(['https://evil.example.com'])).toThrow(
+        /CORS_PREVIEW_ORIGINS/
+      );
+      expect(() =>
+        getCorsOptions('https://authhub.co', [], {
+          allowVercelPreviews: true,
+          previewOrigins: [staging, 'https://agency-access-x-jons-projects-1906288f.vercel.app'],
+        })
+      ).toThrow(/CORS_PREVIEW_ORIGINS/);
+    });
+
+    it('deduplicates listed origins', () => {
+      expect(parseCorsPreviewOrigins([staging, staging])).toEqual([staging]);
+    });
   });
 });

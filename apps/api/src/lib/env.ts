@@ -2,6 +2,7 @@ import { z } from 'zod';
 import dotenv from 'dotenv';
 import { randomBytes } from 'crypto';
 import { parseCreemProductIds } from '../config/creem.config.js';
+import { parseCorsPreviewOrigins } from './cors.js';
 
 dotenv.config();
 
@@ -33,6 +34,17 @@ function parseBooleanish(value: unknown): boolean | undefined {
     if (value === 'false') return false;
   }
   return undefined;
+}
+
+/**
+ * Like booleanish, but an empty or whitespace-only string counts as unset (default), so a
+ * blank dashboard value such as `CORS_ALLOW_VERCEL_PREVIEWS=` does not crash startup.
+ */
+function booleanishEmptyAsUnset(defaultValue: boolean) {
+  return z.preprocess(
+    value => (typeof value === 'string' && value.trim() === '' ? undefined : parseBooleanish(value) ?? value),
+    z.boolean().default(defaultValue)
+  );
 }
 
 function booleanish(defaultValue: boolean) {
@@ -79,7 +91,10 @@ const envSchema = z.object({
   FRONTEND_URL: z.string().url().optional(),
   CORS_ALLOWED_ORIGINS: z.string().optional(),
   // Staging only: also allow agency-access Vercel preview origins (see lib/cors.ts). Default off.
-  CORS_ALLOW_VERCEL_PREVIEWS: booleanish(false),
+  CORS_ALLOW_VERCEL_PREVIEWS: booleanishEmptyAsUnset(false),
+  // Optional exact preview origins (comma-separated). When set and CORS_ALLOW_VERCEL_PREVIEWS=true,
+  // only these preview origins are allowed instead of the agency-access preview URL pattern.
+  CORS_PREVIEW_ORIGINS: z.string().optional(),
   // Backend API URL (for OAuth callbacks)
   API_URL: z.string().url().optional(),
 
@@ -351,6 +366,7 @@ if (parsedEnv.NODE_ENV === 'production') {
 
 const FRONTEND_URL = parsedEnv.FRONTEND_URL ?? 'http://localhost:3000';
 const CORS_ALLOWED_ORIGINS = parseCsvList(parsedEnv.CORS_ALLOWED_ORIGINS);
+const CORS_PREVIEW_ORIGINS = parseCorsPreviewOrigins(parseCsvList(parsedEnv.CORS_PREVIEW_ORIGINS));
 const API_URL = parsedEnv.API_URL ?? `http://localhost:${parsedEnv.PORT}`;
 const INTERNAL_ADMIN_USER_IDS = parseCsvList(parsedEnv.INTERNAL_ADMIN_USER_IDS);
 const INTERNAL_ADMIN_EMAILS = parseCsvList(parsedEnv.INTERNAL_ADMIN_EMAILS);
@@ -380,6 +396,7 @@ export const env = {
   ...parsedEnv,
   FRONTEND_URL,
   CORS_ALLOWED_ORIGINS,
+  CORS_PREVIEW_ORIGINS,
   API_URL,
   INTERNAL_ADMIN_USER_IDS,
   INTERNAL_ADMIN_EMAILS,
