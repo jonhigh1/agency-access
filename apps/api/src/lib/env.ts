@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import dotenv from 'dotenv';
 import { randomBytes } from 'crypto';
+import { parseCreemProductIds } from '../config/creem.config.js';
 
 dotenv.config();
 
@@ -164,6 +165,9 @@ const envSchema = z.object({
   CREEM_API_KEY: z.string(),
   CREEM_WEBHOOK_SECRET: z.string(),
   CREEM_API_URL: z.string().url().default('https://api.creem.io'),
+  // Optional JSON map of tier -> { monthly, yearly } Creem product ids (staging/test mode).
+  // Unset keeps the live product ids in config/creem.config.ts.
+  CREEM_PRODUCT_IDS_JSON: z.string().optional(),
 
   // PostHog (server-side lifecycle events; optional in dev/test)
   POSTHOG_API_KEY: z.string().optional(),
@@ -265,6 +269,9 @@ const rawEnv = {
 };
 
 const parsedEnv = envSchema.parse(rawEnv);
+
+// Fail fast on a set-but-invalid Creem product map rather than at first checkout.
+parseCreemProductIds(parsedEnv.CREEM_PRODUCT_IDS_JSON);
 
 if (parsedEnv.NODE_ENV === 'production') {
   if (!parsedEnv.FRONTEND_URL) {
