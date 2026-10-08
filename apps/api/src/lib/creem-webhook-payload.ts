@@ -168,3 +168,28 @@ export function getSubscriptionPayload(payload: CreemNormalizedEvent): CreemSubs
     trial_end: trialEnd ?? undefined,
   };
 }
+
+function readMetadataAgencyId(source: unknown): string | null {
+  if (!source || typeof source !== 'object') return null;
+  const metadata = (source as { metadata?: unknown }).metadata;
+  if (!metadata || typeof metadata !== 'object') return null;
+  const agencyId = (metadata as { agencyId?: unknown }).agencyId;
+  return typeof agencyId === 'string' && agencyId.trim().length > 0 ? agencyId.trim() : null;
+}
+
+/**
+ * Agency id AuthHub stamped on the Creem checkout (`metadata.agencyId`).
+ *
+ * Creem echoes checkout metadata on `checkout.completed` (checkout and nested
+ * subscription) and on later `subscription.*` events. Only trusted after the
+ * webhook signature has been verified.
+ */
+export function extractCreemMetadataAgencyId(payload: CreemNormalizedEvent): string | null {
+  const data = payload.data;
+  const candidates: unknown[] = [data, data.subscription, data.checkout];
+  for (const candidate of candidates) {
+    const agencyId = readMetadataAgencyId(candidate);
+    if (agencyId) return agencyId;
+  }
+  return null;
+}

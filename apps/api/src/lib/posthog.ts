@@ -9,6 +9,9 @@ type ServerCaptureProps = Record<string, unknown>;
 
 let warnedMissingKey = false;
 
+/** Webhook handlers await capture; never let a slow PostHog stall them. */
+const SERVER_CAPTURE_TIMEOUT_MS = 5000;
+
 function getPosthogConfig(): { apiKey: string; host: string } | null {
   const apiKey = env.POSTHOG_API_KEY?.trim();
   if (!apiKey) {
@@ -41,6 +44,7 @@ export async function captureServerPosthogEvent(input: {
         distinct_id: input.distinctId,
         properties: input.properties ?? {},
       }),
+      signal: AbortSignal.timeout(SERVER_CAPTURE_TIMEOUT_MS),
     });
 
     if (!response.ok) {

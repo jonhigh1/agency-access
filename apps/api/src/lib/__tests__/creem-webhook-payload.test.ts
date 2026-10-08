@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { getProductId } from '@/config/creem.config';
 import {
+  extractCreemMetadataAgencyId,
   extractCreemProductId,
   extractCreemSubscriptionId,
   getSubscriptionPayload,
@@ -153,5 +154,50 @@ describe('extractCreemSubscriptionId', () => {
         id: 'sub_abc',
       })
     ).toBe('sub_abc');
+  });
+});
+
+describe('extractCreemMetadataAgencyId', () => {
+  it('reads agencyId from checkout.completed checkout metadata', () => {
+    const event = normalizeCreemEvent({
+      id: 'evt_1',
+      eventType: 'checkout.completed',
+      object: { object: 'checkout', metadata: { agencyId: 'agency-1' }, subscription: { id: 'sub_1' } },
+    });
+    expect(extractCreemMetadataAgencyId(event)).toBe('agency-1');
+  });
+
+  it('falls back to the nested subscription metadata', () => {
+    const event = normalizeCreemEvent({
+      id: 'evt_2',
+      eventType: 'checkout.completed',
+      object: { object: 'checkout', subscription: { id: 'sub_1', metadata: { agencyId: 'agency-2' } } },
+    });
+    expect(extractCreemMetadataAgencyId(event)).toBe('agency-2');
+  });
+
+  it('reads agencyId from subscription.* event metadata', () => {
+    const event = normalizeCreemEvent({
+      id: 'evt_3',
+      eventType: 'subscription.canceled',
+      object: { object: 'subscription', id: 'sub_1', metadata: { agencyId: ' agency-3 ' } },
+    });
+    expect(extractCreemMetadataAgencyId(event)).toBe('agency-3');
+  });
+
+  it('returns null when metadata is missing, empty, or not a string', () => {
+    expect(
+      extractCreemMetadataAgencyId(normalizeCreemEvent({ id: 'e', eventType: 'subscription.active', object: {} }))
+    ).toBeNull();
+    expect(
+      extractCreemMetadataAgencyId(
+        normalizeCreemEvent({ id: 'e', eventType: 'subscription.active', object: { metadata: { agencyId: '' } } })
+      )
+    ).toBeNull();
+    expect(
+      extractCreemMetadataAgencyId(
+        normalizeCreemEvent({ id: 'e', eventType: 'subscription.active', object: { metadata: { agencyId: 42 } } })
+      )
+    ).toBeNull();
   });
 });

@@ -74,6 +74,7 @@ function lifecycleProps(context: SubscriptionWebhookContext): Record<string, unk
     creem_customer_id: context.creemCustomerId,
     creem_product_id: context.creemProductId,
     subscription_status: context.status,
+    is_trial: context.status === 'trialing',
   };
 
   if (!context.creemProductId) {
@@ -141,6 +142,13 @@ export async function trackSubscriptionLifecycleFromWebhook(input: {
 
   if (eventType === 'subscription.past_due' || status === 'past_due') {
     await captureLifecycleEvent(context, 'subscription.past_due');
+    return;
+  }
+
+  // A trial checkout is still the primary checkout conversion: Creem sends
+  // checkout.completed with a trialing subscription, then subscription.trialing.
+  if (eventType === 'checkout.completed' && status === 'trialing') {
+    await captureLifecycleEvent(context, 'subscription_started');
     return;
   }
 
