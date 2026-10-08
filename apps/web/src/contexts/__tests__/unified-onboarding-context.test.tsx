@@ -51,6 +51,7 @@ describe('UnifiedOnboardingContext', () => {
       primaryEmailAddress: { emailAddress: 'jane@example.com' },
     };
     mockGetToken.mockResolvedValue('token-123');
+    window.sessionStorage.clear();
     (global as any).fetch = fetchMock;
     process.env.NEXT_PUBLIC_API_URL = 'https://api.example.com';
     process.env.NEXT_PUBLIC_APP_URL = 'https://authhub.co';

@@ -20,7 +20,7 @@
 
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useId } from 'react';
 import { m, AnimatePresence } from 'framer-motion';
 import { Check, AlertCircle, ChevronDown } from 'lucide-react';
 
@@ -92,6 +92,10 @@ export function OpinionatedInput({
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const [hasBlurred, setHasBlurred] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  // Stable ids so the visible label is programmatically tied to the input.
+  const inputId = `opinionated-input-${useId().replace(/:/g, '')}`;
+  const errorId = `${inputId}-error`;
+  const helperId = `${inputId}-helper`;
   const suggestionsRef = useRef<HTMLDivElement>(null);
 
   // Determine validation state
@@ -214,14 +218,15 @@ export function OpinionatedInput({
   return (
     <div className="relative">
       {/* Label */}
-      <label className="block text-sm font-semibold text-foreground mb-1.5">
+      <label htmlFor={inputId} className="block text-sm font-semibold text-foreground mb-1.5">
         {label}
-        {required && <span className="text-danger-ink ml-1">*</span>}
+        {required && <span aria-hidden="true" className="text-danger-ink ml-1">*</span>}
       </label>
 
       {/* Input Container */}
       <div className="relative">
         <input
+          id={inputId}
           ref={inputRef}
           type={type}
           value={value}
@@ -244,7 +249,7 @@ export function OpinionatedInput({
           `}
           aria-invalid={showError}
           aria-describedby={
-            showError ? `${label}-error` : helperText ? `${label}-helper` : undefined
+            showError ? errorId : helperText ? helperId : undefined
           }
           autoComplete="off"
         />
@@ -317,7 +322,7 @@ export function OpinionatedInput({
       {showError && (errorMessage || validationMessage) ? (
           <m.p
             key="error"
-            id={`${label}-error`}
+            id={errorId}
             className="mt-1.5 text-sm text-danger-ink flex items-start gap-1.5"
             initial={{ opacity: 0, y: -5 }}
             animate={{ opacity: 1, y: 0 }}
@@ -330,7 +335,7 @@ export function OpinionatedInput({
         ) : helperText ? (
           <m.p
             key="helper"
-            id={`${label}-helper`}
+            id={helperId}
             className="mt-1.5 text-sm text-muted-foreground"
             initial={{ opacity: 0, y: -5 }}
             animate={{ opacity: 1, y: 0 }}

@@ -105,4 +105,94 @@ describe('ClientSelectionScreen', () => {
 
     expect(screen.getByRole('button', { name: /no client yet/i })).toBeInTheDocument();
   });
+
+  it('labels the client fields for assistive tech', () => {
+    render(
+      <ClientSelectionScreen
+        clientName=""
+        clientEmail=""
+        websiteUrl=""
+        existingClients={[]}
+        loading={false}
+        onUpdate={vi.fn()}
+        onWebsiteUrlChange={vi.fn()}
+      />
+    );
+
+    expect(screen.getByRole('textbox', { name: 'Client Name' })).toHaveAttribute('placeholder', 'e.g., Acme Corp');
+    expect(screen.getByRole('textbox', { name: 'Client Email' })).toHaveAttribute('type', 'email');
+    expect(screen.getByRole('textbox', { name: 'Website URL' })).toHaveAttribute('type', 'url');
+  });
+
+  it('labels the existing-client search', () => {
+    render(
+      <ClientSelectionScreen
+        clientName=""
+        clientEmail=""
+        websiteUrl=""
+        existingClients={[{ id: 'client-1', name: 'Example Client', email: 'client@example.com' } as any]}
+        loading={false}
+        onUpdate={vi.fn()}
+        onWebsiteUrlChange={vi.fn()}
+      />
+    );
+
+    expect(screen.getByLabelText('Search clients')).toBeInTheDocument();
+  });
+
+  it('offers "No client yet" only until a client is chosen', () => {
+    const existingClients = [{ id: 'client-1', name: 'Example Client', email: 'client@example.com' } as any];
+    const { rerender } = render(
+      <ClientSelectionScreen
+        clientName=""
+        clientEmail=""
+        websiteUrl=""
+        existingClients={existingClients}
+        loading={false}
+        onUpdate={vi.fn()}
+        onWebsiteUrlChange={vi.fn()}
+        onDefer={vi.fn()}
+      />
+    );
+    expect(screen.getByRole('button', { name: 'No client yet' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /example client/i }));
+    expect(screen.queryByRole('button', { name: 'No client yet' })).not.toBeInTheDocument();
+
+    // Restored selection (e.g. after reload) also hides it.
+    rerender(<></>);
+    render(
+      <ClientSelectionScreen
+        clientName="Example Client"
+        clientEmail="client@example.com"
+        clientId="client-1"
+        websiteUrl=""
+        existingClients={existingClients}
+        loading={false}
+        onUpdate={vi.fn()}
+        onWebsiteUrlChange={vi.fn()}
+        onDefer={vi.fn()}
+      />
+    );
+    expect(screen.queryByRole('button', { name: 'No client yet' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /example client/i, pressed: true })).toBeInTheDocument();
+  });
+
+  it('does not claim Meta is pre-selected on the next step', () => {
+    render(
+      <ClientSelectionScreen
+        clientName=""
+        clientEmail=""
+        websiteUrl=""
+        existingClients={[]}
+        loading={false}
+        onUpdate={vi.fn()}
+        onWebsiteUrlChange={vi.fn()}
+      />
+    );
+
+    expect(screen.queryByText(/meta ads are pre-selected/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/google is pre-selected/i)).toBeInTheDocument();
+  });
 });
+

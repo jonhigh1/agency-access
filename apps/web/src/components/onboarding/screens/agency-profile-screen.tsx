@@ -139,9 +139,9 @@ export function AgencyProfileScreen({
 
         {/* Industry (Pre-selected with option to change) */}
         <div>
-          <label className="block text-sm font-semibold text-foreground mb-1.5">
+          <p className="block text-sm font-semibold text-foreground mb-1.5" aria-hidden="true">
             Industry
-          </label>
+          </p>
           <SingleSelect
             options={COMMON_INDUSTRIES.map((ind) => ({
               value: ind.toLowerCase().replace(/\s+/g, '_'),

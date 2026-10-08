@@ -137,7 +137,22 @@ export function PlatformSelectorGrid({
 
     return (
       <div key={group.name} className="space-y-3">
-        <h3 className="text-sm font-semibold text-ink/70">{group.name}</h3>
+        {group.platforms.length === 1 ? (
+          // Single-platform group: the heading is part of the card's hit area, so clicking it
+          // toggles the platform exactly like the card (keyboard users use the card button).
+          <h3
+            className={cn(
+              'text-sm font-semibold text-ink/70 select-none',
+              disabled ? 'cursor-not-allowed' : 'cursor-pointer hover:text-ink'
+            )}
+            onClick={() => togglePlatform(group.platforms[0])}
+            data-testid={`platform-group-heading-${group.platforms[0]}`}
+          >
+            {group.name}
+          </h3>
+        ) : (
+          <h3 className="text-sm font-semibold text-ink/70">{group.name}</h3>
+        )}
         <div className={platformGridClassName}>
           {group.platforms.map((platform) => {
             const selected = isSelected(platform);
@@ -148,6 +163,7 @@ export function PlatformSelectorGrid({
                 key={platform}
                 type="button"
                 onClick={() => togglePlatform(platform)}
+                aria-pressed={selected}
                 onMouseEnter={() => setHoveredPlatform(platform)}
                 onMouseLeave={() => setHoveredPlatform(null)}
                 disabled={disabled}
@@ -226,7 +242,7 @@ export function PlatformSelectorGrid({
                 Most agencies start with Google
               </div>
               <div className="text-sm text-ink/70">
-                We've pre-selected it for you (add Meta or others anytime)
+                We've pre-selected it for you. Add Meta or other platforms below.
               </div>
             </div>
           </div>

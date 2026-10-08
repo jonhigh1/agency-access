@@ -157,7 +157,7 @@ class OnboardingStepErrorBoundary extends Component<
 }
 
 function OnboardingFlow() {
-  const { state, nextStep, prevStep, canGoNext, canGoBack, canSkip, updateAgency, updateClient, updatePlatforms, loadExistingClients, createAgencyAndAccessRequest, deferUntilClientReady, addTeamInvite, removeTeamInvite, updateTeamInviteRole, sendTeamInvites, completeOnboarding, setError } = useUnifiedOnboarding();
+  const { state, nextStep, prevStep, canGoNext, canGoBack, canSkip, updateAgency, updateClient, updatePlatforms, loadExistingClients, createAgencyAndAccessRequest, deferUntilClientReady, addTeamInvite, removeTeamInvite, updateTeamInviteRole, sendTeamInvites, connectMetaPortfolio, refreshMetaReadiness, completeOnboarding, setError } = useUnifiedOnboarding();
   const router = useRouter();
 
   const handleNext = async () => {
@@ -216,6 +216,7 @@ function OnboardingFlow() {
           <ClientSelectionScreen
             clientName={state.clientName || ''}
             clientEmail={state.clientEmail || ''}
+            clientId={state.clientId}
             websiteUrl={state.agencySettings.website || ''}
             existingClients={state.existingClients}
             loading={state.loading}
@@ -233,6 +234,10 @@ function OnboardingFlow() {
             onUpdate={updatePlatforms}
             onGenerate={handleNext}
             loading={state.loading}
+            metaReadiness={state.metaReadiness}
+            metaJustConnected={state.metaJustConnected}
+            onConnectMeta={() => void connectMetaPortfolio()}
+            onRetryMetaCheck={() => void refreshMetaReadiness()}
           />
         );
 

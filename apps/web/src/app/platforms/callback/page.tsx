@@ -14,11 +14,18 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuth, useUser } from '@clerk/nextjs';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
+import type { Route } from 'next';
 import { AlertCircle, Loader2, RefreshCw } from 'lucide-react';
 import { capturePosthogEvent } from '@/lib/analytics/capture-posthog';
 import { PortfolioSelector, type PortfolioBusiness } from '@/components/client-auth/PortfolioSelector';
 import { Button } from '@/components/ui/button';
 import { startAgencyMetaOAuth } from '@/lib/agency-meta-oauth';
+import {
+  consumeOnboardingReturnIntent,
+  getSessionDraftStorage,
+  onboardingReturnUrl,
+  peekOnboardingReturnIntent,
+} from '@/lib/onboarding/onboarding-draft';
 import { resolveApiUrl } from '@/lib/api/api-env';
 import {
   trackOAuthCallbackFailure,
@@ -63,6 +70,12 @@ function CallbackPageContent() {
 
   const isLoading = !success && !errorCode;
 
+  // Set when the agency started this Meta connection from onboarding (read after mount: sessionStorage is client-only).
+  const [returnToOnboarding, setReturnToOnboarding] = useState(false);
+  useEffect(() => {
+    setReturnToOnboarding(Boolean(peekOnboardingReturnIntent(getSessionDraftStorage())));
+  }, []);
+
   // Complete Meta OAuth Mutation
   const { mutate: completeMetaOauth, isPending: isSaving } = useMutation({
     mutationFn: async ({ businessId, businessName }: { businessId: string; businessName: string }) => {
@@ -89,7 +102,12 @@ function CallbackPageContent() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['platform-connections', targetAgencyId] });
       queryClient.invalidateQueries({ queryKey: ['available-platforms', targetAgencyId] });
-      router.push('/connections?success=true&platform=meta');
+      // Started from onboarding's platform step: go back there (the draft keeps the Meta choice).
+      const onboardingIntent = consumeOnboardingReturnIntent(getSessionDraftStorage());
+      const destination = (onboardingIntent
+        ? onboardingReturnUrl('connected')
+        : '/connections?success=true&platform=meta') as Parameters<typeof router.push>[0];
+      router.push(destination);
     },
     onError: (error: Error) => {
       setSaveError(error.message || 'Failed to complete connection');
@@ -346,6 +364,16 @@ function CallbackPageContent() {
                 />
               </div>
             )}
+            {returnToOnboarding && !isSaving && (
+              <p className="mt-6 text-center text-sm">
+                <Link
+                  href={onboardingReturnUrl('cancelled') as Route}
+                  className="text-muted-foreground underline underline-offset-2 hover:text-ink"
+                >
+                  Back to onboarding without Meta
+                </Link>
+              </p>
+            )}
           </div>
         </div>
       );
@@ -447,9 +475,15 @@ function CallbackPageContent() {
 
         {/* Action buttons */}
         <div className="space-y-3">
-          <Button className="w-full" asChild>
-            <Link href="/onboarding/platforms">Try Again</Link>
-          </Button>
+          {returnToOnboarding ? (
+            <Button className="w-full" asChild>
+              <Link href={onboardingReturnUrl('error') as Route}>Back to onboarding</Link>
+            </Button>
+          ) : (
+            <Button className="w-full" asChild>
+              <Link href="/onboarding/platforms">Try Again</Link>
+            </Button>
+          )}
           <Button variant="secondary" className="w-full" asChild>
             <Link href="/dashboard">Go to Dashboard</Link>
           </Button>

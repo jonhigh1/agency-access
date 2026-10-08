@@ -32,6 +32,8 @@ import { formatOnboardingStepLabel } from '@/lib/onboarding-steps';
 interface ClientSelectionScreenProps {
   clientName: string;
   clientEmail: string;
+  /** Id of the existing client already chosen (e.g. restored after a reload). */
+  clientId?: string;
   websiteUrl: string;
   existingClients: Client[];
   loading: boolean;
@@ -50,6 +52,7 @@ type ClientSelectionMode = 'existing' | 'new';
 export function ClientSelectionScreen({
   clientName,
   clientEmail,
+  clientId,
   websiteUrl,
   existingClients,
   loading,
@@ -58,7 +61,7 @@ export function ClientSelectionScreen({
   onLoadClients,
   onDefer,
 }: ClientSelectionScreenProps) {
-  const [selectedClientId, setSelectedClientId] = useState<string | null>(null);
+  const [selectedClientId, setSelectedClientId] = useState<string | null>(clientId ?? null);
   const [mode, setMode] = useState<ClientSelectionMode>(
     existingClients.length > 0 ? 'existing' : 'new'
   );
@@ -121,6 +124,11 @@ export function ClientSelectionScreen({
     onWebsiteUrlChange(website);
   }, [onWebsiteUrlChange]);
 
+  const hasValidNewClient =
+    clientName.trim().length >= 2 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(clientEmail.trim());
+  // "No client yet" is the escape hatch for agencies without a client; hide it once one is chosen or entered.
+  const hasChosenClient = Boolean(selectedClientId) || hasValidNewClient;
+
   // Filter existing clients by search
   const [searchQuery, setSearchQuery] = useState('');
   const filteredClients = existingClients.filter((client) =>
@@ -154,14 +162,18 @@ export function ClientSelectionScreen({
         {/* Existing Clients Section */}
         {existingClients.length > 0 && mode === 'existing' && (
           <div className="space-y-3">
-            <label className="block text-sm font-semibold text-foreground">
+            <p id="existing-client-heading" className="block text-sm font-semibold text-foreground">
               Select an existing client
-            </label>
+            </p>
 
             {/* Search */}
             <div className="relative">
+              <label htmlFor="existing-client-search" className="sr-only">
+                Search clients
+              </label>
               <input
-                type="text"
+                id="existing-client-search"
+                type="search"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search clients..."
@@ -170,12 +182,13 @@ export function ClientSelectionScreen({
             </div>
 
             {/* Client List */}
-            <div className="space-y-2 max-h-64 overflow-y-auto">
+            <div role="group" aria-labelledby="existing-client-heading" className="space-y-2 max-h-64 overflow-y-auto">
               {filteredClients.map((client) => (
                 <m.button
                   key={client.id}
                   type="button"
                   onClick={() => handleSelectClient(client)}
+                  aria-pressed={selectedClientId === client.id}
                   className={`
                     w-full p-4 rounded-lg border-2 text-left transition-all
                     ${selectedClientId === client.id
@@ -282,7 +295,7 @@ export function ClientSelectionScreen({
           </div>
         </div>
 
-        {onDefer && (
+        {onDefer && !hasChosenClient && (
           <div className="flex justify-start">
             <button
               type="button"
@@ -298,7 +311,7 @@ export function ClientSelectionScreen({
         <div className="border-t border-border pt-6">
           <h3 className="text-sm font-semibold text-foreground mb-2">Next: Choose Platforms</h3>
           <p className="text-sm text-muted-foreground">
-            We'll select which platforms this client needs to authorize. Google Ads and Meta Ads are pre-selected (most agencies start with these).
+            Pick which platforms this client needs to authorize. Google is pre-selected (most agencies start there), and you can add Meta or others on the next step.
           </p>
         </div>
       </div>
