@@ -46,6 +46,7 @@ import {
 } from './schemas.js';
 import { metaOBOService } from '@/services/meta-obo.service';
 import {
+  META_PAGE_ACCESS_TOKEN_USER_MESSAGE,
   MetaPageAccessTokenUnavailableError,
   metaPartnerService,
 } from '@/services/meta-partner.service';
@@ -1321,7 +1322,11 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
               status: 'failed',
               grantedAt,
               errorCode: pageTokenUnavailable ? error.code : 'META_ASSET_GRANT_FAILED',
-              errorMessage: error instanceof Error ? error.message : 'Unknown Meta grant error',
+              errorMessage: pageTokenUnavailable
+                ? META_PAGE_ACCESS_TOKEN_USER_MESSAGE
+                : error instanceof Error
+                  ? error.message
+                  : 'Unknown Meta grant error',
             };
           }
         };

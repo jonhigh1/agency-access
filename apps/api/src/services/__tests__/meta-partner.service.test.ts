@@ -6,7 +6,6 @@ import {
   serializeMetaGraphOp,
 } from '@agency-platform/shared';
 import {
-  META_PAGE_ACCESS_TOKEN_USER_MESSAGE,
   MetaPageAccessTokenUnavailableError,
   metaPartnerService,
 } from '../meta-partner.service.js';
@@ -487,18 +486,35 @@ describe('MetaPartnerService', () => {
       metaPartnerService.obtainPageAccessTokenForAgencies('client-token', 'page_123')
     ).rejects.toMatchObject({
       name: 'MetaPageAccessTokenUnavailableError',
-      message: META_PAGE_ACCESS_TOKEN_USER_MESSAGE,
+      message:
+        'Could not obtain a Page access token for Page page_123; grant pages_show_list and ensure this user manages the Page.',
     });
   });
 
-  it('surfaces the Page token user message when verifyPageAccess cannot resolve a token', async () => {
+  it('surfaces pages_show_list guidance when verifyPageAccess cannot resolve a token', async () => {
     vi.mocked(fetch)
       .mockResolvedValueOnce({ ok: true, json: async () => ({ id: 'page_123' }) } as Response)
       .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) } as Response);
 
     await expect(
       metaPartnerService.verifyPageAccess('client-token', 'page_123', 'person-1', ['MANAGE'])
-    ).rejects.toThrow(META_PAGE_ACCESS_TOKEN_USER_MESSAGE);
+    ).rejects.toThrow('pages_show_list');
+  });
+
+  it('surfaces pages_show_list guidance when verifyAgencyPartnerAccess cannot resolve a Page token', async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ id: 'page_123' }) } as Response)
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ data: [] }) } as Response);
+
+    await expect(
+      metaPartnerService.verifyAgencyPartnerAccess(
+        'client-token',
+        'page_123',
+        'agency-bm-1',
+        ['MANAGE'],
+        { assetKind: 'page' }
+      )
+    ).rejects.toThrow('pages_show_list');
   });
 
   it('verifies Page partner access when Meta returns PROFILE_PLUS_* permitted_tasks', async () => {

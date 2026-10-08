@@ -36,14 +36,18 @@ const grantAgencyPartnerAccessMock = vi.fn();
 const verifyAgencyPartnerAccessMock = vi.fn();
 const resolvePageAccessTokenPhaseMock = vi.fn();
 
-vi.mock('@/services/meta-partner.service.js', () => ({
-  metaPartnerService: {
-    verifyAdAccountAgencyAccess: (...args: unknown[]) => verifyAdAccountAgencyAccessMock(...args),
-    grantAgencyPartnerAccess: (...args: unknown[]) => grantAgencyPartnerAccessMock(...args),
-    verifyAgencyPartnerAccess: (...args: unknown[]) => verifyAgencyPartnerAccessMock(...args),
-    resolvePageAccessTokenPhase: (...args: unknown[]) => resolvePageAccessTokenPhaseMock(...args),
-  },
-}));
+vi.mock('@/services/meta-partner.service.js', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/services/meta-partner.service.js')>();
+  return {
+    ...actual,
+    metaPartnerService: {
+      verifyAdAccountAgencyAccess: (...args: unknown[]) => verifyAdAccountAgencyAccessMock(...args),
+      grantAgencyPartnerAccess: (...args: unknown[]) => grantAgencyPartnerAccessMock(...args),
+      verifyAgencyPartnerAccess: (...args: unknown[]) => verifyAgencyPartnerAccessMock(...args),
+      resolvePageAccessTokenPhase: (...args: unknown[]) => resolvePageAccessTokenPhaseMock(...args),
+    },
+  };
+});
 
 vi.mock('@/lib/infisical.js', () => ({
   infisical: {
@@ -326,6 +330,66 @@ describe('reviewDemoService business_management sandbox scope', () => {
     if (payload.stepId === 'business_management') {
       expect(payload.sandboxMisconfigured).toBe(true);
       expect(payload.assets).toEqual([]);
+    }
+  });
+
+  it('shows pages_show_list partner guidance when Page partner verify cannot resolve a Page token', async () => {
+    const { MetaPageAccessTokenUnavailableError } = await import('@/services/meta-partner.service.js');
+    const pageTokenDetail =
+      'Could not obtain a Page access token for Page 1373353139192376; grant pages_show_list and ensure this user manages the Page.';
+
+    vi.doMock('@/lib/env.js', () => ({
+      env: {
+        META_REVIEW_DEMO_MOCK_GRAPH: false,
+        META_REVIEW_BM_ID: '695982475048959',
+        META_REVIEW_AD_ACCOUNT_ID: '557538895783894',
+        META_REVIEW_PAGE_ID: '1373353139192376',
+        META_REVIEW_AGENCY_BM_ID: '3808519629379919',
+        META_REVIEW_LAB_AGENCY_ID: 'review-lab-agency',
+      },
+    }));
+
+    verifyAdAccountAgencyAccessMock.mockResolvedValue({
+      verified: true,
+      assignedTasks: ['ADVERTISE', 'ANALYZE'],
+    });
+    resolvePageAccessTokenPhaseMock.mockResolvedValue({ obtained: true, source: 'page_fields' });
+    verifyAgencyPartnerAccessMock.mockRejectedValue(
+      new MetaPageAccessTokenUnavailableError(pageTokenDetail)
+    );
+
+    vi.doMock('@/lib/meta-graph-instrumentation.js', () => ({
+      getRecordedMetaGraphOps: () => [],
+      metaGraphFetch: vi.fn(async (url: string) => {
+        if (url.includes('695982475048959?fields')) {
+          return { ok: true, json: async () => ({ id: '695982475048959', name: 'Review BM' }) };
+        }
+        if (url.includes('1373353139192376?fields')) {
+          return { ok: true, json: async () => ({ id: '1373353139192376', name: 'Ah-Review-Page' }) };
+        }
+        if (url.includes('act_557538895783894?fields')) {
+          return {
+            ok: true,
+            json: async () => ({ id: 'act_557538895783894', name: 'Review Ad Account' }),
+          };
+        }
+        if (url.includes('3808519629379919?fields')) {
+          return { ok: true, json: async () => ({ id: '3808519629379919', name: 'Agency BM' }) };
+        }
+        throw new Error(`Unexpected graph URL: ${url}`);
+      }),
+    }));
+
+    const { reviewDemoService } = await import('../review-demo.service.js');
+    const payload = await reviewDemoService.addAgencyToPagePartner({
+      clerkUserId: 'user_test',
+      userEmail: 'lab@test.example',
+    });
+
+    expect(payload.stepId).toBe('business_management');
+    if (payload.stepId === 'business_management') {
+      expect(payload.pagePartner?.pendingMessage).toContain('pages_show_list');
+      expect(payload.pagePartner?.pendingMessage).not.toContain('Business Manager');
     }
   });
 

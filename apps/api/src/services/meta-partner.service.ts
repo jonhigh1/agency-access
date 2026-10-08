@@ -277,7 +277,9 @@ class MetaPartnerService {
       }
     }
 
-    throw new MetaPageAccessTokenUnavailableError();
+    throw new MetaPageAccessTokenUnavailableError(
+      `Could not obtain a Page access token for Page ${pageId}; grant pages_show_list and ensure this user manages the Page.`
+    );
   }
 
   async resolvePageAccessTokenPhase(
