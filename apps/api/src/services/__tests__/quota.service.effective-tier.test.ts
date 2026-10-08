@@ -46,7 +46,7 @@ describe('QuotaService effective tier resolution', () => {
         status: 'incomplete',
       },
     } as any);
-    vi.mocked(prisma.client.count).mockResolvedValue(1);
+    vi.mocked(prisma.client.count).mockResolvedValue(3);
 
     const result = await quotaService.checkQuota({
       agencyId: 'agency-free',
@@ -56,8 +56,8 @@ describe('QuotaService effective tier resolution', () => {
     });
 
     expect(result.allowed).toBe(false);
-    expect(result.limit).toBe(1);
-    expect(result.used).toBe(1);
+    expect(result.limit).toBe(3);
+    expect(result.used).toBe(3);
     expect(result.currentTier).toBe('STARTER');
     expect(result.suggestedTier).toBe('STARTER');
   });
