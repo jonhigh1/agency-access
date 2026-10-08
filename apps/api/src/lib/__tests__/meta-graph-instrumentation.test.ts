@@ -1,7 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   clearRecordedMetaGraphOps,
+  getMetaGraphOpCursor,
   getRecordedMetaGraphOps,
+  getRecordedMetaGraphOpsSince,
+  MAX_RECORDED_META_GRAPH_OPS,
   metaGraphFetch,
   recordMetaGraphOp,
 } from '../meta-graph-instrumentation.js';
@@ -93,5 +96,32 @@ describe('metaGraphFetch instrumentation', () => {
     expect(serialized).toContain('/{asset_id}/agencies');
     expect(serialized).toContain('/{asset_id}/assigned_users');
     assertNoTokenMaterialInSerializedGraphOps(serialized);
+  });
+});
+
+describe('recordedOps ring buffer', () => {
+  afterEach(() => {
+    clearRecordedMetaGraphOps();
+  });
+
+  it('caps recordedOps and keeps cursor-based reads stable across trim', () => {
+    const cursor = getMetaGraphOpCursor();
+    for (let i = 0; i < MAX_RECORDED_META_GRAPH_OPS + 25; i += 1) {
+      recordMetaGraphOp({
+        method: 'GET',
+        edge: `/{asset_id}/item_${i}`,
+        tokenClass: 'client_user',
+        outcome: 'ok',
+      });
+    }
+
+    const ops = getRecordedMetaGraphOps();
+    expect(ops).toHaveLength(MAX_RECORDED_META_GRAPH_OPS);
+    expect(ops[0]?.edge).toBe('/{asset_id}/item_25');
+    expect(ops[ops.length - 1]?.edge).toBe(`/{asset_id}/item_${MAX_RECORDED_META_GRAPH_OPS + 24}`);
+
+    const since = getRecordedMetaGraphOpsSince(cursor);
+    expect(since).toHaveLength(MAX_RECORDED_META_GRAPH_OPS);
+    expect(getMetaGraphOpCursor()).toBe(cursor + MAX_RECORDED_META_GRAPH_OPS + 25);
   });
 });

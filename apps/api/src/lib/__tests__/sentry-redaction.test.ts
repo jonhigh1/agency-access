@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { redactSensitiveString, redactSentryEvent } from '../sentry-redaction.js';
+import {
+  redactSensitiveString,
+  redactSentryEvent,
+  scrubSentryBreadcrumb,
+} from '../sentry-redaction.js';
 
 describe('redactSentryEvent', () => {
   it('redacts public request tokens before request URLs enter logs', () => {
@@ -7,12 +11,52 @@ describe('redactSentryEvent', () => {
       .toBe('/api/access-requests/[redacted]/instructions?code=[redacted]');
   });
 
-  it('redacts Meta token exchange and proof values from URLs', () => {
+  it('drops Meta token exchange and proof params from Graph URLs', () => {
     expect(redactSensitiveString(
       'https://graph.facebook.com/oauth/access_token?fb_exchange_token=short-lived&appsecret_proof=proof&client_id=public-id'
     )).toBe(
-      'https://graph.facebook.com/oauth/access_token?fb_exchange_token=[redacted]&appsecret_proof=[redacted]&client_id=public-id'
+      'https://graph.facebook.com/oauth/access_token?client_id=public-id'
     );
+  });
+
+  it('redacts Meta ad account ids and long numeric Graph path segments', () => {
+    expect(
+      redactSensitiveString(
+        'https://graph.facebook.com/v25.0/act_1234567890/insights?fields=spend&access_token=EAAtok&limit=5'
+      )
+    ).toBe('https://graph.facebook.com/v25.0/act_[redacted]/insights?fields=spend&limit=5');
+
+    expect(
+      redactSensitiveString('GET https://graph.facebook.com/v25.0/112233445566778/agencies')
+    ).toBe('GET https://graph.facebook.com/v25.0/[redacted]/agencies');
+  });
+
+  it('scrubs Graph URLs on Sentry HTTP breadcrumbs while keeping the breadcrumb', () => {
+    const breadcrumb = {
+      type: 'http',
+      category: 'fetch',
+      data: {
+        method: 'GET',
+        url: 'https://graph.facebook.com/v25.0/act_999000111/campaigns?access_token=secret-token',
+        status_code: 200,
+        'http.query': '?fields=id&access_token=secret-token&appsecret_proof=proof',
+        'url.path': '/v25.0/123456789012/assigned_users',
+      },
+    };
+
+    const scrubbed = scrubSentryBreadcrumb(breadcrumb);
+    const serialized = JSON.stringify(scrubbed);
+
+    expect(scrubbed.type).toBe('http');
+    expect(scrubbed.category).toBe('fetch');
+    expect(scrubbed.data.method).toBe('GET');
+    expect(scrubbed.data.status_code).toBe(200);
+    expect(serialized).not.toContain('act_999000111');
+    expect(serialized).not.toContain('secret-token');
+    expect(serialized).not.toContain('appsecret_proof=proof');
+    expect(serialized).not.toContain('123456789012');
+    expect(serialized).toContain('act_[redacted]');
+    expect(serialized).toContain('/[redacted]/assigned_users');
   });
 
   it('redacts debug-token secrets in structured telemetry fields', () => {
@@ -35,7 +79,7 @@ describe('redactSentryEvent', () => {
     const event = {
       request: {
         url: 'https://api.example.test/api/client/invite-secret/assets?code=oauth-code&limit=5',
-      query_string: 'state=oauth-state&include=assets',
+        query_string: 'state=oauth-state&include=assets',
         headers: {
           authorization: 'Bearer oauth-bearer',
           cookie: 'session=session-secret',
