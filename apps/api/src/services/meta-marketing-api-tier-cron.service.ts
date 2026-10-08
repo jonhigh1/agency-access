@@ -1,6 +1,7 @@
 import {
   META_GRAPH_VERSION,
   META_MARKETING_API_TIER_CRON_GRAPH_CALLS,
+  META_MARKETING_API_TIER_CRON_GRAPH_TIMEOUT_MS,
   META_MARKETING_API_TIER_DAILY_AUDIT_ACTION,
   META_MARKETING_API_TIER_TARGET_DAYS,
   META_REVIEW_DEFAULT_AD_ACCOUNT_NUMERIC,
@@ -42,6 +43,22 @@ export interface MetaMarketingApiTierCronResult {
 
 export interface MetaMarketingApiTierCronDeps {
   now?: () => Date;
+  abortSignal?: AbortSignal;
+}
+
+function isAbortError(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+  return error.name === 'AbortError' || error.name === 'TimeoutError';
+}
+
+function graphCallAbortSignal(deps: MetaMarketingApiTierCronDeps): AbortSignal {
+  const timeoutSignal = AbortSignal.timeout(META_MARKETING_API_TIER_CRON_GRAPH_TIMEOUT_MS);
+  if (deps.abortSignal) {
+    return AbortSignal.any([deps.abortSignal, timeoutSignal]);
+  }
+  return timeoutSignal;
 }
 
 function tierUtcDateFrom(date: Date): string {
@@ -94,8 +111,10 @@ async function countConsecutiveFailuresIncludingToday(todaySuccess: boolean): Pr
 async function executeGraphCalls(
   accessToken: string,
   adAccountId: string,
+  deps: MetaMarketingApiTierCronDeps,
 ): Promise<TierCronCallResult[]> {
   const results: TierCronCallResult[] = [];
+  const signal = graphCallAbortSignal(deps);
 
   for (const call of META_MARKETING_API_TIER_CRON_GRAPH_CALLS) {
     const path = call.pathTemplate.replace('{adAccountId}', adAccountId);
@@ -105,20 +124,38 @@ async function executeGraphCalls(
       url.searchParams.set('limit', String(call.limit));
     }
 
-    const response = await metaGraphFetch(url.toString(), {
-      method: 'GET',
-      accessToken,
-      tokenClass: 'client_user',
-    });
+    try {
+      const response = await metaGraphFetch(url.toString(), {
+        method: 'GET',
+        accessToken,
+        tokenClass: 'client_user',
+        signal,
+      });
 
-    results.push({
-      callId: call.id,
-      edge: path,
-      httpStatus: response.status,
-      success: response.ok,
-    });
+      results.push({
+        callId: call.id,
+        edge: path,
+        httpStatus: response.status,
+        success: response.ok,
+      });
 
-    if (!response.ok) {
+      if (!response.ok) {
+        break;
+      }
+    } catch (error) {
+      const timedOut = isAbortError(error);
+      logger.warn('meta_marketing_api_tier_graph_call_failed', {
+        callId: call.id,
+        edge: path,
+        timedOut,
+        error: error instanceof Error ? error.message : String(error),
+      });
+      results.push({
+        callId: call.id,
+        edge: path,
+        httpStatus: timedOut ? 408 : 0,
+        success: false,
+      });
       break;
     }
   }
@@ -220,7 +257,7 @@ export async function runMetaMarketingApiTierDailyCron(
     };
   }
 
-  const calls = await executeGraphCalls(accessToken, adAccountId);
+  const calls = await executeGraphCalls(accessToken, adAccountId, deps);
   const success = calls.length > 0 && calls.every((call) => call.success);
   const primaryStatus = calls[0]?.httpStatus ?? 0;
 

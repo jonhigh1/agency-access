@@ -1,5 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import {
+  META_MARKETING_API_TIER_CRON_JOB_EXPIRE_SECONDS,
   META_MARKETING_API_TIER_CRON_SCHEDULE_BURST,
   META_MARKETING_API_TIER_CRON_SCHEDULE_DAILY,
 } from '@agency-platform/shared';
@@ -39,6 +40,10 @@ describe('scheduleRecurringJobs meta-marketing-api-tier-daily', () => {
       'meta-marketing-api-tier-daily',
       META_MARKETING_API_TIER_CRON_SCHEDULE_DAILY,
       { type: 'run-daily-tier-exercise' },
+      expect.objectContaining({
+        expireInSeconds: META_MARKETING_API_TIER_CRON_JOB_EXPIRE_SECONDS,
+        retryLimit: 0,
+      }),
     );
   });
 
@@ -51,6 +56,10 @@ describe('scheduleRecurringJobs meta-marketing-api-tier-daily', () => {
       'meta-marketing-api-tier-daily',
       META_MARKETING_API_TIER_CRON_SCHEDULE_BURST,
       { type: 'run-daily-tier-exercise' },
+      expect.objectContaining({
+        expireInSeconds: META_MARKETING_API_TIER_CRON_JOB_EXPIRE_SECONDS,
+        retryLimit: 0,
+      }),
     );
   });
 });
