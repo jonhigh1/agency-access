@@ -374,8 +374,16 @@ describe('AccessRequestService', () => {
       );
     });
 
-    it('requires a Meta assignee selection for Meta requests', async () => {
-      vi.mocked(prisma.agency.findUnique).mockResolvedValue({ id: 'agency-1' } as any);
+    it('defaults Meta assignee to agency owner when omitted for Meta requests', async () => {
+      vi.mocked(prisma.agency.findUnique).mockResolvedValue({ id: 'agency-1', email: 'owner@agency.test' } as any);
+      vi.mocked(metaAssetsService.getAssignableRecipients).mockResolvedValue({
+        data: [
+          { type: 'human', id: 'person-1', name: 'Agency Owner', email: 'owner@agency.test' },
+          { type: 'system_user', id: 'system-user-1', name: 'Automation' },
+        ],
+        error: null,
+      });
+      vi.mocked(prisma.accessRequest.create).mockResolvedValue({ id: 'request-1' } as any);
 
       const result = await accessRequestService.createAccessRequest({
         agencyId: 'agency-1',
@@ -384,12 +392,28 @@ describe('AccessRequestService', () => {
         platforms: [{ platform: 'meta_ads', accessLevel: 'manage' }],
       });
 
-      expect(result.error?.code).toBe('META_ASSIGNEE_SELECTION_REQUIRED');
-      expect(prisma.accessRequest.create).not.toHaveBeenCalled();
+      expect(result.error).toBeNull();
+      expect(prisma.accessRequest.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            metaAccessConfig: expect.objectContaining({
+              recipients: [{ type: 'human', id: 'person-1', name: 'Agency Owner' }],
+            }),
+          }),
+        })
+      );
     });
 
-    it('requires at least one human Meta assignee', async () => {
-      vi.mocked(prisma.agency.findUnique).mockResolvedValue({ id: 'agency-1' } as any);
+    it('adds a default human Meta assignee when only a system user was selected', async () => {
+      vi.mocked(prisma.agency.findUnique).mockResolvedValue({ id: 'agency-1', email: 'owner@agency.test' } as any);
+      vi.mocked(metaAssetsService.getAssignableRecipients).mockResolvedValue({
+        data: [
+          { type: 'human', id: 'person-1', name: 'Agency Owner', email: 'owner@agency.test' },
+          { type: 'system_user', id: 'system-user-1', name: 'Automation' },
+        ],
+        error: null,
+      });
+      vi.mocked(prisma.accessRequest.create).mockResolvedValue({ id: 'request-1' } as any);
 
       const result = await accessRequestService.createAccessRequest({
         agencyId: 'agency-1',
@@ -397,14 +421,25 @@ describe('AccessRequestService', () => {
         clientEmail: 'client@test.com',
         platforms: [{ platform: 'meta_ads', accessLevel: 'manage' }],
         metaAccessConfig: {
-          recipients: [{ type: 'system_user', id: 'system-user-1' }],
+          recipients: [{ type: 'system_user', id: 'system-user-1', name: 'Automation' }],
           pageTasks: ['MANAGE'],
           adAccountTasks: ['ANALYZE'],
         },
       });
 
-      expect(result.error?.code).toBe('META_HUMAN_ASSIGNEE_REQUIRED');
-      expect(prisma.accessRequest.create).not.toHaveBeenCalled();
+      expect(result.error).toBeNull();
+      expect(prisma.accessRequest.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            metaAccessConfig: expect.objectContaining({
+              recipients: expect.arrayContaining([
+                { type: 'human', id: 'person-1', name: 'Agency Owner' },
+                { type: 'system_user', id: 'system-user-1', name: 'Automation' },
+              ]),
+            }),
+          }),
+        })
+      );
     });
   });
 

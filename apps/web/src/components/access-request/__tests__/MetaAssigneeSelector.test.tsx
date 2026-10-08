@@ -2,10 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useAuth } from '@clerk/nextjs';
+import { useAuth, useUser } from '@clerk/nextjs';
 import { MetaAssigneeSelector } from '../MetaAssigneeSelector';
 
-vi.mock('@clerk/nextjs', () => ({ useAuth: vi.fn() }));
+vi.mock('@clerk/nextjs', () => ({ useAuth: vi.fn(), useUser: vi.fn() }));
 
 describe('MetaAssigneeSelector', () => {
   beforeEach(() => {
@@ -15,6 +15,11 @@ describe('MetaAssigneeSelector', () => {
       userId: 'user-1',
       orgId: 'org-1',
       isLoaded: true,
+    } as any);
+    vi.mocked(useUser).mockReturnValue({
+      user: {
+        primaryEmailAddress: { emailAddress: 'jon@example.com' },
+      },
     } as any);
     vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       ok: true,
@@ -27,7 +32,7 @@ describe('MetaAssigneeSelector', () => {
     } as Response));
   });
 
-  it('defaults to one human and one system user and supports keyboard task selection', async () => {
+  it('defaults to the agency owner human and supports keyboard task selection', async () => {
     const onChange = vi.fn();
     const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
     render(
@@ -46,10 +51,7 @@ describe('MetaAssigneeSelector', () => {
     );
 
     await waitFor(() => expect(onChange).toHaveBeenCalledWith(expect.objectContaining({
-      recipients: [
-        { type: 'human', id: 'person-1', name: 'Jon High' },
-        { type: 'system_user', id: 'system-1', name: 'Automation' },
-      ],
+      recipients: [{ type: 'human', id: 'person-1', name: 'Jon High' }],
     })));
     expect(screen.getByRole('checkbox', { name: /Jon High/i })).toBeInTheDocument();
     const manageLeads = within(screen.getByRole('group', { name: 'Page tasks' })).getByLabelText('Manage Leads Access');

@@ -20,6 +20,8 @@ import {
   // Subscription tier types (will be implemented)
   SubscriptionTierSchema,
   TIER_LIMITS,
+  FREE_TIER_LIMITS,
+  pickDefaultMetaHumanRecipient,
   SUBSCRIPTION_TIER_NAMES,
   PRICING_DISPLAY_TIER_NAMES,
   PRICING_DISPLAY_TIER_DETAILS,
@@ -762,6 +764,26 @@ describe('Pricing Tiers & Quota Management - TDD Tests', () => {
       expect(PRICING_DISPLAY_TIER_DETAILS.GROWTH.yearlyPrice).toBe(790);
       expect(PRICING_DISPLAY_TIER_DETAILS.SCALE.monthlyPrice).toBe(149);
       expect(PRICING_DISPLAY_TIER_DETAILS.SCALE.yearlyPrice).toBe(1490);
+    });
+  });
+
+  describe('FREE_TIER_LIMITS Configuration', () => {
+    it('allows three active clients on free/trial without a paid subscription', () => {
+      expect(FREE_TIER_LIMITS.clients).toBe(3);
+    });
+  });
+
+  describe('pickDefaultMetaHumanRecipient', () => {
+    it('prefers the agency owner email over other Meta people', () => {
+      const recipient = pickDefaultMetaHumanRecipient(
+        [
+          { type: 'human', id: 'person-1', name: 'Teammate', email: 'teammate@example.com' },
+          { type: 'human', id: 'person-2', name: 'Owner', email: 'owner@example.com' },
+        ],
+        'owner@example.com'
+      );
+
+      expect(recipient?.id).toBe('person-2');
     });
   });
 

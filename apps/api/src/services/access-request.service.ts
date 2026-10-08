@@ -27,6 +27,8 @@ import {
   MetaDeclinableAssetKindSchema,
   META_AUTO_ASSIGN_GRANT_METHOD,
   getDefaultMetaAccessTasks,
+  pickDefaultMetaHumanRecipient,
+  type MetaAccessConfig,
   type MetaAutoAssignResult,
   type MetaFulfillmentStatus,
   type MetaAssetDecline,
@@ -142,6 +144,90 @@ function isUniqueConstraintError(error: unknown): boolean {
   return error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002';
 }
 
+async function resolveMetaAccessConfigForRequest(input: {
+  agencyId: string;
+  agencyEmail: string;
+  platforms: Array<{ platform: string }>;
+  metaAccessConfig?: MetaAccessConfig;
+  request?: FastifyRequest;
+}): Promise<{
+  metaAccessConfig?: MetaAccessConfig;
+  error: { code: string; message: string } | null;
+}> {
+  const requestsMeta = input.platforms.some(
+    (platform) => normalizePlatformGroup(platform.platform) === 'meta'
+  );
+  if (!requestsMeta) {
+    return { metaAccessConfig: input.metaAccessConfig, error: null };
+  }
+
+  const assignees = await metaAssetsService.getAssignableRecipients(input.agencyId, input.request);
+  if (assignees.error || !assignees.data) {
+    return {
+      metaAccessConfig: undefined,
+      error: assignees.error || {
+        code: 'META_ASSIGNEE_DISCOVERY_ERROR',
+        message: 'Failed to validate Meta assignees',
+      },
+    };
+  }
+
+  const allowed = new Set(assignees.data.map((recipient) => `${recipient.type}:${recipient.id}`));
+  const platformProducts = input.platforms.map((item) => item.platform);
+  const defaultMetaTasks = getDefaultMetaAccessTasks(platformProducts);
+  const existingConfig = input.metaAccessConfig;
+  const existingRecipients = existingConfig?.recipients ?? [];
+  const hasHuman = existingRecipients.some((recipient) => recipient.type === 'human');
+
+  let recipients = existingRecipients;
+  if (!hasHuman) {
+    const defaultHuman = pickDefaultMetaHumanRecipient(assignees.data, input.agencyEmail);
+    if (!defaultHuman) {
+      return {
+        metaAccessConfig: undefined,
+        error: {
+          code: 'META_HUMAN_ASSIGNEE_REQUIRED',
+          message: 'Choose at least one Meta person who will use the client assets',
+        },
+      };
+    }
+    recipients = [
+      { type: 'human' as const, id: defaultHuman.id, name: defaultHuman.name },
+      ...existingRecipients.filter((recipient) => recipient.type !== 'human'),
+    ];
+  }
+
+  const invalidRecipient = recipients.find(
+    (recipient) => !allowed.has(`${recipient.type}:${recipient.id}`)
+  );
+  if (invalidRecipient) {
+    return {
+      metaAccessConfig: undefined,
+      error: {
+        code: 'INVALID_META_ASSIGNEE',
+        message: 'A selected Meta assignee does not belong to the agency Business Portfolio',
+      },
+    };
+  }
+
+  return {
+    metaAccessConfig: {
+      recipients,
+      pageTasks: existingConfig?.pageTasks?.length
+        ? existingConfig.pageTasks
+        : defaultMetaTasks.pageTasks,
+      adAccountTasks: existingConfig?.adAccountTasks?.length
+        ? existingConfig.adAccountTasks
+        : defaultMetaTasks.adAccountTasks,
+      datasetTasks: existingConfig?.datasetTasks?.length
+        ? existingConfig.datasetTasks
+        : defaultMetaTasks.datasetTasks,
+      catalogTasks: existingConfig?.catalogTasks ?? ['MANAGE'],
+    },
+    error: null,
+  };
+}
+
 /**
  * Create a new access request
  */
@@ -164,52 +250,15 @@ export async function createAccessRequest(input: unknown, request?: FastifyReque
       };
     }
 
-    const requestsMeta = validated.platforms.some(
-      (platform) => normalizePlatformGroup(platform.platform) === 'meta'
-    );
-    if (requestsMeta && !validated.metaAccessConfig) {
-      return {
-        data: null,
-        error: {
-          code: 'META_ASSIGNEE_SELECTION_REQUIRED',
-          message: 'Choose the Meta people and optional system users for this request',
-        },
-      };
-    }
-    if (
-      requestsMeta &&
-      !validated.metaAccessConfig?.recipients.some((recipient) => recipient.type === 'human')
-    ) {
-      return {
-        data: null,
-        error: {
-          code: 'META_HUMAN_ASSIGNEE_REQUIRED',
-          message: 'Choose at least one Meta person who will use the client assets',
-        },
-      };
-    }
-
-    if (validated.metaAccessConfig) {
-      const assignees = await metaAssetsService.getAssignableRecipients(validated.agencyId, request);
-      if (assignees.error || !assignees.data) {
-        return { data: null, error: assignees.error || {
-          code: 'META_ASSIGNEE_DISCOVERY_ERROR',
-          message: 'Failed to validate Meta assignees',
-        } };
-      }
-      const allowed = new Set(assignees.data.map((recipient) => `${recipient.type}:${recipient.id}`));
-      const invalidRecipient = validated.metaAccessConfig.recipients.find(
-        (recipient) => !allowed.has(`${recipient.type}:${recipient.id}`)
-      );
-      if (invalidRecipient) {
-        return {
-          data: null,
-          error: {
-            code: 'INVALID_META_ASSIGNEE',
-            message: 'A selected Meta assignee does not belong to the agency Business Portfolio',
-          },
-        };
-      }
+    const resolvedMeta = await resolveMetaAccessConfigForRequest({
+      agencyId: validated.agencyId,
+      agencyEmail: agency.email,
+      platforms: validated.platforms,
+      metaAccessConfig: validated.metaAccessConfig,
+      request,
+    });
+    if (resolvedMeta.error) {
+      return { data: null, error: resolvedMeta.error };
     }
 
     // Check if subdomain is already taken (if provided)
@@ -242,21 +291,7 @@ export async function createAccessRequest(input: unknown, request?: FastifyReque
       order: field.order ?? index,
     }));
 
-    const defaultMetaTasks = getDefaultMetaAccessTasks(validated.platforms.map((item) => item.platform));
-    const metaAccessConfig = validated.metaAccessConfig
-      ? {
-          ...validated.metaAccessConfig,
-          pageTasks: validated.metaAccessConfig.pageTasks.length > 0
-            ? validated.metaAccessConfig.pageTasks
-            : defaultMetaTasks.pageTasks,
-          adAccountTasks: validated.metaAccessConfig.adAccountTasks.length > 0
-            ? validated.metaAccessConfig.adAccountTasks
-            : defaultMetaTasks.adAccountTasks,
-          datasetTasks: validated.metaAccessConfig.datasetTasks?.length
-            ? validated.metaAccessConfig.datasetTasks
-            : defaultMetaTasks.datasetTasks,
-        }
-      : undefined;
+    const metaAccessConfig = resolvedMeta.metaAccessConfig;
 
     let accessRequest;
     for (let attempt = 0; attempt < 5; attempt++) {

@@ -167,7 +167,7 @@ describe('TierLimitsService', () => {
           status: 'incomplete',
         },
       });
-      vi.mocked(prisma.client.count).mockResolvedValue(1);
+      vi.mocked(prisma.client.count).mockResolvedValue(3);
 
       const result = await tierLimitsService.checkTierLimit(
         mockAgencyId,
@@ -176,8 +176,8 @@ describe('TierLimitsService', () => {
 
       expect(result).toEqual({
         allowed: false,
-        limit: 1,
-        current: 1,
+        limit: 3,
+        current: 3,
         error: 'TIER_LIMIT_EXCEEDED',
       });
     });
@@ -363,9 +363,9 @@ describe('TierLimitsService', () => {
             remaining: 3,
           },
           clients: {
-            limit: 1,
+            limit: 3,
             used: 1,
-            remaining: 0,
+            remaining: 2,
           },
           members: {
             limit: 1,

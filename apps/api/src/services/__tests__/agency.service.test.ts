@@ -113,10 +113,11 @@ describe('AgencyService', () => {
       expect(result.error?.code).toBe('VALIDATION_ERROR');
     });
 
-    it('should return error if agency already exists', async () => {
+    it('should return error if agency email already exists', async () => {
       vi.mocked(prisma.agency.findUnique).mockResolvedValue({
         id: 'existing-agency',
         name: 'Test Agency',
+        email: 'admin@test.com',
       } as any);
 
       const result = await agencyService.createAgency({
@@ -126,6 +127,40 @@ describe('AgencyService', () => {
 
       expect(result.data).toBeNull();
       expect(result.error?.code).toBe('AGENCY_EXISTS');
+    });
+
+    it('should allow duplicate agency display names', async () => {
+      const mockAgency = {
+        id: 'agency-2',
+        name: 'Northstar Growth',
+        email: 'team2@example.com',
+      };
+
+      vi.mocked(prisma.agency.findUnique).mockResolvedValue(null);
+      vi.mocked(prisma.$transaction).mockImplementation(async (callback) => {
+        return callback({
+          agency: {
+            create: vi.fn().mockResolvedValue(mockAgency),
+          },
+          agencyMember: {
+            create: vi.fn().mockResolvedValue({
+              id: 'member-2',
+              agencyId: 'agency-2',
+              email: 'team2@example.com',
+              role: 'admin',
+            }),
+          },
+        } as any);
+      });
+
+      const result = await agencyService.createAgency({
+        name: 'Northstar Growth',
+        email: 'team2@example.com',
+      });
+
+      expect(result.error).toBeNull();
+      expect(result.data?.name).toBe('Northstar Growth');
+      expect(prisma.agency.findFirst).not.toHaveBeenCalled();
     });
 
     it('should default subscriptionTier to null for free agencies', async () => {
