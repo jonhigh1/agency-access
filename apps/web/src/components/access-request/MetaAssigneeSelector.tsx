@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { useAuth } from '@clerk/nextjs';
+import { useAuth, useUser } from '@clerk/nextjs';
+import { pickDefaultMetaHumanRecipient } from '@agency-platform/shared';
 import { useQuery } from '@tanstack/react-query';
 import { getDefaultMetaAccessTasks, type MetaAccessConfig, type MetaAssignableRecipient } from '@agency-platform/shared';
 import { authorizedApiFetch } from '@/lib/api/authorized-api-fetch';
@@ -41,7 +42,9 @@ export function MetaAssigneeSelector({
   onChange: (config: MetaAccessConfig) => void;
 }) {
   const clerkAuth = useAuth();
+  const { user } = useUser();
   const { getToken } = clerkAuth;
+  const ownerEmail = user?.primaryEmailAddress?.emailAddress;
   const auth = useAuthOrBypass(clerkAuth);
   const appliedDefaults = useRef(false);
   const productKey = [...products].sort().join(',');
@@ -77,10 +80,12 @@ export function MetaAssigneeSelector({
     previousProductKey.current = productKey;
     previousDefaults.current = taskDefaults;
 
-    const recipients = !appliedDefaults.current && data.length > 0 && value.recipients.length === 0
-      ? [data.find((recipient) => recipient.type === 'human'), data.find((recipient) => recipient.type === 'system_user')]
-          .filter((recipient): recipient is MetaAssignableRecipient => Boolean(recipient))
-          .map(({ type, id, name }) => ({ type, id, name }))
+    const defaultHuman = pickDefaultMetaHumanRecipient(
+      data.filter((recipient) => recipient.type === 'human'),
+      ownerEmail
+    );
+    const recipients = !appliedDefaults.current && defaultHuman && value.recipients.length === 0
+      ? [{ type: 'human' as const, id: defaultHuman.id, name: defaultHuman.name }]
       : value.recipients;
     if (recipients !== value.recipients) appliedDefaults.current = true;
     if (updateTasks || recipients !== value.recipients) {
@@ -167,7 +172,7 @@ export function MetaAssigneeSelector({
       <div>
         <h3 id="meta-assignees-title" className="text-base font-semibold text-ink">Meta access recipients</h3>
         <p className="mt-1 text-sm text-muted-foreground">
-          Choose the person who must use the client assets. A system user is optional for server automation.
+          Pre-selected to your agency owner. Change the person or add a system user for automation if needed.
         </p>
       </div>
 

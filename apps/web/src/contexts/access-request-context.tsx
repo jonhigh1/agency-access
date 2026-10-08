@@ -452,14 +452,7 @@ export function AccessRequestProvider({
             return { valid: false, error: 'Please select at least one platform' };
           }
 
-          if (
-            (state.selectedPlatforms.meta?.length || 0) > 0 &&
-            !state.metaAccessConfig.recipients.some((recipient) => recipient.type === 'human')
-          ) {
-            return { valid: false, error: 'Choose one Meta person who will use the client assets' };
-          }
-
-          // Access level has default value (standard), so always valid
+          // Meta assignee defaults to agency owner on the server when omitted
           return { valid: true };
 
         case 3:

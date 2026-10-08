@@ -453,30 +453,17 @@ describe('AccessRequestContext', () => {
       expect(result.current.validateStep(2)).toEqual({ valid: true });
     });
 
-    it('requires a human Meta recipient even when a system user is selected', () => {
+    it('allows Meta platform selection without an explicit assignee (server defaults to owner)', () => {
       const { result } = renderHook(() => useAccessRequest(), { wrapper });
 
       act(() => {
         result.current.updatePlatforms({ meta: ['meta_ads'] });
       });
-      expect(result.current.validateStep(2)).toEqual({
-        valid: false,
-        error: 'Choose one Meta person who will use the client assets',
-      });
+      expect(result.current.validateStep(2)).toEqual({ valid: true });
 
       act(() => {
         result.current.updateMetaAccessConfig({
           recipients: [{ type: 'system_user', id: 'system-1', name: 'Automation' }],
-          pageTasks: [],
-          adAccountTasks: [],
-          catalogTasks: [],
-        });
-      });
-      expect(result.current.validateStep(2)).toMatchObject({ valid: false });
-
-      act(() => {
-        result.current.updateMetaAccessConfig({
-          recipients: [{ type: 'human', id: 'person-1', name: 'Agency user' }],
           pageTasks: [],
           adAccountTasks: [],
           catalogTasks: [],

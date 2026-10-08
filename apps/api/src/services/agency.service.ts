@@ -146,21 +146,6 @@ export async function createAgency(input: CreateAgencyInput) {
       };
     }
 
-    // Check if agency with this name already exists
-    const existingByName = await prisma.agency.findFirst({
-      where: { name: validated.name },
-    });
-
-    if (existingByName) {
-      return {
-        data: null,
-        error: {
-          code: 'AGENCY_EXISTS',
-          message: 'An agency with this name already exists',
-        },
-      };
-    }
-
     // Use transaction to create agency and admin member atomically
     const result = await prisma.$transaction(async (tx: any) => {
       const agency = await tx.agency.create({
@@ -290,21 +275,6 @@ export async function createAgencyWithCheckout(input: CreateAgencyWithCheckoutIn
         error: {
           code: 'AGENCY_EXISTS',
           message: 'An agency with this email already exists',
-        },
-      };
-    }
-
-    // Check if agency with this name already exists
-    const existingByName = await prisma.agency.findFirst({
-      where: { name: validated.name },
-    });
-
-    if (existingByName) {
-      return {
-        data: null,
-        error: {
-          code: 'AGENCY_EXISTS',
-          message: 'An agency with this name already exists',
         },
       };
     }
@@ -547,23 +517,6 @@ export async function updateAgency(agencyId: string, input: UpdateAgencyInput) {
           message: 'Agency not found',
         },
       };
-    }
-
-    // If updating name, check for conflicts
-    if (validated.name && validated.name !== existing.name) {
-      const nameConflict = await prisma.agency.findFirst({
-        where: { name: validated.name },
-      });
-
-      if (nameConflict) {
-        return {
-          data: null,
-          error: {
-            code: 'AGENCY_EXISTS',
-            message: 'An agency with this name already exists',
-          },
-        };
-      }
     }
 
     const existingSettings = (

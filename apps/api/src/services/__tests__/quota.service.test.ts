@@ -15,7 +15,7 @@
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 import { QuotaService } from '../quota.service';
-import { TIER_LIMITS, type SubscriptionTier, type MetricType } from '@agency-platform/shared';
+import { FREE_TIER_LIMITS, TIER_LIMITS, type SubscriptionTier, type MetricType } from '@agency-platform/shared';
 import { prisma } from '@/lib/prisma';
 
 // Mock dependencies
@@ -67,6 +67,39 @@ describe('QuotaService', () => {
   });
 
   describe('checkQuota', () => {
+    it('should allow free-tier agencies to create up to three clients', async () => {
+      vi.mocked(prisma.agency.findUnique).mockResolvedValue({ subscription: null } as any);
+      vi.mocked(prisma.client.count).mockResolvedValue(2);
+
+      const result = await quotaService.checkQuota({
+        agencyId: mockAgencyId,
+        metric: 'clients',
+        action: 'create',
+        requestedAmount: 1,
+      });
+
+      expect(result.allowed).toBe(true);
+      expect(result.limit).toBe(FREE_TIER_LIMITS.clients);
+      expect(result.used).toBe(2);
+      expect(result.remaining).toBe(1);
+    });
+
+    it('should block the fourth client on free tier', async () => {
+      vi.mocked(prisma.agency.findUnique).mockResolvedValue({ subscription: null } as any);
+      vi.mocked(prisma.client.count).mockResolvedValue(FREE_TIER_LIMITS.clients);
+
+      const result = await quotaService.checkQuota({
+        agencyId: mockAgencyId,
+        metric: 'clients',
+        action: 'create',
+        requestedAmount: 1,
+      });
+
+      expect(result.allowed).toBe(false);
+      expect(result.limit).toBe(3);
+      expect(result.remaining).toBe(0);
+    });
+
     it('should allow action when under limit', async () => {
       // Arrange
       const tier: SubscriptionTier = 'STARTER';

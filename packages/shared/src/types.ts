@@ -595,6 +595,30 @@ export const MetaAssignableRecipientSchema = z.object({
 });
 export type MetaAssignableRecipient = z.infer<typeof MetaAssignableRecipientSchema>;
 
+/** Prefer agency owner email, then Meta ADMIN role, then first listed person. */
+export function pickDefaultMetaHumanRecipient(
+  recipients: MetaAssignableRecipient[],
+  preferredEmail?: string | null
+): MetaAssignableRecipient | undefined {
+  const humans = recipients.filter((recipient) => recipient.type === 'human');
+  if (humans.length === 0) {
+    return undefined;
+  }
+
+  const normalizedPreferred = preferredEmail?.trim().toLowerCase();
+  if (normalizedPreferred) {
+    const emailMatch = humans.find(
+      (recipient) => recipient.email?.trim().toLowerCase() === normalizedPreferred
+    );
+    if (emailMatch) {
+      return emailMatch;
+    }
+  }
+
+  const adminMatch = humans.find((recipient) => recipient.role?.toUpperCase() === 'ADMIN');
+  return adminMatch ?? humans[0];
+}
+
 /** Agency-wide defaults for post-Partner Auto-Assign (ticket 08). Stored on Meta connection metadata. */
 export const MetaAutoAssignRecipientSchema = z.object({
   type: z.enum(['human', 'system_user']),
@@ -2913,7 +2937,7 @@ export const TIER_LIMITS: Record<SubscriptionTier, {
 };
 
 // Free tier limits for users without a subscription
-// Aligns with marketing site: 1 active client, core platforms only
+// Aligns with marketing site: up to 3 active clients on trial/free, core platforms only
 export const FREE_TIER_LIMITS: {
   accessRequests: number;
   clients: number;
@@ -2928,7 +2952,7 @@ export const FREE_TIER_LIMITS: {
   description: string;
 } = {
   accessRequests: 3,
-  clients: 1,
+  clients: 3,
   members: 1,
   templates: 1,
   clientOnboards: 3,

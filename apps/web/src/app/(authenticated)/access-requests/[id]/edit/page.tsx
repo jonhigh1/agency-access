@@ -290,11 +290,6 @@ export default function EditAccessRequestPage({ params }: EditAccessRequestPageP
       return;
     }
 
-    if (selectedPlatforms.meta?.length && !metaAccessConfig.recipients.some((recipient) => recipient.type === 'human')) {
-      setError('Choose at least one Meta person who will use the client assets.');
-      return;
-    }
-
     if (intakeFields.some((field) => !field.label.trim())) {
       setError('All intake fields must have a label before saving.');
       return;
