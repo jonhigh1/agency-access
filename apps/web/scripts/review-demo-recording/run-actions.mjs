@@ -27,6 +27,18 @@ export async function runRecordingAction(page, action) {
       }
       return;
     }
+    case 'addPagePartner': {
+      const button = page.getByTestId('review-demo-add-page-partner');
+      await button.waitFor({ state: 'visible', timeout: 30_000 });
+      if (await button.isEnabled()) {
+        await button.click();
+      }
+      await page.getByTestId('review-demo-page-partner-verified').waitFor({
+        state: 'visible',
+        timeout: 120_000,
+      });
+      return;
+    }
     default: {
       const unknown = /** @type {never} */ (action.type);
       throw new Error(`Unknown recording action: ${String(unknown)}`);

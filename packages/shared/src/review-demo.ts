@@ -194,8 +194,8 @@ export type ReviewDemoSession = z.infer<typeof ReviewDemoSessionSchema>;
 /** Default partner tasks for review-lab ad account agency share (matches production defaults). */
 export const REVIEW_DEMO_AD_ACCOUNT_PARTNER_TASKS = ['ADVERTISE', 'ANALYZE'] as const;
 
-/** Meta user id for the AuthHub review-lab sandbox Facebook account (Alex). */
-export const META_REVIEW_DEFAULT_SANDBOX_META_USER_ID = '61595281164997';
+/** App-scoped Meta user id for the lab sandbox Facebook account (Alex). */
+export const META_REVIEW_DEFAULT_SANDBOX_META_USER_ID = '122095319343509372';
 
 /** Infisical plain-secret name for the isolated Marketing API tier cron token. */
 export const META_TIER_CRON_TOKEN_SECRET_NAME = 'meta_tier_cron_token';

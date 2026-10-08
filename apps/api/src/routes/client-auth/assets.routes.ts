@@ -1360,6 +1360,7 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
                   pageId,
                   partnerBusinessId,
                   pageTasks,
+                  { assetKind: 'page' },
                 );
               } catch {
                 return {
@@ -1393,12 +1394,14 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
               pageId,
               partnerBusinessId,
               pageTasks,
+              { assetKind: 'page' },
             );
             const readBack = await metaPartnerService.verifyAgencyPartnerAccess(
               clientAccessToken,
               pageId,
               partnerBusinessId,
               pageTasks,
+              { assetKind: 'page' },
             );
             return {
               assetId: pageId,

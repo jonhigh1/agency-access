@@ -9,7 +9,7 @@ export const REVIEW_DEMO_RECORDING_STEPS = [
   'business_management',
 ];
 
-/** @typedef {'caption' | 'click' | 'wait' | 'hold' | 'checkAdAccess'} RecordingActionType */
+/** @typedef {'caption' | 'click' | 'wait' | 'hold' | 'checkAdAccess' | 'addPagePartner'} RecordingActionType */
 
 /**
  * @typedef {Object} RecordingAction
@@ -82,10 +82,12 @@ export const REVIEW_DEMO_RECORDING_PLAN = [
         type: 'caption',
         primary: 'Permission: business_management',
         secondary:
-          'Scoped Business Portfolio assets → Add agency to Page (production POST + readback) → manual ad-account partner verification',
+          'AuthHub added the agency to the Page as a partner and verified access via Graph readback.',
       },
       { type: 'click', testId: 'review-demo-step-tab-business_management' },
       { type: 'wait', testId: 'review-demo-bm-assets-list' },
+      { type: 'addPagePartner' },
+      { type: 'wait', testId: 'review-demo-page-partner-verified' },
       { type: 'wait', testId: 'review-demo-bm-partner-proof' },
       { type: 'hold', ms: 2500 },
     ],

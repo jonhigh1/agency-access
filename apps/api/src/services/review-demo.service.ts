@@ -23,7 +23,10 @@ import { auditService } from '@/services/audit.service.js';
 import { oauthStateService } from '@/services/oauth-state.service.js';
 import { resolveClientInviteCallbackUrl } from '@/routes/client-auth/redirect-uri.js';
 import { clientAssetsService } from '@/services/client-assets.service.js';
-import { metaPartnerService } from '@/services/meta-partner.service.js';
+import {
+  MetaPageAccessTokenUnavailableError,
+  metaPartnerService,
+} from '@/services/meta-partner.service.js';
 import {
   isReviewDemoSandboxMetaUser,
   reviewDemoContextService,
@@ -122,6 +125,67 @@ function toMetaGraphError(raw: string): ReviewDemoMetaGraphError {
     ...(parsed.fbtraceId ? { fbtraceId: parsed.fbtraceId } : {}),
     rawBody: raw,
   };
+}
+
+const PAGE_PARTNER_NOT_CHECKED_MESSAGE = 'Not checked yet — use Add agency to Page to run partner POST and readback.';
+
+async function buildPagePartnerSnapshotOnLoad(input: {
+  accessToken: string;
+  pageId: string;
+  agencyBusinessId: string;
+  agencyName?: string;
+}): Promise<ReviewDemoPagePartnerResult> {
+  const base = {
+    businessId: input.agencyBusinessId,
+    ...(input.agencyName ? { name: input.agencyName } : {}),
+    assetId: input.pageId,
+    assetKind: 'page' as const,
+  };
+
+  const tokenPhase = await metaPartnerService.resolvePageAccessTokenPhase(
+    input.accessToken,
+    input.pageId
+  );
+  if (!tokenPhase.obtained) {
+    return {
+      ...base,
+      permittedTasks: [],
+      verified: false,
+      pendingMessage: PAGE_PARTNER_NOT_CHECKED_MESSAGE,
+    };
+  }
+
+  try {
+    const pageAccess = await metaPartnerService.verifyAgencyPartnerAccess(
+      input.accessToken,
+      input.pageId,
+      input.agencyBusinessId,
+      [...REVIEW_DEMO_PAGE_PARTNER_TASKS],
+      { assetKind: 'page' }
+    );
+    return {
+      ...base,
+      permittedTasks: pageAccess.assignedTasks,
+      verified: pageAccess.verified,
+    };
+  } catch (error) {
+    if (error instanceof MetaPageAccessTokenUnavailableError) {
+      return {
+        ...base,
+        permittedTasks: [],
+        verified: false,
+        pendingMessage: PAGE_PARTNER_NOT_CHECKED_MESSAGE,
+      };
+    }
+    const raw = error instanceof Error ? error.message : String(error);
+    return {
+      ...base,
+      permittedTasks: [],
+      verified: false,
+      graphError: toMetaGraphError(raw),
+      rawGraphResponse: raw,
+    };
+  }
 }
 
 function businessStepCaption(input: {
@@ -761,7 +825,8 @@ export class ReviewDemoService {
         accessToken,
         pageId,
         agencyBusinessId,
-        partnerTasks
+        partnerTasks,
+        { assetKind: 'page' }
       );
       if (prior.verified) {
         return {
@@ -781,7 +846,8 @@ export class ReviewDemoService {
           accessToken,
           pageId,
           agencyBusinessId,
-          partnerTasks
+          partnerTasks,
+          { assetKind: 'page' }
         );
         rawGraphResponse = JSON.stringify({ success: true });
       } catch (error) {
@@ -804,7 +870,8 @@ export class ReviewDemoService {
         accessToken,
         pageId,
         agencyBusinessId,
-        partnerTasks
+        partnerTasks,
+        { assetKind: 'page' }
       );
 
       return {
@@ -818,6 +885,17 @@ export class ReviewDemoService {
         rawGraphResponse,
       };
     } catch (error) {
+      if (error instanceof MetaPageAccessTokenUnavailableError) {
+        return {
+          businessId: agencyBusinessId,
+          ...(agencyName ? { name: agencyName } : {}),
+          permittedTasks: [],
+          verified: false,
+          assetId: pageId,
+          assetKind: 'page',
+          pendingMessage: error.message,
+        };
+      }
       const raw = error instanceof Error ? error.message : String(error);
       return {
         businessId: agencyBusinessId,
@@ -915,25 +993,12 @@ export class ReviewDemoService {
       }
 
       const agencyName = await this.fetchAgencyBusinessName(accessToken, agencyBusinessId);
-      let pagePartner: ReviewDemoPagePartnerResult | undefined;
-      try {
-        const pageAccess = await metaPartnerService.verifyAgencyPartnerAccess(
-          accessToken,
-          pageId,
-          agencyBusinessId,
-          [...REVIEW_DEMO_PAGE_PARTNER_TASKS]
-        );
-        pagePartner = {
-          businessId: agencyBusinessId,
-          ...(agencyName ? { name: agencyName } : {}),
-          permittedTasks: pageAccess.assignedTasks,
-          verified: pageAccess.verified,
-          assetId: pageId,
-          assetKind: 'page',
-        };
-      } catch {
-        pagePartner = undefined;
-      }
+      const pagePartner = await buildPagePartnerSnapshotOnLoad({
+        accessToken,
+        pageId,
+        agencyBusinessId,
+        ...(agencyName ? { agencyName } : {}),
+      });
 
       const agencyPartner = {
         businessId: agencyBusinessId,
@@ -953,7 +1018,7 @@ export class ReviewDemoService {
         },
         assets,
         agencyPartner,
-        ...(pagePartner ? { pagePartner } : {}),
+        pagePartner,
         stepCaption: businessStepCaption({
           pagePartner,
           adAccountPartnerVerified: agencyPartner.verified,
@@ -1025,37 +1090,14 @@ export class ReviewDemoService {
       }
     }
 
-    let pagePartner: ReviewDemoPagePartnerResult | undefined;
-    if (assetContext.pageId) {
-      try {
-        const pageAccess = await metaPartnerService.verifyAgencyPartnerAccess(
+    const pagePartner = assetContext.pageId
+      ? await buildPagePartnerSnapshotOnLoad({
           accessToken,
-          assetContext.pageId,
+          pageId: assetContext.pageId,
           agencyBusinessId,
-          [...REVIEW_DEMO_PAGE_PARTNER_TASKS]
-        );
-        pagePartner = {
-          businessId: agencyBusinessId,
-          ...(agencyName ? { name: agencyName } : {}),
-          permittedTasks: pageAccess.assignedTasks,
-          verified: pageAccess.verified,
-          assetId: assetContext.pageId,
-          assetKind: 'page',
-        };
-      } catch (error) {
-        const raw = error instanceof Error ? error.message : String(error);
-        pagePartner = {
-          businessId: agencyBusinessId,
-          ...(agencyName ? { name: agencyName } : {}),
-          permittedTasks: [],
-          verified: false,
-          assetId: assetContext.pageId,
-          assetKind: 'page',
-          graphError: toMetaGraphError(raw),
-          rawGraphResponse: raw,
-        };
-      }
-    }
+          ...(agencyName ? { agencyName } : {}),
+        })
+      : undefined;
 
     const agencyPartner = {
       businessId: agencyBusinessId,

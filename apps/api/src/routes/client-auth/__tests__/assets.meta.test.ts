@@ -1285,12 +1285,14 @@ describe('Client Auth Asset Routes - Meta', () => {
       'page_2a',
       'partner-bm-1',
       ['MANAGE_LEADS'],
+      { assetKind: 'page' },
     );
     expect(metaPartnerService.verifyAgencyPartnerAccess).toHaveBeenCalledWith(
       'client-admin-user-token',
       'page_2a',
       'partner-bm-1',
       ['MANAGE_LEADS'],
+      { assetKind: 'page' },
     );
     expect(prisma.platformAuthorization.update).toHaveBeenCalledWith({
       where: { id: 'pa-1' },
