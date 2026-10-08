@@ -12,8 +12,11 @@ const MAX_DISPLAY_NAME_LENGTH = 64;
 
 /** Strip characters that could break an email header or the quoted display name. */
 export function sanitizeHeaderText(value: string): string {
-  return value
-    .replace(/[\u0000-\u001F\u007F]/g, ' ')
+  const withoutControlChars = Array.from(value, (char) => {
+    const code = char.charCodeAt(0);
+    return code <= 0x1f || code === 0x7f ? ' ' : char;
+  }).join('');
+  return withoutControlChars
     .replace(/["<>\\]/g, '')
     .replace(/\s+/g, ' ')
     .trim();
