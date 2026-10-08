@@ -1220,7 +1220,8 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
         ...selectedDatasetIds.map((assetId) => ({ assetId, assetKind: 'dataset' as const, requestedTasks: datasetTasks })),
       ];
       const currentRecipientGrantResults: MetaAssetGrantResult[] = [];
-      let skippedExcludedGrant = false;
+      // Excluded person/system-user grants are non-gating; only excluded business partner rows block completion.
+      let skippedGatingExcludedGrant = false;
 
       for (const recipient of accessConfig.recipients) {
         const recipientRecord = { type: recipient.type, id: recipient.id, grantMethod: 'assigned_users' };
@@ -1229,7 +1230,6 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
           requirements: grantRequirements,
           recipient: recipientRecord,
         });
-        skippedExcludedGrant ||= [...attemptVersions.values()].includes(0);
         const shouldRetry = (kind: string, id: string) => attemptVersions.get(`${kind}:${id}`) !== 0;
         const grantAsset = async (
           assetId: string,
@@ -1376,7 +1376,7 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
             recipient: pageAgencyPartnerRecipient,
           })
         : new Map<string, number>();
-      skippedExcludedGrant ||= [...pageAgencyAttempts.values()].includes(0);
+      skippedGatingExcludedGrant ||= [...pageAgencyAttempts.values()].includes(0);
       const pageAgencyResults = await mapInChunks(
         selectedPageIds.filter((id) => pageAgencyAttempts.get(`page:${id}`) !== 0),
         async (pageId): Promise<MetaAssetGrantResult> => {
@@ -1489,7 +1489,7 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
             recipient: businessRecipient,
           })
         : new Map<string, number>();
-      skippedExcludedGrant ||= [...businessAttemptVersions.values()].includes(0);
+      skippedGatingExcludedGrant ||= [...businessAttemptVersions.values()].includes(0);
       const shouldVerifyBusiness = (kind: string, id: string) => businessAttemptVersions.get(`${kind}:${id}`) !== 0;
       const businessAssetsNeedVerification = businessGrantRequirements.some((item) =>
         shouldVerifyBusiness(item.assetKind, item.assetId)
@@ -1580,7 +1580,7 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
         requirements: catalogBusinessRequirements,
         recipient: catalogBusinessRecipient,
       });
-      skippedExcludedGrant ||= [...catalogBusinessAttempts.values()].includes(0);
+      skippedGatingExcludedGrant ||= [...catalogBusinessAttempts.values()].includes(0);
       const catalogBusinessResults = await mapInChunks(
         selectedCatalogIds.filter((id) => catalogBusinessAttempts.get(`catalog:${id}`) !== 0),
         async (catalogId): Promise<MetaAssetGrantResult> => {
@@ -1701,9 +1701,9 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
           },
         };
       });
-      const verificationStatus = skippedExcludedGrant
-        ? 'partial'
-        : buildMetaGrantVerificationStatus(gatingMetaGrantResults(mergedAssetGrantResults));
+      const verificationStatus = buildMetaGrantVerificationStatus(
+        gatingMetaGrantResults(mergedAssetGrantResults)
+      );
 
       const pageResults = mergedAssetGrantResults.filter((result) => result.assetType === 'page');
       const adAccountResults = mergedAssetGrantResults.filter(
@@ -1713,10 +1713,10 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
       const adAccountBusinessResults = adAccountResults.filter(
         (result) => result.recipientType === 'business'
       );
-      const pagesAccessGranted = !skippedExcludedGrant &&
+      const pagesAccessGranted = !skippedGatingExcludedGrant &&
         pagePartnerResults.length > 0 &&
         pagePartnerResults.every((result) => result.status === 'verified');
-      const adAccountsAccessGranted = !skippedExcludedGrant &&
+      const adAccountsAccessGranted = !skippedGatingExcludedGrant &&
         adAccountBusinessResults.length > 0 &&
         adAccountBusinessResults.every((result) => result.status === 'verified');
       emitMetaClientGrantResultLogs(mergedAssetGrantResults, 'grant');

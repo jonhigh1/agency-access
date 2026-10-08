@@ -1614,17 +1614,15 @@ describe('AccessRequestService', () => {
 
       const result = await accessRequestService.getAccessRequestById('request-1');
 
-      expect(result.data?.authorizationProgress.isComplete).toBe(false);
-      expect(result.data?.authorizationProgress.unresolvedProducts).toEqual([
-        { product: 'meta_pages', platformGroup: 'meta', reason: 'stale' },
-      ]);
+      expect(result.data?.authorizationProgress.isComplete).toBe(true);
+      expect(result.data?.authorizationProgress.unresolvedProducts).toEqual([]);
       expect((result.data as any)?.metaFulfillment).toEqual([
         expect.objectContaining({ status: 'verified' }),
         expect.objectContaining({ status: 'stale', nextActor: 'client_admin' }),
       ]);
     });
 
-    it('keeps Meta access incomplete when verified tasks omit a requested task', async () => {
+    it('does not block Meta completion when only a non-gating person grant omits a requested task', async () => {
       vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue({
         id: 'request-1',
         agencyId: 'agency-1',
@@ -1656,10 +1654,8 @@ describe('AccessRequestService', () => {
 
       const result = await accessRequestService.getAccessRequestById('request-1');
 
-      expect(result.data?.authorizationProgress.isComplete).toBe(false);
-      expect(result.data?.authorizationProgress.unresolvedProducts).toEqual([
-        { product: 'meta_pages', platformGroup: 'meta', reason: 'missing_tasks' },
-      ]);
+      expect(result.data?.authorizationProgress.isComplete).toBe(true);
+      expect(result.data?.authorizationProgress.unresolvedProducts).toEqual([]);
       expect((result.data as any)?.metaFulfillment).toEqual([
         expect.objectContaining({ status: 'verified' }),
         expect.objectContaining({ status: 'blocked', errorCode: 'MISSING_TASKS' }),

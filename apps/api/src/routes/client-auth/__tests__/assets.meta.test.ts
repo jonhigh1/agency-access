@@ -1323,7 +1323,7 @@ describe('Client Auth Asset Routes - Meta', () => {
           meta: expect.objectContaining({
             verifiedMetaAssetGrantStatus: 'partial',
             pagesAccessGranted: true,
-            adAccountsAccessGranted: false,
+            adAccountsAccessGranted: true,
             verifiedMetaAssetGrantAt: expect.any(String),
           }),
         }),
@@ -1610,7 +1610,7 @@ describe('Client Auth Asset Routes - Meta', () => {
     expect(metaPartnerService.verifyDatasetAgencyAccess).not.toHaveBeenCalled();
   });
 
-  it('keeps fulfillment partial when system-user tasks verify but the selected human does not', async () => {
+  it('records a failed human Page assignment without blocking partner-verified fulfillment', async () => {
     vi.mocked(accessRequestService.getAccessRequestByToken).mockResolvedValue({
       data: {
         id: 'request-a',
@@ -1676,10 +1676,11 @@ describe('Client Auth Asset Routes - Meta', () => {
     });
 
     expect(response.statusCode).toBe(200);
-    expect(response.json().data).toMatchObject({ success: false, partial: true });
+    expect(response.json().data).toMatchObject({ success: true, partial: false });
     expect(response.json().data.assetGrantResults).toEqual(expect.arrayContaining([
       expect.objectContaining({ recipientType: 'human', recipientId: 'person-1', status: 'failed' }),
       expect.objectContaining({ recipientType: 'system_user', recipientId: 'system-user-1', status: 'verified' }),
+      expect.objectContaining({ recipientType: 'business', recipientId: 'partner-bm-1', status: 'verified' }),
     ]));
     expect(prisma.metaAssetGrant.updateMany).toHaveBeenCalledWith(expect.objectContaining({
       where: expect.objectContaining({ recipientType: 'human', recipientId: 'person-1' }),
@@ -1739,7 +1740,7 @@ describe('Client Auth Asset Routes - Meta', () => {
 
     const firstAttempt = await request();
     expect(firstAttempt.statusCode, firstAttempt.body).toBe(200);
-    expect(firstAttempt.json().data).toMatchObject({ success: false, partial: true });
+    expect(firstAttempt.json().data).toMatchObject({ success: true, partial: false });
 
     const unverifiableRetry = await request();
     expect(unverifiableRetry.statusCode).toBe(200);
@@ -1912,7 +1913,7 @@ describe('Client Auth Asset Routes - Meta', () => {
           meta: expect.objectContaining({
             verifiedMetaAssetGrantStatus: 'verified',
             pagesAccessGranted: true,
-            adAccountsAccessGranted: true,
+            adAccountsAccessGranted: false,
           }),
         }),
       },
@@ -1929,7 +1930,7 @@ describe('Client Auth Asset Routes - Meta', () => {
       payload: { connectionId: 'conn-1', assetTypes: ['page'] },
     });
     expect(retry.statusCode).toBe(200);
-    expect(retry.json().data).toMatchObject({ success: false, partial: true });
+    expect(retry.json().data).toMatchObject({ success: true, partial: false });
     expect(metaPartnerService.grantPageAccess).toHaveBeenCalledTimes(1);
   });
 
