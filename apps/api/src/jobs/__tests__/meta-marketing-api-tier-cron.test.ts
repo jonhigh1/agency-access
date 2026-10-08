@@ -29,7 +29,7 @@ describe('runMetaMarketingApiTierCronJob tick logging', () => {
         { callId: 'campaigns_list', edge: '/act_x/campaigns', httpStatus: 200, success: true },
       ],
       tierDayCount: 3,
-      consecutiveFailures: 0,
+      consecutiveFailedDays: 0,
       alertedConsecutiveFailures: false,
     });
 
@@ -58,7 +58,7 @@ describe('runMetaMarketingApiTierCronJob tick logging', () => {
       success: false,
       calls: [],
       tierDayCount: 0,
-      consecutiveFailures: 0,
+      consecutiveFailedDays: 0,
       alertedConsecutiveFailures: false,
     });
 

@@ -222,6 +222,7 @@ const envSchema = z.object({
   /** When true, tier cron runs every 10 minutes and may run multiple times per UTC day. */
   META_MARKETING_API_TIER_CRON_BURST: strictTrueOrOne(false),
   META_MARKETING_API_TIER_CRON_LAB_USER_ID: z.string().optional(),
+  // Consecutive failed UTC days (failed runs, no success that day) before the Sentry alert.
   META_MARKETING_API_TIER_FAILURE_ALERT_THRESHOLD: z.coerce.number().int().min(1).default(3),
 
   // Internal Admin Access Control (comma-separated allowlists)

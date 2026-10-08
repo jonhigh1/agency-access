@@ -7,6 +7,8 @@ import {
   META_REVIEW_DEFAULT_AD_ACCOUNT_NUMERIC,
   META_REVIEW_LOCKED_APP_ID,
   normalizeMetaAdAccountId,
+  parseMetaGraphApiErrorText,
+  sanitizeMetaGraphErrorMessage,
 } from '@agency-platform/shared';
 import * as Sentry from '@sentry/node';
 import { env } from '@/lib/env.js';
@@ -15,20 +17,32 @@ import { metaGraphFetch } from '@/lib/meta-graph-instrumentation.js';
 import { prisma } from '@/lib/prisma.js';
 import { auditService } from '@/services/audit.service.js';
 import {
+  countConsecutiveFailedTierDays,
   countSuccessfulTierDays,
   findLastConsecutiveFailureSentryAlert,
   hasSuccessfulTierUtcDate,
+  listTierRunDaysSince,
   META_MARKETING_API_TIER_SENTRY_ALERT_KIND,
 } from '@/services/meta-marketing-api-tier-cron.queries.js';
 import { readMetaTierCronAccessToken } from '@/services/meta-tier-cron-token.service.js';
 
 const GRAPH_BASE = `https://graph.facebook.com/${META_GRAPH_VERSION}`;
 
+/** Meta Graph error fields from a failed call (message sanitized; no token material). */
+export interface TierCronMetaError {
+  code?: number;
+  subcode?: number;
+  type?: string;
+  message?: string;
+  fbtraceId?: string;
+}
+
 export interface TierCronCallResult {
   callId: string;
   edge: string;
   httpStatus: number;
   success: boolean;
+  metaError?: TierCronMetaError;
 }
 
 export interface MetaMarketingApiTierCronResult {
@@ -37,7 +51,8 @@ export interface MetaMarketingApiTierCronResult {
   success: boolean;
   calls: TierCronCallResult[];
   tierDayCount: number;
-  consecutiveFailures: number;
+  /** Consecutive UTC days with failed runs and no successful run (0 on success/skip). */
+  consecutiveFailedDays: number;
   alertedConsecutiveFailures: boolean;
 }
 
@@ -90,22 +105,50 @@ async function findTodaySuccessLog(tierUtcDate: string) {
   });
 }
 
-async function countConsecutiveFailuresIncludingToday(todaySuccess: boolean): Promise<number> {
-  const rows = await prisma.auditLog.findMany({
-    where: { action: META_MARKETING_API_TIER_DAILY_AUDIT_ACTION },
-    select: { metadata: true },
-    orderBy: { createdAt: 'desc' },
-    take: 30,
-  });
+/** Look-back for the consecutive failed day count (the alert only needs a few days). */
+const CONSECUTIVE_FAILED_DAYS_LOOKBACK_DAYS = 35;
 
-  let consecutive = todaySuccess ? 0 : 1;
-  for (const row of rows) {
-    const metadata = row.metadata as { success?: boolean; kind?: string } | null;
-    if (metadata?.kind === META_MARKETING_API_TIER_SENTRY_ALERT_KIND) continue;
-    if (metadata?.success === true) break;
-    if (metadata?.success === false) consecutive += 1;
+/**
+ * Consecutive failed UTC days, including the run that was just written to the audit log.
+ * Counts days, not runs (see countConsecutiveFailedTierDays), so the current run is counted
+ * exactly once and burst-mode runs or pg-boss retries do not inflate it.
+ */
+async function countConsecutiveFailedDays(now: Date, tierUtcDate: string): Promise<number> {
+  const since = new Date(now.getTime() - CONSECUTIVE_FAILED_DAYS_LOOKBACK_DAYS * 24 * 60 * 60 * 1000);
+  const days = await listTierRunDaysSince(since);
+  return countConsecutiveFailedTierDays(days, tierUtcDate);
+}
+
+const META_ERROR_MESSAGE_MAX_LENGTH = 300;
+
+/**
+ * Remove anything that could identify an account or carry a credential before a Meta error
+ * message goes to Sentry or logs: access tokens, act_ ids and long numeric ids.
+ */
+export function scrubMetaErrorMessage(message: string): string {
+  return sanitizeMetaGraphErrorMessage(message)
+    .replace(/\bEA[A-Za-z0-9]{20,}\b/g, '[token]')
+    .replace(/\bact_\d+\b/gi, 'act_[id]')
+    .replace(/\b\d{6,}\b/g, '[id]')
+    .slice(0, META_ERROR_MESSAGE_MAX_LENGTH);
+}
+
+async function readMetaError(response: Response): Promise<TierCronMetaError | undefined> {
+  try {
+    const readable = typeof response.clone === 'function' ? response.clone() : response;
+    if (typeof readable.text !== 'function') return undefined;
+    const details = parseMetaGraphApiErrorText(await readable.text());
+    const metaError: TierCronMetaError = {
+      ...(details.code !== undefined ? { code: details.code } : {}),
+      ...(details.errorSubcode !== undefined ? { subcode: details.errorSubcode } : {}),
+      ...(details.type ? { type: details.type } : {}),
+      ...(details.message ? { message: scrubMetaErrorMessage(details.message) } : {}),
+      ...(details.fbtraceId ? { fbtraceId: details.fbtraceId } : {}),
+    };
+    return Object.keys(metaError).length > 0 ? metaError : undefined;
+  } catch {
+    return undefined;
   }
-  return consecutive;
 }
 
 async function executeGraphCalls(
@@ -132,11 +175,13 @@ async function executeGraphCalls(
         signal,
       });
 
+      const metaError = response.ok ? undefined : await readMetaError(response);
       results.push({
         callId: call.id,
         edge: path,
         httpStatus: response.status,
         success: response.ok,
+        ...(metaError ? { metaError } : {}),
       });
 
       if (!response.ok) {
@@ -190,7 +235,7 @@ export async function runMetaMarketingApiTierDailyCron(
       success: false,
       calls: [],
       tierDayCount: 0,
-      consecutiveFailures: 0,
+      consecutiveFailedDays: 0,
       alertedConsecutiveFailures: false,
     };
   }
@@ -202,7 +247,7 @@ export async function runMetaMarketingApiTierDailyCron(
       success: false,
       calls: [],
       tierDayCount: 0,
-      consecutiveFailures: 0,
+      consecutiveFailedDays: 0,
       alertedConsecutiveFailures: false,
     };
   }
@@ -224,7 +269,7 @@ export async function runMetaMarketingApiTierDailyCron(
         success: true,
         calls: [],
         tierDayCount: metadata?.tierDayCount ?? (await countSuccessfulTierDays()),
-        consecutiveFailures: 0,
+        consecutiveFailedDays: 0,
         alertedConsecutiveFailures: false,
       };
     }
@@ -252,7 +297,7 @@ export async function runMetaMarketingApiTierDailyCron(
       success: false,
       calls: [],
       tierDayCount: await countSuccessfulTierDays(),
-      consecutiveFailures: 0,
+      consecutiveFailedDays: 0,
       alertedConsecutiveFailures: false,
     };
   }
@@ -288,12 +333,10 @@ export async function runMetaMarketingApiTierDailyCron(
 
   logger.info('meta_marketing_api_tier_daily', logPayload);
 
-  const consecutiveFailures = success
-    ? 0
-    : await countConsecutiveFailuresIncludingToday(false);
+  const consecutiveFailedDays = success ? 0 : await countConsecutiveFailedDays(now, tierUtcDate);
   const alertedConsecutiveFailures = success
     ? false
-    : await maybeAlertConsecutiveFailures(consecutiveFailures, now, {
+    : await maybeAlertConsecutiveFailures(consecutiveFailedDays, now, {
         metaAppId,
         adAccountId,
         tierUtcDate,
@@ -304,57 +347,105 @@ export async function runMetaMarketingApiTierDailyCron(
     success,
     calls,
     tierDayCount,
-    consecutiveFailures,
+    consecutiveFailedDays,
     alertedConsecutiveFailures,
   };
 }
 
+export interface TierCronAlertContext {
+  metaAppId?: string;
+  /** Used for the internal audit marker row only; never sent to Sentry. */
+  adAccountId?: string;
+  tierUtcDate: string;
+  graphCalls?: TierCronCallResult[];
+}
+
+/**
+ * Sentry-safe view of the Graph calls: call id, HTTP status and Meta error fields only. The
+ * edge (which embeds the ad account id) is replaced by the call id; tokens never reach here.
+ */
+export function buildTierCronSentryPayload(graphCalls: TierCronCallResult[] = []): {
+  tags: Record<string, string>;
+  extra: Record<string, unknown>;
+} {
+  const failed = graphCalls.find((call) => !call.success);
+  const metaError = failed?.metaError;
+  const tags: Record<string, string> = {
+    ...(failed ? { tier_cron_failed_call: failed.callId, tier_cron_http_status: String(failed.httpStatus) } : {}),
+    ...(metaError?.code !== undefined ? { meta_error_code: String(metaError.code) } : {}),
+    ...(metaError?.subcode !== undefined ? { meta_error_subcode: String(metaError.subcode) } : {}),
+    ...(metaError?.type ? { meta_error_type: metaError.type } : {}),
+  };
+  const extra: Record<string, unknown> = {
+    graphCalls: graphCalls.map((call) => ({
+      callId: call.callId,
+      httpStatus: call.httpStatus,
+      success: call.success,
+    })),
+    ...(metaError
+      ? {
+          metaError: {
+            code: metaError.code,
+            subcode: metaError.subcode,
+            type: metaError.type,
+            message: metaError.message,
+            fbtraceId: metaError.fbtraceId,
+          },
+        }
+      : {}),
+  };
+  return { tags, extra };
+}
+
 export async function maybeAlertConsecutiveFailures(
-  consecutiveFailures: number,
+  consecutiveFailedDays: number,
   now: Date,
-  context: Record<string, unknown>,
+  context: TierCronAlertContext,
 ): Promise<boolean> {
   const threshold = env.META_MARKETING_API_TIER_FAILURE_ALERT_THRESHOLD;
-  if (consecutiveFailures < threshold) {
+  if (consecutiveFailedDays < threshold) {
     return false;
   }
+
+  const sentryPayload = buildTierCronSentryPayload(context.graphCalls);
+  const logContext = {
+    metaAppId: context.metaAppId,
+    tierUtcDate: context.tierUtcDate,
+    consecutiveFailedDays,
+    threshold,
+    ...sentryPayload.extra,
+  };
 
   const recentAlert = await findLastConsecutiveFailureSentryAlert(now);
   if (recentAlert) {
     logger.warn('meta_marketing_api_tier_daily_consecutive_failures_alert_throttled', {
-      ...context,
-      consecutiveFailures,
-      threshold,
+      ...logContext,
       lastAlertAt: recentAlert.toISOString(),
     });
     return false;
   }
 
+  const dayLabel = consecutiveFailedDays === 1 ? 'UTC day' : 'consecutive UTC days';
   Sentry.captureMessage(
-    `Meta Marketing API tier cron: ${consecutiveFailures} consecutive daily failures`,
+    `Meta Marketing API tier cron: ${consecutiveFailedDays} ${dayLabel} without a successful run`,
     {
       level: 'error',
-      extra: {
-        ...context,
-        consecutiveFailures,
-        threshold,
-      },
+      // Stable grouping: the count in the message changes daily.
+      fingerprint: ['meta-marketing-api-tier-cron', 'consecutive-failed-days'],
+      tags: sentryPayload.tags,
+      extra: logContext,
     },
   );
-  logger.error('meta_marketing_api_tier_daily_consecutive_failures', {
-    ...context,
-    consecutiveFailures,
-    threshold,
-  });
+  logger.error('meta_marketing_api_tier_daily_consecutive_failures', logContext);
 
   await auditService.createAuditLog({
     action: META_MARKETING_API_TIER_DAILY_AUDIT_ACTION,
     resourceType: 'meta_marketing_api_tier',
-    resourceId: typeof context.adAccountId === 'string' ? context.adAccountId : undefined,
+    resourceId: context.adAccountId,
     agencyId: env.META_REVIEW_LAB_AGENCY_ID,
     metadata: {
       kind: META_MARKETING_API_TIER_SENTRY_ALERT_KIND,
-      consecutiveFailures,
+      consecutiveFailedDays,
       threshold,
       tierUtcDate: context.tierUtcDate,
       metaAppId: context.metaAppId,

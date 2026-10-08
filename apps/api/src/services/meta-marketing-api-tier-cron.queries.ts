@@ -58,3 +58,61 @@ export async function findLastConsecutiveFailureSentryAlert(
   `;
   return rows[0]?.created_at ?? null;
 }
+
+/** Per-UTC-day rollup of tier cron runs (alert marker rows excluded). */
+export interface TierRunDay {
+  tierUtcDate: string;
+  anySuccess: boolean;
+  anyFailure: boolean;
+}
+
+/**
+ * Distinct UTC days with tier cron runs since `since`, newest first. One row per day, so
+ * burst mode (144 runs/day) cannot crowd older days out of the window.
+ */
+export async function listTierRunDaysSince(since: Date): Promise<TierRunDay[]> {
+  const rows = await prisma.$queryRaw<
+    { tier_utc_date: string; any_success: boolean | null; any_failure: boolean | null }[]
+  >`
+    SELECT
+      COALESCE(
+        metadata->>'tierUtcDate',
+        to_char(created_at AT TIME ZONE 'UTC', 'YYYY-MM-DD')
+      ) AS tier_utc_date,
+      BOOL_OR((metadata->>'success') = 'true') AS any_success,
+      BOOL_OR((metadata->>'success') = 'false') AS any_failure
+    FROM audit_logs
+    WHERE action = ${META_MARKETING_API_TIER_DAILY_AUDIT_ACTION}
+      AND metadata->>'kind' IS DISTINCT FROM ${META_MARKETING_API_TIER_SENTRY_ALERT_KIND}
+      AND created_at >= ${since}
+    GROUP BY 1
+    ORDER BY 1 DESC
+  `;
+  return rows.map((row) => ({
+    tierUtcDate: row.tier_utc_date,
+    anySuccess: row.any_success === true,
+    anyFailure: row.any_failure === true,
+  }));
+}
+
+/**
+ * Consecutive failed UTC days ending at `tierUtcDate`: walking back from that day, count days
+ * that had at least one failed run and no successful run, stopping at the first day with a
+ * success. Days with no runs at all (service asleep, cron off) are skipped rather than
+ * counted or treated as a reset, matching the previous behavior across gaps.
+ *
+ * Each day counts once however many runs it had, so burst mode (a run every 10 minutes) and
+ * pg-boss retries no longer inflate the count, and the current run is not counted twice.
+ */
+export function countConsecutiveFailedTierDays(days: TierRunDay[], tierUtcDate: string): number {
+  const ordered = days
+    .filter((day) => day.tierUtcDate <= tierUtcDate)
+    .sort((a, b) => (a.tierUtcDate < b.tierUtcDate ? 1 : a.tierUtcDate > b.tierUtcDate ? -1 : 0));
+
+  let consecutive = 0;
+  for (const day of ordered) {
+    if (day.anySuccess) break;
+    if (day.anyFailure) consecutive += 1;
+  }
+  return consecutive;
+}

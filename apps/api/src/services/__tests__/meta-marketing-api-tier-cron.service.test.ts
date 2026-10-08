@@ -65,16 +65,28 @@ import * as Sentry from '@sentry/node';
 import {
   runMetaMarketingApiTierDailyCron,
   maybeAlertConsecutiveFailures,
+  scrubMetaErrorMessage,
   type MetaMarketingApiTierCronDeps,
 } from '../meta-marketing-api-tier-cron.service.js';
+import type { TierRunDay } from '../meta-marketing-api-tier-cron.queries.js';
 import { META_MARKETING_API_TIER_SENTRY_ALERT_KIND } from '../meta-marketing-api-tier-cron.queries.js';
 
 const allowedAdAccount = normalizeMetaAdAccountId(META_REVIEW_DEFAULT_AD_ACCOUNT_NUMERIC);
 
-function mockTierDayCount(count: number, options?: { todayAlreadySuccessful?: boolean }) {
+function mockTierDayCount(
+  count: number,
+  options?: { todayAlreadySuccessful?: boolean; runDays?: TierRunDay[] },
+) {
   vi.mocked(prisma.$queryRaw).mockImplementation(async (query) => {
     const strings = Array.isArray(query) ? query : [query];
     const sql = strings.join(' ');
+    if (sql.includes('BOOL_OR')) {
+      return (options?.runDays ?? []).map((day) => ({
+        tier_utc_date: day.tierUtcDate,
+        any_success: day.anySuccess,
+        any_failure: day.anyFailure,
+      })) as never;
+    }
     if (sql.includes('COUNT(DISTINCT')) {
       return [{ count: BigInt(count) }] as never;
     }
@@ -169,24 +181,131 @@ describe('runMetaMarketingApiTierDailyCron', () => {
       ok: false,
       status: 403,
     } as Response);
-
-    vi.mocked(prisma.auditLog.findMany).mockResolvedValue([
-      { createdAt: new Date('2026-10-06T06:00:00Z'), metadata: { success: false } },
-      { createdAt: new Date('2026-10-05T06:00:00Z'), metadata: { success: false } },
-    ] as never);
+    // The audit row for the current run is already written when the count runs, so the
+    // days rollup includes today.
+    mockTierDayCount(0, {
+      runDays: [
+        { tierUtcDate: '2026-10-07', anySuccess: false, anyFailure: true },
+        { tierUtcDate: '2026-10-06', anySuccess: false, anyFailure: true },
+        { tierUtcDate: '2026-10-05', anySuccess: false, anyFailure: true },
+        { tierUtcDate: '2026-10-04', anySuccess: true, anyFailure: false },
+      ],
+    });
 
     const result = await runMetaMarketingApiTierDailyCron({
       now: () => new Date('2026-10-07T06:00:00Z'),
     });
 
     expect(result.success).toBe(false);
-    expect(result.consecutiveFailures).toBe(3);
-    expect(Sentry.captureMessage).toHaveBeenCalled();
+    expect(result.consecutiveFailedDays).toBe(3);
+    expect(result.alertedConsecutiveFailures).toBe(true);
+    expect(Sentry.captureMessage).toHaveBeenCalledWith(
+      'Meta Marketing API tier cron: 3 consecutive UTC days without a successful run',
+      expect.objectContaining({
+        level: 'error',
+        fingerprint: ['meta-marketing-api-tier-cron', 'consecutive-failed-days'],
+        extra: expect.objectContaining({ consecutiveFailedDays: 3, threshold: 3 }),
+      }),
+    );
     expect(auditService.createAuditLog).toHaveBeenCalledWith(
       expect.objectContaining({
         metadata: expect.objectContaining({ success: false, httpStatus: 403 }),
       }),
     );
+  });
+
+  it('counts the current run once: two failed runs today after a success yesterday is 1 day', async () => {
+    vi.mocked(metaGraphFetch).mockResolvedValue({ ok: false, status: 403 } as Response);
+    mockTierDayCount(0, {
+      runDays: [
+        { tierUtcDate: '2026-10-08', anySuccess: false, anyFailure: true },
+        { tierUtcDate: '2026-10-07', anySuccess: true, anyFailure: false },
+      ],
+    });
+
+    const result = await runMetaMarketingApiTierDailyCron({
+      now: () => new Date('2026-10-08T18:00:00Z'),
+    });
+
+    expect(result.consecutiveFailedDays).toBe(1);
+    expect(result.alertedConsecutiveFailures).toBe(false);
+    expect(Sentry.captureMessage).not.toHaveBeenCalled();
+  });
+
+  it('burst mode: failed runs after a same-day success are not a failed day', async () => {
+    const { env } = await import('@/lib/env.js');
+    env.META_MARKETING_API_TIER_CRON_BURST = true;
+    vi.mocked(metaGraphFetch).mockResolvedValue({ ok: false, status: 403 } as Response);
+    mockTierDayCount(2, {
+      todayAlreadySuccessful: true,
+      runDays: [{ tierUtcDate: '2026-10-08', anySuccess: true, anyFailure: true }],
+    });
+
+    const result = await runMetaMarketingApiTierDailyCron({
+      now: () => new Date('2026-10-08T18:00:00Z'),
+    });
+
+    expect(result.success).toBe(false);
+    expect(result.consecutiveFailedDays).toBe(0);
+    expect(Sentry.captureMessage).not.toHaveBeenCalled();
+    env.META_MARKETING_API_TIER_CRON_BURST = false;
+  });
+
+  it('sends Meta error code, subcode, type, message and fbtrace id to Sentry without ids or tokens', async () => {
+    const body = JSON.stringify({
+      error: {
+        message:
+          '(#200) Ad account owner has NOT grant ads_management or ads_read permission for act_557538895783894 (user 1234567890123) access_token=EAAsecretsecretsecretsecret',
+        type: 'OAuthException',
+        code: 200,
+        error_subcode: 1487694,
+        fbtrace_id: 'AbCdEfGhIjKlMnOpQrStUv-',
+      },
+    });
+    vi.mocked(metaGraphFetch).mockResolvedValue(new Response(body, { status: 403 }));
+    mockTierDayCount(0, {
+      runDays: [
+        { tierUtcDate: '2026-10-08', anySuccess: false, anyFailure: true },
+        { tierUtcDate: '2026-10-07', anySuccess: false, anyFailure: true },
+        { tierUtcDate: '2026-10-06', anySuccess: false, anyFailure: true },
+      ],
+    });
+
+    const result = await runMetaMarketingApiTierDailyCron({
+      now: () => new Date('2026-10-08T18:00:00Z'),
+    });
+
+    expect(result.calls[0]?.metaError).toEqual(
+      expect.objectContaining({ code: 200, subcode: 1487694, type: 'OAuthException' }),
+    );
+    expect(Sentry.captureMessage).toHaveBeenCalledTimes(1);
+    const [, captureContext] = vi.mocked(Sentry.captureMessage).mock.calls[0] as [
+      string,
+      { tags: Record<string, string>; extra: Record<string, unknown> },
+    ];
+    expect(captureContext.tags).toEqual(
+      expect.objectContaining({
+        meta_error_code: '200',
+        meta_error_subcode: '1487694',
+        meta_error_type: 'OAuthException',
+        tier_cron_failed_call: 'ad_account_read',
+        tier_cron_http_status: '403',
+      }),
+    );
+    expect(captureContext.extra.metaError).toEqual({
+      code: 200,
+      subcode: 1487694,
+      type: 'OAuthException',
+      message: expect.stringContaining('(#200) Ad account owner has NOT grant ads_management'),
+      fbtraceId: 'AbCdEfGhIjKlMnOpQrStUv-',
+    });
+
+    const serialized = JSON.stringify(vi.mocked(Sentry.captureMessage).mock.calls);
+    expect(serialized).not.toContain('557538895783894');
+    expect(serialized).not.toContain('1234567890123');
+    expect(serialized).not.toContain('EAAsecret');
+    expect(serialized).not.toContain('lab-tier-cron-token');
+    expect(serialized).not.toContain('adAccountId');
   });
 
   it('does not call Graph when today already logged a success (burst off)', async () => {
@@ -261,6 +380,16 @@ describe('maybeAlertConsecutiveFailures', () => {
     vi.mocked(prisma.$queryRaw).mockResolvedValue([] as never);
   });
 
+  it('does not alert below the failed-day threshold', async () => {
+    const fired = await maybeAlertConsecutiveFailures(2, new Date('2026-10-07T12:00:00Z'), {
+      metaAppId: '1215220247221414',
+      adAccountId: allowedAdAccount,
+      tierUtcDate: '2026-10-07',
+    });
+    expect(fired).toBe(false);
+    expect(Sentry.captureMessage).not.toHaveBeenCalled();
+  });
+
   it('sends Sentry at most once per hour', async () => {
     const now = new Date('2026-10-07T12:00:00Z');
 
@@ -296,9 +425,25 @@ describe('maybeAlertConsecutiveFailures', () => {
       expect.objectContaining({
         metadata: expect.objectContaining({
           kind: META_MARKETING_API_TIER_SENTRY_ALERT_KIND,
-          consecutiveFailures: 4,
+          consecutiveFailedDays: 4,
         }),
       }),
     );
+  });
+});
+
+describe('scrubMetaErrorMessage', () => {
+  it('removes tokens, act_ ids and long numeric ids, keeps the Meta error text', () => {
+    const scrubbed = scrubMetaErrorMessage(
+      '(#100) Unsupported get request on act_557538895783894, object 120200000000001 access_token=EAAabc EAABwzLixnjYBO1234567890abcdefXYZ',
+    );
+    expect(scrubbed).toContain('(#100) Unsupported get request on act_[id]');
+    expect(scrubbed).not.toMatch(/\d{6,}/);
+    expect(scrubbed).not.toContain('EAAabc');
+    expect(scrubbed).not.toContain('EAABwz');
+  });
+
+  it('caps length', () => {
+    expect(scrubMetaErrorMessage('x'.repeat(1000))).toHaveLength(300);
   });
 });
