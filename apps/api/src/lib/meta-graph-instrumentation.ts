@@ -10,10 +10,30 @@ import {
 } from '@agency-platform/shared';
 import { logger } from './logger.js';
 
-const recordedOps: MetaGraphOpRecord[] = [];
+/**
+ * Process-wide log of Graph calls. Callers read captions for the calls made during one request
+ * by taking a cursor first (getMetaGraphOpCursor) and reading since it afterwards
+ * (getRecordedMetaGraphOpsSince). The buffer is capped so a long-running process cannot grow
+ * it without bound; the cursor is a monotonic count, so trimming old entries never shifts it.
+ */
+export const MAX_RECORDED_META_GRAPH_OPS = 200;
+
+let recordedOps: MetaGraphOpRecord[] = [];
+let droppedOps = 0;
 
 export function clearRecordedMetaGraphOps(): void {
-  recordedOps.length = 0;
+  recordedOps = [];
+  droppedOps = 0;
+}
+
+/** Total ops recorded so far (monotonic, unaffected by the cap). */
+export function getMetaGraphOpCursor(): number {
+  return droppedOps + recordedOps.length;
+}
+
+/** Ops recorded after `cursor`; entries already trimmed by the cap are skipped. */
+export function getRecordedMetaGraphOpsSince(cursor: number): readonly MetaGraphOpRecord[] {
+  return recordedOps.slice(Math.max(0, cursor - droppedOps));
 }
 
 export function getRecordedMetaGraphOps(): readonly MetaGraphOpRecord[] {
@@ -28,6 +48,11 @@ export function recordMetaGraphOp(record: MetaGraphOpRecord): void {
   const serialized = serializeMetaGraphOp(record);
   assertNoTokenMaterialInSerializedGraphOps(serialized);
   recordedOps.push(record);
+  if (recordedOps.length > MAX_RECORDED_META_GRAPH_OPS) {
+    const excess = recordedOps.length - MAX_RECORDED_META_GRAPH_OPS;
+    recordedOps.splice(0, excess);
+    droppedOps += excess;
+  }
   logger.info('meta_graph_op', { graphOp: record });
 }
 

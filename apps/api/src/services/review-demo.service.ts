@@ -17,7 +17,7 @@ import { env } from '@/lib/env.js';
 import { infisical } from '@/lib/infisical.js';
 import { reviewDemoMetaSecretName } from '@/lib/review-demo-secrets.js';
 import { formatMetaGraphOpCaption } from '@agency-platform/shared';
-import { getRecordedMetaGraphOps, metaGraphFetch } from '@/lib/meta-graph-instrumentation.js';
+import { getMetaGraphOpCursor, getRecordedMetaGraphOpsSince, metaGraphFetch } from '@/lib/meta-graph-instrumentation.js';
 import { MetaConnector } from '@/services/connectors/meta.js';
 import { auditService } from '@/services/audit.service.js';
 import { oauthStateService } from '@/services/oauth-state.service.js';
@@ -190,8 +190,7 @@ async function buildPagePartnerSnapshotOnLoad(input: {
 }
 
 function graphCaptionsSince(start: number): string[] {
-  return getRecordedMetaGraphOps()
-    .slice(start)
+  return getRecordedMetaGraphOpsSince(start)
     .map((op) => formatMetaGraphOpCaption(op));
 }
 
@@ -457,7 +456,7 @@ export class ReviewDemoService {
       input.ipAddress,
       input.userAgent
     );
-    const opsStart = getRecordedMetaGraphOps().length;
+    const opsStart = getMetaGraphOpCursor();
     const stored = await readStoredToken(input.clerkUserId);
     const assetContext = await reviewDemoContextService.resolveAssets({
       accessToken,
@@ -582,7 +581,7 @@ export class ReviewDemoService {
   }
 
   private async loadPagesShowList(accessToken: string): Promise<ReviewDemoStepPayload> {
-    const opsStart = getRecordedMetaGraphOps().length;
+    const opsStart = getMetaGraphOpCursor();
     const response = await metaGraphFetch(
       `${GRAPH_BASE}/me/accounts?fields=id,name,picture`,
       { method: 'GET', accessToken, tokenClass: 'client_user' }
@@ -675,7 +674,7 @@ export class ReviewDemoService {
           code: 'graph_error',
           message: formatMetaGraphApiError(raw).displayMessage,
         },
-        graphCaptions: graphCaptionsSince(getRecordedMetaGraphOps().length),
+        graphCaptions: graphCaptionsSince(getMetaGraphOpCursor()),
       };
     }
   }
@@ -685,7 +684,7 @@ export class ReviewDemoService {
     assetContext: ReviewDemoResolvedAssets,
     options: { includePartnerReadback: boolean }
   ): Promise<ReviewDemoStepPayload> {
-    const opsStart = getRecordedMetaGraphOps().length;
+    const opsStart = getMetaGraphOpCursor();
     const agencyBusinessId = assetContext.agencyBusinessId;
     const partnerTasks = [...REVIEW_DEMO_AD_ACCOUNT_PARTNER_TASKS];
     const agencyName = await this.fetchAgencyBusinessName(accessToken, agencyBusinessId);
@@ -915,7 +914,7 @@ export class ReviewDemoService {
     accessToken: string,
     assetContext: ReviewDemoResolvedAssets
   ): Promise<ReviewDemoStepPayload> {
-    const opsStart = getRecordedMetaGraphOps().length;
+    const opsStart = getMetaGraphOpCursor();
     const agencyBusinessId = assetContext.agencyBusinessId;
     const partnerTasks = [...REVIEW_DEMO_AD_ACCOUNT_PARTNER_TASKS];
 

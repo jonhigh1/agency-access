@@ -151,6 +151,8 @@ describe('reviewDemoService manual ad account check access', () => {
     });
 
     vi.doMock('@/lib/meta-graph-instrumentation.js', () => ({
+      getMetaGraphOpCursor: () => 0,
+      getRecordedMetaGraphOpsSince: () => [],
       getRecordedMetaGraphOps: () => [],
       metaGraphFetch: vi.fn(async (url: string) => {
         if (url.includes('act_557538895783894?fields')) {
@@ -199,6 +201,8 @@ describe('reviewDemoService manual ad account check access', () => {
     );
 
     vi.doMock('@/lib/meta-graph-instrumentation.js', () => ({
+      getMetaGraphOpCursor: () => 0,
+      getRecordedMetaGraphOpsSince: () => [],
       getRecordedMetaGraphOps: () => [],
       metaGraphFetch: vi.fn(async (url: string) => {
         if (url.includes('act_557538895783894?fields')) {
@@ -260,6 +264,8 @@ describe('reviewDemoService business_management sandbox scope', () => {
     });
 
     vi.doMock('@/lib/meta-graph-instrumentation.js', () => ({
+      getMetaGraphOpCursor: () => 0,
+      getRecordedMetaGraphOpsSince: () => [],
       getRecordedMetaGraphOps: () => [],
       metaGraphFetch: vi.fn(async (url: string) => {
         if (url.includes('695982475048959?fields')) {
@@ -313,6 +319,8 @@ describe('reviewDemoService business_management sandbox scope', () => {
     }));
 
     vi.doMock('@/lib/meta-graph-instrumentation.js', () => ({
+      getMetaGraphOpCursor: () => 0,
+      getRecordedMetaGraphOpsSince: () => [],
       getRecordedMetaGraphOps: () => [],
       metaGraphFetch: vi.fn(async () => {
         throw new Error('Graph should not be called when sandbox is misconfigured');
@@ -359,6 +367,8 @@ describe('reviewDemoService business_management sandbox scope', () => {
     );
 
     vi.doMock('@/lib/meta-graph-instrumentation.js', () => ({
+      getMetaGraphOpCursor: () => 0,
+      getRecordedMetaGraphOpsSince: () => [],
       getRecordedMetaGraphOps: () => [],
       metaGraphFetch: vi.fn(async (url: string) => {
         if (url.includes('695982475048959?fields')) {
@@ -412,6 +422,8 @@ describe('reviewDemoService business_management sandbox scope', () => {
     resolvePageAccessTokenPhaseMock.mockResolvedValue({ obtained: false });
 
     vi.doMock('@/lib/meta-graph-instrumentation.js', () => ({
+      getMetaGraphOpCursor: () => 0,
+      getRecordedMetaGraphOpsSince: () => [],
       getRecordedMetaGraphOps: () => [],
       metaGraphFetch: vi.fn(async (url: string) => {
         if (url.includes('695982475048959?fields')) {

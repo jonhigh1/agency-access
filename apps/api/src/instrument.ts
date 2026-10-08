@@ -8,7 +8,7 @@
 import * as Sentry from "@sentry/node";
 import type { ErrorEvent, EventHint } from "@sentry/node";
 import { nodeProfilingIntegration } from "@sentry/profiling-node";
-import { redactSentryEvent } from "./lib/sentry-redaction.js";
+import { redactSentryEvent, scrubSentryBreadcrumb } from "./lib/sentry-redaction.js";
 import { resolveSentryEnvironment } from "./lib/sentry-environment.js";
 
 // Get DSN from environment
@@ -61,6 +61,10 @@ if (!dsn || dsn === "") {
         }
 
         return event;
+      },
+      // Outgoing fetch/http breadcrumbs carry Graph URLs (ad account ids, tokens)
+      beforeBreadcrumb(breadcrumb) {
+        return scrubSentryBreadcrumb(breadcrumb);
       },
       beforeSendTransaction(event) {
         return redactSentryEvent(event);

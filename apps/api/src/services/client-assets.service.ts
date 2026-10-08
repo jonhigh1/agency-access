@@ -14,7 +14,7 @@
 import { logger } from '../lib/logger.js';
 import { META_GRAPH_VERSION } from '../lib/meta-constants.js';
 import { metaGraphGet } from '../lib/meta-graph-request.js';
-import { getRecordedMetaGraphOps, metaGraphFetch } from '../lib/meta-graph-instrumentation.js';
+import { getMetaGraphOpCursor, getRecordedMetaGraphOpsSince, metaGraphFetch } from '../lib/meta-graph-instrumentation.js';
 import {
   formatMetaGraphOpCaption,
   parseMetaGraphApiErrorText,
@@ -286,7 +286,7 @@ class ClientAssetsService {
     options?: { exposeDetailedGraphErrors?: boolean; includeFeed?: boolean }
   ): Promise<MetaPageEngagementProof> {
     const includeFeed = options?.includeFeed !== false;
-    const opsStart = getRecordedMetaGraphOps().length;
+    const opsStart = getMetaGraphOpCursor();
     const pageUrl = new URL(`${this.GRAPH_API_BASE}/${pageId}`);
     pageUrl.searchParams.set('fields', 'id,name,category,fan_count,followers_count');
 
@@ -332,8 +332,7 @@ class ClientAssetsService {
             : {}),
         },
         posts: [],
-        graphOperationCaptions: getRecordedMetaGraphOps()
-          .slice(opsStart)
+        graphOperationCaptions: getRecordedMetaGraphOpsSince(opsStart)
           .map((op) => formatMetaGraphOpCaption(op)),
       };
     }
@@ -411,8 +410,7 @@ class ClientAssetsService {
       },
       posts,
       ...(feedError ? { feedError } : {}),
-      graphOperationCaptions: getRecordedMetaGraphOps()
-        .slice(opsStart)
+      graphOperationCaptions: getRecordedMetaGraphOpsSince(opsStart)
         .map((op) => formatMetaGraphOpCaption(op)),
     };
   }
