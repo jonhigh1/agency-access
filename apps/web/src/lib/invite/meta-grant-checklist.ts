@@ -192,7 +192,7 @@ export function buildMetaGrantChecklist(input: MetaGrantChecklistInput): MetaGra
     let state: MetaGrantItemState;
     if (declined) {
       state = 'declined';
-    } else if (kindRows.length > 0 && verifiedCount === kindRows.length) {
+    } else if (rowsByAsset.size > 0 && verifiedCount === rowsByAsset.size) {
       state = 'done';
     } else if (kindRows.some((row) => ACTION_STATUSES.has(row.status))) {
       state = 'action_required';

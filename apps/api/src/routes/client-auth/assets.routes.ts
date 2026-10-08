@@ -51,6 +51,11 @@ import { metaAssetsService } from '@/services/meta-assets.service';
 import { MetaConnector } from '@/services/connectors/meta';
 import { sendError, sendSuccess, sendValidationError } from '../../lib/response.js';
 import { applyPostVerifyReevaluation } from '../../lib/authorization-reeval.js';
+import {
+  logMetaClientGrantResult,
+  logMetaClientVerifyResult,
+  parseMetaGraphErrorCodesFromMessage,
+} from '../../lib/meta-client-grant-log.js';
 
 type ShareResultWithVerification = TikTokPartnerShareResultItem & { verified?: boolean };
 
@@ -227,6 +232,32 @@ type ManualMetaAdAccountVerificationResult = {
   errorCode?: string;
   errorMessage?: string;
 };
+
+function isGatingMetaGrantResult(result: MetaAssetGrantResult): boolean {
+  return !(result.assetType === 'page' && result.recipientType !== 'business');
+}
+
+function gatingMetaGrantResults(assetGrantResults: MetaAssetGrantResult[]): MetaAssetGrantResult[] {
+  return assetGrantResults.filter(isGatingMetaGrantResult);
+}
+
+function emitMetaClientGrantResultLogs(
+  results: MetaAssetGrantResult[],
+  mode: 'grant' | 'verify'
+): void {
+  const log = mode === 'grant' ? logMetaClientGrantResult : logMetaClientVerifyResult;
+  for (const result of results) {
+    const codes = result.errorMessage
+      ? parseMetaGraphErrorCodesFromMessage(result.errorMessage)
+      : {};
+    log({
+      assetKind: result.assetType,
+      recipientKind: result.recipientType ?? 'unknown',
+      success: result.status === 'verified',
+      ...codes,
+    });
+  }
+}
 
 function buildMetaGrantVerificationStatus(
   assetGrantResults: MetaAssetGrantResult[]
@@ -1189,7 +1220,8 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
         ...selectedDatasetIds.map((assetId) => ({ assetId, assetKind: 'dataset' as const, requestedTasks: datasetTasks })),
       ];
       const currentRecipientGrantResults: MetaAssetGrantResult[] = [];
-      let skippedExcludedGrant = false;
+      // Excluded person/system-user grants are non-gating; only excluded business partner rows block completion.
+      let skippedGatingExcludedGrant = false;
 
       for (const recipient of accessConfig.recipients) {
         const recipientRecord = { type: recipient.type, id: recipient.id, grantMethod: 'assigned_users' };
@@ -1198,7 +1230,6 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
           requirements: grantRequirements,
           recipient: recipientRecord,
         });
-        skippedExcludedGrant ||= [...attemptVersions.values()].includes(0);
         const shouldRetry = (kind: string, id: string) => attemptVersions.get(`${kind}:${id}`) !== 0;
         const grantAsset = async (
           assetId: string,
@@ -1345,7 +1376,7 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
             recipient: pageAgencyPartnerRecipient,
           })
         : new Map<string, number>();
-      skippedExcludedGrant ||= [...pageAgencyAttempts.values()].includes(0);
+      skippedGatingExcludedGrant ||= [...pageAgencyAttempts.values()].includes(0);
       const pageAgencyResults = await mapInChunks(
         selectedPageIds.filter((id) => pageAgencyAttempts.get(`page:${id}`) !== 0),
         async (pageId): Promise<MetaAssetGrantResult> => {
@@ -1458,7 +1489,7 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
             recipient: businessRecipient,
           })
         : new Map<string, number>();
-      skippedExcludedGrant ||= [...businessAttemptVersions.values()].includes(0);
+      skippedGatingExcludedGrant ||= [...businessAttemptVersions.values()].includes(0);
       const shouldVerifyBusiness = (kind: string, id: string) => businessAttemptVersions.get(`${kind}:${id}`) !== 0;
       const businessAssetsNeedVerification = businessGrantRequirements.some((item) =>
         shouldVerifyBusiness(item.assetKind, item.assetId)
@@ -1549,7 +1580,7 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
         requirements: catalogBusinessRequirements,
         recipient: catalogBusinessRecipient,
       });
-      skippedExcludedGrant ||= [...catalogBusinessAttempts.values()].includes(0);
+      skippedGatingExcludedGrant ||= [...catalogBusinessAttempts.values()].includes(0);
       const catalogBusinessResults = await mapInChunks(
         selectedCatalogIds.filter((id) => catalogBusinessAttempts.get(`catalog:${id}`) !== 0),
         async (catalogId): Promise<MetaAssetGrantResult> => {
@@ -1670,18 +1701,25 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
           },
         };
       });
-      const verificationStatus = skippedExcludedGrant
-        ? 'partial'
-        : buildMetaGrantVerificationStatus(mergedAssetGrantResults);
+      const verificationStatus = buildMetaGrantVerificationStatus(
+        gatingMetaGrantResults(mergedAssetGrantResults)
+      );
 
       const pageResults = mergedAssetGrantResults.filter((result) => result.assetType === 'page');
       const adAccountResults = mergedAssetGrantResults.filter(
         (result) => result.assetType === 'ad_account'
       );
-      const pagesAccessGranted = !skippedExcludedGrant &&
-        pageResults.length > 0 && pageResults.every((result) => result.status === 'verified');
-      const adAccountsAccessGranted = !skippedExcludedGrant &&
-        adAccountResults.length > 0 && adAccountResults.every((result) => result.status === 'verified');
+      const pagePartnerResults = pageResults.filter((result) => result.recipientType === 'business');
+      const adAccountBusinessResults = adAccountResults.filter(
+        (result) => result.recipientType === 'business'
+      );
+      const pagesAccessGranted = !skippedGatingExcludedGrant &&
+        pagePartnerResults.length > 0 &&
+        pagePartnerResults.every((result) => result.status === 'verified');
+      const adAccountsAccessGranted = !skippedGatingExcludedGrant &&
+        adAccountBusinessResults.length > 0 &&
+        adAccountBusinessResults.every((result) => result.status === 'verified');
+      emitMetaClientGrantResultLogs(mergedAssetGrantResults, 'grant');
       await updateGrantedAssets(connectionId, (currentGrantedAssets) => {
         const currentMetaGrantedAssets =
           (currentGrantedAssets.meta as Record<string, unknown> | undefined) || {};
@@ -2071,6 +2109,7 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
         results: adAccountGrantResults,
         attemptVersions,
       });
+      emitMetaClientGrantResultLogs(adAccountGrantResults, 'verify');
       let mergedGrantResults: MetaAssetGrantResult[] = [];
       await updateAuthorizationMetadata(platformAuth.id, (currentMetadata) => {
         const { rootMetadata: currentRoot, metaMetadata: currentMeta } =
@@ -2447,6 +2486,8 @@ export async function registerAssetRoutes(fastify: FastifyInstance) {
       });
 
       const requestStatus = await applyPostVerifyReevaluation(accessRequest.id);
+
+      emitMetaClientGrantResultLogs(results, 'verify');
 
       return reply.send({ data: { success: allVerified, partial: anyVerified && !allVerified, status, results, ...(requestStatus ? { requestStatus } : {}) }, error: null });
     } catch (error) {

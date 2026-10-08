@@ -17,6 +17,10 @@ vi.mock('next/navigation', () => ({
   usePathname: vi.fn(() => '/invite/token-123'),
 }));
 
+vi.mock('@/hooks/use-user-agency', () => ({
+  useUserAgency: () => ({ data: undefined }),
+}));
+
 vi.mock('@/lib/analytics/capture-posthog', () => ({
   capturePosthogEvent: vi.fn().mockResolvedValue(undefined),
 }));
@@ -237,7 +241,7 @@ describe('Invite Flow Page', () => {
     expect(capturePosthogEvent).toHaveBeenCalledWith(
       'client_authorization_started',
       expect.objectContaining({
-        access_request_token: 'token-123',
+        access_request_id: 'request-1',
       })
     );
   });

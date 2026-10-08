@@ -38,6 +38,24 @@ describe('capture-posthog', () => {
     expect(captureMock).toHaveBeenCalledWith('invite_link_copied', { surface: 'detail' });
   });
 
+  it('strips client PII from client_* events at the PostHog boundary', async () => {
+    const { capturePosthogEvent } = await import('../capture-posthog');
+    const pending = capturePosthogEvent('client_authorization_started', {
+      access_request_id: 'req-1',
+      client_email: 'client@example.com',
+      client_name: 'Client Co',
+      agency_name: 'Agency Co',
+      is_preview: false,
+    });
+    resolveImport!({ default: { capture: captureMock } });
+    await pending;
+
+    expect(captureMock).toHaveBeenCalledWith('client_authorization_started', {
+      access_request_id: 'req-1',
+      is_preview: false,
+    });
+  });
+
   it('strips invite and custom bearer values at the PostHog boundary', async () => {
     const { capturePosthogEvent } = await import('../capture-posthog');
     const pending = capturePosthogEvent('oauth_callback_failure', {

@@ -53,6 +53,24 @@ export function MetaFulfillmentCard({ results, declines, onExclude }: MetaFulfil
 
   const hasDeclines = Boolean(declines && declines.length > 0);
 
+  const verifiedPagePartnerAssetIds = new Set(
+    results
+      .filter(
+        (row) =>
+          row.assetKind === 'page' &&
+          row.recipientType === 'business' &&
+          row.status === 'verified'
+      )
+      .map((row) => row.assetId)
+  );
+  const needsPersonAssignmentFollowUp = results.some(
+    (row) =>
+      row.assetKind === 'page' &&
+      (row.recipientType === 'human' || row.recipientType === 'system_user') &&
+      ['blocked', 'manual_action_required', 'sharing_attempted', 'selected'].includes(row.status) &&
+      verifiedPagePartnerAssetIds.has(row.assetId)
+  );
+
   if (results.length === 0 && !hasDeclines) return null;
 
   const submitExclusion = async (grantId: string) => {
@@ -111,6 +129,12 @@ export function MetaFulfillmentCard({ results, declines, onExclude }: MetaFulfil
       <div className="border-b border-border px-6 py-4">
         <h2 className="font-display text-lg font-semibold text-ink">Meta Access Results</h2>
         <p className="text-sm text-muted-foreground">Verified separately for each asset and recipient</p>
+        {needsPersonAssignmentFollowUp ? (
+          <p className="mt-3 text-sm text-muted-foreground">
+            Partner share is verified. Assign people from your Business Manager or run Auto-Assign for
+            any team members that still show as pending.
+          </p>
+        ) : null}
       </div>
 
       <p className="sr-only" role="status" aria-live="polite">{message}</p>

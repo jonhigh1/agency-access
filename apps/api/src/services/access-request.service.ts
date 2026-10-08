@@ -641,31 +641,13 @@ export function evaluateMetaProductFulfillment(
     const grantsForCurrentDestinations = currentDestinationIds.size > 0
       ? assetGrants.filter((grant) => currentDestinationIds.has(grant.destination?.businessId || ''))
       : assetGrants;
-    const businessGrants: Grant[] = [];
-    const grantsByRecipient = new Map<string, Map<string, Grant[]>>();
-    for (const grant of grantsForCurrentDestinations) {
-      if (grant.recipientType === 'business') {
-        businessGrants.push(grant);
-        continue;
-      }
-
-      let grantsById = grantsByRecipient.get(grant.recipientType);
-      if (!grantsById) {
-        grantsById = new Map();
-        grantsByRecipient.set(grant.recipientType, grantsById);
-      }
-
-      const recipientGrants = grantsById.get(grant.recipientId) || [];
-      recipientGrants.push(grant);
-      grantsById.set(grant.recipientId, recipientGrants);
-    }
+    const businessGrants = grantsForCurrentDestinations.filter(
+      (grant) => grant.recipientType === 'business'
+    );
     if (businessGrants.length === 0) return { fulfilled: false, reason: 'sharing_required' };
+    // Client completion is gated on Partner (business) share per asset. Person and
+    // system-user assigned_users rows are follow-up work for the agency.
     const requiredGrants = [...businessGrants];
-    for (const recipient of config.data.recipients) {
-      const matches = grantsByRecipient.get(recipient.type)?.get(recipient.id) || [];
-      if (matches.length === 0) return { fulfilled: false, reason: 'sharing_required' };
-      requiredGrants.push(...matches);
-    }
 
     for (const grant of requiredGrants) {
       if (grant.status === 'excluded') continue;
