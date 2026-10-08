@@ -9,8 +9,10 @@ vi.mock('@/lib/prisma.js', () => ({
 
 import { prisma } from '@/lib/prisma.js';
 import {
+  countConsecutiveFailedTierDays,
   countSuccessfulTierDays,
   hasSuccessfulTierUtcDate,
+  listTierRunDaysSince,
   findLastConsecutiveFailureSentryAlert,
   META_MARKETING_API_TIER_SENTRY_ALERT_KIND,
 } from '../meta-marketing-api-tier-cron.queries.js';
@@ -50,5 +52,65 @@ describe('meta-marketing-api-tier-cron queries', () => {
     expect(last).toEqual(alertAt);
     expect(META_MARKETING_API_TIER_SENTRY_ALERT_KIND).toBe('consecutive_failure_sentry');
     expect(META_MARKETING_API_TIER_DAILY_AUDIT_ACTION).toBe('META_MARKETING_API_TIER_DAILY');
+  });
+});
+
+describe('consecutive failed tier days', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  const fail = (tierUtcDate: string) => ({ tierUtcDate, anySuccess: false, anyFailure: true });
+  const ok = (tierUtcDate: string) => ({ tierUtcDate, anySuccess: true, anyFailure: false });
+
+  it('listTierRunDaysSince maps the per-day SQL rollup', async () => {
+    vi.mocked(prisma.$queryRaw).mockResolvedValue([
+      { tier_utc_date: '2026-10-08', any_success: true, any_failure: true },
+      { tier_utc_date: '2026-10-07', any_success: null, any_failure: true },
+    ] as never);
+
+    const days = await listTierRunDaysSince(new Date('2026-09-01T00:00:00Z'));
+
+    expect(days).toEqual([
+      { tierUtcDate: '2026-10-08', anySuccess: true, anyFailure: true },
+      { tierUtcDate: '2026-10-07', anySuccess: false, anyFailure: true },
+    ]);
+  });
+
+  it('counts each failed day once, however many runs it had', () => {
+    expect(countConsecutiveFailedTierDays([fail('2026-10-08'), ok('2026-10-07')], '2026-10-08')).toBe(1);
+  });
+
+  it('stops at the most recent day with any success', () => {
+    expect(
+      countConsecutiveFailedTierDays(
+        [fail('2026-10-08'), fail('2026-10-07'), ok('2026-10-06'), fail('2026-10-05')],
+        '2026-10-08',
+      ),
+    ).toBe(2);
+  });
+
+  it('a day with both success and failure is not a failed day', () => {
+    expect(
+      countConsecutiveFailedTierDays(
+        [{ tierUtcDate: '2026-10-08', anySuccess: true, anyFailure: true }, fail('2026-10-07')],
+        '2026-10-08',
+      ),
+    ).toBe(0);
+  });
+
+  it('skips days with no runs instead of resetting, and ignores days after the run date', () => {
+    expect(
+      countConsecutiveFailedTierDays(
+        [fail('2026-10-09'), fail('2026-10-08'), fail('2026-10-05'), ok('2026-10-01')],
+        '2026-10-08',
+      ),
+    ).toBe(2);
+  });
+
+  it('orders unsorted input newest first', () => {
+    expect(
+      countConsecutiveFailedTierDays([ok('2026-10-06'), fail('2026-10-08'), fail('2026-10-07')], '2026-10-08'),
+    ).toBe(2);
   });
 });

@@ -49,7 +49,7 @@ Set on the **review/lab API** Render service (secrets via Infisical/env only —
 | `META_MARKETING_API_TIER_CRON_LAB_USER_ID` | Clerk user id whose **review_demo** token is copied during one-off seed (see below) |
 | `META_REVIEW_LAB_AGENCY_ID` | Stored on audit rows for lab context |
 | `META_REVIEW_DEMO_MOCK_GRAPH` | Must be `false` for live Graph |
-| `META_MARKETING_API_TIER_FAILURE_ALERT_THRESHOLD` | Consecutive failed days before Sentry alert (default `3`) |
+| `META_MARKETING_API_TIER_FAILURE_ALERT_THRESHOLD` | Consecutive failed UTC days (failed runs, no successful run) before Sentry alert (default `3`). Counts days, not runs, in both daily and burst mode |
 | `SENTRY_DSN` | Optional; consecutive-failure alerts |
 | Infisical | **`meta_tier_cron_token`** — isolated cron token (never overwritten by `/review-demo` reconnect) |
 
@@ -102,7 +102,10 @@ Distinct successful UTC days ≈ progress toward day-16 readiness (`tierDayCount
 ## Failure visibility
 
 - Failed runs log `success: false` with HTTP status and `graphCalls`.
-- After **N** consecutive failed days (`META_MARKETING_API_TIER_FAILURE_ALERT_THRESHOLD`, default 3), the API sends a **Sentry** error message (`meta_marketing_api_tier_daily_consecutive_failures`).
+- After **N** consecutive failed UTC days (`META_MARKETING_API_TIER_FAILURE_ALERT_THRESHOLD`, default 3), the API sends a **Sentry** error message (`meta_marketing_api_tier_daily_consecutive_failures`), at most once per hour.
+  - A failed day is a UTC day with at least one failed run and **no** successful run. Each day counts once, however many runs it had (burst mode runs every 10 minutes; pg-boss retries add more). A day with any success resets the streak. Days with no runs at all are skipped.
+  - In burst mode a breakage that starts after the day's first success is not a failed day until the next UTC day; set the threshold to `1` to page on the first full UTC day without a success.
+  - The Sentry event groups under one fingerprint and carries tags `meta_error_code`, `meta_error_subcode`, `meta_error_type`, `tier_cron_failed_call`, `tier_cron_http_status`, plus `extra.metaError` (code, subcode, type, scrubbed message, fbtrace id). Ad account ids, other long numeric ids and tokens are never sent to Sentry.
 - pg-boss retries failed job handlers; operators should fix token/Graph issues and re-run manually if needed.
 
 ## Related docs
