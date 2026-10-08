@@ -416,6 +416,44 @@ describe('MetaPartnerService', () => {
     ).rejects.toBeInstanceOf(MetaPageAccessTokenUnavailableError);
   });
 
+  it('verifies Page partner access when Meta returns PROFILE_PLUS_* permitted_tasks', async () => {
+    vi.mocked(fetch)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({ access_token: 'page-token' }),
+      } as Response)
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: [
+            {
+              id: 'agency-bm-1',
+              permitted_tasks: [
+                'PROFILE_PLUS_MANAGE_LEADS',
+                'PROFILE_PLUS_MODERATE',
+                'PROFILE_PLUS_MESSAGING',
+                'PROFILE_PLUS_ANALYZE',
+                'PROFILE_PLUS_ADVERTISE',
+                'PROFILE_PLUS_CREATE_CONTENT',
+                'PROFILE_PLUS_MANAGE',
+              ],
+            },
+          ],
+        }),
+      } as Response);
+
+    const result = await metaPartnerService.verifyAgencyPartnerAccess(
+      'client-token',
+      'page_123',
+      'agency-bm-1',
+      ['MANAGE', 'CREATE_CONTENT', 'MODERATE', 'ADVERTISE'],
+      { assetKind: 'page' }
+    );
+
+    expect(result.verified).toBe(true);
+    expect(result.assignedTasks).toContain('PROFILE_PLUS_MANAGE');
+  });
+
   it('does not leak Page access token material in recorded meta_graph_op envelopes', async () => {
     vi.mocked(fetch)
       .mockResolvedValueOnce({

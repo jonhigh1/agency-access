@@ -11,7 +11,10 @@
 
 import { META_GRAPH_VERSION } from '@/lib/meta-constants';
 import { metaGraphFetch } from '@/lib/meta-graph-instrumentation.js';
-import type { MetaGraphTokenClass } from '@agency-platform/shared';
+import {
+  metaPagePartnerPermittedTasksSatisfyRequired,
+  type MetaGraphTokenClass,
+} from '@agency-platform/shared';
 
 export interface MetaAssignedUserVerificationResult {
   verified: boolean;
@@ -218,13 +221,17 @@ class MetaPartnerService {
     assetId: string,
     agencyBusinessId: string,
     requiredTasks: string[],
-    tokenClass: MetaGraphTokenClass = 'client_user'
+    tokenClass: MetaGraphTokenClass = 'client_user',
+    options?: { pagePartnerTaskComparison?: boolean }
   ): Promise<MetaAssignedUserVerificationResult> {
     const agencies = await this.getAgenciesWithTasks(accessToken, assetId, tokenClass);
     const agency = agencies.find((item) => item.id === agencyBusinessId);
     const assignedTasks = this.normalizeTasks(agency?.permitted_tasks);
+    const tasksSatisfied = options?.pagePartnerTaskComparison
+      ? metaPagePartnerPermittedTasksSatisfyRequired(assignedTasks, requiredTasks)
+      : requiredTasks.every((task) => assignedTasks.includes(task));
     return {
-      verified: Boolean(agency) && requiredTasks.every((task) => assignedTasks.includes(task)),
+      verified: Boolean(agency) && tasksSatisfied,
       assignedTasks,
     };
   }
@@ -336,7 +343,9 @@ class MetaPartnerService {
       assetId,
       assetKind
     );
-    return this.getAgencyAccess(accessToken, assetId, agencyBusinessId, requiredTasks, tokenClass);
+    return this.getAgencyAccess(accessToken, assetId, agencyBusinessId, requiredTasks, tokenClass, {
+      pagePartnerTaskComparison: assetKind === 'page',
+    });
   }
 
   async grantCatalogAgencyAccess(

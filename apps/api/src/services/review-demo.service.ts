@@ -36,6 +36,7 @@ import {
   formatMetaGraphApiError,
   readMetaGraphApiError,
 } from '@/services/review-demo-graph-errors.js';
+import { buildBusinessManagementStepCaption } from '@/services/review-demo-business-caption.js';
 
 const GRAPH_BASE = `https://graph.facebook.com/${META_GRAPH_VERSION}`;
 
@@ -186,22 +187,6 @@ async function buildPagePartnerSnapshotOnLoad(input: {
       rawGraphResponse: raw,
     };
   }
-}
-
-function businessStepCaption(input: {
-  pagePartner?: ReviewDemoPagePartnerResult;
-  adAccountPartnerVerified: boolean;
-}): string {
-  if (input.pagePartner?.verified) {
-    return 'AuthHub added the agency to the Page as a partner and verified access via Graph readback.';
-  }
-  if (input.pagePartner?.graphError?.code === 3) {
-    return 'Manual ad-account partner share was verified via Graph readback. Page partner add is not available for this app capability.';
-  }
-  if (input.adAccountPartnerVerified) {
-    return 'Manual ad-account partner share verified via Graph readback. Use Add agency to Page to run the production Page partner POST when a Page is connected.';
-  }
-  return 'Client Business Portfolio assets scoped to this session, manual ad-account partner verification, and optional Page partner add.';
 }
 
 function graphCaptionsSince(start: number): string[] {
@@ -523,7 +508,7 @@ export class ReviewDemoService {
           assetKind: 'page',
           granted: true,
         },
-        stepCaption: businessStepCaption({
+        stepCaption: buildBusinessManagementStepCaption({
           pagePartner: {
             businessId: defaultSandboxIds().agencyBusinessId,
             permittedTasks: [...REVIEW_DEMO_PAGE_PARTNER_TASKS],
@@ -573,7 +558,7 @@ export class ReviewDemoService {
     return {
       ...basePayload,
       pagePartner,
-      stepCaption: businessStepCaption({
+      stepCaption: buildBusinessManagementStepCaption({
         pagePartner,
         adAccountPartnerVerified: basePayload.agencyPartner.verified,
       }),
@@ -1019,7 +1004,7 @@ export class ReviewDemoService {
         assets,
         agencyPartner,
         pagePartner,
-        stepCaption: businessStepCaption({
+        stepCaption: buildBusinessManagementStepCaption({
           pagePartner,
           adAccountPartnerVerified: agencyPartner.verified,
         }),
@@ -1118,7 +1103,7 @@ export class ReviewDemoService {
       assets,
       agencyPartner,
       ...(pagePartner ? { pagePartner } : {}),
-      stepCaption: businessStepCaption({
+      stepCaption: buildBusinessManagementStepCaption({
         pagePartner,
         adAccountPartnerVerified: agencyPartner.verified,
       }),

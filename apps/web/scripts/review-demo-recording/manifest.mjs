@@ -78,16 +78,16 @@ export const REVIEW_DEMO_RECORDING_PLAN = [
     stepId: 'business_management',
     outputBasename: 'business_management',
     actions: [
+      { type: 'click', testId: 'review-demo-step-tab-business_management' },
+      { type: 'wait', testId: 'review-demo-bm-assets-list' },
+      { type: 'addPagePartner' },
+      { type: 'wait', testId: 'review-demo-page-partner-verified' },
       {
         type: 'caption',
         primary: 'Permission: business_management',
         secondary:
           'AuthHub added the agency to the Page as a partner and verified access via Graph readback.',
       },
-      { type: 'click', testId: 'review-demo-step-tab-business_management' },
-      { type: 'wait', testId: 'review-demo-bm-assets-list' },
-      { type: 'addPagePartner' },
-      { type: 'wait', testId: 'review-demo-page-partner-verified' },
       { type: 'wait', testId: 'review-demo-bm-partner-proof' },
       { type: 'hold', ms: 2500 },
     ],
