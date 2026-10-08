@@ -168,6 +168,8 @@ const envSchema = z.object({
   // PostHog (server-side lifecycle events; optional in dev/test)
   POSTHOG_API_KEY: z.string().optional(),
   POSTHOG_HOST: z.string().url().optional(),
+  // Deployment label for analytics (e.g. staging). Unset/production = no environment property.
+  APP_ENV: z.string().optional(),
 
   // Sentry Error Monitoring
   SENTRY_DSN: z.string().optional(),
