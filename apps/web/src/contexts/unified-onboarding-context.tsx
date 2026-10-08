@@ -395,6 +395,9 @@ export function UnifiedOnboardingProvider({
   const completionSucceededRef = useRef(false);
   const navigationInFlightRef = useRef(false);
   const draftRestoredRef = useRef(false);
+  // True once we know whether the agency already exists (progress hydration finished or isn't running),
+  // so the Meta check doesn't flash "not connected" before the agency id arrives.
+  const [agencyLookupSettled, setAgencyLookupSettled] = useState(!enableProgressHydration);
   const [draftReady, setDraftReady] = useState(false);
   const principalClerkIdForDraft = orgId || userId || null;
 
@@ -1051,8 +1054,9 @@ export function UnifiedOnboardingProvider({
   useEffect(() => {
     if (state.currentStep !== 3 || !metaSelected) return;
     if (state.metaReadiness.status !== 'idle') return;
+    if (!state.agencyId && !agencyLookupSettled) return; // stays "Checking…" until the agency lookup finishes
     void refreshMetaReadiness();
-  }, [metaSelected, refreshMetaReadiness, state.currentStep, state.metaReadiness.status]);
+  }, [agencyLookupSettled, metaSelected, refreshMetaReadiness, state.agencyId, state.currentStep, state.metaReadiness.status]);
 
   useEffect(() => {
     // A newly resolved agency id invalidates a "no agency, so not connected" verdict.
@@ -1302,6 +1306,7 @@ export function UnifiedOnboardingProvider({
     }
 
     if (state.currentStep > 0 || state.agencyId) {
+      setAgencyLookupSettled(true);
       return;
     }
 
@@ -1351,6 +1356,8 @@ export function UnifiedOnboardingProvider({
         }));
       } catch {
         // Non-blocking hydration path.
+      } finally {
+        setAgencyLookupSettled(true);
       }
     };
 

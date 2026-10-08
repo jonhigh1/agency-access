@@ -148,6 +148,33 @@ describe('unified onboarding: agency Meta portfolio gate', () => {
     expect(result.current.canGoNext()).toBe(true);
   });
 
+  it('waits for the agency lookup instead of flashing "not connected" on return', async () => {
+    let releaseAgencyLookup!: () => void;
+    const agencyLookupGate = new Promise<void>((resolve) => {
+      releaseAgencyLookup = resolve;
+    });
+    const routed = routeFetch({
+      meta: () => ({ platform: 'meta', connected: true, metadata: { selectedBusinessId: 'biz-1' } }),
+    });
+    (global as any).fetch = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+      if (String(input).includes('/api/agencies?clerkUserId=')) await agencyLookupGate;
+      return routed(input, init);
+    });
+    seedDraft({ google: ['google'], meta: ['meta'] });
+
+    const { result } = renderHook(() => useUnifiedOnboarding(), { wrapper: persistentWrapper });
+    await waitFor(() => expect(result.current.state.currentStep).toBe(3));
+
+    expect(result.current.state.metaReadiness.status).toBe('idle');
+    expect(result.current.canGoNext()).toBe(false);
+
+    await act(async () => {
+      releaseAgencyLookup();
+    });
+    await waitFor(() => expect(result.current.state.metaReadiness.status).toBe('ready'));
+    expect(result.current.canGoNext()).toBe(true);
+  });
+
   it('asks for a portfolio when Meta is connected without one', async () => {
     (global as any).fetch = routeFetch({ meta: () => ({ platform: 'meta', connected: true, metadata: {} }) });
     seedDraft({ google: ['google'], meta: ['meta'] });
