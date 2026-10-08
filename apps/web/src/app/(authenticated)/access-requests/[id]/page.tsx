@@ -209,6 +209,7 @@ export default function AccessRequestDetailPage({ params }: AccessRequestDetailP
       status: accessRequest.status,
       channel: 'email',
       surface: 'detail',
+      delivery: 'mailto',
     });
     window.location.assign(mailtoHref);
   };
@@ -347,6 +348,7 @@ export default function AccessRequestDetailPage({ params }: AccessRequestDetailP
           reminderStatusMessage={reminderStatusMessage}
           onCopyLink={handleCopyLink}
           onPreviewLink={handlePreviewLink}
+          getToken={resolveApiToken}
           showAwaitingClientCallout={
             (accessRequest.status === 'pending' || accessRequest.status === 'partial') &&
             getPendingCliff(accessRequest.createdAt) === null

@@ -25,10 +25,20 @@ type InviteLinkCopiedProps = {
   surface: InviteSurface;
 };
 
+/** `authhub` = AuthHub emailed the invite; `mailto` = opened the agency's mail client. */
+export type InviteDelivery = 'authhub' | 'mailto';
+
 type InviteSentProps = {
   access_request_id: string;
   access_request_token: string;
   channel: InviteChannel;
+  surface: InviteSurface;
+  status?: string | null;
+  delivery?: InviteDelivery;
+};
+
+type InviteEmailSentProps = {
+  access_request_id: string;
   surface: InviteSurface;
   status?: string | null;
 };
@@ -55,6 +65,20 @@ export function trackInviteLinkCopied(properties: InviteLinkCopiedProps): void {
 
 export function trackInviteSent(properties: InviteSentProps): void {
   captureInviteEvent('invite_sent', properties);
+}
+
+/**
+ * AuthHub delivered the invite email. Carries ids only: the client email
+ * address never goes to PostHog.
+ */
+export function trackInviteEmailSent(properties: InviteEmailSentProps): void {
+  captureInviteEvent('invite_sent', {
+    access_request_id: properties.access_request_id,
+    channel: 'email',
+    delivery: 'authhub',
+    surface: properties.surface,
+    status: properties.status ?? null,
+  });
 }
 
 /** Fires invite_link_copied + invite_sent (channel=copy) in one serialized PostHog capture. */

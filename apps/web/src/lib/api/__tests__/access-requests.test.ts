@@ -6,6 +6,7 @@ import {
   cancelAccessRequest,
   confirmManualAccess,
   sendAccessRequestReminder,
+  sendAccessRequestInviteEmail,
 } from '../access-requests';
 
 function getAuthorizationHeader(headers: HeadersInit | undefined): string | undefined {
@@ -162,6 +163,24 @@ describe('access-requests api client', () => {
     expect(fetchMock).toHaveBeenCalledWith(
       'https://api.example.com/api/access-requests/request-456/remind',
       expect.objectContaining({ method: 'POST' })
+    );
+  });
+
+  it('calls POST /api/access-requests/:id/invite-email with the client email', async () => {
+    fetchMock.mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        data: { accessRequestId: 'request-456', sentAt: '2026-10-08T12:00:00.000Z' },
+        error: null,
+      }),
+    });
+
+    const result = await sendAccessRequestInviteEmail('request-456', 'client@example.com', async () => 'token-123');
+
+    expect(result.data?.accessRequestId).toBe('request-456');
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://api.example.com/api/access-requests/request-456/invite-email',
+      expect.objectContaining({ method: 'POST', body: JSON.stringify({ email: 'client@example.com' }) })
     );
   });
 });

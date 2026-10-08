@@ -422,3 +422,45 @@ export async function sendAccessRequestReminder(
     };
   }
 }
+
+export interface SendAccessRequestInviteEmailResponse {
+  accessRequestId: string;
+  sentAt: string;
+}
+
+/** Ask AuthHub to email the invite link to the client ("<Agency> via AuthHub"). */
+export async function sendAccessRequestInviteEmail(
+  id: string,
+  email: string,
+  getToken?: TokenProvider
+): Promise<{ data?: SendAccessRequestInviteEmailResponse; error?: ApiError }> {
+  try {
+    const response = await authorizedApiFetch<{ data: SendAccessRequestInviteEmailResponse; error: null }>(
+      `/api/access-requests/${encodeURIComponent(id)}/invite-email`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ email }),
+        getToken: getToken ?? (async () => null),
+      }
+    );
+
+    return { data: response.data };
+  } catch (err) {
+    if (err instanceof AuthorizedApiError) {
+      return {
+        error: {
+          code: err.code,
+          message: err.message,
+          details: err.details,
+        },
+      };
+    }
+
+    return {
+      error: {
+        code: 'NETWORK_ERROR',
+        message: err instanceof Error ? err.message : 'Network error. Please try again.',
+      },
+    };
+  }
+}

@@ -3,6 +3,7 @@
 import { Bell, Calendar, Clipboard, ExternalLink, Mail, User } from 'lucide-react';
 import { Card, Button, StatusBadge } from '@/components/ui';
 import type { AccessRequest } from '@/lib/api/access-requests';
+import { SendInviteEmailForm } from '@/components/send-invite-email-form';
 
 interface RequestOverviewCardProps {
   request: AccessRequest;
@@ -16,6 +17,8 @@ interface RequestOverviewCardProps {
   reminderLoading?: boolean;
   reminderStatusMessage?: string | null;
   showAwaitingClientCallout?: boolean;
+  /** When set (and the request is open), shows the AuthHub "Send invite" email form. */
+  getToken?: () => Promise<string | null>;
 }
 
 function isAwaitingClient(status: AccessRequest['status']): boolean {
@@ -34,6 +37,7 @@ export function RequestOverviewCard({
   reminderLoading = false,
   reminderStatusMessage = null,
   showAwaitingClientCallout,
+  getToken,
 }: RequestOverviewCardProps) {
   const awaitingClient = isAwaitingClient(request.status);
   const shouldShowAwaitingCallout =
@@ -155,6 +159,17 @@ export function RequestOverviewCard({
             </Button>
           )}
         </div>
+        {awaitingClient && getToken ? (
+          <SendInviteEmailForm
+            className="mt-4 max-w-xl"
+            size="sm"
+            accessRequestId={request.id}
+            surface="detail"
+            status={request.status}
+            defaultEmail={request.clientEmail}
+            getToken={getToken}
+          />
+        ) : null}
       </div>
     </Card>
   );

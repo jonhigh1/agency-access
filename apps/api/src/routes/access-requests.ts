@@ -20,6 +20,7 @@ import {
 import { agencyPlatformService } from '../services/agency-platform.service.js';
 import { auditService } from '../services/audit.service.js';
 import { accessRequestReminderService } from '../services/access-request-reminder.service.js';
+import { accessRequestInviteEmailService } from '../services/access-request-invite-email.service.js';
 import { quotaEnforcementMiddleware } from '../middleware/quota-enforcement.js';
 import { authenticate } from '@/middleware/auth.js';
 import { assertAgencyAccess, resolveAuthenticatedUserEmail } from '@/lib/authorization.js';
@@ -404,6 +405,46 @@ export async function accessRequestRoutes(fastify: FastifyInstance) {
         AGENCY_USER_REQUIRED: 403,
       };
       return reply.code(statusByCode[result.error.code] ?? 500).send(result);
+    }
+
+    return reply.send(result);
+  });
+
+  // Email the invite link to the client (Resend, "<Agency> via AuthHub")
+  fastify.post('/access-requests/:id/invite-email', {
+    onRequest: [authenticate(), requirePrincipalAgency],
+  }, async (request, reply) => {
+    const params = z.object({ id: z.string().min(1) }).safeParse(request.params);
+    const body = z.object({ email: z.string().max(320) }).safeParse(request.body);
+    if (!params.success || !body.success) {
+      return sendError(reply, 'INVALID_EMAIL', 'Enter a valid client email address', 400);
+    }
+
+    const principalAgencyId = (request as any).principalAgencyId as string;
+    const senderEmail = await resolveAuthenticatedUserEmail((request as any).user);
+
+    const result = await accessRequestInviteEmailService.sendInviteEmail({
+      accessRequestId: params.data.id,
+      principalAgencyId,
+      recipientEmail: body.data.email,
+      senderEmail,
+      ipAddress: extractClientIp(request),
+      userAgent: (request.headers['user-agent'] as string | undefined) || 'unknown',
+    });
+
+    if (result.error) {
+      const statusByCode: Record<string, number> = {
+        INVALID_EMAIL: 400,
+        NOT_FOUND: 404,
+        FORBIDDEN: 403,
+        INVALID_STATUS: 409,
+        REQUEST_EXPIRED: 409,
+        INVITE_EMAIL_COOLDOWN: 429,
+        INVITE_EMAIL_LIMIT: 429,
+        EMAIL_NOT_CONFIGURED: 503,
+        INVITE_EMAIL_DELIVERY_FAILED: 502,
+      };
+      return reply.code(statusByCode[result.error.code] ?? 400).send(result);
     }
 
     return reply.send(result);
