@@ -18,6 +18,7 @@
     "db:migrate:deploy": "node ./scripts/migrate-deploy.mjs",
     "db:push": "prisma db push",
     "db:seed": "tsx prisma/seed.ts",
+    "seed:staging": "tsx scripts/seed-staging.ts",
     "db:studio": "prisma studio",
     "seed:meta-tier-cron-token": "tsx scripts/seed-meta-tier-cron-token.ts",
     "ops:review-demo-page-partner": "tsx scripts/review-demo-page-partner-ops.ts",
