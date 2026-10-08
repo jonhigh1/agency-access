@@ -32,6 +32,7 @@ import {
 import { getTierFromProductId } from '@/config/creem.config';
 import { creem } from '@/lib/creem';
 import {
+  extractCreemMetadataAgencyId,
   getSubscriptionPayload,
   normalizeCreemEvent,
   type CreemNormalizedEvent,
@@ -432,7 +433,12 @@ export async function webhookRoutes(fastify: FastifyInstance) {
           return reply.code(400).send({ error: 'Unknown product ID' });
         }
 
-        const agency = await prisma.agency.findFirst({
+        // First-time checkouts are created with customerEmail only, so the
+        // agency's Subscription row has no creemCustomerId until a webhook
+        // links it. Resolve by customer id, then by the agencyId we stamped on
+        // the checkout metadata (signature-verified above), then by Creem
+        // subscription id; link the Creem ids on the first match.
+        let agency = await prisma.agency.findFirst({
           where: {
             subscription: {
               creemCustomerId: subscription.customer_id,
@@ -442,8 +448,64 @@ export async function webhookRoutes(fastify: FastifyInstance) {
             subscription: true,
           },
         });
+        let resolvedBy: 'customer_id' | 'metadata_agency_id' | 'subscription_id' | null = agency
+          ? 'customer_id'
+          : null;
 
-        if (agency?.clerkUserId) {
+        if (!agency) {
+          const metadataAgencyId = extractCreemMetadataAgencyId(payload);
+          if (metadataAgencyId) {
+            agency = await prisma.agency.findUnique({
+              where: { id: metadataAgencyId },
+              include: { subscription: true },
+            });
+            if (agency) resolvedBy = 'metadata_agency_id';
+          }
+        }
+
+        if (!agency) {
+          agency = await prisma.agency.findFirst({
+            where: {
+              subscription: {
+                creemSubscriptionId: subscription.id,
+              },
+            },
+            include: {
+              subscription: true,
+            },
+          });
+          if (agency) resolvedBy = 'subscription_id';
+        }
+
+        if (!agency) {
+          fastify.log.warn(
+            { eventId: payload.id, eventType: payload.type },
+            'Creem subscription webhook matched no agency; skipping tier sync and analytics'
+          );
+          return { received: true, processed: false, reason: 'agency_not_found' };
+        }
+
+        // A customer id already linked to this agency's subscription is never
+        // overwritten by a fallback match.
+        const existingCustomerId = agency.subscription?.creemCustomerId ?? null;
+        const linkCreemIds =
+          resolvedBy !== 'customer_id' &&
+          (!existingCustomerId || existingCustomerId === subscription.customer_id);
+        if (resolvedBy !== 'customer_id' && !linkCreemIds) {
+          fastify.log.warn(
+            { eventId: payload.id, eventType: payload.type, agencyId: agency.id, resolvedBy },
+            'Creem webhook customer id differs from the linked subscription; not relinking'
+          );
+        }
+
+        if (!agency.clerkUserId) {
+          fastify.log.warn(
+            { eventId: payload.id, eventType: payload.type, agencyId: agency.id },
+            'Creem subscription webhook agency has no Clerk owner; skipping tier sync and analytics'
+          );
+        }
+
+        if (agency.clerkUserId) {
           // Check if subscription was expired and is now being reactivated
           const wasExpired = agency.subscription?.status === 'expired';
           const isNowActive = subscription.status === 'active' || subscription.status === 'trialing';
@@ -498,6 +560,12 @@ export async function webhookRoutes(fastify: FastifyInstance) {
               ? prisma.subscription.update({
                   where: { id: agency.subscription.id },
                   data: {
+                    ...(linkCreemIds
+                      ? {
+                          creemCustomerId: subscription.customer_id,
+                          creemSubscriptionId: subscription.id,
+                        }
+                      : {}),
                     tier,
                     status: subscription.status,
                     currentPeriodStart: new Date(subscription.current_period_start),

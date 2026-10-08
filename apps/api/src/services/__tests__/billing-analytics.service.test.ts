@@ -127,6 +127,7 @@ describe('billing-analytics.service', () => {
         creem_customer_id: 'cus_123',
         creem_product_id: null,
         subscription_status: 'active',
+        is_trial: false,
       },
     });
   });
@@ -209,5 +210,41 @@ describe('billing-analytics.service', () => {
         creem_product_id: 'prod_11NeEMY6WtGEkdnvdd7obj',
       }),
     });
+  });
+
+  it('emits subscription_started (is_trial) for a trial checkout.completed', async () => {
+    await trackSubscriptionLifecycleFromWebhook({
+      eventType: 'checkout.completed',
+      context: { ...context, status: 'trialing' },
+    });
+
+    expect(captureServerPosthogEventMock).toHaveBeenCalledTimes(1);
+    expect(captureServerPosthogEventMock).toHaveBeenCalledWith({
+      distinctId: 'user_123',
+      event: 'subscription_started',
+      properties: expect.objectContaining({ subscription_status: 'trialing', is_trial: true }),
+    });
+  });
+
+  it('keeps trial_started for subscription.trialing', async () => {
+    await trackSubscriptionLifecycleFromWebhook({
+      eventType: 'subscription.trialing',
+      context: { ...context, status: 'trialing' },
+    });
+
+    expect(captureServerPosthogEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({ event: 'trial_started' })
+    );
+  });
+
+  it('marks paid starts as not a trial', async () => {
+    await trackSubscriptionLifecycleFromWebhook({ eventType: 'checkout.completed', context });
+
+    expect(captureServerPosthogEventMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: 'subscription_started',
+        properties: expect.objectContaining({ is_trial: false }),
+      })
+    );
   });
 });
