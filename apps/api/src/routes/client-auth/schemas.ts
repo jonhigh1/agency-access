@@ -1,26 +1,17 @@
 import { z } from 'zod';
+import { clientOAuthPlatforms, type PlatformRegistryId } from '@agency-platform/shared';
 
-// Platforms a client may start an OAuth flow for. Shared by both the
-// state-creation and exchange schemas so the accepted set cannot drift.
-// Klaviyo, Mailchimp, and Pinterest are manual-invitation platforms
-// (see PLATFORM_TOKEN_CAPABILITIES in @agency-platform/shared) and are
-// intentionally excluded — their OAuth credentials no longer exist.
-//
-// @internal-for-golden — exported only so the golden can pin it against the
-// shared registry derivation (client-oauth-platforms.golden.test.ts).
-// Phase 2a deletes this enum in favor of the registry's clientOAuthPlatforms.
-export const clientOAuthPlatform = z.enum([
-  'google',
-  'meta',
-  'meta_ads',
-  'meta_pages',
-  'google_ads',
-  'ga4',
-  'linkedin',
-  'instagram',
-  'tiktok',
-  'snapchat',
-]);
+// Platforms a client may start an OAuth flow for: the registry's
+// clientAuthorizable derivation (DEC-015). Klaviyo, Mailchimp, and Pinterest
+// are manual-invitation platforms, and the four ads products (tiktok_ads,
+// linkedin_ads, linkedin_pages, snapchat_ads) are connectionMethod 'oauth'
+// but not client-authorizable — the curated gate fact that 8e17c27e enforces.
+// Accepted-set membership is pinned by client-oauth-platforms.golden.test.ts
+// and the shared registry golden. The cast is zod's tuple requirement: the
+// derivation is non-empty by golden pin (ten members).
+export const clientOAuthPlatform = z.enum(
+  clientOAuthPlatforms as unknown as [PlatformRegistryId, ...PlatformRegistryId[]]
+);
 
 export const submitIntakeSchema = z.object({
   intakeResponses: z.record(z.string().max(10_000)).refine(
