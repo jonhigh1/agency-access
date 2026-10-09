@@ -1,3 +1,25 @@
+## Session: 2026-10-08 — PLATFORMS registry: architecture review, settled design, Phase 0+1 shipped (PR #172 + stacked PR)
+
+### What was done
+- Ran the improve-codebase-architecture review: two explorer passes (api+shared, web) over hot spots from the last ~60 commits; 8-candidate report delivered as a temp-dir HTML file (not committed). Top pick: the platform-capability partition — hand-typed in 6+ places across three tiers, drift already shipped 8e17c27e.
+- Settled the design through a two-round grilling loop with a hostile-reviewer subagent as proxy decision-maker (user-delegated): FRONTIER: EMPTY. Registry = one sanctioned place to hand-type; walker + goldens are the load-bearing enforcement. Key rulings: per-entry `clientAuthorizable` (gate-10 not derivable), `LEGACY_PAYLOAD_IDS` as a named set (R3 contest flipped per-entry flags), shopify dual identity confirmed live by audit (agency OAuth at oauth.routes.ts:99/207), rider products split by required-literal `authorizesViaParent`.
+- Wrote `GLOSSARY.md` (repo root): platform identity kinds, connection method vs oauth config block, clientAuthorizable, email-invite quartet, PQ-other-14 / PQ-selector-4 parked questions.
+- Implemented Phase 0 (PR #172, `refactor/platform-registry-phase-0`): RED→GREEN goldens for the identity-mode 6-platform list and the 13-product asset-selection set, then deduped both to single sites (lib/asset-selecting-products.ts; shared const in identity-verification.service.ts). Full api suite green (165 files, 1796 tests).
+- Implemented Phase 1 (`feat/platform-registry-phase-1`, stacked): acknowledged golden regenerator (`scripts/generate-platform-registry-golden.ts`, refuses without `--acknowledge`), `packages/shared/src/platforms/registry.ts` (28-entry discriminated union, `satisfies`-checked), shared golden (RED first — it caught a real data-entry error: the four client-gated ads products were typed authorizable), api gate golden (schemas.ts export is @internal-for-golden), web manual-invite golden.
+- Recorded DEC-015 (full design + 6-PR roadmap + parked questions).
+
+### Decisions
+- DEC-015 (docs/DECISIONS.md) — the registry design, the rider encoding, LEGACY_PAYLOAD_IDS, the golden regen protocol, and the six-PR delivery plan.
+- Phases 2a–3 (gate flip, registry.config absorption + factory flip, web flip, source walker) are separate stacked PRs; no consumer flips landed in Phase 0+1.
+- Shared jest config gained the NodeNext `.js→.ts` moduleNameMapper so the src/index.ts barrel is importable under jest (the golden is its first importer).
+
+### Next steps
+- Phase 2a: flip `clientOAuthPlatform` to derive from the registry's `clientOAuthPlatforms`; delete the @internal-for-golden enum.
+- Phase 2b: absorb `registry.config.ts` into the descriptors' oauth blocks (golden equality diff first), then flip the factory keys (two commits).
+- Phase 2c: collapse the web lib's triple-encoded 7-member manual list to the derived import; keep instructional copy web-side.
+- Phase 3: source walker (3 tiers + .tsx, ≥3-id switch detection, pre-seeded ratchet allowlist incl. connector layer, stale-entry failures).
+- Open: shared's pre-existing global coverage-threshold breach (branches/functions below 80% on main; Phase 1 improves it, registry.ts is 100%); PQ-other-14 and PQ-selector-4 product questions.
+
 ## Session: 2026-10-05/06 — Creem production webhook: wired, then env-incident and full recovery
 
 ### What was done
