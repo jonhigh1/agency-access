@@ -1,6 +1,5 @@
 import {
   META_GRAPH_VERSION,
-  META_MARKETING_API_TIER_CRON_GRAPH_CALLS,
   META_MARKETING_API_TIER_CRON_GRAPH_TIMEOUT_MS,
   META_MARKETING_API_TIER_DAILY_AUDIT_ACTION,
   META_MARKETING_API_TIER_TARGET_DAYS,
@@ -8,6 +7,8 @@ import {
   META_REVIEW_LOCKED_APP_ID,
   normalizeMetaAdAccountId,
   parseMetaGraphApiErrorText,
+  resolveMetaMarketingApiTierCronCallSpacingMs,
+  resolveMetaMarketingApiTierCronGraphCalls,
   sanitizeMetaGraphErrorMessage,
 } from '@agency-platform/shared';
 import * as Sentry from '@sentry/node';
@@ -74,6 +75,22 @@ function graphCallAbortSignal(deps: MetaMarketingApiTierCronDeps): AbortSignal {
     return AbortSignal.any([deps.abortSignal, timeoutSignal]);
   }
   return timeoutSignal;
+}
+
+/** Wait between Graph GETs; resolves early if the run is aborted. */
+function waitBetweenCalls(ms: number, signal?: AbortSignal): Promise<void> {
+  if (ms <= 0 || signal?.aborted) return Promise.resolve();
+  return new Promise((resolve) => {
+    const onAbort = () => {
+      clearTimeout(timer);
+      resolve();
+    };
+    const timer = setTimeout(() => {
+      signal?.removeEventListener('abort', onAbort);
+      resolve();
+    }, ms);
+    signal?.addEventListener('abort', onAbort, { once: true });
+  });
 }
 
 function tierUtcDateFrom(date: Date): string {
@@ -155,17 +172,28 @@ async function executeGraphCalls(
   accessToken: string,
   adAccountId: string,
   deps: MetaMarketingApiTierCronDeps,
+  burstEnabled: boolean,
 ): Promise<TierCronCallResult[]> {
   const results: TierCronCallResult[] = [];
-  const signal = graphCallAbortSignal(deps);
+  const graphCalls = resolveMetaMarketingApiTierCronGraphCalls(burstEnabled);
+  const spacingMs = resolveMetaMarketingApiTierCronCallSpacingMs(burstEnabled);
 
-  for (const call of META_MARKETING_API_TIER_CRON_GRAPH_CALLS) {
+  for (const [index, call] of graphCalls.entries()) {
+    if (index > 0 && spacingMs > 0) {
+      await waitBetweenCalls(spacingMs, deps.abortSignal);
+    }
+
     const path = call.pathTemplate.replace('{adAccountId}', adAccountId);
     const url = new URL(`${GRAPH_BASE}${path}`);
     url.searchParams.set('fields', call.fields);
-    if ('limit' in call && call.limit !== undefined) {
+    if (call.limit !== undefined) {
       url.searchParams.set('limit', String(call.limit));
     }
+    for (const [key, value] of Object.entries(call.params ?? {})) {
+      url.searchParams.set(key, value);
+    }
+    // Fresh timeout per call so the spacing between calls never eats into a call's budget.
+    const signal = graphCallAbortSignal(deps);
 
     try {
       const response = await metaGraphFetch(url.toString(), {
@@ -302,7 +330,12 @@ export async function runMetaMarketingApiTierDailyCron(
     };
   }
 
-  const calls = await executeGraphCalls(accessToken, adAccountId, deps);
+  const calls = await executeGraphCalls(
+    accessToken,
+    adAccountId,
+    deps,
+    env.META_MARKETING_API_TIER_CRON_BURST,
+  );
   const success = calls.length > 0 && calls.every((call) => call.success);
   const primaryStatus = calls[0]?.httpStatus ?? 0;
 

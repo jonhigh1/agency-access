@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import {
   META_MARKETING_API_TIER_DAILY_AUDIT_ACTION,
   META_REVIEW_DEFAULT_AD_ACCOUNT_NUMERIC,
@@ -363,13 +363,154 @@ describe('runMetaMarketingApiTierDailyCron', () => {
     ] as never);
     mockTierDayCount(1, { todayAlreadySuccessful: true });
 
-    const result = await runMetaMarketingApiTierDailyCron({
-      now: () => new Date('2026-10-07T12:00:00Z'),
-    });
+    vi.useFakeTimers();
+    try {
+      const run = runMetaMarketingApiTierDailyCron({
+        now: () => new Date('2026-10-07T12:00:00Z'),
+      });
+      await vi.runAllTimersAsync();
+      const result = await run;
 
-    expect(result.skipped).toBeFalsy();
-    expect(metaGraphFetch).toHaveBeenCalledTimes(2);
+      expect(result.skipped).toBeFalsy();
+      expect(metaGraphFetch).toHaveBeenCalledTimes(6);
+    } finally {
+      vi.useRealTimers();
+      env.META_MARKETING_API_TIER_CRON_BURST = false;
+    }
+  });
+});
+
+describe('runMetaMarketingApiTierDailyCron burst mode call list and spacing', () => {
+  const fakeAdAccount = 'act_1000000000001';
+  let previousAdAccount: string | undefined;
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    const { env } = await import('@/lib/env.js');
+    previousAdAccount = env.META_REVIEW_AD_ACCOUNT_ID;
+    env.META_REVIEW_AD_ACCOUNT_ID = fakeAdAccount;
+    env.META_MARKETING_API_TIER_CRON_BURST = true;
+    vi.mocked(readMetaTierCronAccessToken).mockResolvedValue('lab-tier-cron-token');
+    vi.mocked(prisma.auditLog.findMany).mockResolvedValue([]);
+    mockTierDayCount(0);
+    vi.mocked(auditService.createAuditLog).mockResolvedValue({ data: {}, error: null });
+    mockGraphOk();
+    vi.useFakeTimers();
+  });
+
+  afterEach(async () => {
+    vi.useRealTimers();
+    const { env } = await import('@/lib/env.js');
+    env.META_REVIEW_AD_ACCOUNT_ID = previousAdAccount;
     env.META_MARKETING_API_TIER_CRON_BURST = false;
+  });
+
+  it('makes six GETs on distinct read-only edges of the configured ad account', async () => {
+    const run = runMetaMarketingApiTierDailyCron();
+    await vi.runAllTimersAsync();
+    const result = await run;
+
+    expect(result.success).toBe(true);
+    expect(result.calls.map((call) => call.callId)).toEqual([
+      'ad_account_read',
+      'campaigns_list',
+      'adsets_list',
+      'ads_list',
+      'account_insights_last_7d',
+      'adcreatives_list',
+    ]);
+
+    const fetchCalls = vi.mocked(metaGraphFetch).mock.calls;
+    expect(fetchCalls).toHaveLength(6);
+    const paths = fetchCalls.map(([url]) => new URL(url).pathname.replace(/^\/v[\d.]+/, ''));
+    expect(paths).toEqual([
+      `/${fakeAdAccount}`,
+      `/${fakeAdAccount}/campaigns`,
+      `/${fakeAdAccount}/adsets`,
+      `/${fakeAdAccount}/ads`,
+      `/${fakeAdAccount}/insights`,
+      `/${fakeAdAccount}/adcreatives`,
+    ]);
+    for (const [url, init] of fetchCalls) {
+      expect(new URL(url).hostname).toBe('graph.facebook.com');
+      expect(init.method).toBe('GET');
+      expect(init.signal).toBeDefined();
+    }
+    const insightsUrl = new URL(fetchCalls[4][0]);
+    expect(insightsUrl.searchParams.get('date_preset')).toBe('last_7d');
+  });
+
+  it('treats empty 200 lists as success', async () => {
+    vi.mocked(metaGraphFetch).mockImplementation(
+      async () => new Response(JSON.stringify({ data: [] }), { status: 200 }),
+    );
+    const run = runMetaMarketingApiTierDailyCron();
+    await vi.runAllTimersAsync();
+    const result = await run;
+
+    expect(result.success).toBe(true);
+    expect(result.calls).toHaveLength(6);
+  });
+
+  it('spaces calls 1.5s apart', async () => {
+    const run = runMetaMarketingApiTierDailyCron();
+
+    await vi.advanceTimersByTimeAsync(0);
+    expect(metaGraphFetch).toHaveBeenCalledTimes(1);
+
+    await vi.advanceTimersByTimeAsync(1_499);
+    expect(metaGraphFetch).toHaveBeenCalledTimes(1);
+
+    await vi.advanceTimersByTimeAsync(1);
+    expect(metaGraphFetch).toHaveBeenCalledTimes(2);
+
+    await vi.advanceTimersByTimeAsync(1_500 * 4);
+    expect(metaGraphFetch).toHaveBeenCalledTimes(6);
+
+    const result = await run;
+    expect(result.success).toBe(true);
+  });
+
+  it('stops at the first failed call and keeps the failure in the audit log', async () => {
+    vi.mocked(metaGraphFetch)
+      .mockResolvedValueOnce({ ok: true, status: 200 } as Response)
+      .mockResolvedValueOnce({ ok: false, status: 403 } as Response);
+
+    const run = runMetaMarketingApiTierDailyCron();
+    await vi.runAllTimersAsync();
+    const result = await run;
+
+    expect(result.success).toBe(false);
+    expect(metaGraphFetch).toHaveBeenCalledTimes(2);
+    expect(auditService.createAuditLog).toHaveBeenCalledWith(
+      expect.objectContaining({
+        metadata: expect.objectContaining({ success: false }),
+      }),
+    );
+  });
+});
+
+describe('runMetaMarketingApiTierDailyCron non-burst mode', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(readMetaTierCronAccessToken).mockResolvedValue('lab-tier-cron-token');
+    vi.mocked(prisma.auditLog.findMany).mockResolvedValue([]);
+    mockTierDayCount(0);
+    vi.mocked(auditService.createAuditLog).mockResolvedValue({ data: {}, error: null });
+    mockGraphOk();
+  });
+
+  it('makes the original two GETs back to back with no spacing timers', async () => {
+    vi.useFakeTimers();
+    try {
+      const result = await runMetaMarketingApiTierDailyCron();
+
+      expect(vi.getTimerCount()).toBe(0);
+      expect(result.calls.map((call) => call.callId)).toEqual(['ad_account_read', 'campaigns_list']);
+      expect(metaGraphFetch).toHaveBeenCalledTimes(2);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
 
