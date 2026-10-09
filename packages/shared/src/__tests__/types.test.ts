@@ -48,7 +48,6 @@ import {
   MetaAutoAssignResultSchema,
   getDefaultMetaAccessTasks,
   buildMetaClientAllowedAssetTypes,
-  PLATFORM_SCOPES,
 } from '../types';
 
 // Type imports for TypeScript validation
@@ -69,10 +68,6 @@ describe('Phase 5: Shared Types - TDD Tests', () => {
       'business_management',
       'pages_read_engagement',
     ]);
-    expect(PLATFORM_SCOPES.meta).toEqual(expectedScopes);
-    expect(PLATFORM_SCOPES.meta_ads).toEqual(expectedScopes);
-    expect(PLATFORM_SCOPES.meta_pages).toEqual(META_PERMISSION_CONTRACT.tracks.meta_pages);
-    expect(PLATFORM_SCOPES.instagram).toEqual(META_PERMISSION_CONTRACT.tracks.instagram);
   });
 
   it('rejects permissions outside the Meta review contract', () => {

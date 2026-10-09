@@ -258,9 +258,192 @@ describe('display names golden', () => {
   });
 });
 
-describe('oauth config placeholder', () => {
-  it('leaves every entry undefined until Phase 2b absorbs the connector configs', () => {
+// Verbatim copy of apps/api/src/services/connectors/registry.config.ts
+// PLATFORM_CONFIGS at absorption time (DEC-015 Phase 2b). Meta URLs resolve
+// META_GRAPH_VERSION ('v25.0'); Meta scopes resolve META_PERMISSION_CONTRACT.
+// Do not regenerate by hand — use the regen protocol.
+const FROZEN_OAUTH_CONFIGS: Record<string, Record<string, unknown>> = {
+  google: {
+    name: 'Google',
+    authUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
+    tokenUrl: 'https://oauth2.googleapis.com/token',
+    scopeSeparator: ' ',
+    authParams: { access_type: 'offline', prompt: 'consent' },
+    userInfoUrl: 'https://www.googleapis.com/oauth2/v2/userinfo',
+    verifyUrl: 'https://www.googleapis.com/oauth2/v2/tokeninfo',
+    supportsRefreshTokens: true,
+    apiHeaders: {},
+    defaultScopes: [
+      'https://www.googleapis.com/auth/adwords',
+      'https://www.googleapis.com/auth/analytics.readonly',
+      'https://www.googleapis.com/auth/business.manage',
+      'https://www.googleapis.com/auth/tagmanager.readonly',
+      'https://www.googleapis.com/auth/webmasters',
+      'https://www.googleapis.com/auth/content',
+    ],
+  },
+  google_ads: {
+    name: 'Google Ads',
+    authUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
+    tokenUrl: 'https://oauth2.googleapis.com/token',
+    scopeSeparator: ' ',
+    authParams: { access_type: 'offline', prompt: 'consent' },
+    userInfoUrl: 'https://www.googleapis.com/oauth2/v2/userinfo',
+    verifyUrl: 'https://googleads.googleapis.com/v22/customers:listAccessibleCustomers',
+    supportsRefreshTokens: true,
+    apiHeaders: {},
+    defaultScopes: ['https://www.googleapis.com/auth/adwords'],
+  },
+  ga4: {
+    name: 'Google Analytics 4',
+    authUrl: 'https://accounts.google.com/o/oauth2/v2/auth',
+    tokenUrl: 'https://oauth2.googleapis.com/token',
+    scopeSeparator: ' ',
+    authParams: { access_type: 'offline', prompt: 'consent' },
+    userInfoUrl: 'https://www.googleapis.com/oauth2/v2/userinfo',
+    supportsRefreshTokens: true,
+    defaultScopes: ['https://www.googleapis.com/auth/analytics.readonly'],
+  },
+  meta: {
+    name: 'Meta',
+    authUrl: 'https://www.facebook.com/v25.0/dialog/oauth',
+    tokenUrl: 'https://graph.facebook.com/v25.0/oauth/access_token',
+    scopeSeparator: ',',
+    version: 'v25.0',
+    requiresLongLivedExchange: true,
+    userInfoUrl: 'https://graph.facebook.com/v25.0/me',
+    supportsRefreshTokens: false,
+    defaultScopes: ['ads_management', 'business_management', 'pages_read_engagement', 'pages_show_list'],
+  },
+  meta_ads: {
+    name: 'Meta Ads',
+    authUrl: 'https://www.facebook.com/v25.0/dialog/oauth',
+    tokenUrl: 'https://graph.facebook.com/v25.0/oauth/access_token',
+    scopeSeparator: ',',
+    version: 'v25.0',
+    requiresLongLivedExchange: true,
+    userInfoUrl: 'https://graph.facebook.com/v25.0/me',
+    supportsRefreshTokens: false,
+    defaultScopes: ['ads_management', 'business_management', 'pages_read_engagement', 'pages_show_list'],
+  },
+  meta_pages: {
+    name: 'Meta Pages',
+    authUrl: 'https://www.facebook.com/v25.0/dialog/oauth',
+    tokenUrl: 'https://graph.facebook.com/v25.0/oauth/access_token',
+    scopeSeparator: ',',
+    version: 'v25.0',
+    requiresLongLivedExchange: true,
+    userInfoUrl: 'https://graph.facebook.com/v25.0/me',
+    supportsRefreshTokens: false,
+    defaultScopes: ['business_management', 'pages_show_list', 'pages_read_engagement'],
+  },
+  instagram: {
+    name: 'Instagram',
+    authUrl: 'https://www.facebook.com/v25.0/dialog/oauth',
+    tokenUrl: 'https://graph.facebook.com/v25.0/oauth/access_token',
+    scopeSeparator: ',',
+    version: 'v25.0',
+    requiresLongLivedExchange: true,
+    userInfoUrl: 'https://graph.facebook.com/v25.0/me',
+    supportsRefreshTokens: false,
+    defaultScopes: ['business_management', 'pages_read_engagement'],
+  },
+  linkedin: {
+    name: 'LinkedIn',
+    authUrl: 'https://www.linkedin.com/oauth/v2/authorization',
+    tokenUrl: 'https://www.linkedin.com/oauth/v2/accessToken',
+    scopeSeparator: ' ',
+    userInfoUrl: 'https://api.linkedin.com/v2/userinfo',
+    supportsRefreshTokens: true,
+    defaultScopes: ['openid', 'profile', 'email', 'rw_ads', 'r_ads_reporting'],
+  },
+  linkedin_ads: {
+    name: 'LinkedIn Ads',
+    authUrl: 'https://www.linkedin.com/oauth/v2/authorization',
+    tokenUrl: 'https://www.linkedin.com/oauth/v2/accessToken',
+    scopeSeparator: ' ',
+    userInfoUrl: 'https://api.linkedin.com/v2/userinfo',
+    supportsRefreshTokens: true,
+    defaultScopes: ['openid', 'profile', 'email', 'rw_ads', 'r_ads_reporting'],
+  },
+  linkedin_pages: {
+    name: 'LinkedIn Pages',
+    authUrl: 'https://www.linkedin.com/oauth/v2/authorization',
+    tokenUrl: 'https://www.linkedin.com/oauth/v2/accessToken',
+    scopeSeparator: ' ',
+    userInfoUrl: 'https://api.linkedin.com/v2/userinfo',
+    supportsRefreshTokens: true,
+    defaultScopes: ['openid', 'profile', 'email', 'rw_organization_admin'],
+  },
+  tiktok: {
+    name: 'TikTok',
+    authUrl: 'https://business-api.tiktok.com/open_api/v1.3/oauth2/authorize/',
+    tokenUrl: 'https://business-api.tiktok.com/open_api/v1.3/oauth/token/',
+    scopeSeparator: ',',
+    userInfoUrl: 'https://business-api.tiktok.com/open_api/v1.3/oauth2/advertiser/get/',
+    verifyUrl: 'https://business-api.tiktok.com/open_api/v1.3/oauth2/advertiser/get/',
+    supportsRefreshTokens: false,
+    defaultScopes: ['advertiser.info'],
+  },
+  tiktok_ads: {
+    name: 'TikTok Ads',
+    authUrl: 'https://business-api.tiktok.com/open_api/v1.3/oauth2/authorize/',
+    tokenUrl: 'https://business-api.tiktok.com/open_api/v1.3/oauth/token/',
+    scopeSeparator: ',',
+    userInfoUrl: 'https://business-api.tiktok.com/open_api/v1.3/oauth2/advertiser/get/',
+    verifyUrl: 'https://business-api.tiktok.com/open_api/v1.3/oauth2/advertiser/get/',
+    supportsRefreshTokens: false,
+    defaultScopes: ['advertiser.info'],
+  },
+  snapchat: {
+    name: 'Snapchat',
+    authUrl: 'https://accounts.snapchat.com/login/oauth2/authorize',
+    tokenUrl: 'https://accounts.snapchat.com/login/oauth2/access_token',
+    scopeSeparator: ' ',
+    userInfoUrl: 'https://adsapi.snapchat.com/v1/me',
+    supportsRefreshTokens: true,
+    defaultScopes: ['snapchat-marketing-api'],
+  },
+  snapchat_ads: {
+    name: 'Snapchat Ads',
+    authUrl: 'https://accounts.snapchat.com/login/oauth2/authorize',
+    tokenUrl: 'https://accounts.snapchat.com/login/oauth2/access_token',
+    scopeSeparator: ' ',
+    userInfoUrl: 'https://adsapi.snapchat.com/v1/me',
+    supportsRefreshTokens: true,
+    defaultScopes: ['snapchat-marketing-api'],
+  },
+  shopify: {
+    name: 'Shopify',
+    authUrl: 'https://{shop}.myshopify.com/admin/oauth/authorize',
+    tokenUrl: 'https://{shop}.myshopify.com/admin/oauth/access_token',
+    scopeSeparator: ',',
+    supportsRefreshTokens: false,
+    requiresShopContext: true,
+    defaultScopes: ['read_products', 'read_orders', 'read_customers', 'read_marketing_events'],
+  },
+};
+
+describe('oauth config golden', () => {
+  it('carries exactly the absorbed api OAuth configs, verbatim', () => {
+    const derived: Record<string, unknown> = {};
     for (const id of platformIds) {
+      const entry = PLATFORMS[id as keyof typeof PLATFORMS] as PlatformRegistryEntry;
+      if (entry.oauth !== undefined) derived[id] = entry.oauth;
+    }
+    expect(derived).toEqual(FROZEN_OAUTH_CONFIGS);
+  });
+
+  it('gives riders and legacy entries no oauth block', () => {
+    for (const id of [
+      'google_tag_manager',
+      'google_merchant_center',
+      'google_search_console',
+      'google_business_profile',
+      'whatsapp_business',
+      'youtube_studio',
+      'display_video_360',
+    ]) {
       const entry = PLATFORMS[id as keyof typeof PLATFORMS] as PlatformRegistryEntry;
       expect(entry.oauth).toBeUndefined();
     }

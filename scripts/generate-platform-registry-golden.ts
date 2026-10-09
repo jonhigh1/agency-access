@@ -69,6 +69,15 @@ async function main(): Promise<void> {
   console.log('// LEGACY_PAYLOAD_IDS (' + LEGACY_PAYLOAD_IDS.size + '):');
   console.log(JSON.stringify([...LEGACY_PAYLOAD_IDS]));
   console.log('');
+  console.log('// oauth blocks (Phase 2b) — Meta URLs/scopes resolve');
+  console.log('// META_GRAPH_VERSION / META_PERMISSION_CONTRACT at runtime:');
+  for (const id of platformIds) {
+    const entry: Record<string, unknown> = PLATFORMS[id as keyof typeof PLATFORMS];
+    if (entry['oauth'] !== undefined) {
+      console.log('// ' + id + ': ' + JSON.stringify(entry['oauth']));
+    }
+  }
+  console.log('');
   console.log(
     '// capabilities table: copy verbatim from the registry entries (characterized from'
   );
