@@ -16,6 +16,7 @@ import {
   IdempotencyConflictError,
   IdempotencyExpiredError,
   IdempotencyInProgressError,
+  IdempotencyLimitError,
 } from '@/services/idempotency.service.js';
 import { DeliveryCursorError } from '@/services/webhook-delivery.service.js';
 
@@ -70,6 +71,9 @@ export function sendIdempotencyClaimError(reply: FastifyReply, error: unknown): 
   }
   if (error instanceof IdempotencyExpiredError) {
     return v1Error(reply, 410, error.code, error.message);
+  }
+  if (error instanceof IdempotencyLimitError) {
+    return v1Error(reply, 429, error.code, error.message);
   }
   throw error;
 }

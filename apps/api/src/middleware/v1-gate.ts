@@ -10,10 +10,17 @@
  * - The per-key limiter in this module is the ONE authoritative limiter for
  *   v1 traffic. The global IP limiter must skip the v1 prefix via
  *   shouldSkipGlobalLimiter(url) so v1 traffic never double-counts.
+ * - Uniform consumption rule: budget is consumed only after tier, scope,
+ *   and validation all pass. Every denial before the consumption point
+ *   (tier, pre-check, scope, validation, idempotency-claim failure) burns
+ *   nothing. Reads run tier -> peek -> scope -> consume; idempotent writes
+ *   run tier -> peek -> scope, then consume inside the handler after strict
+ *   validation passes.
  * - Pre-check runs before validation; consume runs after validation
  *   (preCheckV1RateLimit / consumeV1RateLimit). The bundled
- *   v1RateLimitPreHandler does both for read-style routes; writes wire the
- *   split around idempotency claims on creates.
+ *   v1RateLimitPreHandler consumes in one step for routes that own no later
+ *   consumption point; read-style routes prefer the split pair
+ *   v1RatePreCheckHandler / v1RateConsumeHandler around the scope gate.
  * - Every gated response carries X-RateLimit-Limit (and Remaining once the
  *   budget is touched); 429s add Retry-After.
  * - Bad-key attempts throttle in a separate, stricter bucket keyed by
@@ -254,6 +261,40 @@ export function v1TierGate() {
  * response and Retry-After on 429.
  */
 export function v1RateLimitPreHandler() {
+  return async (request: FastifyRequest, reply: FastifyReply) => {
+    const principal = principalOf(request);
+    if (!principal) return;
+    const check = consumeV1RateLimit(principal.keyId);
+    rateHeaders(reply, check.remaining);
+    if (!check.allowed) {
+      reply.header('Retry-After', String(check.retryAfterSeconds));
+      return v1Error(reply, 429, V1_RATE_LIMITED_CODE, 'Rate limit exceeded. Please try again later.');
+    }
+  };
+}
+
+/**
+ * Peek half of the split gate for reads: tier -> peek -> scope -> consume.
+ * Denied here burns nothing.
+ */
+export function v1RatePreCheckHandler() {
+  return async (request: FastifyRequest, reply: FastifyReply) => {
+    const principal = principalOf(request);
+    if (!principal) return;
+    const check = preCheckV1RateLimit(principal.keyId);
+    rateHeaders(reply, check.remaining);
+    if (!check.allowed) {
+      reply.header('Retry-After', String(check.retryAfterSeconds));
+      return v1Error(reply, 429, V1_RATE_LIMITED_CODE, 'Rate limit exceeded. Please try again later.');
+    }
+  };
+}
+
+/**
+ * Consume half of the split gate: runs after the scope gate, so
+ * scope-denied reads never touch the budget.
+ */
+export function v1RateConsumeHandler() {
   return async (request: FastifyRequest, reply: FastifyReply) => {
     const principal = principalOf(request);
     if (!principal) return;

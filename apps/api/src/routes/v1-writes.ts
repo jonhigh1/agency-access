@@ -11,7 +11,8 @@
  * Validation failures never reach the claim, so they never consume the key.
  * Replay re-checks scope and tier because those preHandlers run before the
  * claim on every call, including retries. Records isolate by agency plus key
- * identity: one key never reads another key's stored result. Usage metrics
+ * family: rotation siblings replay the original result, while different
+ * families never share stored results. Usage metrics
  * derive via DB counts with no increment on this path, so a replayed create
  * consumes no allowance twice.
  *
@@ -153,6 +154,9 @@ async function createRequestInTx(tx: Tx, agencyId: string, body: V1RequestCreate
 
 function mapWriteError(reply: FastifyReply, error: unknown) {
   if (error instanceof Error) {
+    if (error.message === 'V1_KEY_DEAD') {
+      return sendError(reply, 401, 'INVALID_API_KEY', 'Invalid or missing API key');
+    }
     if (error.message.includes(ClientError.EXTERNAL_ID_CONFLICT)) {
       return sendError(reply, 409, ClientError.EXTERNAL_ID_CONFLICT, 'This external client ID is already in use.');
     }
@@ -203,7 +207,9 @@ async function handleIdempotentCreate<S extends typeof v1ClientCreateSchema | ty
   try {
     claim = await idempotencyService.claim({
       agencyId: principal.agencyId,
-      keyIdentity: principal.keyId,
+      // Family-scoped identity: a rotated replacement key replays the
+      // original result instead of double-writing.
+      keyIdentity: principal.familyId,
       endpoint: opts.endpoint,
       key,
       fingerprint,
@@ -219,6 +225,19 @@ async function handleIdempotentCreate<S extends typeof v1ClientCreateSchema | ty
   const recordId = claim.record.id;
   try {
     const row = await prisma.$transaction(async (tx) => {
+      // Revoke-vs-commit race: re-check key liveness inside the transaction
+      // so a key revoked after the claim cannot land a business write.
+      const keyRow = await tx.apiKey.findUnique({
+        where: { id: principal.keyId },
+        select: { revokedAt: true, expiresAt: true },
+      });
+      if (
+        keyRow == null ||
+        keyRow.revokedAt != null ||
+        (keyRow.expiresAt != null && new Date(keyRow.expiresAt) <= new Date())
+      ) {
+        throw new Error('V1_KEY_DEAD');
+      }
       const created = await opts.write(tx, principal.agencyId, parsed.data);
       const stored = await tx.idempotencyRecord.updateMany({
         where: { id: recordId, state: 'in_progress' },

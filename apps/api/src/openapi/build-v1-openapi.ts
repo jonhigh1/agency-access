@@ -28,6 +28,7 @@ import {
   v1RequestListQuerySchema,
   v1WebhookDeliveriesQuerySchema,
   v1WebhookEndpointCreateSchema,
+  v1WebhookEndpointUpdateSchema,
   v1WebhookRotateSchema,
 } from '@/routes/v1-schemas.js';
 import { zodToJsonSchema } from './zod-to-json-schema.js';
@@ -138,6 +139,8 @@ interface RouteDef {
   scopes: string[];
   query?: z.ZodTypeAny;
   body?: z.ZodTypeAny;
+  /** True when the route accepts an empty body (rotate defaults). */
+  bodyOptional?: boolean;
   pathParams?: Record<string, JsonSchema>;
   idempotent?: boolean;
   successStatus: number;
@@ -251,6 +254,7 @@ const ROUTES: RouteDef[] = [
       'IDEMPOTENCY_CONFLICT',
       'IDEMPOTENCY_IN_PROGRESS',
       'IDEMPOTENCY_KEY_EXPIRED',
+      'IDEMPOTENCY_LIMIT_EXCEEDED',
       'CLIENT_EMAIL_EXISTS',
       'EXTERNAL_ID_CONFLICT',
     ],
@@ -272,6 +276,7 @@ const ROUTES: RouteDef[] = [
       'IDEMPOTENCY_CONFLICT',
       'IDEMPOTENCY_IN_PROGRESS',
       'IDEMPOTENCY_KEY_EXPIRED',
+      'IDEMPOTENCY_LIMIT_EXCEEDED',
       'CLIENT_NOT_FOUND',
     ],
   },
@@ -348,6 +353,7 @@ const ROUTES: RouteDef[] = [
       'IDEMPOTENCY_CONFLICT',
       'IDEMPOTENCY_IN_PROGRESS',
       'IDEMPOTENCY_KEY_EXPIRED',
+      'IDEMPOTENCY_LIMIT_EXCEEDED',
       'UNSAFE_ENDPOINT_URL',
       'WEBHOOK_ENDPOINT_CAP_EXCEEDED',
       'WEBHOOK_ENDPOINT_URL_EXISTS',
@@ -367,9 +373,9 @@ const ROUTES: RouteDef[] = [
   {
     path: '/webhook-endpoints/{id}',
     method: 'patch',
-    summary: 'Update a webhook endpoint URL and subscriptions.',
+    summary: 'Update a webhook endpoint URL and subscriptions. Disabled status is sticky; only {"reactivate": true} clears it.',
     scopes: ['webhooks:write'],
-    body: v1WebhookEndpointCreateSchema,
+    body: v1WebhookEndpointUpdateSchema,
     pathParams: { id: { type: 'string' } },
     successStatus: 200,
     successData: { type: 'object' },
@@ -391,6 +397,7 @@ const ROUTES: RouteDef[] = [
     summary: 'Rotate an endpoint signing secret with 24h dual-active overlap, or immediately.',
     scopes: ['webhooks:write'],
     body: v1WebhookRotateSchema,
+    bodyOptional: true,
     pathParams: { id: { type: 'string' } },
     successStatus: 200,
     successData: {
@@ -439,7 +446,7 @@ export function buildV1OpenApi(): Record<string, unknown> {
       ...(route.body
         ? {
             requestBody: {
-              required: true,
+              required: route.bodyOptional !== true,
               content: { 'application/json': { schema: zodToJsonSchema(route.body) } },
             },
           }

@@ -57,6 +57,35 @@ CREATE INDEX "webhook_events_correlation_id_idx"
 -- ordering uses comparison, never contiguity.
 CREATE SEQUENCE "webhook_endpoint_sequence";
 
+-- Public v1 API keys (P0 gap fill): schema.prisma defines ApiKey/api_keys
+-- but no migration created the table. Raw secrets never land here — only
+-- HMAC hashes under a versioned server pepper, shown once at issuance.
+CREATE TABLE "api_keys" (
+    "id" TEXT NOT NULL,
+    "agency_id" TEXT NOT NULL,
+    "family_id" TEXT NOT NULL,
+    "name" TEXT NOT NULL,
+    "prefix" TEXT NOT NULL,
+    "key_hash" TEXT NOT NULL,
+    "pepper_version" INTEGER NOT NULL DEFAULT 1,
+    "scopes" TEXT[] NOT NULL DEFAULT '{}',
+    "created_by" TEXT NOT NULL,
+    "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updated_at" TIMESTAMP(3) NOT NULL,
+    "last_used_at" TIMESTAMP(3),
+    "expires_at" TIMESTAMP(3),
+    "revoked_at" TIMESTAMP(3),
+    "revoked_by" TEXT,
+
+    CONSTRAINT "api_keys_pkey" PRIMARY KEY ("id"),
+    CONSTRAINT "api_keys_agency_id_fkey" FOREIGN KEY ("agency_id") REFERENCES "agencies"("id") ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE UNIQUE INDEX "api_keys_key_hash_key" ON "api_keys"("key_hash");
+CREATE INDEX "api_keys_prefix_idx" ON "api_keys"("prefix");
+CREATE INDEX "api_keys_agency_id_revoked_at_idx" ON "api_keys"("agency_id", "revoked_at");
+CREATE INDEX "api_keys_family_id_revoked_at_idx" ON "api_keys"("family_id", "revoked_at");
+
 -- Verification queries (run post-deploy; both must return zero rows):
 -- 1. Zero duplicate non-null external IDs per agency:
 --    SELECT "agency_id", "external_client_id", COUNT(*)

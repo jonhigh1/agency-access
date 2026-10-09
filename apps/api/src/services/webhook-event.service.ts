@@ -11,6 +11,7 @@ import {
   type WebhookAccessRequestLifecycleEventType,
 } from '@agency-platform/shared';
 import { prisma } from '@/lib/prisma';
+import { logger } from '@/lib/logger.js';
 
 interface AccessRequestWebhookEventInput {
   type: WebhookAccessRequestLifecycleEventType;
@@ -471,7 +472,9 @@ export async function nextEndpointSequence(): Promise<bigint> {
   const next = rows?.[0]?.next;
   if (typeof next === 'bigint') return next;
   if (typeof next === 'number') return BigInt(next);
-  return BigInt(String(next ?? Date.now()));
+  // Never mint Date.now() fallbacks: duplicate sequence numbers would
+  // violate the per-endpoint unique guard and corrupt consumer ordering.
+  throw new Error('WEBHOOK_SEQUENCE_UNAVAILABLE');
 }
 
 export interface EmitWebhookEventsInput {
@@ -484,6 +487,8 @@ export interface EmitWebhookEventsInput {
   apiVersion?: WebhookApiVersion;
   /** Set once per logical occurrence; generated when omitted. */
   correlationId?: string;
+  /** Restrict fan-out to these endpoints (lifecycle groups by API version). */
+  endpointIds?: string[];
 }
 
 export interface EmittedWebhookEvent {
@@ -510,7 +515,8 @@ export async function emitWebhookEvents(
     });
     const subscribed = endpoints.filter((endpoint) =>
       Array.isArray(endpoint.subscribedEvents) &&
-      (endpoint.subscribedEvents as string[]).includes(input.type),
+      (endpoint.subscribedEvents as string[]).includes(input.type) &&
+      (input.endpointIds == null || input.endpointIds.includes(endpoint.id)),
     );
 
     const correlationId = input.correlationId ?? `corr_${randomUUID().replace(/-/g, '')}`;
@@ -548,8 +554,15 @@ export async function emitWebhookEvents(
       try {
         const { queueWebhookDelivery } = await import('@/lib/queue-helpers');
         await queueWebhookDelivery(record.id);
-      } catch {
-        // Queue failure is delivery-retryable, never an emit failure.
+      } catch (error) {
+        // Queue failure is delivery-retryable, never an emit failure — but
+        // it must be visible: log with the event identity for triage.
+        logger.error('queueWebhookDelivery failed', {
+          eventId: record.id,
+          endpointId: endpoint.id,
+          correlationId,
+          error: error instanceof Error ? error.message : String(error),
+        });
       }
     }
 

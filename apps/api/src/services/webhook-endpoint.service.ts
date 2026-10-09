@@ -78,6 +78,11 @@ const WebhookDisableSchema = z.object({
 
 const BLOCKED_HOSTNAMES = new Set(['metadata.google.internal', 'metadata.goog', 'instance-data']);
 
+/** URL hostnames keep IPv6 brackets; strip them before IP classification. */
+function stripIpBrackets(hostname: string): string {
+  return hostname.startsWith('[') && hostname.endsWith(']') ? hostname.slice(1, -1) : hostname;
+}
+
 function isLoopbackOrPrivateIPv4(parts: number[]): boolean {
   const [a, b] = parts;
   if (a === 10) return true;
@@ -91,17 +96,43 @@ function isLoopbackOrPrivateIPv4(parts: number[]): boolean {
 
 /** True for loopback, private, link-local, and metadata IPv4/IPv6 literals. */
 export function isPrivateIpAddress(ip: string): boolean {
-  const family = isIP(ip);
+  // URL hostnames keep IPv6 brackets (and Node compresses mapped forms to
+  // hex, e.g. [::ffff:7f00:1]): strip brackets before classifying.
+  const host = ip.startsWith('[') && ip.endsWith(']') ? ip.slice(1, -1) : ip;
+  const family = isIP(host);
   if (family === 4) {
-    return isLoopbackOrPrivateIPv4(ip.split('.').map(Number));
+    return isLoopbackOrPrivateIPv4(host.split('.').map(Number));
   }
   if (family === 6) {
-    const lower = ip.toLowerCase();
+    const lower = host.toLowerCase();
     if (lower === '::1' || lower === '::') return true;
+    // IPv4-mapped / IPv4-translated forms embed an IPv4 literal:
+    // normalize to the embedded IPv4 and apply the IPv4 check, so
+    // ::ffff:127.0.0.1 and friends cannot bypass the private check.
+    const mapped = lower.match(/^::ffff:(?:0+:)*(\d+\.\d+\.\d+\.\d+)$/);
+    if (mapped?.[1]) {
+      return isLoopbackOrPrivateIPv4(mapped[1].split('.').map(Number));
+    }
+    const translated = lower.match(/^\[?::ffff:0:(\d+\.\d+\.\d+\.\d+)\]?$/);
+    if (translated?.[1]) {
+      return isLoopbackOrPrivateIPv4(translated[1].split('.').map(Number));
+    }
+    // Hex-form mapped address, e.g. ::ffff:7f00:1 == ::ffff:127.0.0.1.
+    const hexMapped = lower.match(/^::ffff:([0-9a-f]{1,4}):([0-9a-f]{1,4})$/);
+    if (hexMapped) {
+      const hi = parseInt(hexMapped[1], 16);
+      const lo = parseInt(hexMapped[2], 16);
+      const parts = [(hi >> 8) & 0xff, hi & 0xff, (lo >> 8) & 0xff, lo & 0xff];
+      return isLoopbackOrPrivateIPv4(parts);
+    }
+    if (lower === '0.0.0.0') return true;
     if (lower.startsWith('fc') || lower.startsWith('fd')) return true;
     if (lower.startsWith('fe80')) return true;
     return false;
   }
+  // Unparseable literals: the URL parser already handed us a string that
+  // isIP rejects — treat 0.0.0.0 / unspecified text forms as denied.
+  if (host === '0.0.0.0' || host === '::') return true;
   return false;
 }
 
@@ -137,7 +168,7 @@ export function validateEndpointUrlSync(rawUrl: string): EndpointUrlCheck {
   if (isBlockedWebhookHostname(url.hostname)) {
     return { ok: false, code: UNSAFE_ENDPOINT_URL_CODE, message: 'Endpoint URL targets a blocked metadata host' };
   }
-  if (isIP(url.hostname) !== 0 && isPrivateIpAddress(url.hostname)) {
+  if (isPrivateIpAddress(stripIpBrackets(url.hostname))) {
     return { ok: false, code: UNSAFE_ENDPOINT_URL_CODE, message: 'Endpoint URL targets a private address' };
   }
   return { ok: true };
@@ -147,9 +178,8 @@ export type EndpointHostCheck = { allowed: true } | { allowed: false; reason: st
 
 /**
  * Delivery-time DNS re-check (U6): the hostname must not resolve to a
- * private address. Resolver errors fail OPEN on purpose: a host that does
- * not resolve cannot be fetched either, so fetch still enforces
- * reachability; only proven-private resolutions reject here.
+ * private address. Resolver errors fail CLOSED: an unresolvable host is
+ * denied here rather than passed to fetch.
  */
 export async function assertEndpointHostResolvable(rawUrl: string): Promise<EndpointHostCheck> {
   let hostname: string;
@@ -158,7 +188,7 @@ export async function assertEndpointHostResolvable(rawUrl: string): Promise<Endp
   } catch {
     return { allowed: false, reason: 'Invalid endpoint URL' };
   }
-  if (isIP(hostname) !== 0 || isBlockedWebhookHostname(hostname)) {
+  if (isIP(stripIpBrackets(hostname)) !== 0 || isBlockedWebhookHostname(hostname)) {
     return isBlockedWebhookHostname(hostname) || isPrivateIpAddress(hostname)
       ? { allowed: false, reason: 'Endpoint URL targets a blocked host' }
       : { allowed: true };
@@ -167,10 +197,10 @@ export async function assertEndpointHostResolvable(rawUrl: string): Promise<Endp
   try {
     resolved = (await lookup(hostname, { all: true })) as Array<{ address: string }>;
   } catch {
-    return { allowed: true };
+    return { allowed: false, reason: 'Endpoint hostname could not be resolved' };
   }
   if (!Array.isArray(resolved)) {
-    return { allowed: true };
+    return { allowed: false, reason: 'Endpoint hostname could not be resolved' };
   }
   if (resolved.some((entry) => isPrivateIpAddress(entry.address))) {
     return { allowed: false, reason: 'Endpoint hostname resolves to a private address' };
@@ -627,8 +657,9 @@ export async function getWebhookEndpointById(
 
 export async function createPluralWebhookEndpoint(
   input: z.infer<typeof WebhookCreateSchema>,
-  actor?: PluralActor
-): Promise<ServiceResult<{ endpoint: ReturnType<typeof toEndpointSummary>; signingSecret: string }>> {
+  actor?: PluralActor,
+  atomic?: { keyId: string; claimRecordId: string; requestId: string },
+): Promise<ServiceResult<{ endpoint: ReturnType<typeof toEndpointSummary>; signingSecret: string; body?: unknown }>> {
   const scopeError = recheckScope(actor?.scopes, 'webhooks:write');
   if (scopeError) return { data: null, error: scopeError };
   try {
@@ -667,6 +698,75 @@ export async function createPluralWebhookEndpoint(
     const secretId = infisical.generateSecretName('webhook', endpointId);
     const signingSecret = buildSigningSecret();
 
+    await infisical.storePlainSecret(secretId, signingSecret);
+
+    if (atomic) {
+      // Atomic path (v1 route): the endpoint insert, the key-liveness
+      // re-check (revoke-vs-commit race), and the claim completion commit
+      // in one transaction — a crash between steps can never orphan an
+      // endpoint behind an uncompletable claim.
+      try {
+        const body = await prisma.$transaction(async (tx: any) => {
+          const keyRow = await tx.apiKey.findUnique({
+            where: { id: atomic.keyId },
+            select: { revokedAt: true, expiresAt: true },
+          });
+          if (
+            keyRow == null ||
+            keyRow.revokedAt != null ||
+            (keyRow.expiresAt != null && new Date(keyRow.expiresAt) <= new Date())
+          ) {
+            throw new Error('V1_KEY_DEAD');
+          }
+          const created = await tx.webhookEndpoint.create({
+            data: {
+              id: endpointId,
+              agencyId: validated.agencyId,
+              url: validated.url,
+              status: 'active',
+              subscribedEvents: validated.subscribedEvents,
+              preferredApiVersion: validated.preferredApiVersion ?? '2026-03-08',
+              secretId,
+              createdBy: validated.createdBy,
+            },
+          });
+          const completedBody = {
+            data: { endpoint: toEndpointSummary(created), signingSecret },
+            error: null,
+            meta: { requestId: atomic.requestId },
+          };
+          const stored = await tx.idempotencyRecord.updateMany({
+            where: { id: atomic.claimRecordId, state: 'in_progress' },
+            data: { state: 'completed', statusCode: 201, result: completedBody as any },
+          });
+          if (stored.count !== 1) throw new Error('IDEMPOTENCY_STATE');
+          return completedBody;
+        });
+
+        await auditService.createAuditLog({
+          agencyId: validated.agencyId,
+          userEmail: validated.createdBy,
+          action: 'WEBHOOK_ENDPOINT_CREATED',
+          resourceType: 'webhook_endpoint',
+          resourceId: endpointId,
+          metadata: {
+            subscribedEvents: validated.subscribedEvents,
+            preferredApiVersion: validated.preferredApiVersion ?? '2026-03-08',
+          },
+        });
+
+        return {
+          data: { endpoint: (body.data as any).endpoint, signingSecret, body },
+          error: null,
+        };
+      } catch (error) {
+        if (error instanceof Error && error.message === 'V1_KEY_DEAD') {
+          return { data: null, error: { code: 'INVALID_API_KEY', message: 'Invalid or missing API key' } };
+        }
+        throw error;
+      }
+    }
+
     const endpoint = await prisma.webhookEndpoint.create({
       data: {
         id: endpointId,
@@ -679,8 +779,6 @@ export async function createPluralWebhookEndpoint(
         createdBy: validated.createdBy,
       },
     });
-
-    await infisical.storePlainSecret(secretId, signingSecret);
 
     await auditService.createAuditLog({
       agencyId: validated.agencyId,
@@ -708,7 +806,7 @@ export async function createPluralWebhookEndpoint(
 
 export async function updatePluralWebhookEndpoint(
   endpointId: string,
-  input: z.infer<typeof WebhookUpdateSchema>,
+  input: z.infer<typeof WebhookUpdateSchema> & { reactivate?: boolean },
   actor?: PluralActor
 ): Promise<ServiceResult<{ endpoint: ReturnType<typeof toEndpointSummary> }>> {
   const scopeError = recheckScope(actor?.scopes, 'webhooks:write');
@@ -740,14 +838,16 @@ export async function updatePluralWebhookEndpoint(
       }
     }
 
+    // Disabled status is sticky: only an explicit reactivate flag clears
+    // disablement; a plain field update preserves it.
+    const shouldReactivate = input.reactivate === true;
     const endpoint = await prisma.webhookEndpoint.update({
       where: { id: existing.id },
       data: {
         url: validated.url,
-        status: 'active',
         subscribedEvents: validated.subscribedEvents,
         ...(validated.preferredApiVersion ? { preferredApiVersion: validated.preferredApiVersion } : {}),
-        disabledAt: null,
+        ...(shouldReactivate ? { status: 'active', disabledAt: null } : {}),
       },
     });
 

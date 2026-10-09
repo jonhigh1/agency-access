@@ -15,6 +15,12 @@ import {
   type ApiKeyPrincipal,
   type ApiKeyScope,
 } from '@/services/api-key.service';
+import { extractClientIp } from '@/lib/ip.js';
+import {
+  V1_RATE_LIMITED_CODE,
+  isV1AuthThrottled,
+  noteV1AuthResult,
+} from '@/middleware/v1-gate.js';
 import { v1Error } from '@/lib/v1-envelope.js';
 import type { V1ErrorCode } from '@/lib/v1-errors.js';
 
@@ -33,8 +39,19 @@ function extractBearerKey(request: FastifyRequest): string | null {
 export function apiKeyPreHandler() {
   return async (request: FastifyRequest, reply: FastifyReply) => {
     const presented = extractBearerKey(request);
+    const ip = extractClientIp(request);
+    const prefix =
+      typeof presented === 'string' && presented.length >= 12
+        ? presented.slice(0, 12)
+        : 'unknown';
+    // Brute-force bucket first: exhausted IP+prefix probes get 429 without
+    // touching the verifier.
+    if (isV1AuthThrottled(ip, prefix)) {
+      return v1Error(reply, 429, V1_RATE_LIMITED_CODE as V1ErrorCode, 'Rate limit exceeded. Please try again later.');
+    }
     const { principal } = await verifyApiKey(presented);
     if (!principal) {
+      noteV1AuthResult(ip, presented, false);
       return denyKey(reply);
     }
     request.apiKey = principal as ApiKeyPrincipal;

@@ -42,6 +42,7 @@ const prismaMock = vi.hoisted(() => ({
     create: vi.fn(),
     findUnique: vi.fn(),
     updateMany: vi.fn(),
+    count: vi.fn(),
   },
   $transaction: vi.fn(),
 }));
@@ -65,14 +66,17 @@ function hashSecret(secret: string): string {
   return createHmac('sha256', PEPPER).update(secret).digest('hex');
 }
 
+let keyFamilySeq = 0;
+
 function keyRow(scopes: string[] = ['clients:read', 'clients:write', 'requests:read', 'requests:write']) {
   const secret = `ah_live_${randomBytes(16).toString('base64url')}`;
+  keyFamilySeq += 1;
   return {
     secret,
     row: {
       id: `key-${secret.slice(8, 14)}`,
       agencyId: 'agency-1',
-      familyId: 'fam-1',
+      familyId: `fam-${keyFamilySeq}`,
       name: 'crm',
       prefix: secret.slice(0, 12),
       keyHash: hashSecret(secret),
@@ -95,6 +99,12 @@ function mockValidKeys() {
   vi.mocked(prismaMock.apiKey.findMany).mockImplementation(async (args: any) => {
     const found = keyRows.find((k) => k.row.prefix === args?.where?.prefix);
     return (found ? [found.row] : []) as any;
+  });
+  // In-transaction liveness re-check (revoke-vs-commit race): live by default.
+  vi.mocked(prismaMock.apiKey.findUnique).mockImplementation(async (args: any) => {
+    const found = keyRows.find((k) => k.row.id === args?.where?.id);
+    if (!found) return null as any;
+    return { revokedAt: found.row.revokedAt, expiresAt: found.row.expiresAt } as any;
   });
   vi.mocked(prismaMock.agency.findUnique).mockImplementation(async (args: any) => {
     if (args?.where?.id === 'agency-1') return { id: 'agency-1', name: 'Acme' } as any;
@@ -163,6 +173,8 @@ describe('v1 idempotent writes (U5)', () => {
     keyRows.push(k);
     secret = k.secret;
     mockValidKeys();
+    // Live-record cap: empty by default.
+    vi.mocked(prismaMock.idempotencyRecord.count).mockResolvedValue(0);
     // Default: claim wins, transaction runs the callback against the mock.
     vi.mocked(prismaMock.idempotencyRecord.create).mockResolvedValue({
       id: 'idem-1',
@@ -261,7 +273,7 @@ describe('v1 idempotent writes (U5)', () => {
     expect(vi.mocked(prismaMock.client.create)).toHaveBeenCalledTimes(1);
   });
 
-  it('cross-key replay isolation: one key never reads another key’s stored result', async () => {
+  it('cross-family replay isolation: one family never reads another family’s stored result', async () => {
     const other = keyRow();
     keyRows.push(other);
     mockValidKeys();
@@ -269,7 +281,7 @@ describe('v1 idempotent writes (U5)', () => {
     await postClients(CLIENT_BODY, 'shared-key', secret);
     expect(vi.mocked(prismaMock.client.create)).toHaveBeenCalledTimes(1);
 
-    // Same key value under a different key identity claims fresh (no P2002).
+    // Same key value under a different family claims fresh (no P2002).
     vi.mocked(prismaMock.idempotencyRecord.create).mockResolvedValue({
       id: 'idem-2',
       state: 'in_progress',
@@ -285,7 +297,37 @@ describe('v1 idempotent writes (U5)', () => {
     expect(res.statusCode).toBe(201);
     expect(res.json().data.id).toBe('client-2');
     const claimCall = vi.mocked(prismaMock.idempotencyRecord.create).mock.calls.at(-1)?.[0] as any;
-    expect(claimCall.data.keyIdentity).not.toBe(keyRows[0].row.id);
+    expect(claimCall.data.keyIdentity).toBe(other.row.familyId);
+    expect(claimCall.data.keyIdentity).not.toBe(keyRows[0].row.familyId);
+  });
+
+  it('rotation retry replays: same family, same key and body returns the original without a second write', async () => {
+    const sibling = keyRow();
+    // Rotation sibling: same family, different key id.
+    sibling.row.familyId = keyRows[0].row.familyId;
+    keyRows.push(sibling);
+    mockValidKeys();
+
+    await postClients(CLIENT_BODY, 'rotation-key', secret);
+    expect(vi.mocked(prismaMock.client.create)).toHaveBeenCalledTimes(1);
+
+    // Sibling loses the claim race; the winner's stored result replays.
+    vi.mocked(prismaMock.idempotencyRecord.create).mockRejectedValue(
+      Object.assign(new Error('Unique constraint'), { code: 'P2002' }),
+    );
+    vi.mocked(prismaMock.idempotencyRecord.findUnique).mockResolvedValue({
+      id: 'idem-1',
+      state: 'completed',
+      statusCode: 201,
+      fingerprint: fingerprintRequest(CLIENT_BODY),
+      result: JSON.parse(JSON.stringify(createdClientRow())),
+      expiresAt: new Date(Date.now() + 60_000),
+    } as any);
+
+    const res = await postClients(CLIENT_BODY, 'rotation-key', sibling.secret);
+    expect(res.statusCode).toBe(201);
+    expect(res.json().data.id).toBe('client-1');
+    expect(vi.mocked(prismaMock.client.create)).toHaveBeenCalledTimes(1);
   });
 
   it('expired idempotency keys fail with the distinct expired code', async () => {

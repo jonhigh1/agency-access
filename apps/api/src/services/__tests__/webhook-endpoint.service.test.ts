@@ -42,8 +42,9 @@ vi.mock('@/services/audit.service', () => ({
 describe('webhook-endpoint.service', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    // Creation/update URL checks fail open on resolver errors.
-    vi.mocked(lookup).mockRejectedValue(Object.assign(new Error('ENOTFOUND'), { code: 'ENOTFOUND' }));
+    // Creation/update URL checks fail closed on resolver errors; resolve a
+    // public IP so example.com hosts pass the delivery-time re-check.
+    vi.mocked(lookup).mockResolvedValue([{ address: '93.184.216.34', family: 4 }] as any);
   });
 
   it('creates a single webhook endpoint for an agency and stores the secret in Infisical', async () => {

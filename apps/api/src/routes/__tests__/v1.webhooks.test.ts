@@ -13,7 +13,7 @@ vi.mock('@clerk/backend', () => ({
 }));
 
 const prismaMock = vi.hoisted(() => ({
-  apiKey: { findMany: vi.fn(), update: vi.fn() },
+  apiKey: { findMany: vi.fn(), findUnique: vi.fn(), update: vi.fn() },
   agency: { findUnique: vi.fn() },
   subscription: { findUnique: vi.fn() },
   webhookEndpoint: {
@@ -26,7 +26,8 @@ const prismaMock = vi.hoisted(() => ({
   },
   webhookEvent: { create: vi.fn(), findMany: vi.fn() },
   webhookDelivery: { findMany: vi.fn(), deleteMany: vi.fn() },
-  idempotencyRecord: { create: vi.fn(), findUnique: vi.fn(), updateMany: vi.fn() },
+  idempotencyRecord: { create: vi.fn(), findUnique: vi.fn(), updateMany: vi.fn(), count: vi.fn() },
+  $transaction: vi.fn(),
   $queryRaw: vi.fn(),
 }));
 
@@ -241,10 +242,17 @@ describe('U6 webhook v1: URL validation', () => {
     expect(result.allowed).toBe(false);
   });
 
-  it('allows resolution failures through (fetch still enforces reachability)', async () => {
+  it('denies resolution failures closed (unresolvable hosts never reach fetch)', async () => {
     vi.mocked(lookup).mockRejectedValue(Object.assign(new Error('ENOTFOUND'), { code: 'ENOTFOUND' }));
     const result = await assertEndpointHostResolvable('https://example.com/hooks');
-    expect(result.allowed).toBe(true);
+    expect(result.allowed).toBe(false);
+  });
+
+  it('denies IPv4-mapped IPv6 private literals (::ffff:0:0/96)', () => {
+    expect(validateEndpointUrlSync('https://[::ffff:127.0.0.1]/hooks').ok).toBe(false);
+    expect(validateEndpointUrlSync('https://[::ffff:10.1.2.3]/hooks').ok).toBe(false);
+    expect(validateEndpointUrlSync('https://[::ffff:169.254.169.254]/hooks').ok).toBe(false);
+    expect(validateEndpointUrlSync('https://[::ffff:7f00:1]/hooks').ok).toBe(false);
   });
 });
 
@@ -257,9 +265,16 @@ describe('U6 webhook v1: plural CRUD, cap, idempotent creates', () => {
     vi.clearAllMocks();
     resetV1RateLimits();
     resetV1AuthFailures();
+    // Creation URL checks fail closed on resolver errors; resolve a public
+    // IP so example.com hosts pass the delivery-time re-check.
+    vi.mocked(lookup).mockResolvedValue([{ address: '93.184.216.34', family: 4 }] as any);
     const k = keyRow();
     secret = k.secret;
     mockValidKey(k.row);
+    // Claim cap + in-transaction key-liveness check: live by default.
+    vi.mocked(prismaMock.idempotencyRecord.count).mockResolvedValue(0);
+    vi.mocked(prismaMock.apiKey.findUnique).mockResolvedValue({ revokedAt: null, expiresAt: null } as any);
+    vi.mocked(prismaMock.$transaction).mockImplementation(async (cb: any) => cb(prismaMock));
     app = await buildApp();
   });
 
@@ -332,12 +347,17 @@ describe('U6 webhook v1: plural CRUD, cap, idempotent creates', () => {
     });
     expect(first.statusCode).toBe(201);
     expect(prismaMock.webhookEndpoint.create).toHaveBeenCalledTimes(1);
+    expect(first.json().data.signingSecret).toMatch(/^[a-f0-9]{64}$/);
 
     const retry = await app.inject({
       method: 'POST', url: '/webhook-endpoints', headers: auth({ 'idempotency-key': 'same-key' }), payload,
     });
     expect(retry.statusCode).toBe(201);
     expect(prismaMock.webhookEndpoint.create).toHaveBeenCalledTimes(1);
+    // Replay strips the shown-once secret and re-wraps with a fresh request ID.
+    expect(retry.json().data.signingSecret).toBeUndefined();
+    expect(retry.json().data.endpoint).toEqual({ id: 'endpoint-1' });
+    expect(retry.json().meta.requestId).not.toBe(first.json().meta.requestId);
   });
 
   it('denies out-of-scope keys naming the missing scope', async () => {

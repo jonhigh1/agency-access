@@ -228,13 +228,14 @@ export async function listRequestsKeyset(input: {
     where,
     // Never select uniqueToken: it is a bearer credential for the client
     // authorization flow and must not cross the public contract.
+    // externalReference stays internal-only too (KTD4): the public join key
+    // is Client.externalClientId, never this legacy per-request field.
     select: {
       id: true,
       agencyId: true,
       clientId: true,
       clientName: true,
       clientEmail: true,
-      externalReference: true,
       platforms: true,
       status: true,
       expiresAt: true,

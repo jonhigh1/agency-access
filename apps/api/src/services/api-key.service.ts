@@ -170,8 +170,15 @@ export async function issueApiKey(input: {
   }
 
   try {
+    // Live-key cap: expired keys do not count — only keys that can still
+    // verify (unrevoked, unexpired) consume the 10-key budget.
+    const now = new Date();
     const activeCount = await prisma.apiKey.count({
-      where: { agencyId: input.agencyId, revokedAt: null },
+      where: {
+        agencyId: input.agencyId,
+        revokedAt: null,
+        OR: [{ expiresAt: null }, { expiresAt: { gt: now } }],
+      },
     });
     if (activeCount >= MAX_API_KEYS_PER_AGENCY) {
       return {
@@ -290,6 +297,8 @@ export async function rotateApiKey(input: {
       };
     }
 
+    // Rotation replacements bypass the agency-wide 10-key cap by design:
+    // the only bound here is the per-family dual-active cap below.
     const actives = await prisma.apiKey.findMany({
       where: { familyId: existing.familyId, revokedAt: null },
       select: { id: true, expiresAt: true },

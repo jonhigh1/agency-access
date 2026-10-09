@@ -1,10 +1,11 @@
 /**
  * Generic idempotency store for public v1 creates (KTD5; R7, R8).
  *
- * Identity is (agency, key identity, endpoint, key value): one key never
- * reads another key's stored result, and the same key value on different
- * endpoints never collides. The atomic claim is a single insert against the
- * composite unique guard; losers read the winner and replay or fail.
+ * Identity is (agency, key family, endpoint, key value): a rotated
+ * replacement key replays the original result instead of double-writing,
+ * while different families never share stored results. The atomic claim is
+ * a single insert against the composite unique guard; losers read the
+ * winner row and replay or fail.
  *
  * Caller order (enforced by v1 routes in U5, not here): strict-validate,
  * fingerprint, atomic claim. Validation failures never reach claim, so they
@@ -13,17 +14,21 @@
  * one Postgres transaction at the route; this service only owns the claim
  * row lifecycle.
  *
- * States: in_progress (first call running; exempt from purge), completed
- * (replayable until expiry), failed (terminal; caller must use a fresh key).
- * Retention is 72h; expired keys fail with a distinct code and are never
- * silently recreated.
+ * States: in_progress (first call running; stealable past the 15-minute
+ * lease, collectible past expiry), completed (replayable until expiry),
+ * failed (terminal; caller must use a fresh key). Retention is 72h; expired
+ * keys fail with a distinct code and are never silently recreated.
  */
 import { createHash } from 'crypto';
 import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
+import { MAX_ACTIVE_IDEMPOTENCY_RECORDS_PER_KEY } from '@/middleware/v1-gate.js';
 
 /** Retention window for stored idempotent results (KTD5). */
 export const IDEMPOTENCY_TTL_MS = 72 * 60 * 60 * 1000;
+
+/** In-progress lease: a stuck first call becomes stealable past this age. */
+export const IDEMPOTENCY_LEASE_MS = 15 * 60 * 1000;
 
 /** Same key, finished, different body. */
 export const IDEMPOTENCY_CONFLICT_CODE = 'IDEMPOTENCY_CONFLICT';
@@ -31,6 +36,8 @@ export const IDEMPOTENCY_CONFLICT_CODE = 'IDEMPOTENCY_CONFLICT';
 export const IDEMPOTENCY_IN_PROGRESS_CODE = 'IDEMPOTENCY_IN_PROGRESS';
 /** Same key, retention window passed. Never recreated silently. */
 export const IDEMPOTENCY_EXPIRED_CODE = 'IDEMPOTENCY_KEY_EXPIRED';
+/** Same identity holds too many live records. Back off and retry later. */
+export const IDEMPOTENCY_LIMIT_CODE = 'IDEMPOTENCY_LIMIT_EXCEEDED';
 /** Duplicate Client.externalClientId within one agency (KTD4; mapped in U5). */
 export const EXTERNAL_ID_CONFLICT_CODE = 'EXTERNAL_ID_CONFLICT';
 
@@ -44,6 +51,10 @@ export class IdempotencyInProgressError extends Error {
 
 export class IdempotencyExpiredError extends Error {
   readonly code = IDEMPOTENCY_EXPIRED_CODE;
+}
+
+export class IdempotencyLimitError extends Error {
+  readonly code = IDEMPOTENCY_LIMIT_CODE;
 }
 
 export class IdempotencyStateError extends Error {
@@ -75,7 +86,7 @@ export function fingerprintRequest(body: unknown): string {
 
 export interface IdempotencyClaimInput {
   agencyId: string;
-  /** v1 API key id. Isolates records so keys never share stored results. */
+  /** v1 API key family id. Rotation siblings share results; families never do. */
   keyIdentity: string;
   /** Endpoint scope, e.g. 'POST /api/v1/clients'. */
   endpoint: string;
@@ -114,11 +125,27 @@ export const idempotencyService = {
    * Atomically claim the key. Returns 'claimed' when this caller owns the
    * business write, 'replay' with the stored result for an identical retry.
    * Throws IdempotencyInProgressError while the first call runs,
-   * IdempotencyConflictError on body mismatch, IdempotencyExpiredError past
-   * retention. Callers must re-check scope and tier before acting on replay.
+   * IdempotencyConflictError on body mismatch or on a terminally failed
+   * record, IdempotencyExpiredError past retention, IdempotencyLimitError
+   * past the per-identity live-record cap. Callers must re-check scope and
+   * tier before acting on replay.
    */
   async claim(input: IdempotencyClaimInput): Promise<IdempotencyClaimOutcome> {
     const now = input.now ?? new Date();
+    // Live-record cap per identity: too many unexpired rows means the
+    // caller must back off, not mint another claim.
+    const liveCount = await prisma.idempotencyRecord.count({
+      where: {
+        agencyId: input.agencyId,
+        keyIdentity: input.keyIdentity,
+        expiresAt: { gt: now },
+      },
+    });
+    if (liveCount >= MAX_ACTIVE_IDEMPOTENCY_RECORDS_PER_KEY) {
+      throw new IdempotencyLimitError(
+        'Too many active idempotency keys for this identity; retry later with an expired key reclaimed.',
+      );
+    }
     try {
       const record = await prisma.idempotencyRecord.create({
         data: {
@@ -151,7 +178,37 @@ export const idempotencyService = {
         'Idempotency key has expired; retry with a fresh key.',
       );
     }
+    if (existing.state === 'failed') {
+      // Terminal: a failed record never replays (its result is null) and
+      // never silently revives — the caller must use a fresh key.
+      throw new IdempotencyConflictError(
+        'Idempotency key failed terminally; retry with a fresh key.',
+      );
+    }
     if (existing.state === 'in_progress') {
+      // Lease steal: a first call older than the lease is presumed stuck;
+      // delete + fresh-claim in one transaction so exactly one owner wins.
+      const createdAtMs = new Date(existing.createdAt).getTime();
+      if (Number.isFinite(createdAtMs) && now.getTime() - createdAtMs > IDEMPOTENCY_LEASE_MS) {
+        const record = await prisma.$transaction(async (tx: any) => {
+          await tx.idempotencyRecord.delete({ where: { id: existing.id } });
+          return tx.idempotencyRecord.create({
+            data: {
+              agencyId: input.agencyId,
+              keyIdentity: input.keyIdentity,
+              endpoint: input.endpoint,
+              idemKey: input.key,
+              fingerprint: input.fingerprint,
+              state: 'in_progress',
+              expiresAt: new Date(now.getTime() + IDEMPOTENCY_TTL_MS),
+            },
+          });
+        });
+        return {
+          status: 'claimed',
+          record: { id: record.id, state: record.state, statusCode: null, result: null },
+        };
+      }
       throw new IdempotencyInProgressError(
         'The first request with this idempotency key is still running.',
       );
@@ -195,14 +252,14 @@ export const idempotencyService = {
   },
 
   /**
-   * Owned purge path. Deletes expired records but never in-progress claims,
-   * so a slow first call is never collected mid-flight.
+   * Owned purge path. Deletes expired records in every state — including
+   * in_progress rows past expiresAt, whose lease has necessarily lapsed —
+   * so stuck claims never accumulate.
    */
   async purgeExpired(now: Date = new Date()): Promise<number> {
     const deleted = await prisma.idempotencyRecord.deleteMany({
       where: {
         expiresAt: { lte: now },
-        state: { not: 'in_progress' },
       },
     });
     return deleted.count;

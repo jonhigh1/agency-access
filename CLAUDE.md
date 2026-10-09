@@ -12,7 +12,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Connectors**: OAuth connectors in `apps/api/src/services/connectors/`. Registry in `registry.config.ts`, base class `BaseConnector`, factory in `factory.ts`.
 - **Design system**: `apps/web/DESIGN_SYSTEM.md`; token showcase at `http://localhost:3000/design-system`. "Acid Brutalism" — one brutalist element per view.
 - **API responses**: Success `{ data: T }`; Error `{ error: { code, message, details? } }`. Common codes: INVALID_TOKEN, VALIDATION_ERROR, NOT_FOUND, UNAUTHORIZED, FORBIDDEN, PLATFORM_ERROR.
-- **Auth**: Verify Clerk JWT on every API request via backend middleware. Scope all queries to the user's agency.
+- **Auth**: Dual credential plane — Clerk JWT on dashboard/session routes; scoped API keys on `/api/v1` only (never Clerk on v1, never keys on dashboard). Scope all queries to the resolved agency.
 - **Env**: Backend `apps/api/src/lib/env.ts` (Zod); `apps/api/.env.example` and `apps/web/.env.local` for required vars.
 - **Session/decisions**: Start: read last 3–5 entries in `docs/SESSION-LOG.md`. End: append to SESSION-LOG, add DECs to `docs/DECISIONS.md`.
 
@@ -21,7 +21,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - [ ] **ALWAYS** read `apps/web/DESIGN_SYSTEM.md` before starting any UI work — components, pages, layouts, styling, or visual changes. No UI implementation without consulting the design system first.
 - [ ] **NEVER** store OAuth tokens in PostgreSQL — use Infisical, store only `secretId` in database.
 - [ ] **ALWAYS** write failing tests before implementation (TDD). Exceptions: config files, type-only definitions, styling/CSS.
-- [ ] **ALWAYS** verify Clerk JWT on every API request via middleware.
+- [ ] **ALWAYS** authenticate every API request: Clerk JWT on dashboard/session routes; scoped API keys on `/api/v1` only. Never mix credential planes.
 - [ ] **NEVER** commit `.env` files or log tokens/secrets.
 - [ ] **ALWAYS** log token access in AuditLog (user email, IP, timestamp, action, metadata where applicable).
 - [ ] **ALWAYS** use Redis-backed CSRF state for OAuth flows (OAuthStateService).
@@ -269,7 +269,7 @@ Frontend 3000, Backend 3001, Prisma Studio 5555. Kill: `lsof -ti:3000 | xargs ki
 
 1. Token storage: Infisical only; never in DB.
 2. Audit logging: every token access with user email, IP, timestamp, action (token_viewed, access_granted, access_revoked, AGENCY_*); metadata, ipAddress, userAgent where applicable.
-3. Auth: Clerk JWT on every API request.
+3. Auth: Clerk JWT on dashboard/session routes; scoped API keys on `/api/v1` only (separate planes).
 4. Roles: admin (full), member (create/manage requests, view connections), viewer (read-only).
 5. OAuth: Redis-backed CSRF state.
 6. Rotate Infisical Machine Identity quarterly.

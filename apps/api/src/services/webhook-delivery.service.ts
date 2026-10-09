@@ -30,11 +30,18 @@ function toSnippet(value: string | null | undefined): string | null {
   return value.slice(0, MAX_RESPONSE_SNIPPET_LENGTH);
 }
 
-function getRetryDelayMs(attemptNumber: number): number {
-  return Math.min(
+/**
+ * Exponential backoff with equal jitter (R14): half the capped delay is
+ * deterministic, half is uniform random. The cap always holds, so the
+ * worst case never exceeds WEBHOOK_RETRY_MAX_DELAY_MS.
+ */
+export function getRetryDelayMs(attemptNumber: number): number {
+  const capped = Math.min(
     WEBHOOK_RETRY_MAX_DELAY_MS,
     WEBHOOK_RETRY_BASE_DELAY_MS * 2 ** Math.max(0, attemptNumber - 1)
   );
+  const half = capped / 2;
+  return Math.floor(half + Math.random() * half);
 }
 
 function isRetryableStatusCode(statusCode: number): boolean {
@@ -97,22 +104,26 @@ export async function deliverWebhookEvent(
     if (!target.allowed) {
       const failedAt = new Date();
       const failureCount = (event.endpoint.failureCount ?? 0) + 1;
-      await prisma.webhookDelivery.create({
-        data: {
-          id: randomUUID(),
-          endpointId: event.endpoint.id,
-          eventId: event.id,
-          attemptNumber: validated.attemptNumber,
-          status: 'failed',
-          errorCode: 'UNSAFE_ENDPOINT_TARGET',
-          errorMessage: target.reason,
-          nextAttemptAt: null,
-        },
-      });
-      await prisma.webhookEndpoint.update({
-        where: { id: event.endpoint.id },
-        data: { failureCount, lastFailedAt: failedAt },
-      });
+      // Outcome + counter commit together: no orphan delivery rows and no
+      // lost failure counts on a crash between the two writes.
+      await prisma.$transaction([
+        prisma.webhookDelivery.create({
+          data: {
+            id: randomUUID(),
+            endpointId: event.endpoint.id,
+            eventId: event.id,
+            attemptNumber: validated.attemptNumber,
+            status: 'failed',
+            errorCode: 'UNSAFE_ENDPOINT_TARGET',
+            errorMessage: target.reason,
+            nextAttemptAt: null,
+          },
+        }),
+        prisma.webhookEndpoint.update({
+          where: { id: event.endpoint.id },
+          data: { failureCount, lastFailedAt: failedAt },
+        }),
+      ]);
       return {
         data: null,
         error: { code: 'DELIVERY_FAILED', message: target.reason },
@@ -121,15 +132,63 @@ export async function deliverWebhookEvent(
 
     const payload = JSON.stringify(event.payload);
     const timestamp = Math.floor(Date.now() / 1000).toString();
-    const signingSecret = await infisical.getPlainSecret(event.endpoint.secretId);
+
+    // Rotation overlap (KTD7, R14): on overlap expiry lazily promote the
+    // pending secret to active and delete the superseded secret material.
+    // During a live overlap deliveries carry BOTH signatures (old + pending)
+    // so receivers on either side of the rotation verify; verification
+    // order is new-then-old (verifyWebhookSignatureWithRotation).
+    let endpoint = event.endpoint;
+    const pendingId: string | null =
+      typeof endpoint.pendingSecretId === 'string' ? endpoint.pendingSecretId : null;
+    const pendingExpiresAt: Date | null =
+      endpoint.pendingSecretExpiresAt instanceof Date
+        ? endpoint.pendingSecretExpiresAt
+        : endpoint.pendingSecretExpiresAt != null
+          ? new Date(endpoint.pendingSecretExpiresAt)
+          : null;
+    const pendingExpired =
+      pendingId != null &&
+      pendingExpiresAt != null &&
+      !Number.isNaN(pendingExpiresAt.getTime()) &&
+      pendingExpiresAt.getTime() <= Date.now();
+    if (pendingExpired && pendingId != null) {
+      const supersededSecretId: string = endpoint.secretId;
+      const promoted = await prisma.webhookEndpoint.update({
+        where: { id: endpoint.id },
+        data: { secretId: pendingId, pendingSecretId: null, pendingSecretExpiresAt: null },
+      });
+      endpoint = { ...endpoint, ...promoted };
+      await infisical.deleteSecret(supersededSecretId).catch(() => undefined);
+    }
+    const overlapLive =
+      typeof endpoint.pendingSecretId === 'string' &&
+      endpoint.pendingSecretId.length > 0 &&
+      (endpoint.pendingSecretExpiresAt == null ||
+        new Date(endpoint.pendingSecretExpiresAt).getTime() > Date.now());
+
+    const signingSecret = await infisical.getPlainSecret(endpoint.secretId);
+    let pendingSecret: string | null = null;
+    if (overlapLive && typeof endpoint.pendingSecretId === 'string') {
+      try {
+        pendingSecret = await infisical.getPlainSecret(endpoint.pendingSecretId);
+      } catch {
+        pendingSecret = null;
+      }
+    }
 
     const deliveryId = randomUUID();
-    const headers = {
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       'X-AgencyAccess-Event': event.type,
       'X-AgencyAccess-Delivery-Id': deliveryId,
       'X-AgencyAccess-Timestamp': timestamp,
       'X-AgencyAccess-Signature': signWebhookPayload(payload, signingSecret, timestamp),
+      ...(pendingSecret != null
+        ? {
+            'X-AgencyAccess-Pending-Signature': signWebhookPayload(payload, pendingSecret, timestamp),
+          }
+        : {}),
     };
 
     const pendingDelivery = await prisma.webhookDelivery.create({
@@ -197,26 +256,27 @@ export async function deliverWebhookEvent(
       const deliveredAt = new Date();
 
       if (finalResponse.ok) {
-        await prisma.webhookDelivery.update({
-          where: { id: pendingDelivery.id },
-          data: {
-            status: 'delivered',
-            responseStatus: finalResponse.status,
-            responseBodySnippet: responseText,
-            deliveredAt,
-            nextAttemptAt: null,
-          },
-        });
-
-        await prisma.webhookEndpoint.update({
-          where: { id: event.endpoint.id },
-          data: {
-            failureCount: 0,
-            status: 'active',
-            disabledAt: null,
-            lastDeliveredAt: deliveredAt,
-          },
-        });
+        await prisma.$transaction([
+          prisma.webhookDelivery.update({
+            where: { id: pendingDelivery.id },
+            data: {
+              status: 'delivered',
+              responseStatus: finalResponse.status,
+              responseBodySnippet: responseText,
+              deliveredAt,
+              nextAttemptAt: null,
+            },
+          }),
+          prisma.webhookEndpoint.update({
+            where: { id: event.endpoint.id },
+            data: {
+              failureCount: 0,
+              status: 'active',
+              disabledAt: null,
+              lastDeliveredAt: deliveredAt,
+            },
+          }),
+        ]);
 
         return {
           data: {
@@ -235,29 +295,30 @@ export async function deliverWebhookEvent(
       const failureCount = (event.endpoint.failureCount ?? 0) + 1;
       const disabled = failureCount >= env.WEBHOOK_FAILURE_DISABLE_THRESHOLD;
 
-      await prisma.webhookDelivery.update({
-        where: { id: pendingDelivery.id },
-        data: {
-          status: 'failed',
-          responseStatus: finalResponse.status,
-          responseBodySnippet: responseText,
-          errorCode: `HTTP_${finalResponse.status}`,
-          errorMessage: `Webhook endpoint returned ${finalResponse.status}`,
-          nextAttemptAt: retryable
-            ? new Date(failedAt.getTime() + getRetryDelayMs(validated.attemptNumber))
-            : null,
-        },
-      });
-
-      await prisma.webhookEndpoint.update({
-        where: { id: event.endpoint.id },
-        data: {
-          failureCount,
-          lastFailedAt: failedAt,
-          status: disabled ? 'disabled' : 'active',
-          disabledAt: disabled ? failedAt : null,
-        },
-      });
+      await prisma.$transaction([
+        prisma.webhookDelivery.update({
+          where: { id: pendingDelivery.id },
+          data: {
+            status: 'failed',
+            responseStatus: finalResponse.status,
+            responseBodySnippet: responseText,
+            errorCode: `HTTP_${finalResponse.status}`,
+            errorMessage: `Webhook endpoint returned ${finalResponse.status}`,
+            nextAttemptAt: retryable
+              ? new Date(failedAt.getTime() + getRetryDelayMs(validated.attemptNumber))
+              : null,
+          },
+        }),
+        prisma.webhookEndpoint.update({
+          where: { id: event.endpoint.id },
+          data: {
+            failureCount,
+            lastFailedAt: failedAt,
+            status: disabled ? 'disabled' : 'active',
+            disabledAt: disabled ? failedAt : null,
+          },
+        }),
+      ]);
 
       return {
         data: {
@@ -290,27 +351,28 @@ export async function deliverWebhookEvent(
       const disabled = failureCount >= env.WEBHOOK_FAILURE_DISABLE_THRESHOLD;
       const message = error instanceof Error ? error.message : 'Webhook delivery failed';
 
-      await prisma.webhookDelivery.update({
-        where: { id: pendingDelivery.id },
-        data: {
-          status: 'failed',
-          errorCode: knownPolicyCode ?? (isRetryableError(error) ? 'NETWORK_ERROR' : 'DELIVERY_ERROR'),
-          errorMessage: message,
-          nextAttemptAt: retryable
-            ? new Date(failedAt.getTime() + getRetryDelayMs(validated.attemptNumber))
-            : null,
-        },
-      });
-
-      await prisma.webhookEndpoint.update({
-        where: { id: event.endpoint.id },
-        data: {
-          failureCount,
-          lastFailedAt: failedAt,
-          status: disabled ? 'disabled' : 'active',
-          disabledAt: disabled ? failedAt : null,
-        },
-      });
+      await prisma.$transaction([
+        prisma.webhookDelivery.update({
+          where: { id: pendingDelivery.id },
+          data: {
+            status: 'failed',
+            errorCode: knownPolicyCode ?? (isRetryableError(error) ? 'NETWORK_ERROR' : 'DELIVERY_ERROR'),
+            errorMessage: message,
+            nextAttemptAt: retryable
+              ? new Date(failedAt.getTime() + getRetryDelayMs(validated.attemptNumber))
+              : null,
+          },
+        }),
+        prisma.webhookEndpoint.update({
+          where: { id: event.endpoint.id },
+          data: {
+            failureCount,
+            lastFailedAt: failedAt,
+            status: disabled ? 'disabled' : 'active',
+            disabledAt: disabled ? failedAt : null,
+          },
+        }),
+      ]);
 
       return {
         data: {

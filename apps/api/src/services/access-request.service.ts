@@ -9,7 +9,7 @@ import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
 import type { FastifyRequest } from 'fastify';
 import { z } from 'zod';
-import { randomBytes } from 'crypto';
+import { randomBytes, randomUUID } from 'crypto';
 import {
   PlatformSchema,
   type Platform,
@@ -40,7 +40,7 @@ import { invalidateDashboardCache } from '@/lib/cache.js';
 import { env } from '@/lib/env.js';
 import { isAnalyticsInternal } from '@/lib/analytics-internal.js';
 import { logger } from '@/lib/logger.js';
-import { webhookEventService } from '@/services/webhook-event.service.js';
+import { emitWebhookEvents, webhookEventService } from '@/services/webhook-event.service.js';
 import { normalizeCustomerId } from '@/services/connectors/google.js';
 import { resolveListLimit, resolveListOffset } from '@/lib/list-pagination.js';
 import { encodeKeysetCursor } from '@/services/catalog.service.js';
@@ -1276,19 +1276,16 @@ export async function emitAccessRequestLifecycleWebhook(input: {
       return;
     }
 
-    const endpoint = await prisma.webhookEndpoint.findFirst({
-      where: { agencyId: accessRequest.agencyId },
+    const endpoints = await prisma.webhookEndpoint.findMany({
+      where: { agencyId: accessRequest.agencyId, status: 'active' },
       orderBy: { createdAt: 'asc' },
     });
-
-    if (!endpoint || endpoint.status !== 'active') {
-      return;
-    }
-
-    const subscribedEvents = Array.isArray(endpoint.subscribedEvents)
-      ? endpoint.subscribedEvents
-      : [];
-    if (!subscribedEvents.includes(eventType)) {
+    const subscribed = endpoints.filter(
+      (endpoint) =>
+        Array.isArray(endpoint.subscribedEvents) &&
+        (endpoint.subscribedEvents as string[]).includes(eventType),
+    );
+    if (subscribed.length === 0) {
       return;
     }
 
@@ -1342,63 +1339,70 @@ export async function emitAccessRequestLifecycleWebhook(input: {
     const progress = evaluateAuthorizationProgress(requestedProducts, clientConnections as any, [], accessRequest.metaAccessConfig);
     const connections = buildConnectionSummaries(clientConnections as any);
 
-    const apiVersion = (endpoint.preferredApiVersion as string) || '2026-03-08';
-
-    // Build V2 connection data with raw grantedAssets for V2 payload builder
+    // Fan-out through the shared emitter: one stored event per subscribed
+    // endpoint sharing one correlationId with distinct per-endpoint
+    // sequences. Endpoints are grouped by preferred API version so each
+    // group stores its own data shape (V1 summary vs V2 per-asset detail).
+    // Build V2 connection data with raw grantedAssets for the V2 payload builder.
     const connectionsWithV2Data = connections.map((conn, idx) => ({
       ...conn,
       grantedAssets: (clientConnections[idx]?.grantedAssets as Record<string, unknown> | null) ?? null,
       grantedAt: clientConnections[idx]?.createdAt ?? null,
       authorizationStatuses: clientConnections[idx]?.authorizations,
     }));
-
-    const payload = webhookEventService.buildAccessRequestWebhookEvent({
-      type: eventType,
-      apiVersion: apiVersion as '2026-03-08' | '2026-03-19',
-      request: {
-        id: accessRequest.id,
-        status: accessRequest.status as AccessRequestStatus,
-        createdAt: accessRequest.createdAt,
-        authorizedAt: accessRequest.authorizedAt,
-        expiresAt: accessRequest.expiresAt,
-        externalReference: accessRequest.externalReference,
-        uniqueToken: accessRequest.uniqueToken,
-      },
-      client: {
-        id: accessRequest.client?.id ?? accessRequest.clientId ?? accessRequest.id,
-        name: accessRequest.clientName,
-        email: accessRequest.clientEmail,
-        ...(accessRequest.client?.company
-          ? { company: accessRequest.client.company }
-          : {}),
-      },
-      authorizationProgress: {
-        requestedPlatforms,
-        completedPlatforms: progress.completedPlatforms,
-      },
-      connections: connectionsWithV2Data,
-      requestUrl: `${env.FRONTEND_URL}/invite/${accessRequest.uniqueToken}`,
-      ...(input.nextStatus === 'revoked'
-        ? { revokedAt: new Date().toISOString(), revokedBy: 'system' }
-        : {}),
-      ...(input.nextStatus === 'expired'
-        ? { expiredAt: new Date().toISOString() }
-        : {}),
-    });
-
-    const eventRecord = await prisma.webhookEvent.create({
-      data: {
-        agencyId: accessRequest.agencyId,
-        endpointId: endpoint.id,
+    const correlationId = `corr_${randomUUID().replace(/-/g, '')}`;
+    const byVersion = new Map<string, typeof subscribed>();
+    for (const endpoint of subscribed) {
+      const version = (endpoint.preferredApiVersion as string) || '2026-03-08';
+      const group = byVersion.get(version);
+      if (group) group.push(endpoint);
+      else byVersion.set(version, [endpoint]);
+    }
+    for (const [apiVersion, group] of byVersion) {
+      const payload = webhookEventService.buildAccessRequestWebhookEvent({
         type: eventType,
+        apiVersion: apiVersion as '2026-03-08' | '2026-03-19',
+        request: {
+          id: accessRequest.id,
+          status: accessRequest.status as AccessRequestStatus,
+          createdAt: accessRequest.createdAt,
+          authorizedAt: accessRequest.authorizedAt,
+          expiresAt: accessRequest.expiresAt,
+          externalReference: accessRequest.externalReference,
+          uniqueToken: accessRequest.uniqueToken,
+        },
+        client: {
+          id: accessRequest.client?.id ?? accessRequest.clientId ?? accessRequest.id,
+          name: accessRequest.clientName,
+          email: accessRequest.clientEmail,
+          ...(accessRequest.client?.company
+            ? { company: accessRequest.client.company }
+            : {}),
+        },
+        authorizationProgress: {
+          requestedPlatforms,
+          completedPlatforms: progress.completedPlatforms,
+        },
+        connections: connectionsWithV2Data,
+        requestUrl: `${env.FRONTEND_URL}/invite/${accessRequest.uniqueToken}`,
+        ...(input.nextStatus === 'revoked'
+          ? { revokedAt: new Date().toISOString(), revokedBy: 'system' }
+          : {}),
+        ...(input.nextStatus === 'expired'
+          ? { expiredAt: new Date().toISOString() }
+          : {}),
+      });
+      await emitWebhookEvents({
+        agencyId: accessRequest.agencyId,
+        type: eventType,
+        data: (payload as { data: unknown }).data,
         resourceType: 'access_request',
         resourceId: accessRequest.id,
-        payload: payload as any,
-      },
-    });
-
-    const { queueWebhookDelivery } = await import('@/lib/queue-helpers');
-    await queueWebhookDelivery(eventRecord.id);
+        apiVersion: apiVersion as '2026-03-08' | '2026-03-19',
+        correlationId,
+        endpointIds: group.map((endpoint) => endpoint.id),
+      });
+    }
   } catch (error) {
     logger.warn('Failed to emit access request lifecycle webhook', {
       accessRequestId: input.accessRequestId,

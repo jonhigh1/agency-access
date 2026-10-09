@@ -31,6 +31,7 @@ export const V1_ERROR_REGISTRY = {
   IDEMPOTENCY_CONFLICT: { status: 409, message: 'Idempotency key is already in use with a different request.' },
   IDEMPOTENCY_IN_PROGRESS: { status: 409, message: 'The first request with this idempotency key is still running.' },
   IDEMPOTENCY_KEY_EXPIRED: { status: 410, message: 'Idempotency key has expired; retry with a fresh key.' },
+  IDEMPOTENCY_LIMIT_EXCEEDED: { status: 429, message: 'Too many active idempotency keys. Please try again later.' },
   WEBHOOK_ENDPOINT_CAP_EXCEEDED: { status: 409, message: 'Webhook endpoint cap exceeded' },
   WEBHOOK_ENDPOINT_URL_EXISTS: { status: 409, message: 'A webhook endpoint with this URL already exists' },
   UNSAFE_ENDPOINT_URL: { status: 400, message: 'Endpoint URL is not allowed' },

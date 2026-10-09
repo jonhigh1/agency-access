@@ -20,8 +20,9 @@ alwaysApply: true
 - Include metadata, ipAddress, userAgent where applicable
 
 ## Authentication
-- Verify Clerk JWT on every API request
-- Use middleware for auth verification
+- Dual credential plane: Clerk JWT on dashboard/session routes; scoped API keys on `/api/v1` only
+- Never accept API keys on dashboard routes or Clerk sessions on `/api/v1`
+- Use middleware for auth verification on each plane
 - Never trust client-provided user IDs
 
 ## Authorization

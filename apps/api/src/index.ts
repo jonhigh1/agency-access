@@ -39,6 +39,7 @@ import { apiKeyRoutes } from './routes/api-keys.js';
 import { v1Routes } from './routes/v1.js';
 import { mcpRoutes } from './routes/mcp.js';
 import { performanceOnRequest, performanceOnSend } from './middleware/performance.js';
+import { shouldSkipGlobalLimiter } from './middleware/v1-gate.js';
 import { prisma } from './lib/prisma.js';
 import { redactSensitiveString } from './lib/sentry-redaction.js';
 
@@ -46,6 +47,8 @@ const trustProxy = env.TRUST_PROXY_IPS.length > 0 ? env.TRUST_PROXY_IPS : false;
 
 function buildAuthenticatedRateLimitAllowList() {
   return async (request: FastifyRequest, _key: string): Promise<boolean> => {
+    // v1 traffic is owned by the per-key limiter — never double-count it here.
+    if (shouldSkipGlobalLimiter(request.url)) return true;
     return Boolean((request as FastifyRequest & { user?: unknown }).user);
   };
 }
@@ -115,7 +118,8 @@ if (env.RATE_LIMIT_ENABLED) {
     skipOnError: true,
     allowList: env.RATE_LIMIT_SKIP_AUTHENTICATED
       ? buildAuthenticatedRateLimitAllowList()
-      : async () => false,
+      : async (request: FastifyRequest, _key: string) =>
+          shouldSkipGlobalLimiter(request.url),
     keyGenerator: (request: FastifyRequest) => {
       // Use IP address as rate limit key
       return extractClientIp(request);

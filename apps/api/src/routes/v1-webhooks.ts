@@ -26,7 +26,7 @@ import {
   v1WebhookEndpointUpdateSchema,
   v1WebhookRotateSchema,
 } from './v1-schemas.js';
-import { v1RateLimitPreHandler, v1TierGate } from '@/middleware/v1-gate.js';
+import { v1RateConsumeHandler, v1RateLimitPreHandler, v1RatePreCheckHandler, v1TierGate } from '@/middleware/v1-gate.js';
 import type { ApiKeyPrincipal } from '@/services/api-key.service';
 import {
   fingerprintRequest,
@@ -61,9 +61,31 @@ function actorEmailOf(principal: ApiKeyPrincipal): string {
   return `${principal.keyId}@api-key.local`;
 }
 
+/**
+ * Replay a stored webhook-create result with a fresh meta.requestId (matching
+ * the writes path, which mints requestId per response) and the
+ * shown-once signingSecret stripped: the secret stays returned-once.
+ */
+export function replayWebhookCreate(
+  reply: FastifyReply,
+  statusCode: number,
+  stored: unknown,
+): unknown {
+  const record = (stored ?? {}) as {
+    data?: { endpoint?: unknown; signingSecret?: unknown };
+    error?: unknown;
+  };
+  return reply.code(statusCode).send({
+    data: { endpoint: record.data?.endpoint ?? null },
+    error: record.error ?? null,
+    meta: { requestId: randomUUID() },
+  });
+}
+
 const SERVICE_ERROR_STATUS: Record<string, number> = {
   NOT_FOUND: 404,
   MISSING_SCOPE: 403,
+  INVALID_API_KEY: 401,
   [WEBHOOK_ENDPOINT_CAP_EXCEEDED_CODE]: 409,
   [WEBHOOK_ENDPOINT_URL_EXISTS_CODE]: 409,
   INTERNAL_ERROR: 500,
@@ -82,6 +104,8 @@ function sendServiceError(reply: FastifyReply, error: ServiceError) {
 export async function v1WebhooksRoutes(fastify: FastifyInstance) {
   const tier = v1TierGate();
   const rate = v1RateLimitPreHandler();
+  const ratePre = v1RatePreCheckHandler();
+  const rateConsume = v1RateConsumeHandler();
 
   /**
    * GET /api/v1/webhook-event-types
@@ -90,7 +114,7 @@ export async function v1WebhooksRoutes(fastify: FastifyInstance) {
    */
   fastify.get(
     '/webhook-event-types',
-    { preHandler: [tier, rate, requireKeyScope('webhooks:read')] },
+    { preHandler: [tier, ratePre, requireKeyScope('webhooks:read'), rateConsume] },
     async (_request, reply) => {
       return v1Success(
         reply,
@@ -108,7 +132,7 @@ export async function v1WebhooksRoutes(fastify: FastifyInstance) {
    */
   fastify.get(
     '/webhook-endpoints',
-    { preHandler: [tier, rate, requireKeyScope('webhooks:read')] },
+    { preHandler: [tier, ratePre, requireKeyScope('webhooks:read'), rateConsume] },
     async (request, reply) => {
       const principal = principalOf(request);
       const result = await listWebhookEndpoints(principal.agencyId, { scopes: principal.scopes });
@@ -147,7 +171,9 @@ export async function v1WebhooksRoutes(fastify: FastifyInstance) {
       try {
         claim = await idempotencyService.claim({
           agencyId: principal.agencyId,
-          keyIdentity: principal.keyId,
+          // Family-scoped identity: rotation retries replay instead of
+          // double-writing.
+          keyIdentity: principal.familyId,
           endpoint: V1_WEBHOOK_IDEMPOTENCY_ENDPOINT,
           key: idemKey,
           fingerprint: fingerprintRequest(parsed.data),
@@ -158,9 +184,12 @@ export async function v1WebhooksRoutes(fastify: FastifyInstance) {
 
       if (claim.status === 'replay') {
         // Scope and tier were re-checked by this request's own gate chain.
-        return reply.code(claim.record.statusCode ?? 200).send(claim.record.result);
+        // Re-wrap the stored data with a fresh request ID, and never replay
+        // the signing secret: it was shown once on the original create.
+        return replayWebhookCreate(reply, claim.record.statusCode ?? 200, claim.record.result);
       }
 
+      const requestId = randomUUID();
       const result = await createPluralWebhookEndpoint(
         {
           agencyId: principal.agencyId,
@@ -172,18 +201,15 @@ export async function v1WebhooksRoutes(fastify: FastifyInstance) {
           createdBy: actorEmailOf(principal),
         },
         { scopes: principal.scopes },
+        // Atomic path: insert + key-liveness re-check + claim completion in
+        // one transaction, so a crash between steps leaves no orphan.
+        { keyId: principal.keyId, claimRecordId: claim.record.id, requestId },
       );
       if (result.error) {
         await idempotencyService.fail({ recordId: claim.record.id });
         return sendServiceError(reply, result.error);
       }
-      const body = {
-        data: { endpoint: result.data!.endpoint, signingSecret: result.data!.signingSecret },
-        error: null,
-        meta: { requestId: randomUUID() },
-      };
-      await idempotencyService.complete({ recordId: claim.record.id, statusCode: 201, result: body });
-      return reply.code(201).send(body);
+      return reply.code(201).send(result.data!.body);
     },
   );
 
@@ -192,7 +218,7 @@ export async function v1WebhooksRoutes(fastify: FastifyInstance) {
    */
   fastify.get(
     '/webhook-endpoints/:id',
-    { preHandler: [tier, rate, requireKeyScope('webhooks:read')] },
+    { preHandler: [tier, ratePre, requireKeyScope('webhooks:read'), rateConsume] },
     async (request, reply) => {
       const principal = principalOf(request);
       const { id } = request.params as { id: string };
@@ -204,7 +230,8 @@ export async function v1WebhooksRoutes(fastify: FastifyInstance) {
 
   /**
    * PATCH /api/v1/webhook-endpoints/:id
-   * URL re-validated like creation; reactivation clears disablement.
+   * URL re-validated like creation; disabled status is sticky and only an
+   * explicit {"reactivate": true} clears disablement.
    */
   fastify.patch(
     '/webhook-endpoints/:id',
@@ -230,6 +257,7 @@ export async function v1WebhooksRoutes(fastify: FastifyInstance) {
           >[1]['subscribedEvents'],
           preferredApiVersion: parsed.data.preferredApiVersion,
           updatedBy: actorEmailOf(principal),
+          ...(parsed.data.reactivate !== undefined ? { reactivate: parsed.data.reactivate } : {}),
         },
         { scopes: principal.scopes },
       );
@@ -290,7 +318,7 @@ export async function v1WebhooksRoutes(fastify: FastifyInstance) {
    */
   fastify.get(
     '/webhook-endpoints/:id/deliveries',
-    { preHandler: [tier, rate, requireKeyScope('webhooks:read')] },
+    { preHandler: [tier, ratePre, requireKeyScope('webhooks:read'), rateConsume] },
     async (request, reply) => {
       const principal = principalOf(request);
       const { id } = request.params as { id: string };

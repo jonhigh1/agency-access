@@ -2,8 +2,10 @@
  * U4 write-foundations tests (R6, R7, R8, R13 storage half).
  *
  * Covers KTD4 (agency-scoped external ID uniqueness), KTD5 (atomic
- * idempotency claim, fingerprint replay/conflict, expiry, purge exemption),
- * and the KTD7 expand-half migration guards (singleton guard preserved).
+ * idempotency claim, fingerprint replay/conflict, expiry, purge of expired
+ * rows in every state, failed-state terminal conflict, per-identity live
+ * cap, in-progress lease steal), and the KTD7 expand-half migration guards
+ * (singleton guard preserved, api_keys table present).
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -14,10 +16,12 @@ import {
   IDEMPOTENCY_CONFLICT_CODE,
   IDEMPOTENCY_EXPIRED_CODE,
   IDEMPOTENCY_IN_PROGRESS_CODE,
+  IDEMPOTENCY_LIMIT_CODE,
   IDEMPOTENCY_TTL_MS,
   IdempotencyConflictError,
   IdempotencyExpiredError,
   IdempotencyInProgressError,
+  IdempotencyLimitError,
   fingerprintRequest,
   idempotencyService,
   isPrismaUniqueViolation,
@@ -31,6 +35,8 @@ vi.mock('@/lib/prisma.js', () => ({
       update: vi.fn(),
       updateMany: vi.fn(),
       deleteMany: vi.fn(),
+      count: vi.fn(),
+      delete: vi.fn(),
     },
     $transaction: vi.fn(),
   },
@@ -69,6 +75,7 @@ describe('fingerprintRequest', () => {
 describe('idempotencyService.claim', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.mocked(prisma.idempotencyRecord.count).mockResolvedValue(0);
   });
 
   it('claims a fresh key as in_progress with the 72h retention window', async () => {
@@ -171,6 +178,98 @@ describe('idempotencyService.claim', () => {
     expect(IDEMPOTENCY_EXPIRED_CODE).not.toBe(IDEMPOTENCY_CONFLICT_CODE);
   });
 
+  it('never replays a terminally failed record: failed conflicts distinctly', async () => {
+    vi.mocked(prisma.idempotencyRecord.create).mockRejectedValue(p2002());
+    vi.mocked(prisma.idempotencyRecord.findUnique).mockResolvedValue({
+      id: 'rec-1',
+      state: 'failed',
+      fingerprint: claimInput.fingerprint,
+      statusCode: null,
+      result: null,
+      expiresAt: new Date(Date.now() + 60_000),
+    } as any);
+
+    await expect(idempotencyService.claim(claimInput)).rejects.toBeInstanceOf(
+      IdempotencyConflictError,
+    );
+    await expect(idempotencyService.claim(claimInput)).rejects.toMatchObject({
+      code: IDEMPOTENCY_CONFLICT_CODE,
+    });
+  });
+
+  it('enforces the per-identity live-record cap with the stable over-cap code', async () => {
+    vi.mocked(prisma.idempotencyRecord.count).mockResolvedValue(100);
+
+    await expect(idempotencyService.claim(claimInput)).rejects.toBeInstanceOf(
+      IdempotencyLimitError,
+    );
+    await expect(idempotencyService.claim(claimInput)).rejects.toMatchObject({
+      code: IDEMPOTENCY_LIMIT_CODE,
+    });
+    expect(prisma.idempotencyRecord.create).not.toHaveBeenCalled();
+    expect(IDEMPOTENCY_LIMIT_CODE).toBe('IDEMPOTENCY_LIMIT_EXCEEDED');
+  });
+
+  it('counts only non-expired rows for the identity toward the cap', async () => {
+    vi.mocked(prisma.idempotencyRecord.count).mockResolvedValue(0);
+    vi.mocked(prisma.idempotencyRecord.create).mockImplementation(async ({ data }: any) => ({
+      id: 'rec-1',
+      ...data,
+    }));
+
+    await idempotencyService.claim(claimInput);
+
+    expect(prisma.idempotencyRecord.count).toHaveBeenCalledWith({
+      where: {
+        agencyId: 'agency-1',
+        keyIdentity: 'key-1',
+        expiresAt: { gt: expect.any(Date) },
+      },
+    });
+  });
+
+  it('steals an in-progress claim past the 15-minute lease via delete+fresh-claim in one transaction', async () => {
+    vi.mocked(prisma.idempotencyRecord.create).mockRejectedValue(p2002());
+    vi.mocked(prisma.idempotencyRecord.findUnique).mockResolvedValue({
+      id: 'rec-stuck',
+      state: 'in_progress',
+      fingerprint: claimInput.fingerprint,
+      createdAt: new Date(Date.now() - 16 * 60 * 1000),
+      expiresAt: new Date(Date.now() + 60_000),
+    } as any);
+    vi.mocked(prisma.$transaction).mockImplementation(async (cb: any) => {
+      const tx = {
+        idempotencyRecord: {
+          delete: vi.fn().mockResolvedValue({ id: 'rec-stuck' }),
+          create: vi.fn().mockImplementation(async ({ data }: any) => ({ id: 'rec-2', ...data })),
+        },
+      };
+      return cb(tx);
+    });
+
+    const outcome = await idempotencyService.claim(claimInput);
+
+    expect(outcome.status).toBe('claimed');
+    expect(outcome.record.id).toBe('rec-2');
+    expect(prisma.$transaction).toHaveBeenCalledTimes(1);
+  });
+
+  it('keeps a fresh in-progress claim conflicting inside the lease', async () => {
+    vi.mocked(prisma.idempotencyRecord.create).mockRejectedValue(p2002());
+    vi.mocked(prisma.idempotencyRecord.findUnique).mockResolvedValue({
+      id: 'rec-1',
+      state: 'in_progress',
+      fingerprint: claimInput.fingerprint,
+      createdAt: new Date(Date.now() - 60_000),
+      expiresAt: new Date(Date.now() + 60_000),
+    } as any);
+
+    await expect(idempotencyService.claim(claimInput)).rejects.toBeInstanceOf(
+      IdempotencyInProgressError,
+    );
+    expect(prisma.$transaction).not.toHaveBeenCalled();
+  });
+
   it('isolates claims by agency plus key identity, endpoint, and key value', async () => {
     vi.mocked(prisma.idempotencyRecord.create).mockImplementation(async ({ data }: any) => ({
       id: 'rec-1',
@@ -203,7 +302,7 @@ describe('idempotencyService.complete / purgeExpired', () => {
     );
   });
 
-  it('never purges in-progress claims: the purge filter proves the exemption', async () => {
+  it('collects expired in-progress rows past expiresAt: no state is exempt', async () => {
     vi.mocked(prisma.idempotencyRecord.deleteMany).mockResolvedValue({ count: 3 } as any);
 
     const deleted = await idempotencyService.purgeExpired(new Date());
@@ -212,7 +311,6 @@ describe('idempotencyService.complete / purgeExpired', () => {
     expect(prisma.idempotencyRecord.deleteMany).toHaveBeenCalledWith({
       where: {
         expiresAt: { lte: expect.any(Date) },
-        state: { not: 'in_progress' },
       },
     });
   });
@@ -260,5 +358,14 @@ describe('U4 expand migration guards (KTD7 expand half)', () => {
 
   it('creates the per-endpoint ordering sequence with documented gap tolerance', () => {
     expect(migrationSql).toMatch(/CREATE SEQUENCE[^;]*webhook_endpoint_sequence/);
+  });
+
+  it('creates the api_keys table with hash uniqueness and lookup indexes', () => {
+    expect(migrationSql).toMatch(/CREATE TABLE[^;]*"api_keys"/);
+    expect(migrationSql).toMatch(/"key_hash" TEXT NOT NULL/);
+    expect(migrationSql).toMatch(/UNIQUE[^;]*\(\s*"key_hash"\s*\)/);
+    expect(migrationSql).toMatch(/\(\s*"prefix"\s*\)/);
+    expect(migrationSql).toMatch(/\(\s*"agency_id"\s*,\s*"revoked_at"\s*\)/);
+    expect(migrationSql).toMatch(/\(\s*"family_id"\s*,\s*"revoked_at"\s*\)/);
   });
 });

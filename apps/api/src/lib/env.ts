@@ -268,6 +268,21 @@ const envSchema = z.object({
   WEBHOOK_FAILURE_DISABLE_THRESHOLD: z.coerce.number().int().min(1).default(5),
   WEBHOOK_MAX_ATTEMPTS: z.coerce.number().int().min(1).default(6),
 
+  // Public v1 API key pepper (HMAC secret for key hashes; never logged).
+  // Rotation path: set API_KEY_PEPPER to the new value, keep the old value
+  // in API_KEY_PEPPER_PREVIOUS; keys on the previous version still verify
+  // and adopt the current pepper on their next rotation. Empty counts as
+  // unset so a blank example value never fails startup.
+  API_KEY_PEPPER: z.preprocess(
+    (value) => (value === '' ? undefined : value),
+    z.string().min(16).optional(),
+  ),
+  API_KEY_PEPPER_PREVIOUS: z.preprocess(
+    (value) => (value === '' ? undefined : value),
+    z.string().min(16).optional(),
+  ),
+  API_KEY_PEPPER_VERSION: z.coerce.number().int().min(1).default(1),
+
   // Drex by Nace.AI (decision model — wire-compatible with @typesafe-ai/sdk)
   DREX_API_KEY: z.string().optional(),
   TYPESAFE_BASE_URL: z.string().url().optional(),

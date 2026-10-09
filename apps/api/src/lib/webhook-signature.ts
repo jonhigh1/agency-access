@@ -97,9 +97,12 @@ export function verifyWebhookSignatureWithRotation(
       : typeof secrets.pendingExpiresAt === 'string'
         ? new Date(secrets.pendingExpiresAt)
         : null;
+  // Fail-closed: an unparseable expiry never verifies as pending.
   const pendingLive =
     pending != null &&
-    (pendingExpiresAt == null || Number.isNaN(pendingExpiresAt.getTime()) || pendingExpiresAt.getTime() > now.getTime());
+    pendingExpiresAt != null &&
+    !Number.isNaN(pendingExpiresAt.getTime()) &&
+    pendingExpiresAt.getTime() > now.getTime();
 
   if (pendingLive && verifyWebhookPayloadSignature(payload, signature, pending, timestamp)) {
     return { ok: true, matched: 'pending' };

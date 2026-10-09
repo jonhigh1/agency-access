@@ -240,7 +240,8 @@
                         "code": {
                           "type": "string",
                           "enum": [
-                            "RATE_LIMIT_EXCEEDED"
+                            "RATE_LIMIT_EXCEEDED",
+                            "IDEMPOTENCY_LIMIT_EXCEEDED"
                           ]
                         },
                         "message": {
@@ -524,7 +525,8 @@
                         "code": {
                           "type": "string",
                           "enum": [
-                            "RATE_LIMIT_EXCEEDED"
+                            "RATE_LIMIT_EXCEEDED",
+                            "IDEMPOTENCY_LIMIT_EXCEEDED"
                           ]
                         },
                         "message": {
@@ -808,7 +810,8 @@
                         "code": {
                           "type": "string",
                           "enum": [
-                            "RATE_LIMIT_EXCEEDED"
+                            "RATE_LIMIT_EXCEEDED",
+                            "IDEMPOTENCY_LIMIT_EXCEEDED"
                           ]
                         },
                         "message": {
@@ -1197,7 +1200,8 @@
                         "code": {
                           "type": "string",
                           "enum": [
-                            "RATE_LIMIT_EXCEEDED"
+                            "RATE_LIMIT_EXCEEDED",
+                            "IDEMPOTENCY_LIMIT_EXCEEDED"
                           ]
                         },
                         "message": {
@@ -1704,7 +1708,8 @@
                         "code": {
                           "type": "string",
                           "enum": [
-                            "RATE_LIMIT_EXCEEDED"
+                            "RATE_LIMIT_EXCEEDED",
+                            "IDEMPOTENCY_LIMIT_EXCEEDED"
                           ]
                         },
                         "message": {
@@ -2099,7 +2104,8 @@
                         "code": {
                           "type": "string",
                           "enum": [
-                            "RATE_LIMIT_EXCEEDED"
+                            "RATE_LIMIT_EXCEEDED",
+                            "IDEMPOTENCY_LIMIT_EXCEEDED"
                           ]
                         },
                         "message": {
@@ -2677,7 +2683,8 @@
                         "code": {
                           "type": "string",
                           "enum": [
-                            "RATE_LIMIT_EXCEEDED"
+                            "RATE_LIMIT_EXCEEDED",
+                            "IDEMPOTENCY_LIMIT_EXCEEDED"
                           ]
                         },
                         "message": {
@@ -2980,7 +2987,8 @@
                         "code": {
                           "type": "string",
                           "enum": [
-                            "RATE_LIMIT_EXCEEDED"
+                            "RATE_LIMIT_EXCEEDED",
+                            "IDEMPOTENCY_LIMIT_EXCEEDED"
                           ]
                         },
                         "message": {
@@ -3477,7 +3485,8 @@
                         "code": {
                           "type": "string",
                           "enum": [
-                            "RATE_LIMIT_EXCEEDED"
+                            "RATE_LIMIT_EXCEEDED",
+                            "IDEMPOTENCY_LIMIT_EXCEEDED"
                           ]
                         },
                         "message": {
@@ -3823,7 +3832,8 @@
                         "code": {
                           "type": "string",
                           "enum": [
-                            "RATE_LIMIT_EXCEEDED"
+                            "RATE_LIMIT_EXCEEDED",
+                            "IDEMPOTENCY_LIMIT_EXCEEDED"
                           ]
                         },
                         "message": {
@@ -4127,7 +4137,8 @@
                         "code": {
                           "type": "string",
                           "enum": [
-                            "RATE_LIMIT_EXCEEDED"
+                            "RATE_LIMIT_EXCEEDED",
+                            "IDEMPOTENCY_LIMIT_EXCEEDED"
                           ]
                         },
                         "message": {
@@ -4411,7 +4422,8 @@
                         "code": {
                           "type": "string",
                           "enum": [
-                            "RATE_LIMIT_EXCEEDED"
+                            "RATE_LIMIT_EXCEEDED",
+                            "IDEMPOTENCY_LIMIT_EXCEEDED"
                           ]
                         },
                         "message": {
@@ -4983,7 +4995,8 @@
                         "code": {
                           "type": "string",
                           "enum": [
-                            "RATE_LIMIT_EXCEEDED"
+                            "RATE_LIMIT_EXCEEDED",
+                            "IDEMPOTENCY_LIMIT_EXCEEDED"
                           ]
                         },
                         "message": {
@@ -5383,7 +5396,8 @@
                         "code": {
                           "type": "string",
                           "enum": [
-                            "RATE_LIMIT_EXCEEDED"
+                            "RATE_LIMIT_EXCEEDED",
+                            "IDEMPOTENCY_LIMIT_EXCEEDED"
                           ]
                         },
                         "message": {
@@ -5531,7 +5545,7 @@
         }
       },
       "patch": {
-        "summary": "Update a webhook endpoint URL and subscriptions.",
+        "summary": "Update a webhook endpoint URL and subscriptions. Disabled status is sticky; only {\"reactivate\": true} clears it.",
         "security": [
           {
             "ApiKeyAuth": [
@@ -5583,6 +5597,9 @@
                       "2026-03-08",
                       "2026-03-19"
                     ]
+                  },
+                  "reactivate": {
+                    "type": "boolean"
                   }
                 },
                 "additionalProperties": false,
@@ -5941,7 +5958,8 @@
                         "code": {
                           "type": "string",
                           "enum": [
-                            "RATE_LIMIT_EXCEEDED"
+                            "RATE_LIMIT_EXCEEDED",
+                            "IDEMPOTENCY_LIMIT_EXCEEDED"
                           ]
                         },
                         "message": {
@@ -6339,7 +6357,8 @@
                         "code": {
                           "type": "string",
                           "enum": [
-                            "RATE_LIMIT_EXCEEDED"
+                            "RATE_LIMIT_EXCEEDED",
+                            "IDEMPOTENCY_LIMIT_EXCEEDED"
                           ]
                         },
                         "message": {
@@ -6508,7 +6527,7 @@
           }
         ],
         "requestBody": {
-          "required": true,
+          "required": false,
           "content": {
             "application/json": {
               "schema": {
@@ -6825,7 +6844,8 @@
                         "code": {
                           "type": "string",
                           "enum": [
-                            "RATE_LIMIT_EXCEEDED"
+                            "RATE_LIMIT_EXCEEDED",
+                            "IDEMPOTENCY_LIMIT_EXCEEDED"
                           ]
                         },
                         "message": {
@@ -7322,7 +7342,8 @@
                         "code": {
                           "type": "string",
                           "enum": [
-                            "RATE_LIMIT_EXCEEDED"
+                            "RATE_LIMIT_EXCEEDED",
+                            "IDEMPOTENCY_LIMIT_EXCEEDED"
                           ]
                         },
                         "message": {

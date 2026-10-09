@@ -11,7 +11,7 @@ import type { FastifyInstance } from 'fastify';
 import { apiKeyPreHandler } from '@/middleware/api-key-auth.js';
 import { prisma } from '@/lib/prisma';
 import { v1Error, v1Success } from '@/lib/v1-envelope.js';
-import type { V1ErrorCode } from '@/lib/v1-errors.js';
+import { V1_ERROR_REGISTRY, isRegisteredV1Code, type V1ErrorCode } from '@/lib/v1-errors.js';
 import { v1ReadsRoutes } from './v1-reads.js';
 import { v1WebhooksRoutes } from './v1-webhooks.js';
 import { v1WritesRoutes } from './v1-writes.js';
@@ -21,12 +21,14 @@ export async function v1Routes(fastify: FastifyInstance) {
   fastify.setErrorHandler((error: unknown, _request, reply) => {
     const err = error as { statusCode?: number; code?: string; message?: string };
     const statusCode = err.statusCode ?? 500;
-    return v1Error(
-      reply,
-      statusCode,
-      (err?.code || 'INTERNAL_ERROR') as V1ErrorCode,
-      err?.message || 'An unexpected error occurred',
-    );
+    // Unregistered codes (e.g. FST_ERR_*) never leak verbatim: 4xx maps to
+    // VALIDATION_ERROR, everything else to INTERNAL_ERROR with the generic
+    // registry message — never err.message.
+    if (err?.code && isRegisteredV1Code(err.code)) {
+      return v1Error(reply, statusCode, err.code, V1_ERROR_REGISTRY[err.code].message);
+    }
+    const code: V1ErrorCode = statusCode >= 400 && statusCode < 500 ? 'VALIDATION_ERROR' : 'INTERNAL_ERROR';
+    return v1Error(reply, statusCode, code, V1_ERROR_REGISTRY[code].message);
   });
 
   fastify.addHook('onRequest', apiKeyPreHandler());
@@ -56,7 +58,11 @@ export async function v1Routes(fastify: FastifyInstance) {
         prisma.agency.findUnique({ where: { id: principal.agencyId }, select: { id: true, name: true } }),
         prisma.subscription.findUnique({ where: { agencyId: principal.agencyId }, select: { tier: true } }),
         prisma.apiKey.count({
-          where: { agencyId: principal.agencyId, revokedAt: null },
+          where: {
+            agencyId: principal.agencyId,
+            revokedAt: null,
+            OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }],
+          },
         }),
       ]);
 

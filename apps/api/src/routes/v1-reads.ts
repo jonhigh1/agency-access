@@ -3,7 +3,8 @@
  *
  * Registered inside the v1 plugin context, so the key preHandler already
  * ran. Each route carries the rest of the gate chain as preHandlers:
- * read-aware tier gate, per-key rate limit, then the scope gate. Handlers
+ * read-aware tier gate, rate peek, scope gate, then rate consume — so
+ * scope-denied reads never touch the budget. Handlers
  * query new keyset paths — never the offset dashboard services — and every
  * query schema is strict: unknown parameters fail naming the parameter.
  */
@@ -11,7 +12,7 @@
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import { prisma } from '@/lib/prisma';
 import { requireKeyScope } from '@/middleware/api-key-auth.js';
-import { v1RateLimitPreHandler, v1TierGate } from '@/middleware/v1-gate.js';
+import { v1RateConsumeHandler, v1RatePreCheckHandler, v1TierGate } from '@/middleware/v1-gate.js';
 import {
   decodeKeysetCursor,
   catalogService,
@@ -34,7 +35,8 @@ function sendValidationError(reply: FastifyReply, message: string) {
 
 export async function v1ReadsRoutes(fastify: FastifyInstance) {
   const tier = v1TierGate();
-  const rate = v1RateLimitPreHandler();
+  const ratePre = v1RatePreCheckHandler();
+  const rateConsume = v1RateConsumeHandler();
 
   /**
    * GET /api/v1/catalog/accounts
@@ -43,7 +45,7 @@ export async function v1ReadsRoutes(fastify: FastifyInstance) {
    */
   fastify.get(
     '/catalog/accounts',
-    { preHandler: [tier, rate, requireKeyScope('catalog:read')] },
+    { preHandler: [tier, ratePre, requireKeyScope('catalog:read'), rateConsume] },
     async (request, reply) => {
       const accounts = await catalogService.listConnectedAccounts(principalOf(request).agencyId);
       return v1Success(reply, accounts);
@@ -56,7 +58,7 @@ export async function v1ReadsRoutes(fastify: FastifyInstance) {
    */
   fastify.get(
     '/catalog/services',
-    { preHandler: [tier, rate, requireKeyScope('catalog:read')] },
+    { preHandler: [tier, ratePre, requireKeyScope('catalog:read'), rateConsume] },
     async (_request, reply) => {
       const services = catalogService.listServices();
       return v1Success(reply, services);
@@ -69,7 +71,7 @@ export async function v1ReadsRoutes(fastify: FastifyInstance) {
    */
   fastify.get(
     '/clients',
-    { preHandler: [tier, rate, requireKeyScope('clients:read')] },
+    { preHandler: [tier, ratePre, requireKeyScope('clients:read'), rateConsume] },
     async (request, reply) => {
       const parsed = v1ClientListQuerySchema.safeParse(request.query);
       if (!parsed.success) {
@@ -95,7 +97,7 @@ export async function v1ReadsRoutes(fastify: FastifyInstance) {
    */
   fastify.get(
     '/requests',
-    { preHandler: [tier, rate, requireKeyScope('requests:read')] },
+    { preHandler: [tier, ratePre, requireKeyScope('requests:read'), rateConsume] },
     async (request, reply) => {
       const parsed = v1RequestListQuerySchema.safeParse(request.query);
       if (!parsed.success) {
@@ -122,7 +124,7 @@ export async function v1ReadsRoutes(fastify: FastifyInstance) {
    */
   fastify.get(
     '/usage',
-    { preHandler: [tier, rate, requireKeyScope('usage:read')] },
+    { preHandler: [tier, ratePre, requireKeyScope('usage:read'), rateConsume] },
     async (request, reply) => {
       const agencyId = principalOf(request).agencyId;
       const [snapshot, subscription] = await Promise.all([

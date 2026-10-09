@@ -100,7 +100,10 @@ export const v1WebhookEndpointCreateSchema = z
   })
   .strict();
 
-export const v1WebhookEndpointUpdateSchema = v1WebhookEndpointCreateSchema;
+export const v1WebhookEndpointUpdateSchema = v1WebhookEndpointCreateSchema.extend({
+  /** Explicit opt-in: only { reactivate: true } clears a disabled status. */
+  reactivate: z.boolean().optional(),
+}).strict();
 
 export const v1WebhookRotateSchema = z
   .object({
