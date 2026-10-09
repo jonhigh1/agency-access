@@ -22,6 +22,13 @@ import { getGoogleAdsAccountLabel } from '@/lib/google-ads-account-label';
 import { authorizedApiFetch } from '@/lib/api/authorized-api-fetch';
 import type { GoogleAdsAccount } from '@agency-platform/shared';
 import { cn } from '@/lib/utils';
+import {
+  defaultGoogleProductSelection,
+  isMetaGroupPlatform,
+  isMetaPendingApproval,
+  META_PENDING_APPROVAL_LABEL,
+  withoutMetaPlatforms,
+} from '@/lib/meta-pending-approval';
 
 interface CreateRequestModalProps {
   client: {
@@ -46,8 +53,15 @@ export function CreateRequestModal({ client, onClose, onSuccess }: CreateRequest
 
   const [globalAccessLevel, setGlobalAccessLevel] = useState<AccessLevel>('standard');
   const [externalReference, setExternalReference] = useState('');
-  const [selectedPlatforms, setSelectedPlatforms] = useState<Record<string, string[]>>({});
-  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+  // Google-first mode (NEXT_PUBLIC_META_PENDING_APPROVAL=true): Google is preselected
+  // (and expanded so the Ads account picker is visible); Meta can't be selected.
+  const metaPending = isMetaPendingApproval();
+  const [selectedPlatforms, setSelectedPlatforms] = useState<Record<string, string[]>>(() =>
+    metaPending ? defaultGoogleProductSelection() : {}
+  );
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>(
+    (): Record<string, boolean> => (metaPending ? { google: true } : {})
+  );
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [createdRequest, setCreatedRequest] = useState<{ id: string; uniqueToken: string } | null>(null);
   const success = createdRequest !== null;
@@ -109,6 +123,7 @@ export function CreateRequestModal({ client, onClose, onSuccess }: CreateRequest
 
   // Toggle single product
   const toggleProduct = (groupKey: string, productId: string) => {
+    if (metaPending && isMetaGroupPlatform(groupKey)) return;
     const currentSelection = selectedPlatforms[groupKey] || [];
     const isSelected = currentSelection.includes(productId);
 
@@ -123,6 +138,7 @@ export function CreateRequestModal({ client, onClose, onSuccess }: CreateRequest
   // Toggle all products in a group
   const toggleGroupAll = (groupKey: string, e: React.MouseEvent) => {
     e.stopPropagation();
+    if (metaPending && isMetaGroupPlatform(groupKey)) return;
     const products = PLATFORM_HIERARCHY[groupKey]?.products ?? [];
     const allProductIds = products.map(p => p.id);
     const currentSelection = selectedPlatforms[groupKey] || [];
@@ -153,7 +169,7 @@ export function CreateRequestModal({ client, onClose, onSuccess }: CreateRequest
 
   // Transform selected platforms to API format
   const buildSelectedPlatforms = (): SelectedPlatform[] => {
-    return Object.entries(selectedPlatforms)
+    return Object.entries(metaPending ? withoutMetaPlatforms(selectedPlatforms) : selectedPlatforms)
       .filter(([, products]) => products.length > 0)
       .map(([groupKey, products]) => ({
         platformGroup: groupKey,
@@ -410,6 +426,25 @@ export function CreateRequestModal({ client, onClose, onSuccess }: CreateRequest
 
                   <div className="space-y-2">
                     {Object.entries(PLATFORM_HIERARCHY).map(([groupKey, group]) => {
+                      if (metaPending && isMetaGroupPlatform(groupKey)) {
+                        return (
+                          <div
+                            key={groupKey}
+                            data-testid={`platform-group-pending-${groupKey}`}
+                            aria-disabled="true"
+                            className="border border-dashed border-border rounded-xl bg-muted/10 opacity-60 grayscale cursor-not-allowed"
+                          >
+                            <div className="flex items-center gap-3 px-4 py-3 min-h-[52px]">
+                              <span className="flex-shrink-0 w-5 h-5 rounded border-2 border-border bg-background" aria-hidden="true" />
+                              <PlatformIcon platform={groupKey as Platform} size="sm" />
+                              <div className="flex-1 min-w-0">
+                                <span className="font-medium text-foreground text-sm">{group.name}</span>
+                                <span className="ml-2 text-xs text-muted-foreground">{META_PENDING_APPROVAL_LABEL}</span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      }
                       const isExpanded = expandedGroups[groupKey];
                       const products = group.products;
                       const selectionState = getGroupSelectionState(groupKey);

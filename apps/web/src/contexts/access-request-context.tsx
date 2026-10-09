@@ -13,6 +13,7 @@ import { QueryClient } from '@tanstack/react-query';
 import { Client, AccessLevel, AccessRequestTemplate, IntakeField, IntakeFieldTypeSchema, PLATFORM_NAMES, SUPPORTED_LANGUAGES, type MetaAccessConfig } from '@agency-platform/shared';
 import { transformPlatformsForAPI } from '@/lib/transform-platforms';
 import { createAccessRequest, type CreateAccessRequestPayload } from '@/lib/api/access-requests';
+import { isMetaPendingApproval, withoutMetaPlatforms } from '@/lib/meta-pending-approval';
 import { capturePosthogEvent } from '@/lib/analytics/capture-posthog';
 
 // Validation messages the wizard page matches on to focus the offending
@@ -210,7 +211,7 @@ function readDraft(agencyId: string): AccessRequestFormState {
           }
         : null,
       externalReference: saved.externalReference,
-      selectedPlatforms: saved.selectedPlatforms,
+      selectedPlatforms: withoutPendingMeta(saved.selectedPlatforms),
       globalAccessLevel: saved.globalAccessLevel ?? initialState.globalAccessLevel,
       platformAccessLevels: saved.platformAccessLevels,
       intakeFields: saved.intakeFields,
@@ -221,6 +222,11 @@ function readDraft(agencyId: string): AccessRequestFormState {
     safeRemoveDraft(agencyId);
     return initialState;
   }
+}
+
+/** Google-first mode (NEXT_PUBLIC_META_PENDING_APPROVAL=true) drops Meta; flag off returns the selection unchanged. */
+function withoutPendingMeta(selection: Record<string, string[]>): Record<string, string[]> {
+  return isMetaPendingApproval() ? withoutMetaPlatforms(selection) : selection;
 }
 
 function hasDraftContent(state: AccessRequestFormState): boolean {
@@ -312,12 +318,12 @@ export function AccessRequestProvider({
 
       // When template is selected, populate form state with template data
       if (template) {
-        newState.selectedPlatforms = template.platforms || {};
+        newState.selectedPlatforms = withoutPendingMeta(template.platforms || {});
         newState.globalAccessLevel = template.globalAccessLevel || 'standard';
 
         // Initialize platformAccessLevels from globalAccessLevel for all platforms in the template
         const templatePlatformAccessLevels: Record<string, AccessLevel> = {};
-        Object.keys(template.platforms || {}).forEach((platformGroup) => {
+        Object.keys(newState.selectedPlatforms).forEach((platformGroup) => {
           templatePlatformAccessLevels[platformGroup] = template.globalAccessLevel || 'standard';
         });
         newState.platformAccessLevels = templatePlatformAccessLevels;
@@ -342,7 +348,8 @@ export function AccessRequestProvider({
     setState((prev) => ({ ...prev, externalReference }));
   }, []);
 
-  const updatePlatforms = useCallback((platforms: Record<string, string[]>) => {
+  const updatePlatforms = useCallback((nextPlatforms: Record<string, string[]>) => {
+    const platforms = withoutPendingMeta(nextPlatforms);
     setState((prev) => {
       // Identify newly added platform groups
       const newGroups = Object.keys(platforms).filter(
@@ -510,8 +517,9 @@ export function AccessRequestProvider({
 
     try {
       // Transform platforms to API format
+      const submittedPlatforms = withoutPendingMeta(state.selectedPlatforms);
       const platformsConfig = transformPlatformsForAPI(
-        state.selectedPlatforms,
+        submittedPlatforms,
         state.platformAccessLevels,
         state.globalAccessLevel! // Fallback default
       );
@@ -530,7 +538,7 @@ export function AccessRequestProvider({
           primaryColor: state.branding.primaryColor,
           subdomain: state.branding.subdomain || undefined,
         },
-        ...((state.selectedPlatforms.meta?.length || 0) > 0
+        ...((submittedPlatforms.meta?.length || 0) > 0
           ? { metaAccessConfig: state.metaAccessConfig }
           : {}),
       };

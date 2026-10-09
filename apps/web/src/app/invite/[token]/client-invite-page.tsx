@@ -37,6 +37,11 @@ import {
   isClientInviteManualPlatform,
 } from '@/lib/client-invite-platforms';
 import { buildInvitePlatformQueue } from '@/lib/invite-platform-queue';
+import {
+  isMetaGroupPlatform,
+  isMetaPendingApproval,
+  META_ACCESS_COMING_SOON,
+} from '@/lib/meta-pending-approval';
 import { buildInvitePlatformChecklist } from '@/lib/invite/platform-status';
 import { toDisplayName } from '@/lib/display-name';
 import { buildInviteRequestIdentity } from '@/lib/invite/invite-request-identity';
@@ -218,18 +223,33 @@ export default function ClientAuthorizationPage({
       ?.clientBusinessId,
     [data?.metaResumeSelections, metaConnectionId]
   );
+  // Google-first mode (NEXT_PUBLIC_META_PENDING_APPROVAL=true): Meta goes last in the
+  // queue so the client finishes every other platform first, and when Meta is up the
+  // page shows a "Meta access coming soon" note instead of starting Meta OAuth.
+  const metaPending = isMetaPendingApproval();
+  const queuePlatforms = useMemo(() => {
+    const platforms = data?.platforms || [];
+    if (!metaPending) return platforms;
+    return [
+      ...platforms.filter((group) => !isMetaGroupPlatform(group.platformGroup)),
+      ...platforms.filter((group) => isMetaGroupPlatform(group.platformGroup)),
+    ];
+  }, [data?.platforms, metaPending]);
   const platformQueue = useMemo(
-    () =>
-      buildInvitePlatformQueue({
-        platforms: data?.platforms || [],
+    () => {
+      const returningPlatform = oauthConnectionInfo?.platform ?? (urlView === 'connect' ? urlPlatform : null);
+      return buildInvitePlatformQueue({
+        platforms: queuePlatforms,
         completedPlatforms,
         unresolvedProducts: data?.authorizationProgress?.unresolvedProducts,
-        returningPlatform: oauthConnectionInfo?.platform ?? (urlView === 'connect' ? urlPlatform : null),
-      }),
+        returningPlatform: metaPending && isMetaGroupPlatform(returningPlatform) ? null : returningPlatform,
+      });
+    },
     [
       completedPlatforms,
       data?.authorizationProgress?.unresolvedProducts,
-      data?.platforms,
+      metaPending,
+      queuePlatforms,
       oauthConnectionInfo?.platform,
       urlPlatform,
       urlView,
@@ -1041,7 +1061,19 @@ export default function ClientAuthorizationPage({
           ) : null}
 
           {/* When all platforms are done, activePlatform is null - show complete view to avoid blank state */}
-          {platformQueue.activePlatform ? (
+          {platformQueue.activePlatform && metaPending && isMetaGroupPlatform(platformQueue.activePlatform.platformGroup) ? (
+            <div
+              ref={platformStageRef}
+              role="status"
+              data-testid="meta-coming-soon"
+              className="border-2 border-black bg-card p-6 text-center"
+            >
+              <div className="flex justify-center">
+                <PlatformIcon platform={platformQueue.activePlatform.platformGroup as Platform} size="lg" />
+              </div>
+              <h2 className="mt-3 text-xl font-semibold text-ink font-display">{META_ACCESS_COMING_SOON}</h2>
+            </div>
+          ) : platformQueue.activePlatform ? (
             <div ref={platformStageRef}>
             <InvitePlatformStage
               platform={platformQueue.activePlatform.platformGroup as Platform}

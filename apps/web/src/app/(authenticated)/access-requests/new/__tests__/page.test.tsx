@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -391,6 +391,59 @@ describe('Access Request Wizard', () => {
         expect.stringContaining('/agency-platforms?agencyId=agency-123&status=active'),
         expect.any(Object)
       );
+    });
+  });
+  describe('Meta pending approval flag (NEXT_PUBLIC_META_PENDING_APPROVAL)', () => {
+    const FLAG = 'NEXT_PUBLIC_META_PENDING_APPROVAL';
+    const originalFlag = process.env[FLAG];
+
+    afterEach(() => {
+      if (originalFlag === undefined) delete process.env[FLAG];
+      else process.env[FLAG] = originalFlag;
+    });
+
+    it('flag on: Google is the default once connected and Meta cannot be added', async () => {
+      process.env[FLAG] = 'true';
+      vi.mocked(accessRequestsApi.createAccessRequest).mockResolvedValue({ data: { id: 'request-123' } } as any);
+      renderWithProviders(<AccessRequestPage />);
+
+      await userEvent.click(await screen.findByRole('button', { name: /pick client/i }));
+      await userEvent.click(screen.getByRole('button', { name: /continue to platforms/i }));
+
+      const continueButton = await screen.findByRole('button', { name: /continue to customize/i });
+      await waitFor(() => expect(continueButton).not.toBeDisabled());
+
+      await userEvent.click(screen.getByRole('button', { name: /pick meta platform/i }));
+      expect(screen.queryByText('Meta assignees')).not.toBeInTheDocument();
+
+      await userEvent.click(screen.getByRole('button', { name: /pick platforms/i }));
+      await userEvent.click(continueButton);
+      await userEvent.click(await screen.findByRole('button', { name: /review & create/i }));
+      await userEvent.click(await screen.findByRole('button', { name: /create access request/i }));
+
+      await waitFor(() => expect(accessRequestsApi.createAccessRequest).toHaveBeenCalled());
+      const payload = vi.mocked(accessRequestsApi.createAccessRequest).mock.calls[0][0] as any;
+      const groups = payload.platforms.map((group: any) => group.platformGroup);
+      expect(groups).toEqual(['google']);
+      expect(payload).not.toHaveProperty('metaAccessConfig');
+    });
+
+    it('flag off: nothing is preselected and Meta can be added as today', async () => {
+      delete process.env[FLAG];
+      renderWithProviders(<AccessRequestPage />);
+
+      await userEvent.click(await screen.findByRole('button', { name: /pick client/i }));
+      await userEvent.click(screen.getByRole('button', { name: /continue to platforms/i }));
+
+      const continueButton = await screen.findByRole('button', { name: /continue to customize/i });
+      // Give the connections query time to settle; Google must still not be preselected.
+      await waitFor(() =>
+        expect(fetch).toHaveBeenCalledWith(expect.stringContaining('/agency-platforms?'), expect.any(Object))
+      );
+      expect(continueButton).toBeDisabled();
+
+      await userEvent.click(screen.getByRole('button', { name: /pick meta platform/i }));
+      await waitFor(() => expect(continueButton).not.toBeDisabled());
     });
   });
 });
