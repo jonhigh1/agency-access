@@ -183,12 +183,17 @@ export class TikTokConnector extends BaseConnector {
     };
   }
 
+  /**
+   * Revoke a long-term access token.
+   * https://business-api.tiktok.com/portal/docs/revoke-a-long-term-access-token/v1.3
+   */
   override async revokeToken(accessToken: string): Promise<void> {
     const response = await fetch(
       `${TIKTOK_API_BASE}/oauth2/revoke_token/`,
       {
         method: 'POST',
         headers: {
+          'Access-Token': accessToken,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({

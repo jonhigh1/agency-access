@@ -282,7 +282,7 @@ model PlatformAuthorization {
   id                 String    @id @default(uuid())
   connectionId       String    @map("connection_id")
   platform           String // Platform identifier: group-level ('google', 'meta') or product-level ('google_ads', 'ga4', 'meta_ads', 'linkedin')
-  secretId           String    @map("secret_id") // AWS Secrets Manager ID
+  secretId           String    @map("secret_id") // Infisical secret name
   expiresAt          DateTime? @map("expires_at")
   lastRefreshedAt    DateTime? @map("last_refreshed_at")
   status             String // 'active', 'expired', 'invalid', 'revoked'
