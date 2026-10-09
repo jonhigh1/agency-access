@@ -7,6 +7,7 @@ import {
   onboardingDraftKey,
   saveOnboardingDraft,
 } from '@/lib/onboarding/onboarding-draft';
+import { selectionWithoutMeta } from '@/lib/onboarding/meta-readiness';
 
 vi.mock('@/lib/analytics/affiliate', () => ({ trackAffiliateEvent: vi.fn() }));
 
@@ -295,5 +296,52 @@ describe('unified onboarding: agency Meta portfolio gate', () => {
     await waitFor(() => expect(result.current.state.metaReadiness.status).toBe('not_connected'));
     expect(result.current.canGoNext()).toBe(false);
     expect(result.current.state.error).toMatch(/connect your agency meta business portfolio/i);
+  });
+
+  it('Check again picks up a portfolio created in another tab without leaving the platform step', async () => {
+    let hasPortfolio = false;
+    (global as any).fetch = routeFetch({
+      meta: () => ({
+        platform: 'meta',
+        connected: true,
+        metadata: hasPortfolio ? { selectedBusinessId: 'biz-1', selectedBusinessName: 'Example Portfolio' } : {},
+      }),
+    });
+    seedDraft({ google: ['google'], meta: ['meta'] });
+
+    const { result } = renderHook(() => useUnifiedOnboarding(), { wrapper: persistentWrapper });
+    await waitFor(() => expect(result.current.state.metaReadiness.status).toBe('needs_portfolio'));
+    expect(result.current.canGoNext()).toBe(false);
+
+    hasPortfolio = true;
+    await act(async () => {
+      await result.current.refreshMetaReadiness();
+    });
+
+    expect(result.current.state.metaReadiness).toEqual({ status: 'ready', portfolioName: 'Example Portfolio' });
+    expect(result.current.canGoNext()).toBe(true);
+    expect(result.current.state.currentStep).toBe(3);
+    expect(result.current.state.selectedPlatforms).toEqual({ google: ['google'], meta: ['meta'] });
+    const saved = JSON.parse(window.sessionStorage.getItem(onboardingDraftKey('user_test')) || '{}');
+    expect(saved.currentStep).toBe(3);
+  });
+
+  it('skipping Meta un-gates Continue and the draft remembers the skip', async () => {
+    (global as any).fetch = routeFetch({ meta: () => ({ platform: 'meta', connected: true, metadata: {} }) });
+    seedDraft({ google: ['google'], meta: ['meta'] });
+
+    const { result } = renderHook(() => useUnifiedOnboarding(), { wrapper: persistentWrapper });
+    await waitFor(() => expect(result.current.state.metaReadiness.status).toBe('needs_portfolio'));
+    expect(result.current.canGoNext()).toBe(false);
+
+    act(() => {
+      result.current.updatePlatforms(selectionWithoutMeta(result.current.state.selectedPlatforms));
+    });
+
+    expect(result.current.canGoNext()).toBe(true);
+    await waitFor(() => {
+      const saved = JSON.parse(window.sessionStorage.getItem(onboardingDraftKey('user_test')) || '{}');
+      expect(saved.selectedPlatforms).toEqual({ google: ['google'] });
+    });
   });
 });

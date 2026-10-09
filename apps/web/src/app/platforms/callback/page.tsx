@@ -15,7 +15,7 @@ import { useAuth, useUser } from '@clerk/nextjs';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import type { Route } from 'next';
-import { AlertCircle, Loader2, RefreshCw } from 'lucide-react';
+import { AlertCircle, ExternalLink, Loader2, RefreshCw } from 'lucide-react';
 import { capturePosthogEvent } from '@/lib/analytics/capture-posthog';
 import { PortfolioSelector, type PortfolioBusiness } from '@/components/client-auth/PortfolioSelector';
 import { Button } from '@/components/ui/button';
@@ -27,6 +27,7 @@ import {
   peekOnboardingReturnIntent,
 } from '@/lib/onboarding/onboarding-draft';
 import { resolveApiUrl } from '@/lib/api/api-env';
+import { META_CREATE_BUSINESS_PORTFOLIO_URL } from '@/lib/onboarding/meta-readiness';
 import {
   trackOAuthCallbackFailure,
   trackOAuthCallbackSuccess,
@@ -329,6 +330,28 @@ function CallbackPageContent() {
                   <AlertCircle className="h-8 w-8 text-muted-foreground" />
                 </div>
                 <h3 className="text-ink font-bold mb-2">No Meta Business portfolios found</h3>
+                <p className="text-muted-foreground text-sm max-w-sm mx-auto mb-4">
+                  Your agency needs a Business Portfolio to receive client access. Create one in Meta (it opens in a
+                  new tab), then come back and check again.
+                </p>
+                <div className="flex flex-wrap items-center justify-center gap-3 mb-6">
+                  <Button variant="primary" size="sm" asChild>
+                    <a href={META_CREATE_BUSINESS_PORTFOLIO_URL} target="_blank" rel="noopener noreferrer">
+                      Create a Business Portfolio
+                      <ExternalLink className="h-4 w-4" aria-hidden="true" />
+                      <span className="sr-only">(opens in a new tab)</span>
+                    </a>
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    onClick={() => void portfolioQuery.refetch()}
+                    disabled={portfolioQuery.isFetching}
+                  >
+                    <RefreshCw className="h-4 w-4" aria-hidden="true" />
+                    {portfolioQuery.isFetching ? 'Checking…' : 'Check again'}
+                  </Button>
+                </div>
                 <p className="text-muted-foreground text-sm max-w-xs mx-auto mb-6">
                   Don&apos;t see your Business Portfolio? To refresh this list{' '}
                   <Button
