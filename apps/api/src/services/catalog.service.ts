@@ -1,5 +1,5 @@
 /**
- * Catalog Service (U3: R9, R10 — read slice).
+ * Catalog Service: read slice projections.
  *
  * Projects catalog reads over internal connection tables:
  * - Connected accounts come from AgencyPlatformConnection rows, projected to
@@ -12,7 +12,7 @@
  *   roles a request may ask for and the grant requirements to fulfill them.
  *
  * Keyset list paths for v1 clients/requests live here too: opaque
- * (createdAt, id) tuple comparison, never offset wrapping (KTD6).
+ * (createdAt, id) tuple comparison, never offset wrapping.
  */
 
 import { PLATFORMS } from '@agency-platform/shared';
@@ -20,7 +20,7 @@ import { prisma } from '@/lib/prisma';
 import { normalizeGrantedAssetsToV2 } from './webhook-event.service.js';
 
 // ============================================================
-// Connected accounts (R9)
+// Connected accounts
 // ============================================================
 
 export interface CatalogAccount {
@@ -66,13 +66,22 @@ export function toSafeConnectionAccount(row: any): CatalogAccount {
 export async function listConnectedAccounts(agencyId: string): Promise<CatalogAccount[]> {
   const rows = await prisma.agencyPlatformConnection.findMany({
     where: { agencyId },
+    select: {
+      id: true,
+      platform: true,
+      connectionMode: true,
+      status: true,
+      verificationStatus: true,
+      connectedAt: true,
+      metadata: true,
+    },
     orderBy: { connectedAt: 'desc' },
   });
   return rows.map(toSafeConnectionAccount);
 }
 
 // ============================================================
-// Requestable services (R10)
+// Requestable services
 // ============================================================
 
 export interface CatalogServiceEntry {
@@ -86,36 +95,39 @@ export interface CatalogServiceEntry {
 
 const REQUESTABLE_ROLES = ['manage', 'view_only'] as const;
 
+/** The PLATFORMS registry never changes at runtime; project it once. */
+const MEMOIZED_SERVICES: CatalogServiceEntry[] = Object.entries(PLATFORMS as Record<string, any>)
+  .filter(([, entry]) => entry?.kind !== 'legacy')
+  .map(([id, entry]) => {
+    const capabilities = entry?.capabilities as
+      | { connectionMethod?: string; tokenKind?: string }
+      | undefined;
+    const grantRequirements: Record<string, unknown> =
+      capabilities?.connectionMethod != null
+        ? {
+            connectionMethod: capabilities.connectionMethod,
+            ...(capabilities.tokenKind ? { tokenKind: capabilities.tokenKind } : {}),
+            clientAuthorizable: Boolean(entry.clientAuthorizable),
+          }
+        : {
+            authorizesViaParent: (entry as { parent?: string }).parent ?? null,
+            clientAuthorizable: false,
+          };
+    return {
+      id,
+      displayName: String(entry.displayName ?? id),
+      kind: String(entry.kind),
+      roles: [...REQUESTABLE_ROLES],
+      grantRequirements,
+    };
+  });
+
 export function listServices(): CatalogServiceEntry[] {
-  return Object.entries(PLATFORMS as Record<string, any>)
-    .filter(([, entry]) => entry?.kind !== 'legacy')
-    .map(([id, entry]) => {
-      const capabilities = entry?.capabilities as
-        | { connectionMethod?: string; tokenKind?: string }
-        | undefined;
-      const grantRequirements: Record<string, unknown> =
-        capabilities?.connectionMethod != null
-          ? {
-              connectionMethod: capabilities.connectionMethod,
-              ...(capabilities.tokenKind ? { tokenKind: capabilities.tokenKind } : {}),
-              clientAuthorizable: Boolean(entry.clientAuthorizable),
-            }
-          : {
-              authorizesViaParent: (entry as { parent?: string }).parent ?? null,
-              clientAuthorizable: false,
-            };
-      return {
-        id,
-        displayName: String(entry.displayName ?? id),
-        kind: String(entry.kind),
-        roles: [...REQUESTABLE_ROLES],
-        grantRequirements,
-      };
-    });
+  return MEMOIZED_SERVICES;
 }
 
 // ============================================================
-// Opaque keyset cursors (KTD6, R11)
+// Opaque keyset cursors
 // ============================================================
 
 export interface KeysetCursor {
@@ -168,6 +180,21 @@ export interface KeysetPage<T> {
   hasMore: boolean;
 }
 
+/** Slice a limit+1 keyset fetch into its page: extras become the cursor. */
+export function toKeysetPage<T extends { createdAt: Date | string; id: string }>(
+  rows: T[],
+  limit: number,
+): KeysetPage<T> {
+  const hasMore = rows.length > limit;
+  const page = hasMore ? rows.slice(0, limit) : rows;
+  const last = page[page.length - 1];
+  return {
+    rows: page,
+    nextCursor: hasMore && last ? encodeKeysetCursor(last.createdAt, last.id) : null,
+    hasMore,
+  };
+}
+
 export async function listClientsKeyset(input: {
   agencyId: string;
   limit: number;
@@ -184,14 +211,7 @@ export async function listClientsKeyset(input: {
     take: input.limit + 1,
   });
 
-  const hasMore = rows.length > input.limit;
-  const page = hasMore ? rows.slice(0, input.limit) : rows;
-  const last = page[page.length - 1];
-  return {
-    rows: page,
-    nextCursor: hasMore && last ? encodeKeysetCursor(last.createdAt, last.id) : null,
-    hasMore,
-  };
+  return toKeysetPage(rows, input.limit);
 }
 
 export async function listRequestsKeyset(input: {
@@ -225,14 +245,7 @@ export async function listRequestsKeyset(input: {
     take: input.limit + 1,
   });
 
-  const hasMore = rows.length > input.limit;
-  const page = hasMore ? rows.slice(0, input.limit) : rows;
-  const last = page[page.length - 1];
-  return {
-    rows: page,
-    nextCursor: hasMore && last ? encodeKeysetCursor(last.createdAt, last.id) : null,
-    hasMore,
-  };
+  return toKeysetPage(rows, input.limit);
 }
 
 export const catalogService = {

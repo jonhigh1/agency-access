@@ -41,6 +41,9 @@ export type V1ErrorCode = keyof typeof V1_ERROR_REGISTRY;
 
 export const V1_ERROR_CODES = Object.keys(V1_ERROR_REGISTRY) as V1ErrorCode[];
 
+/** Missing-or-empty idempotency header on v1 creates. */
+export const IDEMPOTENCY_KEY_REQUIRED = 'IDEMPOTENCY_KEY_REQUIRED' as const;
+
 export function isRegisteredV1Code(code: string): code is V1ErrorCode {
   return Object.hasOwn(V1_ERROR_REGISTRY, code);
 }

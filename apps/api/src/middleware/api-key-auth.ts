@@ -1,7 +1,7 @@
 /**
- * API Key Authentication (public v1 credential plane)
+ * API Key Authentication (public v1 credential plane).
  *
- * Parallel preHandler per KTD2: verifies the bearer API key and attaches a
+ * Parallel preHandler: verifies the bearer API key and attaches a
  * key-principal shape that never touches `request.user`. Dashboard paths use
  * Clerk `authenticate()` instead, so neither credential replays on the
  * other's path. Revocation is checked synchronously on every request.
@@ -13,8 +13,10 @@ import {
   assertKeyScope,
   verifyApiKey,
   type ApiKeyPrincipal,
+  type ApiKeyScope,
 } from '@/services/api-key.service';
 import { v1Error } from '@/lib/v1-envelope.js';
+import type { V1ErrorCode } from '@/lib/v1-errors.js';
 
 function denyKey(reply: FastifyReply) {
   return v1Error(reply, 401, INVALID_API_KEY_CODE, 'Invalid or missing API key');
@@ -35,20 +37,20 @@ export function apiKeyPreHandler() {
     if (!principal) {
       return denyKey(reply);
     }
-    (request as any).apiKey = principal as ApiKeyPrincipal;
+    request.apiKey = principal as ApiKeyPrincipal;
   };
 }
 
-/** Route scope gate: deny-by-default, names the missing scope (R2, AE4). */
-export function requireKeyScope(scope: string) {
+/** Route scope gate: deny-by-default, names the missing scope. */
+export function requireKeyScope(scope: ApiKeyScope) {
   return async (request: FastifyRequest, reply: FastifyReply) => {
-    const principal = (request as any).apiKey as ApiKeyPrincipal | undefined;
+    const principal = request.apiKey as ApiKeyPrincipal | undefined;
     if (!principal) {
       return denyKey(reply);
     }
     const scopeError = assertKeyScope(principal, scope);
     if (scopeError) {
-      return v1Error(reply, 403, scopeError.code, scopeError.message);
+      return v1Error(reply, 403, scopeError.code as V1ErrorCode, scopeError.message);
     }
   };
 }

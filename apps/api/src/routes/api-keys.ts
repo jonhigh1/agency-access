@@ -6,7 +6,7 @@
  * metadata only. This module never accepts API keys as credentials.
  */
 
-import type { FastifyInstance } from 'fastify';
+import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { authenticate } from '@/middleware/auth.js';
 import { requirePrincipalAgency } from '@/lib/agency-guard.js';
@@ -17,7 +17,8 @@ import {
   rotateApiKey,
   revokeApiKeyFamily,
 } from '@/services/api-key.service.js';
-import { resolveAuthenticatedUserEmail } from '@/lib/authorization.js';
+import { resolveAuthenticatedUserEmail, type AuthUserClaims } from '@/lib/authorization.js';
+import type { ServiceResult } from '@/lib/service-result';
 
 const IssueKeySchema = z.object({
   name: z.string().min(1).max(100),
@@ -44,6 +45,21 @@ function statusFor(code: string): number {
   }
 }
 
+async function actorEmailOf(request: FastifyRequest): Promise<string> {
+  const user = (request as unknown as { user?: AuthUserClaims }).user;
+  return (await resolveAuthenticatedUserEmail(user)) ?? 'unknown';
+}
+
+function sendServiceResult<T>(reply: FastifyReply, result: ServiceResult<T>, successStatus: number): unknown {
+  if (result.error || !result.data) {
+    const code = result.error?.code ?? 'INTERNAL_ERROR';
+    return reply
+      .code(statusFor(code))
+      .send({ data: null, error: result.error });
+  }
+  return reply.code(successStatus).send({ data: result.data, error: null });
+}
+
 export async function apiKeyRoutes(fastify: FastifyInstance) {
   fastify.addHook('onRequest', authenticate());
   fastify.addHook('onRequest', requirePrincipalAgency);
@@ -58,16 +74,9 @@ export async function apiKeyRoutes(fastify: FastifyInstance) {
       });
     }
 
-    const createdBy =
-      (await resolveAuthenticatedUserEmail((request as any).user)) ?? 'unknown';
+    const createdBy = await actorEmailOf(request);
     const result = await issueApiKey({ agencyId, ...parsed.data, createdBy });
-    if (result.error || !result.data) {
-      const code = result.error?.code ?? 'INTERNAL_ERROR';
-      return reply
-        .code(statusFor(code))
-        .send({ data: null, error: result.error });
-    }
-    return reply.code(201).send({ data: result.data, error: null });
+    return sendServiceResult(reply, result, 201);
   });
 
   fastify.get('/api-keys', async (request, reply) => {
@@ -82,16 +91,9 @@ export async function apiKeyRoutes(fastify: FastifyInstance) {
   fastify.post('/api-keys/:id/revoke', async (request, reply) => {
     const agencyId = (request as any).principalAgencyId as string;
     const { id } = request.params as { id: string };
-    const revokedBy =
-      (await resolveAuthenticatedUserEmail((request as any).user)) ?? 'unknown';
+    const revokedBy = await actorEmailOf(request);
     const result = await revokeApiKey({ agencyId, keyId: id, revokedBy });
-    if (result.error || !result.data) {
-      const code = result.error?.code ?? 'INTERNAL_ERROR';
-      return reply
-        .code(statusFor(code))
-        .send({ data: null, error: result.error });
-    }
-    return reply.send({ data: result.data, error: null });
+    return sendServiceResult(reply, result, 200);
   });
 
   fastify.post('/api-keys/:id/rotate', async (request, reply) => {
@@ -104,35 +106,21 @@ export async function apiKeyRoutes(fastify: FastifyInstance) {
         error: { code: 'VALIDATION_ERROR', message: 'Invalid rotation input' },
       });
     }
-    const rotatedBy =
-      (await resolveAuthenticatedUserEmail((request as any).user)) ?? 'unknown';
+    const rotatedBy = await actorEmailOf(request);
     const result = await rotateApiKey({
       agencyId,
       keyId: id,
       rotatedBy,
       name: parsed.data.name,
     });
-    if (result.error || !result.data) {
-      const code = result.error?.code ?? 'INTERNAL_ERROR';
-      return reply
-        .code(statusFor(code))
-        .send({ data: null, error: result.error });
-    }
-    return reply.code(201).send({ data: result.data, error: null });
+    return sendServiceResult(reply, result, 201);
   });
 
   fastify.post('/api-keys/families/:familyId/revoke', async (request, reply) => {
     const agencyId = (request as any).principalAgencyId as string;
     const { familyId } = request.params as { familyId: string };
-    const revokedBy =
-      (await resolveAuthenticatedUserEmail((request as any).user)) ?? 'unknown';
+    const revokedBy = await actorEmailOf(request);
     const result = await revokeApiKeyFamily({ agencyId, familyId, revokedBy });
-    if (result.error || !result.data) {
-      const code = result.error?.code ?? 'INTERNAL_ERROR';
-      return reply
-        .code(statusFor(code))
-        .send({ data: null, error: result.error });
-    }
-    return reply.send({ data: result.data, error: null });
+    return sendServiceResult(reply, result, 200);
   });
 }

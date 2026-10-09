@@ -1,23 +1,23 @@
 /**
- * v1 Webhook Routes (U6: R13–R16 — multi-endpoint CRUD, reconciled
- * taxonomy, rotation, ordering primitives, deliveries log).
+ * v1 Webhook Routes: multi-endpoint CRUD, reconciled taxonomy, rotation,
+ * ordering primitives, deliveries log.
  *
  * Registered inside the v1 plugin context (same pattern as v1-reads):
  * the key preHandler already ran; each route carries tier gate,
  * per-key rate limit, then the scope gate. Every write schema is strict
- * (unknown fields fail naming the field, R17/KTD9).
+ * (unknown fields fail naming the field).
  *
- * Ordering + dedupe contract surfaced here (R16, documented for
- * integrators in @agency-platform/shared): order by the per-endpoint
+ * Ordering + dedupe contract surfaced here: order by the per-endpoint
  * `sequenceNumber` (gaps tolerated), collapse redeliveries on the global
  * event `id`, and use `correlationId` as the cross-endpoint dedupe key.
  * Secret rotation verifies new-then-old during the 24h overlap window.
  */
 
-import { randomUUID } from 'crypto';
 import type { FastifyInstance, FastifyReply } from 'fastify';
+import { randomUUID } from 'crypto';
 import { requireKeyScope } from '@/middleware/api-key-auth.js';
-import { v1Error } from '@/lib/v1-envelope.js';
+import { v1Error, v1Success } from '@/lib/v1-envelope.js';
+import { IDEMPOTENCY_KEY_REQUIRED, type V1ErrorCode } from '@/lib/v1-errors.js';
 import {
   V1_WEBHOOK_EVENT_DESCRIPTIONS,
   V1_WEBHOOK_IDEMPOTENCY_ENDPOINT,
@@ -29,14 +29,10 @@ import {
 import { v1RateLimitPreHandler, v1TierGate } from '@/middleware/v1-gate.js';
 import type { ApiKeyPrincipal } from '@/services/api-key.service';
 import {
-  IdempotencyConflictError,
-  IdempotencyExpiredError,
-  IdempotencyInProgressError,
   fingerprintRequest,
   idempotencyService,
 } from '@/services/idempotency.service.js';
 import {
-  UNSAFE_ENDPOINT_URL_CODE,
   WEBHOOK_ENDPOINT_CAP_EXCEEDED_CODE,
   WEBHOOK_ENDPOINT_URL_EXISTS_CODE,
   createPluralWebhookEndpoint,
@@ -48,50 +44,39 @@ import {
   validateEndpointUrlSync,
 } from '@/services/webhook-endpoint.service.js';
 import {
-  DeliveryCursorError,
   decodeDeliveryCursor,
   listWebhookDeliveriesKeyset,
 } from '@/services/webhook-delivery.service.js';
 import { V1_WEBHOOK_SUBSCRIBABLE_EVENTS } from '@agency-platform/shared';
-
-const IDEMPOTENCY_ENDPOINT = V1_WEBHOOK_IDEMPOTENCY_ENDPOINT;
-const IDEMPOTENCY_KEY_REQUIRED_CODE = 'IDEMPOTENCY_KEY_REQUIRED';
-
-const TAXONOMY_DESCRIPTIONS: Record<string, string> = V1_WEBHOOK_EVENT_DESCRIPTIONS;
-
-function principalOf(request: unknown): ApiKeyPrincipal {
-  return (request as { apiKey: ApiKeyPrincipal }).apiKey;
-}
+import type { ServiceError } from '@/lib/service-result';
+import {
+  decodeCursorOr400,
+  extractIdempotencyKey,
+  principalOf,
+  sendIdempotencyClaimError,
+  validationMessage,
+} from '@/lib/v1-route-helpers.js';
 
 function actorEmailOf(principal: ApiKeyPrincipal): string {
   return `${principal.keyId}@api-key.local`;
 }
 
-function sendSuccess(reply: FastifyReply, data: unknown, statusCode = 200) {
-  return reply.code(statusCode).send({
-    data,
-    error: null,
-    meta: { requestId: randomUUID() },
-  });
-}
+const SERVICE_ERROR_STATUS: Record<string, number> = {
+  NOT_FOUND: 404,
+  MISSING_SCOPE: 403,
+  [WEBHOOK_ENDPOINT_CAP_EXCEEDED_CODE]: 409,
+  [WEBHOOK_ENDPOINT_URL_EXISTS_CODE]: 409,
+  INTERNAL_ERROR: 500,
+};
 
-function sendServiceError(reply: FastifyReply, error: { code: string; message: string; details?: unknown }) {
-  const status =
-    error.code === 'NOT_FOUND'
-      ? 404
-      : error.code === 'MISSING_SCOPE'
-        ? 403
-        : error.code === WEBHOOK_ENDPOINT_CAP_EXCEEDED_CODE ||
-            error.code === WEBHOOK_ENDPOINT_URL_EXISTS_CODE
-          ? 409
-          : error.code === 'INTERNAL_ERROR'
-            ? 500
-            : 400;
-  return reply.code(status).send({ data: null, error, meta: { requestId: randomUUID() } });
-}
-
-function sendValidationError(reply: FastifyReply, message: string, code = 'VALIDATION_ERROR') {
-  return v1Error(reply, 400, code, message);
+function sendServiceError(reply: FastifyReply, error: ServiceError) {
+  return v1Error(
+    reply,
+    SERVICE_ERROR_STATUS[error.code] ?? 400,
+    error.code as V1ErrorCode,
+    error.message,
+    error.details,
+  );
 }
 
 export async function v1WebhooksRoutes(fastify: FastifyInstance) {
@@ -99,7 +84,7 @@ export async function v1WebhooksRoutes(fastify: FastifyInstance) {
   const rate = v1RateLimitPreHandler();
 
   /**
-   * GET /api/v1/webhook-event-types (R15)
+   * GET /api/v1/webhook-event-types
    * The reconciled taxonomy: every event the evaluator can emit is
    * subscribable, including previously unsubscribable ones.
    */
@@ -107,18 +92,18 @@ export async function v1WebhooksRoutes(fastify: FastifyInstance) {
     '/webhook-event-types',
     { preHandler: [tier, rate, requireKeyScope('webhooks:read')] },
     async (_request, reply) => {
-      return sendSuccess(
+      return v1Success(
         reply,
         V1_WEBHOOK_SUBSCRIBABLE_EVENTS.map((type) => ({
           type,
-          description: TAXONOMY_DESCRIPTIONS[type] ?? '',
+          description: V1_WEBHOOK_EVENT_DESCRIPTIONS[type] ?? '',
         })),
       );
     },
   );
 
   /**
-   * GET /api/v1/webhook-endpoints (R13)
+   * GET /api/v1/webhook-endpoints
    * All endpoints for the key's agency, creation order.
    */
   fastify.get(
@@ -128,12 +113,12 @@ export async function v1WebhooksRoutes(fastify: FastifyInstance) {
       const principal = principalOf(request);
       const result = await listWebhookEndpoints(principal.agencyId, { scopes: principal.scopes });
       if (result.error) return sendServiceError(reply, result.error);
-      return sendSuccess(reply, result.data!.endpoints);
+      return v1Success(reply, result.data!.endpoints);
     },
   );
 
   /**
-   * POST /api/v1/webhook-endpoints (R7, R13)
+   * POST /api/v1/webhook-endpoints
    * Creates require the idempotency header via the generic record: a
    * retry with the same key and body replays the original result.
    */
@@ -144,22 +129,18 @@ export async function v1WebhooksRoutes(fastify: FastifyInstance) {
       const principal = principalOf(request);
       const parsed = v1WebhookEndpointCreateSchema.safeParse(request.body);
       if (!parsed.success) {
-        const first = parsed.error.errors[0];
-        return sendValidationError(
-          reply,
-          first ? `${first.path.join('.') || 'body'}: ${first.message}` : 'Invalid request body',
-        );
+        return v1Error(reply, 400, 'VALIDATION_ERROR', validationMessage(parsed.error));
       }
       // Sync SSRF screen before the idempotency claim so validation
-      // failures never consume the key (KTD5).
+      // failures never consume the key.
       const syncCheck = validateEndpointUrlSync(parsed.data.url);
       if (!syncCheck.ok) {
-        return sendValidationError(reply, syncCheck.message, syncCheck.code);
+        return v1Error(reply, 400, syncCheck.code as V1ErrorCode, syncCheck.message);
       }
 
-      const idemKey = request.headers['idempotency-key'];
-      if (typeof idemKey !== 'string' || idemKey.length === 0) {
-        return sendValidationError(reply, 'The Idempotency-Key header is required', IDEMPOTENCY_KEY_REQUIRED_CODE);
+      const idemKey = extractIdempotencyKey(request.headers);
+      if (!idemKey) {
+        return v1Error(reply, 400, IDEMPOTENCY_KEY_REQUIRED, 'The Idempotency-Key header is required');
       }
 
       let claim: { status: 'claimed' | 'replay'; record: { id: string; statusCode: number | null; result: unknown } };
@@ -167,21 +148,12 @@ export async function v1WebhooksRoutes(fastify: FastifyInstance) {
         claim = await idempotencyService.claim({
           agencyId: principal.agencyId,
           keyIdentity: principal.keyId,
-          endpoint: IDEMPOTENCY_ENDPOINT,
+          endpoint: V1_WEBHOOK_IDEMPOTENCY_ENDPOINT,
           key: idemKey,
           fingerprint: fingerprintRequest(parsed.data),
         });
       } catch (error) {
-        if (error instanceof IdempotencyInProgressError) {
-          return v1Error(reply, 409, error.code, error.message);
-        }
-        if (error instanceof IdempotencyConflictError) {
-          return v1Error(reply, 409, error.code, error.message);
-        }
-        if (error instanceof IdempotencyExpiredError) {
-          return v1Error(reply, 410, error.code, error.message);
-        }
-        throw error;
+        return sendIdempotencyClaimError(reply, error);
       }
 
       if (claim.status === 'replay') {
@@ -193,10 +165,12 @@ export async function v1WebhooksRoutes(fastify: FastifyInstance) {
         {
           agencyId: principal.agencyId,
           url: parsed.data.url,
-          subscribedEvents: parsed.data.subscribedEvents as string[] as never,
+          subscribedEvents: parsed.data.subscribedEvents as Parameters<
+            typeof createPluralWebhookEndpoint
+          >[0]['subscribedEvents'],
           preferredApiVersion: parsed.data.preferredApiVersion,
           createdBy: actorEmailOf(principal),
-        } as never,
+        },
         { scopes: principal.scopes },
       );
       if (result.error) {
@@ -214,7 +188,7 @@ export async function v1WebhooksRoutes(fastify: FastifyInstance) {
   );
 
   /**
-   * GET /api/v1/webhook-endpoints/:id (R13)
+   * GET /api/v1/webhook-endpoints/:id
    */
   fastify.get(
     '/webhook-endpoints/:id',
@@ -224,12 +198,12 @@ export async function v1WebhooksRoutes(fastify: FastifyInstance) {
       const { id } = request.params as { id: string };
       const result = await getWebhookEndpointById(principal.agencyId, id, { scopes: principal.scopes });
       if (result.error) return sendServiceError(reply, result.error);
-      return sendSuccess(reply, result.data!.endpoint);
+      return v1Success(reply, result.data!.endpoint);
     },
   );
 
   /**
-   * PATCH /api/v1/webhook-endpoints/:id (R13)
+   * PATCH /api/v1/webhook-endpoints/:id
    * URL re-validated like creation; reactivation clears disablement.
    */
   fastify.patch(
@@ -240,34 +214,32 @@ export async function v1WebhooksRoutes(fastify: FastifyInstance) {
       const { id } = request.params as { id: string };
       const parsed = v1WebhookEndpointUpdateSchema.safeParse(request.body);
       if (!parsed.success) {
-        const first = parsed.error.errors[0];
-        return sendValidationError(
-          reply,
-          first ? `${first.path.join('.') || 'body'}: ${first.message}` : 'Invalid request body',
-        );
+        return v1Error(reply, 400, 'VALIDATION_ERROR', validationMessage(parsed.error));
       }
       const syncCheck = validateEndpointUrlSync(parsed.data.url);
       if (!syncCheck.ok) {
-        return sendValidationError(reply, syncCheck.message, syncCheck.code);
+        return v1Error(reply, 400, syncCheck.code as V1ErrorCode, syncCheck.message);
       }
       const result = await updatePluralWebhookEndpoint(
         id,
         {
           agencyId: principal.agencyId,
           url: parsed.data.url,
-          subscribedEvents: parsed.data.subscribedEvents as string[] as never,
+          subscribedEvents: parsed.data.subscribedEvents as Parameters<
+            typeof updatePluralWebhookEndpoint
+          >[1]['subscribedEvents'],
           preferredApiVersion: parsed.data.preferredApiVersion,
           updatedBy: actorEmailOf(principal),
-        } as never,
+        },
         { scopes: principal.scopes },
       );
       if (result.error) return sendServiceError(reply, result.error);
-      return sendSuccess(reply, result.data!.endpoint);
+      return v1Success(reply, result.data!.endpoint);
     },
   );
 
   /**
-   * DELETE /api/v1/webhook-endpoints/:id (R13)
+   * DELETE /api/v1/webhook-endpoints/:id
    * Removes the endpoint and its secret material.
    */
   fastify.delete(
@@ -280,12 +252,12 @@ export async function v1WebhooksRoutes(fastify: FastifyInstance) {
         scopes: principal.scopes,
       });
       if (result.error) return sendServiceError(reply, result.error);
-      return sendSuccess(reply, result.data);
+      return v1Success(reply, result.data);
     },
   );
 
   /**
-   * POST /api/v1/webhook-endpoints/:id/rotate (R14)
+   * POST /api/v1/webhook-endpoints/:id/rotate
    * Default overlap keeps the old secret verifying for 24h (new-then-old);
    * `{"immediate": true}` replaces at once and revokes the old secret.
    */
@@ -297,11 +269,7 @@ export async function v1WebhooksRoutes(fastify: FastifyInstance) {
       const { id } = request.params as { id: string };
       const parsed = v1WebhookRotateSchema.safeParse(request.body ?? {});
       if (!parsed.success) {
-        const first = parsed.error.errors[0];
-        return sendValidationError(
-          reply,
-          first ? `${first.path.join('.') || 'body'}: ${first.message}` : 'Invalid request body',
-        );
+        return v1Error(reply, 400, 'VALIDATION_ERROR', validationMessage(parsed.error));
       }
       const result = await rotateWebhookEndpointSecretById(
         principal.agencyId,
@@ -311,12 +279,12 @@ export async function v1WebhooksRoutes(fastify: FastifyInstance) {
         { scopes: principal.scopes },
       );
       if (result.error) return sendServiceError(reply, result.error);
-      return sendSuccess(reply, { endpoint: result.data!.endpoint, signingSecret: result.data!.signingSecret });
+      return v1Success(reply, { endpoint: result.data!.endpoint, signingSecret: result.data!.signingSecret });
     },
   );
 
   /**
-   * GET /api/v1/webhook-endpoints/:id/deliveries (R14)
+   * GET /api/v1/webhook-endpoints/:id/deliveries
    * Cursor log over (createdAt, id); summaries carry status plus the
    * ordering primitives, never secrets or full bodies.
    */
@@ -328,19 +296,10 @@ export async function v1WebhooksRoutes(fastify: FastifyInstance) {
       const { id } = request.params as { id: string };
       const parsed = v1WebhookDeliveriesQuerySchema.safeParse(request.query);
       if (!parsed.success) {
-        const first = parsed.error.errors[0];
-        return sendValidationError(
-          reply,
-          first ? `${first.path.join('.') || 'query'}: ${first.message}` : 'Invalid query',
-        );
+        return v1Error(reply, 400, 'VALIDATION_ERROR', validationMessage(parsed.error));
       }
-      let cursor;
-      try {
-        cursor = decodeDeliveryCursor(parsed.data.cursor);
-      } catch (error) {
-        if (error instanceof DeliveryCursorError) return sendValidationError(reply, error.message);
-        throw error;
-      }
+      const cursor = decodeCursorOr400(reply, decodeDeliveryCursor, parsed.data.cursor);
+      if (cursor === undefined) return;
       const endpoint = await getWebhookEndpointById(principal.agencyId, id, { scopes: principal.scopes });
       if (endpoint.error) return sendServiceError(reply, endpoint.error);
       const result = await listWebhookDeliveriesKeyset({
@@ -350,13 +309,8 @@ export async function v1WebhooksRoutes(fastify: FastifyInstance) {
         cursor,
       });
       if (result.error) return sendServiceError(reply, result.error);
-      return reply.send({
-        data: result.data!.deliveries,
-        error: null,
-        meta: {
-          requestId: randomUUID(),
-          pagination: { nextCursor: result.data!.nextCursor, hasMore: result.data!.hasMore },
-        },
+      return v1Success(reply, result.data!.deliveries, 200, {
+        pagination: { nextCursor: result.data!.nextCursor, hasMore: result.data!.hasMore },
       });
     },
   );

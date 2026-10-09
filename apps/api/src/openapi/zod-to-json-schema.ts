@@ -38,8 +38,11 @@ function defaultOf(schema: z.ZodTypeAny): unknown {
 
 export function zodToJsonSchema(schema: z.ZodTypeAny): JsonSchema {
   const { inner } = baseOf(schema);
+  return zodToJsonSchemaWithDefault(inner, defaultOf(schema));
+}
+
+function zodToJsonSchemaWithDefault(inner: z.ZodTypeAny, fallbackDefault: unknown): JsonSchema {
   const def = inner._def as { typeName: string; [key: string]: unknown };
-  const fallbackDefault = defaultOf(schema);
   const withDefault = (out: JsonSchema): JsonSchema =>
     fallbackDefault === undefined ? out : { ...out, default: fallbackDefault };
 
@@ -86,8 +89,9 @@ export function zodToJsonSchema(schema: z.ZodTypeAny): JsonSchema {
       const properties: Record<string, JsonSchema> = {};
       const required: string[] = [];
       for (const [key, field] of Object.entries(shape)) {
-        properties[key] = zodToJsonSchema(field);
-        if (baseOf(field).required) required.push(key);
+        const base = baseOf(field);
+        properties[key] = zodToJsonSchemaWithDefault(base.inner, defaultOf(field));
+        if (base.required) required.push(key);
       }
       const out: JsonSchema = {
         type: 'object',

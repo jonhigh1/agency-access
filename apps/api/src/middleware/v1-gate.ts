@@ -1,10 +1,9 @@
 /**
- * v1 Gate (U2: read-aware tier gate + per-key rate limits, KTD8 / R5 / R18).
+ * v1 Gate: read-aware tier gate plus per-key rate limits.
  *
- * Covers the AE4 tier-denial path: every v1 call, reads included, passes
- * entitlement and per-key throttling. The tier check lives in the service
- * layer (quota.service checkV1TierEntitlement, keyed off the key's agency,
- * fail-closed, re-checked per request) and is never the GET-skipping
+ * Every v1 call, reads included, passes entitlement and per-key throttling.
+ * The tier check lives in the service layer keyed off the key's agency,
+ * fail-closed with a per-request re-check, and is never the GET-skipping
  * dashboard quota middleware.
  *
  * Rate-limit contract (published limits, standard headers, retry contract):
@@ -13,14 +12,14 @@
  *   shouldSkipGlobalLimiter(url) so v1 traffic never double-counts.
  * - Pre-check runs before validation; consume runs after validation
  *   (preCheckV1RateLimit / consumeV1RateLimit). The bundled
- *   v1RateLimitPreHandler does both for read-style routes; U5 wires the
+ *   v1RateLimitPreHandler does both for read-style routes; writes wire the
  *   split around idempotency claims on creates.
  * - Every gated response carries X-RateLimit-Limit (and Remaining once the
  *   budget is touched); 429s add Retry-After.
  * - Bad-key attempts throttle in a separate, stricter bucket keyed by
- *   IP + key prefix (brute-force oracle mitigation).
+ *   IP + key prefix.
  * - MAX_ACTIVE_IDEMPOTENCY_RECORDS_PER_KEY caps live idempotency records
- *   per key; enforced by the idempotency store in U4.
+ *   per key; enforced by the idempotency store.
  */
 
 import type { FastifyReply, FastifyRequest } from 'fastify';
@@ -33,7 +32,7 @@ import { v1Error } from '@/lib/v1-envelope.js';
 
 export { V1_ENTITLED_SUBSCRIPTION_STATUSES };
 
-/** Distinct tier-denial code (AE4: names the plan gate, not the scope). */
+/** Distinct tier-denial code: names the plan gate, not the scope. */
 export const V1_TIER_DENIED_CODE = 'TIER_ACCESS_DENIED';
 /** Fail-closed outage code: tier could not be verified, retry later. */
 export const V1_TIER_UNAVAILABLE_CODE = 'TIER_CHECK_UNAVAILABLE';
@@ -68,9 +67,37 @@ export function shouldSkipGlobalLimiter(url: string): boolean {
 const rateBuckets = new Map<string, number[]>();
 const authFailureBuckets = new Map<string, number[]>();
 
+/** Upper bound on tracked keys per bucket map; oversized maps get swept. */
+const MAX_BUCKET_KEYS = 10000;
+
 function prune(bucket: number[], now: number, windowMs: number): number[] {
   const cutoff = now - windowMs;
   return bucket.filter((ts) => ts > cutoff);
+}
+
+/** Keep only live entries; drop the key entirely when nothing remains. */
+function storePruned(store: Map<string, number[]>, key: string, pruned: number[]): void {
+  if (pruned.length === 0) {
+    store.delete(key);
+  } else {
+    store.set(key, pruned);
+  }
+}
+
+/** Drop expired entries across all keys; runs only when the map is oversized. */
+function sweepBuckets(store: Map<string, number[]>, windowMs: number, now: number): void {
+  for (const [key, bucket] of store) {
+    const pruned = prune(bucket, now, windowMs);
+    if (pruned.length === 0) {
+      store.delete(key);
+    } else if (pruned.length !== bucket.length) {
+      store.set(key, pruned);
+    }
+  }
+}
+
+function sweepIfOversized(store: Map<string, number[]>, windowMs: number, now: number): void {
+  if (store.size > MAX_BUCKET_KEYS) sweepBuckets(store, windowMs, now);
 }
 
 export interface V1RateCheck {
@@ -86,6 +113,7 @@ function checkAndConsume(
   windowMs: number,
   now: number = Date.now()
 ): V1RateCheck {
+  sweepIfOversized(store, windowMs, now);
   const pruned = prune(store.get(key) ?? [], now, windowMs);
   if (pruned.length >= max) {
     const oldest = pruned[0];
@@ -108,8 +136,9 @@ function peek(
   windowMs: number,
   now: number = Date.now()
 ): V1RateCheck {
+  sweepIfOversized(store, windowMs, now);
   const pruned = prune(store.get(key) ?? [], now, windowMs);
-  store.set(key, pruned);
+  storePruned(store, key, pruned);
   if (pruned.length >= max) {
     const oldest = pruned[0];
     return {
@@ -126,7 +155,7 @@ export function preCheckV1RateLimit(keyId: string, now: number = Date.now()): V1
   return peek(rateBuckets, keyId, V1_RATE_LIMIT_MAX_REQUESTS, V1_RATE_LIMIT_WINDOW_SECONDS * 1000, now);
 }
 
-/** Consume after validation passes. */
+/** Consume after validation passes. Also serves read-style routes directly. */
 export function consumeV1RateLimit(keyId: string, now: number = Date.now()): V1RateCheck {
   return checkAndConsume(
     rateBuckets,
@@ -135,14 +164,6 @@ export function consumeV1RateLimit(keyId: string, now: number = Date.now()): V1R
     V1_RATE_LIMIT_WINDOW_SECONDS * 1000,
     now
   );
-}
-
-/** Combined pre-check + consume for read-style routes. */
-export function checkAndConsumeV1RateLimit(
-  keyId: string,
-  now: number = Date.now()
-): V1RateCheck {
-  return consumeV1RateLimit(keyId, now);
 }
 
 /** Record a failed key verification for the brute-force bucket. */
@@ -195,16 +216,16 @@ export function resetV1AuthFailures(): void {
 }
 
 function principalOf(request: FastifyRequest): ApiKeyPrincipal | undefined {
-  return (request as unknown as { apiKey?: ApiKeyPrincipal }).apiKey;
+  return request.apiKey;
 }
 
-function rateHeaders(reply: FastifyReply, remaining: number): void {
+export function rateHeaders(reply: FastifyReply, remaining: number): void {
   reply.header('X-RateLimit-Limit', String(V1_RATE_LIMIT_MAX_REQUESTS));
   reply.header('X-RateLimit-Remaining', String(remaining));
 }
 
 /**
- * Service-layer tier gate off the key's agency (KTD8). Reads included —
+ * Service-layer tier gate off the key's agency. Reads included —
  * never the GET-skipping dashboard middleware. Per-request re-check; no
  * cache in front. Fail-closed: store/provider outage → 503.
  */
@@ -230,13 +251,13 @@ export function v1TierGate() {
 
 /**
  * Per-key rate pre-check + consume with standard headers on every gated
- * response and Retry-After on 429 (R18).
+ * response and Retry-After on 429.
  */
 export function v1RateLimitPreHandler() {
   return async (request: FastifyRequest, reply: FastifyReply) => {
     const principal = principalOf(request);
     if (!principal) return;
-    const check = checkAndConsumeV1RateLimit(principal.keyId);
+    const check = consumeV1RateLimit(principal.keyId);
     rateHeaders(reply, check.remaining);
     if (!check.allowed) {
       reply.header('Retry-After', String(check.retryAfterSeconds));

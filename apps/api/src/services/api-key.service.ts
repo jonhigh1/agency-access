@@ -14,6 +14,7 @@ import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { auditService } from '@/services/audit.service';
 import type { ServiceResult } from '@/lib/service-result';
+import type { V1ErrorCode } from '@/lib/v1-errors';
 
 export const API_KEY_SCOPES = [
   'clients:read',
@@ -28,14 +29,17 @@ export const API_KEY_SCOPES = [
 
 export type ApiKeyScope = (typeof API_KEY_SCOPES)[number];
 
-/** Adjustable default cap; raisable without contract change (KTD8). */
+/** Adjustable default cap; raisable without contract change. */
 export const MAX_API_KEYS_PER_AGENCY = 10;
-/** Max simultaneously active keys sharing one rotation family (KTD3). */
+/** Max simultaneously active keys sharing one rotation family. */
 export const MAX_ACTIVE_KEYS_PER_FAMILY = 2;
-/** Dual-active overlap window for rotation (KTD3). */
+/** Dual-active overlap window for rotation. */
 export const ROTATION_OVERLAP_MS = 24 * 60 * 60 * 1000;
 
-/** Single external code for every key verification failure (KTD3). */
+/** Minimum age of a stored lastUsedAt before it is rewritten. */
+const LAST_USED_AT_WRITE_MS = 5 * 60 * 1000;
+
+/** Single external code for every key verification failure. */
 export const INVALID_API_KEY_CODE = 'INVALID_API_KEY';
 
 export const KEY_PREFIX = 'ah_live_';
@@ -394,7 +398,21 @@ export async function verifyApiKey(
   }
 
   const prefix = presented.slice(0, 12);
-  const candidates = await prisma.apiKey.findMany({ where: { prefix } });
+  const candidates = await prisma.apiKey.findMany({
+    where: { prefix },
+    select: {
+      id: true,
+      agencyId: true,
+      familyId: true,
+      prefix: true,
+      scopes: true,
+      keyHash: true,
+      pepperVersion: true,
+      revokedAt: true,
+      expiresAt: true,
+      lastUsedAt: true,
+    },
+  });
   let matched: any = null;
   for (const candidate of candidates) {
     const pepper = getPepper(candidate.pepperVersion);
@@ -417,13 +435,18 @@ export async function verifyApiKey(
     return { principal: null, reason: 'expired' };
   }
 
-  // Lookup only: agency auto-creation is bypassed on the key path (KTD2).
+  // Lookup only: agency auto-creation is bypassed on the key path.
   const agency = await prisma.agency.findUnique({ where: { id: matched.agencyId } });
   if (!agency) return { principal: null, reason: 'unknown-agency' };
 
-  void Promise.resolve(
-    prisma.apiKey.update({ where: { id: matched.id }, data: { lastUsedAt: new Date() } })
-  ).catch(() => undefined);
+  // lastUsedAt is advisory: rewrite it only when unset or stale so steady
+  // traffic does not write on every request.
+  const lastUsedMs = matched.lastUsedAt ? new Date(matched.lastUsedAt).getTime() : 0;
+  if (!matched.lastUsedAt || Date.now() - lastUsedMs >= LAST_USED_AT_WRITE_MS) {
+    void Promise.resolve(
+      prisma.apiKey.update({ where: { id: matched.id }, data: { lastUsedAt: new Date() } })
+    ).catch(() => undefined);
+  }
 
   return {
     principal: {
@@ -438,14 +461,14 @@ export async function verifyApiKey(
 }
 
 /**
- * Service-entry scope re-check (KTD2): every service behind a scoped v1 route
+ * Service-entry scope re-check: every service behind a scoped v1 route
  * calls this with the key principal before doing work. Returns null when the
  * scope is present, otherwise the stable capability error.
  */
 export function assertKeyScope(
   principal: Pick<ApiKeyPrincipal, 'scopes'> | null | undefined,
   required: ApiKeyScope | string
-): { code: string; message: string } | null {
+): { code: V1ErrorCode; message: string } | null {
   const scopes = principal?.scopes ?? [];
   if (scopes.includes(required as ApiKeyScope)) return null;
   return {

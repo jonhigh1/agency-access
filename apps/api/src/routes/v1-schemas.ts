@@ -1,5 +1,5 @@
 /**
- * Single Shared v1 Zod Schema Module (U7, KTD10).
+ * Single Shared v1 Zod Schema Module.
  *
  * The canonical request/response validation shapes for the whole v1
  * surface. Route handlers import these for validation; the OpenAPI
@@ -8,7 +8,7 @@
  * contract tests.
  *
  * Every write schema is strict: unknown fields fail instead of dropping
- * silently (KTD9, R17, AE5).
+ * silently.
  */
 
 import { z } from 'zod';
@@ -38,8 +38,8 @@ export const v1RequestListQuerySchema = z
   })
   .strict();
 
-// Strict v1 write schemas (KTD9). externalReference never appears: it stays
-// internal-only while externalClientId is the public join key (KTD4).
+// Strict v1 write schemas. externalReference never appears: it stays
+// internal-only while externalClientId is the public join key.
 export const v1ClientCreateSchema = z
   .object({
     name: z.string().min(1),
@@ -72,7 +72,7 @@ export const v1RequestCreateSchema = z
 
 export const v1ExternalRequestsQuerySchema = z
   .object({
-    limit: z.coerce.number().int().min(1).max(100).default(50),
+    limit: v1LimitSchema,
     cursor: z.string().optional(),
   })
   .strict();
@@ -111,7 +111,7 @@ export const v1WebhookRotateSchema = z
 
 export const v1WebhookDeliveriesQuerySchema = z
   .object({
-    limit: z.coerce.number().int().min(1).max(MAX_LIST_LIMIT).default(DEFAULT_LIST_LIMIT),
+    limit: v1LimitSchema,
     cursor: z.string().optional(),
   })
   .strict();

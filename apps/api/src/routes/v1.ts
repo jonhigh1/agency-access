@@ -1,5 +1,5 @@
 /**
- * Public API v1 plugin (KTD1)
+ * Public API v1 plugin.
  *
  * One encapsulated module owning the full v1 gate chain. It registers only
  * the API-key preHandler — never Clerk `authenticate()` — and carries its
@@ -11,11 +11,11 @@ import type { FastifyInstance } from 'fastify';
 import { apiKeyPreHandler } from '@/middleware/api-key-auth.js';
 import { prisma } from '@/lib/prisma';
 import { v1Error, v1Success } from '@/lib/v1-envelope.js';
+import type { V1ErrorCode } from '@/lib/v1-errors.js';
 import { v1ReadsRoutes } from './v1-reads.js';
 import { v1WebhooksRoutes } from './v1-webhooks.js';
 import { v1WritesRoutes } from './v1-writes.js';
 import { MAX_API_KEYS_PER_AGENCY } from '@/services/api-key.service.js';
-import type { ApiKeyPrincipal } from '@/services/api-key.service';
 
 export async function v1Routes(fastify: FastifyInstance) {
   fastify.setErrorHandler((error: unknown, _request, reply) => {
@@ -24,37 +24,37 @@ export async function v1Routes(fastify: FastifyInstance) {
     return v1Error(
       reply,
       statusCode,
-      err?.code || 'INTERNAL_ERROR',
+      (err?.code || 'INTERNAL_ERROR') as V1ErrorCode,
       err?.message || 'An unexpected error occurred',
     );
   });
 
   fastify.addHook('onRequest', apiKeyPreHandler());
 
-  // U3 read slice: catalog, cursor lists, usage. Each route carries the
+  // Read slice: catalog, cursor lists, usage. Each route carries the
   // tier gate + per-key rate limit + scope gate as its own preHandler chain.
   await fastify.register(v1ReadsRoutes);
 
-  // U5 idempotent creates: clients, requests, external-ID lookups. Each
+  // Idempotent creates: clients, requests, external-ID lookups. Each
   // route carries the tier gate + per-key rate limit + scope gate as its
   // own preHandler chain.
   await fastify.register(v1WritesRoutes);
 
-  // U6 webhooks: multi-endpoint CRUD, rotation, deliveries log. Same gate
+  // Webhooks: multi-endpoint CRUD, rotation, deliveries log. Same gate
   // chain as the read and write slices.
   await fastify.register(v1WebhooksRoutes);
 
   /**
-   * GET /api/v1/self-check (R4)
+   * GET /api/v1/self-check
    * The only scopeless v1 endpoint: returns the key's agency and scopes
    * plus tier and limit hints. No plan details beyond entitlement.
    */
   fastify.get('/self-check', async (request, reply) => {
-    const principal = (request as any).apiKey as ApiKeyPrincipal;
+    const principal = request.apiKey!;
     try {
       const [agency, subscription, activeKeys] = await Promise.all([
-        prisma.agency.findUnique({ where: { id: principal.agencyId } }),
-        prisma.subscription.findUnique({ where: { agencyId: principal.agencyId } }),
+        prisma.agency.findUnique({ where: { id: principal.agencyId }, select: { id: true, name: true } }),
+        prisma.subscription.findUnique({ where: { agencyId: principal.agencyId }, select: { tier: true } }),
         prisma.apiKey.count({
           where: { agencyId: principal.agencyId, revokedAt: null },
         }),

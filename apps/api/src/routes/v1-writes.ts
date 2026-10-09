@@ -1,50 +1,57 @@
 /**
- * v1 Write Routes (U5: R6, R7, R8, R11, R17 — idempotent creates, strict schemas).
+ * v1 Write Routes: idempotent creates with strict schemas.
  *
- * Registered inside the v1 plugin context, so the key preHandler from
- * v1.ts already ran. Each create carries tier + rate pre-check + scope as
- * preHandlers, then the handler follows the KTD5 order strictly:
+ * Registered inside the v1 plugin context, so the key preHandler already
+ * ran. Each create carries tier + rate pre-check + scope as preHandlers,
+ * then the handler follows this order strictly:
  *
  *   require header -> strict-validate -> rate consume -> fingerprint ->
  *   atomic claim -> (business write + stored result in one transaction)
  *
- * Validation failures never reach the claim, so they never consume the key
- * (KTD5). Replay re-checks scope and tier because those preHandlers run
- * before the claim on every call, including retries (KTD5). Records isolate
- * by agency plus key identity: one key never reads another key's stored
- * result. Usage metrics derive via DB counts with no increment on this path,
- * so a replayed create consumes no allowance twice (KTD5, R7).
+ * Validation failures never reach the claim, so they never consume the key.
+ * Replay re-checks scope and tier because those preHandlers run before the
+ * claim on every call, including retries. Records isolate by agency plus key
+ * identity: one key never reads another key's stored result. Usage metrics
+ * derive via DB counts with no increment on this path, so a replayed create
+ * consumes no allowance twice.
  *
  * Every write schema is strict: unknown fields fail with VALIDATION_ERROR
- * naming the field, never silently dropped (KTD9, R17, AE5).
+ * naming the field, never silently dropped. The legacy per-request
+ * `externalReference` never appears: it stays internal-only while
+ * `externalClientId` is the public join key.
  */
 
-import { randomUUID } from 'crypto';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
 import type { z } from 'zod';
+import type { Prisma } from '@prisma/client';
 import { prisma } from '@/lib/prisma';
 import { requireKeyScope } from '@/middleware/api-key-auth.js';
-import { v1Error } from '@/lib/v1-envelope.js';
+import { v1Error, v1Success } from '@/lib/v1-envelope.js';
+import { IDEMPOTENCY_KEY_REQUIRED } from '@/lib/v1-errors.js';
 import {
   V1_RATE_LIMITED_CODE,
-  V1_RATE_LIMIT_MAX_REQUESTS,
   consumeV1RateLimit,
   preCheckV1RateLimit,
+  rateHeaders,
   v1TierGate,
 } from '@/middleware/v1-gate.js';
-import type { ApiKeyPrincipal } from '@/services/api-key.service';
 import {
-  IDEMPOTENCY_CONFLICT_CODE,
-  IDEMPOTENCY_EXPIRED_CODE,
-  IDEMPOTENCY_IN_PROGRESS_CODE,
-  IdempotencyConflictError,
-  IdempotencyExpiredError,
-  IdempotencyInProgressError,
+  decodeKeysetCursor,
+} from '@/services/catalog.service.js';
+import {
   fingerprintRequest,
   idempotencyService,
   isPrismaUniqueViolation,
 } from '@/services/idempotency.service.js';
 import { ClientError } from '@/services/client.service.js';
+import type { V1ErrorCode } from '@/lib/v1-errors.js';
+import {
+  decodeCursorOr400,
+  extractIdempotencyKey,
+  principalOf,
+  sendIdempotencyClaimError,
+  validationMessage,
+} from '@/lib/v1-route-helpers.js';
 import {
   v1ClientCreateSchema,
   v1ExternalRequestsQuerySchema,
@@ -54,42 +61,17 @@ import {
   generateUniqueToken,
   listRequestsForExternalClient,
 } from '@/services/access-request.service.js';
-import { decodeKeysetCursor, CursorError } from '@/services/catalog.service.js';
 
-function principalOf(request: FastifyRequest): ApiKeyPrincipal {
-  return (request as unknown as { apiKey: ApiKeyPrincipal }).apiKey;
-}
-
-/** Missing-or-empty idempotency header code (R7: creates require the key). */
-export const IDEMPOTENCY_KEY_REQUIRED_CODE = 'IDEMPOTENCY_KEY_REQUIRED';
-
-function sendError(reply: FastifyReply, statusCode: number, code: string, message: string) {
+function sendError(reply: FastifyReply, statusCode: number, code: V1ErrorCode, message: string) {
   return v1Error(reply, statusCode, code, message);
 }
 
 function sendSuccess(reply: FastifyReply, statusCode: number, data: unknown, replayed: boolean) {
-  return reply.code(statusCode).send({
-    data,
-    error: null,
-    meta: { requestId: randomUUID(), replayed },
-  });
-}
-
-/** Name every unrecognized key; zod's default message drops them (KTD9). */
-function validationMessage(error: z.ZodError): string {
-  const unknownKeys = error.issues
-    .filter((issue) => issue.code === 'unrecognized_keys')
-    .flatMap((issue) =>
-      issue.code === 'unrecognized_keys' ? (issue.keys as string[]) : [],
-    );
-  if (unknownKeys.length > 0) {
-    return `Unknown field${unknownKeys.length > 1 ? 's' : ''}: ${unknownKeys.join(', ')}`;
-  }
-  return error.issues[0]?.message ?? 'Invalid request body';
+  return v1Success(reply, data, statusCode, { replayed });
 }
 
 /**
- * Per-key rate pre-check before validation: peek without consuming (KTD8).
+ * Per-key rate pre-check before validation: peek without consuming.
  * Consume happens in the handler after strict validation passes.
  */
 function v1WriteRatePreCheck() {
@@ -97,18 +79,13 @@ function v1WriteRatePreCheck() {
     const principal = principalOf(request);
     if (!principal) return;
     const check = preCheckV1RateLimit(principal.keyId);
-    reply.header('X-RateLimit-Limit', String(V1_RATE_LIMIT_MAX_REQUESTS));
-    reply.header('X-RateLimit-Remaining', String(check.remaining));
+    rateHeaders(reply, check.remaining);
     if (!check.allowed) {
       reply.header('Retry-After', String(check.retryAfterSeconds));
       return sendError(reply, 429, V1_RATE_LIMITED_CODE, 'Rate limit exceeded. Please try again later.');
     }
   };
 }
-
-// Strict v1 write schemas live in the single shared module (KTD10);
-// externalReference never appears: it stays internal-only while
-// externalClientId is the public join key (KTD4).
 
 type Tx = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
 
@@ -118,12 +95,11 @@ function isExternalIdTarget(error: unknown): boolean {
   return Array.isArray(target) && target.includes('externalClientId');
 }
 
+type V1ClientCreateBody = z.infer<typeof v1ClientCreateSchema>;
+type V1RequestCreateBody = z.infer<typeof v1RequestCreateSchema>;
+
 /** Client write inside the idempotency transaction: dup email + dup external ID map distinctly. */
-async function createClientInTx(tx: Tx, agencyId: string, body: z.infer<typeof v1ClientCreateSchema>) {
-  const duplicateEmail = await tx.client.findFirst({ where: { agencyId, email: body.email } });
-  if (duplicateEmail) {
-    throw new Error(ClientError.EMAIL_EXISTS);
-  }
+async function createClientInTx(tx: Tx, agencyId: string, body: V1ClientCreateBody) {
   try {
     return await tx.client.create({
       data: {
@@ -144,7 +120,7 @@ async function createClientInTx(tx: Tx, agencyId: string, body: z.infer<typeof v
 }
 
 /** Request write inside the idempotency transaction; client links by id or external ID. */
-async function createRequestInTx(tx: Tx, agencyId: string, body: z.infer<typeof v1RequestCreateSchema>) {
+async function createRequestInTx(tx: Tx, agencyId: string, body: V1RequestCreateBody) {
   let clientId: string | undefined;
   if (body.clientExternalId !== undefined) {
     const client = await tx.client.findFirst({
@@ -168,7 +144,7 @@ async function createRequestInTx(tx: Tx, agencyId: string, body: z.infer<typeof 
       clientName: body.clientName,
       clientEmail: body.clientEmail,
       uniqueToken: generateUniqueToken(),
-      platforms: body.platforms as never,
+      platforms: body.platforms as Prisma.InputJsonValue,
       status: 'pending',
       expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000),
     },
@@ -195,20 +171,19 @@ function mapWriteError(reply: FastifyReply, error: unknown) {
  * result commit in one Postgres transaction; a replay returns the stored
  * result with its original status code without writing anything.
  */
-async function handleIdempotentCreate(
+async function handleIdempotentCreate<S extends typeof v1ClientCreateSchema | typeof v1RequestCreateSchema>(
   request: FastifyRequest,
   reply: FastifyReply,
   opts: {
     endpoint: string;
-    schema: typeof v1ClientCreateSchema | typeof v1RequestCreateSchema;
-    write: (tx: Tx, agencyId: string, body: never) => Promise<unknown>;
+    schema: S;
+    write: (tx: Tx, agencyId: string, body: z.infer<S>) => Promise<unknown>;
   },
 ) {
   const principal = principalOf(request);
-  const rawKey = request.headers['idempotency-key'];
-  const key = Array.isArray(rawKey) ? rawKey[0] : rawKey;
-  if (!key || key.trim().length === 0) {
-    return sendError(reply, 400, IDEMPOTENCY_KEY_REQUIRED_CODE, 'The Idempotency-Key header is required.');
+  const key = extractIdempotencyKey(request.headers);
+  if (!key) {
+    return sendError(reply, 400, IDEMPOTENCY_KEY_REQUIRED, 'The Idempotency-Key header is required.');
   }
 
   const parsed = opts.schema.safeParse(request.body);
@@ -217,8 +192,7 @@ async function handleIdempotentCreate(
   }
 
   const consumed = consumeV1RateLimit(principal.keyId);
-  reply.header('X-RateLimit-Limit', String(V1_RATE_LIMIT_MAX_REQUESTS));
-  reply.header('X-RateLimit-Remaining', String(consumed.remaining));
+  rateHeaders(reply, consumed.remaining);
   if (!consumed.allowed) {
     reply.header('Retry-After', String(consumed.retryAfterSeconds));
     return sendError(reply, 429, V1_RATE_LIMITED_CODE, 'Rate limit exceeded. Please try again later.');
@@ -235,16 +209,7 @@ async function handleIdempotentCreate(
       fingerprint,
     });
   } catch (error) {
-    if (error instanceof IdempotencyInProgressError) {
-      return sendError(reply, 409, IDEMPOTENCY_IN_PROGRESS_CODE, 'The first request with this idempotency key is still running.');
-    }
-    if (error instanceof IdempotencyExpiredError) {
-      return sendError(reply, 410, IDEMPOTENCY_EXPIRED_CODE, 'Idempotency key has expired; retry with a fresh key.');
-    }
-    if (error instanceof IdempotencyConflictError) {
-      return sendError(reply, 409, IDEMPOTENCY_CONFLICT_CODE, 'Idempotency key is already in use with a different request.');
-    }
-    throw error;
+    return sendIdempotencyClaimError(reply, error);
   }
 
   if (claim.status === 'replay') {
@@ -254,13 +219,13 @@ async function handleIdempotentCreate(
   const recordId = claim.record.id;
   try {
     const row = await prisma.$transaction(async (tx) => {
-      const created = await opts.write(tx, principal.agencyId, parsed.data as never);
+      const created = await opts.write(tx, principal.agencyId, parsed.data);
       const stored = await tx.idempotencyRecord.updateMany({
         where: { id: recordId, state: 'in_progress' },
         data: {
           state: 'completed',
           statusCode: 201,
-          result: JSON.parse(JSON.stringify(created)) as never,
+          result: JSON.parse(JSON.stringify(created)),
         },
       });
       if (stored.count !== 1) throw new Error('IDEMPOTENCY_STATE');
@@ -269,7 +234,7 @@ async function handleIdempotentCreate(
     return sendSuccess(reply, 201, row, false);
   } catch (error) {
     // Terminally fail the claim so the poisoned key is never replayed;
-    // the caller retries the business write with a fresh key (KTD5).
+    // the caller retries the business write with a fresh key.
     try {
       await idempotencyService.fail({ recordId });
     } catch {
@@ -288,9 +253,9 @@ export async function v1WritesRoutes(fastify: FastifyInstance) {
   const ratePre = v1WriteRatePreCheck();
 
   /**
-   * POST /api/v1/clients (R6, R7, R8, R17)
+   * POST /api/v1/clients
    * Retry-safe client creation with an immutable external ID set at
-   * creation (KTD4). Duplicates map to EXTERNAL_ID_CONFLICT via the
+   * creation. Duplicates map to EXTERNAL_ID_CONFLICT via the
    * DB-violation guard.
    */
   fastify.post(
@@ -305,9 +270,9 @@ export async function v1WritesRoutes(fastify: FastifyInstance) {
   );
 
   /**
-   * POST /api/v1/requests (R7, R8, R17)
+   * POST /api/v1/requests
    * Retry-safe request creation; links to a client by id or by the
-   * immutable external ID (KTD4).
+   * immutable external ID.
    */
   fastify.post(
     '/requests',
@@ -321,8 +286,8 @@ export async function v1WritesRoutes(fastify: FastifyInstance) {
   );
 
   /**
-   * GET /api/v1/clients/external/:externalClientId (R6, R11)
-   * Direct row resolution by the immutable external ID (AE2).
+   * GET /api/v1/clients/external/:externalClientId
+   * Direct row resolution by the immutable external ID.
    */
   fastify.get(
     '/clients/external/:externalClientId',
@@ -336,13 +301,13 @@ export async function v1WritesRoutes(fastify: FastifyInstance) {
       if (!client) {
         return sendError(reply, 404, 'CLIENT_NOT_FOUND', 'Client not found.');
       }
-      return reply.send({ data: client, error: null, meta: { requestId: randomUUID() } });
+      return v1Success(reply, client);
     },
   );
 
   /**
-   * GET /api/v1/clients/external/:externalClientId/requests (R6, R11)
-   * Exactly this client's requests under an opaque keyset cursor (AE2).
+   * GET /api/v1/clients/external/:externalClientId/requests
+   * Exactly this client's requests under an opaque keyset cursor.
    */
   fastify.get(
     '/clients/external/:externalClientId/requests',
@@ -354,13 +319,8 @@ export async function v1WritesRoutes(fastify: FastifyInstance) {
       if (!parsed.success) {
         return sendError(reply, 400, 'VALIDATION_ERROR', validationMessage(parsed.error));
       }
-      let cursor;
-      try {
-        cursor = decodeKeysetCursor(parsed.data.cursor);
-      } catch (error) {
-        if (error instanceof CursorError) return sendError(reply, 400, 'VALIDATION_ERROR', error.message);
-        throw error;
-      }
+      const cursor = decodeCursorOr400(reply, decodeKeysetCursor, parsed.data.cursor);
+      if (cursor === undefined) return;
       const result = await listRequestsForExternalClient({
         agencyId: principal.agencyId,
         externalClientId,
@@ -370,13 +330,8 @@ export async function v1WritesRoutes(fastify: FastifyInstance) {
       if (result.error || !result.data) {
         return sendError(reply, 404, 'CLIENT_NOT_FOUND', 'Client not found.');
       }
-      return reply.send({
-        data: result.data.rows,
-        error: null,
-        meta: {
-          requestId: randomUUID(),
-          pagination: { nextCursor: result.data.nextCursor, hasMore: result.data.hasMore },
-        },
+      return v1Success(reply, result.data.rows, 200, {
+        pagination: { nextCursor: result.data.nextCursor, hasMore: result.data.hasMore },
       });
     },
   );

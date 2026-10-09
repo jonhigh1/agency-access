@@ -12,6 +12,7 @@
 
 import { randomUUID } from 'crypto';
 import type { FastifyReply } from 'fastify';
+import type { V1ErrorCode } from './v1-errors.js';
 
 export interface V1Meta {
   requestId: string;
@@ -46,7 +47,7 @@ export function v1Success(
 export function v1Error(
   reply: FastifyReply,
   statusCode: number,
-  code: string,
+  code: V1ErrorCode,
   message: string,
   details?: unknown,
   requestId: string = newRequestId(),

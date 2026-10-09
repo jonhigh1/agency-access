@@ -22,6 +22,7 @@ import {
   type ClientDetailPlatformGroupStatus,
 } from '@agency-platform/shared';
 import type { Prisma } from '@prisma/client';
+import { EXTERNAL_ID_CONFLICT_CODE } from '@/services/idempotency.service.js';
 
 type Client = Prisma.ClientGetPayload<{}>;
 
@@ -33,9 +34,9 @@ export const ClientError = {
   EMAIL_EXISTS: 'CLIENT_EMAIL_EXISTS',
   INVALID_EMAIL: 'CLIENT_INVALID_EMAIL',
   NOT_FOUND: 'CLIENT_NOT_FOUND',
-  /** Duplicate Client.externalClientId within one agency (KTD4; R6). */
-  EXTERNAL_ID_CONFLICT: 'EXTERNAL_ID_CONFLICT',
-  /** Client.externalClientId is set at creation and immutable after (KTD4). */
+  /** Duplicate Client.externalClientId within one agency; settable at creation, immutable after. */
+  EXTERNAL_ID_CONFLICT: EXTERNAL_ID_CONFLICT_CODE,
+  /** Client.externalClientId is set at creation and immutable after. */
   EXTERNAL_ID_IMMUTABLE: 'EXTERNAL_ID_IMMUTABLE',
 } as const;
 
