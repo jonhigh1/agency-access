@@ -8,6 +8,25 @@ Record significant technical choices so future sessions (and humans) understand 
 
 ---
 
+### DEC-015: The PLATFORMS registry is the one sanctioned place to hand-type platform facts
+**Date:** 2026-10-08
+
+**Context:** The platform-capability partition (OAuth vs manual vs api_key, client gate, display names, legacy payload ids) was hand-typed in 6+ places across three tiers. Drift shipped a production bug (8e17c27e: the client OAuth gate accepted manual-invite platforms). An architecture review (2026-10-08) selected the partition as the top deepening candidate; a two-round design review settled the design.
+
+**Decision:**
+- One registry module, `packages/shared/src/platforms/registry.ts`: a keyed record over a discriminated union `kind: 'group' | 'product' | 'legacy'`. 28 entries — the 21 `PlatformSchema` members (capabilities verbatim from `PLATFORM_TOKEN_CAPABILITIES`), 4 Google "rider" products (`google_tag_manager`, `google_merchant_center`, `google_search_console`, `google_business_profile`: current, selectable hierarchy products whose grants ride the google group connection, encoded by a required-literal `authorizesViaParent: true` with capabilities compile-forbidden), and 3 legacy-only payload ids (`whatsapp_business`, `youtube_studio`, `display_video_360`), carrying id/kind/displayName/parent only.
+- The registry is NOT "derivation kills hand-typing." The client gate, the identity-verification 6, the asset-selecting 13, and the picker "other" 14 are curated facts with no generating rule. The registry concentrates the hand-typing; the walker + goldens guard it.
+- The client OAuth gate derives from a per-entry `clientAuthorizable` boolean reproducing today's exact ten members (`linkedin_ads`, `linkedin_pages`, `tiktok_ads`, `snapchat_ads` are connectionMethod `oauth` but not client-authorizable — the fact 8e17c27e enforces).
+- `LEGACY_PAYLOAD_IDS` is one named seven-member set (payload history, not a platform property — a per-entry flag would state a falsehood about live products). A golden asserts it is a subset of all registry ids.
+- `connectionMethod` documents the client-facing authorization flow; the optional `oauth` config block documents agency-side transport. Independent facts: shopify is client-manual and agency-OAuth (live at `oauth.routes.ts:99, 207`) in one entry.
+- Per-tier goldens pin every projection as frozen literals with provenance headers; changes require the hand-run regenerator with `--acknowledge=<decision-ref>` (`scripts/generate-platform-registry-golden.ts`). Never snapshots.
+- Delivery is six stacked PRs: Phase 0 dedupe (identity 6, asset-selecting 13) → Phase 1 registry + goldens → Phase 2a gate flip → Phase 2b registry.config absorption + factory flip (two commits) → Phase 2c web flip → Phase 3 source walker with a pre-seeded ratchet allowlist (connector layer included pending review card 5). Phase 0+1 are additive; no consumer flips until Phase 2.
+
+**Consequences:**
+- Positive: adding a platform becomes a one-file registry edit with compiler-forced completeness; drift fails CI instead of production; both progress vocabularies and two connector registries get a common substrate for later deepening (review cards 2 and 5).
+- Negative: the registry initially duplicates `PLATFORM_TOKEN_CAPABILITIES` values (golden-pinned; Phase 2 flips ownership); shared's pre-existing global coverage-threshold breach on branches/functions (58.22%/71.87% on main) remains open — Phase 1 improves it (59.25%/76.31%) and the registry module is 100%.
+- Parked product questions (GLOSSARY.md): PQ-other-14 (why the picker "other" list holds 14 and omits three ads products) and PQ-selector-4 (email quartet semantics). Both are pinned as-is by goldens; a linked decision must resolve each.
+
 ### DEC-014: Meta declines ride a parallel payload; completion notifications moved to the lifecycle transition
 **Date:** 2026-10-03
 

@@ -26,8 +26,8 @@ import { cn } from '@/lib/utils';
 import { PlatformIcon } from '@/components/ui/platform-icon';
 import {
   Platform,
+  PLATFORM_CATEGORIES,
   PLATFORM_NAMES,
-  RECOMMENDED_CONNECTION_PLATFORMS,
   SUPPORTED_CONNECTION_PLATFORMS,
 } from '@agency-platform/shared';
 
@@ -78,7 +78,7 @@ const PRIMARY_PLATFORM_GROUPS: PlatformGroupConfig[] = [
 const SECONDARY_PLATFORM_GROUP: PlatformGroupConfig = {
   name: 'Other Platforms',
   platforms: SUPPORTED_CONNECTION_PLATFORMS.filter(
-    (platform: Platform) => !RECOMMENDED_CONNECTION_PLATFORMS.includes(platform as any)
+    (platform: Platform) => !PLATFORM_CATEGORIES.recommended.includes(platform as any)
   ) as Platform[],
   color: 'bg-paper hover:bg-card border-black/20',
   selectedColor: 'bg-coral/5 border-coral',

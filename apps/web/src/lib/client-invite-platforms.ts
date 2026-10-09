@@ -1,59 +1,44 @@
-import { getPlatformTokenCapability, type Platform } from '@agency-platform/shared';
+import { manualConfirmationPlatforms, type Platform } from '@agency-platform/shared';
 
 type ClientInviteFlow = 'oauth' | 'manual';
 
 /**
- * Platforms whose agency-side "connect" action opens the manual-invite modal
- * (no standard OAuth). Single source of truth for the connections page,
- * onboarding platform picker, and platform cards. Includes zapier — the
- * onboarding copy previously omitted it (drift, fixed per refactor plan U11).
+ * Platforms whose client-facing flow is NOT OAuth: manual invitation
+ * (kit, mailchimp, pinterest, klaviyo, zapier, shopify) and the api-key
+ * email invite (beehiiv). Derived from the shared registry (DEC-015 Phase
+ * 2c). Single source of truth for the connections page, onboarding platform
+ * picker, and platform cards.
  */
-export const MANUAL_INVITE_PLATFORMS: readonly string[] = [
-  'kit',
-  'mailchimp',
-  'beehiiv',
-  'klaviyo',
-  'pinterest',
-  'shopify',
-  'zapier',
-];
+export const MANUAL_INVITE_PLATFORMS: readonly string[] = manualConfirmationPlatforms;
 
 export function isManualInvitePlatform(platform: string): boolean {
   return MANUAL_INVITE_PLATFORMS.includes(platform);
 }
+
+/**
+ * The four manual platforms whose client invite is an email (beehiiv's
+ * api-key invite included). Curated presentation subset — deliberately NOT
+ * derived from MANUAL_INVITE_PLATFORMS, which would silently add pinterest,
+ * shopify, and zapier. Semantics parked as PQ-selector-4 (GLOSSARY.md).
+ */
+export const EMAIL_INVITE_PLATFORMS = ['beehiiv', 'kit', 'klaviyo', 'mailchimp'] as const;
 
 interface ClientInvitePlatformCapability {
   flow: ClientInviteFlow;
   manualRoute: string | null;
 }
 
-const CLIENT_INVITE_MANUAL_ROUTE_SEGMENTS: Partial<Record<Platform, string>> = {
-  beehiiv: 'beehiiv/manual',
-  kit: 'kit/manual',
-  mailchimp: 'mailchimp/manual',
-  klaviyo: 'klaviyo/manual',
-  pinterest: 'pinterest/manual',
-  shopify: 'shopify/manual',
-  zapier: 'zapier/manual',
-};
-
-const CLIENT_INVITE_MANUAL_PLATFORMS = new Set<Platform>([
-  'beehiiv',
-  'kit',
-  'mailchimp',
-  'klaviyo',
-  'pinterest',
-  'shopify',
-  'zapier',
-]);
+// Mechanical projection: one manual-invite route per manual platform. The
+// physical routes live at app/invite/[token]/<platform>/manual/page.tsx.
+const CLIENT_INVITE_MANUAL_ROUTE_SEGMENTS: Partial<Record<Platform, string>> = Object.fromEntries(
+  manualConfirmationPlatforms.map((platform) => [platform, `${platform}/manual`] as const)
+);
 
 export function getClientInvitePlatformCapability(platform: Platform): ClientInvitePlatformCapability {
-  const sharedCapability = getPlatformTokenCapability(platform);
+  // The derived list includes beehiiv (api_key): its client-facing flow is a
+  // manual-style email invite even though its agency-side auth is an API key.
   const manualRoute = CLIENT_INVITE_MANUAL_ROUTE_SEGMENTS[platform] || null;
-  const flow: ClientInviteFlow =
-    CLIENT_INVITE_MANUAL_PLATFORMS.has(platform) || sharedCapability.connectionMethod === 'manual'
-      ? 'manual'
-      : 'oauth';
+  const flow: ClientInviteFlow = MANUAL_INVITE_PLATFORMS.includes(platform) ? 'manual' : 'oauth';
 
   return {
     flow,

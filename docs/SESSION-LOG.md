@@ -1,3 +1,45 @@
+## Session: 2026-10-08/09 — PLATFORMS registry: Phases 2a–3 shipped; the partition has one owner and an enforcement layer
+
+### What was done
+- Phase 2a (PR #174): `clientOAuthPlatform` now constructs from the registry's `clientAuthorizable` derivation; the hand-typed gate enum is gone. RED→GREEN on the elementwise construction assertion.
+- Phase 2b (PR #175, two commits): the 15 OAuth personalities absorbed into the registry's `oauth` blocks verbatim (Meta still references `META_GRAPH_VERSION` / `META_PERMISSION_CONTRACT`); `registry.config.ts` became a thin facade and the existing `registry.config.test.ts` pins prove the projection byte-for-byte; dead `PLATFORM_SCOPES` (85 lines) deleted. Factory keys pinned to the new `connectorPlatformIds` derivation by a completeness test; stale factory header replaced.
+- Phase 2c (PR #178): web's triple-encoded seven-member manual list collapsed to the shared `manualConfirmationPlatforms` derivation. The lib's own suite caught a real regression in the first rewrite — beehiiv is agency-`api_key` but client-manual; the flow decision reads the derived list (`connectionMethod !== 'oauth'`), not `=== 'manual'`. Instructional copy stays web-side.
+- Phase 3 (PR #179): partition duplicates deduped (`RECOMMENDED_CONNECTION_PLATFORMS` / `getConnectionPlatformCategory` / dead agency `getPlatformDisplayName` deleted); email quartet collapsed to one named `EMAIL_INVITE_PLATFORMS` (PQ-selector-4 stays parked). Platform-id walker shipped: node:test over 562 files, ≥3-quoted-run and ≥3-case-dispatch detectors, 13-entry ratcheted allowlist seeded from the real first run, stale-entry failures, >250 anti-vacuous guard, wired into root `test:run`. Transform normalizer gained its emitted-ids test.
+- Walker built by a clean subagent after two corrupted direct writes; two spec bugs found and fixed (ROOT depth; newline-erasing comment blanking broke line numbers — now per-character blanking preserving newlines).
+
+### Decisions
+- Order ownership for every derived list moved to the registry; per-tier pins are order-free frozen sets, construction assertions are elementwise.
+- Unquoted object-key maps are outside the walker's predicate: the factory is pinned by `factory-completeness.test.ts` instead (the reviewer's predicted factory allowlist entry turned out unnecessary — and would have failed as stale).
+- Shared's pre-existing global coverage-threshold breach (branches/functions < 80% on main) remains open; Phases 1+ improved it (registry.ts is 100%).
+
+### Next steps
+- Merge the stack in order (#172 → #173 → #174 → #175 → #178 → #179).
+- Review cards 2/3/5 can now consume the walker allowlist: refactoring `getSelectedAssetCount` dispatch (card 2), the invite session module (card 3), or the connector interface (card 5) should PRUNE allowlist entries in the same change — the stale check enforces it.
+- Registry migration of the shared types.ts partition (PlatformSchema/ManualConfirmationPlatformSchema derive from PLATFORMS) is the natural Phase 4 if drift reappears; the allowlist entry documents it.
+- Parked product questions: PQ-other-14, PQ-selector-4.
+
+## Session: 2026-10-08 — PLATFORMS registry: architecture review, settled design, Phase 0+1 shipped (PR #172 + stacked PR)
+
+### What was done
+- Ran the improve-codebase-architecture review: two explorer passes (api+shared, web) over hot spots from the last ~60 commits; 8-candidate report delivered as a temp-dir HTML file (not committed). Top pick: the platform-capability partition — hand-typed in 6+ places across three tiers, drift already shipped 8e17c27e.
+- Settled the design through a two-round grilling loop with a hostile-reviewer subagent as proxy decision-maker (user-delegated): FRONTIER: EMPTY. Registry = one sanctioned place to hand-type; walker + goldens are the load-bearing enforcement. Key rulings: per-entry `clientAuthorizable` (gate-10 not derivable), `LEGACY_PAYLOAD_IDS` as a named set (R3 contest flipped per-entry flags), shopify dual identity confirmed live by audit (agency OAuth at oauth.routes.ts:99/207), rider products split by required-literal `authorizesViaParent`.
+- Wrote `GLOSSARY.md` (repo root): platform identity kinds, connection method vs oauth config block, clientAuthorizable, email-invite quartet, PQ-other-14 / PQ-selector-4 parked questions.
+- Implemented Phase 0 (PR #172, `refactor/platform-registry-phase-0`): RED→GREEN goldens for the identity-mode 6-platform list and the 13-product asset-selection set, then deduped both to single sites (lib/asset-selecting-products.ts; shared const in identity-verification.service.ts). Full api suite green (165 files, 1796 tests).
+- Implemented Phase 1 (`feat/platform-registry-phase-1`, stacked): acknowledged golden regenerator (`scripts/generate-platform-registry-golden.ts`, refuses without `--acknowledge`), `packages/shared/src/platforms/registry.ts` (28-entry discriminated union, `satisfies`-checked), shared golden (RED first — it caught a real data-entry error: the four client-gated ads products were typed authorizable), api gate golden (schemas.ts export is @internal-for-golden), web manual-invite golden.
+- Recorded DEC-015 (full design + 6-PR roadmap + parked questions).
+
+### Decisions
+- DEC-015 (docs/DECISIONS.md) — the registry design, the rider encoding, LEGACY_PAYLOAD_IDS, the golden regen protocol, and the six-PR delivery plan.
+- Phases 2a–3 (gate flip, registry.config absorption + factory flip, web flip, source walker) are separate stacked PRs; no consumer flips landed in Phase 0+1.
+- Shared jest config gained the NodeNext `.js→.ts` moduleNameMapper so the src/index.ts barrel is importable under jest (the golden is its first importer).
+
+### Next steps
+- Phase 2a: flip `clientOAuthPlatform` to derive from the registry's `clientOAuthPlatforms`; delete the @internal-for-golden enum.
+- Phase 2b: absorb `registry.config.ts` into the descriptors' oauth blocks (golden equality diff first), then flip the factory keys (two commits).
+- Phase 2c: collapse the web lib's triple-encoded 7-member manual list to the derived import; keep instructional copy web-side.
+- Phase 3: source walker (3 tiers + .tsx, ≥3-id switch detection, pre-seeded ratchet allowlist incl. connector layer, stale-entry failures).
+- Open: shared's pre-existing global coverage-threshold breach (branches/functions below 80% on main; Phase 1 improves it, registry.ts is 100%); PQ-other-14 and PQ-selector-4 product questions.
+
 ## Session: 2026-10-05/06 — Creem production webhook: wired, then env-incident and full recovery
 
 ### What was done

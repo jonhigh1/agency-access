@@ -8,7 +8,6 @@ import { beehiivConnector } from './beehiiv.js';
 import { shopifyConnector } from './shopify.js';
 import { tiktokConnector } from './tiktok.js';
 import { snapchatConnector } from './snapchat.js';
-// Zapier uses manual invitation flow (like Beehiiv/Kit), not OAuth
 
 // Export new hybrid architecture components
 export { BaseConnector, ConnectorError } from './base.connector.js';
@@ -17,35 +16,31 @@ export { PLATFORM_CONFIGS, getPlatformConfig } from './registry.config.js';
 
 /**
  * ============================================================================
- * HYBRID CONNECTOR ARCHITECTURE
+ * CONNECTOR FACTORY
  * ============================================================================
  *
- * This factory supports TWO connector patterns:
+ * Maps platform ids to connector instances. The key set is pinned to the
+ * shared PLATFORMS registry (`connectorPlatformIds`, DEC-015 Phase 2b) by
+ * __tests__/factory-completeness.test.ts — a platform missing here fails CI,
+ * not the first request that needs it.
  *
- * 1. **LEGACY PATTERN** (Existing connectors: meta, google, google-ads, ga4)
- *    - Standalone classes implementing full PlatformConnector interface
- *    - Each has its own OAuth flow implementation
- *    - Located in: meta.ts, google.ts, google-ads.ts, ga4.ts
+ * Aliases: meta_ads / meta_pages / instagram share the Meta connector;
+ * linkedin_ads / linkedin_pages, tiktok_ads, and snapchat_ads alias their
+ * group connector. Google products have distinct connectors (google,
+ * google_ads, ga4). Beehiiv is the api_key connector (cast stays until
+ * review card 5 unifies the connector interface). Manual-invite platforms
+ * (kit, zapier, mailchimp, pinterest, klaviyo) have no connector.
  *
- * 2. **NEW PATTERN** (BaseConnector + Registry)
- *    - Extend BaseConnector class for standard OAuth 2.0 platforms
- *    - Configuration-driven via registry.config.ts
- *    - ~80% less code for standard OAuth platforms
- *    - See: TEMPLATE.ts for usage examples
- *
- * MIGRATION:
- * - Legacy connectors continue to work unchanged
- * - New platforms should use BaseConnector pattern
- * - Existing connectors can be migrated gradually (not urgent)
- *
- * ADDING A NEW CONNECTOR (New Pattern):
- * 1. Add platform to packages/shared/src/types.ts (PlatformSchema, PLATFORM_NAMES, PLATFORM_SCOPES)
+ * ADDING A NEW PLATFORM:
+ * 1. Add its descriptor to packages/shared/src/platforms/registry.ts
+ *    (capabilities, oauth block, clientAuthorizable)
  * 2. Add env vars to apps/api/src/lib/env.ts
- * 3. Add config to registry.config.ts
- * 4. Create connector extending BaseConnector
- * 5. Register connector in the `connectors` object below
- * 6. Add OAuth callback route in apps/api/src/routes/oauth.ts
+ * 3. OAuth transports feed registry.config automatically from the registry
+ * 4. Create a connector (extend BaseConnector for standard OAuth 2.0) and
+ *    register the instance below — the completeness pin enforces it
  *
+ * @see apps/api/src/services/connectors/base.connector.ts
+ * @see apps/api/src/services/connectors/registry.config.ts
  * ============================================================================
  */
 
@@ -119,33 +114,25 @@ export interface PlatformConnector {
  * Platform Connector Registry
  *
  * Maps platform identifiers to their connector instances.
- * Add new connectors here as they are implemented.
+ * Key set pinned to the shared registry's connectorPlatformIds (DEC-015).
  */
-const connectors: Partial<Record<Platform, PlatformConnector>> = {
-  // Legacy pattern connectors
+export const CONNECTOR_REGISTRY: Partial<Record<Platform, PlatformConnector>> = {
   meta: metaConnector,
-  meta_ads: metaConnector,
-  meta_pages: metaConnector,
-  instagram: metaConnector,
+  meta_ads: metaConnector, // Alias for same connector
+  meta_pages: metaConnector, // Alias for same connector
+  instagram: metaConnector, // Alias for same connector
   google: googleConnector,
   google_ads: googleAdsConnector,
   ga4: ga4Connector,
-
-  // New pattern connectors (BaseConnector)
   linkedin: linkedinConnector,
   linkedin_ads: linkedinConnector, // Alias for same connector
   linkedin_pages: linkedinConnector, // Alias for same connector
-
-  // API Key authentication connectors (non-OAuth)
   beehiiv: beehiivConnector as any, // Beehiiv uses API key auth (team invitation workflow)
-
-  // New platform connectors
   tiktok: tiktokConnector,
   tiktok_ads: tiktokConnector, // Alias for same connector
   snapchat: snapchatConnector,
   snapchat_ads: snapchatConnector, // Alias for same connector
   shopify: shopifyConnector,
-  // kit / zapier / mailchimp / pinterest / klaviyo: manual invitation flow, not OAuth
 };
 
 /**
@@ -162,12 +149,12 @@ const connectors: Partial<Record<Platform, PlatformConnector>> = {
  * ```
  */
 export function getConnector(platform: Platform): PlatformConnector {
-  const connector = connectors[platform];
+  const connector = CONNECTOR_REGISTRY[platform];
 
   if (!connector) {
     throw new Error(
       `No connector found for platform: ${platform}. ` +
-      `Available platforms: ${Object.keys(connectors).join(', ')}`
+      `Available platforms: ${Object.keys(CONNECTOR_REGISTRY).join(', ')}`
     );
   }
 
