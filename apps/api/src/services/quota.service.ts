@@ -559,5 +559,52 @@ export class QuotaService {
   }
 }
 
+// ============================================================
+// V1 PUBLIC API TIER GATE (KTD8, R5)
+//
+// Pinned entitled-status set owned by the v1 contract: trialing and
+// past_due are entitled alongside active; everything else (including no
+// subscription, i.e. free) is denied. This deliberately does NOT delegate
+// to resolveEffectiveSubscriptionTier unchanged, so future billing-helper
+// changes never silently move API entitlement. Fail-closed: any store or
+// provider error denies with `unavailable: true` and the caller maps it
+// to 503. Re-checked per request; callers must not cache the result.
+// ============================================================
+
+export const V1_ENTITLED_SUBSCRIPTION_STATUSES = ['active', 'trialing', 'past_due'] as const;
+
+export type V1EntitledSubscriptionStatus = (typeof V1_ENTITLED_SUBSCRIPTION_STATUSES)[number];
+
+const V1_PAID_TIERS = new Set(['STARTER', 'GROWTH', 'SCALE']);
+
+export interface V1TierEntitlement {
+  entitled: boolean;
+  unavailable: boolean;
+  tier: string | null;
+  status: string | null;
+}
+
+export async function checkV1TierEntitlement(agencyId: string): Promise<V1TierEntitlement> {
+  try {
+    const subscription = await prisma.subscription.findUnique({
+      where: { agencyId },
+      select: { tier: true, status: true },
+    });
+    if (!subscription) {
+      return { entitled: false, unavailable: false, tier: null, status: null };
+    }
+    const status = subscription.status?.toLowerCase() ?? null;
+    const tier = subscription.tier ?? null;
+    const entitled =
+      status != null &&
+      (V1_ENTITLED_SUBSCRIPTION_STATUSES as readonly string[]).includes(status) &&
+      tier != null &&
+      V1_PAID_TIERS.has(tier);
+    return { entitled, unavailable: false, tier, status };
+  } catch {
+    return { entitled: false, unavailable: true, tier: null, status: null };
+  }
+}
+
 // Export singleton instance
 export const quotaService = new QuotaService();
