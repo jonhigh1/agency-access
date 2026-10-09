@@ -11,6 +11,7 @@ import type { FastifyInstance } from 'fastify';
 import { apiKeyPreHandler } from '@/middleware/api-key-auth.js';
 import { prisma } from '@/lib/prisma';
 import { v1ReadsRoutes } from './v1-reads.js';
+import { v1WritesRoutes } from './v1-writes.js';
 import { MAX_API_KEYS_PER_AGENCY } from '@/services/api-key.service.js';
 import type { ApiKeyPrincipal } from '@/services/api-key.service';
 
@@ -32,6 +33,11 @@ export async function v1Routes(fastify: FastifyInstance) {
   // U3 read slice: catalog, cursor lists, usage. Each route carries the
   // tier gate + per-key rate limit + scope gate as its own preHandler chain.
   await fastify.register(v1ReadsRoutes);
+
+  // U5 idempotent creates: clients, requests, external-ID lookups. Each
+  // route carries the tier gate + per-key rate limit + scope gate as its
+  // own preHandler chain.
+  await fastify.register(v1WritesRoutes);
 
   /**
    * GET /api/v1/self-check (R4)

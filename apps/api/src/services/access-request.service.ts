@@ -43,6 +43,7 @@ import { logger } from '@/lib/logger.js';
 import { webhookEventService } from '@/services/webhook-event.service.js';
 import { normalizeCustomerId } from '@/services/connectors/google.js';
 import { resolveListLimit, resolveListOffset } from '@/lib/list-pagination.js';
+import { encodeKeysetCursor } from '@/services/catalog.service.js';
 import { metaAssetsService } from '@/services/meta-assets.service.js';
 import { metaAutoAssignService } from '@/services/meta-auto-assign.service.js';
 import { readMetaAuthorizationMetadata } from '@/lib/meta-authorization-metadata.js';
@@ -2126,6 +2127,71 @@ export async function getAgencyAccessRequests(
 }
 
 /**
+ * List an external client's requests for the public v1 API (U5; R6, R11).
+ *
+ * Resolves the client row directly by (agencyId, externalClientId), then
+ * pages that client's requests newest-first with an opaque keyset cursor.
+ * Returns a CLIENT_NOT_FOUND error when the external ID is unknown, so the
+ * route never leaks whether the miss was the client or its requests.
+ */
+export async function listRequestsForExternalClient(input: {
+  agencyId: string;
+  externalClientId: string;
+  limit?: number;
+  cursor?: { createdAt: string; id: string } | null;
+}) {
+  const client = await prisma.client.findFirst({
+    where: { agencyId: input.agencyId, externalClientId: input.externalClientId },
+    select: { id: true },
+  });
+  if (!client) {
+    return {
+      data: null,
+      error: { code: 'CLIENT_NOT_FOUND', message: 'Client not found' },
+    };
+  }
+
+  const limit = Math.min(Math.max(input.limit ?? 50, 1), 100);
+  const where: any = { agencyId: input.agencyId, clientId: client.id };
+  if (input.cursor) {
+    const at = new Date(input.cursor.createdAt);
+    where.OR = [{ createdAt: { lt: at } }, { createdAt: { equals: at }, id: { lt: input.cursor.id } }];
+  }
+
+  const rows = await prisma.accessRequest.findMany({
+    where,
+    // Never select uniqueToken: it is a bearer credential for the client
+    // authorization flow and must not cross the public contract.
+    select: {
+      id: true,
+      agencyId: true,
+      clientId: true,
+      clientName: true,
+      clientEmail: true,
+      platforms: true,
+      status: true,
+      expiresAt: true,
+      createdAt: true,
+      authorizedAt: true,
+    },
+    orderBy: [{ createdAt: 'desc' }, { id: 'desc' }],
+    take: limit + 1,
+  });
+
+  const hasMore = rows.length > limit;
+  const page = hasMore ? rows.slice(0, limit) : rows;
+  const last = page[page.length - 1];
+  return {
+    data: {
+      rows: page,
+      nextCursor: hasMore && last ? encodeKeysetCursor(last.createdAt, last.id) : null,
+      hasMore,
+    },
+    error: null,
+  };
+}
+
+/**
  * Get lightweight dashboard access request summaries.
  * Returns only the latest rows required for dashboard rendering.
  */
@@ -2734,6 +2800,7 @@ export const accessRequestService = {
   getAccessRequestByToken,
   getAgencyAccessRequests,
   getDashboardAccessRequestSummaries,
+  listRequestsForExternalClient,
   updateAccessRequest,
   markRequestAuthorized,
   setAccessRequestLifecycleStatus,
