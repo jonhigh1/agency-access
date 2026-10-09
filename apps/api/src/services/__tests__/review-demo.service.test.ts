@@ -54,7 +54,7 @@ vi.mock('@/lib/infisical.js', () => ({
     getPlainSecret: vi.fn(async () =>
       JSON.stringify({
         accessToken: 'client-token',
-        identity: { id: '122095319343509372', name: 'Alex Reviewer' },
+        identity: { id: '100000000000000001', name: 'Alex Reviewer' },
       })
     ),
     storePlainSecret: vi.fn(async () => 'review_demo_meta_user_test'),
@@ -64,12 +64,12 @@ vi.mock('@/lib/infisical.js', () => ({
 vi.mock('@/lib/env.js', () => ({
   env: {
     META_REVIEW_DEMO_MOCK_GRAPH: true,
-    META_REVIEW_BM_ID: '695982475048959',
-    META_REVIEW_AD_ACCOUNT_ID: '557538895783894',
-    META_REVIEW_PAGE_ID: '1373353139192376',
-    META_REVIEW_AGENCY_BM_ID: '3808519629379919',
+    META_REVIEW_BM_ID: '100000000000001',
+    META_REVIEW_AD_ACCOUNT_ID: '100000000000002',
+    META_REVIEW_PAGE_ID: '1000000000000003',
+    META_REVIEW_AGENCY_BM_ID: '1000000000000004',
     META_REVIEW_LAB_AGENCY_ID: 'review-lab-agency',
-    META_REVIEW_SANDBOX_META_USER_ID: '122095319343509372',
+    META_REVIEW_SANDBOX_META_USER_ID: '100000000000000001',
   },
 }));
 
@@ -137,11 +137,12 @@ describe('reviewDemoService manual ad account check access', () => {
     vi.doMock('@/lib/env.js', () => ({
       env: {
         META_REVIEW_DEMO_MOCK_GRAPH: false,
-        META_REVIEW_BM_ID: '695982475048959',
-        META_REVIEW_AD_ACCOUNT_ID: '557538895783894',
-        META_REVIEW_PAGE_ID: '1373353139192376',
-        META_REVIEW_AGENCY_BM_ID: '3808519629379919',
+        META_REVIEW_BM_ID: '100000000000001',
+        META_REVIEW_AD_ACCOUNT_ID: '100000000000002',
+        META_REVIEW_PAGE_ID: '1000000000000003',
+        META_REVIEW_AGENCY_BM_ID: '1000000000000004',
         META_REVIEW_LAB_AGENCY_ID: 'review-lab-agency',
+        META_REVIEW_SANDBOX_META_USER_ID: '100000000000000001',
       },
     }));
 
@@ -155,14 +156,14 @@ describe('reviewDemoService manual ad account check access', () => {
       getRecordedMetaGraphOpsSince: () => [],
       getRecordedMetaGraphOps: () => [],
       metaGraphFetch: vi.fn(async (url: string) => {
-        if (url.includes('act_557538895783894?fields')) {
+        if (url.includes('act_100000000000002?fields')) {
           return {
             ok: true,
-            json: async () => ({ id: 'act_557538895783894', name: 'Review Ad Account' }),
+            json: async () => ({ id: 'act_100000000000002', name: 'Review Ad Account' }),
           };
         }
-        if (url.includes('3808519629379919?fields')) {
-          return { ok: true, json: async () => ({ id: '3808519629379919', name: 'Agency BM' }) };
+        if (url.includes('1000000000000004?fields')) {
+          return { ok: true, json: async () => ({ id: '1000000000000004', name: 'Agency BM' }) };
         }
         throw new Error(`Unexpected graph URL: ${url}`);
       }),
@@ -186,11 +187,12 @@ describe('reviewDemoService manual ad account check access', () => {
     vi.doMock('@/lib/env.js', () => ({
       env: {
         META_REVIEW_DEMO_MOCK_GRAPH: false,
-        META_REVIEW_BM_ID: '695982475048959',
-        META_REVIEW_AD_ACCOUNT_ID: '557538895783894',
-        META_REVIEW_PAGE_ID: '1373353139192376',
-        META_REVIEW_AGENCY_BM_ID: '3808519629379919',
+        META_REVIEW_BM_ID: '100000000000001',
+        META_REVIEW_AD_ACCOUNT_ID: '100000000000002',
+        META_REVIEW_PAGE_ID: '1000000000000003',
+        META_REVIEW_AGENCY_BM_ID: '1000000000000004',
         META_REVIEW_LAB_AGENCY_ID: 'review-lab-agency',
+        META_REVIEW_SANDBOX_META_USER_ID: '100000000000000001',
       },
     }));
 
@@ -205,14 +207,14 @@ describe('reviewDemoService manual ad account check access', () => {
       getRecordedMetaGraphOpsSince: () => [],
       getRecordedMetaGraphOps: () => [],
       metaGraphFetch: vi.fn(async (url: string) => {
-        if (url.includes('act_557538895783894?fields')) {
+        if (url.includes('act_100000000000002?fields')) {
           return {
             ok: true,
-            json: async () => ({ id: 'act_557538895783894', name: 'Review Ad Account' }),
+            json: async () => ({ id: 'act_100000000000002', name: 'Review Ad Account' }),
           };
         }
-        if (url.includes('3808519629379919?fields')) {
-          return { ok: true, json: async () => ({ id: '3808519629379919', name: 'Agency BM' }) };
+        if (url.includes('1000000000000004?fields')) {
+          return { ok: true, json: async () => ({ id: '1000000000000004', name: 'Agency BM' }) };
         }
         throw new Error(`Unexpected graph URL: ${url}`);
       }),
@@ -250,11 +252,12 @@ describe('reviewDemoService business_management sandbox scope', () => {
     vi.doMock('@/lib/env.js', () => ({
       env: {
         META_REVIEW_DEMO_MOCK_GRAPH: false,
-        META_REVIEW_BM_ID: '695982475048959',
-        META_REVIEW_AD_ACCOUNT_ID: '557538895783894',
-        META_REVIEW_PAGE_ID: '1373353139192376',
-        META_REVIEW_AGENCY_BM_ID: '3808519629379919',
+        META_REVIEW_BM_ID: '100000000000001',
+        META_REVIEW_AD_ACCOUNT_ID: '100000000000002',
+        META_REVIEW_PAGE_ID: '1000000000000003',
+        META_REVIEW_AGENCY_BM_ID: '1000000000000004',
         META_REVIEW_LAB_AGENCY_ID: 'review-lab-agency',
+        META_REVIEW_SANDBOX_META_USER_ID: '100000000000000001',
       },
     }));
 
@@ -268,20 +271,20 @@ describe('reviewDemoService business_management sandbox scope', () => {
       getRecordedMetaGraphOpsSince: () => [],
       getRecordedMetaGraphOps: () => [],
       metaGraphFetch: vi.fn(async (url: string) => {
-        if (url.includes('695982475048959?fields')) {
-          return { ok: true, json: async () => ({ id: '695982475048959', name: 'Review BM' }) };
+        if (url.includes('100000000000001?fields')) {
+          return { ok: true, json: async () => ({ id: '100000000000001', name: 'Review BM' }) };
         }
-        if (url.includes('1373353139192376?fields')) {
-          return { ok: true, json: async () => ({ id: '1373353139192376', name: 'Ah-Review-Page' }) };
+        if (url.includes('1000000000000003?fields')) {
+          return { ok: true, json: async () => ({ id: '1000000000000003', name: 'Ah-Review-Page' }) };
         }
-        if (url.includes('act_557538895783894?fields')) {
+        if (url.includes('act_100000000000002?fields')) {
           return {
             ok: true,
-            json: async () => ({ id: 'act_557538895783894', name: 'Review Ad Account' }),
+            json: async () => ({ id: 'act_100000000000002', name: 'Review Ad Account' }),
           };
         }
-        if (url.includes('3808519629379919?fields')) {
-          return { ok: true, json: async () => ({ id: '3808519629379919', name: 'Agency BM' }) };
+        if (url.includes('1000000000000004?fields')) {
+          return { ok: true, json: async () => ({ id: '1000000000000004', name: 'Agency BM' }) };
         }
         throw new Error(`Unexpected graph URL: ${url}`);
       }),
@@ -298,9 +301,9 @@ describe('reviewDemoService business_management sandbox scope', () => {
     if (payload.stepId === 'business_management') {
       expect(payload.assets).toHaveLength(3);
       expect(payload.assets.map((asset) => asset.id)).toEqual([
-        '695982475048959',
-        '1373353139192376',
-        'act_557538895783894',
+        '100000000000001',
+        '1000000000000003',
+        'act_100000000000002',
       ]);
       expect(payload.assets.some((asset) => asset.name.includes('ATX'))).toBe(false);
     }
@@ -313,8 +316,9 @@ describe('reviewDemoService business_management sandbox scope', () => {
         META_REVIEW_BM_ID: '',
         META_REVIEW_AD_ACCOUNT_ID: '',
         META_REVIEW_PAGE_ID: '',
-        META_REVIEW_AGENCY_BM_ID: '3808519629379919',
+        META_REVIEW_AGENCY_BM_ID: '1000000000000004',
         META_REVIEW_LAB_AGENCY_ID: 'review-lab-agency',
+        META_REVIEW_SANDBOX_META_USER_ID: '100000000000000001',
       },
     }));
 
@@ -344,16 +348,17 @@ describe('reviewDemoService business_management sandbox scope', () => {
   it('shows pages_show_list partner guidance when Page partner verify cannot resolve a Page token', async () => {
     const { MetaPageAccessTokenUnavailableError } = await import('@/services/meta-partner.service.js');
     const pageTokenDetail =
-      'Could not obtain a Page access token for Page 1373353139192376; grant pages_show_list and ensure this user manages the Page.';
+      'Could not obtain a Page access token for Page 1000000000000003; grant pages_show_list and ensure this user manages the Page.';
 
     vi.doMock('@/lib/env.js', () => ({
       env: {
         META_REVIEW_DEMO_MOCK_GRAPH: false,
-        META_REVIEW_BM_ID: '695982475048959',
-        META_REVIEW_AD_ACCOUNT_ID: '557538895783894',
-        META_REVIEW_PAGE_ID: '1373353139192376',
-        META_REVIEW_AGENCY_BM_ID: '3808519629379919',
+        META_REVIEW_BM_ID: '100000000000001',
+        META_REVIEW_AD_ACCOUNT_ID: '100000000000002',
+        META_REVIEW_PAGE_ID: '1000000000000003',
+        META_REVIEW_AGENCY_BM_ID: '1000000000000004',
         META_REVIEW_LAB_AGENCY_ID: 'review-lab-agency',
+        META_REVIEW_SANDBOX_META_USER_ID: '100000000000000001',
       },
     }));
 
@@ -371,20 +376,20 @@ describe('reviewDemoService business_management sandbox scope', () => {
       getRecordedMetaGraphOpsSince: () => [],
       getRecordedMetaGraphOps: () => [],
       metaGraphFetch: vi.fn(async (url: string) => {
-        if (url.includes('695982475048959?fields')) {
-          return { ok: true, json: async () => ({ id: '695982475048959', name: 'Review BM' }) };
+        if (url.includes('100000000000001?fields')) {
+          return { ok: true, json: async () => ({ id: '100000000000001', name: 'Review BM' }) };
         }
-        if (url.includes('1373353139192376?fields')) {
-          return { ok: true, json: async () => ({ id: '1373353139192376', name: 'Ah-Review-Page' }) };
+        if (url.includes('1000000000000003?fields')) {
+          return { ok: true, json: async () => ({ id: '1000000000000003', name: 'Ah-Review-Page' }) };
         }
-        if (url.includes('act_557538895783894?fields')) {
+        if (url.includes('act_100000000000002?fields')) {
           return {
             ok: true,
-            json: async () => ({ id: 'act_557538895783894', name: 'Review Ad Account' }),
+            json: async () => ({ id: 'act_100000000000002', name: 'Review Ad Account' }),
           };
         }
-        if (url.includes('3808519629379919?fields')) {
-          return { ok: true, json: async () => ({ id: '3808519629379919', name: 'Agency BM' }) };
+        if (url.includes('1000000000000004?fields')) {
+          return { ok: true, json: async () => ({ id: '1000000000000004', name: 'Agency BM' }) };
         }
         throw new Error(`Unexpected graph URL: ${url}`);
       }),
@@ -407,11 +412,12 @@ describe('reviewDemoService business_management sandbox scope', () => {
     vi.doMock('@/lib/env.js', () => ({
       env: {
         META_REVIEW_DEMO_MOCK_GRAPH: false,
-        META_REVIEW_BM_ID: '695982475048959',
-        META_REVIEW_AD_ACCOUNT_ID: '557538895783894',
-        META_REVIEW_PAGE_ID: '1373353139192376',
-        META_REVIEW_AGENCY_BM_ID: '3808519629379919',
+        META_REVIEW_BM_ID: '100000000000001',
+        META_REVIEW_AD_ACCOUNT_ID: '100000000000002',
+        META_REVIEW_PAGE_ID: '1000000000000003',
+        META_REVIEW_AGENCY_BM_ID: '1000000000000004',
         META_REVIEW_LAB_AGENCY_ID: 'review-lab-agency',
+        META_REVIEW_SANDBOX_META_USER_ID: '100000000000000001',
       },
     }));
 
@@ -426,20 +432,20 @@ describe('reviewDemoService business_management sandbox scope', () => {
       getRecordedMetaGraphOpsSince: () => [],
       getRecordedMetaGraphOps: () => [],
       metaGraphFetch: vi.fn(async (url: string) => {
-        if (url.includes('695982475048959?fields')) {
-          return { ok: true, json: async () => ({ id: '695982475048959', name: 'Review BM' }) };
+        if (url.includes('100000000000001?fields')) {
+          return { ok: true, json: async () => ({ id: '100000000000001', name: 'Review BM' }) };
         }
-        if (url.includes('1373353139192376?fields')) {
-          return { ok: true, json: async () => ({ id: '1373353139192376', name: 'Ah-Review-Page' }) };
+        if (url.includes('1000000000000003?fields')) {
+          return { ok: true, json: async () => ({ id: '1000000000000003', name: 'Ah-Review-Page' }) };
         }
-        if (url.includes('act_557538895783894?fields')) {
+        if (url.includes('act_100000000000002?fields')) {
           return {
             ok: true,
-            json: async () => ({ id: 'act_557538895783894', name: 'Review Ad Account' }),
+            json: async () => ({ id: 'act_100000000000002', name: 'Review Ad Account' }),
           };
         }
-        if (url.includes('3808519629379919?fields')) {
-          return { ok: true, json: async () => ({ id: '3808519629379919', name: 'Agency BM' }) };
+        if (url.includes('1000000000000004?fields')) {
+          return { ok: true, json: async () => ({ id: '1000000000000004', name: 'Agency BM' }) };
         }
         throw new Error(`Unexpected graph URL: ${url}`);
       }),

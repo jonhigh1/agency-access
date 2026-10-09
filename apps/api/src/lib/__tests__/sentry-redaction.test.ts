@@ -31,6 +31,27 @@ describe('redactSentryEvent', () => {
     ).toBe('GET https://graph.facebook.com/v25.0/[redacted]/agencies');
   });
 
+  it('redacts number-only Graph query values of 8 or more digits', () => {
+    expect(
+      redactSensitiveString(
+        'https://graph.facebook.com/v25.0/?ids=112233445566778&fields=name&limit=5'
+      )
+    ).toBe('https://graph.facebook.com/v25.0/?ids=[redacted]&fields=name&limit=5');
+
+    const breadcrumb = {
+      type: 'http',
+      category: 'fetch',
+      data: {
+        url: 'https://graph.facebook.com/v25.0/',
+        'http.query': '?ids=9988776655443322&fields=id',
+      },
+    };
+    const scrubbed = scrubSentryBreadcrumb(breadcrumb);
+    const serialized = JSON.stringify(scrubbed);
+    expect(serialized).not.toContain('9988776655443322');
+    expect(serialized).toContain('ids=[redacted]');
+  });
+
   it('scrubs Graph URLs on Sentry HTTP breadcrumbs while keeping the breadcrumb', () => {
     const breadcrumb = {
       type: 'http',

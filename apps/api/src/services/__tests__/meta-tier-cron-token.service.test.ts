@@ -46,7 +46,7 @@ describe('meta-tier-cron-token.service', () => {
         throw new Error('not found');
       }
       if (name === 'review_demo_meta_user_alex') {
-        return JSON.stringify({ accessToken: 'alex-review-token', identity: { id: '122095319343509372' } });
+        return JSON.stringify({ accessToken: 'alex-review-token', identity: { id: '100000000000000001' } });
       }
       throw new Error('unexpected');
     });

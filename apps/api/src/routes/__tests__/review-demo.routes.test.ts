@@ -23,22 +23,22 @@ vi.mock('@/services/review-demo.service.js', () => ({
   reviewDemoService: {
     getSession: vi.fn(async () => ({
       connected: true,
-      identity: { id: '122095319343509372', name: 'Alex Reviewer' },
+      identity: { id: '100000000000000001', name: 'Alex Reviewer' },
       grantedPermissions: ['pages_show_list', 'pages_read_engagement', 'ads_management', 'business_management'],
       activeStep: 'pages_show_list',
       stepIndex: 0,
       stepCount: 4,
       sandbox: {
-        businessManagerId: '695982475048959',
-        adAccountId: 'act_557538895783894',
-        pageId: '1373353139192376',
-        agencyBusinessId: '3808519629379919',
+        businessManagerId: '100000000000001',
+        adAccountId: 'act_100000000000002',
+        pageId: '1000000000000003',
+        agencyBusinessId: '1000000000000004',
       },
       usesSandboxAssets: true,
     })),
     loadStepPayload: vi.fn(async () => ({
       stepId: 'pages_show_list',
-      pages: [{ id: '1373353139192376', name: 'Ah-Review-Page' }],
+      pages: [{ id: '1000000000000003', name: 'Ah-Review-Page' }],
       graphCaptions: ['GET /me/accounts'],
     })),
   },
