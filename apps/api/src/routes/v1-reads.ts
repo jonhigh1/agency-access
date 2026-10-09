@@ -190,7 +190,7 @@ export async function v1ReadsRoutes(fastify: FastifyInstance) {
           error: { code: 'INTERNAL_ERROR', message: 'Unable to load usage' },
         });
       }
-      const { currentTier, updatedAt: _updatedAt, ...metrics } = snapshot as Record<string, unknown>;
+      const { currentTier, updatedAt: _updatedAt, ...metrics } = snapshot as unknown as Record<string, unknown>;
       void _updatedAt;
       return reply.send({
         data: {
