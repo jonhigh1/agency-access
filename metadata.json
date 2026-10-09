@@ -1,0 +1,48 @@
+{
+  "cli_version": "0.10.2",
+  "checkpoint_id": "01M4H4DXJ8DBDBEJ2SC42S71QX",
+  "strategy": "manual-commit",
+  "branch": "feat/public-api-parity-core",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "CLAUDE.md",
+    "apps/api/.env.example",
+    "apps/api/openapi/v1.openapi.json",
+    "apps/api/prisma/migrations/20261009120000_v1_write_foundations_expand/migration.sql",
+    "apps/api/src/index.ts",
+    "apps/api/src/lib/__tests__/env.test.ts",
+    "apps/api/src/lib/env.ts",
+    "apps/api/src/lib/v1-errors.ts",
+    "apps/api/src/lib/v1-route-helpers.ts",
+    "apps/api/src/lib/webhook-signature.ts",
+    "apps/api/src/middleware/api-key-auth.ts",
+    "apps/api/src/middleware/v1-gate.ts",
+    "apps/api/src/openapi/build-v1-openapi.ts",
+    "apps/api/src/routes/__tests__/v1.webhooks.test.ts",
+    "apps/api/src/routes/__tests__/v1.writes.test.ts",
+    "apps/api/src/routes/v1-reads.ts",
+    "apps/api/src/routes/v1-schemas.ts",
+    "apps/api/src/routes/v1-webhooks.ts",
+    "apps/api/src/routes/v1-writes.ts",
+    "apps/api/src/routes/v1.ts",
+    "apps/api/src/services/__tests__/idempotency.service.test.ts",
+    "apps/api/src/services/__tests__/webhook-delivery.service.test.ts",
+    "apps/api/src/services/__tests__/webhook-endpoint.service.test.ts",
+    "apps/api/src/services/access-request.service.ts",
+    "apps/api/src/services/api-key.service.ts",
+    "apps/api/src/services/catalog.service.ts",
+    "apps/api/src/services/idempotency.service.ts",
+    "apps/api/src/services/webhook-delivery.service.ts",
+    "apps/api/src/services/webhook-endpoint.service.ts",
+    "apps/api/src/services/webhook-event.service.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ]
+}
