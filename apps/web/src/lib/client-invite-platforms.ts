@@ -15,6 +15,14 @@ export function isManualInvitePlatform(platform: string): boolean {
   return MANUAL_INVITE_PLATFORMS.includes(platform);
 }
 
+/**
+ * The four manual platforms whose client invite is an email (beehiiv's
+ * api-key invite included). Curated presentation subset — deliberately NOT
+ * derived from MANUAL_INVITE_PLATFORMS, which would silently add pinterest,
+ * shopify, and zapier. Semantics parked as PQ-selector-4 (GLOSSARY.md).
+ */
+export const EMAIL_INVITE_PLATFORMS = ['beehiiv', 'kit', 'klaviyo', 'mailchimp'] as const;
+
 interface ClientInvitePlatformCapability {
   flow: ClientInviteFlow;
   manualRoute: string | null;

@@ -32,6 +32,7 @@ import { useInviteRequestLoader } from '@/lib/query/use-invite-request-loader';
 import { resolveApiUrl } from '@/lib/api/api-env';
 import { ApiResponseError, parseJsonResponse } from '@/lib/api/parse-json-response';
 import {
+  EMAIL_INVITE_PLATFORMS,
   getInviteSecuritySummary,
   isClientInviteManualPlatform,
 } from '@/lib/client-invite-platforms';
@@ -264,7 +265,7 @@ export default function ClientAuthorizationPage({
     const targets = data.manualInviteTargets || {};
     const identities: Array<{ platform: Platform; label: string; value: string }> = [];
 
-    const emailPlatforms: Array<Platform> = ['beehiiv', 'kit', 'klaviyo', 'mailchimp'];
+    const emailPlatforms: Array<Platform> = [...EMAIL_INVITE_PLATFORMS];
     for (const platform of emailPlatforms) {
       const value = (targets as any)?.[platform]?.agencyEmail;
       if (value) {

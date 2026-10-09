@@ -15,6 +15,7 @@ import { ChevronDown, Check, Minus, AlertCircle, Link2, Edit, Mail } from 'lucid
 import { m, AnimatePresence, useReducedMotion } from 'framer-motion';
 import { PLATFORM_HIERARCHY, AccessLevel, ACCESS_LEVEL_DESCRIPTIONS } from '@agency-platform/shared';
 import { normalizePlatformToGroup } from '@/lib/transform-platforms';
+import { EMAIL_INVITE_PLATFORMS } from '@/lib/client-invite-platforms';
 import Link from 'next/link';
 import { ManualInvitationModal } from '@/components/manual-invitation-modal';
 import { PlatformIcon, Button } from '@/components/ui';
@@ -40,8 +41,10 @@ interface HierarchicalPlatformSelectorProps {
   onPlatformAccessLevelChange?: (group: string, level: AccessLevel) => void;
 }
 
-// Platforms that use manual invitation flow instead of OAuth
-const MANUAL_INVITATION_PLATFORMS = new Set(['kit', 'beehiiv', 'mailchimp', 'klaviyo']);
+// Platforms that use manual invitation flow instead of OAuth — the email
+// quartet, single web-side constant (DEC-015 Phase 3; semantics parked as
+// PQ-selector-4).
+const MANUAL_INVITATION_PLATFORMS = new Set<string>(EMAIL_INVITE_PLATFORMS);
 
 interface GroupState {
   [key: string]: boolean;

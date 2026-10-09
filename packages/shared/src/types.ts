@@ -914,19 +914,9 @@ export const SUPPORTED_CONNECTION_PLATFORMS = [
   'zapier',
 ] as const satisfies readonly Platform[];
 
-export const RECOMMENDED_CONNECTION_PLATFORMS = ['google', 'meta', 'linkedin'] as const satisfies readonly Platform[];
-
 // Helper to get category for a platform
 export function getPlatformCategory(platform: Platform): 'recommended' | 'other' {
   if (PLATFORM_CATEGORIES.recommended.includes(platform as any)) {
-    return 'recommended';
-  }
-  return 'other';
-}
-
-// Helper for Connections page categorization.
-export function getConnectionPlatformCategory(platform: Platform): 'recommended' | 'other' {
-  if (RECOMMENDED_CONNECTION_PLATFORMS.includes(platform as any)) {
     return 'recommended';
   }
   return 'other';
