@@ -124,6 +124,22 @@ describe('AuditService', () => {
         }),
       });
     });
+
+    it('scopes the revoke row to the agency when agencyId is given', async () => {
+      vi.mocked(prisma.auditLog.create).mockResolvedValue({} as any);
+
+      await auditService.logTokenRevoke({
+        connectionId: 'connection-1',
+        platform: 'meta',
+        userEmail: 'admin@test.com',
+        ipAddress: '172.16.0.1',
+        agencyId: 'agency-1',
+      });
+
+      expect(prisma.auditLog.create).toHaveBeenCalledWith({
+        data: expect.objectContaining({ agencyId: 'agency-1', action: 'REVOKED', resourceId: 'connection-1' }),
+      });
+    });
   });
 
   describe('logTokenRefresh', () => {

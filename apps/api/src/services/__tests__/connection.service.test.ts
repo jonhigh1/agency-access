@@ -10,6 +10,7 @@ import { prisma } from '@/lib/prisma';
 import * as connectionService from '@/services/connection.service';
 import { infisical } from '@/lib/infisical';
 import { auditService } from '@/services/audit.service';
+import { ConnectorError } from '@/services/connectors/base.connector';
 
 const { refreshClientPlatformAuthorizationMock, getConnectorMock, verifyTokenMock, metaRevokeTokenMock, metaRevokeAssignedMock, metaRevokeAgencyMock, metaRevokeCatalogAgencyMock, markRequestAuthorizedMock } = vi.hoisted(() => ({
   refreshClientPlatformAuthorizationMock: vi.fn(),
@@ -97,6 +98,7 @@ vi.mock('@/services/audit.service', async (importOriginal) => {
     auditService: {
       ...actual.auditService,
       logTokenAccess: vi.fn().mockResolvedValue({ data: {}, error: null }),
+      logTokenRevoke: vi.fn().mockResolvedValue({ data: {}, error: null }),
       createAuditLog: vi.fn().mockResolvedValue({ data: null, error: null }),
       createAuditLogs: vi.fn((...args: Parameters<typeof actual.auditService.createAuditLogs>) =>
         actual.auditService.createAuditLogs(...args)
@@ -1109,7 +1111,185 @@ describe('ConnectionService', () => {
     });
   });
 
+  describe('revokeConnection audit accuracy', () => {
+    const auditContext = { userEmail: 'owner@example.com', ipAddress: '127.0.0.1' };
+
+    beforeEach(() => {
+      vi.mocked(prisma.clientConnection.findUnique).mockResolvedValue({
+        id: 'connection-1', agencyId: 'agency-1', clientEmail: 'client@example.com',
+      } as any);
+      vi.mocked(prisma.clientConnection.update).mockResolvedValue({ id: 'connection-1' } as any);
+      vi.mocked(prisma.platformAuthorization.update).mockResolvedValue({} as any);
+      vi.mocked(infisical.deleteSecret).mockResolvedValue(undefined);
+      vi.mocked(infisical.getOAuthTokens).mockResolvedValue({ accessToken: 'tiktok-access-token' } as any);
+    });
+
+    it('sets revokedAt and revokedBy so the Activity timeline shows the revoke', async () => {
+      vi.mocked(prisma.platformAuthorization.findMany).mockResolvedValue([
+        { id: 'auth-google', platform: 'google_ads', secretId: 'secret-google', status: 'active' },
+      ] as any);
+
+      const result = await connectionService.revokeConnection('connection-1', undefined, auditContext);
+
+      expect(result.error).toBeNull();
+      expect(prisma.clientConnection.update).toHaveBeenCalledWith({
+        where: { id: 'connection-1' },
+        data: { status: 'revoked', revokedAt: expect.any(Date), revokedBy: 'owner@example.com' },
+      });
+    });
+
+    it('does not set revokedAt when cleanup fails', async () => {
+      vi.mocked(prisma.platformAuthorization.findMany).mockResolvedValue([
+        { id: 'auth-google', platform: 'google_ads', secretId: 'secret-google', status: 'active' },
+      ] as any);
+      vi.mocked(infisical.deleteSecret).mockRejectedValue(new Error('Infisical unavailable'));
+
+      const result = await connectionService.revokeConnection('connection-1', undefined, auditContext);
+
+      expect(result.error?.code).toBe('TOKEN_DELETION_FAILED');
+      expect(prisma.clientConnection.update).not.toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ revokedAt: expect.anything() }),
+      }));
+      expect(auditService.logTokenRevoke).not.toHaveBeenCalled();
+    });
+
+    it('writes a REVOKED audit row per revoked authorization via logTokenRevoke', async () => {
+      vi.mocked(prisma.platformAuthorization.findMany).mockResolvedValue([
+        { id: 'auth-google', platform: 'google_ads', secretId: 'secret-google', status: 'active' },
+        { id: 'auth-linkedin', platform: 'linkedin_ads', secretId: 'secret-linkedin', status: 'revoked' },
+      ] as any);
+
+      await connectionService.revokeConnection('connection-1', undefined, auditContext);
+
+      expect(auditService.logTokenRevoke).toHaveBeenCalledTimes(1);
+      expect(auditService.logTokenRevoke).toHaveBeenCalledWith({
+        connectionId: 'connection-1',
+        platform: 'google_ads',
+        userEmail: 'owner@example.com',
+        ipAddress: '127.0.0.1',
+        agencyId: 'agency-1',
+        details: { authorizationId: 'auth-google', reason: 'connection_revoked' },
+      });
+    });
+
+    it('calls TikTok revoke before deleting the secret and logs TIKTOK_TOKEN_REVOKED on success', async () => {
+      vi.mocked(prisma.platformAuthorization.findMany).mockResolvedValue([
+        { id: 'auth-tiktok', platform: 'tiktok', secretId: 'secret-tiktok', status: 'active' },
+      ] as any);
+
+      const result = await connectionService.revokeConnection('connection-1', undefined, auditContext);
+
+      expect(result.error).toBeNull();
+      expect(auditService.logTokenAccess).toHaveBeenCalledWith(expect.objectContaining({
+        details: expect.objectContaining({ operation: 'tiktok_provider_revocation', authorizationId: 'auth-tiktok' }),
+      }));
+      expect(metaRevokeTokenMock).toHaveBeenCalledWith('tiktok-access-token');
+      expect(metaRevokeTokenMock.mock.invocationCallOrder[0]).toBeLessThan(vi.mocked(infisical.deleteSecret).mock.invocationCallOrder[0]);
+      expect(auditService.createAuditLog).toHaveBeenCalledWith(expect.objectContaining({
+        action: 'TIKTOK_TOKEN_REVOKED',
+        metadata: expect.objectContaining({ platform: 'tiktok', providerRevoked: true, reason: 'connection_revoked' }),
+      }));
+      expect(infisical.deleteSecret).toHaveBeenCalledWith('secret-tiktok');
+      expect(prisma.clientConnection.update).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ status: 'revoked' }),
+      }));
+    });
+
+    it('still revokes locally and logs TIKTOK_PROVIDER_REVOKE_FAILED when TikTok rejects the revoke', async () => {
+      vi.mocked(prisma.platformAuthorization.findMany).mockResolvedValue([
+        { id: 'auth-tiktok', platform: 'tiktok_ads', secretId: 'secret-tiktok', status: 'active' },
+      ] as any);
+      metaRevokeTokenMock.mockRejectedValueOnce(new ConnectorError('tiktok', 'REVOKE_FAILED', 'invalid token', { code: 40001 }));
+
+      const result = await connectionService.revokeConnection('connection-1', undefined, auditContext);
+
+      expect(result.error).toBeNull();
+      expect(auditService.createAuditLog).not.toHaveBeenCalledWith(expect.objectContaining({ action: 'TIKTOK_TOKEN_REVOKED' }));
+      expect(auditService.createAuditLog).toHaveBeenCalledWith(expect.objectContaining({
+        action: 'TIKTOK_PROVIDER_REVOKE_FAILED',
+        metadata: expect.objectContaining({
+          platform: 'tiktok_ads', providerRevoked: false, error: 'REVOKE_FAILED', providerCode: 40001, localRevocation: 'continued',
+        }),
+      }));
+      expect(infisical.deleteSecret).toHaveBeenCalledWith('secret-tiktok');
+      expect(prisma.platformAuthorization.update).toHaveBeenCalledWith({ where: { id: 'auth-tiktok' }, data: { status: 'revoked' } });
+      expect(auditService.logTokenRevoke).toHaveBeenCalledWith(expect.objectContaining({ platform: 'tiktok_ads' }));
+    });
+
+    it('does not read the TikTok token without an audit context and records the skipped provider revoke', async () => {
+      vi.mocked(prisma.platformAuthorization.findMany).mockResolvedValue([
+        { id: 'auth-tiktok', platform: 'tiktok', secretId: 'secret-tiktok', status: 'active' },
+      ] as any);
+
+      const result = await connectionService.revokeConnection('connection-1');
+
+      expect(result.error).toBeNull();
+      expect(infisical.getOAuthTokens).not.toHaveBeenCalled();
+      expect(metaRevokeTokenMock).not.toHaveBeenCalled();
+      expect(auditService.createAuditLog).toHaveBeenCalledWith(expect.objectContaining({
+        action: 'TIKTOK_PROVIDER_REVOKE_FAILED',
+        metadata: expect.objectContaining({ error: 'audit_context_missing' }),
+      }));
+      expect(prisma.clientConnection.update).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.objectContaining({ status: 'revoked', revokedBy: 'system' }),
+      }));
+    });
+  });
+
   describe('revokePlatformAuthorization', () => {
+    it('revokes a TikTok token upstream, then locally, and audits both', async () => {
+      vi.mocked(prisma.platformAuthorization.findFirst).mockResolvedValue({
+        id: 'auth-tiktok', connectionId: 'connection-1', platform: 'tiktok', secretId: 'secret-tiktok', status: 'active',
+      } as any);
+      vi.mocked(prisma.platformAuthorization.update).mockResolvedValue({ id: 'auth-tiktok', status: 'revoked' } as any);
+      vi.mocked(prisma.clientConnection.findUnique).mockResolvedValue({
+        agencyId: 'agency-1', clientEmail: 'client@example.com', accessRequestId: null,
+      } as any);
+      vi.mocked(infisical.getOAuthTokens).mockResolvedValue({ accessToken: 'tiktok-access-token' } as any);
+      vi.mocked(infisical.deleteSecret).mockResolvedValue(undefined);
+
+      const result = await connectionService.revokePlatformAuthorization('connection-1', 'tiktok', { userEmail: 'owner@example.com', ipAddress: '127.0.0.1' });
+
+      expect(result.error).toBeNull();
+      expect(metaRevokeTokenMock).toHaveBeenCalledWith('tiktok-access-token');
+      expect(metaRevokeTokenMock.mock.invocationCallOrder[0]).toBeLessThan(vi.mocked(infisical.deleteSecret).mock.invocationCallOrder[0]);
+      expect(auditService.createAuditLog).toHaveBeenCalledWith(expect.objectContaining({
+        action: 'TIKTOK_TOKEN_REVOKED',
+        metadata: expect.objectContaining({ reason: 'platform_authorization_revoked', providerRevoked: true }),
+      }));
+      expect(auditService.logTokenRevoke).toHaveBeenCalledWith({
+        connectionId: 'connection-1',
+        platform: 'tiktok',
+        userEmail: 'owner@example.com',
+        ipAddress: '127.0.0.1',
+        agencyId: 'agency-1',
+        details: { authorizationId: 'auth-tiktok', reason: 'platform_authorization_revoked' },
+      });
+    });
+
+    it('logs TIKTOK_PROVIDER_REVOKE_FAILED and still revokes locally when the TikTok call throws', async () => {
+      vi.mocked(prisma.platformAuthorization.findFirst).mockResolvedValue({
+        id: 'auth-tiktok', connectionId: 'connection-1', platform: 'tiktok', secretId: 'secret-tiktok', status: 'active',
+      } as any);
+      vi.mocked(prisma.platformAuthorization.update).mockResolvedValue({ id: 'auth-tiktok', status: 'revoked' } as any);
+      vi.mocked(prisma.clientConnection.findUnique).mockResolvedValue({ agencyId: 'agency-1', clientEmail: 'client@example.com' } as any);
+      vi.mocked(infisical.getOAuthTokens).mockResolvedValue({ accessToken: 'tiktok-access-token' } as any);
+      vi.mocked(infisical.deleteSecret).mockResolvedValue(undefined);
+      metaRevokeTokenMock.mockRejectedValueOnce(new TypeError('fetch failed'));
+
+      const result = await connectionService.revokePlatformAuthorization('connection-1', 'tiktok', { userEmail: 'owner@example.com', ipAddress: '127.0.0.1' });
+
+      expect(result.error).toBeNull();
+      expect(auditService.createAuditLog).not.toHaveBeenCalledWith(expect.objectContaining({ action: 'TIKTOK_TOKEN_REVOKED' }));
+      expect(auditService.createAuditLog).toHaveBeenCalledWith(expect.objectContaining({
+        action: 'TIKTOK_PROVIDER_REVOKE_FAILED',
+        metadata: expect.objectContaining({ error: 'provider_request_failed', providerRevoked: false }),
+      }));
+      expect(infisical.deleteSecret).toHaveBeenCalledWith('secret-tiktok');
+      expect(prisma.platformAuthorization.update).toHaveBeenCalledWith({ where: { id: 'auth-tiktok' }, data: { status: 'revoked' } });
+    });
+
+
     it('recomputes request fulfillment after revoking one authorization', async () => {
       vi.mocked(prisma.platformAuthorization.findFirst).mockResolvedValue({
         id: 'auth-meta-1', connectionId: 'connection-1', platform: 'meta', secretId: 'meta-token-1',
