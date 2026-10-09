@@ -13,16 +13,31 @@
 import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
 
+/**
+ * @internal-for-golden — pinned by __tests__/identity-verification.service.test.ts.
+ * Curated identity-mode subset, characterized verbatim from the duplicated
+ * literals this const replaces (DEC-015, docs/DECISIONS.md). Intentionally NOT
+ * derived from the PLATFORMS registry. Phase 2a may absorb it there.
+ */
+export const IDENTITY_VERIFICATION_PLATFORMS = [
+  'google',
+  'meta',
+  'meta_ads',
+  'google_ads',
+  'ga4',
+  'linkedin',
+] as const;
+
 // Validation schemas
 const validateIdentitySchema = z.object({
-  platform: z.enum(['google', 'meta', 'meta_ads', 'google_ads', 'ga4', 'linkedin']),
+  platform: z.enum(IDENTITY_VERIFICATION_PLATFORMS),
   agencyEmail: z.string().email().optional(),
   businessId: z.string().optional(),
 });
 
 const createIdentityConnectionSchema = z.object({
   agencyId: z.string().min(1),
-  platform: z.enum(['google', 'meta', 'meta_ads', 'google_ads', 'ga4', 'linkedin']),
+  platform: z.enum(IDENTITY_VERIFICATION_PLATFORMS),
   agencyEmail: z.string().email().optional(),
   businessId: z.string().optional(),
   connectedBy: z.string().email(),
