@@ -1,3 +1,23 @@
+## Session: 2026-10-08/09 — PLATFORMS registry: Phases 2a–3 shipped; the partition has one owner and an enforcement layer
+
+### What was done
+- Phase 2a (PR #174): `clientOAuthPlatform` now constructs from the registry's `clientAuthorizable` derivation; the hand-typed gate enum is gone. RED→GREEN on the elementwise construction assertion.
+- Phase 2b (PR #175, two commits): the 15 OAuth personalities absorbed into the registry's `oauth` blocks verbatim (Meta still references `META_GRAPH_VERSION` / `META_PERMISSION_CONTRACT`); `registry.config.ts` became a thin facade and the existing `registry.config.test.ts` pins prove the projection byte-for-byte; dead `PLATFORM_SCOPES` (85 lines) deleted. Factory keys pinned to the new `connectorPlatformIds` derivation by a completeness test; stale factory header replaced.
+- Phase 2c (PR #178): web's triple-encoded seven-member manual list collapsed to the shared `manualConfirmationPlatforms` derivation. The lib's own suite caught a real regression in the first rewrite — beehiiv is agency-`api_key` but client-manual; the flow decision reads the derived list (`connectionMethod !== 'oauth'`), not `=== 'manual'`. Instructional copy stays web-side.
+- Phase 3 (PR #179): partition duplicates deduped (`RECOMMENDED_CONNECTION_PLATFORMS` / `getConnectionPlatformCategory` / dead agency `getPlatformDisplayName` deleted); email quartet collapsed to one named `EMAIL_INVITE_PLATFORMS` (PQ-selector-4 stays parked). Platform-id walker shipped: node:test over 562 files, ≥3-quoted-run and ≥3-case-dispatch detectors, 13-entry ratcheted allowlist seeded from the real first run, stale-entry failures, >250 anti-vacuous guard, wired into root `test:run`. Transform normalizer gained its emitted-ids test.
+- Walker built by a clean subagent after two corrupted direct writes; two spec bugs found and fixed (ROOT depth; newline-erasing comment blanking broke line numbers — now per-character blanking preserving newlines).
+
+### Decisions
+- Order ownership for every derived list moved to the registry; per-tier pins are order-free frozen sets, construction assertions are elementwise.
+- Unquoted object-key maps are outside the walker's predicate: the factory is pinned by `factory-completeness.test.ts` instead (the reviewer's predicted factory allowlist entry turned out unnecessary — and would have failed as stale).
+- Shared's pre-existing global coverage-threshold breach (branches/functions < 80% on main) remains open; Phases 1+ improved it (registry.ts is 100%).
+
+### Next steps
+- Merge the stack in order (#172 → #173 → #174 → #175 → #178 → #179).
+- Review cards 2/3/5 can now consume the walker allowlist: refactoring `getSelectedAssetCount` dispatch (card 2), the invite session module (card 3), or the connector interface (card 5) should PRUNE allowlist entries in the same change — the stale check enforces it.
+- Registry migration of the shared types.ts partition (PlatformSchema/ManualConfirmationPlatformSchema derive from PLATFORMS) is the natural Phase 4 if drift reappears; the allowlist entry documents it.
+- Parked product questions: PQ-other-14, PQ-selector-4.
+
 ## Session: 2026-10-08 — PLATFORMS registry: architecture review, settled design, Phase 0+1 shipped (PR #172 + stacked PR)
 
 ### What was done
