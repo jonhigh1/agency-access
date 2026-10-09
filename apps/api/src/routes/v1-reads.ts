@@ -11,7 +11,6 @@
 
 import { randomUUID } from 'crypto';
 import type { FastifyInstance } from 'fastify';
-import { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { requireKeyScope } from '@/middleware/api-key-auth.js';
 import { v1RateLimitPreHandler, v1TierGate } from '@/middleware/v1-gate.js';
@@ -22,7 +21,11 @@ import {
   decodeKeysetCursor,
 } from '@/services/catalog.service.js';
 import { quotaService } from '@/services/quota.service.js';
-import { DEFAULT_LIST_LIMIT, MAX_LIST_LIMIT } from '@/lib/list-pagination.js';
+import { v1Error } from '@/lib/v1-envelope.js';
+import {
+  v1ClientListQuerySchema,
+  v1RequestListQuerySchema,
+} from './v1-schemas.js';
 
 function principalOf(request: unknown): ApiKeyPrincipal {
   return (request as { apiKey: ApiKeyPrincipal }).apiKey;
@@ -47,34 +50,8 @@ function sendValidationError(
   reply: import('fastify').FastifyReply,
   message: string,
 ) {
-  return reply.code(400).send({
-    data: null,
-    error: { code: 'VALIDATION_ERROR', message },
-  });
+  return v1Error(reply, 400, 'VALIDATION_ERROR', message);
 }
-
-const limitSchema = z.coerce
-  .number()
-  .int()
-  .min(1)
-  .max(MAX_LIST_LIMIT)
-  .default(DEFAULT_LIST_LIMIT);
-
-const clientListQuerySchema = z
-  .object({
-    limit: limitSchema,
-    cursor: z.string().optional(),
-    email: z.string().email().optional(),
-  })
-  .strict();
-
-const requestListQuerySchema = z
-  .object({
-    limit: limitSchema,
-    cursor: z.string().optional(),
-    status: z.enum(['pending', 'partial', 'completed', 'expired', 'revoked']).optional(),
-  })
-  .strict();
 
 export async function v1ReadsRoutes(fastify: FastifyInstance) {
   const tier = v1TierGate();
@@ -116,7 +93,7 @@ export async function v1ReadsRoutes(fastify: FastifyInstance) {
     '/clients',
     { preHandler: [tier, rate, requireKeyScope('clients:read')] },
     async (request, reply) => {
-      const parsed = clientListQuerySchema.safeParse(request.query);
+      const parsed = v1ClientListQuerySchema.safeParse(request.query);
       if (!parsed.success) {
         return sendValidationError(reply, parsed.error.errors[0]?.message ?? 'Invalid query');
       }
@@ -146,7 +123,7 @@ export async function v1ReadsRoutes(fastify: FastifyInstance) {
     '/requests',
     { preHandler: [tier, rate, requireKeyScope('requests:read')] },
     async (request, reply) => {
-      const parsed = requestListQuerySchema.safeParse(request.query);
+      const parsed = v1RequestListQuerySchema.safeParse(request.query);
       if (!parsed.success) {
         return sendValidationError(reply, parsed.error.errors[0]?.message ?? 'Invalid query');
       }
@@ -185,10 +162,7 @@ export async function v1ReadsRoutes(fastify: FastifyInstance) {
         }),
       ]);
       if (!snapshot) {
-        return reply.code(500).send({
-          data: null,
-          error: { code: 'INTERNAL_ERROR', message: 'Unable to load usage' },
-        });
+        return v1Error(reply, 500, 'INTERNAL_ERROR', 'Unable to load usage');
       }
       const { currentTier, updatedAt: _updatedAt, ...metrics } = snapshot as unknown as Record<string, unknown>;
       void _updatedAt;

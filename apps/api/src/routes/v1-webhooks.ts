@@ -16,8 +16,16 @@
 
 import { randomUUID } from 'crypto';
 import type { FastifyInstance, FastifyReply } from 'fastify';
-import { z } from 'zod';
 import { requireKeyScope } from '@/middleware/api-key-auth.js';
+import { v1Error } from '@/lib/v1-envelope.js';
+import {
+  V1_WEBHOOK_EVENT_DESCRIPTIONS,
+  V1_WEBHOOK_IDEMPOTENCY_ENDPOINT,
+  v1WebhookDeliveriesQuerySchema,
+  v1WebhookEndpointCreateSchema,
+  v1WebhookEndpointUpdateSchema,
+  v1WebhookRotateSchema,
+} from './v1-schemas.js';
 import { v1RateLimitPreHandler, v1TierGate } from '@/middleware/v1-gate.js';
 import type { ApiKeyPrincipal } from '@/services/api-key.service';
 import {
@@ -45,45 +53,11 @@ import {
   listWebhookDeliveriesKeyset,
 } from '@/services/webhook-delivery.service.js';
 import { V1_WEBHOOK_SUBSCRIBABLE_EVENTS } from '@agency-platform/shared';
-import { DEFAULT_LIST_LIMIT, MAX_LIST_LIMIT } from '@/lib/list-pagination.js';
 
-const IDEMPOTENCY_ENDPOINT = 'POST /api/v1/webhook-endpoints';
+const IDEMPOTENCY_ENDPOINT = V1_WEBHOOK_IDEMPOTENCY_ENDPOINT;
 const IDEMPOTENCY_KEY_REQUIRED_CODE = 'IDEMPOTENCY_KEY_REQUIRED';
 
-const TAXONOMY_DESCRIPTIONS: Record<string, string> = {
-  'webhook.test': 'Connectivity probe sent on demand to verify an endpoint.',
-  'access_request.partial': 'A request crossed into partial authorization (some services granted).',
-  'access_request.completed': 'A request reached full authorization (all services granted).',
-  'access_request.revoked': 'A request was revoked after authorization.',
-  'access_request.expired': 'A request expired before completion.',
-  'connection.status_changed': 'A platform connection changed health status.',
-};
-
-const EventEnum = z.enum(V1_WEBHOOK_SUBSCRIBABLE_EVENTS as unknown as [string, ...string[]]);
-
-const endpointCreateBodySchema = z
-  .object({
-    url: z.string().url().max(2048),
-    subscribedEvents: z.array(EventEnum).min(1).max(6),
-    preferredApiVersion: z.enum(['2026-03-08', '2026-03-19']).optional(),
-  })
-  .strict();
-
-const endpointUpdateBodySchema = endpointCreateBodySchema;
-
-const rotateBodySchema = z
-  .object({
-    /** False (default): 24h dual-active overlap. True: replace at once. */
-    immediate: z.boolean().optional().default(false),
-  })
-  .strict();
-
-const deliveriesQuerySchema = z
-  .object({
-    limit: z.coerce.number().int().min(1).max(MAX_LIST_LIMIT).default(DEFAULT_LIST_LIMIT),
-    cursor: z.string().optional(),
-  })
-  .strict();
+const TAXONOMY_DESCRIPTIONS: Record<string, string> = V1_WEBHOOK_EVENT_DESCRIPTIONS;
 
 function principalOf(request: unknown): ApiKeyPrincipal {
   return (request as { apiKey: ApiKeyPrincipal }).apiKey;
@@ -117,7 +91,7 @@ function sendServiceError(reply: FastifyReply, error: { code: string; message: s
 }
 
 function sendValidationError(reply: FastifyReply, message: string, code = 'VALIDATION_ERROR') {
-  return reply.code(400).send({ data: null, error: { code, message } });
+  return v1Error(reply, 400, code, message);
 }
 
 export async function v1WebhooksRoutes(fastify: FastifyInstance) {
@@ -168,7 +142,7 @@ export async function v1WebhooksRoutes(fastify: FastifyInstance) {
     { preHandler: [tier, rate, requireKeyScope('webhooks:write')] },
     async (request, reply) => {
       const principal = principalOf(request);
-      const parsed = endpointCreateBodySchema.safeParse(request.body);
+      const parsed = v1WebhookEndpointCreateSchema.safeParse(request.body);
       if (!parsed.success) {
         const first = parsed.error.errors[0];
         return sendValidationError(
@@ -199,13 +173,13 @@ export async function v1WebhooksRoutes(fastify: FastifyInstance) {
         });
       } catch (error) {
         if (error instanceof IdempotencyInProgressError) {
-          return reply.code(409).send({ data: null, error: { code: error.code, message: error.message } });
+          return v1Error(reply, 409, error.code, error.message);
         }
         if (error instanceof IdempotencyConflictError) {
-          return reply.code(409).send({ data: null, error: { code: error.code, message: error.message } });
+          return v1Error(reply, 409, error.code, error.message);
         }
         if (error instanceof IdempotencyExpiredError) {
-          return reply.code(410).send({ data: null, error: { code: error.code, message: error.message } });
+          return v1Error(reply, 410, error.code, error.message);
         }
         throw error;
       }
@@ -264,7 +238,7 @@ export async function v1WebhooksRoutes(fastify: FastifyInstance) {
     async (request, reply) => {
       const principal = principalOf(request);
       const { id } = request.params as { id: string };
-      const parsed = endpointUpdateBodySchema.safeParse(request.body);
+      const parsed = v1WebhookEndpointUpdateSchema.safeParse(request.body);
       if (!parsed.success) {
         const first = parsed.error.errors[0];
         return sendValidationError(
@@ -321,7 +295,7 @@ export async function v1WebhooksRoutes(fastify: FastifyInstance) {
     async (request, reply) => {
       const principal = principalOf(request);
       const { id } = request.params as { id: string };
-      const parsed = rotateBodySchema.safeParse(request.body ?? {});
+      const parsed = v1WebhookRotateSchema.safeParse(request.body ?? {});
       if (!parsed.success) {
         const first = parsed.error.errors[0];
         return sendValidationError(
@@ -352,7 +326,7 @@ export async function v1WebhooksRoutes(fastify: FastifyInstance) {
     async (request, reply) => {
       const principal = principalOf(request);
       const { id } = request.params as { id: string };
-      const parsed = deliveriesQuerySchema.safeParse(request.query);
+      const parsed = v1WebhookDeliveriesQuerySchema.safeParse(request.query);
       if (!parsed.success) {
         const first = parsed.error.errors[0];
         return sendValidationError(

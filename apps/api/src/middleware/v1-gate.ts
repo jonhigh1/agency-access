@@ -29,6 +29,7 @@ import {
   checkV1TierEntitlement,
 } from '@/services/quota.service.js';
 import type { ApiKeyPrincipal } from '@/services/api-key.service.js';
+import { v1Error } from '@/lib/v1-envelope.js';
 
 export { V1_ENTITLED_SUBSCRIPTION_STATUSES };
 
@@ -214,22 +215,15 @@ export function v1TierGate() {
     const result = await checkV1TierEntitlement(principal.agencyId);
     reply.header('X-RateLimit-Limit', String(V1_RATE_LIMIT_MAX_REQUESTS));
     if (result.unavailable) {
-      return reply.code(503).send({
-        data: null,
-        error: {
-          code: V1_TIER_UNAVAILABLE_CODE,
-          message: 'Unable to verify API access for this plan. Please try again later.',
-        },
-      });
+      return v1Error(
+        reply,
+        503,
+        V1_TIER_UNAVAILABLE_CODE,
+        'Unable to verify API access for this plan. Please try again later.',
+      );
     }
     if (!result.entitled) {
-      return reply.code(403).send({
-        data: null,
-        error: {
-          code: V1_TIER_DENIED_CODE,
-          message: 'API access requires a paid plan or active trial.',
-        },
-      });
+      return v1Error(reply, 403, V1_TIER_DENIED_CODE, 'API access requires a paid plan or active trial.');
     }
   };
 }
@@ -246,13 +240,7 @@ export function v1RateLimitPreHandler() {
     rateHeaders(reply, check.remaining);
     if (!check.allowed) {
       reply.header('Retry-After', String(check.retryAfterSeconds));
-      return reply.code(429).send({
-        data: null,
-        error: {
-          code: V1_RATE_LIMITED_CODE,
-          message: 'Rate limit exceeded. Please try again later.',
-        },
-      });
+      return v1Error(reply, 429, V1_RATE_LIMITED_CODE, 'Rate limit exceeded. Please try again later.');
     }
   };
 }

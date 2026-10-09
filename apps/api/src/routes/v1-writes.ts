@@ -21,9 +21,10 @@
 
 import { randomUUID } from 'crypto';
 import type { FastifyInstance, FastifyReply, FastifyRequest } from 'fastify';
-import { z } from 'zod';
+import type { z } from 'zod';
 import { prisma } from '@/lib/prisma';
 import { requireKeyScope } from '@/middleware/api-key-auth.js';
+import { v1Error } from '@/lib/v1-envelope.js';
 import {
   V1_RATE_LIMITED_CODE,
   V1_RATE_LIMIT_MAX_REQUESTS,
@@ -45,6 +46,11 @@ import {
 } from '@/services/idempotency.service.js';
 import { ClientError } from '@/services/client.service.js';
 import {
+  v1ClientCreateSchema,
+  v1ExternalRequestsQuerySchema,
+  v1RequestCreateSchema,
+} from './v1-schemas.js';
+import {
   generateUniqueToken,
   listRequestsForExternalClient,
 } from '@/services/access-request.service.js';
@@ -58,7 +64,7 @@ function principalOf(request: FastifyRequest): ApiKeyPrincipal {
 export const IDEMPOTENCY_KEY_REQUIRED_CODE = 'IDEMPOTENCY_KEY_REQUIRED';
 
 function sendError(reply: FastifyReply, statusCode: number, code: string, message: string) {
-  return reply.code(statusCode).send({ data: null, error: { code, message } });
+  return v1Error(reply, statusCode, code, message);
 }
 
 function sendSuccess(reply: FastifyReply, statusCode: number, data: unknown, replayed: boolean) {
@@ -100,44 +106,9 @@ function v1WriteRatePreCheck() {
   };
 }
 
-// Strict v1 write schemas (KTD9). externalReference never appears: it stays
-// internal-only while externalClientId is the public join key (KTD4).
-const v1ClientCreateSchema = z
-  .object({
-    name: z.string().min(1),
-    company: z.string().min(1),
-    email: z.string().email(),
-    website: z.string().url().optional(),
-    language: z.string().min(2).max(10).optional(),
-    externalClientId: z.string().min(1).max(128).optional(),
-  })
-  .strict();
-
-const v1RequestCreateSchema = z
-  .object({
-    clientId: z.string().min(1).optional(),
-    clientExternalId: z.string().min(1).max(128).optional(),
-    clientName: z.string().min(1),
-    clientEmail: z.string().email(),
-    platforms: z
-      .array(
-        z
-          .object({
-            platform: z.string().min(1),
-            accessLevel: z.enum(['manage', 'view_only']),
-          })
-          .strict(),
-      )
-      .min(1),
-  })
-  .strict();
-
-const v1ExternalRequestsQuerySchema = z
-  .object({
-    limit: z.coerce.number().int().min(1).max(100).default(50),
-    cursor: z.string().optional(),
-  })
-  .strict();
+// Strict v1 write schemas live in the single shared module (KTD10);
+// externalReference never appears: it stays internal-only while
+// externalClientId is the public join key (KTD4).
 
 type Tx = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
 

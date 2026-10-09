@@ -10,6 +10,7 @@
 import type { FastifyInstance } from 'fastify';
 import { apiKeyPreHandler } from '@/middleware/api-key-auth.js';
 import { prisma } from '@/lib/prisma';
+import { v1Error, v1Success } from '@/lib/v1-envelope.js';
 import { v1ReadsRoutes } from './v1-reads.js';
 import { v1WebhooksRoutes } from './v1-webhooks.js';
 import { v1WritesRoutes } from './v1-writes.js';
@@ -20,13 +21,12 @@ export async function v1Routes(fastify: FastifyInstance) {
   fastify.setErrorHandler((error: unknown, _request, reply) => {
     const err = error as { statusCode?: number; code?: string; message?: string };
     const statusCode = err.statusCode ?? 500;
-    void reply.code(statusCode).send({
-      data: null,
-      error: {
-        code: err?.code || 'INTERNAL_ERROR',
-        message: err?.message || 'An unexpected error occurred',
-      },
-    });
+    return v1Error(
+      reply,
+      statusCode,
+      err?.code || 'INTERNAL_ERROR',
+      err?.message || 'An unexpected error occurred',
+    );
   });
 
   fastify.addHook('onRequest', apiKeyPreHandler());
@@ -60,21 +60,15 @@ export async function v1Routes(fastify: FastifyInstance) {
         }),
       ]);
 
-      return reply.send({
-        data: {
-          agency: agency ? { id: agency.id, name: agency.name } : { id: principal.agencyId },
-          keyPrefix: principal.keyPrefix,
-          scopes: principal.scopes,
-          tier: subscription?.tier ?? null,
-          limits: { maxKeys: MAX_API_KEYS_PER_AGENCY, activeKeys },
-        },
-        error: null,
+      return v1Success(reply, {
+        agency: agency ? { id: agency.id, name: agency.name } : { id: principal.agencyId },
+        keyPrefix: principal.keyPrefix,
+        scopes: principal.scopes,
+        tier: subscription?.tier ?? null,
+        limits: { maxKeys: MAX_API_KEYS_PER_AGENCY, activeKeys },
       });
     } catch {
-      return reply.code(500).send({
-        data: null,
-        error: { code: 'INTERNAL_ERROR', message: 'Self-check failed' },
-      });
+      return v1Error(reply, 500, 'INTERNAL_ERROR', 'Self-check failed');
     }
   });
 }

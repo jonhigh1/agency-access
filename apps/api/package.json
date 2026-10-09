@@ -20,6 +20,7 @@
     "db:seed": "tsx prisma/seed.ts",
     "seed:staging": "tsx scripts/seed-staging.ts",
     "db:studio": "prisma studio",
+    "openapi:build": "tsx --tsconfig tsconfig.json ./scripts/emit-v1-openapi.ts",
     "seed:meta-tier-cron-token": "tsx scripts/seed-meta-tier-cron-token.ts",
     "ops:review-demo-page-partner": "tsx scripts/review-demo-page-partner-ops.ts",
     "ops:meta-asset-grant-failures": "tsx scripts/meta-asset-grant-failures-ops.ts"

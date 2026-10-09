@@ -14,15 +14,10 @@ import {
   verifyApiKey,
   type ApiKeyPrincipal,
 } from '@/services/api-key.service';
+import { v1Error } from '@/lib/v1-envelope.js';
 
 function denyKey(reply: FastifyReply) {
-  return reply.code(401).send({
-    data: null,
-    error: {
-      code: INVALID_API_KEY_CODE,
-      message: 'Invalid or missing API key',
-    },
-  });
+  return v1Error(reply, 401, INVALID_API_KEY_CODE, 'Invalid or missing API key');
 }
 
 function extractBearerKey(request: FastifyRequest): string | null {
@@ -53,7 +48,7 @@ export function requireKeyScope(scope: string) {
     }
     const scopeError = assertKeyScope(principal, scope);
     if (scopeError) {
-      return reply.code(403).send({ data: null, error: scopeError });
+      return v1Error(reply, 403, scopeError.code, scopeError.message);
     }
   };
 }
