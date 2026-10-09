@@ -42,6 +42,7 @@ model Agency {
   agentGrants           AgentGrant[]
   agentOperations       AgentOperation[]
   googleOffboardingRuns GoogleOffboardingRun[]
+  apiKeys               ApiKey[]
 
   @@map("agencies")
 }
@@ -389,6 +390,34 @@ model AgentOperation {
   @@index([grantId, status, createdAt])
   @@index([status, expiresAt])
   @@map("agent_operations")
+}
+
+// Public API (v1) agency keys. Hashes in Postgres are the sanctioned
+// exception to the no-token-material rule: only HMAC hashes land here,
+// never raw secrets. Raw secrets are shown once at issuance and never stored.
+model ApiKey {
+  id            String    @id @default(uuid())
+  agencyId      String    @map("agency_id")
+  familyId      String    @map("family_id")
+  name          String
+  prefix        String    @map("prefix")
+  keyHash       String    @unique @map("key_hash")
+  pepperVersion Int       @default(1) @map("pepper_version")
+  scopes        String[]  @default([])
+  createdBy     String    @map("created_by")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  lastUsedAt    DateTime? @map("last_used_at")
+  expiresAt     DateTime? @map("expires_at")
+  revokedAt     DateTime? @map("revoked_at")
+  revokedBy     String?   @map("revoked_by")
+
+  agency Agency @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+
+  @@index([prefix])
+  @@index([agencyId, revokedAt])
+  @@index([familyId, revokedAt])
+  @@map("api_keys")
 }
 
 // Authorization verification tracking (for platform-native identity flow)

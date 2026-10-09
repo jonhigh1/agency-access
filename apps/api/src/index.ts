@@ -35,6 +35,8 @@ import { sentryTestRoutes } from './routes/sentry-test.routes.js';
 import { agentGrantRoutes } from './routes/agent-grants.js';
 import { agentOperationRoutes } from './routes/agent-operations.js';
 import { clientOffboardingRoutes } from './routes/client-offboarding.routes.js';
+import { apiKeyRoutes } from './routes/api-keys.js';
+import { v1Routes } from './routes/v1.js';
 import { mcpRoutes } from './routes/mcp.js';
 import { performanceOnRequest, performanceOnSend } from './middleware/performance.js';
 import { prisma } from './lib/prisma.js';
@@ -200,6 +202,8 @@ await fastify.register(sentryTestRoutes); // No prefix - routes handle their own
 await fastify.register(agentGrantRoutes, { prefix: '/api' });
 await fastify.register(agentOperationRoutes, { prefix: '/api' });
 await fastify.register(clientOffboardingRoutes, { prefix: '/api' });
+await fastify.register(apiKeyRoutes, { prefix: '/api' });
+await fastify.register(v1Routes, { prefix: '/api/v1' });
 if (env.AGENT_NATIVE_ENABLED) {
   await fastify.register(mcpRoutes);
 }
