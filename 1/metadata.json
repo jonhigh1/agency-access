@@ -1,0 +1,56 @@
+{
+  "cli_version": "0.10.2",
+  "checkpoint_id": "01M4H50TY0038WS6RP2CF2J9Y9",
+  "session_id": "agent-745c2ef8-ac82-4e7c-8664-c19dc52acabb",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-09T20:17:41.637096Z",
+  "branch": "refactor/fulfillment-selection-signals",
+  "checkpoints_count": 2,
+  "save_step_count": 3,
+  "files_touched": [],
+  "agent": "Cursor",
+  "model": "default",
+  "turn_id": "45d1c83ecab4",
+  "checkpoint_transcript_start": 24,
+  "transcript_lines_at_start": 24,
+  "compact_transcript_start": 3,
+  "session_metrics": {
+    "duration_ms": 30388,
+    "turn_count": 3
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    },
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 36,
+      "user_lines_removed": 2,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        ".githooks/pre-push": 9,
+        ".impeccable/config.local.json": 26,
+        ".impeccable/hook.cache.json": 1
+      },
+      "user_removed_per_file": {
+        ".githooks/pre-push": 2
+      }
+    },
+    {
+      "checkpoint_number": 3,
+      "user_lines_added": 27,
+      "user_lines_removed": 0,
+      "agent_lines_added": 9,
+      "agent_lines_removed": 2,
+      "user_added_per_file": {
+        ".impeccable/config.local.json": 26,
+        ".impeccable/hook.cache.json": 1
+      }
+    }
+  ]
+}
