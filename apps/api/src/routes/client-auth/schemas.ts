@@ -5,7 +5,11 @@ import { z } from 'zod';
 // Klaviyo, Mailchimp, and Pinterest are manual-invitation platforms
 // (see PLATFORM_TOKEN_CAPABILITIES in @agency-platform/shared) and are
 // intentionally excluded — their OAuth credentials no longer exist.
-const clientOAuthPlatform = z.enum([
+//
+// @internal-for-golden — exported only so the golden can pin it against the
+// shared registry derivation (client-oauth-platforms.golden.test.ts).
+// Phase 2a deletes this enum in favor of the registry's clientOAuthPlatforms.
+export const clientOAuthPlatform = z.enum([
   'google',
   'meta',
   'meta_ads',
