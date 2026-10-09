@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { prisma } from '@/lib/prisma';
+import { lookup } from 'node:dns/promises';
 import { infisical } from '@/lib/infisical';
 import { auditService } from '@/services/audit.service';
 import {
@@ -13,17 +14,21 @@ import {
 vi.mock('@/lib/prisma', () => ({
   prisma: {
     webhookEndpoint: {
-      findUnique: vi.fn(),
-      upsert: vi.fn(),
+      findFirst: vi.fn(),
+      create: vi.fn(),
       update: vi.fn(),
     },
   },
 }));
 
+vi.mock('node:dns/promises', () => ({
+  lookup: vi.fn(),
+}));
+
 vi.mock('@/lib/infisical', () => ({
   infisical: {
     storePlainSecret: vi.fn(),
-    deleteSecret: vi.fn(),
+    deleteSecret: vi.fn().mockResolvedValue(undefined),
     generateSecretName: vi.fn((platform: string, id: string) => `${platform}_token_${id}`),
   },
 }));
@@ -37,10 +42,12 @@ vi.mock('@/services/audit.service', () => ({
 describe('webhook-endpoint.service', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Creation/update URL checks fail open on resolver errors.
+    vi.mocked(lookup).mockRejectedValue(Object.assign(new Error('ENOTFOUND'), { code: 'ENOTFOUND' }));
   });
 
   it('creates a single webhook endpoint for an agency and stores the secret in Infisical', async () => {
-    vi.mocked(prisma.webhookEndpoint.upsert).mockResolvedValue({
+    vi.mocked(prisma.webhookEndpoint.create).mockResolvedValue({
       id: 'endpoint-1',
       agencyId: 'agency-1',
       url: 'https://example.com/webhook',
@@ -79,7 +86,7 @@ describe('webhook-endpoint.service', () => {
   });
 
   it('rejects creating a second webhook endpoint for the same agency', async () => {
-    vi.mocked(prisma.webhookEndpoint.findUnique).mockResolvedValue({
+    vi.mocked(prisma.webhookEndpoint.findFirst).mockResolvedValue({
       id: 'endpoint-existing',
       agencyId: 'agency-1',
       url: 'https://example.com/webhook',
@@ -98,13 +105,13 @@ describe('webhook-endpoint.service', () => {
       code: 'WEBHOOK_ENDPOINT_EXISTS',
       message: 'A webhook endpoint already exists for this agency',
     });
-    expect(prisma.webhookEndpoint.upsert).not.toHaveBeenCalled();
+    expect(prisma.webhookEndpoint.create).not.toHaveBeenCalled();
     expect(infisical.storePlainSecret).not.toHaveBeenCalled();
     expect(auditService.createAuditLog).not.toHaveBeenCalled();
   });
 
   it('returns the existing endpoint summary without exposing secret material', async () => {
-    vi.mocked(prisma.webhookEndpoint.findUnique).mockResolvedValue({
+    vi.mocked(prisma.webhookEndpoint.findFirst).mockResolvedValue({
       id: 'endpoint-1',
       agencyId: 'agency-1',
       url: 'https://example.com/webhook',
@@ -126,7 +133,7 @@ describe('webhook-endpoint.service', () => {
   });
 
   it('returns INTERNAL_ERROR when endpoint lookup fails unexpectedly', async () => {
-    vi.mocked(prisma.webhookEndpoint.findUnique).mockRejectedValue(new Error('relation "webhook_endpoints" does not exist'));
+    vi.mocked(prisma.webhookEndpoint.findFirst).mockRejectedValue(new Error('relation "webhook_endpoints" does not exist'));
 
     const result = await getWebhookEndpoint('agency-1');
 
@@ -138,7 +145,7 @@ describe('webhook-endpoint.service', () => {
   });
 
   it('updates the existing endpoint settings for an agency', async () => {
-    vi.mocked(prisma.webhookEndpoint.findUnique).mockResolvedValue({
+    vi.mocked(prisma.webhookEndpoint.findFirst).mockResolvedValue({
       id: 'endpoint-1',
       agencyId: 'agency-1',
       secretId: 'webhook_token_endpoint-1',
@@ -166,7 +173,7 @@ describe('webhook-endpoint.service', () => {
 
     expect(result.error).toBeNull();
     expect(prisma.webhookEndpoint.update).toHaveBeenCalledWith({
-      where: { agencyId: 'agency-1' },
+      where: { id: 'endpoint-1' },
       data: expect.objectContaining({
         url: 'https://example.com/new-webhook',
         subscribedEvents: ['webhook.test'],
@@ -180,7 +187,7 @@ describe('webhook-endpoint.service', () => {
   });
 
   it('rotates the endpoint signing secret and deletes the previous secret reference', async () => {
-    vi.mocked(prisma.webhookEndpoint.findUnique).mockResolvedValue({
+    vi.mocked(prisma.webhookEndpoint.findFirst).mockResolvedValue({
       id: 'endpoint-1',
       agencyId: 'agency-1',
       secretId: 'webhook_token_endpoint-1',
@@ -202,6 +209,8 @@ describe('webhook-endpoint.service', () => {
     const result = await rotateWebhookEndpointSecret({
       agencyId: 'agency-1',
       rotatedBy: 'owner@example.com',
+      // Dashboard semantic: immediate revocation, as the dashboard route passes.
+      immediate: true,
     });
 
     expect(result.error).toBeNull();
@@ -219,7 +228,7 @@ describe('webhook-endpoint.service', () => {
   });
 
   it('disables an existing endpoint', async () => {
-    vi.mocked(prisma.webhookEndpoint.findUnique).mockResolvedValue({
+    vi.mocked(prisma.webhookEndpoint.findFirst).mockResolvedValue({
       id: 'endpoint-1',
       agencyId: 'agency-1',
       secretId: 'webhook_token_endpoint-1',
@@ -246,7 +255,7 @@ describe('webhook-endpoint.service', () => {
 
     expect(result.error).toBeNull();
     expect(prisma.webhookEndpoint.update).toHaveBeenCalledWith({
-      where: { agencyId: 'agency-1' },
+      where: { id: 'endpoint-1' },
       data: expect.objectContaining({
         status: 'disabled',
         disabledAt: expect.any(Date),

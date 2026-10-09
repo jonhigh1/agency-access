@@ -1276,8 +1276,9 @@ export async function emitAccessRequestLifecycleWebhook(input: {
       return;
     }
 
-    const endpoint = await prisma.webhookEndpoint.findUnique({
+    const endpoint = await prisma.webhookEndpoint.findFirst({
       where: { agencyId: accessRequest.agencyId },
+      orderBy: { createdAt: 'asc' },
     });
 
     if (!endpoint || endpoint.status !== 'active') {

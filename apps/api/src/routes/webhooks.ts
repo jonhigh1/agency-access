@@ -200,6 +200,9 @@ export async function webhookRoutes(fastify: FastifyInstance) {
     const result = await rotateWebhookEndpointSecret({
       agencyId: id,
       rotatedBy: resolveActorEmail(request),
+      // Dashboard path keeps the pre-U6 destructive semantic: the old
+      // secret is revoked at once. Overlap rotation lives on the v1 API.
+      immediate: true,
     });
 
     if (result.error) {

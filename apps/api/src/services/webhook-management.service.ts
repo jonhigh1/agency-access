@@ -64,8 +64,9 @@ export async function sendWebhookTestEvent(
 ): Promise<ServiceResult<{ eventId: string; queued: true }>> {
   try {
     const validated = SendWebhookTestEventSchema.parse(input);
-    const endpoint = await prisma.webhookEndpoint.findUnique({
+    const endpoint = await prisma.webhookEndpoint.findFirst({
       where: { agencyId: validated.agencyId },
+      orderBy: { createdAt: 'asc' },
     });
 
     if (!endpoint) {
@@ -148,8 +149,9 @@ export async function listWebhookDeliveries(
 ): Promise<ServiceResult<{ endpoint: ReturnType<typeof toEndpointSummary>; deliveries: ReturnType<typeof toDeliverySummary>[] }>> {
   try {
     const validated = ListWebhookDeliveriesSchema.parse(input);
-    const endpoint = await prisma.webhookEndpoint.findUnique({
+    const endpoint = await prisma.webhookEndpoint.findFirst({
       where: { agencyId: validated.agencyId },
+      orderBy: { createdAt: 'asc' },
     });
 
     if (!endpoint) {

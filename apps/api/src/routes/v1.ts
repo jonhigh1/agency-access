@@ -11,6 +11,7 @@ import type { FastifyInstance } from 'fastify';
 import { apiKeyPreHandler } from '@/middleware/api-key-auth.js';
 import { prisma } from '@/lib/prisma';
 import { v1ReadsRoutes } from './v1-reads.js';
+import { v1WebhooksRoutes } from './v1-webhooks.js';
 import { v1WritesRoutes } from './v1-writes.js';
 import { MAX_API_KEYS_PER_AGENCY } from '@/services/api-key.service.js';
 import type { ApiKeyPrincipal } from '@/services/api-key.service';
@@ -38,6 +39,10 @@ export async function v1Routes(fastify: FastifyInstance) {
   // route carries the tier gate + per-key rate limit + scope gate as its
   // own preHandler chain.
   await fastify.register(v1WritesRoutes);
+
+  // U6 webhooks: multi-endpoint CRUD, rotation, deliveries log. Same gate
+  // chain as the read and write slices.
+  await fastify.register(v1WebhooksRoutes);
 
   /**
    * GET /api/v1/self-check (R4)

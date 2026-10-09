@@ -4,10 +4,13 @@ import {
   WEBHOOK_API_VERSION_V2,
   type WebhookApiVersion,
   type WebhookConnectionAssetV2,
+  type WebhookEventType,
+  type WebhookOrderedEnvelope,
   type AccessRequestStatus,
   type ConnectionStatus,
   type WebhookAccessRequestLifecycleEventType,
 } from '@agency-platform/shared';
+import { prisma } from '@/lib/prisma';
 
 interface AccessRequestWebhookEventInput {
   type: WebhookAccessRequestLifecycleEventType;
@@ -383,3 +386,175 @@ export const webhookEventService = {
   buildConnectionStatusChangedEvent,
   normalizeGrantedAssetsToV2,
 };
+
+/* ============================================================
+ * U6 ordered fan-out (R15, R16, KTD7)
+ *
+ * One logical occurrence fans out to one stored event per subscribed
+ * endpoint. `correlationId` is set once and copied to every
+ * per-endpoint event (cross-endpoint dedupe key); `sequenceNumber`
+ * comes from the shared `webhook_endpoint_sequence` object so values
+ * are unique per endpoint with documented gap tolerance.
+ * ============================================================
+ */
+
+/** Secret-bearing keys stripped before a payload is ever stored (R14: minimized PII). */
+const TOKEN_POINTER_KEYS = new Set([
+  'uniqueToken',
+  'secretId',
+  'secret',
+  'signingSecret',
+  'accessToken',
+  'refreshToken',
+  'clientSecret',
+  'apiKey',
+]);
+
+/** Recursively strips token pointers; every other value passes through. */
+export function sanitizeWebhookPayload(value: unknown): unknown {
+  if (Array.isArray(value)) return value.map(sanitizeWebhookPayload);
+  if (value !== null && typeof value === 'object') {
+    const out: Record<string, unknown> = {};
+    for (const [key, entry] of Object.entries(value as Record<string, unknown>)) {
+      if (TOKEN_POINTER_KEYS.has(key)) continue;
+      out[key] = sanitizeWebhookPayload(entry);
+    }
+    return out;
+  }
+  return value;
+}
+
+/** Consumer-side ordering: ascending per-endpoint sequence (gaps tolerated). */
+export function sortWebhookEventsBySequence<
+  T extends { sequenceNumber: bigint | number },
+>(events: T[]): T[] {
+  return [...events].sort((a, b) => (a.sequenceNumber < b.sequenceNumber ? -1 : a.sequenceNumber > b.sequenceNumber ? 1 : 0));
+}
+
+/** Consumer-side dedupe: collapse redeliveries on the global event ID. */
+export function collapseDuplicateWebhookEvents<T extends { id: string }>(events: T[]): T[] {
+  const seen = new Set<string>();
+  return events.filter((event) => {
+    if (seen.has(event.id)) return false;
+    seen.add(event.id);
+    return true;
+  });
+}
+
+/**
+ * Ordered v1 envelope: the base event plus the R16 ordering primitives.
+ * AE3 consumers reconstruct truth from `sequenceNumber` + `id`.
+ */
+export function buildOrderedWebhookEnvelope(input: {
+  type: WebhookEventType;
+  apiVersion?: WebhookApiVersion;
+  sequenceNumber: bigint | number;
+  correlationId: string;
+  data: unknown;
+}): WebhookOrderedEnvelope {
+  return {
+    id: buildEventId(),
+    apiVersion: input.apiVersion ?? WEBHOOK_API_VERSION_V1,
+    type: input.type,
+    createdAt: new Date().toISOString(),
+    sequenceNumber: typeof input.sequenceNumber === 'bigint' ? Number(input.sequenceNumber) : input.sequenceNumber,
+    correlationId: input.correlationId,
+    data: input.data,
+  };
+}
+
+/** Next value from the shared per-endpoint sequence object (unique per endpoint). */
+export async function nextEndpointSequence(): Promise<bigint> {
+  const rows = (await prisma.$queryRaw<
+    Array<{ next: bigint }>
+  >`SELECT nextval('"webhook_endpoint_sequence"') AS next`) as Array<{ next: bigint }>;
+  const next = rows?.[0]?.next;
+  if (typeof next === 'bigint') return next;
+  if (typeof next === 'number') return BigInt(next);
+  return BigInt(String(next ?? Date.now()));
+}
+
+export interface EmitWebhookEventsInput {
+  agencyId: string;
+  type: WebhookEventType;
+  /** Raw data; sanitized before storage so no token pointers persist. */
+  data: unknown;
+  resourceType?: string;
+  resourceId?: string;
+  apiVersion?: WebhookApiVersion;
+  /** Set once per logical occurrence; generated when omitted. */
+  correlationId?: string;
+}
+
+export interface EmittedWebhookEvent {
+  id: string;
+  endpointId: string;
+  type: string;
+  sequenceNumber: string;
+  correlationId: string;
+}
+
+/**
+ * Shared-evaluator fan-out: one stored event per active endpoint
+ * subscribed to `type`, sharing one correlation ID with distinct
+ * per-endpoint sequences. Delivery queueing is best-effort per event;
+ * a queue failure never fails the sibling events.
+ */
+export async function emitWebhookEvents(
+  input: EmitWebhookEventsInput
+): Promise<{ data: { events: EmittedWebhookEvent[]; correlationId: string } | null; error: { code: string; message: string } | null }> {
+  try {
+    const endpoints = await prisma.webhookEndpoint.findMany({
+      where: { agencyId: input.agencyId, status: 'active' },
+      orderBy: { createdAt: 'asc' },
+    });
+    const subscribed = endpoints.filter((endpoint) =>
+      Array.isArray(endpoint.subscribedEvents) &&
+      (endpoint.subscribedEvents as string[]).includes(input.type),
+    );
+
+    const correlationId = input.correlationId ?? `corr_${randomUUID().replace(/-/g, '')}`;
+    const sanitized = sanitizeWebhookPayload(input.data);
+    const events: EmittedWebhookEvent[] = [];
+
+    for (const endpoint of subscribed) {
+      const sequenceNumber = await nextEndpointSequence();
+      const envelope = buildOrderedWebhookEnvelope({
+        type: input.type,
+        apiVersion: (endpoint.preferredApiVersion as WebhookApiVersion | undefined) ?? input.apiVersion,
+        sequenceNumber,
+        correlationId,
+        data: sanitized,
+      });
+      const record = await prisma.webhookEvent.create({
+        data: {
+          agencyId: input.agencyId,
+          endpointId: endpoint.id,
+          type: input.type,
+          resourceType: input.resourceType ?? null,
+          resourceId: input.resourceId ?? null,
+          payload: envelope as any,
+          sequenceNumber,
+          correlationId,
+        },
+      });
+      events.push({
+        id: record.id,
+        endpointId: endpoint.id,
+        type: input.type,
+        sequenceNumber: sequenceNumber.toString(),
+        correlationId,
+      });
+      try {
+        const { queueWebhookDelivery } = await import('@/lib/queue-helpers');
+        await queueWebhookDelivery(record.id);
+      } catch {
+        // Queue failure is delivery-retryable, never an emit failure.
+      }
+    }
+
+    return { data: { events, correlationId }, error: null };
+  } catch {
+    return { data: null, error: { code: 'INTERNAL_ERROR', message: 'Failed to emit webhook events' } };
+  }
+}
