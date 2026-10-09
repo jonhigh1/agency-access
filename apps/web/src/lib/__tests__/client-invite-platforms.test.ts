@@ -68,11 +68,13 @@ describe('client invite platform capabilities', () => {
 
 describe('MANUAL_INVITE_PLATFORMS', () => {
   it('includes all manual-invite platforms, including zapier (drift fix, U11)', () => {
-    expect(MANUAL_INVITE_PLATFORMS).toEqual([
-      'kit',
-      'mailchimp',
+    // Order is owned by the shared registry's derivation (DEC-015 Phase 2c);
+    // the membership set stays pinned here.
+    expect([...MANUAL_INVITE_PLATFORMS].sort()).toEqual([
       'beehiiv',
+      'kit',
       'klaviyo',
+      'mailchimp',
       'pinterest',
       'shopify',
       'zapier',
