@@ -33,8 +33,10 @@ import {
   type MetaFulfillmentStatus,
   type MetaAssetDecline,
   type UnresolvedProductReason,
+  LEGACY_PAYLOAD_IDS,
   ManualConfirmationPlatformSchema,
   type ManualConfirmation,
+  type PlatformRegistryId,
 } from '@agency-platform/shared';
 import { invalidateDashboardCache } from '@/lib/cache.js';
 import { env } from '@/lib/env.js';
@@ -47,16 +49,16 @@ import { metaAssetsService } from '@/services/meta-assets.service.js';
 import { metaAutoAssignService } from '@/services/meta-auto-assign.service.js';
 import { readMetaAuthorizationMetadata } from '@/lib/meta-authorization-metadata.js';
 import { ASSET_SELECTING_PRODUCTS } from '@/lib/asset-selecting-products.js';
+import {
+  getSelectedAssetCount,
+  hasNoAssetsSignal,
+} from '@/lib/product-selection-signals.js';
 
-const LegacyPlatformSchema = z.enum([
-  'whatsapp_business',
-  'google_tag_manager',
-  'google_merchant_center',
-  'google_search_console',
-  'youtube_studio',
-  'google_business_profile',
-  'display_video_360',
-]);
+// Payload-history ids from the PLATFORMS registry (DEC-015). Zod needs a
+// non-empty tuple; LEGACY_PAYLOAD_IDS is golden-pinned at seven members.
+const LegacyPlatformSchema = z.enum(
+  [...LEGACY_PAYLOAD_IDS] as [PlatformRegistryId, ...PlatformRegistryId[]]
+);
 
 const AccessRequestPlatformSchema = z.union([PlatformSchema, LegacyPlatformSchema]);
 
@@ -559,45 +561,6 @@ function extractRequestedProducts(platforms: unknown): RequestedProduct[] {
   return requestedProducts;
 }
 
-function getSelectedAssetCount(product: string, assets: Record<string, any>): number {
-  switch (product) {
-    case 'google_ads':
-    case 'meta_ads':
-    case 'instagram':
-    case 'linkedin_ads':
-    case 'linkedin_pages':
-      return (
-        (assets.adAccounts?.length ?? 0) +
-        (assets.pages?.length ?? 0) +
-        (assets.instagramAccounts?.length ?? 0) +
-        (assets.catalogs?.length ?? 0) +
-        (assets.datasets?.length ?? 0)
-      );
-    case 'meta_pages':
-      return assets.pages?.length ?? 0;
-    case 'ga4':
-      return assets.properties?.length ?? 0;
-    case 'google_business_profile':
-      return assets.businessAccounts?.length ?? 0;
-    case 'google_tag_manager':
-      return assets.containers?.length ?? 0;
-    case 'google_search_console':
-      return assets.sites?.length ?? 0;
-    case 'google_merchant_center':
-      return assets.merchantAccounts?.length ?? 0;
-    case 'tiktok':
-    case 'tiktok_ads':
-      return (
-        (assets.selectedAdvertiserIds?.length ?? 0) ||
-        (assets.adAccounts?.length ?? 0) ||
-        (assets.advertisers?.length ?? 0) ||
-        0
-      );
-    default:
-      return 0;
-  }
-}
-
 function getSelectedMetaAssets(product: string, assets: Record<string, any>) {
   const pairs: Array<{ assetKind: string; assetId: string }> = [];
   const add = (assetKind: string, ids: unknown) => {
@@ -826,28 +789,6 @@ function buildMetaAutoAssignResults(
         };
       }),
   );
-}
-
-function hasNoAssetsSignal(product: string, assets: Record<string, any>): boolean {
-  if (
-    product === 'google_ads' ||
-    product === 'ga4' ||
-    product === 'google_business_profile' ||
-    product === 'google_tag_manager' ||
-    product === 'google_search_console' ||
-    product === 'google_merchant_center' ||
-    product === 'meta_pages' ||
-    product === 'linkedin_ads' ||
-    product === 'linkedin_pages'
-  ) {
-    return assets.availableAssetCount === 0;
-  }
-
-  if (product === 'tiktok' || product === 'tiktok_ads') {
-    return Array.isArray(assets.availableAdvertisers) && assets.availableAdvertisers.length === 0;
-  }
-
-  return false;
 }
 
 function hasNonSelectingProductAccess(

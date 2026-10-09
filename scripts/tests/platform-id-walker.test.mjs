@@ -191,10 +191,11 @@ const ALLOWLIST = {
   // Allowlist-until-refactored.
   'apps/api/src/routes/client-auth/assets.routes.ts': 'DEC-015 Phase 3, 2026-10-09',
 
-  // getSelectedAssetCount: genuine per-platform dispatch; collapses with
-  // review card 2.
-  'apps/api/src/services/access-request.service.ts': 'DEC-015 Phase 3, 2026-10-09',
-  'apps/api/src/services/client.service.ts': 'DEC-015 Phase 3, 2026-10-09',
+  // getSelectedAssetCount + hasNoAssetsSignal live in
+  // apps/api/src/lib/product-selection-signals.ts (unquoted-key table; review
+  // card 2). LegacyPlatformSchema derives from LEGACY_PAYLOAD_IDS. Both prior
+  // allowlist entries for access-request.service.ts and client.service.ts
+  // were pruned in the same change.
 
   // getSelectedAssetCount + getProductSummaryLines dispatch; collapses with
   // review card 3. Allowlist-until-card-3.

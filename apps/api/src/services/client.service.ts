@@ -7,6 +7,10 @@
 
 import { invalidateDashboardCache } from '@/lib/cache';
 import { ASSET_SELECTING_PRODUCTS } from '@/lib/asset-selecting-products';
+import {
+  getSelectedAssetCount,
+  hasNoAssetsSignal,
+} from '@/lib/product-selection-signals';
 import { prisma } from '@/lib/prisma';
 import { connectionService } from '@/services/connection.service';
 import { evaluateMetaProductFulfillment } from '@/services/access-request.service';
@@ -545,68 +549,6 @@ function extractRequestedProducts(platforms: unknown): ClientDetailRequestedProd
   }
 
   return requestedProducts;
-}
-
-function getSelectedAssetCount(product: string, assets: Record<string, any>): number {
-  switch (product) {
-    case 'google_ads':
-    case 'meta_ads':
-    case 'linkedin_ads':
-    case 'linkedin_pages':
-      return (
-        (assets.adAccounts?.length ?? 0) +
-        (assets.pages?.length ?? 0) +
-        (assets.instagramAccounts?.length ?? 0) +
-        (assets.catalogs?.length ?? 0) +
-        (assets.datasets?.length ?? 0)
-      );
-    case 'instagram':
-      return assets.instagramAccounts?.length ?? 0;
-    case 'meta_pages':
-      return assets.pages?.length ?? 0;
-    case 'ga4':
-      return assets.properties?.length ?? 0;
-    case 'google_business_profile':
-      return assets.businessAccounts?.length ?? 0;
-    case 'google_tag_manager':
-      return assets.containers?.length ?? 0;
-    case 'google_search_console':
-      return assets.sites?.length ?? 0;
-    case 'google_merchant_center':
-      return assets.merchantAccounts?.length ?? 0;
-    case 'tiktok':
-    case 'tiktok_ads':
-      return (
-        (assets.selectedAdvertiserIds?.length ?? 0) ||
-        (assets.adAccounts?.length ?? 0) ||
-        (assets.advertisers?.length ?? 0) ||
-        0
-      );
-    default:
-      return 0;
-  }
-}
-
-function hasNoAssetsSignal(product: string, assets: Record<string, any>): boolean {
-  if (
-    product === 'google_ads' ||
-    product === 'ga4' ||
-    product === 'google_business_profile' ||
-    product === 'google_tag_manager' ||
-    product === 'google_search_console' ||
-    product === 'google_merchant_center' ||
-    product === 'meta_pages' ||
-    product === 'linkedin_ads' ||
-    product === 'linkedin_pages'
-  ) {
-    return assets.availableAssetCount === 0;
-  }
-
-  if (product === 'tiktok' || product === 'tiktok_ads') {
-    return Array.isArray(assets.availableAdvertisers) && assets.availableAdvertisers.length === 0;
-  }
-
-  return false;
 }
 
 function resolveGoogleGrantLifecycle(
