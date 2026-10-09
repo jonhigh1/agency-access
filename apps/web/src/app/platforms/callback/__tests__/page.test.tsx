@@ -284,6 +284,45 @@ describe('OAuth Callback Page', () => {
     );
   });
 
+  it('links zero-portfolio agencies to create a Business Portfolio in a new tab', async () => {
+    mockMetaCallbackParams();
+    vi.mocked(fetch).mockResolvedValueOnce(businessAccountsResponse([]) as Response);
+
+    renderWithQueryClient(<CallbackPage />);
+
+    const link = await screen.findByRole('link', { name: /create a business portfolio/i });
+    expect(link).toHaveAttribute('href', 'https://business.facebook.com/overview');
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link).toHaveAttribute('rel', expect.stringContaining('noopener'));
+    expect(screen.getByText(/needs a business portfolio to receive client access/i)).toBeInTheDocument();
+  });
+
+  it('re-checks the portfolio list after the agency creates one in another tab', async () => {
+    const user = userEvent.setup();
+    mockMetaCallbackParams();
+    vi.mocked(fetch)
+      .mockResolvedValueOnce(businessAccountsResponse([]) as Response)
+      .mockResolvedValueOnce(
+        businessAccountsResponse([
+          { id: 'biz-new', name: 'Example New Portfolio' },
+          { id: 'biz-other', name: 'Example Other Portfolio' },
+        ]) as Response
+      );
+
+    renderWithQueryClient(<CallbackPage />);
+
+    await user.click(await screen.findByRole('button', { name: /check again/i }));
+
+    await waitFor(() => {
+      expect(screen.queryByText(/no meta business portfolios found/i)).not.toBeInTheDocument();
+    });
+    const businessCalls = vi
+      .mocked(fetch)
+      .mock.calls.filter(([url]) => String(url).includes('/agency-platforms/meta/business-accounts'));
+    expect(businessCalls).toHaveLength(2);
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+
   it('routes the connections return path through orgId when no agencyId param is present', async () => {
     const user = userEvent.setup();
     mockMetaCallbackParams();

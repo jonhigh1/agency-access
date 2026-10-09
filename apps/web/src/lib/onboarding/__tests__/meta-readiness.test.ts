@@ -4,6 +4,7 @@ import {
   metaGateMessage,
   resolveMetaReadinessFromPlatforms,
   selectionIncludesMeta,
+  selectionWithoutMeta,
 } from '../meta-readiness';
 
 describe('selectionIncludesMeta', () => {
@@ -83,5 +84,18 @@ describe('isMetaGateBlocking', () => {
   it('explains how to unblock', () => {
     expect(metaGateMessage({ status: 'not_connected' })).toMatch(/connect your agency meta business portfolio/i);
     expect(metaGateMessage({ status: 'needs_portfolio' })).toMatch(/choose your agency meta business portfolio/i);
+  });
+});
+
+describe('selectionWithoutMeta', () => {
+  it('drops the Meta group and Meta products, keeping everything else', () => {
+    const next = selectionWithoutMeta({ google: ['google'], meta: ['meta'], other: ['meta_ads', 'linkedin'] });
+    expect(next).toEqual({ google: ['google'], other: ['linkedin'] });
+    expect(selectionIncludesMeta(next)).toBe(false);
+  });
+
+  it('returns an empty selection when Meta was the only choice', () => {
+    expect(selectionWithoutMeta({ meta: ['meta'] })).toEqual({});
+    expect(selectionWithoutMeta(null)).toEqual({});
   });
 });

@@ -19,14 +19,19 @@
 
 'use client';
 
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { m } from 'framer-motion';
 import { Platform, PlatformSelection } from '@agency-platform/shared';
 import { PlatformSelectorGrid } from '../platform-selector-grid';
 import { fadeVariants, fadeTransition } from '@/lib/animations';
 import { formatOnboardingStepLabel } from '@/lib/onboarding-steps';
 import { MetaPortfolioPanel } from '../meta-portfolio-panel';
-import { isMetaGateBlocking, selectionIncludesMeta, type MetaPortfolioReadiness } from '@/lib/onboarding/meta-readiness';
+import {
+  isMetaGateBlocking,
+  selectionIncludesMeta,
+  selectionWithoutMeta,
+  type MetaPortfolioReadiness,
+} from '@/lib/onboarding/meta-readiness';
 
 // ============================================================
 // TYPES
@@ -99,6 +104,19 @@ export function PlatformSelectionScreen({
     [onUpdate]
   );
 
+  // "Skip Meta for now": deselect Meta (which un-gates Continue) and say where to connect it later.
+  const [metaSkipped, setMetaSkipped] = useState(false);
+  const metaIncluded = selectionIncludesMeta(selectedPlatforms);
+  const handleSkipMeta = useCallback(() => {
+    const remaining = selectionWithoutMeta(selectedPlatforms);
+    // Never leave an empty selection: fall back to the Google default (what link generation would use anyway).
+    onUpdate(Object.keys(remaining).length > 0 ? remaining : { google: ['google'] });
+    setMetaSkipped(true);
+  }, [onUpdate, selectedPlatforms]);
+  useEffect(() => {
+    if (metaIncluded) setMetaSkipped(false);
+  }, [metaIncluded]);
+
   const platformCount = flatPlatforms.length;
   const showMetaPanel = Boolean(metaReadiness && onConnectMeta) && selectionIncludesMeta(selectedPlatforms);
   const metaBlocking = Boolean(metaReadiness) && isMetaGateBlocking(selectedPlatforms, metaReadiness!);
@@ -138,7 +156,18 @@ export function PlatformSelectionScreen({
             connecting={loading}
             onConnect={onConnectMeta}
             onRetry={onRetryMetaCheck ?? (() => undefined)}
+            onSkip={handleSkipMeta}
           />
+        )}
+
+        {metaSkipped && !metaIncluded && (
+          <p
+            role="status"
+            data-testid="meta-skipped-note"
+            className="mt-6 rounded-lg border-2 border-black bg-paper p-4 text-sm text-ink"
+          >
+            Meta skipped for now. You can connect it later from Connections and add it to a new access request.
+          </p>
         )}
 
         {/* Selection Summary */}
@@ -156,7 +185,7 @@ export function PlatformSelectionScreen({
             )}
             {metaBlocking && (
               <span className="text-ink/60 ml-2">
-                → Connect your Meta Business Portfolio above (or deselect Meta) to continue
+                → Connect your Meta Business Portfolio above (or skip Meta for now) to continue
               </span>
             )}
           </div>

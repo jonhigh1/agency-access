@@ -31,6 +31,27 @@ export function selectionIncludesMeta(selection: SelectionLike): boolean {
   });
 }
 
+/** Where an agency without a Meta Business Portfolio can create one (opens in a new tab). */
+export const META_CREATE_BUSINESS_PORTFOLIO_URL = 'https://business.facebook.com/overview';
+
+/**
+ * The selection with every Meta-group platform removed ("Skip Meta for now").
+ * Groups left empty are dropped so the result never reads as including Meta.
+ */
+export function selectionWithoutMeta<T extends Record<string, readonly string[] | undefined>>(
+  selection: T | null | undefined
+): Record<string, string[]> {
+  const next: Record<string, string[]> = {};
+  for (const [group, platforms] of Object.entries(selection ?? {})) {
+    if (platformGroupOf(group) === 'meta') continue;
+    const kept = (platforms ?? []).filter(
+      (platform) => typeof platform === 'string' && platform.length > 0 && platformGroupOf(platform) !== 'meta'
+    );
+    if (kept.length > 0) next[group] = kept;
+  }
+  return next;
+}
+
 function nonEmptyString(value: unknown): string | undefined {
   return typeof value === 'string' && value.trim().length > 0 ? value.trim() : undefined;
 }
