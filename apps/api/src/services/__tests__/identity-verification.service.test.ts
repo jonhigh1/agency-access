@@ -5,7 +5,10 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { identityVerificationService } from '../identity-verification.service.js';
+import {
+  IDENTITY_VERIFICATION_PLATFORMS,
+  identityVerificationService,
+} from '../identity-verification.service.js';
 
 // Mock prisma with factory function to avoid hoisting issues
 vi.mock('@/lib/prisma', () => ({
@@ -287,5 +290,21 @@ describe('IdentityVerificationService', () => {
         }),
       });
     });
+  });
+});
+
+// GOLDEN — regenerate only via:
+//   npx tsx scripts/generate-platform-registry-golden.ts --acknowledge=DEC-015
+// Provenance: DEC-015 (docs/DECISIONS.md), 2026-10-08. Frozen literals; NEVER snapshots.
+describe('identity verification platform list', () => {
+  it('accepts exactly the six identity-mode platforms, characterized verbatim (DEC-015)', () => {
+    expect([...IDENTITY_VERIFICATION_PLATFORMS]).toEqual([
+      'google',
+      'meta',
+      'meta_ads',
+      'google_ads',
+      'ga4',
+      'linkedin',
+    ]);
   });
 });
