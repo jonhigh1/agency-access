@@ -534,6 +534,18 @@ export const manualConfirmationPlatforms: readonly PlatformRegistryId[] = ENTRIE
   ([, entry]) => entry.capabilities !== undefined && entry.capabilities.connectionMethod !== 'oauth'
 ).map(([id]) => id);
 
+/**
+ * Platforms the connector factory can serve: every entry with an OAuth
+ * transport plus the api_key connector (beehiiv). Manual-invite platforms
+ * (kit, mailchimp, pinterest, klaviyo, zapier) have no connector. The api
+ * factory's key set is pinned to this derivation (DEC-015 Phase 2b).
+ */
+export const connectorPlatformIds: readonly PlatformRegistryId[] = ENTRIES.filter(
+  ([, entry]) =>
+    entry.oauth !== undefined ||
+    (entry.capabilities !== undefined && entry.capabilities.connectionMethod === 'api_key')
+).map(([id]) => id);
+
 export function getPlatform(id: PlatformRegistryId): PlatformRegistryEntry {
   return PLATFORMS[id];
 }

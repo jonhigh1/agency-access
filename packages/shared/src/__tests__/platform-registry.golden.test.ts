@@ -3,6 +3,7 @@ import {
   LEGACY_PAYLOAD_IDS,
   PLATFORMS,
   clientOAuthPlatforms,
+  connectorPlatformIds,
   getPlatform,
   manualConfirmationPlatforms,
   platformIds,
@@ -180,6 +181,29 @@ describe('manual confirmation golden', () => {
     expect([...manualConfirmationPlatforms].sort()).toEqual(
       [...ManualConfirmationPlatformSchema.options].sort()
     );
+  });
+});
+
+describe('connector platform golden', () => {
+  it('derives exactly the sixteen connector-served platforms, in derivation order', () => {
+    expect(connectorPlatformIds).toEqual([
+      'google',
+      'meta',
+      'google_ads',
+      'ga4',
+      'meta_ads',
+      'meta_pages',
+      'tiktok',
+      'tiktok_ads',
+      'linkedin',
+      'linkedin_ads',
+      'linkedin_pages',
+      'snapchat',
+      'snapchat_ads',
+      'instagram',
+      'beehiiv',
+      'shopify',
+    ]);
   });
 });
 
