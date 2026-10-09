@@ -46,6 +46,7 @@ import { resolveListLimit, resolveListOffset } from '@/lib/list-pagination.js';
 import { metaAssetsService } from '@/services/meta-assets.service.js';
 import { metaAutoAssignService } from '@/services/meta-auto-assign.service.js';
 import { readMetaAuthorizationMetadata } from '@/lib/meta-authorization-metadata.js';
+import { ASSET_SELECTING_PRODUCTS } from '@/lib/asset-selecting-products.js';
 
 const LegacyPlatformSchema = z.enum([
   'whatsapp_business',
@@ -434,22 +435,6 @@ function extractDashboardPlatformGroups(platforms: unknown): string[] {
 
   return Array.from(groups);
 }
-
-const ASSET_SELECTING_PRODUCTS = new Set([
-  'google_ads',
-  'ga4',
-  'google_business_profile',
-  'google_tag_manager',
-  'google_search_console',
-  'google_merchant_center',
-  'meta_ads',
-  'meta_pages',
-  'instagram',
-  'linkedin_ads',
-  'linkedin_pages',
-  'tiktok',
-  'tiktok_ads',
-]);
 
 type RequestedProduct = {
   product: string;

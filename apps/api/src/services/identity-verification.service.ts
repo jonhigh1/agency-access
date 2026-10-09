@@ -30,14 +30,14 @@ export const IDENTITY_VERIFICATION_PLATFORMS = [
 
 // Validation schemas
 const validateIdentitySchema = z.object({
-  platform: z.enum(['google', 'meta', 'meta_ads', 'google_ads', 'ga4', 'linkedin']),
+  platform: z.enum(IDENTITY_VERIFICATION_PLATFORMS),
   agencyEmail: z.string().email().optional(),
   businessId: z.string().optional(),
 });
 
 const createIdentityConnectionSchema = z.object({
   agencyId: z.string().min(1),
-  platform: z.enum(['google', 'meta', 'meta_ads', 'google_ads', 'ga4', 'linkedin']),
+  platform: z.enum(IDENTITY_VERIFICATION_PLATFORMS),
   agencyEmail: z.string().email().optional(),
   businessId: z.string().optional(),
   connectedBy: z.string().email(),
