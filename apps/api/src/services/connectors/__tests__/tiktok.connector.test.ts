@@ -123,4 +123,35 @@ describe('TikTokConnector', () => {
       expect(message).not.toContain('test-tiktok-client-secret');
     }
   });
+  it('calls the official long-term token revoke endpoint with app credentials', async () => {
+    const connector = new TikTokConnector();
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ code: 0, message: 'OK', data: { advertiser_ids: [] } }),
+    } as unknown as Response);
+
+    await expect(connector.revokeToken?.('access-token')).resolves.toBeUndefined();
+
+    const [url, init] = vi.mocked(fetch).mock.calls[0] as [string, RequestInit];
+    expect(url).toBe('https://business-api.tiktok.com/open_api/v1.3/oauth2/revoke_token/');
+    expect(init.method).toBe('POST');
+    expect(init.headers).toMatchObject({ 'Access-Token': 'access-token', 'Content-Type': 'application/json' });
+    expect(JSON.parse(String(init.body))).toEqual({
+      app_id: 'test-tiktok-client-id',
+      secret: 'test-tiktok-client-secret',
+      access_token: 'access-token',
+    });
+  });
+
+  it('treats a non-zero TikTok envelope code as a failed revoke', async () => {
+    const connector = new TikTokConnector();
+    vi.mocked(fetch).mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ code: 40001, message: 'invalid token' }),
+    } as unknown as Response);
+
+    await expect(connector.revokeToken?.('access-token')).rejects.toMatchObject({ code: 'REVOKE_FAILED' });
+  });
 });

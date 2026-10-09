@@ -13,7 +13,7 @@
 
 'use client';
 
-import { FormEvent, useEffect, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useAuth } from '@clerk/nextjs';
 import { useQueryClient, useQuery } from '@tanstack/react-query';
@@ -39,7 +39,8 @@ import {
   SUBDOMAIN_ERROR_PREFIX,
 } from '@/contexts/access-request-context';
 import type { IntakeField } from '@/contexts/access-request-context';
-import { getPlatformCount } from '@/lib/transform-platforms';
+import { getPlatformCount, normalizePlatformToGroup } from '@/lib/transform-platforms';
+import { defaultGoogleProductSelection, isMetaPendingApproval } from '@/lib/meta-pending-approval';
 import { useAuthOrBypass } from '@/lib/dev-auth';
 import { useUserAgency, fetchActiveAgencyPlatformConnections } from '@/hooks/use-user-agency';
 import { ACCESS_LEVEL_DESCRIPTIONS, PLATFORM_NAMES } from '@agency-platform/shared';
@@ -135,6 +136,24 @@ function AccessRequestWizardContent() {
     },
     enabled: !!agencyId,
   });
+
+  // Google-first mode (NEXT_PUBLIC_META_PENDING_APPROVAL=true): default an empty
+  // selection to Google once we know Google is connected (the selector only lists
+  // connected platforms). Applied once, so the agency can still deselect it.
+  const googleDefaultAppliedRef = useRef(false);
+  useEffect(() => {
+    if (!isMetaPendingApproval() || googleDefaultAppliedRef.current) return;
+    if (state.selectedTemplate || getPlatformCount(state.selectedPlatforms) > 0) {
+      googleDefaultAppliedRef.current = true;
+      return;
+    }
+    const googleConnected = platformConnections.some(
+      (connection) => connection.connected && normalizePlatformToGroup(connection.platform) === 'google'
+    );
+    if (!googleConnected) return;
+    googleDefaultAppliedRef.current = true;
+    updatePlatforms(defaultGoogleProductSelection());
+  }, [platformConnections, state.selectedPlatforms, state.selectedTemplate, updatePlatforms]);
 
   // Calculate platform counts
   const platformCount = useMemo(

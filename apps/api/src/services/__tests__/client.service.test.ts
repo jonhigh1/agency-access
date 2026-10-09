@@ -661,6 +661,14 @@ describe('Phase 5: Client Service - TDD Tests', () => {
           products: [expect.objectContaining({ product: 'meta_ads', status: 'revoked' })],
         }),
       ]);
+      // revokedAt (set by connectionService.revokeConnection) drives the "Access revoked" timeline entry.
+      expect(result?.activity).toEqual(expect.arrayContaining([
+        expect.objectContaining({
+          type: 'connection_revoked',
+          description: 'Access revoked for "Meta reconnect"',
+          timestamp: new Date('2026-03-10T00:00:00.000Z'),
+        }),
+      ]));
     });
 
     it('uses the newest request for each product when records are not ordered', async () => {

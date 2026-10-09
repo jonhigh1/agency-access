@@ -46,6 +46,7 @@ import {
   selectionIncludesMeta,
   type MetaPortfolioReadiness,
 } from '@/lib/onboarding/meta-readiness';
+import { isMetaPendingApproval, withoutMetaPlatforms } from '@/lib/meta-pending-approval';
 import {
   MAX_RESTORABLE_STEP,
   clearOnboardingDraft,
@@ -182,6 +183,17 @@ const UnifiedOnboardingContext = createContext<UnifiedOnboardingContextValue | u
 // ============================================================
 
 const PRESELECTED_PLATFORMS: Platform[] = ['google'];
+
+/**
+ * Google-first mode (NEXT_PUBLIC_META_PENDING_APPROVAL=true): Meta can't be in the
+ * selection (restored drafts included), and an empty result falls back to Google so
+ * the platform step never dead-ends. Flag off: the selection is returned unchanged.
+ */
+function applyMetaPendingSelection(selection: PlatformSelection): PlatformSelection {
+  if (!isMetaPendingApproval()) return selection;
+  const withoutMeta = withoutMetaPlatforms(selection);
+  return Object.keys(withoutMeta).length > 0 ? withoutMeta : { google: ['google'] };
+}
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const SECOND_LEVEL_TLDS = new Set(['co', 'com', 'org', 'net', 'gov', 'edu', 'ac']);
 const ACRONYM_TOKENS = new Set(['ai', 'seo', 'ppc', 'crm', 'saas', 'b2b', 'b2c']);
@@ -446,7 +458,7 @@ export function UnifiedOnboardingProvider({
         clientId: draft.clientId || undefined,
         clientName: draft.clientName ?? prev.clientName,
         clientEmail: draft.clientEmail ?? prev.clientEmail,
-        selectedPlatforms: draft.selectedPlatforms,
+        selectedPlatforms: applyMetaPendingSelection(draft.selectedPlatforms),
       }));
     }
     setDraftReady(true);
@@ -663,7 +675,7 @@ export function UnifiedOnboardingProvider({
   const updatePlatforms = useCallback((platforms: PlatformSelection) => {
     setState((prev) => ({
       ...prev,
-      selectedPlatforms: platforms,
+      selectedPlatforms: applyMetaPendingSelection(platforms),
     }));
   }, []);
 
@@ -891,7 +903,7 @@ export function UnifiedOnboardingProvider({
       } = await resolveAgency();
       const safeClientName = state.clientName?.trim() || '';
       const safeClientEmail = state.clientEmail?.trim() || '';
-      const selectedPlatforms = Object.entries(state.selectedPlatforms || {}).reduce<Record<string, string[]>>(
+      const selectedPlatforms = Object.entries(applyMetaPendingSelection(state.selectedPlatforms)).reduce<Record<string, string[]>>(
         (acc, [group, platforms]) => {
           const validPlatforms = (platforms || []).filter((platform) => typeof platform === 'string' && platform.trim().length > 0);
           if (validPlatforms.length > 0) {

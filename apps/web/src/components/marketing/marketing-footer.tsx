@@ -111,6 +111,7 @@ export function MarketingFooter() {
               <ul className="space-y-3 sm:space-y-4 text-sm text-gray-600 font-mono">
                 <li><Link href="/privacy-policy" className="hover:text-danger-ink hover:underline decoration-2 underline-offset-2 transition-all">Privacy Policy</Link></li>
                 <li><Link href="/terms" className="hover:text-danger-ink hover:underline decoration-2 underline-offset-2 transition-all">Terms of Service</Link></li>
+                <li><Link href={"/security" as Route} className="hover:text-danger-ink hover:underline decoration-2 underline-offset-2 transition-all">Security</Link></li>
               </ul>
             </div>
           </div>

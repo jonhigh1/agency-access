@@ -207,7 +207,7 @@ export const leadsieAlternativePage: ProgrammaticComparisonPage = {
       icon: "Clock",
       quote: "I need to know which connections are healthy before a campaign launch.",
       description:
-        "Expired or revoked access can stop work. AuthHub monitors token health, uses provider-supported refresh where the provider allows it, stores token references in Infisical, and records audit events.",
+        "Expired or revoked access can stop work. AuthHub monitors token health, uses provider-supported refresh where the provider allows it, stores token references in Infisical (/security), and records audit events.",
       solution: "Token health, provider-supported refresh, and audit trails",
     },
     {
@@ -448,7 +448,7 @@ export const leadsieAlternativePage: ProgrammaticComparisonPage = {
     {
       question: "Does AuthHub claim formal SOC 2 certification on this page?",
       answer:
-        "No. We do not use a SOC 2 readiness marketing claim here. We do describe Infisical-backed token references and audit logs. Ask security/compliance for current paperwork if you need a formal attestation.",
+        "No. We do not use a SOC 2 readiness marketing claim here. We do describe Infisical-backed token references and audit logs (/security). Ask security/compliance for current paperwork if you need a formal attestation.",
     },
   ],
 
@@ -681,7 +681,7 @@ export const agencyAccessAlternativePage: ProgrammaticComparisonPage = {
       icon: "Shield",
       quote: "Enterprise clients ask for vaulting and audit trails—not just GDPR copy.",
       description:
-        "AuthHub stores OAuth token references in Infisical and ships audit logs. AgencyAccess is GDPR-oriented and secure by design; it does not advertise Infisical-backed vaulting or the same audit packaging. AuthHub does not claim SOC 2 on this page.",
+        "AuthHub stores OAuth token references in Infisical (/security) and ships audit logs. AgencyAccess is GDPR-oriented and secure by design; it does not advertise Infisical-backed vaulting or the same audit packaging. AuthHub does not claim SOC 2 on this page.",
       solution: "Infisical-backed token references and audit logs (no SOC 2 claim).",
     },
     {
@@ -933,7 +933,7 @@ export const agencyAccessAlternativePage: ProgrammaticComparisonPage = {
     {
       question: "What security can AuthHub claim without SOC 2?",
       answer:
-        "Infisical-backed token references and audit logs. We do not claim SOC 2 or SOC2-ready. AgencyAccess emphasizes GDPR and secure OAuth. Ask each vendor for the paperwork your clients require.",
+        "Infisical-backed token references and audit logs (/security). We do not claim SOC 2 or SOC2-ready. AgencyAccess emphasizes GDPR and secure OAuth. Ask each vendor for the paperwork your clients require.",
     },
     {
       question: "Does AuthHub support every AgencyAccess platform?",

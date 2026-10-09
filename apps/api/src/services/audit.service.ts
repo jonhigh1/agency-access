@@ -86,11 +86,13 @@ export async function logTokenRevoke(input: {
   platform: Platform;
   userEmail: string;
   ipAddress: string;
+  agencyId?: string;
   details?: Record<string, any>;
 }) {
   try {
     const auditLog = await prisma.auditLog.create({
       data: {
+        ...(input.agencyId ? { agencyId: input.agencyId } : {}),
         resourceId: input.connectionId,
         resourceType: 'connection',
         action: 'REVOKED',

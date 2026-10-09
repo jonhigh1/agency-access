@@ -172,7 +172,7 @@ export const clientInviteAlternativePage: ProgrammaticComparisonPage = {
       icon: "Shield",
       quote: "Expired tokens and vendor review packets are eating our week.",
       description:
-        "AuthHub emphasizes automatic token refresh where providers allow, Infisical-backed token references, and audit logs—not SOC 2. ClientInvite uses official APIs, encrypted tokens, and GDPR/DPA language on their site; automatic refresh is not the primary public pitch.",
+        "AuthHub emphasizes automatic token refresh where providers allow, Infisical-backed token references (/security), and audit logs—not SOC 2. ClientInvite uses official APIs, encrypted tokens, and GDPR/DPA language on their site; automatic refresh is not the primary public pitch.",
       solution: "Infisical + audit logs only (no SOC 2 claim). Do not promise permanent grants without in-platform checks.",
     },
     {
@@ -469,7 +469,7 @@ export const clientInviteAlternativePage: ProgrammaticComparisonPage = {
     {
       question: "What security can AuthHub claim without SOC 2?",
       answer:
-        "Infisical-backed token references and audit logs only—no SOC 2 claim. ClientInvite emphasizes official APIs, encryption, and GDPR/DPA language. Compare paperwork, not slogans.",
+        "Infisical-backed token references and audit logs only (/security)—no SOC 2 claim. ClientInvite emphasizes official APIs, encryption, and GDPR/DPA language. Compare paperwork, not slogans.",
     },
     {
       question: "Will switching break live campaigns?",

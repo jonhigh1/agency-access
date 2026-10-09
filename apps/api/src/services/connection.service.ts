@@ -11,6 +11,7 @@ import { infisical } from '@/lib/infisical';
 import { auditService } from '@/services/audit.service';
 import { refreshClientPlatformAuthorization } from '@/services/token-lifecycle.service';
 import { getConnector } from '@/services/connectors/factory';
+import { ConnectorError } from '@/services/connectors/base.connector';
 import { metaPartnerService } from '@/services/meta-partner.service';
 import { markRequestAuthorized } from '@/services/access-request.service';
 import {
@@ -29,6 +30,91 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 
 function isMetaPlatform(platform: string): platform is Platform {
   return platform === 'meta' || platform === 'meta_ads' || platform === 'meta_pages';
+}
+
+function isTikTokPlatform(platform: string): boolean {
+  return platform === 'tiktok' || platform === 'tiktok_ads';
+}
+
+type AuditContext = { userEmail: string; ipAddress: string };
+
+/**
+ * Best-effort provider-side revoke for a TikTok long-term token.
+ * Must run before the Infisical secret is deleted. Never throws: callers
+ * always continue with local revocation, and the audit row records whether
+ * TikTok actually confirmed the revoke.
+ */
+async function revokeTikTokProviderToken(
+  authorization: { id: string; platform: string; secretId: string },
+  connection: { id: string; agencyId?: string | null; clientEmail?: string | null },
+  reason: 'connection_revoked' | 'platform_authorization_revoked',
+  auditContext?: AuditContext
+): Promise<boolean> {
+  let failure: string | null = null;
+  let providerCode: number | undefined;
+  try {
+    if (!auditContext?.userEmail || !auditContext.ipAddress) {
+      failure = 'audit_context_missing';
+    } else {
+      const access = await auditService.logTokenAccess({
+        connectionId: connection.id,
+        platform: authorization.platform as Platform,
+        userEmail: auditContext.userEmail,
+        ipAddress: auditContext.ipAddress,
+        details: { operation: 'tiktok_provider_revocation', authorizationId: authorization.id },
+      });
+      if (access.error) {
+        failure = 'token_access_audit_failed';
+      } else {
+        const tokens = await infisical.getOAuthTokens(authorization.secretId);
+        const connector = getConnector(authorization.platform as Platform);
+        if (!tokens?.accessToken) failure = 'token_not_found';
+        else if (!connector.revokeToken) failure = 'revoke_not_supported';
+        else await connector.revokeToken.call(connector, tokens.accessToken);
+      }
+    }
+  } catch (error) {
+    failure = error instanceof ConnectorError ? error.code : 'provider_request_failed';
+    if (error instanceof ConnectorError) {
+      const detail = error.details?.code ?? error.details?.status;
+      if (typeof detail === 'number') providerCode = detail;
+    }
+  }
+
+  await auditService.createAuditLog({
+    agencyId: connection.agencyId ?? undefined,
+    userEmail: auditContext?.userEmail ?? connection.clientEmail ?? undefined,
+    ...(auditContext?.ipAddress ? { ipAddress: auditContext.ipAddress } : {}),
+    action: failure ? 'TIKTOK_PROVIDER_REVOKE_FAILED' : 'TIKTOK_TOKEN_REVOKED',
+    resourceType: 'client_connection',
+    resourceId: connection.id,
+    metadata: {
+      platform: authorization.platform,
+      authorizationId: authorization.id,
+      reason,
+      providerRevoked: !failure,
+      ...(failure ? { error: failure, localRevocation: 'continued' } : {}),
+      ...(providerCode !== undefined ? { providerCode } : {}),
+    },
+  });
+  return !failure;
+}
+
+/** Audit row for a completed local revoke of one platform authorization. */
+async function logAuthorizationRevoked(
+  authorization: { id: string; platform: string },
+  connection: { id: string; agencyId?: string | null },
+  reason: 'connection_revoked' | 'platform_authorization_revoked',
+  auditContext?: AuditContext
+): Promise<void> {
+  await auditService.logTokenRevoke({
+    connectionId: connection.id,
+    platform: authorization.platform as Platform,
+    userEmail: auditContext?.userEmail || 'system',
+    ipAddress: auditContext?.ipAddress || '0.0.0.0',
+    ...(connection.agencyId ? { agencyId: connection.agencyId } : {}),
+    details: { authorizationId: authorization.id, reason },
+  });
 }
 
 async function revokeMetaProviderAccess(authorization: {
@@ -451,18 +537,9 @@ export async function revokeConnection(
     });
 
     for (const auth of authorizations) {
-      if (auth.platform === 'tiktok' || auth.platform === 'tiktok_ads') {
-        await auditService.createAuditLog({
-          agencyId: connection.agencyId,
-          userEmail: connection.clientEmail,
-          action: 'TIKTOK_TOKEN_REVOKED',
-          resourceType: 'client_connection',
-          resourceId: connectionId,
-          metadata: {
-            platform: auth.platform,
-            reason: 'connection_revoked',
-          },
-        });
+      // Already-revoked authorizations have no live token to revoke upstream.
+      if (isTikTokPlatform(auth.platform) && auth.status !== 'revoked') {
+        await revokeTikTokProviderToken(auth, { ...connection, id: connectionId }, 'connection_revoked', auditContext);
       }
 
       let metaProviderStep = isMetaPlatform(auth.platform);
@@ -484,6 +561,9 @@ export async function revokeConnection(
           }), 'revoked');
         } else {
           await prisma.platformAuthorization.update({ where: { id: auth.id }, data: { status: 'revoked' } });
+        }
+        if (auth.status !== 'revoked') {
+          await logAuthorizationRevoked(auth, { ...connection, id: connectionId }, 'connection_revoked', auditContext);
         }
       } catch (error) {
         const metaFailure = metaProviderStep;
@@ -522,9 +602,14 @@ export async function revokeConnection(
     if (connection.accessRequestId) await markRequestAuthorized(connection.accessRequestId);
 
     // Update connection status
+    // revokedAt drives the "Access revoked" entry on the client Activity timeline.
     await prisma.clientConnection.update({
       where: { id: connectionId },
-      data: { status: 'revoked' },
+      data: {
+        status: 'revoked',
+        revokedAt: new Date(),
+        revokedBy: auditContext?.userEmail || 'system',
+      },
     });
 
     return {
@@ -845,6 +930,19 @@ export async function revokePlatformAuthorization(
       };
     }
 
+    if (isTikTokPlatform(platform) && authorization.status !== 'revoked') {
+      const owner = await prisma.clientConnection.findUnique({
+        where: { id: connectionId },
+        select: { agencyId: true, clientEmail: true },
+      });
+      await revokeTikTokProviderToken(
+        authorization,
+        { id: connectionId, agencyId: owner?.agencyId, clientEmail: owner?.clientEmail },
+        'platform_authorization_revoked',
+        auditContext
+      );
+    }
+
     let metaProviderStep = isMetaPlatform(platform);
     try {
       if (metaProviderStep) await revokeMetaProviderAccess(authorization, connectionId, auditContext);
@@ -884,28 +982,6 @@ export async function revokePlatformAuthorization(
       };
     }
 
-    if (platform === 'tiktok' || platform === 'tiktok_ads') {
-      const connection = await prisma.clientConnection.findUnique({
-        where: { id: connectionId },
-        select: {
-          agencyId: true,
-          clientEmail: true,
-        },
-      });
-
-      await auditService.createAuditLog({
-        agencyId: connection?.agencyId,
-        userEmail: connection?.clientEmail,
-        action: 'TIKTOK_TOKEN_REVOKED',
-        resourceType: 'client_connection',
-        resourceId: connectionId,
-        metadata: {
-          platform,
-          reason: 'platform_authorization_revoked',
-        },
-      });
-    }
-
     // Update authorization status
     const deletedIds = readPendingSecretDeletionIds(authorization.metadata);
     const updated = isMetaPlatform(platform)
@@ -923,8 +999,14 @@ export async function revokePlatformAuthorization(
 
     const connection = await prisma.clientConnection.findUnique({
       where: { id: connectionId },
-      select: { accessRequestId: true },
+      select: { accessRequestId: true, agencyId: true },
     });
+    await logAuthorizationRevoked(
+      authorization,
+      { id: connectionId, agencyId: connection?.agencyId },
+      'platform_authorization_revoked',
+      auditContext
+    );
     if (connection?.accessRequestId) await markRequestAuthorized(connection.accessRequestId);
 
     return { data: updated, error: null };
