@@ -13,7 +13,7 @@
 - Shared's pre-existing global coverage-threshold breach (branches/functions < 80% on main) remains open; Phases 1+ improved it (registry.ts is 100%).
 
 ### Next steps
-- Merge the stack in order (#172 → #173 → #174 → #175 → #178 → #179).
+- Merged 2026-10-09: main carries the registry via #172 (Phase 0 squash) + #181 (Phases 1–3 aggregate squash). Sequencing lesson recorded: stacked PRs retarget only when the base branch is deleted — #173–#180 squash-merged into their still-alive base branches, so #181 re-delivered the remainder as one reviewed set (its tip was the exact rebased stack that passed CI five times). The rebase onto origin/main was mandatory regardless: the stack had inherited the Entire-stomped pre-push hook from local main (upstream had repaired it) and was ~10 upstream PRs stale.
 - Review cards 2/3/5 can now consume the walker allowlist: refactoring `getSelectedAssetCount` dispatch (card 2), the invite session module (card 3), or the connector interface (card 5) should PRUNE allowlist entries in the same change — the stale check enforces it.
 - Registry migration of the shared types.ts partition (PlatformSchema/ManualConfirmationPlatformSchema derive from PLATFORMS) is the natural Phase 4 if drift reappears; the allowlist entry documents it.
 - Parked product questions: PQ-other-14, PQ-selector-4.
