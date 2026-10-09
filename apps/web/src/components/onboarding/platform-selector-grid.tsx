@@ -41,6 +41,11 @@ export interface PlatformSelectorGridProps {
   preSelected?: Platform[];
   showPreSelectedMessage?: boolean;
   disabled?: boolean;
+  /**
+   * Platforms shown greyed out with a label instead of being selectable
+   * (e.g. Meta while App Review is pending). Clicking them does nothing.
+   */
+  pendingPlatforms?: Partial<Record<Platform, string>>;
 }
 
 // ============================================================
@@ -94,6 +99,7 @@ export function PlatformSelectorGrid({
   preSelected = [],
   showPreSelectedMessage = true,
   disabled = false,
+  pendingPlatforms,
 }: PlatformSelectorGridProps) {
   const [hoveredPlatform, setHoveredPlatform] = useState<Platform | null>(null);
 
@@ -101,6 +107,7 @@ export function PlatformSelectorGrid({
   const togglePlatform = useCallback(
     (platform: Platform) => {
       if (disabled) return;
+      if (pendingPlatforms?.[platform]) return;
 
       const isSelected = selectedPlatforms.includes(platform);
       let newSelection: Platform[];
@@ -115,7 +122,7 @@ export function PlatformSelectorGrid({
 
       onSelectionChange(newSelection);
     },
-    [selectedPlatforms, onSelectionChange, disabled]
+    [selectedPlatforms, onSelectionChange, disabled, pendingPlatforms]
   );
 
   // Check if platform is pre-selected
@@ -143,7 +150,9 @@ export function PlatformSelectorGrid({
           <h3
             className={cn(
               'text-sm font-semibold text-ink/70 select-none',
-              disabled ? 'cursor-not-allowed' : 'cursor-pointer hover:text-ink'
+              disabled || pendingPlatforms?.[group.platforms[0]]
+                ? 'cursor-not-allowed'
+                : 'cursor-pointer hover:text-ink'
             )}
             onClick={() => togglePlatform(group.platforms[0])}
             data-testid={`platform-group-heading-${group.platforms[0]}`}
@@ -155,6 +164,29 @@ export function PlatformSelectorGrid({
         )}
         <div className={platformGridClassName}>
           {group.platforms.map((platform) => {
+            const pendingLabel = pendingPlatforms?.[platform];
+            if (pendingLabel) {
+              return (
+                <m.button
+                  key={platform}
+                  type="button"
+                  disabled
+                  aria-disabled="true"
+                  aria-pressed={false}
+                  data-testid={`platform-pending-${platform}`}
+                  className="relative p-4 rounded-lg border-2 border-dashed border-black/20 bg-paper text-left min-h-[120px] opacity-60 grayscale cursor-not-allowed"
+                  variants={staggerItem}
+                >
+                  <div className="mb-3">
+                    <PlatformIcon platform={platform} size="lg" />
+                  </div>
+                  <div className="font-semibold text-ink text-sm">
+                    {PLATFORM_NAMES[platform]}
+                  </div>
+                  <div className="text-xs text-ink/70 mt-1">{pendingLabel}</div>
+                </m.button>
+              );
+            }
             const selected = isSelected(platform);
             const isPreselected = isPreSelected(platform);
 

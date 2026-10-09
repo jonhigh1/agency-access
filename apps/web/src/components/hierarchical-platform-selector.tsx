@@ -22,6 +22,11 @@ import { PlatformIcon, Button } from '@/components/ui';
 import { SingleSelect } from '@/components/ui/single-select';
 import type { Platform } from '@agency-platform/shared';
 import { cn } from '@/lib/utils';
+import {
+  isMetaGroupPlatform,
+  isMetaPendingApproval,
+  META_PENDING_APPROVAL_LABEL,
+} from '@/lib/meta-pending-approval';
 
 interface ConnectedPlatform {
   platform: string;
@@ -60,6 +65,7 @@ export function HierarchicalPlatformSelector({
   onPlatformAccessLevelChange,
 }: HierarchicalPlatformSelectorProps) {
   const prefersReducedMotion = useReducedMotion();
+  const metaPending = isMetaPendingApproval();
   const [expandedGroups, setExpandedGroups] = useState<GroupState>({});
 
   // Manual invitation modal state
@@ -215,6 +221,26 @@ export function HierarchicalPlatformSelector({
   return (
     <div className="space-y-2">
       {availableGroups.map(([groupKey, group]) => {
+        // Google-first mode: Meta is shown but can't be selected until App Review approves.
+        if (metaPending && isMetaGroupPlatform(groupKey)) {
+          return (
+            <div
+              key={groupKey}
+              data-testid={`platform-group-pending-${groupKey}`}
+              aria-disabled="true"
+              className="border border-dashed border-border rounded-xl bg-muted/10 opacity-60 grayscale cursor-not-allowed"
+            >
+              <div className="flex items-center gap-3 px-4 py-3 min-h-[56px]">
+                <span className="flex-shrink-0 w-6 h-6 rounded-full border-2 border-border bg-background" aria-hidden="true" />
+                <PlatformIcon platform={groupKey as Platform} size="sm" />
+                <div className="flex-1 min-w-0">
+                  <span className="font-semibold text-sm text-foreground">{group.name}</span>
+                  <span className="ml-2 text-xs text-muted-foreground">{META_PENDING_APPROVAL_LABEL}</span>
+                </div>
+              </div>
+            </div>
+          );
+        }
         const isExpanded = expandedGroups[groupKey] || false;
         const selectionCount = getGroupSelectionCount(groupKey);
         const { checked: platformChecked, indeterminate: platformIndeterminate } =

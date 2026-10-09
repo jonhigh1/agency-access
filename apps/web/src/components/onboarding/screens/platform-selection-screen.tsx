@@ -32,6 +32,7 @@ import {
   selectionWithoutMeta,
   type MetaPortfolioReadiness,
 } from '@/lib/onboarding/meta-readiness';
+import { isMetaPendingApproval, META_PENDING_APPROVAL_LABEL } from '@/lib/meta-pending-approval';
 
 // ============================================================
 // TYPES
@@ -117,9 +118,18 @@ export function PlatformSelectionScreen({
     if (metaIncluded) setMetaSkipped(false);
   }, [metaIncluded]);
 
+  // Google-first mode (NEXT_PUBLIC_META_PENDING_APPROVAL=true): Meta is greyed out and
+  // the Meta Business Portfolio panel never renders, so this step can't dead-end.
+  const metaPending = isMetaPendingApproval();
+  const pendingPlatforms = useMemo<Partial<Record<Platform, string>> | undefined>(
+    () => (metaPending ? { meta: META_PENDING_APPROVAL_LABEL } : undefined),
+    [metaPending]
+  );
+
   const platformCount = flatPlatforms.length;
-  const showMetaPanel = Boolean(metaReadiness && onConnectMeta) && selectionIncludesMeta(selectedPlatforms);
-  const metaBlocking = Boolean(metaReadiness) && isMetaGateBlocking(selectedPlatforms, metaReadiness!);
+  const showMetaPanel =
+    !metaPending && Boolean(metaReadiness && onConnectMeta) && selectionIncludesMeta(selectedPlatforms);
+  const metaBlocking = !metaPending && Boolean(metaReadiness) && isMetaGateBlocking(selectedPlatforms, metaReadiness!);
 
   return (
     <m.div
@@ -147,6 +157,7 @@ export function PlatformSelectionScreen({
           preSelected={preSelected}
           showPreSelectedMessage
           disabled={loading}
+          pendingPlatforms={pendingPlatforms}
         />
 
         {showMetaPanel && metaReadiness && onConnectMeta && (
