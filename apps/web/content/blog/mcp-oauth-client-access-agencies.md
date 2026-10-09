@@ -110,7 +110,7 @@ Intake in the same link is real on AuthHub **and** AgencyAccess—parity, not an
 
 ### Step 2: Store and refresh tokens (Infisical + auto-refresh)
 
-OAuth tokens are encrypted in **Infisical**—not left in a spreadsheet, Slack thread, or laptop `.env`. AuthHub auto-refreshes before expiry where providers support it, and keeps **audit logs** of who accessed what and when.
+OAuth tokens are encrypted in **Infisical**—not left in a spreadsheet, Slack thread, or laptop `.env`. AuthHub auto-refreshes before expiry where providers support it, and keeps **audit logs** of who accessed what and when. See [how AuthHub secures client tokens](/security).
 
 What we do **not** claim: **SOC 2**. Infisical + audit logs only. If procurement needs a SOC 2 report this quarter, evaluate accordingly—do not invent one from marketing copy.
 
