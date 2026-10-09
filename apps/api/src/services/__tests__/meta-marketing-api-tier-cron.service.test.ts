@@ -255,7 +255,7 @@ describe('runMetaMarketingApiTierDailyCron', () => {
     const body = JSON.stringify({
       error: {
         message:
-          '(#200) Ad account owner has NOT grant ads_management or ads_read permission for act_557538895783894 (user 1234567890123) access_token=EAAsecretsecretsecretsecret',
+          '(#200) Ad account owner has NOT grant ads_management or ads_read permission for act_100000000000002 (user 1234567890123) access_token=EAAsecretsecretsecretsecret',
         type: 'OAuthException',
         code: 200,
         error_subcode: 1487694,
@@ -301,7 +301,7 @@ describe('runMetaMarketingApiTierDailyCron', () => {
     });
 
     const serialized = JSON.stringify(vi.mocked(Sentry.captureMessage).mock.calls);
-    expect(serialized).not.toContain('557538895783894');
+    expect(serialized).not.toContain('100000000000002');
     expect(serialized).not.toContain('1234567890123');
     expect(serialized).not.toContain('EAAsecret');
     expect(serialized).not.toContain('lab-tier-cron-token');
@@ -435,7 +435,7 @@ describe('maybeAlertConsecutiveFailures', () => {
 describe('scrubMetaErrorMessage', () => {
   it('removes tokens, act_ ids and long numeric ids, keeps the Meta error text', () => {
     const scrubbed = scrubMetaErrorMessage(
-      '(#100) Unsupported get request on act_557538895783894, object 120200000000001 access_token=EAAabc EAABwzLixnjYBO1234567890abcdefXYZ',
+      '(#100) Unsupported get request on act_100000000000002, object 120200000000001 access_token=EAAabc EAABwzLixnjYBO1234567890abcdefXYZ',
     );
     expect(scrubbed).toContain('(#100) Unsupported get request on act_[id]');
     expect(scrubbed).not.toMatch(/\d{6,}/);

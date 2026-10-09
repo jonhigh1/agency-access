@@ -2,11 +2,11 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('@/lib/env.js', () => ({
   env: {
-    META_REVIEW_BM_ID: '695982475048959',
-    META_REVIEW_AD_ACCOUNT_ID: '557538895783894',
-    META_REVIEW_PAGE_ID: '1373353139192376',
-    META_REVIEW_AGENCY_BM_ID: '3808519629379919',
-    META_REVIEW_SANDBOX_META_USER_ID: '122095319343509372',
+    META_REVIEW_BM_ID: '100000000000001',
+    META_REVIEW_AD_ACCOUNT_ID: '100000000000002',
+    META_REVIEW_PAGE_ID: '1000000000000003',
+    META_REVIEW_AGENCY_BM_ID: '1000000000000004',
+    META_REVIEW_SANDBOX_META_USER_ID: '100000000000000001',
   },
 }));
 
@@ -53,12 +53,12 @@ describe('reviewDemoContextService', () => {
     const { reviewDemoContextService } = await import('../review-demo-context.service.js');
     const resolved = await reviewDemoContextService.resolveAssets({
       accessToken: 'token',
-      identity: { id: '122095319343509372', name: 'Alex' },
+      identity: { id: '100000000000000001', name: 'Alex' },
     });
 
     expect(resolved.mode).toBe('sandbox');
-    expect(resolved.pageId).toBe('1373353139192376');
-    expect(resolved.adAccountId).toBe('act_557538895783894');
+    expect(resolved.pageId).toBe('1000000000000003');
+    expect(resolved.adAccountId).toBe('act_100000000000002');
   });
 
   it('derives assets from the connected reviewer token when not the sandbox user', async () => {
@@ -87,11 +87,11 @@ describe('reviewDemoContextService', () => {
     vi.resetModules();
     vi.doMock('@/lib/env.js', () => ({
       env: {
-        META_REVIEW_BM_ID: '695982475048959',
-        META_REVIEW_AD_ACCOUNT_ID: '557538895783894',
-        META_REVIEW_PAGE_ID: '1373353139192376',
-        META_REVIEW_AGENCY_BM_ID: '3808519629379919',
-        META_REVIEW_SANDBOX_META_USER_ID: '122095319343509372',
+        META_REVIEW_BM_ID: '100000000000001',
+        META_REVIEW_AD_ACCOUNT_ID: '100000000000002',
+        META_REVIEW_PAGE_ID: '1000000000000003',
+        META_REVIEW_AGENCY_BM_ID: '1000000000000004',
+        META_REVIEW_SANDBOX_META_USER_ID: '100000000000000001',
       },
     }));
     vi.doMock('@/services/connectors/meta.js', () => ({

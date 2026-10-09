@@ -15,7 +15,7 @@ describe('meta-partner-grant-narrative', () => {
 
   it('calls out agency Partner Business Portfolio id in narrative copy', () => {
     const narrative = buildMetaPartnerGrantNarrative({
-      agencyBusinessId: '3808519629379919',
+      agencyBusinessId: '1000000000000004',
       agencyBusinessName: 'Outdoor DIY',
       clientBusinessId: 'biz_client_2',
       clientBusinessName: 'DogTimez Retail',
@@ -24,7 +24,7 @@ describe('meta-partner-grant-narrative', () => {
     expect(narrative.headline).toMatch(/Partner/i);
     expect(narrative.oauthOrchestrationNote).toMatch(/orchestr/i);
     expect(narrative.revokeNote).toMatch(/remove the Partner/i);
-    expect(narrative.agencyPartnerLine).toContain('3808519629379919');
+    expect(narrative.agencyPartnerLine).toContain('1000000000000004');
     expect(narrative.agencyPartnerLine).toMatch(/Partner recipient/i);
     expect(narrative.clientPortfolioLine).toContain('biz_client_2');
     expect(narrative.discoveryNote).not.toMatch(/business_management/i);

@@ -6,6 +6,8 @@ const AD_ACCOUNT_ID = /\bact_\d+/gi;
 const LONG_NUMERIC_SEGMENT = /\/\d{8,}(?=\/|$)/g;
 const DROP_GRAPH_PARAMS = ['access_token', 'appsecret_proof', 'fb_exchange_token'] as const;
 
+const LONG_NUMERIC_QUERY_VALUE = /(^|[?&])([^=&#?]+=)\d{8,}(?=&|#|$)/g;
+
 function scrubGraphUrl(url: string): string {
   try {
     const parsed = new URL(url);
@@ -14,7 +16,7 @@ function scrubGraphUrl(url: string): string {
       parsed.searchParams.delete(key);
     }
     parsed.pathname = parsed.pathname.replace(LONG_NUMERIC_SEGMENT, '/[redacted]');
-    return parsed.toString();
+    return parsed.toString().replace(LONG_NUMERIC_QUERY_VALUE, '$1$2[redacted]');
   } catch {
     return url;
   }
@@ -22,8 +24,9 @@ function scrubGraphUrl(url: string): string {
 
 /**
  * Meta Graph hygiene for Sentry: ad account ids (act_<digits>) are redacted everywhere,
- * and graph.facebook.com URLs lose access_token/appsecret_proof/fb_exchange_token params
- * and long numeric path segments (page, business and asset ids).
+ * and graph.facebook.com URLs lose access_token/appsecret_proof/fb_exchange_token params,
+ * long numeric path segments (page, business and asset ids), and number-only query values
+ * of 8+ digits (e.g. ids=...).
  */
 export function scrubMetaGraphUrls(value: string): string {
   return value.replace(GRAPH_URL, scrubGraphUrl).replace(AD_ACCOUNT_ID, 'act_[redacted]');
@@ -45,6 +48,7 @@ function scrubGraphUrlPart(value: string): string {
   const rest = looksLikePath ? (queryStart === -1 ? '' : value.slice(queryStart)) : value;
   const cleanedRest = rest
     .replace(GRAPH_DROP_QUERY, (_match, sep: string) => sep)
+    .replace(LONG_NUMERIC_QUERY_VALUE, '$1$2[redacted]')
     .replace(/([?&])&+/g, '$1')
     .replace(/[?&]+$/, '')
     .replace(/^&+/, '');
