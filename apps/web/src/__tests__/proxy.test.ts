@@ -65,6 +65,14 @@ describe('proxy public route handling', () => {
     expect(protectMock).not.toHaveBeenCalled();
   });
 
+  it('does not protect the public security page', async () => {
+    const { default: proxy } = await import('../proxy');
+
+    await proxy({ protect: protectMock }, new Request('https://authhub.test/security'));
+
+    expect(protectMock).not.toHaveBeenCalled();
+  });
+
   it('does not protect referral redirect routes', async () => {
     const { default: proxy } = await import('../proxy');
 

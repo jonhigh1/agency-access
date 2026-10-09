@@ -55,6 +55,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     entry('/affiliate', buildDate, 'monthly', 0.7),
     entry('/terms', buildDate, 'yearly', 0.3),
     entry('/privacy-policy', buildDate, 'yearly', 0.3),
+    entry('/security', buildDate, 'monthly', 0.7),
   ];
 
   // Blog posts — use publishedAt for lastmod (accurate per 2026 guidelines)
