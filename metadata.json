@@ -1,0 +1,43 @@
+{
+  "cli_version": "0.10.2",
+  "checkpoint_id": "01M4K7TA4S2XRVYDKBBPT2MFT9",
+  "strategy": "manual-commit",
+  "branch": "mm-merge2",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "apps/web/public/brands/README.md",
+    "apps/web/public/brands/gmail.svg",
+    "apps/web/public/brands/imessage.png",
+    "apps/web/public/brands/slack.svg",
+    "apps/web/public/brands/zoom.svg",
+    "apps/web/src/components/marketing/__tests__/solution-section-motion.test.tsx",
+    "apps/web/src/components/marketing/cta-section.tsx",
+    "apps/web/src/components/marketing/hero-section.tsx",
+    "apps/web/src/components/marketing/homepage-faq-section.tsx",
+    "apps/web/src/components/marketing/how-it-works-section.tsx",
+    "apps/web/src/components/marketing/pain-section.tsx",
+    "apps/web/src/components/marketing/section-badge.tsx",
+    "apps/web/src/components/marketing/solution-section-new.tsx",
+    "apps/web/src/components/marketing/solution-section.module.css",
+    "apps/web/src/components/marketing/success-stories-section.tsx",
+    "apps/web/src/components/ui/combined-featured-section.tsx",
+    "apps/web/src/components/ui/integration-hero.tsx",
+    "docs/design/homepage-section-badges.md"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 0,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 0,
+    "api_call_count": 0
+  }
+}
