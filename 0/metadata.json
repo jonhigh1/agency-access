@@ -1,0 +1,47 @@
+{
+  "cli_version": "0.10.2",
+  "checkpoint_id": "01M4J4H94EHPWPWDAPS32DNGBE",
+  "session_id": "agent-517ab3b4-9e5c-4c84-a60a-349b0043760a",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-10T05:28:24.791687Z",
+  "branch": "codex/homepage-polish",
+  "checkpoints_count": 1,
+  "save_step_count": 2,
+  "files_touched": [
+    "apps/web/public/brands/README.md",
+    "apps/web/public/brands/gmail.svg",
+    "apps/web/public/brands/imessage.png",
+    "apps/web/public/brands/slack.svg",
+    "apps/web/public/brands/zoom.svg",
+    "apps/web/src/components/marketing/solution-section-new.tsx"
+  ],
+  "agent": "Cursor",
+  "model": "default",
+  "turn_id": "065c53aeed23",
+  "compact_transcript_start": 0,
+  "session_metrics": {
+    "duration_ms": 637611,
+    "turn_count": 5
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-10-10T05:28:24.711723Z",
+    "agent_lines": 184,
+    "agent_removed": 262,
+    "human_added": 242,
+    "human_modified": 4,
+    "human_removed": 0,
+    "total_committed": 430,
+    "total_lines_changed": 735,
+    "agent_percentage": 60.68027210884354,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    }
+  ]
+}
