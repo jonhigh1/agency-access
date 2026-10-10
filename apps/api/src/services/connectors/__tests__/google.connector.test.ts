@@ -780,6 +780,33 @@ describe('GoogleConnector', () => {
   });
 });
 
+describe('getAccountsForProduct dispatch (card 5 U8)', () => {
+  it('routes each Google product to its account fetcher', async () => {
+    const connector = new GoogleConnector();
+    const token = 'test-access-token';
+    const ads = [{ id: 'ads-1', name: 'Ads', type: 'google_ads' as const }];
+    const props = [{ id: 'ga4-1', name: 'Prop', type: 'ga4' as const }];
+    const biz = [{ id: 'biz-1', name: 'Biz', type: 'google_business_profile' as const }];
+    const gtm = [{ id: 'gtm-1', name: 'GTM', type: 'google_tag_manager' as const }];
+    const sc = [{ id: 'sc-1', name: 'SC', type: 'google_search_console' as const }];
+    const mc = [{ id: 'mc-1', name: 'MC', type: 'google_merchant_center' as const }];
+
+    vi.spyOn(connector as any, 'getAdsAccounts').mockResolvedValue({ accounts: ads });
+    vi.spyOn(connector as any, 'getAnalyticsProperties').mockResolvedValue({ properties: props });
+    vi.spyOn(connector as any, 'getBusinessLocations').mockResolvedValue({ accounts: biz });
+    vi.spyOn(connector as any, 'getTagManagerContainers').mockResolvedValue({ containers: gtm });
+    vi.spyOn(connector as any, 'getSearchConsoleSites').mockResolvedValue({ sites: sc });
+    vi.spyOn(connector as any, 'getMerchantCenterAccounts').mockResolvedValue({ accounts: mc });
+
+    await expect(connector.getAccountsForProduct('google_ads', token)).resolves.toEqual(ads);
+    await expect(connector.getAccountsForProduct('ga4', token)).resolves.toEqual(props);
+    await expect(connector.getAccountsForProduct('google_business_profile', token)).resolves.toEqual(biz);
+    await expect(connector.getAccountsForProduct('google_tag_manager', token)).resolves.toEqual(gtm);
+    await expect(connector.getAccountsForProduct('google_search_console', token)).resolves.toEqual(sc);
+    await expect(connector.getAccountsForProduct('google_merchant_center', token)).resolves.toEqual(mc);
+  });
+});
+
 describe('offboarding prerequisite checks', () => {
   it('classifies GA4 as reconnect_required when analytics.manage.users scope is missing', () => {
     const grantedScopes = new Set([

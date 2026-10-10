@@ -314,24 +314,23 @@ export class GoogleConnector extends BaseConnector {
     return result;
   }
 
+  /**
+   * Per-product account fetch. Unquoted-key table — walker-safe (card 5 U8).
+   */
   async getAccountsForProduct(
     product: GoogleProduct,
     accessToken: string
   ): Promise<GoogleProductAccount[]> {
-    switch (product) {
-      case 'google_ads':
-        return (await this.getAdsAccounts(accessToken)).accounts;
-      case 'ga4':
-        return (await this.getAnalyticsProperties(accessToken)).properties;
-      case 'google_business_profile':
-        return (await this.getBusinessLocations(accessToken)).accounts;
-      case 'google_tag_manager':
-        return (await this.getTagManagerContainers(accessToken)).containers;
-      case 'google_search_console':
-        return (await this.getSearchConsoleSites(accessToken)).sites;
-      case 'google_merchant_center':
-        return (await this.getMerchantCenterAccounts(accessToken)).accounts;
-    }
+    const fetchers: Record<GoogleProduct, () => Promise<GoogleProductAccount[]>> = {
+      google_ads: async () => (await this.getAdsAccounts(accessToken)).accounts,
+      ga4: async () => (await this.getAnalyticsProperties(accessToken)).properties,
+      google_business_profile: async () => (await this.getBusinessLocations(accessToken)).accounts,
+      google_tag_manager: async () => (await this.getTagManagerContainers(accessToken)).containers,
+      google_search_console: async () => (await this.getSearchConsoleSites(accessToken)).sites,
+      google_merchant_center: async () => (await this.getMerchantCenterAccounts(accessToken)).accounts,
+    };
+
+    return fetchers[product]();
   }
 
   /**

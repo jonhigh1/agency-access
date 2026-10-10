@@ -210,10 +210,8 @@ const ALLOWLIST = {
   // (unquoted-key table; review card 2 U3). Prior allowlist entry for
   // authorization-verification.service.ts was pruned in the same change.
 
-  // Google connector verifies assets per sub-product; one consent covers
-  // every google product, so the case split is inherent to the flow.
-  // Allowlist-until-refactored.
-  'apps/api/src/services/connectors/google.ts': 'DEC-015 Phase 3, 2026-10-09',
+  // getAccountsForProduct lives behind an unquoted-key fetcher map in
+  // google.ts (review card 5 U8). Prior allowlist entry pruned same change.
 
   // Per-product revoke dispatch: each google product has its own
   // offboarding API. Allowlist-until-refactored.
