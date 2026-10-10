@@ -34,6 +34,15 @@ export interface NormalizedTokenResponse {
 }
 
 /**
+ * Looser OAuth token shape for the PlatformConnector contract.
+ * Meta may omit expiresIn / expiresAt; BaseConnector returns NormalizedTokenResponse.
+ */
+export type OAuthTokenResponse = Omit<NormalizedTokenResponse, 'expiresIn' | 'expiresAt'> & {
+  expiresIn?: number;
+  expiresAt?: Date;
+};
+
+/**
  * OAuth Token Exchange Error
  *
  * Thrown when token exchange or refresh fails.
@@ -98,6 +107,8 @@ export class ConnectorError extends Error {
  * ```
  */
 export abstract class BaseConnector {
+  readonly authMode = 'oauth' as const;
+
   protected readonly config: PlatformOAuthConfig;
   protected readonly platform: Platform;
 

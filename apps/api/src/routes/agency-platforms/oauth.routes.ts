@@ -4,7 +4,7 @@ import { oauthStateService } from '@/services/oauth-state.service';
 import { MetaConnector } from '@/services/connectors/meta';
 import { GoogleConnector } from '@/services/connectors/google';
 import type { GoogleAccountsResponse } from '@/services/connectors/google';
-import type { SnapchatUserInfo } from '@/services/connectors/snapchat';
+import { SnapchatConnector, type SnapchatUserInfo } from '@/services/connectors/snapchat';
 import type { PlatformConnector } from '@/services/connectors/factory';
 import { ConnectorError } from '@/services/connectors/base.connector.js';
 import { env } from '@/lib/env';
@@ -241,9 +241,9 @@ export async function registerOAuthRoutes(fastify: FastifyInstance) {
       // and an identity failure are recorded as discoveryFailed metadata and
       // the connection is still created.
       let snapchatOrganizations: SnapchatOrganizationsMetadata | undefined;
-      if (platform === 'snapchat') {
+      if (platform === 'snapchat' && connector instanceof SnapchatConnector) {
         try {
-          const snapUserInfo: SnapchatUserInfo = await connector.getUserInfo(tokens.accessToken);
+          const snapUserInfo = await connector.getUserInfo(tokens.accessToken);
           snapchatOrganizations = {
             organizations: snapUserInfo.organizations,
             adAccountCount: snapUserInfo.adAccountCount,

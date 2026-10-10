@@ -23,6 +23,8 @@ interface BeehiivPublication {
  * @see https://www.beehiiv.com/docs/api
  */
 export class BeehiivConnector {
+  readonly authMode = 'api_key' as const;
+
   private readonly API_BASE = 'https://api.beehiiv.com/v2';
 
   /**

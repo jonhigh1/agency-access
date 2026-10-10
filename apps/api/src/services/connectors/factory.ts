@@ -1,4 +1,5 @@
 import type { Platform } from '@agency-platform/shared';
+import type { OAuthTokenResponse } from './base.connector.js';
 import { metaConnector } from './meta.js';
 import { googleAdsConnector } from './google-ads.js';
 import { ga4Connector } from './ga4.js';
@@ -11,7 +12,7 @@ import { snapchatConnector } from './snapchat.js';
 
 // Export new hybrid architecture components
 export { BaseConnector, ConnectorError } from './base.connector.js';
-export type { NormalizedTokenResponse } from './base.connector.js';
+export type { NormalizedTokenResponse, OAuthTokenResponse } from './base.connector.js';
 export { PLATFORM_CONFIGS, getPlatformConfig } from './registry.config.js';
 
 /**
@@ -27,9 +28,9 @@ export { PLATFORM_CONFIGS, getPlatformConfig } from './registry.config.js';
  * Aliases: meta_ads / meta_pages / instagram share the Meta connector;
  * linkedin_ads / linkedin_pages, tiktok_ads, and snapchat_ads alias their
  * group connector. Google products have distinct connectors (google,
- * google_ads, ga4). Beehiiv is the api_key connector (cast stays until
- * review card 5 unifies the connector interface). Manual-invite platforms
- * (kit, zapier, mailchimp, pinterest, klaviyo) have no connector.
+ * google_ads, ga4). Beehiiv is the api_key connector (authMode union —
+ * no cast). Manual-invite platforms (kit, zapier, mailchimp, pinterest,
+ * klaviyo) have no connector.
  *
  * ADDING A NEW PLATFORM:
  * 1. Add its descriptor to packages/shared/src/platforms/registry.ts
@@ -45,37 +46,22 @@ export { PLATFORM_CONFIGS, getPlatformConfig } from './registry.config.js';
  */
 
 /**
- * Platform Connector Interface
+ * OAuth platform connector contract (`authMode: 'oauth'`).
  *
- * Defines the contract that all platform connectors must implement.
  * Different platforms have different refresh capabilities:
- *
  * - Google Ads & GA4: Support refresh_token flow
  * - Meta: Uses 60-day long-lived tokens (no refresh, requires re-auth)
- * - TikTok/LinkedIn/Snapchat: To be implemented
  */
 export interface PlatformConnector {
-  /**
-   * Generate OAuth authorization URL
-   */
+  readonly authMode: 'oauth';
+
   getAuthUrl(state: string, scopes?: string[], redirectUri?: string): string;
 
-  /**
-   * Exchange authorization code for access tokens
-   */
-  exchangeCode(code: string, redirectUri?: string): Promise<any>;
+  exchangeCode(code: string, redirectUri?: string): Promise<OAuthTokenResponse>;
 
-  /**
-   * Optional: Refresh access token using refresh token
-   * Not supported by all platforms (e.g., Meta)
-   */
-  refreshToken?(refreshToken: string): Promise<any>;
+  refreshToken?(refreshToken: string): Promise<OAuthTokenResponse>;
 
-  /**
-   * Optional: Exchange short-lived token for long-lived token
-   * Meta-specific (60-day tokens)
-   */
-  getLongLivedToken?(shortToken: string): Promise<any>;
+  getLongLivedToken?(shortToken: string): Promise<OAuthTokenResponse>;
 
   /** Optional provider-side token inspection; never return or persist token values. */
   getTokenMetadata?(accessToken: string): Promise<{
@@ -86,28 +72,35 @@ export interface PlatformConnector {
     isValid: boolean;
   }>;
 
-  /**
-   * Verify token is still valid
-   */
   verifyToken(accessToken: string): Promise<boolean>;
 
-  /**
-   * Get user info from platform
-   */
-  getUserInfo(accessToken: string): Promise<any>;
+  getUserInfo(accessToken: string): Promise<unknown>;
 
-  /**
-   * Optional: Verify agency has access to client's assets
-   */
   verifyClientAccess?(
     agencyAccessToken: string,
-    ...args: any[]
-  ): Promise<any>;
+    ...args: unknown[]
+  ): Promise<unknown>;
 
-  /**
-   * Optional: Revoke token
-   */
   revokeToken?(accessToken: string): Promise<void>;
+}
+
+/**
+ * API-key connector contract (`authMode: 'api_key'`).
+ * Beehiiv team-invitation workflow — no OAuth URL / code exchange.
+ */
+export interface ApiKeyConnector {
+  readonly authMode: 'api_key';
+  verifyToken(apiKey: string): Promise<boolean>;
+}
+
+export type RegistryConnector = PlatformConnector | ApiKeyConnector;
+
+export function isOAuthConnector(connector: RegistryConnector): connector is PlatformConnector {
+  return connector.authMode === 'oauth';
+}
+
+export function isApiKeyConnector(connector: RegistryConnector): connector is ApiKeyConnector {
+  return connector.authMode === 'api_key';
 }
 
 /**
@@ -116,7 +109,7 @@ export interface PlatformConnector {
  * Maps platform identifiers to their connector instances.
  * Key set pinned to the shared registry's connectorPlatformIds (DEC-015).
  */
-export const CONNECTOR_REGISTRY: Partial<Record<Platform, PlatformConnector>> = {
+export const CONNECTOR_REGISTRY: Partial<Record<Platform, RegistryConnector>> = {
   meta: metaConnector,
   meta_ads: metaConnector, // Alias for same connector
   meta_pages: metaConnector, // Alias for same connector
@@ -127,7 +120,7 @@ export const CONNECTOR_REGISTRY: Partial<Record<Platform, PlatformConnector>> = 
   linkedin: linkedinConnector,
   linkedin_ads: linkedinConnector, // Alias for same connector
   linkedin_pages: linkedinConnector, // Alias for same connector
-  beehiiv: beehiivConnector as any, // Beehiiv uses API key auth (team invitation workflow)
+  beehiiv: beehiivConnector,
   tiktok: tiktokConnector,
   tiktok_ads: tiktokConnector, // Alias for same connector
   snapchat: snapchatConnector,
@@ -135,26 +128,49 @@ export const CONNECTOR_REGISTRY: Partial<Record<Platform, PlatformConnector>> = 
   shopify: shopifyConnector,
 };
 
+function missingConnectorError(platform: Platform): Error {
+  return new Error(
+    `No connector found for platform: ${platform}. ` +
+    `Available platforms: ${Object.keys(CONNECTOR_REGISTRY).join(', ')}`
+  );
+}
+
 /**
- * Get the appropriate connector for a platform
+ * Get the OAuth connector for a platform.
  *
- * @param platform - The platform identifier
- * @returns The platform connector instance
- * @throws Error if no connector exists for the platform
- *
- * @example
- * ```typescript
- * const connector = getConnector('meta_ads');
- * const tokens = await connector.exchangeCode(code);
- * ```
+ * @throws if no connector exists, or the platform uses API-key auth
  */
 export function getConnector(platform: Platform): PlatformConnector {
   const connector = CONNECTOR_REGISTRY[platform];
 
   if (!connector) {
+    throw missingConnectorError(platform);
+  }
+
+  if (!isOAuthConnector(connector)) {
     throw new Error(
-      `No connector found for platform: ${platform}. ` +
-      `Available platforms: ${Object.keys(CONNECTOR_REGISTRY).join(', ')}`
+      `Platform ${platform} uses API-key auth; use getApiKeyConnector() instead of getConnector().`
+    );
+  }
+
+  return connector;
+}
+
+/**
+ * Get the API-key connector for a platform (currently beehiiv).
+ *
+ * @throws if no connector exists, or the platform is OAuth
+ */
+export function getApiKeyConnector(platform: Platform): ApiKeyConnector {
+  const connector = CONNECTOR_REGISTRY[platform];
+
+  if (!connector) {
+    throw missingConnectorError(platform);
+  }
+
+  if (!isApiKeyConnector(connector)) {
+    throw new Error(
+      `Platform ${platform} is an OAuth connector; use getConnector() instead of getApiKeyConnector().`
     );
   }
 

@@ -84,6 +84,8 @@ async function throwMetaMutationError(response: Response, operation: string): Pr
 }
 
 export class MetaConnector {
+  readonly authMode = 'oauth' as const;
+
   private readonly appId: string;
   private readonly appSecret: string;
   private readonly redirectUri: string;
