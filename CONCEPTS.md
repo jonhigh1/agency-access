@@ -46,6 +46,7 @@ If a returning OAuth platform is still incomplete, it becomes the Active Platfor
 
 ### Full Request
 The compact, complete view of every requested Platform Group and its truthful state.
+*Also named:* the named-platform checklist (the current implementation name for the one progress surface).
 
 It preserves context for the client without turning every item into an equal action.
 
@@ -68,12 +69,6 @@ A receipt names businesses and assets in plain language only — raw platform ID
 The client-controlled payload describing which assets were chosen for a product.
 
 The server treats it as untrusted input: it validates the claimed business and every asset against the invite's scope before persisting, so the blob never grants access by assertion.
-
-### Full Request
-The compact, complete view of every requested Platform Group and its truthful state.
-*Also named:* the named-platform checklist (the current implementation name for the one progress surface).
-
-It preserves context for the client without turning every item into an equal action.
 
 ### Terminal Landing State
 The named dead-end state of an invite — expired, revoked, unavailable, and their kin — rendered through one branded card.
@@ -122,6 +117,13 @@ It validates the pushed commit content from a clean checkout, not the working tr
 A frontend flow change whose correctness depends on the backend deploy shipping in coordination.
 
 Either side can be live while its counterpart is not, so a dual-deploy change is verified by checking the backend route's presence in production, never by assuming the latest commit built.
+
+## Agent memory
+
+### Memory Claim
+One falsifiable thing a session learned, small enough to verify against a commit.
+
+A claim rests in exactly one terminal state — verified, promoted, dropped, or tentative — marked inline on its source entry, so retrieval can tell what is authoritative without opening a second file.
 
 ## Retired
 

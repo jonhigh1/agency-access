@@ -1,5 +1,7 @@
 # Glossary
 
+> Code-settled platform names live here. Concept meaning lives in `CONCEPTS.md`.
+
 Domain vocabulary for the Agency Access Platform. Add a term when a name settles in code or review; keep definitions to what the term means, not how it is implemented. Architecture vocabulary (module, interface, depth, seam, adapter, leverage, locality) is defined in the codebase-design skill and is not duplicated here.
 
 Created 2026-10-08 during the platform-registry architecture review.

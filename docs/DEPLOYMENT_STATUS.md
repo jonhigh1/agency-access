@@ -1,5 +1,7 @@
 # Vercel Deployment Status
 
+> **History — not current.** Vercel blocker notes. Live host is Render per `render.yaml`; verify before deploy work.
+
 ## Current Issue
 
 Vercel is failing during the `npm install` step because:

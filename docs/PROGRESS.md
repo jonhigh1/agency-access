@@ -1,5 +1,7 @@
 # OAuth Aggregation Platform - Progress & Next Steps
 
+> **History — not current.** Day 1 Meta-only snapshot. Current state lives in `docs/workspace/status.md`.
+
 **Last Updated:** 2025-12-24
 **Status:** Day 1 - Foundation (External Service Setup)
 

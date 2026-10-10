@@ -1,5 +1,7 @@
 # 🚀 Quick Start for New Claude Code Session
 
+> **History — not current.** This describes a 2025 Meta-only Day 1 setup. Start at `docs/workspace/status.md` and `docs/workspace/source-map.md` instead.
+
 **Copy this to start your next conversation:**
 
 ---

@@ -37,4 +37,4 @@ These are evidence-based observations, not assumed user priorities:
 - `docs/START-HERE.md` and `docs/PROGRESS.md` describe a 2025 “Day 1” Meta-only build using AWS Secrets Manager. Current code and configuration use Infisical and support a much broader product. Treat both files as history.
 - `docs/DEPLOYMENT_STATUS.md` describes a Vercel blocker, while `README.md`, `render.yaml`, and recent commits point to Render. Verify the actual live host before deployment work.
 - `product/PRODUCT-ROADMAP-2026.md` has Q1/Q2 timing and numeric baselines/targets that may now be stale or unvalidated.
-- `docs/SESSION-LOG.md` calls itself the current-session source but its newest entry predates the June/July work. Use it as history until maintained again.
+- `docs/SESSION-LOG.md` is maintained again (newest entry 2026-10-09). Treat it as recent history, still below live state and code.

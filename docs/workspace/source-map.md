@@ -28,7 +28,7 @@ File dates and confident prose do not make a document authoritative. If a high-i
 | Runtime environment | `apps/api/src/lib/env.ts`, frontend env helpers, `.env.example` files | Never expose secret values. Live host settings outrank examples. |
 | Deployment | `render.yaml`, `docs/PRODUCTION_CHECKLIST.md`, recent commits, verified Render state | Older Vercel docs may be historical. |
 | Security decisions | code/tests, `docs/DECISIONS.md`, security plans and solution notes | `docs/DECISIONS.md` is sparse and not a complete ledger. |
-| Active engineering plan | latest confirmed file in `docs/plans/` or `docs/implementation-plans/` | A dated plan is not active merely because it exists. |
+| Active engineering plan | latest confirmed file in `docs/plans/` (`docs/plans/` is canonical; `docs/implementation-plans/` is archive) | A dated plan is not active merely because it exists. |
 | Product/content evidence | analytics, database, customer/support systems, then marketing/research docs | Verify claims before external use. |
 
 ## Conflict rules
