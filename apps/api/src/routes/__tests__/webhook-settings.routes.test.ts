@@ -262,6 +262,8 @@ describe('Webhook Settings Routes', () => {
     expect(webhookEndpointService.rotateWebhookEndpointSecret).toHaveBeenCalledWith({
       agencyId: 'agency-1',
       rotatedBy: expect.any(String),
+      // Dashboard preserves destructive rotation: old secret revoked at once.
+      immediate: true,
     });
   });
 

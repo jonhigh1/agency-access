@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { env } from '@/lib/env';
 import { infisical } from '@/lib/infisical';
 import { prisma } from '@/lib/prisma';
+import { signWebhookPayload } from '@/lib/webhook-signature';
 import { deliverWebhookEvent } from '@/services/webhook-delivery.service';
 
 vi.mock('@/lib/prisma', () => ({
@@ -16,12 +17,14 @@ vi.mock('@/lib/prisma', () => ({
     webhookEndpoint: {
       update: vi.fn(),
     },
+    $transaction: vi.fn((ops: any) => (Array.isArray(ops) ? Promise.all(ops) : ops)),
   },
 }));
 
 vi.mock('@/lib/infisical', () => ({
   infisical: {
     getPlainSecret: vi.fn(),
+    deleteSecret: vi.fn(),
   },
 }));
 
@@ -227,5 +230,108 @@ describe('webhook-delivery.service', () => {
         nextAttemptAt: null,
       }),
     });
+  });
+
+  it('signs with both current and pending secrets during a live rotation overlap', async () => {
+    const currentSecret = 'whsec_current';
+    const pendingSecret = 'whsec_pending';
+    vi.mocked(infisical.getPlainSecret).mockImplementation(async (secretId: string) => {
+      if (secretId === 'webhook_token_endpoint-1') return currentSecret;
+      if (secretId === 'webhook_token_endpoint-1_pending') return pendingSecret;
+      throw new Error(`unknown secret ${secretId}`);
+    });
+    vi.mocked(prisma.webhookEvent.findUnique).mockResolvedValue({
+      id: 'event-1',
+      type: 'access_request.completed',
+      payload: { id: 'evt_test_1', type: 'access_request.completed' },
+      endpoint: {
+        id: 'endpoint-1',
+        agencyId: 'agency-1',
+        url: 'https://example.com/webhooks',
+        secretId: 'webhook_token_endpoint-1',
+        pendingSecretId: 'webhook_token_endpoint-1_pending',
+        pendingSecretExpiresAt: new Date(Date.now() + 60_000),
+        status: 'active',
+        failureCount: 0,
+      },
+    } as any);
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      status: 204,
+      text: async () => '',
+    } as Response);
+
+    const result = await deliverWebhookEvent({ eventId: 'event-1', attemptNumber: 1 });
+
+    expect(result.error).toBeNull();
+    const headers = vi.mocked(prisma.webhookDelivery.create).mock.calls[0][0].data.requestHeaders;
+    const payload = JSON.stringify({ id: 'evt_test_1', type: 'access_request.completed' });
+    const timestamp = headers['X-AgencyAccess-Timestamp'];
+    expect(headers['X-AgencyAccess-Signature']).toBe(
+      signWebhookPayload(payload, currentSecret, timestamp),
+    );
+    expect(headers['X-AgencyAccess-Pending-Signature']).toBe(
+      signWebhookPayload(payload, pendingSecret, timestamp),
+    );
+    expect(prisma.webhookEndpoint.update).not.toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({ pendingSecretId: null }),
+      }),
+    );
+  });
+
+  it('promotes an expired pending secret to active and drops the superseded Infisical secret', async () => {
+    const currentSecret = 'whsec_old';
+    const pendingSecret = 'whsec_new';
+    vi.mocked(infisical.getPlainSecret).mockImplementation(async (secretId: string) => {
+      if (secretId === 'webhook_token_endpoint-1') return currentSecret;
+      if (secretId === 'webhook_token_endpoint-1_pending') return pendingSecret;
+      throw new Error(`unknown secret ${secretId}`);
+    });
+    vi.mocked(infisical.deleteSecret).mockResolvedValue(undefined as any);
+    vi.mocked(prisma.webhookEndpoint.update).mockResolvedValue({
+      id: 'endpoint-1',
+      secretId: 'webhook_token_endpoint-1_pending',
+      pendingSecretId: null,
+      pendingSecretExpiresAt: null,
+      status: 'active',
+      failureCount: 0,
+    } as any);
+    vi.mocked(prisma.webhookEvent.findUnique).mockResolvedValue({
+      id: 'event-1',
+      type: 'access_request.completed',
+      payload: { id: 'evt_test_1', type: 'access_request.completed' },
+      endpoint: {
+        id: 'endpoint-1',
+        agencyId: 'agency-1',
+        url: 'https://example.com/webhooks',
+        secretId: 'webhook_token_endpoint-1',
+        pendingSecretId: 'webhook_token_endpoint-1_pending',
+        pendingSecretExpiresAt: new Date(Date.now() - 1_000),
+        status: 'active',
+        failureCount: 0,
+      },
+    } as any);
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      status: 204,
+      text: async () => '',
+    } as Response);
+
+    const result = await deliverWebhookEvent({ eventId: 'event-1', attemptNumber: 1 });
+
+    expect(result.error).toBeNull();
+    expect(prisma.webhookEndpoint.update).toHaveBeenCalledWith({
+      where: { id: 'endpoint-1' },
+      data: {
+        secretId: 'webhook_token_endpoint-1_pending',
+        pendingSecretId: null,
+        pendingSecretExpiresAt: null,
+      },
+    });
+    expect(infisical.deleteSecret).toHaveBeenCalledWith('webhook_token_endpoint-1');
+    const headers = vi.mocked(prisma.webhookDelivery.create).mock.calls[0][0].data.requestHeaders;
+    expect(headers['X-AgencyAccess-Pending-Signature']).toBeUndefined();
+    expect(headers['X-AgencyAccess-Signature']).toMatch(/^v1=[a-f0-9]{64}$/);
   });
 });

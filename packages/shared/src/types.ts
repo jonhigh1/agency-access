@@ -3226,3 +3226,58 @@ export interface ClientDetailResponse {
   accessRequests: ClientAccessRequest[];
   activity: ClientActivityItem[];
 }
+
+/* ============================================================
+ * Public API v1 webhooks (U6: R13–R16, KTD7)
+ * ============================================================
+ *
+ * Reconciled taxonomy: every event the shared evaluator can emit is
+ * subscribable, including per-service outcomes (granted/skipped/failed
+ * surface as access_request lifecycle transitions) plus request lifecycle
+ * transitions and intake completion (access_request.partial/completed,
+ * revoked, expired) and connection health (connection.status_changed).
+ *
+ * Ordering + dedupe contract (documented for integrators):
+ * - `sequenceNumber` is a per-endpoint monotonic value drawn from one
+ *   Postgres sequence object. Values never repeat per endpoint but gaps
+ *   occur (rolled-back nextval calls never reuse). Consumers order by
+ *   comparison, never by contiguity.
+ * - `correlationId` is set once per logical occurrence and copied to each
+ *   per-endpoint event: the cross-endpoint dedupe key.
+ * - `id` (global event ID) is the within-endpoint duplicate key: collapse
+ *   redeliveries on `id`, reconstruct order via `sequenceNumber`.
+ */
+
+/** Every event type subscribable through the v1 webhook surface. */
+export const V1_WEBHOOK_SUBSCRIBABLE_EVENTS = [
+  'webhook.test',
+  'access_request.partial',
+  'access_request.completed',
+  'access_request.revoked',
+  'access_request.expired',
+  'connection.status_changed',
+] as const satisfies readonly WebhookEventType[];
+
+/** Adjustable default cap on webhook endpoints per agency (KTD8). */
+export const MAX_WEBHOOK_ENDPOINTS_PER_AGENCY = 10;
+
+/** Inbound signature freshness window, seconds (R14). */
+export const WEBHOOK_SIGNATURE_SKEW_SECONDS = 300;
+
+/** Dual-secret rotation overlap window, ms: 24h like API keys (KTD7). */
+export const WEBHOOK_SECRET_ROTATION_OVERLAP_MS = 24 * 60 * 60 * 1000;
+
+/** Deliveries-log retention window, days: expired rows are purge-owned (R14). */
+export const WEBHOOK_DELIVERY_RETENTION_DAYS = 90;
+
+/** Ordered v1 envelope: base event plus the R16 ordering primitives. */
+export const WebhookOrderedEnvelopeSchema = z.object({
+  id: z.string().min(1),
+  apiVersion: WebhookApiVersionSchema,
+  type: WebhookEventTypeSchema,
+  createdAt: z.string().datetime(),
+  sequenceNumber: z.number().int().nonnegative(),
+  correlationId: z.string().min(1),
+  data: z.unknown(),
+});
+export type WebhookOrderedEnvelope = z.infer<typeof WebhookOrderedEnvelopeSchema>;

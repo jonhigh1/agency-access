@@ -26,6 +26,7 @@ import {
   type ClientDetailPlatformGroupStatus,
 } from '@agency-platform/shared';
 import type { Prisma } from '@prisma/client';
+import { EXTERNAL_ID_CONFLICT_CODE } from '@/services/idempotency.service.js';
 
 type Client = Prisma.ClientGetPayload<{}>;
 
@@ -37,7 +38,27 @@ export const ClientError = {
   EMAIL_EXISTS: 'CLIENT_EMAIL_EXISTS',
   INVALID_EMAIL: 'CLIENT_INVALID_EMAIL',
   NOT_FOUND: 'CLIENT_NOT_FOUND',
+  /** Duplicate Client.externalClientId within one agency; settable at creation, immutable after. */
+  EXTERNAL_ID_CONFLICT: EXTERNAL_ID_CONFLICT_CODE,
+  /** Client.externalClientId is set at creation and immutable after. */
+  EXTERNAL_ID_IMMUTABLE: 'EXTERNAL_ID_IMMUTABLE',
 } as const;
+
+/** True for Prisma unique-violation errors (P2002). */
+function isUniqueViolation(error: unknown): boolean {
+  return (
+    !!error &&
+    typeof error === 'object' &&
+    (error as { code?: unknown }).code === 'P2002'
+  );
+}
+
+/** True when the P2002 target names the agency-scoped external-ID guard. */
+function isExternalIdViolation(error: unknown): boolean {
+  if (!isUniqueViolation(error)) return false;
+  const target = (error as { meta?: { target?: unknown } }).meta?.target;
+  return Array.isArray(target) && target.includes('externalClientId');
+}
 
 // Input types
 export interface CreateClientDto {
@@ -48,6 +69,11 @@ export interface CreateClientDto {
   email: string;
   website?: string;
   language?: ClientLanguage;
+  /**
+   * Agency-scoped immutable CRM join key (KTD4; R6). Settable at creation
+   * only; duplicates within the agency fail with EXTERNAL_ID_CONFLICT.
+   */
+  externalClientId?: string;
 }
 
 export interface GetClientsDto {
@@ -78,9 +104,10 @@ export interface PaginatedResult<T> {
  * Create a new client
  * @throws {Error} CLIENT_EMAIL_EXISTS if email already exists for this agency
  * @throws {Error} CLIENT_INVALID_EMAIL if email format is invalid
+ * @throws {Error} EXTERNAL_ID_CONFLICT if externalClientId is taken in this agency
  */
 export async function createClient(dto: CreateClientDto): Promise<Client> {
-  const { id, agencyId, email, language = 'en', ...rest } = dto;
+  const { id, agencyId, email, language = 'en', externalClientId, ...rest } = dto;
 
   // Validate email format
   if (!EMAIL_REGEX.test(email)) {
@@ -99,18 +126,30 @@ export async function createClient(dto: CreateClientDto): Promise<Client> {
     throw new Error(ClientError.EMAIL_EXISTS);
   }
 
-  // Create client
-  const client = await prisma.client.create({
-    data: {
-      ...rest,
-      ...(id ? { id } : {}),
-      agencyId,
-      email,
-      language,
-    },
-  });
+  // Create client; the composite guard maps in-agency external-ID
+  // duplicates to EXTERNAL_ID_CONFLICT (KTD4). Cross-agency reuse succeeds.
+  try {
+    const client = await prisma.client.create({
+      data: {
+        ...rest,
+        ...(id ? { id } : {}),
+        agencyId,
+        email,
+        language,
+        ...(externalClientId !== undefined ? { externalClientId } : {}),
+      },
+    });
 
-  return client;
+    return client;
+  } catch (error) {
+    if (isExternalIdViolation(error)) {
+      throw new Error(ClientError.EXTERNAL_ID_CONFLICT);
+    }
+    if (isUniqueViolation(error)) {
+      throw new Error(ClientError.EMAIL_EXISTS);
+    }
+    throw error;
+  }
 }
 
 /**
@@ -170,6 +209,7 @@ export const clientService = {
   createClient,
   getClients,
   getClientById,
+  getClientByExternalId,
   updateClient,
   findClientByEmail,
   deleteClient,
@@ -178,8 +218,22 @@ export const clientService = {
 };
 
 /**
+ * Get a client by its agency-scoped immutable external ID (R6, R11).
+ * Resolves the row directly; never falls back to a scan.
+ */
+export async function getClientByExternalId(
+  agencyId: string,
+  externalClientId: string
+): Promise<Client | null> {
+  return prisma.client.findFirst({
+    where: { agencyId, externalClientId },
+  });
+}
+
+/**
  * Update a client
  * @throws {Error} CLIENT_EMAIL_EXISTS if new email already exists for another client
+ * @throws {Error} EXTERNAL_ID_IMMUTABLE if externalClientId is present (immutable, KTD4)
  * @returns Updated client or null if not found
  */
 export async function updateClient(
@@ -187,6 +241,13 @@ export async function updateClient(
   agencyId: string,
   dto: UpdateClientDto
 ): Promise<Client | null> {
+  // External IDs are set at creation and immutable after: the field is
+  // absent from UpdateClientDto, and this runtime guard rejects untyped
+  // callers that smuggle it in.
+  if ('externalClientId' in (dto as Record<string, unknown>)) {
+    throw new Error(ClientError.EXTERNAL_ID_IMMUTABLE);
+  }
+
   // Check if client exists
   const existing = await prisma.client.findFirst({
     where: { id, agencyId },

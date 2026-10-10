@@ -42,6 +42,7 @@ model Agency {
   agentGrants           AgentGrant[]
   agentOperations       AgentOperation[]
   googleOffboardingRuns GoogleOffboardingRun[]
+  apiKeys               ApiKey[]
 
   @@map("agencies")
 }
@@ -115,6 +116,10 @@ model Client {
   email     String
   website   String?
   language  String   @default("en") // 'en', 'es', 'nl', etc.
+  // Agency-scoped immutable CRM join key for the public v1 API (KTD4, R6).
+  // Nullable: multiple nulls need no backfill; set values are immutable.
+  // Legacy AccessRequest.externalReference stays internal-only.
+  externalClientId String? @map("external_client_id")
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
@@ -122,6 +127,8 @@ model Client {
   accessRequests AccessRequest[]
 
   @@unique([agencyId, email])
+  // Postgres NULLs never conflict: duplicates fail in-agency, succeed cross-agency.
+  @@unique([agencyId, externalClientId])
   @@map("clients")
 }
 
@@ -194,6 +201,10 @@ model WebhookEndpoint {
   lastFailedAt        DateTime? @map("last_failed_at")
   disabledAt          DateTime? @map("disabled_at")
   createdBy           String    @map("created_by")
+  // KTD7 expand half: dual-secret rotation overlap (new-then-old verification
+  // lands in U6). Singleton @@unique([agencyId]) stays until U6 contracts.
+  pendingSecretId        String?   @map("pending_secret_id")
+  pendingSecretExpiresAt DateTime? @map("pending_secret_expires_at")
   createdAt           DateTime  @default(now()) @map("created_at")
   updatedAt           DateTime  @updatedAt @map("updated_at")
 
@@ -201,7 +212,9 @@ model WebhookEndpoint {
   events     WebhookEvent[]
   deliveries WebhookDelivery[]
 
-  @@unique([agencyId])
+  // U6 contract: plural endpoints per agency (KTD7). The singleton
+  // @@unique([agencyId]) guard is gone; uniqueness is per (agency, url).
+  @@unique([agencyId, url])
   @@index([agencyId, status])
   @@map("webhook_endpoints")
 }
@@ -214,6 +227,11 @@ model WebhookEvent {
   resourceType String?  @map("resource_type")
   resourceId   String?  @map("resource_id")
   payload      Json
+  // KTD7 expand half: per-endpoint monotonic sequence (default from the
+  // webhook_endpoint_sequence object; gaps tolerated) plus the cross-endpoint
+  // dedupe key set once per logical occurrence. Nullable until U6 backfills.
+  sequenceNumber BigInt? @map("sequence_number")
+  correlationId  String?  @map("correlation_id")
   createdAt    DateTime @default(now()) @map("created_at")
 
   agency     Agency            @relation(fields: [agencyId], references: [id], onDelete: Cascade)
@@ -222,6 +240,9 @@ model WebhookEvent {
 
   @@index([agencyId, type])
   @@index([endpointId, createdAt])
+  @@index([correlationId])
+  // NULL sequence numbers (pre-U6 rows) never conflict; U6 backfills then relies on this.
+  @@unique([endpointId, sequenceNumber])
   @@map("webhook_events")
 }
 
@@ -389,6 +410,57 @@ model AgentOperation {
   @@index([grantId, status, createdAt])
   @@index([status, expiresAt])
   @@map("agent_operations")
+}
+
+// Public API (v1) agency keys. Hashes in Postgres are the sanctioned
+// exception to the no-token-material rule: only HMAC hashes land here,
+// never raw secrets. Raw secrets are shown once at issuance and never stored.
+model ApiKey {
+  id            String    @id @default(uuid())
+  agencyId      String    @map("agency_id")
+  familyId      String    @map("family_id")
+  name          String
+  prefix        String    @map("prefix")
+  keyHash       String    @unique @map("key_hash")
+  pepperVersion Int       @default(1) @map("pepper_version")
+  scopes        String[]  @default([])
+  createdBy     String    @map("created_by")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  lastUsedAt    DateTime? @map("last_used_at")
+  expiresAt     DateTime? @map("expires_at")
+  revokedAt     DateTime? @map("revoked_at")
+  revokedBy     String?   @map("revoked_by")
+
+  agency Agency @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+
+  @@index([prefix])
+  @@index([agencyId, revokedAt])
+  @@index([familyId, revokedAt])
+  @@map("api_keys")
+}
+
+// Generic idempotency claims for public v1 creates (KTD5; R7, R8).
+// Identity is (agency, key identity, endpoint, key value); the atomic claim
+// is a single insert against the composite unique guard. No agency relation:
+// records are looked up by the composite, never joined.
+model IdempotencyRecord {
+  id          String   @id @default(uuid())
+  agencyId    String   @map("agency_id")
+  keyIdentity String   @map("key_identity")
+  endpoint    String
+  idemKey     String   @map("idem_key")
+  fingerprint String
+  state       String // 'in_progress' | 'completed' | 'failed'
+  statusCode  Int?     @map("status_code")
+  result      Json?
+  expiresAt   DateTime @map("expires_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@unique([agencyId, keyIdentity, endpoint, idemKey])
+  @@index([expiresAt, state])
+  @@map("idempotency_records")
 }
 
 // Authorization verification tracking (for platform-native identity flow)

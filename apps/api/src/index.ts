@@ -35,8 +35,11 @@ import { sentryTestRoutes } from './routes/sentry-test.routes.js';
 import { agentGrantRoutes } from './routes/agent-grants.js';
 import { agentOperationRoutes } from './routes/agent-operations.js';
 import { clientOffboardingRoutes } from './routes/client-offboarding.routes.js';
+import { apiKeyRoutes } from './routes/api-keys.js';
+import { v1Routes } from './routes/v1.js';
 import { mcpRoutes } from './routes/mcp.js';
 import { performanceOnRequest, performanceOnSend } from './middleware/performance.js';
+import { shouldSkipGlobalLimiter } from './middleware/v1-gate.js';
 import { prisma } from './lib/prisma.js';
 import { redactSensitiveString } from './lib/sentry-redaction.js';
 
@@ -44,6 +47,8 @@ const trustProxy = env.TRUST_PROXY_IPS.length > 0 ? env.TRUST_PROXY_IPS : false;
 
 function buildAuthenticatedRateLimitAllowList() {
   return async (request: FastifyRequest, _key: string): Promise<boolean> => {
+    // v1 traffic is owned by the per-key limiter — never double-count it here.
+    if (shouldSkipGlobalLimiter(request.url)) return true;
     return Boolean((request as FastifyRequest & { user?: unknown }).user);
   };
 }
@@ -113,7 +118,8 @@ if (env.RATE_LIMIT_ENABLED) {
     skipOnError: true,
     allowList: env.RATE_LIMIT_SKIP_AUTHENTICATED
       ? buildAuthenticatedRateLimitAllowList()
-      : async () => false,
+      : async (request: FastifyRequest, _key: string) =>
+          shouldSkipGlobalLimiter(request.url),
     keyGenerator: (request: FastifyRequest) => {
       // Use IP address as rate limit key
       return extractClientIp(request);
@@ -200,6 +206,8 @@ await fastify.register(sentryTestRoutes); // No prefix - routes handle their own
 await fastify.register(agentGrantRoutes, { prefix: '/api' });
 await fastify.register(agentOperationRoutes, { prefix: '/api' });
 await fastify.register(clientOffboardingRoutes, { prefix: '/api' });
+await fastify.register(apiKeyRoutes, { prefix: '/api' });
+await fastify.register(v1Routes, { prefix: '/api/v1' });
 if (env.AGENT_NATIVE_ENABLED) {
   await fastify.register(mcpRoutes);
 }

@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AuthHub vs AgencyAccess API v2 — Competitive Report · Oct 2026</title>
+<style>
+  :root { --ink:#16181d; --mut:#5b6472; --line:#e4e7ec; --bg:#f7f8fa; --card:#fff;
+    --green:#0e7c3e; --greenbg:#e7f5ec; --red:#b42318; --redbg:#fdecea; --gold:#92580a; --goldbg:#fdf3e0; }
+  * { box-sizing:border-box; }
+  body { font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Helvetica,Arial,sans-serif;
+    color:var(--ink); background:var(--bg); margin:0; line-height:1.55; }
+  .wrap { max-width:1020px; margin:0 auto; padding:40px 24px 80px; }
+  header.hero { background:var(--ink); color:#fff; border-radius:16px; padding:36px 36px 30px; margin-bottom:24px; }
+  header.hero h1 { margin:0 0 8px; font-size:28px; letter-spacing:-.02em; }
+  header.hero p { margin:6px 0; color:#c7cdd6; max-width:70ch; }
+  .meta { display:flex; gap:10px; flex-wrap:wrap; margin-top:14px; }
+  .meta span { background:#262b34; border:1px solid #3a4150; border-radius:999px; padding:4px 12px; font-size:12.5px; color:#dfe4ec; }
+  .grid3 { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin:24px 0; }
+  @media(max-width:800px){ .grid3{grid-template-columns:1fr;} }
+  .stat { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:18px; }
+  .stat b { font-size:26px; display:block; }
+  .stat small { color:var(--mut); }
+  section.card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:28px 30px; margin:18px 0; }
+  h2 { font-size:21px; margin:0 0 4px; letter-spacing:-.01em; }
+  .sub { color:var(--mut); margin:0 0 16px; font-size:14.5px; }
+  .verdict { border-radius:10px; padding:12px 16px; font-size:14.5px; margin:0 0 18px; }
+  .v-green { background:var(--greenbg); border:1px solid #bfe3cc; }
+  .v-red { background:var(--redbg); border:1px solid #f3c2bc; }
+  .v-gold { background:var(--goldbg); border:1px solid #eed9a8; }
+  table { width:100%; border-collapse:collapse; font-size:13.5px; margin:12px 0 4px; }
+  th,td { text-align:left; padding:9px 10px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { font-size:12px; text-transform:uppercase; letter-spacing:.05em; color:var(--mut); }
+  .pill { display:inline-block; border-radius:999px; padding:1px 10px; font-size:12px; font-weight:600; white-space:nowrap; }
+  .yes { background:var(--greenbg); color:var(--green); }
+  .no { background:var(--redbg); color:var(--red); }
+  .part { background:var(--goldbg); color:var(--gold); }
+  ul.tight li { margin:7px 0; }
+  code { background:#eef1f5; border-radius:5px; padding:1px 6px; font-size:12.8px; }
+  .atk { border-left:4px solid var(--ink); padding:10px 16px; margin:12px 0; background:#f2f4f7; border-radius:0 10px 10px 0; }
+  .atk b { display:block; margin-bottom:2px; }
+  .atk .prio { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:var(--mut); }
+  footer { color:var(--mut); font-size:12.5px; margin-top:26px; }
+  a { color:#1458c8; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="hero">
+  <h1>AuthHub vs AgencyAccess API v2 — Competitive Report</h1>
+  <p>AgencyAccess shipped a major v2 API + embedded expansion (Oct 2026): scoped API keys, clients/requests CRUD with external IDs, service catalog, signed webhooks (12 event types), iframe embedding with browser events, idempotency keys, usage endpoint, OpenAPI 3.1 spec. This report compares it against AuthHub's current API surface (verified in-repo, Oct 2026) and lays out where we win, where we bleed, and how to beat them.</p>
+  <div class="meta">
+    <span>Them: api.agencyaccess.co/api/v2 + public OpenAPI</span>
+    <span>Us: Fastify REST + MCP agent plane (no public keys)</span>
+    <span>Evidence: their /docs/api reference + our routes audit</span>
+  </div>
+</header>
+
+<div class="grid3">
+  <div class="stat"><b style="color:var(--green)">6</b><small>Areas where AuthHub is ahead today</small></div>
+  <div class="stat"><b style="color:var(--red)">9</b><small>Gaps where AgencyAccess v2 leads</small></div>
+  <div class="stat"><b>5</b><small>Attack moves to leapfrog them</small></div>
+</div>
+
+<!-- ============ PART 1 ============ -->
+<section class="card">
+  <h2>① Where AuthHub is better</h2>
+  <p class="sub">Genuine leads. Their announcement courts "AI agent" users, but they ship REST-only. We have the agent-native plane.</p>
+  <div class="verdict v-green"><b>Verdict:</b> they built the better <i>classic</i> REST API; we own the <i>agentic</i> layer and the full lifecycle. That is the moat to press.</div>
+  <table>
+    <tr><th>Capability</th><th>Them</th><th>Us</th><th>Why we win</th></tr>
+    <tr><td><b>AI-agent-native interface (MCP)</b></td><td><span class="pill no">No</span></td><td><span class="pill yes">Yes</span></td><td><code>POST /mcp</code> with onboarding / approved-operation / cancel / handoff tools, OAuth-protected-resource discovery, telemetry + risk classes. Their "AI agent" story is REST + docs; ours is callable by agents directly.</td></tr>
+    <tr><td><b>Human-approval plane for agents</b></td><td><span class="pill no">No</span></td><td><span class="pill yes">Yes</span></td><td>Agent grants + operation prepare/approve/execute with idempotency. Nobody else offers supervised agency ops. Enterprise-grade trust story.</td></tr>
+    <tr><td><b>Offboarding / access removal lifecycle</b></td><td><span class="pill no">No</span></td><td><span class="pill yes">Yes</span></td><td>Prepare → confirm → retry → attest runs. They can only <i>cancel a request</i>; access already granted is untouched on both sides, but only we productize revocation.</td></tr>
+    <tr><td><b>Connection &amp; token-health diagnostics</b></td><td><span class="pill part">Partial</span></td><td><span class="pill yes">Yes</span></td><td><code>/api/connections</code>, <code>/api/token-health</code>, revoke + refresh endpoints. Their catalog shows <i>connected</i> state only; we expose health + repair as API.</td></tr>
+    <tr><td><b>Long-tail manual-connect coverage</b></td><td><span class="pill part">Partial</span></td><td><span class="pill yes">Yes</span></td><td>Manual-connect + verification APIs for Pinterest, Shopify, TikTok, Klaviyo, Mailchimp, Kit, Beehiiv, Zapier, Meta datasets/assets. Their failure reporting centers on Google/Meta; manual-platform depth is ours.</td></tr>
+    <tr><td><b>Subscription / quota introspection</b></td><td><span class="pill part">Partial</span></td><td><span class="pill yes">Yes</span></td><td>They have one <code>GET /usage</code> (access-link counting). We expose tier, per-resource limits, feature flags, invoices, payment methods — a fuller billing-aware API.</td></tr>
+  </table>
+  <p class="sub" style="margin-top:12px">Near-parity worth noting: both sides have outbound webhooks with HMAC signing, rotate/test/deliveries tooling, request cancel + expiry, and intake forms. Detail differs (see gaps).</p>
+</section>
+
+<!-- ============ PART 2 ============ -->
+<section class="card">
+  <h2>② Where our gaps are</h2>
+  <p class="sub">Ranked by damage. The top three form one bundle: without them, CRM/portal integrations choose AgencyAccess.</p>
+  <div class="verdict v-red"><b>Verdict:</b> we have no first-party developer API story. Everything an external builder needs — keys, IDs, idempotency, catalog, docs — they ship and we don't.</div>
+  <table>
+    <tr><th>#</th><th>Gap</th><th>Them</th><th>Us</th><th>Impact</th></tr>
+    <tr><td><b>1</b></td><td><b>Scoped first-party API keys</b><br><code>aa_live_…</code>, per-key scopes, dashboard issuance, <code>GET /me</code></td><td><span class="pill yes">Yes</span></td><td><span class="pill no">No</span> — Clerk JWT only; no agency keys</td><td>Critical. No key = no third-party integration story at all.</td></tr>
+    <tr><td><b>2</b></td><td><b>External/CRM IDs on clients</b><br>immutable <code>externalClientId</code>, lookup by it</td><td><span class="pill yes">Yes</span></td><td><span class="pill no">No</span> — internal tokens only</td><td>Critical. Deal-closed → client-create automation needs this join key.</td></tr>
+    <tr><td><b>3</b></td><td><b>Generic idempotency on creates</b><br><code>Idempotency-Key</code>, 24h, replay header, 409 codes</td><td><span class="pill yes">Yes</span></td><td><span class="pill part">Pockets</span> — agent ops/offboarding only</td><td>High. Network-retry safety is table stakes for onboarding automation.</td></tr>
+    <tr><td><b>4</b></td><td><b>Embeddable requests + browser events</b><br>iframe <code>embedUrl</code>, postMessage protocol (ready/resize/granted/completed…), origin allowlist</td><td><span class="pill yes">Yes</span></td><td><span class="pill no">No</span> — hosted links + popup only</td><td>High. Portal-embedded onboarding is their headline feature; we can't play.</td></tr>
+    <tr><td><b>5</b></td><td><b>Service catalog endpoints</b><br><code>GET /accounts</code> + <code>GET /services</code> (roles, grant method, link fields)</td><td><span class="pill yes">Yes</span></td><td><span class="pill no">No</span></td><td>High. Builders can't discover "what can I request" programmatically.</td></tr>
+    <tr><td><b>6</b></td><td><b>Webhook depth</b><br>10 endpoints/agency via API, per-event subscription, 12 event types incl. <code>service.skipped</code>, <code>service.grant_failed</code>, <code>connection.attempt_completed</code>, <code>intake.completed</code>, <code>request.created/updated</code>, <code>client.created</code></td><td><span class="pill yes">Yes</span></td><td><span class="pill part">Partial</span> — single endpoint/agency, 6 coarse types</td><td>Medium-high. We miss per-service failure/skip signals integrators need.</td></tr>
+    <tr><td><b>7</b></td><td><b>Ordering primitive</b><br>per-request <code>stateVersion</code> for out-of-order handling</td><td><span class="pill yes">Yes</span></td><td><span class="pill no">No</span></td><td>Medium. Required for correct webhook consumers at scale.</td></tr>
+    <tr><td><b>8</b></td><td><b>Public docs + OpenAPI + API contract</b><br>guides, reference, OpenAPI 3.1, <code>data/meta</code> envelope, stable error codes, versioning policy</td><td><span class="pill yes">Yes</span></td><td><span class="pill no">No</span></td><td>Medium. DX gap; slows every evaluation and every agent that reads specs.</td></tr>
+    <tr><td><b>9</b></td><td><b>List/rate-limit ergonomics</b><br>cursor pagination, <code>Retry-After</code> + RateLimit headers, <code>requestId</code> tracing, 300/min published</td><td><span class="pill yes">Yes</span></td><td><span class="pill part">Partial</span> — offset pagination, no standard headers</td><td>Medium. Matters for sync-heavy CRM integrations.</td></tr>
+  </table>
+</section>
+
+<!-- ============ PART 3 ============ -->
+<section class="card">
+  <h2>③ Where we can kick their ass</h2>
+  <p class="sub">Don't just close gaps — pair each parity move with a leapfrog they can't copy without rebuilding.</p>
+  <div class="verdict v-gold"><b>Strategy in one line:</b> match their REST fundamentals in one release, then outflank on agentic + embedded + lifecycle while their v2 is still new.</div>
+
+  <div class="atk"><span class="prio">P0 · Parity bundle</span><b>Ship "Keys + IDs + Idempotency" as one release.</b>
+    Scoped agency API keys with <code>GET /me</code>; immutable external IDs on clients (and requests filterable by them); <code>Idempotency-Key</code> on all creates with replay semantics. This single bundle neutralizes gaps 1–3 and unblocks every CRM integration story they currently win.</div>
+
+  <div class="atk"><span class="prio">P0 · Leapfrog</span><b>Brand the MCP + approval plane as "the agent-native onboarding API."</b>
+    They market to AI-agent users with REST docs; we already execute <i>through</i> agents with human approval, audit, and risk classes. Publish agent guides + a reference agent integration. Make evaluators compare "their docs for agents" vs "our API for agents" — a fight they lose by architecture.</div>
+
+  <div class="atk"><span class="prio">P1 · Leapfrog</span><b>Embed v2 that skips their iframe generation.</b>
+    Match <code>embedUrl</code> + postMessage events + origin allowlist (gap 4), but ship a headless JS SDK on top: framework components, optimistic progress state, and <code>stateVersion</code>-style ordering built in. Their guide warns "browser events can be tampered with — confirm server-side"; an SDK that pairs client events with webhook truth out of the box is the better story.</div>
+
+  <div class="atk"><span class="prio">P1 · Leapfrog</span><b>Turn diagnostics into the moat: attempt-level + health webhooks.</b>
+    They expose <code>connection.attempt_completed</code> with per-service errors — good. Answer with our token-health edge: proactive <code>connection.degraded</code> / <code>connection.recovered</code> / <code>token.refresh_failed</code> events plus health state in every payload. Nobody else tells the agency <i>before</i> the client fails — sell "onboarding that monitors itself."</div>
+
+  <div class="atk"><span class="prio">P2 · Leapfrog</span><b>Own the full lifecycle: access → health → offboarding.</b>
+    Their story ends at <code>request.completed</code>. Ours runs request → connection monitoring → revocation with attestation. Package it as "client access lifecycle API" with catalog (gap 5), granular webhooks (gap 6), OpenAPI + versioning policy (gaps 7–9) included in the same launch. One release that both closes the REST gap and redefines the category around lifecycle.</div>
+
+  <table>
+    <tr><th>Move</th><th>Closes</th><th>Opens (their cost to copy)</th></tr>
+    <tr><td>Keys + IDs + Idempotency</td><td>Gaps 1–3</td><td>— (parity)</td></tr>
+    <tr><td>Agent-native positioning (MCP + approvals)</td><td>—</td><td>Agent execution plane + trust model; greenfield for them</td></tr>
+    <tr><td>Embed v2 (iframe parity + headless SDK)</td><td>Gap 4</td><td>SDK + server-confirmed progress; a second system to build</td></tr>
+    <tr><td>Proactive health webhooks</td><td>Gap 6 (partially)</td><td>Monitoring infra behind the API; they report attempts, we predict failure</td></tr>
+    <tr><td>Lifecycle API launch (catalog + events + OpenAPI)</td><td>Gaps 5–9</td><td>Offboarding + attestation category; no equivalent exists on their side</td></tr>
+  </table>
+</section>
+
+<footer>
+  Sources: AgencyAccess public API docs (agencyaccess.co/docs/api, incl. reference pages for clients, requests, catalog, webhooks, usage, authentication, conventions; guides for webhooks + embedding; events catalog) fetched Oct 2026 · AuthHub surface verified from repo routes (<code>apps/api/src/routes/*</code>, <code>packages/shared/src/types.ts</code>) Oct 2026. AuthHub claims flagged "verify live" where behavior (not just routes) decides.
+</footer>
+
+</div>
+</body>
+</html> 

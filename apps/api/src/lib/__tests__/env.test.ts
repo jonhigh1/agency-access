@@ -460,6 +460,36 @@ describe('env contract', () => {
     });
   });
 
+  describe('API key pepper', () => {
+    it('defaults the pepper version to 1 and leaves peppers unset', async () => {
+      const module = await importEnvWith(withRequiredBase({
+        API_KEY_PEPPER: undefined,
+        API_KEY_PEPPER_PREVIOUS: undefined,
+        API_KEY_PEPPER_VERSION: undefined,
+      }));
+      expect(module.env.API_KEY_PEPPER).toBeUndefined();
+      expect(module.env.API_KEY_PEPPER_PREVIOUS).toBeUndefined();
+      expect(module.env.API_KEY_PEPPER_VERSION).toBe(1);
+    });
+
+    it('validates explicit pepper values and version', async () => {
+      const module = await importEnvWith(withRequiredBase({
+        API_KEY_PEPPER: '0123456789abcdef0123456789abcdef',
+        API_KEY_PEPPER_PREVIOUS: 'fedcba9876543210fedcba9876543210',
+        API_KEY_PEPPER_VERSION: '2',
+      }));
+      expect(module.env.API_KEY_PEPPER).toBe('0123456789abcdef0123456789abcdef');
+      expect(module.env.API_KEY_PEPPER_PREVIOUS).toBe('fedcba9876543210fedcba9876543210');
+      expect(module.env.API_KEY_PEPPER_VERSION).toBe(2);
+    });
+
+    it('rejects short pepper values', async () => {
+      await expect(importEnvWith(withRequiredBase({
+        API_KEY_PEPPER: 'short',
+      }))).rejects.toThrow();
+    });
+  });
+
   describe('META_MARKETING_API_TIER_CRON_BURST', () => {
     it('enables burst only for true or 1', async () => {
       const enabledTrue = await importEnvWith(withRequiredBase({

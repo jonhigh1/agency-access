@@ -80,6 +80,7 @@ vi.mock('@/lib/prisma', () => ({
     },
     webhookEndpoint: {
       findUnique: vi.fn(),
+      findFirst: vi.fn(),
     },
     webhookEvent: {
       create: vi.fn(),
@@ -2158,7 +2159,7 @@ describe('AccessRequestService', () => {
           }],
         },
       ] as any);
-      vi.mocked(prisma.webhookEndpoint.findUnique).mockResolvedValue({
+      vi.mocked(prisma.webhookEndpoint.findFirst).mockResolvedValue({
         id: 'endpoint-1',
         agencyId: 'agency-1',
         status: 'active',
@@ -2243,7 +2244,7 @@ describe('AccessRequestService', () => {
           authorizations: [{ platform: 'linkedin', status: 'active' }],
         },
       ] as any);
-      vi.mocked(prisma.webhookEndpoint.findUnique).mockResolvedValue({
+      vi.mocked(prisma.webhookEndpoint.findFirst).mockResolvedValue({
         id: 'endpoint-1',
         agencyId: 'agency-1',
         status: 'active',
@@ -2873,7 +2874,7 @@ describe('AccessRequestService', () => {
           authorizations: [{ platform: 'google_ads', status: 'active' }],
         },
       ] as any);
-      vi.mocked(prisma.webhookEndpoint.findUnique).mockResolvedValue({
+      vi.mocked(prisma.webhookEndpoint.findFirst).mockResolvedValue({
         id: 'endpoint-1',
         agencyId: 'agency-1',
         status: 'active',
@@ -2957,7 +2958,7 @@ describe('AccessRequestService', () => {
         auditLog: { create: vi.fn() },
       };
       vi.mocked(prisma.$transaction).mockImplementation(async (callback: any) => callback(transaction));
-      vi.mocked(prisma.webhookEndpoint.findUnique).mockReturnValue(
+      vi.mocked(prisma.webhookEndpoint.findFirst).mockReturnValue(
         new Promise(() => {}) as any
       );
 
@@ -3012,7 +3013,7 @@ describe('AccessRequestService', () => {
       });
 
       expect(result).toMatchObject({ data: null, error: { code: 'INTERNAL_ERROR' } });
-      expect(prisma.webhookEndpoint.findUnique).not.toHaveBeenCalled();
+      expect(prisma.webhookEndpoint.findFirst).not.toHaveBeenCalled();
     });
 
     it('returns database errors instead of starting side effects', async () => {
