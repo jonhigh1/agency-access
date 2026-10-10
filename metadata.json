@@ -1,0 +1,48 @@
+{
+  "cli_version": "0.10.2",
+  "checkpoint_id": "01M4KEHNJXJT9RRBQ8RTNKJCR3",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "apps/web/next.config.ts",
+    "apps/web/public/llms.txt",
+    "apps/web/src/__tests__/proxy.test.ts",
+    "apps/web/src/app/(marketing)/guides/[slug]/page.tsx",
+    "apps/web/src/app/(marketing)/guides/__tests__/pages.public.test.tsx",
+    "apps/web/src/app/(marketing)/guides/google-ads-access/page.tsx",
+    "apps/web/src/app/(marketing)/guides/meta-ads-access/page.tsx",
+    "apps/web/src/app/(marketing)/guides/page.tsx",
+    "apps/web/src/app/sitemap.ts",
+    "apps/web/src/components/guides/guide-template.tsx",
+    "apps/web/src/lib/__tests__/llms-txt.test.ts",
+    "apps/web/src/lib/__tests__/seo-canonical.test.ts",
+    "apps/web/src/lib/guides/__tests__/guides.test.ts",
+    "apps/web/src/lib/guides/facebook-business-manager-access.ts",
+    "apps/web/src/lib/guides/ga4-access.ts",
+    "apps/web/src/lib/guides/google-ads-access.ts",
+    "apps/web/src/lib/guides/index.ts",
+    "apps/web/src/lib/guides/linkedin-ads-access.ts",
+    "apps/web/src/lib/guides/meta-ads-access.ts",
+    "apps/web/src/lib/guides/schema.ts",
+    "apps/web/src/lib/guides/tiktok-ads-access.ts",
+    "apps/web/src/lib/guides/types.ts",
+    "apps/web/src/lib/seo-canonical.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 0,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 0,
+    "api_call_count": 0
+  }
+}
