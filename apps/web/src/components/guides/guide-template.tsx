@@ -1,5 +1,6 @@
 import type { Route } from "next";
 import Link from "next/link";
+import { AccessLinkDemo } from "@/components/guides/access-link-demo";
 import { ComparisonCTA } from "@/components/marketing/comparison-cta";
 import { Schema } from "@/components/seo";
 import {
@@ -109,6 +110,7 @@ export function GuideTemplate({ guide }: GuideTemplateProps) {
               Method 2: Using AuthHub (5 minutes)
             </h3>
             <p className="font-mono text-sm text-foreground">{guide.authHubMethod}</p>
+            <AccessLinkDemo />
           </div>
         </div>
       </section>
