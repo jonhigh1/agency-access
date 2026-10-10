@@ -48,4 +48,9 @@ describe('MarketingFooter section links', () => {
     render(<MarketingFooter />);
     expect(screen.getByRole('link', { name: 'Uses' })).toHaveAttribute('href', '/uses');
   });
+
+  it('links to the stats roundup', () => {
+    render(<MarketingFooter />);
+    expect(screen.getByRole('link', { name: 'Stats' })).toHaveAttribute('href', '/stats');
+  });
 });

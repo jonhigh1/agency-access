@@ -30,6 +30,7 @@ const isPublicRoute = createRouteMatcher([
   '/tools/(.*)',
   '/uses',
   '/uses/(.*)',
+  '/stats',
   '/terms',
   '/security',
   '/sign-in',

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import { isExcludedBlogSlug } from "@/lib/seo-canonical";
 import {
   getBlogPostBySlug,
   getBlogPosts,
@@ -60,6 +61,22 @@ describe("blog-data", () => {
   it("rewrites www canonicals to the non-www origin", () => {
     const post = getBlogPostBySlug("how-to-get-meta-ads-access-from-clients");
     expect(post?.canonical).toBe("https://authhub.co/guides/meta-ads-access");
+  });
+
+  it("publishes the 2026 client-access cluster with Jon High bylines", () => {
+    const slugs = [
+      "admin-vs-standard-vs-read-only-agency-access",
+      "meta-partner-vs-employee-access",
+      "how-to-explain-an-access-request-to-clients",
+      "google-ads-standard-vs-admin",
+    ];
+    for (const slug of slugs) {
+      const post = getBlogPostBySlug(slug);
+      expect(post?.author).toMatchObject({ name: "Jon High", slug: "jon-high" });
+      expect(post?.faqs?.length).toBeGreaterThanOrEqual(3);
+      expect(post?.updatedAt).toBe("2026-10-10");
+      expect(isExcludedBlogSlug(slug)).toBe(false);
+    }
   });
 
   it("sorts posts newest first and filters by category", () => {

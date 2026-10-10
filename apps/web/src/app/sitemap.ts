@@ -64,6 +64,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     entry('/tools', buildDate, 'weekly', 0.7),
     entry('/tools/access-level', buildDate, 'weekly', 0.8),
     entry('/uses', buildDate, 'weekly', 0.7),
+    entry('/stats', buildDate, 'monthly', 0.6),
   ];
 
   const blogUrls: MetadataRoute.Sitemap = getBlogPosts()

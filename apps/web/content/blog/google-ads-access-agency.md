@@ -8,6 +8,7 @@ excerpt: >-
 category: tutorials
 stage: consideration
 publishedAt: '2026-01-16'
+updatedAt: '2026-10-10'
 readTime: 10
 author:
   name: Jon High
