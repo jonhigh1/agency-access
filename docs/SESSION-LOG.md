@@ -12,9 +12,18 @@
 - Connector union uses `authMode` discriminant; `getConnector` rejects api_key platforms.
 
 ### Next steps
-- Optional U6 if invite session locality is still painful.
 - Deferred: vocabulary enum merge (KTD3), `google-offboarding-executor` walker entry, Meta → BaseConnector.
 - Entire pre-push durable fix still parked.
+
+## Session: 2026-10-09 — Architecture cards U4 + U6 on main
+
+### What was done
+- U4: `apps/api/src/lib/product-fulfillment.ts` — shared `extractSelectedAssets` (Instagram → `meta_ads`), selection snapshot, asset-selecting evaluator; access-request + client detail rewired; client Instagram fixture pinned to `meta_ads` (`0b818c52`).
+- U6: invite resume/prefill + checklist overlay hooks (`useMetaResumePrefill`, `useMetaGrantChecklistOverlay`), pure `meta-resume-prefill` + `meta-oauth-popup`; wizard ~1678 → ~1536 lines. PlatformAuthWizard suites green.
+
+### Decisions
+- Client detail reads Instagram from `meta_ads` only (no legacy `instagram` key fallback).
+- U6 success is session seam clarity, not walker prune.
 
 ## Session: 2026-10-08/09 — PLATFORMS registry: Phases 2a–3 shipped; the partition has one owner and an enforcement layer
 

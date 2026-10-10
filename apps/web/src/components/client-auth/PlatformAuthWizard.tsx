@@ -15,18 +15,17 @@
  * - grantedAssets: confirmation from backend after grant
  */
 
-import { useState, useCallback, useEffect, useMemo, useRef } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { m, AnimatePresence } from 'framer-motion';
 import { Loader2, ExternalLink, CheckCircle2, ChevronDown, Lock } from 'lucide-react';
 import { PlatformWizardCard } from './PlatformWizardCard';
 import { MetaAssetSelector } from './MetaAssetSelector';
-import { type MetaSelectionBlob } from './meta-selection-blob';
 import { SelectionResetConfirmDialog } from './SelectionResetConfirmDialog';
 import { GoogleAssetSelector } from './GoogleAssetSelector';
 import { LinkedInAssetSelector } from './LinkedInAssetSelector';
 import { TikTokAssetSelector } from './TikTokAssetSelector';
-import { MetaGrantChecklist, metaGrantSelectedKindsFromBlob } from './MetaGrantChecklist';
+import { MetaGrantChecklist } from './MetaGrantChecklist';
 import {
   ClientGrantPrimaryButton,
   ClientGrantSecondaryButton,
@@ -46,8 +45,6 @@ import type {
 } from '@agency-platform/shared';
 import { trackOnboardingEvent } from '@/lib/analytics/onboarding';
 import {
-  trackClientFinishClickedWithPending,
-  trackClientGrantChecklistViewed,
   trackInviteCtaBlocked,
   trackInviteSelectionSaved,
 } from '@/lib/analytics/invite-events';
@@ -64,12 +61,9 @@ import {
   isTerminalRequestCode,
   type InviteSelectionPrefill,
 } from '@/lib/invite/landing-state';
+import { waitForMetaPopup } from '@/lib/invite/meta-oauth-popup';
+import { buildMetaGroupAssetsSeedFromPrefill } from '@/lib/invite/meta-resume-prefill';
 import {
-  buildMetaGrantChecklist,
-  type MetaGrantItemState,
-} from '@/lib/invite/meta-grant-checklist';
-import {
-  getMetaFollowUpLines,
   getProductCtaState,
   getProductSummaryLines,
   getSelectedAssetCount,
@@ -80,7 +74,8 @@ import {
   supportsAssetSelection,
 } from '@/lib/invite/product-selection-summary';
 import { META_GRANT_ACCESS } from '@/lib/content/meta-grant-access';
-import { resolveMetaGrantPhaseHeader } from '@/lib/invite/client-invite-status';
+import { useMetaGrantChecklistOverlay } from '@/hooks/invite/useMetaGrantChecklistOverlay';
+import { useMetaResumePrefill } from '@/hooks/invite/useMetaResumePrefill';
 
 interface PlatformAuthWizardProps {
   platform: Platform;
@@ -143,72 +138,8 @@ const SAVE_REQUEST_TIMEOUT_MS = 45_000;
 const SAVE_REQUEST_TIMEOUT_MESSAGE =
   'Saving is taking longer than expected. Check your connection and try again.';
 
-function hasRetainedMetaSelection(
-  expected: InviteSelectionPrefill | null,
-  actual: MetaSelectionBlob | undefined
-): boolean {
-  if (!expected || !actual) return false;
-  const matches = (saved: string[], selected: string[]) =>
-    saved.length === selected.length && saved.every((id) => selected.includes(id));
-  return (
-    matches(expected.adAccounts, actual.adAccounts) &&
-    matches(expected.pages, actual.pages) &&
-    matches(expected.instagramAccounts, actual.instagramAccounts) &&
-    matches(expected.catalogs, actual.catalogs) &&
-    matches(expected.datasets, actual.datasets)
-  );
-}
-
 function clampStep(step: number): 1 | 2 | 3 {
   return step > 3 ? 3 : step as 1 | 2 | 3;
-}
-
-function waitForMetaPopup(popup: Window) {
-  let timeout: number;
-  let closeCheck: number;
-  let finish: (result: { connectionId: string; platform: string }) => void;
-  let fail: (error: Error) => void;
-  let settled = false;
-  const promise = new Promise<{ connectionId: string; platform: string }>((resolve, reject) => {
-    finish = (result) => {
-      if (settled) return;
-      settled = true;
-      cleanup();
-      resolve(result);
-    };
-    fail = (error) => {
-      if (settled) return;
-      settled = true;
-      cleanup();
-      reject(error);
-    };
-  });
-  const cleanup = () => {
-    window.removeEventListener('message', onMessage);
-    window.clearTimeout(timeout);
-    window.clearInterval(closeCheck);
-  };
-  const onMessage = (event: MessageEvent) => {
-    const data = event.data;
-    if (event.origin !== window.location.origin || event.source !== popup || data?.type !== 'authhub:oauth-result') return;
-    if (data.success && typeof data.connectionId === 'string' && data.platform === 'meta') {
-      finish({ connectionId: data.connectionId, platform: data.platform });
-    } else {
-      fail(new Error(data.errorCode === 'OAUTH_DENIED'
-        ? 'You declined or cancelled access. Try again when ready.'
-        : 'Meta could not complete authorization. Try again.'));
-    }
-  };
-  window.addEventListener('message', onMessage);
-  timeout = window.setTimeout(() => {
-    fail(new Error('Meta authorization timed out. Close the pop-up and try again.'));
-  }, 120_000);
-  closeCheck = window.setInterval(() => {
-    if (popup.closed) {
-      fail(new Error('Meta authorization closed before it finished. Try again.'));
-    }
-  }, 500);
-  return { promise, cleanup, cancel: () => fail(new Error('Meta authorization was cancelled.')) };
 }
 
 const PAGE_TASK_LABELS: Record<string, string> = {
@@ -299,29 +230,16 @@ export function PlatformAuthWizard({
   const metaNeedsGrantStep = platform === 'meta' && primaryMetaAssetProduct !== null;
   const maxSteps = 3;
   // U7 resume prefill: present only when the payload carried saved Meta
-  // selections. Consumed once — any selection reset (switch business, change
-  // saved selection) clears it so a selector remount cannot resurrect it.
+  // selections. Consumed once — any selection reset clears it via the resume hook.
   const hasInitialMetaSelections =
     metaNeedsGrantStep && hasSelectableAssets(initialMetaSelections);
-  const [metaSelectionPrefill, setMetaSelectionPrefill] = useState<InviteSelectionPrefill | null>(
-    hasInitialMetaSelections ? (initialMetaSelections as InviteSelectionPrefill) : null
-  );
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(initialStep ? clampStep(initialStep) : 1);
   const [connectionId, setConnectionId] = useState<string | null>(initialConnectionId || null);
-  const [groupAssets, setGroupAssets] = useState<Record<string, any>>(() => {
-    if (!hasInitialMetaSelections) return {};
-    const prefill = initialMetaSelections as InviteSelectionPrefill;
-    const selectedAssets: MetaSelectionBlob = {
-      ...prefill,
-      selectedBusinessId: initialMetaBusinessId,
-      selectedAdAccountsWithNames: prefill.adAccounts.map((id) => ({ id, name: id })),
-      selectedPagesWithNames: prefill.pages.map((id) => ({ id, name: id })),
-      selectedInstagramWithNames: prefill.instagramAccounts.map((id) => ({ id, name: id })),
-      selectedCatalogsWithNames: prefill.catalogs.map((id) => ({ id, name: id })),
-      selectedDatasetsWithNames: prefill.datasets.map((id) => ({ id, name: id })),
-    };
-    return { meta_ads: selectedAssets, meta_pages: selectedAssets, instagram: selectedAssets };
-  });
+  const [groupAssets, setGroupAssets] = useState<Record<string, any>>(() =>
+    hasInitialMetaSelections && initialMetaSelections
+      ? buildMetaGroupAssetsSeedFromPrefill(initialMetaSelections, initialMetaBusinessId)
+      : {}
+  );
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // Selector-scoped fetch failure. Kept separate from `error` so the CTA
@@ -331,33 +249,12 @@ export function PlatformAuthWizard({
   const [businessName, setBusinessName] = useState<string | null>(null);
   const [businessIdLoading, setBusinessIdLoading] = useState(false);
   const [businessIdError, setBusinessIdError] = useState<string | null>(null);
-  // R4: grant progress lives in the checklist overlay, never in wizard
-  // flags — confirm is decoupled from completion.
-  const [checklistOverlay, setChecklistOverlay] = useState<Record<string, MetaGrantItemState>>({});
   const [assetsSaved, setAssetsSaved] = useState(false);
   const [chooseAccountsExpanded, setChooseAccountsExpanded] = useState(true);
   const [grantAccessExpanded, setGrantAccessExpanded] = useState(true);
-  // U7 resume: the server already holds the client's saved selections, so the
-  // share step reads as saved once the fresh asset fetch lands — not before
-  // (until then the resolver must report a neutral loading reason, KTD2).
-  // Consumed once; any selection reset cancels it permanently.
-  const resumeSavedPendingRef = useRef(hasInitialMetaSelections);
-
-  // #10: popup OAuth resume updates initialMetaSelections on the same mounted
-  // instance, and the useState initializer above runs only once. Re-apply the
-  // prefill when its content changes, keyed by the serialized shape so an
-  // unrelated parent re-render cannot re-seed it after a reset.
   // #22: bumped by every selection-derived reset so an in-flight save's
   // success handler can detect that its state was replaced underneath it.
   const saveVersionRef = useRef(0);
-  const prefillKey = hasInitialMetaSelections ? JSON.stringify(initialMetaSelections) : '';
-  const appliedPrefillKeyRef = useRef(prefillKey);
-  useEffect(() => {
-    if (!prefillKey || appliedPrefillKeyRef.current === prefillKey) return;
-    appliedPrefillKeyRef.current = prefillKey;
-    setMetaSelectionPrefill(JSON.parse(prefillKey) as InviteSelectionPrefill);
-    resumeSavedPendingRef.current = true;
-  }, [prefillKey]);
   const [sharedAccountsExpanded, setSharedAccountsExpanded] = useState(false);
   const [tiktokShareResult, setTikTokShareResult] = useState<TikTokShareResponse | null>(null);
   const [isTikTokSharing, setIsTikTokSharing] = useState(false);
@@ -378,41 +275,40 @@ export function PlatformAuthWizard({
 
   // Derived Meta asset state (single source for checklist + summary copy)
   const metaAdAssets = groupAssets['meta_ads'] || {};
+  const metaSelectionBlob = groupAssets['meta_ads'] || undefined;
 
-  // One machine call per render: the checklist component renders from the
-  // same pure module, and the wizard reads `remainingCount` for the step-3
-  // action label plus item states for the follow-up summary copy.
-  const metaChecklist = useMemo(
-    () =>
-      buildMetaGrantChecklist({
-        rows: metaFulfillment,
-        declines: metaDeclines,
-        selectedKinds: metaGrantSelectedKindsFromBlob(metaAdAssets),
-        overlay: checklistOverlay,
-      }),
-    [metaFulfillment, metaDeclines, groupAssets, checklistOverlay]
-  );
+  const {
+    metaSelectionPrefill,
+    clearResumePrefill,
+    cancelResumeSavedPending,
+    metaAssetsLoaded,
+  } = useMetaResumePrefill({
+    metaNeedsGrantStep,
+    initialMetaSelections,
+    metaSelectionBlob,
+    setAssetsSaved,
+    setChooseAccountsExpanded,
+  });
 
-  // Funnel: the step-3 checklist became visible. Once per wizard instance —
-  // re-renders never re-fire, and the remaining count is the same number the
-  // Finish label renders.
-  const hasReportedChecklistViewRef = useRef(false);
-  useEffect(() => {
-    if (!(platform === 'meta' && metaNeedsGrantStep && currentStep === 3 && connectionId)) return;
-    if (hasReportedChecklistViewRef.current) return;
-    hasReportedChecklistViewRef.current = true;
-    trackClientGrantChecklistViewed({ remaining_count: metaChecklist.remainingCount });
-  }, [platform, metaNeedsGrantStep, currentStep, connectionId, metaChecklist.remainingCount]);
-
-  // Checklist settle: optimistic overlay flip + one refetch ask. The refetch
-  // replaces the overlay with server rows when it lands.
-  const handleItemSettled = useCallback(
-    (kind: string, state: MetaGrantItemState) => {
-      setChecklistOverlay((prev) => ({ ...prev, [kind]: state }));
-      onRequestRefresh?.();
-    },
-    [onRequestRefresh]
-  );
+  const {
+    checklistOverlay,
+    clearChecklistOverlay,
+    metaChecklist,
+    handleItemSettled,
+    handleFinishClick,
+    hasMetaFollowUp,
+    metaGrantPhaseHeader,
+  } = useMetaGrantChecklistOverlay({
+    platform,
+    metaNeedsGrantStep,
+    currentStep,
+    connectionId,
+    metaFulfillment,
+    metaDeclines,
+    metaAdAssets,
+    onRequestRefresh,
+    onComplete,
+  });
 
   // Step 1: Initiate OAuth
   const handleConnectClick = async (presentation: 'redirect' | 'popup' = 'redirect') => {
@@ -504,7 +400,7 @@ export function PlatformAuthWizard({
 
     if (isMetaAssetProduct(product)) {
       // A fresh selection blob invalidates any optimistic grant state.
-      setChecklistOverlay({});
+      clearChecklistOverlay();
     }
 
     if (platform === 'tiktok' || product === 'tiktok' || product === 'tiktok_ads') {
@@ -521,7 +417,7 @@ export function PlatformAuthWizard({
         selectedBusinessCenterId: selectedAssets?.selectedBusinessCenterId,
       });
     }
-  }, [platform]);
+  }, [platform, clearChecklistOverlay]);
 
   /**
    * Single ownership point for clearing wizard state derived from Meta asset
@@ -534,7 +430,7 @@ export function PlatformAuthWizard({
     // #22: every reset invalidates an in-flight save's success handler.
     saveVersionRef.current += 1;
     setAssetsSaved(false);
-    setChecklistOverlay({});
+    clearChecklistOverlay();
     // U9 registration: the manual-grant checklist persists per-row check
     // state in sessionStorage. A post-save change-selection must uncheck it,
     // so clear its storage alongside the in-memory resets.
@@ -542,8 +438,8 @@ export function PlatformAuthWizard({
     // The resume prefill counts as selection-derived state: once the client
     // resets their selections it must not come back on a selector remount,
     // and the resumed saved state must not reapply after the fresh fetch.
-    setMetaSelectionPrefill(null);
-    resumeSavedPendingRef.current = false;
+    clearResumePrefill();
+    cancelResumeSavedPending();
     setGroupAssets((prev) => {
       if (!prev.meta_ads && !prev.meta_pages && !prev.instagram) return prev;
       const next = { ...prev };
@@ -553,7 +449,12 @@ export function PlatformAuthWizard({
       return next;
     });
     setChooseAccountsExpanded(true);
-  }, [accessRequestToken]);
+  }, [
+    accessRequestToken,
+    clearChecklistOverlay,
+    clearResumePrefill,
+    cancelResumeSavedPending,
+  ]);
 
   // Selector fetch failures feed both the in-card banner and the CTA reason.
   const handleSelectorError = useCallback((message: string) => {
@@ -794,36 +695,13 @@ export function PlatformAuthWizard({
   // resolver (R4, KTD2) decides whether it is clickable and which single
   // truthful reason applies right now.
   const selectableProducts = products.filter((product) => supportsAssetSelection(product.product));
-  // U7 resume: the selector emits a selection blob on mount with every asset
-  // list defined-empty, so list presence can never prove a completed fetch
-  // (#3). The selector reports `assetsLoaded` only after fetchAssets
-  // resolves; until then the resolver sees a loading state — never an
-  // enableable advance (KTD2: loading is neutral, never a selection demand).
-  const metaSelectionBlob = groupAssets['meta_ads'] || undefined;
-  const metaAssetsLoaded =
-    !metaNeedsGrantStep || metaSelectionBlob?.assetsLoaded === true;
+  // U7 resume: the selector reports `assetsLoaded` only after fetchAssets
+  // resolves; until then the resolver sees a loading state (KTD2).
   const assetsLoading =
     !assetsFetchError && (
       selectableProducts.some((product) => groupAssets[product.product] === undefined) ||
       !metaAssetsLoaded
     );
-  const retainedResumeSelection = hasRetainedMetaSelection(
-    metaSelectionPrefill,
-    metaSelectionBlob
-  );
-
-  // U7 resume: mark the share step saved once — when the resumed prefill is
-  // pending and the fresh asset fetch has reported its lists.
-  useEffect(() => {
-    if (!resumeSavedPendingRef.current || !metaAssetsLoaded) return;
-    resumeSavedPendingRef.current = false;
-    if (retainedResumeSelection) {
-      setAssetsSaved(true);
-      return;
-    }
-    setAssetsSaved(false);
-    setChooseAccountsExpanded(true);
-  }, [metaAssetsLoaded, metaSelectionBlob, retainedResumeSelection]);
   const ctaProductStates = selectableProducts.map((product) =>
     getProductCtaState(
       product.product,
@@ -888,29 +766,9 @@ export function PlatformAuthWizard({
     void handleBatchSave();
   };
 
-  // Step-3 primary action: report an exit with pending grant work, then advance.
-  const handleFinishClick = useCallback(() => {
-    if (metaChecklist.remainingCount > 0) {
-      trackClientFinishClickedWithPending({ remaining_count: metaChecklist.remainingCount });
-    }
-    onComplete();
-  }, [metaChecklist.remainingCount, onComplete]);
-
   const hasZeroAssetFollowUp = Object.entries(groupAssets).some(
     ([product, assets]) => getSelectedAssetCount(product, assets) === 0 && hasNoAssetsFollowUp(product, assets)
   );
-  // The checklist is the source of truth for pending grants: blob flags only
-  // appear once a panel has run, so a fresh partial share would otherwise read
-  // as fully granted above its own pending items.
-  const hasMetaFollowUp =
-    platform === 'meta' &&
-    (metaChecklist.remainingCount > 0 ||
-      getMetaFollowUpLines(groupAssets['meta_ads'] || {}, metaChecklist).length > 0);
-
-  const metaGrantPhaseHeader =
-    platform === 'meta' && metaNeedsGrantStep
-      ? resolveMetaGrantPhaseHeader(metaChecklist)
-      : null;
 
   // Render step content
   const renderStepContent = () => {
