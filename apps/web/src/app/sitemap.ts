@@ -4,6 +4,7 @@ import {
   getAllComparisonPageSlugs,
   getComparisonLastVerified,
 } from '@/lib/comparison-data';
+import { getAllGuides } from '@/lib/guides';
 import {
   isExcludedBlogSlug,
   sitemapLastmod,
@@ -81,10 +82,14 @@ export default function sitemap(): MetadataRoute.Sitemap {
       )
   );
 
-  const guideUrls: MetadataRoute.Sitemap = [
-    entry('/guides/meta-ads-access', buildDate, 'monthly', 0.8),
-    entry('/guides/google-ads-access', buildDate, 'monthly', 0.8),
-  ];
+  const guideUrls: MetadataRoute.Sitemap = getAllGuides().map((guide) =>
+    entry(
+      `/guides/${guide.slug}`,
+      sitemapLastmod(guide.updatedAt) ?? buildDate,
+      'monthly',
+      0.8
+    )
+  );
 
   const featureUrls: MetadataRoute.Sitemap = [
     entry('/features/white-label', buildDate, 'monthly', 0.8),

@@ -3,6 +3,10 @@ export const CANONICAL_ORIGIN = "https://authhub.co";
 export const SITEMAP_EXCLUDED_BLOG_SLUGS = [
   "how-to-get-meta-ads-access-from-clients",
   "leadsie-vs-authhub-comparison",
+  "ga4-access-agencies",
+  "linkedin-ads-access-agency",
+  "tiktok-ads-access-agency",
+  "meta-business-manager-access-guide",
 ] as const;
 
 export const AI_SEARCH_USER_AGENTS = [

@@ -27,6 +27,10 @@ describe("sitemap exclusions", () => {
     expect(SITEMAP_EXCLUDED_BLOG_SLUGS).toEqual([
       "how-to-get-meta-ads-access-from-clients",
       "leadsie-vs-authhub-comparison",
+      "ga4-access-agencies",
+      "linkedin-ads-access-agency",
+      "tiktok-ads-access-agency",
+      "meta-business-manager-access-guide",
     ]);
     expect(isExcludedBlogSlug("how-to-get-meta-ads-access-from-clients")).toBe(true);
     expect(isExcludedBlogSlug("google-ads-access-agency")).toBe(false);

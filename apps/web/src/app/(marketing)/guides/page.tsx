@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { getAllGuides } from "@/lib/guides";
+import { CANONICAL_ORIGIN } from "@/lib/seo-canonical";
 
-const PAGE_URL = "https://authhub.co/guides";
+const PAGE_URL = `${CANONICAL_ORIGIN}/guides`;
 const PAGE_TITLE = "Platform Access Guides for Agencies | AuthHub";
 const META_DESCRIPTION =
-  "Step-by-step guides for getting Meta Ads, Google Ads, and related platform access from clients — the manual path, then the one-link option.";
+  "Step-by-step guides for getting Meta Ads, Google Ads, GA4, LinkedIn, TikTok, and Business Manager access from clients — the manual path, then the one-link option.";
 
 export const metadata: Metadata = {
   title: PAGE_TITLE,
@@ -20,30 +22,17 @@ export const metadata: Metadata = {
   },
 };
 
-const GUIDES = [
-  {
-    slug: "meta-ads-access",
-    title: "How to Get Meta Ads Access for Agencies",
-    summary:
-      "Give your agency access to client Facebook and Instagram ad accounts. Manual Business Manager steps, or one AuthHub link.",
-  },
-  {
-    slug: "google-ads-access",
-    title: "How to Get Google Ads Access for Agencies",
-    summary:
-      "Request Google Ads manager access from clients: Customer ID, Access and security, roles — or send one link.",
-  },
-] as const;
+const guides = getAllGuides();
 
 const itemListSchema = {
   "@context": "https://schema.org",
   "@type": "ItemList",
   name: "AuthHub platform access guides",
-  itemListElement: GUIDES.map((guide, index) => ({
+  itemListElement: guides.map((guide, index) => ({
     "@type": "ListItem",
     position: index + 1,
     name: guide.title,
-    url: `https://authhub.co/guides/${guide.slug}`,
+    url: `${CANONICAL_ORIGIN}/guides/${guide.slug}`,
   })),
 };
 
@@ -72,7 +61,7 @@ export default function GuidesHubPage() {
 
       <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
         <ul className="grid gap-4 sm:grid-cols-2">
-          {GUIDES.map((guide) => (
+          {guides.map((guide) => (
             <li key={guide.slug} className="border-2 border-black bg-card p-5">
               <Link
                 href={`/guides/${guide.slug}`}
@@ -80,7 +69,7 @@ export default function GuidesHubPage() {
               >
                 {guide.title}
               </Link>
-              <p className="font-mono text-sm text-foreground mt-2">{guide.summary}</p>
+              <p className="font-mono text-sm text-foreground mt-2">{guide.hubSummary}</p>
             </li>
           ))}
         </ul>

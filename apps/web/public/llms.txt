@@ -14,8 +14,13 @@ AuthHub is for digital marketing agencies that onboard clients across ad and ana
 
 ## Guides
 
+- Guides hub: https://authhub.co/guides
 - Meta Ads access: https://authhub.co/guides/meta-ads-access
 - Google Ads access: https://authhub.co/guides/google-ads-access
+- GA4 access: https://authhub.co/guides/ga4-access
+- LinkedIn Ads access: https://authhub.co/guides/linkedin-ads-access
+- TikTok Ads access: https://authhub.co/guides/tiktok-ads-access
+- Meta Business Manager access: https://authhub.co/guides/facebook-business-manager-access
 
 ## Comparisons
 

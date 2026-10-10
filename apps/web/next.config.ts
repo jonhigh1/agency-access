@@ -93,6 +93,26 @@ const nextConfig: NextConfig = {
         destination: '/compare/leadsie-vs-agencyaccess-vs-authhub',
         permanent: true,
       },
+      {
+        source: '/blog/ga4-access-agencies',
+        destination: '/guides/ga4-access',
+        permanent: true,
+      },
+      {
+        source: '/blog/linkedin-ads-access-agency',
+        destination: '/guides/linkedin-ads-access',
+        permanent: true,
+      },
+      {
+        source: '/blog/tiktok-ads-access-agency',
+        destination: '/guides/tiktok-ads-access',
+        permanent: true,
+      },
+      {
+        source: '/blog/meta-business-manager-access-guide',
+        destination: '/guides/facebook-business-manager-access',
+        permanent: true,
+      },
     ];
   },
 
