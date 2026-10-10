@@ -88,6 +88,7 @@ export function MarketingFooter() {
                 <li><Link href="/pricing" className="hover:text-danger-ink hover:underline decoration-2 underline-offset-2 transition-all">Pricing</Link></li>
                 <li><Link href="/affiliate" className="hover:text-danger-ink hover:underline decoration-2 underline-offset-2 transition-all">Affiliates</Link></li>
                 <li><Link href="/guides" className="hover:text-danger-ink hover:underline decoration-2 underline-offset-2 transition-all">Guides</Link></li>
+                <li><Link href={"/tools/access-level" as Route} className="hover:text-danger-ink hover:underline decoration-2 underline-offset-2 transition-all">Access-level tool</Link></li>
                 <li><Link href="/blog" className="hover:text-danger-ink hover:underline decoration-2 underline-offset-2 transition-all">Blog</Link></li>
                 <li><a href={getDocsUrl()} className="hover:text-danger-ink hover:underline decoration-2 underline-offset-2 transition-all">Help Center</a></li>
               </ul>

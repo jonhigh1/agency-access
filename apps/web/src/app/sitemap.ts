@@ -60,6 +60,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
     entry('/security', buildDate, 'monthly', 0.7),
     entry('/compare', buildDate, 'weekly', 0.8),
     entry('/guides', buildDate, 'weekly', 0.8),
+    entry('/tools', buildDate, 'weekly', 0.7),
+    entry('/tools/access-level', buildDate, 'weekly', 0.8),
   ];
 
   const blogUrls: MetadataRoute.Sitemap = getBlogPosts()

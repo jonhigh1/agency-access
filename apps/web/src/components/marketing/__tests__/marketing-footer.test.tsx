@@ -35,4 +35,12 @@ describe('MarketingFooter section links', () => {
 
       expect(push).toHaveBeenCalledWith(`/#${id}`);
     });
+
+  it('links to the ungated access-level tool', () => {
+    render(<MarketingFooter />);
+    expect(screen.getByRole('link', { name: 'Access-level tool' })).toHaveAttribute(
+      'href',
+      '/tools/access-level',
+    );
+  });
 });
