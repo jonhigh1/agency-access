@@ -348,7 +348,7 @@ export function ManualInviteFlow<TData extends ManualInviteFlowData>({
           error ||
           (phase === 'timeout'
             ? config.timeoutMessage
-            : 'This request link is invalid or expired. Contact your agency for a new link.')
+            : "We couldn't load this request. Please try again, or contact your agency if it keeps failing.")
         }
         onRetry={retry}
       />

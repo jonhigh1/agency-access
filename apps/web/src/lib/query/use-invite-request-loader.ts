@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { capturePosthogEvent } from '@/lib/analytics/capture-posthog';
 import { ApiResponseError } from '@/lib/api/parse-json-response';
+import { isTerminalRequestCode } from '@/lib/invite/landing-state';
 
 export type InviteLoadPhase = 'loading' | 'delayed' | 'timeout' | 'ready' | 'error';
 
@@ -22,7 +23,8 @@ interface UseInviteRequestLoaderOptions<TData> {
   parseData?: (payload: any) => TData;
   /**
    * When set (e.g. from a Server Component fetch), skip the first client fetch so
-   * the invite shell can paint immediately after hydration.
+   * the invite shell can paint immediately after hydration. A server error without
+   * a terminal code (often a cold API) gets one browser fetch before the error shows.
    */
   serverInviteResult?:
     | { status: 'ok'; payload: TData }
@@ -50,22 +52,35 @@ export function useInviteRequestLoader<TData>({
   parseData,
   serverInviteResult,
 }: UseInviteRequestLoaderOptions<TData>): UseInviteRequestLoaderResult<TData> {
+  const serverFailed = serverInviteResult?.status === 'error';
+  const serverErrorCode = serverInviteResult?.status === 'error' ? serverInviteResult.code || null : null;
+  const retriesServerError = serverFailed && !isTerminalRequestCode(serverErrorCode);
+  const skipsFirstFetch = Boolean(serverInviteResult) && !retriesServerError;
+  const shownServerError =
+    serverInviteResult?.status === 'error' && !retriesServerError ? serverInviteResult : null;
+
   const [attempt, setAttempt] = useState(0);
   const [data, setData] = useState<TData | null>(() =>
     serverInviteResult?.status === 'ok' ? serverInviteResult.payload : null
   );
-  const [error, setError] = useState<string | null>(() =>
-    serverInviteResult?.status === 'error' ? serverInviteResult.message : null
-  );
-  const [errorCode, setErrorCode] = useState<string | null>(() =>
-    serverInviteResult?.status === 'error' ? serverInviteResult.code || null : null
-  );
+  const [error, setError] = useState<string | null>(() => shownServerError?.message ?? null);
+  const [errorCode, setErrorCode] = useState<string | null>(() => shownServerError?.code || null);
   const [phase, setPhase] = useState<InviteLoadPhase>(() => {
-    if (!serverInviteResult) return 'loading';
-    return serverInviteResult.status === 'ok' ? 'ready' : 'error';
+    if (shownServerError) return 'error';
+    return serverInviteResult?.status === 'ok' ? 'ready' : 'loading';
   });
 
   const requestIdRef = useRef(0);
+
+  useEffect(() => {
+    if (!serverFailed) return;
+    void capturePosthogEvent('client_invite_load_failed', {
+      source,
+      origin: 'server',
+      error_code: serverErrorCode,
+      auto_retry: retriesServerError,
+    });
+  }, [retriesServerError, serverErrorCode, serverFailed, source]);
 
   const retry = useCallback(() => {
     void capturePosthogEvent('client_invite_load_retry', { source, attempt: attempt + 1 });
@@ -73,7 +88,7 @@ export function useInviteRequestLoader<TData>({
   }, [attempt, source]);
 
   useEffect(() => {
-    if (serverInviteResult && attempt === 0) {
+    if (skipsFirstFetch && attempt === 0) {
       return;
     }
 
@@ -128,9 +143,16 @@ export function useInviteRequestLoader<TData>({
           return;
         }
 
+        const code = err instanceof ApiResponseError ? (err.code ?? null) : null;
+        void capturePosthogEvent('client_invite_load_failed', {
+          source,
+          origin: 'browser',
+          error_code: code,
+          attempt: attempt + 1,
+        });
         setPhase('error');
         setError(err instanceof Error ? err.message : 'Failed to load authorization request.');
-        setErrorCode(err instanceof ApiResponseError ? (err.code ?? null) : null);
+        setErrorCode(code);
       } finally {
         window.clearTimeout(delayedTimer);
         window.clearTimeout(timeoutTimer);
@@ -144,7 +166,7 @@ export function useInviteRequestLoader<TData>({
       window.clearTimeout(delayedTimer);
       window.clearTimeout(timeoutTimer);
     };
-  }, [attempt, delayedMs, endpoint, parseData, serverInviteResult, source, timeoutMs]);
+  }, [attempt, delayedMs, endpoint, parseData, skipsFirstFetch, source, timeoutMs]);
 
   return {
     data,

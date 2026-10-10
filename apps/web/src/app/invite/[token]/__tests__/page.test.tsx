@@ -126,7 +126,7 @@ describe('Invite Flow Page', () => {
     render(<InvitePage />);
 
     await waitFor(() => {
-      expect(screen.getByText(/this link is not working/i)).toBeInTheDocument();
+      expect(screen.getByText(/we couldn't load this request/i)).toBeInTheDocument();
       expect(screen.getByText(/access request expired/i)).toBeInTheDocument();
     });
   });

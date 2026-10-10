@@ -1,3 +1,13 @@
+## Session: 2026-10-10 — Invite load retries once in the browser after a server failure
+
+### What was done
+- `useInviteRequestLoader`: a server invite error without a terminal code (often a cold API) now starts one browser fetch with the normal delayed/timeout states, instead of the error card at once. Terminal codes still go straight to the terminal card.
+- New `client_invite_load_failed` event (`origin: server | browser`, `error_code`, `auto_retry` or `attempt`) gives a baseline for first-load failures.
+- Error card title is now "We couldn't load this request"; the fallback text no longer says the link is invalid or expired.
+
+### Next steps
+- After deploy, watch `client_invite_load_failed` (origin `server`, `auto_retry: true`) against `client_invite_load_retry`. Manual retries should drop toward zero when cold starts finish within the browser timeout.
+
 ## Session: 2026-10-09 — Architecture cards 2/3/5 ce-work closed (Phase 3–4)
 
 ### What was done
