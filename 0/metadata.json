@@ -1,0 +1,40 @@
+{
+  "cli_version": "0.10.2",
+  "checkpoint_id": "01M4K7BBBYRNDPH6M9A7YZFA3A",
+  "session_id": "agent-517ab3b4-9e5c-4c84-a60a-349b0043760a",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-10T15:36:49.756149Z",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "save_step_count": 1,
+  "files_touched": [
+    "CONCEPTS.md",
+    "DESIGN.md",
+    "GLOSSARY.md",
+    "docs/DEPLOYMENT_STATUS.md",
+    "docs/PROGRESS.md",
+    "docs/START-HERE.md",
+    "docs/workspace/source-map.md",
+    "docs/workspace/status.md"
+  ],
+  "agent": "Cursor",
+  "model": "default",
+  "turn_id": "065c53aeed23",
+  "compact_transcript_start": 0,
+  "session_metrics": {
+    "duration_ms": 637611,
+    "turn_count": 5
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-10-10T15:36:49.681272Z",
+    "agent_lines": 0,
+    "agent_removed": 0,
+    "human_added": 0,
+    "human_modified": 18,
+    "human_removed": 78,
+    "total_committed": 0,
+    "total_lines_changed": 96,
+    "agent_percentage": 0,
+    "metric_version": 2
+  }
+}
