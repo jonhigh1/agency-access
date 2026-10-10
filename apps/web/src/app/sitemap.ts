@@ -57,6 +57,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     entry('/privacy-policy', buildDate, 'yearly', 0.3),
     entry('/security', buildDate, 'monthly', 0.7),
     entry('/compare', buildDate, 'weekly', 0.8),
+    entry('/guides', buildDate, 'weekly', 0.8),
   ];
 
   const blogUrls: MetadataRoute.Sitemap = getBlogPosts()

@@ -123,6 +123,9 @@ export default function MetaAdsAccessGuidePage() {
             <h1 className="font-dela text-3xl sm:text-4xl md:text-5xl text-ink mb-4 tracking-tight">
               How to Get Meta Ads Access for Agencies
             </h1>
+            <p className="font-mono text-xs text-muted-foreground mb-4">
+              Updated <time dateTime="2026-10-10">October 10, 2026</time>
+            </p>
             <p className="font-mono text-base text-foreground">
               Give your agency access to client Facebook and Instagram ad accounts. Manual steps below, or one link that does it for you.
             </p>
