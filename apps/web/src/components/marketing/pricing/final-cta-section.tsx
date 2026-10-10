@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { ArrowRight, Check } from 'lucide-react';
 import { m } from 'framer-motion';
 import { Reveal } from '../reveal';
+import { PartnerBadges } from '../partner-badges';
 
 // Helper to set Growth tier (STARTER in backend) for trial signup
 const handleTrialSignup = () => {
@@ -97,6 +98,9 @@ export function FinalCTASection() {
                   <span>Cancel anytime</span>
                 </div>
               </div>
+
+              {/* Official partner badges */}
+              <PartnerBadges className="w-full justify-center mt-5" />
             </div>
           </m.div>
         </Reveal>

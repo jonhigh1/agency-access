@@ -10,6 +10,7 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 import { securityFaqSchema, securityFaqs } from "@/lib/security-page-faq";
+import { PartnerBadges } from "@/components/marketing/partner-badges";
 
 const PAGE_URL = "https://authhub.co/security";
 const PAGE_TITLE = "AuthHub Security: Token Vault, Audit Log & Revoking Access";
@@ -346,6 +347,12 @@ export default function SecurityPage() {
               </Link>
               .
             </p>
+            <div className="mt-6">
+              <p className="font-mono text-sm text-foreground">
+                AuthHub is an official Google and Meta partner.
+              </p>
+              <PartnerBadges className="mt-3" />
+            </div>
           </div>
         </div>
       </section>

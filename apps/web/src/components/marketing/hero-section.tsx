@@ -11,6 +11,7 @@ import { ScheduleDemoModal } from './schedule-demo-modal';
 import Link from 'next/link';
 import { useState } from 'react';
 import { useAnimationOrchestrator } from '@/hooks/use-animation-orchestrator';
+import { PartnerBadges } from './partner-badges';
 
 // Helper to set Growth tier (STARTER in backend) for trial signup
 const handleTrialSignup = () => {
@@ -123,6 +124,7 @@ export function HeroSection() {
                     Digital One
                   </span>
                 </div>
+                <PartnerBadges className="mt-4 justify-center lg:justify-start" />
               </div>
             </Reveal>
 

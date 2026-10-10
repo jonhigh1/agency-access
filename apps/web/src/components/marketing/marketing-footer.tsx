@@ -4,6 +4,7 @@ import Link from 'next/link';
 import type { Route } from 'next';
 import { usePathname, useRouter } from 'next/navigation';
 import { getDocsUrl } from '@/lib/docs-url';
+import { PartnerBadges } from './partner-badges';
 
 export function MarketingFooter() {
   const pathname = usePathname();
@@ -77,6 +78,7 @@ export function MarketingFooter() {
               The easy button for client account access.
               Replace weeks of back-and-forth with one link.
             </p>
+            <PartnerBadges className="mt-4" />
           </div>
 
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-6 sm:gap-8 md:gap-12 w-full md:w-auto">
