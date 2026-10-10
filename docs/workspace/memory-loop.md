@@ -11,6 +11,19 @@ Authority order for memory: user instruction, live code and tests, promoted repo
 - Repo config carries `AGENTMEMORY_URL` only. No secrets are committed; local auth stays open loopback.
 - Recall proof (U1): observation posted keyless returns through hybrid recall. Re-verify after any substrate upgrade.
 
+## Claim markers (U3)
+
+Six states, marked inline on the source entry. `pending` is the default unmarked state.
+
+- `pending` — captured, not yet verified.
+- `verified <sha>` — checked against the named commit from a clean checkout.
+- `tentative <recheck>` — evidenced but not commit-anchored; carries its recheck condition.
+- `dropped <reason>` — wrong or superseded before promotion; reason recorded.
+- `promoted <path>` — lives in exactly one home; source entry links to it.
+- `invalidated <superseding-ref>` — a revert or newer truth retired it.
+
+A daily log renames to `.done.md` only when the marker checker reports zero unmarked claims.
+
 ## Hook ownership (U2)
 
 | Event | Owner | Store |
