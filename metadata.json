@@ -1,0 +1,31 @@
+{
+  "cli_version": "0.10.2",
+  "checkpoint_id": "01M4J5228JFYD4JE1VEW1EMXH0",
+  "strategy": "manual-commit",
+  "branch": "feat/agent-memory-loop",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "docs/memory-loop-premise-tally.md",
+    "docs/solutions/stale-design-frontmatter-token-trap.md",
+    "docs/workspace/memory-loop.md",
+    "package.json",
+    "scripts/memory/check-frontmatter.mjs",
+    "scripts/tests/memory-frontmatter.test.mjs"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 0,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 0,
+    "api_call_count": 0
+  }
+}
