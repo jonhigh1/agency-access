@@ -1,12 +1,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-const { prismaMock, infisicalMock } = vi.hoisted(() => ({
+const { prismaMock, infisicalMock, assertHostMock } = vi.hoisted(() => ({
   prismaMock: {
     webhookEvent: { findUnique: vi.fn() },
     webhookDelivery: { create: vi.fn(), update: vi.fn() },
     webhookEndpoint: { update: vi.fn() },
+    $transaction: vi.fn((ops: unknown) => (Array.isArray(ops) ? Promise.all(ops) : ops)),
   },
   infisicalMock: { getPlainSecret: vi.fn() },
+  assertHostMock: vi.fn(),
 }));
 
 vi.mock('@/lib/prisma', () => ({ prisma: prismaMock }));
@@ -21,6 +23,9 @@ vi.mock('@/lib/env', () => ({
     WEBHOOK_FAILURE_DISABLE_THRESHOLD: 5,
   },
 }));
+vi.mock('@/services/webhook-endpoint.service.js', () => ({
+  assertEndpointHostResolvable: assertHostMock,
+}));
 
 import { deliverWebhookEvent } from '../webhook-delivery.service.js';
 
@@ -31,7 +36,7 @@ const EVENT = {
   endpoint: {
     id: 'ep-1',
     status: 'active',
-    url: 'http://hooks.example.test/deliver',
+    url: 'https://example.com/webhooks',
     secretId: 'sec-1',
     failureCount: 0,
   },
@@ -48,6 +53,7 @@ describe('webhook delivery timeout', () => {
     prismaMock.webhookDelivery.update.mockResolvedValue({});
     prismaMock.webhookEndpoint.update.mockResolvedValue({});
     infisicalMock.getPlainSecret.mockResolvedValue('secret');
+    assertHostMock.mockResolvedValue({ allowed: true });
 
     fetchInit = undefined;
     capturedSignal = undefined;
@@ -90,7 +96,7 @@ describe('webhook delivery timeout', () => {
     await deliverWebhookEvent({ eventId: 'evt-1', attemptNumber: 1 });
 
     expect(global.fetch).toHaveBeenCalledWith(
-      'http://hooks.example.test/deliver',
+      'https://example.com/webhooks',
       expect.objectContaining({ method: 'POST', signal: expect.any(AbortSignal) })
     );
     expect(fetchInit?.signal).toBe(capturedSignal);

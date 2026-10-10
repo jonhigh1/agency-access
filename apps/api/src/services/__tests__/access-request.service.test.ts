@@ -23,6 +23,7 @@ const META_ACCESS_CONFIG = {
 vi.mock('@/lib/env', () => ({
   env: {
     DATABASE_URL: 'postgresql://test:test@localhost:5432/test',
+    FRONTEND_URL: 'http://localhost:3000',
     CLERK_PUBLISHABLE_KEY: 'pk_test_key',
     CLERK_SECRET_KEY: 'sk_test_secret_key',
   },
@@ -81,6 +82,7 @@ vi.mock('@/lib/prisma', () => ({
     webhookEndpoint: {
       findUnique: vi.fn(),
       findFirst: vi.fn(),
+      findMany: vi.fn(),
     },
     webhookEvent: {
       create: vi.fn(),
@@ -2159,12 +2161,22 @@ describe('AccessRequestService', () => {
           }],
         },
       ] as any);
-      vi.mocked(prisma.webhookEndpoint.findFirst).mockResolvedValue({
-        id: 'endpoint-1',
-        agencyId: 'agency-1',
-        status: 'active',
-        subscribedEvents: ['access_request.completed'],
-      } as any);
+      vi.mocked(prisma.webhookEndpoint.findMany).mockResolvedValue([
+        {
+          id: 'endpoint-1',
+          agencyId: 'agency-1',
+          status: 'active',
+          subscribedEvents: ['access_request.completed'],
+          preferredApiVersion: '2026-03-08',
+        },
+      ] as any);
+      // First $queryRaw is the FOR UPDATE lock; later calls are webhook sequence nextval.
+      let queryRawCalls = 0;
+      vi.mocked(prisma.$queryRaw).mockImplementation(async () => {
+        queryRawCalls += 1;
+        if (queryRawCalls === 1) return [{ id: 'request-1' }];
+        return [{ next: 1n }];
+      });
       vi.mocked(prisma.webhookEvent.create).mockResolvedValue({
         id: 'event-1',
       } as any);
@@ -2244,12 +2256,21 @@ describe('AccessRequestService', () => {
           authorizations: [{ platform: 'linkedin', status: 'active' }],
         },
       ] as any);
-      vi.mocked(prisma.webhookEndpoint.findFirst).mockResolvedValue({
-        id: 'endpoint-1',
-        agencyId: 'agency-1',
-        status: 'active',
-        subscribedEvents: ['access_request.partial'],
-      } as any);
+      vi.mocked(prisma.webhookEndpoint.findMany).mockResolvedValue([
+        {
+          id: 'endpoint-1',
+          agencyId: 'agency-1',
+          status: 'active',
+          subscribedEvents: ['access_request.partial'],
+          preferredApiVersion: '2026-03-08',
+        },
+      ] as any);
+      let queryRawCalls = 0;
+      vi.mocked(prisma.$queryRaw).mockImplementation(async () => {
+        queryRawCalls += 1;
+        if (queryRawCalls === 1) return [{ id: 'request-1' }];
+        return [{ next: 1n }];
+      });
       vi.mocked(prisma.webhookEvent.create).mockResolvedValue({
         id: 'event-partial-1',
       } as any);
@@ -2874,12 +2895,16 @@ describe('AccessRequestService', () => {
           authorizations: [{ platform: 'google_ads', status: 'active' }],
         },
       ] as any);
-      vi.mocked(prisma.webhookEndpoint.findFirst).mockResolvedValue({
-        id: 'endpoint-1',
-        agencyId: 'agency-1',
-        status: 'active',
-        subscribedEvents: ['access_request.partial'],
-      } as any);
+      vi.mocked(prisma.webhookEndpoint.findMany).mockResolvedValue([
+        {
+          id: 'endpoint-1',
+          agencyId: 'agency-1',
+          status: 'active',
+          subscribedEvents: ['access_request.partial'],
+          preferredApiVersion: '2026-03-08',
+        },
+      ] as any);
+      vi.mocked(prisma.$queryRaw).mockResolvedValue([{ next: 1n }] as any);
       vi.mocked(prisma.webhookEvent.create).mockResolvedValue({
         id: 'event-partial-1',
       } as any);
@@ -2958,7 +2983,7 @@ describe('AccessRequestService', () => {
         auditLog: { create: vi.fn() },
       };
       vi.mocked(prisma.$transaction).mockImplementation(async (callback: any) => callback(transaction));
-      vi.mocked(prisma.webhookEndpoint.findFirst).mockReturnValue(
+      vi.mocked(prisma.webhookEndpoint.findMany).mockReturnValue(
         new Promise(() => {}) as any
       );
 
@@ -3013,7 +3038,7 @@ describe('AccessRequestService', () => {
       });
 
       expect(result).toMatchObject({ data: null, error: { code: 'INTERNAL_ERROR' } });
-      expect(prisma.webhookEndpoint.findFirst).not.toHaveBeenCalled();
+      expect(prisma.webhookEndpoint.findMany).not.toHaveBeenCalled();
     });
 
     it('returns database errors instead of starting side effects', async () => {
