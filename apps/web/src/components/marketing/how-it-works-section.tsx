@@ -1,5 +1,7 @@
 'use client';
 
+import { SectionBadge } from './section-badge';
+
 import { m, useScroll, useTransform } from 'framer-motion';
 import { useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
@@ -108,10 +110,7 @@ export function HowItWorksSection() {
           <Reveal delay={0.2}>
             <div className="text-center mb-12 sm:mb-16 md:mb-20">
               {/* Badge */}
-              <div className="inline-flex items-center gap-2 border-2 border-black bg-ink text-paper px-4 sm:px-6 py-2 text-[10px] sm:text-xs font-bold uppercase tracking-widest font-mono shadow-brutalist rounded-[0.75rem] mb-6 sm:mb-8">
-                <Clock size={14} />
-                5-Minute Setup
-              </div>
+              <SectionBadge variant="coral" icon={Clock}>5-Minute Setup</SectionBadge>
 
               {/* Main headline */}
               <h2 className="font-dela text-4xl sm:text-5xl md:text-6xl lg:text-7xl tracking-tight mb-4 sm:mb-6 text-ink leading-[1.1]">

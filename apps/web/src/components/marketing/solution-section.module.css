@@ -1,0 +1,70 @@
+.frame {
+  --example-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --inbox-row: 112px;
+}
+
+.sequence {
+  opacity: 1;
+  transition: opacity 250ms var(--example-ease);
+}
+
+.sequence[data-resetting] { opacity: 0; }
+
+.inbox {
+  position: relative;
+  height: calc(var(--inbox-row) * 3 + 32px);
+  overflow: hidden;
+  mask-image: linear-gradient(to bottom, #000 0%, #000 calc(100% - 68px), transparent 100%);
+}
+
+.history {
+  position: absolute;
+  inset: 0;
+  transition: opacity 250ms var(--example-ease);
+}
+
+.history[data-muted] { opacity: 0.12; }
+
+.resolution {
+  position: absolute;
+  inset: 48px 12px auto;
+  display: grid;
+  gap: 12px;
+}
+
+.row {
+  position: absolute;
+  inset: 0 0 auto;
+  height: var(--inbox-row);
+  padding-bottom: 8px;
+  transition: transform 250ms var(--example-ease);
+}
+
+.card {
+  animation: arrival 250ms var(--example-ease) both;
+}
+
+.state {
+  animation: arrival var(--motion-surface-enter) var(--example-ease) both;
+}
+
+@keyframes arrival {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sequence, .history, .row, .card, .state {
+    animation: none;
+    transition: none;
+  }
+}
+
+@media (max-width: 1023px) {
+  .frame { --inbox-row: 148px; }
+  .resolution { top: 64px; }
+}
+
+@media (max-width: 639px) {
+  .resolution { left: 0; right: 0; }
+}

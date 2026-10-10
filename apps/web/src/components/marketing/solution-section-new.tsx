@@ -1,32 +1,29 @@
 'use client';
 
+import { SectionBadge } from './section-badge';
+
 import { useEffect, useRef, useState } from 'react';
-import {
-  AnimatePresence,
-  m,
-  useInView,
-  useReducedMotion,
-} from 'framer-motion';
+import Image from 'next/image';
+import { useInView, useReducedMotion } from 'framer-motion';
 import {
   ArrowRight,
   CheckCircle2,
   Link2,
   Mail,
   MessageSquare,
-  ShieldAlert,
-  Video,
 } from 'lucide-react';
 import { SignUpButton } from '@/components/lazy-clerk-auth-buttons';
 import { Button } from '@/components/ui/button';
 import { Reveal } from './reveal';
 import { cn } from '@/lib/utils';
+import styles from './solution-section.module.css';
 
 const handleTrialSignup = () => {
   localStorage.setItem('selectedSubscriptionTier', 'STARTER');
   localStorage.setItem('selectedBillingInterval', 'yearly');
 };
 
-type InboxIcon = 'mail' | 'chat' | 'video' | 'meta' | 'link' | 'granted';
+type InboxIcon = 'gmail' | 'slack' | 'imessage' | 'zoom' | 'meta' | 'link' | 'granted';
 
 interface InboxItem {
   id: string;
@@ -38,38 +35,27 @@ interface InboxItem {
   tone: 'inbound' | 'outbound' | 'error' | 'link' | 'granted';
 }
 
-function InboxGlyph({ icon, className }: { icon: InboxIcon; className?: string }) {
-  const shared = 'w-4 h-4';
-  switch (icon) {
-    case 'mail':
-      return <Mail className={cn(shared, className)} strokeWidth={2.5} />;
-    case 'chat':
-      return <MessageSquare className={cn(shared, className)} strokeWidth={2.5} />;
-    case 'video':
-      return <Video className={cn(shared, className)} strokeWidth={2.5} />;
-    case 'meta':
-      return <ShieldAlert className={cn(shared, className)} strokeWidth={2.5} />;
-    case 'link':
-      return <Link2 className={cn(shared, className)} strokeWidth={2.5} />;
-    case 'granted':
-      return <CheckCircle2 className={cn(shared, className)} strokeWidth={2.5} />;
-  }
+function InboxGlyph({ icon }: { icon: InboxIcon }) {
+  if (icon === 'link') return <Link2 className="w-4 h-4" strokeWidth={2.5} />;
+  if (icon === 'granted') return <CheckCircle2 className="w-4 h-4" strokeWidth={2.5} />;
+  const source = icon === 'meta' ? '/meta-color.svg' : `/brands/${icon}.${icon === 'imessage' ? 'png' : 'svg'}`;
+  return <Image src={source} alt="" width={24} height={24} className="object-contain" unoptimized />;
 }
 
 const WITHOUT_MSGS: InboxItem[] = [
   {
     id: 'm1',
-    icon: 'mail',
-    from: 'Sam · Harbor Dental',
+    icon: 'gmail',
+    from: 'Dr. Ellis · Maple Chiro',
     time: 'MON 9:02 AM',
     title: 'How do we give you access?',
-    body: 'Business Manager → Business settings → Partners → add Business ID 1029384756102938. Is that right?',
+    body: 'Business settings, then Partners… which Business ID do I use?',
     tone: 'inbound',
   },
   {
     id: 'm2',
-    icon: 'chat',
-    from: 'Sam · Harbor Dental',
+    icon: 'slack',
+    from: 'Dr. Ellis · Maple Chiro',
     time: 'TUE 4:15 PM',
     title: 'Think I added you',
     body: "I wasn't sure which permissions to tick, so I selected a few.",
@@ -77,25 +63,25 @@ const WITHOUT_MSGS: InboxItem[] = [
   },
   {
     id: 'm3',
-    icon: 'mail',
+    icon: 'gmail',
     from: 'You · Brightpath Agency',
     time: 'WED 11:10 AM',
-    title: 'Almost — two assets missing',
-    body: 'We only see the Page. The ad account and pixel are missing — could you add those too?',
+    title: 'The ad account is missing',
+    body: 'The Page is shared, but the ad account is missing. Can you add it too?',
     tone: 'outbound',
   },
   {
     id: 'm4',
-    icon: 'video',
-    from: 'Zoom · 15 min call',
+    icon: 'imessage',
+    from: 'Dr. Ellis · iMessage',
     time: 'THU 11:00 AM',
-    title: 'Business Manager walkthrough',
+    title: 'Can we jump on a call?',
     body: '"Honestly, this is confusing. Can we do a quick call?"',
     tone: 'inbound',
   },
   {
     id: 'm5',
-    icon: 'video',
+    icon: 'zoom',
     from: 'Zoom · call ended',
     time: 'THU 11:38 AM',
     title: '38 minutes, still stuck',
@@ -119,23 +105,23 @@ const WITH_ITEMS: InboxItem[] = [
     icon: 'link',
     from: 'AUTHHUB · ONE LINK',
     time: 'MON 9:02 AM',
-    title: 'authhub.co/agency/harbor-dental',
-    body: 'One link. Every platform. Correct permissions, first try.',
+    title: 'authhub.co/agency/maple-chiro',
+    body: 'One guided request for the platforms and permissions you need.',
     tone: 'link',
   },
   {
     id: 'w2',
     icon: 'granted',
-    from: 'ACCESS GRANTED',
+    from: 'AUTHHUB · ACCESS CONFIRMED',
     time: '9:04 AM',
-    title: 'Ad account, Page & Pixel · Admin',
-    body: 'Client approved in one click. No calls, no re-requests.',
+    title: 'Selected access confirmed',
+    body: 'Request complete. Review the selected access in your dashboard.',
     tone: 'granted',
   },
 ];
 
 interface Phase {
-  timer: string;
+  minutes: number;
   messages: number;
   calls: number;
   rerequests: number;
@@ -146,276 +132,213 @@ interface Phase {
 }
 
 const PHASES: Phase[] = [
-  { timer: '35m', messages: 2, calls: 0, rerequests: 0, status: 'Still waiting on access', withMode: false, inboxCount: 1, durationMs: 1100 },
-  { timer: '54m', messages: 4, calls: 0, rerequests: 0, status: 'Still waiting on access', withMode: false, inboxCount: 2, durationMs: 1100 },
-  { timer: '1h 20m', messages: 6, calls: 0, rerequests: 1, status: 'Still waiting on access', withMode: false, inboxCount: 3, durationMs: 1100 },
-  { timer: '2h 59m', messages: 5, calls: 0, rerequests: 1, status: 'Still waiting on access', withMode: false, inboxCount: 4, durationMs: 1100 },
-  { timer: '3h 10m', messages: 5, calls: 1, rerequests: 1, status: 'Still waiting on access', withMode: false, inboxCount: 5, durationMs: 1100 },
-  { timer: '5h', messages: 5, calls: 1, rerequests: 2, status: 'Still waiting on access', withMode: false, inboxCount: 6, durationMs: 1600 },
-  { timer: '2m', messages: 1, calls: 0, rerequests: 0, status: 'Link sent. Waiting on one click.', withMode: true, inboxCount: 0, durationMs: 1800 },
-  { timer: '2m', messages: 1, calls: 0, rerequests: 0, status: 'Access granted, first try.', withMode: true, inboxCount: 0, durationMs: 2600 },
+  { minutes: 35, messages: 1, calls: 0, rerequests: 0, status: 'Waiting for the right access', withMode: false, inboxCount: 1, durationMs: 2200 },
+  { minutes: 54, messages: 2, calls: 0, rerequests: 0, status: 'Permissions still unclear', withMode: false, inboxCount: 2, durationMs: 2200 },
+  { minutes: 80, messages: 3, calls: 0, rerequests: 1, status: 'Following up on missing assets', withMode: false, inboxCount: 3, durationMs: 2400 },
+  { minutes: 179, messages: 4, calls: 1, rerequests: 1, status: 'Scheduling a walkthrough', withMode: false, inboxCount: 4, durationMs: 2200 },
+  { minutes: 190, messages: 5, calls: 1, rerequests: 1, status: 'Still working through setup', withMode: false, inboxCount: 5, durationMs: 2200 },
+  { minutes: 300, messages: 6, calls: 1, rerequests: 2, status: 'Access needs another request', withMode: false, inboxCount: 6, durationMs: 2800 },
+  { minutes: 2, messages: 1, calls: 0, rerequests: 0, status: 'Link sent. Client completes the request.', withMode: true, inboxCount: 0, durationMs: 2800 },
+  { minutes: 2, messages: 1, calls: 0, rerequests: 0, status: 'Access confirmed. Ready for your team.', withMode: true, inboxCount: 0, durationMs: 3000 },
 ];
 
 const VISIBLE_WINDOW = 4;
 
-function toneClasses(tone: InboxItem['tone']): string {
-  switch (tone) {
-    case 'error':
-      return 'border-[#C2410C] bg-[#FF6B35]/10';
-    case 'link':
-      return 'border-black bg-[#09090B] text-[#FAFAFA]';
-    case 'granted':
-      return 'border-[#0F766E] bg-[#00A896]/10';
-    case 'outbound':
-      return 'border-black bg-white';
-    case 'inbound':
-    default:
-      return 'border-black bg-white';
-  }
-}
-
-function chipClasses(tone: InboxItem['tone']): string {
-  switch (tone) {
-    case 'error':
-      return 'border-[#C2410C] bg-[#FF6B35]/20 text-[#C2410C]';
-    case 'link':
-      return 'border-[#FF6B35] bg-[#FF6B35] text-[#09090B]';
-    case 'granted':
-      return 'border-[#0F766E] bg-[#00A896]/20 text-[#0F766E]';
-    default:
-      return 'border-black bg-[#FAFAFA] text-[#09090B]';
-  }
-}
-
 function InboxCard({ item }: { item: InboxItem }) {
   const dark = item.tone === 'link';
   return (
-    <m.div
-      layout
-      initial={{ opacity: 0, y: -14 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: 10 }}
-      transition={{ duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-      className={cn('border-2 p-3 flex gap-3', toneClasses(item.tone))}
-    >
-      <div
-        className={cn(
-          'w-8 h-8 shrink-0 border-2 rounded-none flex items-center justify-center',
-          chipClasses(item.tone)
-        )}
-        aria-hidden
-      >
+    <article className={cn(styles.card, 'border p-3 flex gap-2 sm:gap-3',
+      item.tone === 'error' ? 'border-coral/30 bg-coral/5' :
+      item.tone === 'granted' ? 'border-teal/30 bg-card' :
+      dark ? 'border-ink bg-ink text-paper' : 'border-border bg-card')}>
+      <div className={cn('w-7 h-7 shrink-0 flex items-center justify-center',
+        dark ? 'border-coral bg-coral text-ink' :
+        item.tone === 'error' ? 'text-danger-ink' :
+        item.tone === 'granted' ? 'border-teal/30 text-success-ink' : 'text-muted-foreground')} aria-hidden>
         <InboxGlyph icon={item.icon} />
       </div>
       <div className="min-w-0 flex-1">
-        <div className="flex items-baseline justify-between gap-2">
-          <p className={cn('font-mono text-[11px] font-bold uppercase tracking-wide truncate', dark ? 'text-[#FAFAFA]' : 'text-[#09090B]')}>
-            {item.from}
-          </p>
-          <p className={cn('font-mono text-[10px] shrink-0', dark ? 'text-[#FAFAFA]/60' : 'text-gray-500')}>
-            {item.time}
-          </p>
+        <div className="flex flex-wrap items-baseline justify-between gap-x-2 gap-y-1">
+          <p className={cn('font-mono text-[10px] font-semibold tracking-wide', dark ? 'text-paper/80' : 'text-muted-foreground')}>{item.from}</p>
+          <p className={cn('font-mono text-[10px] shrink-0', dark ? 'text-paper/70' : 'text-muted-foreground')}>{item.time}</p>
         </div>
-        <p className={cn('text-sm font-semibold mt-0.5 leading-snug', dark ? 'text-[#FAFAFA]' : 'text-[#09090B]')}>
-          {item.title}
-        </p>
-        <p className={cn('text-[13px] leading-snug mt-0.5', dark ? 'text-[#FAFAFA]/75' : 'text-gray-600')}>
-          {item.body}
-        </p>
+        <p className="text-sm font-semibold mt-1 leading-snug break-words">{item.title}</p>
+        <p className={cn('text-[13px] leading-snug mt-1', dark ? 'text-paper/80' : 'text-muted-foreground')}>{item.body}</p>
       </div>
-    </m.div>
+    </article>
   );
 }
 
-function StatCell({ label, value, accent }: { label: string; value: number; accent?: boolean }) {
+function TimeCounter({ phaseIndex, active, reduced, resetting }: {
+  phaseIndex: number; active: boolean; reduced: boolean | null; resetting: boolean;
+}) {
+  const labelRef = useRef<HTMLParagraphElement>(null);
+  const minutesRef = useRef(0);
+  const previousPhase = useRef(phaseIndex);
+
+  useEffect(() => {
+    const label = labelRef.current;
+    if (!label) return;
+    const phase = PHASES[phaseIndex];
+    const format = (value: number) => {
+      const minutes = Math.round(value);
+      if (minutes < 60) return `${minutes}m`;
+      const remainder = minutes % 60;
+      return `${Math.floor(minutes / 60)}h${remainder ? ` ${remainder}m` : ''}`;
+    };
+    // The AuthHub comparison has one fixed total, including reduced motion.
+    if (reduced || phase.withMode) {
+      minutesRef.current = 2;
+      label.textContent = '2m';
+      previousPhase.current = phaseIndex;
+      return;
+    }
+    if (phaseIndex === 0 && previousPhase.current !== 0) {
+      minutesRef.current = 0;
+      label.textContent = '0m';
+    }
+    previousPhase.current = phaseIndex;
+    if (!active || resetting) return;
+
+    const from = minutesRef.current;
+    const target = phase.minutes;
+    if (from === target) return;
+    const started = performance.now();
+    let frame: number;
+    const tick = (now: number) => {
+      const progress = Math.min(1, (now - started) / 600);
+      const eased = 1 - (1 - progress) ** 3;
+      minutesRef.current = from + (target - from) * eased;
+      label.textContent = format(minutesRef.current);
+      if (progress < 1) frame = requestAnimationFrame(tick);
+    };
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+  }, [phaseIndex, active, reduced, resetting]);
+
+  return <p ref={labelRef} data-testid="agency-time" className="font-display font-semibold text-6xl sm:text-7xl text-paper mt-2 tracking-display-lg tabular-nums leading-none whitespace-nowrap">0m</p>;
+}
+
+function StatCell({ label, value }: { label: string; value: number }) {
   return (
-    <div className="border-t border-[#FAFAFA]/15 pt-3">
+    <div className="border-t border-paper/20 pt-4">
       <p className="label-nano uppercase">{label}</p>
-      <AnimatePresence mode="wait" initial={false}>
-        <m.p
-          key={value}
-          initial={{ opacity: 0, y: 6 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -6 }}
-          transition={{ duration: 0.15 }}
-          className={cn('font-dela text-2xl sm:text-3xl mt-1', accent ? 'text-[#FF6B35]' : 'text-[#FAFAFA]')}
-        >
-          {value}
-        </m.p>
-      </AnimatePresence>
+      <p key={value} className={cn(styles.state, "font-display font-semibold text-3xl mt-2 tabular-nums")}>{value}</p>
     </div>
   );
 }
 
-/**
- * ChaosToLinkSection — replaces the drag-slider with an auto-playing
- * before/after dramatization (mirrors the ClientInvite "inbox chaos" spot):
- * the left inbox accumulates real access-request messages while the right
- * ink panel counts agency time, messages, calls and re-requests — then the
- * whole thing flips to the one-link outcome.
- */
 export function SolutionSectionNew() {
   const frameRef = useRef<HTMLDivElement>(null);
   const inView = useInView(frameRef, { amount: 0.25 });
   const reduceMotion = useReducedMotion();
   const [phaseIdx, setPhaseIdx] = useState(0);
+  const [hidden, setHidden] = useState(false);
+  const [resetting, setResetting] = useState(false);
+  const complete = phaseIdx === PHASES.length - 1;
 
   useEffect(() => {
-    if (!inView || reduceMotion) return;
-    const t = setTimeout(
-      () => setPhaseIdx((i) => (i + 1) % PHASES.length),
-      PHASES[phaseIdx].durationMs
-    );
-    return () => clearTimeout(t);
-  }, [phaseIdx, inView, reduceMotion]);
+    const update = () => setHidden(document.hidden);
+    update();
+    document.addEventListener('visibilitychange', update);
+    return () => document.removeEventListener('visibilitychange', update);
+  }, []);
 
-  // Reduced motion: park on the resolved end-state.
+  useEffect(() => {
+    if (!inView || reduceMotion || hidden) return;
+    const timer = setTimeout(() => {
+      if (resetting) {
+        setPhaseIdx(0);
+        setResetting(false);
+      } else if (complete) {
+        setResetting(true);
+      } else {
+        setPhaseIdx((index) => index + 1);
+      }
+    }, resetting ? 250 : PHASES[phaseIdx].durationMs);
+    return () => clearTimeout(timer);
+  }, [phaseIdx, inView, reduceMotion, hidden, complete, resetting]);
+
   const phase = reduceMotion ? PHASES[PHASES.length - 1] : PHASES[phaseIdx];
-
-  const withoutVisible = WITHOUT_MSGS.slice(0, phase.inboxCount)
-    .slice(-VISIBLE_WINDOW)
-    .reverse();
-  const withVisible = phase.withMode
-    ? WITH_ITEMS.slice(0, phaseIdx === PHASES.length - 1 || reduceMotion ? 2 : 1)
-    : [];
+  const history = WITHOUT_MSGS.slice(0, phase.withMode ? WITHOUT_MSGS.length : phase.inboxCount).slice(-VISIBLE_WINDOW).reverse();
+  const resolved = WITH_ITEMS.slice(0, complete || reduceMotion ? 2 : 1);
 
   return (
-    <section className="relative py-20 sm:py-24 md:py-32 bg-paper overflow-hidden">
-      <div className="absolute inset-0 opacity-5 pointer-events-none diagonal-lines" />
-      <div className="absolute top-0 left-0 right-0 h-1 bg-black" />
-
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-        <Reveal delay={0.2}>
-          <div className="max-w-4xl mx-auto text-center mb-12 sm:mb-16">
-            <h2 className="font-dela text-4xl sm:text-5xl md:text-6xl lg:text-7xl !leading-[1.05] tracking-tight mb-6 text-ink">
-              One Link.
-              <br />
-              <span className="text-[#00A896]">All Your Clients.</span>
+    <section aria-labelledby="one-link-heading" className="relative py-16 md:py-24 bg-paper border-y border-ink/15">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8">
+        <Reveal>
+          <div className="max-w-5xl mx-auto text-center mb-12 sm:mb-16">
+            <SectionBadge variant="ink" icon={Link2}>The simpler way</SectionBadge>
+            <h2 id="one-link-heading" className="font-dela text-4xl sm:text-5xl md:text-6xl leading-[1.1] tracking-tight text-ink mb-4 sm:mb-6 text-balance">
+              Less chasing.<br /><span className="inline-block text-balance text-danger-ink">More clients ready to go.</span>
             </h2>
-            <p className="font-mono text-base sm:text-lg max-w-2xl mx-auto leading-relaxed text-gray-600">
-              Five hours of back-and-forth, or one link. Watch it play out.
+            <p className="font-mono text-base sm:text-lg md:text-xl max-w-2xl mx-auto leading-relaxed text-muted-foreground">
+              Send each client one branded link for the access you need. They follow a guided request. Your team sees what’s ready and what needs attention.
             </p>
           </div>
         </Reveal>
 
-        <Reveal delay={0.35}>
+        <Reveal delay={0.1}>
           <div className="max-w-5xl mx-auto">
-            {/* Screen-reader summary of the animation */}
-            <p className="sr-only">
-              Without AuthHub: getting ad-account access takes 5 hours across 5
-              messages, 1 call and 2 re-requests, and access is still pending.
-              With AuthHub: one link is sent, and access is granted in 2
-              minutes on the first try.
-            </p>
-
-            <div
-              ref={frameRef}
-              aria-hidden
-              className="grid md:grid-cols-2 border-2 border-black bg-paper shadow-brutalist"
-            >
-              {/* LEFT — inbox */}
-              <div className="p-5 sm:p-6 border-b-2 md:border-b-0 md:border-r-2 border-black">
-                <div className="flex items-baseline justify-between mb-4">
-                  <h3 className="font-dela text-lg sm:text-xl text-ink leading-tight">
-                    Getting access to Harbor Dental&apos;s ad account
-                  </h3>
-                  <span className="label-micro uppercase shrink-0 ml-3">Inbox</span>
-                </div>
-                <div className="flex flex-col gap-3 min-h-[380px] sm:min-h-[420px] content-start">
-                  <AnimatePresence initial={false}>
-                    {phase.withMode
-                      ? withVisible.map((item) => <InboxCard key={item.id} item={item} />)
-                      : withoutVisible.map((item) => <InboxCard key={item.id} item={item} />)}
-                  </AnimatePresence>
-                </div>
+            <div ref={frameRef} className={cn(styles.frame, 'border border-ink bg-card')}>
+              <div className="flex flex-wrap items-center justify-between gap-3 border-b border-ink/15 px-5 py-3 sm:px-6">
+                <span className="label-micro">One client. Two ways to get access.</span>
               </div>
-
-              {/* RIGHT — ink stats panel */}
-              <div className="ink-panel p-5 sm:p-6 flex flex-col">
-                <AnimatePresence mode="wait" initial={false}>
-                  <m.p
-                    key={phase.withMode ? 'with' : 'without'}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.2 }}
-                    className={cn(
-                      'label-micro uppercase',
-                      phase.withMode ? 'text-[#FAFAFA]' : 'text-[#FF6B35]'
-                    )}
-                  >
-                    {phase.withMode ? 'With AuthHub' : 'Without AuthHub'}
-                  </m.p>
-                </AnimatePresence>
-
-                <p className="label-nano uppercase mt-6">Agency time spent</p>
-                <AnimatePresence mode="wait" initial={false}>
-                  <m.p
-                    key={phase.timer}
-                    initial={{ opacity: 0, y: 8 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -8 }}
-                    transition={{ duration: 0.18 }}
-                    className="font-dela text-6xl sm:text-7xl text-[#FAFAFA] mt-2 tracking-tight"
-                  >
-                    {phase.timer}
-                  </m.p>
-                </AnimatePresence>
-
-                <div className="grid grid-cols-3 gap-4 mt-8">
-                  <StatCell label="Messages" value={phase.messages} />
-                  <StatCell label="Calls" value={phase.calls} />
-                  <StatCell label="Re-requests" value={phase.rerequests} />
+              <p className="sr-only">This illustrative example compares manual follow-up with a guided AuthHub request. Times are examples, not guaranteed results. Clients select their accounts and approve the requested access. Your team can review completion and any required follow-up.</p>
+              <div className={cn(styles.sequence, "grid md:grid-cols-[1.2fr_1fr]")} data-resetting={resetting && !reduceMotion ? "true" : undefined} aria-hidden="true">
+                <div className="p-5 sm:p-6 md:p-8 border-b md:border-b-0 md:border-r border-ink/15">
+                  <div className="flex items-center justify-between gap-4 mb-5">
+                    <div><h3 className="font-display text-lg font-semibold text-ink">Maple Chiropractic</h3><p className="text-sm text-muted-foreground mt-1">Chiropractic care · Access request</p></div>
+                    <Mail className="w-5 h-5 text-muted-foreground" />
+                  </div>
+                  <div className={styles.inbox}>
+                    <div className={styles.history} data-muted={phase.withMode ? 'true' : undefined}>
+                      {history.map((item, index) => (
+                        <div key={item.id} className={styles.row} style={{ transform: `translateY(${index * 100}%)` }}>
+                          <InboxCard item={item} />
+                        </div>
+                      ))}
+                    </div>
+                    {phase.withMode && <div className={styles.resolution}>
+                      {resolved.map((item) => <div key={item.id} className={styles.result}><InboxCard item={item} /></div>)}
+                    </div>}
+                  </div>
                 </div>
-
-                <div className="mt-auto pt-8">
-                  <div className="border-t border-[#FAFAFA]/15 pt-4 flex items-center gap-2">
-                    <span
-                      className={cn(
-                        'w-2 h-2 rounded-full shrink-0',
-                        phase.withMode ? 'bg-[#00A896]' : 'bg-[#FF6B35] animate-pulse'
-                      )}
-                    />
-                    <AnimatePresence mode="wait" initial={false}>
-                      <m.p
-                        key={phase.status}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.2 }}
-                        className="font-mono text-[13px] text-[#FAFAFA]/85"
-                      >
-                        {phase.status}
-                      </m.p>
-                    </AnimatePresence>
+                <div className="ink-panel p-5 sm:p-6 md:p-8 flex flex-col">
+                  <div className="flex items-center gap-2 text-paper">
+                    {phase.withMode ? <Link2 className="w-4 h-4 text-coral" /> : <MessageSquare className="w-4 h-4 text-paper/70" />}
+                    <span className="label-micro">{phase.withMode ? 'With AuthHub' : 'Without AuthHub'}</span>
+                  </div>
+                  <div>
+                    <p className="label-nano uppercase mt-8">Agency time spent</p>
+                    <TimeCounter phaseIndex={reduceMotion ? PHASES.length - 1 : phaseIdx} active={inView && !hidden} reduced={reduceMotion} resetting={resetting} />
+                  </div>
+                  <div className="grid grid-cols-3 gap-3 sm:gap-4 mt-8">
+                    <StatCell label="Messages" value={phase.messages} />
+                    <StatCell label="Calls" value={phase.calls} />
+                    <StatCell label="Follow-ups" value={phase.rerequests} />
+                  </div>
+                  <div className="mt-auto pt-8">
+                    <div className="border-t border-paper/20 pt-4 flex items-start gap-3 min-h-[64px]">
+                      {phase.withMode && (complete || reduceMotion) ? <CheckCircle2 className="w-4 h-4 text-paper mt-0.5 shrink-0" /> : <span className={cn('w-2 h-2 rounded-full mt-1.5 shrink-0', phase.withMode ? 'bg-teal' : 'bg-coral')} />}
+                      <p key={phase.status} className={cn(styles.state, 'font-display text-sm text-paper/85 leading-relaxed')}>{phase.status}</p>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* Bottom CTA */}
-            <div className="mt-12 text-center">
+            </div>
+            <div className="mt-10 text-center">
               <SignUpButton mode="modal">
-                <Button
-                  type="button"
-                  variant="primary"
-                  size="xl"
-                  className="sm:px-10"
-                  onClick={handleTrialSignup}
-                >
-                  Start Free Trial
-                  <ArrowRight className="w-5 h-5" />
+                <Button type="button" variant="primary" size="xl" className="px-5 sm:px-10" onClick={handleTrialSignup}>
+                  Send Your First Link<ArrowRight className="w-5 h-5" />
                 </Button>
               </SignUpButton>
-              <p className="font-mono text-xs text-gray-500 mt-4">
-                No credit card required · Free 14-day trial
-              </p>
+              <p className="text-sm text-muted-foreground mt-4">14-day free trial · No credit card required</p>
             </div>
           </div>
         </Reveal>
       </div>
-
-      <div className="absolute bottom-0 left-0 right-0 h-px bg-black" />
     </section>
   );
 }

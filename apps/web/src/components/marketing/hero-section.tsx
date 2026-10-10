@@ -1,5 +1,7 @@
 'use client';
 
+import { SectionBadge } from './section-badge';
+
 import { SignUpButton } from '@/components/lazy-clerk-auth-buttons';
 import { Button } from '@/components/ui/button';
 import { Globe, ShieldCheck, Zap, TrendingUp, Check } from 'lucide-react';
@@ -36,12 +38,9 @@ export function HeroSection() {
         <div className="grid lg:grid-cols-12 gap-8 lg:gap-16 items-center">
           {/* Left Column - Content */}
           <div className="lg:col-span-7 flex flex-col items-start gap-6 z-10 text-center lg:text-left w-full">
-            {/* Badge - Tilted with rotation */}
+            {/* Section badge */}
             <Reveal delay={0.2}>
-              <div className="inline-flex items-center gap-2 border-2 border-black bg-ink text-paper px-4 sm:px-6 py-2 text-[10px] sm:text-xs font-bold uppercase tracking-widest font-mono shadow-brutalist -rotate-2 hover:rotate-0 transition-transform rounded-[0.75rem]">
-                <Globe size={14} />
-                Client Access Platform
-              </div>
+              <SectionBadge variant="ink" icon={Globe}>Client Access Platform</SectionBadge>
             </Reveal>
 
             {/* Main Headline - Tighter leading */}

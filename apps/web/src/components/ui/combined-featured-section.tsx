@@ -1,5 +1,7 @@
 'use client'
 
+import { SectionBadge } from '@/components/marketing/section-badge'
+
 import { Activity, Globe, Shield, Zap } from 'lucide-react'
 import { m } from 'framer-motion'
 
@@ -19,10 +21,7 @@ export default function CombinedFeaturedSection() {
           className="text-center mb-16"
         >
           {/* Badge */}
-          <div className="inline-flex items-center gap-2 border-2 border-black bg-coral text-paper px-4 sm:px-6 py-2 text-[10px] sm:text-xs font-bold uppercase tracking-widest font-mono shadow-brutalist rounded-[0.75rem] mb-6">
-            <Zap size={14} />
-            Real Results
-          </div>
+          <SectionBadge variant="coral" icon={Zap}>Real Results</SectionBadge>
           <h2 className="font-dela text-3xl sm:text-4xl md:text-5xl tracking-tight text-ink mb-4">
             Trusted by Growing Agencies
           </h2>

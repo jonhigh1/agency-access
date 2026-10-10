@@ -1,8 +1,10 @@
 'use client';
 
+import { SectionBadge } from './section-badge';
+
 import { useState } from 'react';
 import { m, AnimatePresence } from 'framer-motion';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, CircleHelp } from 'lucide-react';
 import { Reveal } from './reveal';
 
 const faqs = [
@@ -41,6 +43,7 @@ export function HomepageFAQSection() {
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <Reveal>
           <div className="text-center mb-12">
+            <SectionBadge variant="coral" icon={CircleHelp}>Your questions, answered</SectionBadge>
             <h2 className="font-dela text-3xl sm:text-4xl lg:text-5xl text-ink mb-4">
               Frequently Asked Questions
             </h2>

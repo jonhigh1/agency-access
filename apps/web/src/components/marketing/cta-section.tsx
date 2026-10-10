@@ -1,5 +1,7 @@
 'use client';
 
+import { SectionBadge } from './section-badge';
+
 import { SignUpButton } from '@/components/lazy-clerk-auth-buttons';
 import { Button } from '@/components/ui/button';
 import { ArrowRight, Check } from 'lucide-react';
@@ -46,6 +48,7 @@ export function CTASection() {
 
           <div className="relative z-10 max-w-3xl mx-auto">
             {/* Headline */}
+            <SectionBadge variant="ink" icon={ArrowRight}>Get started</SectionBadge>
             <h2 className="font-dela text-3xl sm:text-4xl md:text-5xl lg:text-6xl tracking-tight mb-6 sm:mb-8 leading-[1.1] text-ink">
               Stop chasing access.{' '}
               <span className="text-danger-ink italic">Start scaling.</span>

@@ -1,5 +1,7 @@
 'use client';
 
+import { SectionBadge } from './section-badge';
+
 import { useState } from 'react';
 import { m, AnimatePresence } from 'framer-motion';
 import { ChevronLeft, ChevronRight, TrendingUp, Clock, Users } from 'lucide-react';
@@ -89,9 +91,7 @@ export function SuccessStoriesSection() {
         {/* Section Header */}
         <Reveal>
           <div className="text-center mb-16">
-            <div className="inline-flex items-center gap-2 border-2 border-black bg-coral text-paper px-4 sm:px-6 py-2 text-[10px] sm:text-xs font-bold uppercase tracking-widest font-mono shadow-brutalist rounded-[0.75rem] mb-6">
-              Real Results
-            </div>
+            <SectionBadge variant="ink" icon={TrendingUp}>Real Results</SectionBadge>
             <h2 className="font-dela text-4xl md:text-6xl tracking-tighter text-ink mt-2 mb-4">
               What Changes
             </h2>
