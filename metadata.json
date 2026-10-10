@@ -1,0 +1,43 @@
+{
+  "cli_version": "0.10.2",
+  "checkpoint_id": "01M4KMVE4BKE190ZTQ4DXXB8AB",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "apps/web/content/blog/admin-vs-standard-vs-read-only-agency-access.md",
+    "apps/web/content/blog/google-ads-access-agency.md",
+    "apps/web/content/blog/google-ads-standard-vs-admin.md",
+    "apps/web/content/blog/how-to-explain-an-access-request-to-clients.md",
+    "apps/web/content/blog/how-to-revoke-client-access-offboarding.md",
+    "apps/web/content/blog/meta-partner-vs-employee-access.md",
+    "apps/web/content/blog/oauth-token-management-agencies.md",
+    "apps/web/src/__tests__/proxy.test.ts",
+    "apps/web/src/app/(marketing)/stats/__tests__/page.public.test.tsx",
+    "apps/web/src/app/(marketing)/stats/page.tsx",
+    "apps/web/src/app/layout.tsx",
+    "apps/web/src/app/sitemap.ts",
+    "apps/web/src/components/marketing/__tests__/marketing-footer.test.tsx",
+    "apps/web/src/components/marketing/marketing-footer.tsx",
+    "apps/web/src/lib/__tests__/blog-data.test.ts",
+    "apps/web/src/lib/__tests__/client-access-stats.test.ts",
+    "apps/web/src/lib/client-access-stats.ts",
+    "apps/web/src/proxy.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 0,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 0,
+    "api_call_count": 0
+  }
+}
