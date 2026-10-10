@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import type { Route } from "next";
 import Link from "next/link";
 
 import { getCompareHubEntries } from "@/lib/comparison-data";
@@ -58,6 +59,11 @@ export default function CompareHubPage() {
             <p className="font-mono text-base text-foreground">
               AuthHub vs ClientInvite, Leadsie, and AgencyAccess — with live pricing units
               and pick-X-if gates. These pages say when the other tool is the better pick.
+              For the job by team type, see{" "}
+              <Link href={"/uses" as Route} className="text-danger-ink font-bold hover:underline">
+                who AuthHub is for
+              </Link>
+              .
             </p>
           </div>
         </div>

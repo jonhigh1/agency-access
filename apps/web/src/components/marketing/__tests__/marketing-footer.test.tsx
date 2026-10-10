@@ -43,4 +43,9 @@ describe('MarketingFooter section links', () => {
       '/tools/access-level',
     );
   });
+
+  it('links to the uses cluster', () => {
+    render(<MarketingFooter />);
+    expect(screen.getByRole('link', { name: 'Uses' })).toHaveAttribute('href', '/uses');
+  });
 });

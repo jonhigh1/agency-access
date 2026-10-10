@@ -6,6 +6,7 @@ import {
 } from '@/lib/comparison-data';
 import { getAllAuthorSlugs } from '@/lib/authors';
 import { getAllGuides } from '@/lib/guides';
+import { getAllUseCaseSlugs } from '@/lib/use-cases';
 import {
   isExcludedBlogSlug,
   sitemapLastmod,
@@ -62,6 +63,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     entry('/guides', buildDate, 'weekly', 0.8),
     entry('/tools', buildDate, 'weekly', 0.7),
     entry('/tools/access-level', buildDate, 'weekly', 0.8),
+    entry('/uses', buildDate, 'weekly', 0.7),
   ];
 
   const blogUrls: MetadataRoute.Sitemap = getBlogPosts()
@@ -98,6 +100,10 @@ export default function sitemap(): MetadataRoute.Sitemap {
     entry(`/authors/${slug}`, buildDate, 'monthly', 0.6)
   );
 
+  const useCaseUrls: MetadataRoute.Sitemap = getAllUseCaseSlugs().map((slug) =>
+    entry(`/uses/${slug}`, buildDate, 'monthly', 0.7)
+  );
+
   const featureUrls: MetadataRoute.Sitemap = [
     entry('/features/white-label', buildDate, 'monthly', 0.8),
   ];
@@ -108,6 +114,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     ...compareUrls,
     ...guideUrls,
     ...authorUrls,
+    ...useCaseUrls,
     ...featureUrls,
   ];
 }

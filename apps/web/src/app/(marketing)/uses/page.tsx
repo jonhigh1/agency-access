@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import type { Route } from "next";
 import Link from "next/link";
-import { getAllGuides } from "@/lib/guides";
+import { getAllUseCases } from "@/lib/use-cases";
 import { CANONICAL_ORIGIN } from "@/lib/seo-canonical";
 
-const PAGE_URL = `${CANONICAL_ORIGIN}/guides`;
-const PAGE_TITLE = "Platform Access Guides for Agencies | AuthHub";
+const PAGE_URL = `${CANONICAL_ORIGIN}/uses`;
+const PAGE_TITLE = "Who AuthHub Is For | AuthHub";
 const META_DESCRIPTION =
-  "Step-by-step guides for getting Meta Ads, Google Ads, GA4, LinkedIn, TikTok, and Business Manager access from clients — the manual path, then the one-link option.";
+  "Client platform access for PPC agencies, SEO agencies, freelancers, and in-house marketing teams — not a dental or ecommerce playbook.";
 
 export const metadata: Metadata = {
   title: PAGE_TITLE,
@@ -23,21 +23,21 @@ export const metadata: Metadata = {
   },
 };
 
-const guides = getAllGuides();
+const useCases = getAllUseCases();
 
 const itemListSchema = {
   "@context": "https://schema.org",
   "@type": "ItemList",
-  name: "AuthHub platform access guides",
-  itemListElement: guides.map((guide, index) => ({
+  name: "AuthHub use cases",
+  itemListElement: useCases.map((useCase, index) => ({
     "@type": "ListItem",
     position: index + 1,
-    name: guide.title,
-    url: `${CANONICAL_ORIGIN}/guides/${guide.slug}`,
+    name: useCase.title,
+    url: `${CANONICAL_ORIGIN}/uses/${useCase.slug}`,
   })),
 };
 
-export default function GuidesHubPage() {
+export default function UsesHubPage() {
   return (
     <div className="min-h-screen bg-paper">
       <script
@@ -48,18 +48,13 @@ export default function GuidesHubPage() {
       <section className="border-b-2 border-black">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
           <div className="max-w-3xl">
-            <p className="label-micro text-danger-ink mb-4">Guides</p>
+            <p className="label-micro text-danger-ink mb-4">Uses</p>
             <h1 className="font-dela text-3xl sm:text-4xl md:text-5xl text-ink mb-4 tracking-tight">
-              Platform access guides
+              Who AuthHub is for
             </h1>
             <p className="font-mono text-base text-foreground">
-              How agencies get client access to ad and analytics accounts. Manual steps first,
-              then the one-link option. These pages are the breadcrumb parent for every guide.
-              Same job by team type:{" "}
-              <Link href={"/uses" as Route} className="text-danger-ink font-bold hover:underline">
-                who AuthHub is for
-              </Link>
-              .
+              Agencies and operators who collect client access to ads and analytics
+              platforms. Four verticals, cross-linked. Not dental, not ecommerce.
             </p>
           </div>
         </div>
@@ -67,15 +62,15 @@ export default function GuidesHubPage() {
 
       <section className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 md:py-16">
         <ul className="grid gap-4 sm:grid-cols-2">
-          {guides.map((guide) => (
-            <li key={guide.slug} className="border-2 border-black bg-card p-5">
+          {useCases.map((useCase) => (
+            <li key={useCase.slug} className="border-2 border-black bg-card p-5">
               <Link
-                href={`/guides/${guide.slug}`}
+                href={`/uses/${useCase.slug}` as Route}
                 className="font-display text-lg font-bold text-ink hover:text-danger-ink hover:underline"
               >
-                {guide.title}
+                {useCase.title}
               </Link>
-              <p className="font-mono text-sm text-foreground mt-2">{guide.hubSummary}</p>
+              <p className="font-mono text-sm text-foreground mt-2">{useCase.hubSummary}</p>
             </li>
           ))}
         </ul>
