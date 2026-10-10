@@ -1,0 +1,42 @@
+{
+  "cli_version": "0.10.2",
+  "checkpoint_id": "01M4KDDRWAJFDCC678RYJEDF1R",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "apps/web/content/blog/how-to-get-meta-ads-access-from-clients.md",
+    "apps/web/public/llms.txt",
+    "apps/web/src/app/__tests__/robots.test.ts",
+    "apps/web/src/app/__tests__/sitemap.test.ts",
+    "apps/web/src/app/layout.tsx",
+    "apps/web/src/app/robots.ts",
+    "apps/web/src/app/sitemap.ts",
+    "apps/web/src/components/seo/Schema.tsx",
+    "apps/web/src/lib/__tests__/blog-data.test.ts",
+    "apps/web/src/lib/__tests__/llms-txt.test.ts",
+    "apps/web/src/lib/__tests__/root-schemas.test.ts",
+    "apps/web/src/lib/__tests__/seo-canonical.test.ts",
+    "apps/web/src/lib/blog-data.ts",
+    "apps/web/src/lib/comparison-data.ts",
+    "apps/web/src/lib/root-schemas.ts",
+    "apps/web/src/lib/seo-canonical.ts",
+    "docs/seo-patterns.md"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 0,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 0,
+    "api_call_count": 0
+  }
+}
