@@ -1,9 +1,11 @@
 {
   "cli_version": "0.10.2",
   "checkpoint_id": "01M4KK6SKBFEKYM550XK64B6YX",
+  "session_id": "4a82b8e6-f84e-44cb-813c-a7a544ebe21d",
   "strategy": "manual-commit",
+  "created_at": "2026-10-10T19:04:09.845759Z",
   "branch": "worktree-feat+social-proof-rollout",
-  "checkpoints_count": 2,
+  "checkpoints_count": 1,
   "files_touched": [
     "apps/web/src/app/(marketing)/page.tsx",
     "apps/web/src/components/marketing/__tests__/marketing-copy.claims.test.ts",
@@ -16,26 +18,28 @@
     "apps/web/src/components/marketing/success-stories-section.tsx",
     "apps/web/src/components/marketing/value-marquee-section.tsx"
   ],
-  "sessions": [
-    {
-      "metadata": "/0/metadata.json",
-      "transcript": "/0/full.jsonl",
-      "compact_transcript": "/0/transcript.jsonl",
-      "content_hash": "/0/content_hash.txt",
-      "prompt": ""
-    },
-    {
-      "metadata": "/1/metadata.json",
-      "transcript": "/1/full.jsonl",
-      "content_hash": "/1/content_hash.txt",
-      "prompt": ""
-    }
-  ],
+  "agent": "Factory AI Droid",
+  "model": "",
+  "turn_id": "cb4dbb38f29d",
+  "checkpoint_transcript_start": 1,
+  "transcript_lines_at_start": 1,
   "token_usage": {
     "input_tokens": 0,
     "cache_creation_tokens": 0,
     "cache_read_tokens": 0,
     "output_tokens": 0,
     "api_call_count": 0
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-10-10T19:04:09.797711Z",
+    "agent_lines": 154,
+    "agent_removed": 296,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 154,
+    "total_lines_changed": 450,
+    "agent_percentage": 100,
+    "metric_version": 2
   }
 }
