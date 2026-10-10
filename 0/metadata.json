@@ -1,0 +1,139 @@
+{
+  "cli_version": "0.10.2",
+  "checkpoint_id": "01M4J21PSYS2CF1X79NM9ED88G",
+  "session_id": "agent-517ab3b4-9e5c-4c84-a60a-349b0043760a",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-10T04:44:58.30432Z",
+  "branch": "main",
+  "checkpoints_count": 2,
+  "save_step_count": 2,
+  "files_touched": [
+    "apps/api/.env.example",
+    "apps/api/.env.sentry.example",
+    "apps/api/docs/monitoring/SENTRY_SETUP.md",
+    "apps/api/src/index.ts",
+    "apps/api/src/instrument.ts",
+    "apps/api/src/lib/__tests__/sentry-capture.test.ts",
+    "apps/api/src/lib/__tests__/sentry-release.test.ts",
+    "apps/api/src/lib/sentry-capture.ts",
+    "apps/api/src/lib/sentry-release.ts",
+    "apps/web/.env.example",
+    "apps/web/.env.sentry-build-plugin",
+    "apps/web/instrumentation-client.ts",
+    "apps/web/next.config.ts",
+    "apps/web/sentry.client.config.ts",
+    "apps/web/sentry.edge.config.ts",
+    "apps/web/sentry.server.config.ts",
+    "apps/web/src/__tests__/frontend-perf-contracts.test.ts",
+    "apps/web/src/__tests__/sentry-config.test.ts",
+    "apps/web/src/app/invite/layout.tsx",
+    "apps/web/src/lib/__tests__/sentry-environment.test.ts",
+    "apps/web/src/lib/__tests__/sentry-release.test.ts",
+    "apps/web/src/lib/sentry-release.ts",
+    "docs/SESSION-LOG.md",
+    "docs/monitoring/SENTRY_SETUP.md"
+  ],
+  "agent": "Cursor",
+  "model": "default",
+  "turn_id": "558021ab0e3a",
+  "compact_transcript_start": 0,
+  "session_metrics": {
+    "duration_ms": 260691,
+    "turn_count": 2
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-10-10T04:44:58.192603Z",
+    "agent_lines": 224,
+    "agent_removed": 75,
+    "human_added": 31,
+    "human_modified": 29,
+    "human_removed": 0,
+    "total_committed": 269,
+    "total_lines_changed": 359,
+    "agent_percentage": 83.28690807799443,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 2506,
+      "user_lines_removed": 2,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        ".githooks/pre-push": 9,
+        ".impeccable/config.local.json": 26,
+        ".impeccable/hook.cache.json": 1,
+        ".impeccable/review/vq/email-flow-rules-desktop-1440.json": 1,
+        ".impeccable/review/vq/email-flow-rules-mobile-390.json": 1,
+        ".impeccable/review/vq2/email-flow-rules-desktop-1440.json": 1,
+        ".impeccable/review/vq2/email-flow-rules-mobile-390.json": 1,
+        ".impeccable/review/vq3/email-flow-rules-desktop-1440.json": 1,
+        ".impeccable/review/vq3/email-flow-rules-mobile-390.json": 1,
+        ".impeccable/review/vq4/email-flow-rules-desktop-1440.json": 1,
+        ".impeccable/review/vq4/email-flow-rules-mobile-390.json": 1,
+        ".impeccable/review/vq5/email-flow-rules-desktop-1440.json": 1,
+        ".impeccable/review/vq5/email-flow-rules-mobile-390.json": 1,
+        "apps/web/.impeccable/questions/f2a36795.log": 1,
+        "apps/web/.impeccable/questions/f2a36795.state.json": 1,
+        "apps/web/src/.impeccable/config.json": 17,
+        "docs/SESSION-LOG.md": 18,
+        "docs/client-funnel-walkthrough.html": 786,
+        "docs/email-onboarding-flow.html": 1124,
+        "docs/user-journeys.html": 513
+      },
+      "user_removed_per_file": {
+        ".githooks/pre-push": 2
+      }
+    },
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 38,
+      "user_lines_removed": 96,
+      "agent_lines_added": 2479,
+      "agent_lines_removed": 2,
+      "user_added_per_file": {
+        ".impeccable/config.local.json": 26,
+        ".impeccable/hook.cache.json": 1,
+        "CONCEPTS.md": 1,
+        "GLOSSARY.md": 2,
+        "docs/DEPLOYMENT_STATUS.md": 2,
+        "docs/PROGRESS.md": 2,
+        "docs/START-HERE.md": 2,
+        "docs/workspace/source-map.md": 1,
+        "docs/workspace/status.md": 1
+      },
+      "user_removed_per_file": {
+        "CONCEPTS.md": 6,
+        "DESIGN.md": 88,
+        "docs/workspace/source-map.md": 1,
+        "docs/workspace/status.md": 1
+      }
+    },
+    {
+      "checkpoint_number": 3,
+      "user_lines_added": 286,
+      "user_lines_removed": 241,
+      "agent_lines_added": 3114,
+      "agent_lines_removed": 405,
+      "user_added_per_file": {
+        ".impeccable/config.local.json": 26,
+        ".impeccable/hook.cache.json": 1,
+        "apps/api/.env.example": 6,
+        "apps/api/.env.sentry.example": 7,
+        "apps/web/.env.example": 10,
+        "apps/web/.env.sentry-build-plugin": 7,
+        "apps/web/src/components/marketing/__tests__/solution-section-motion.test.tsx": 59,
+        "apps/web/src/components/marketing/solution-section-new.tsx": 120,
+        "apps/web/src/components/marketing/solution-section.module.css": 50
+      },
+      "user_removed_per_file": {
+        "apps/api/.env.example": 3,
+        "apps/api/.env.sentry.example": 5,
+        "apps/web/.env.example": 1,
+        "apps/web/.env.sentry-build-plugin": 5,
+        "apps/web/src/components/marketing/solution-section-new.tsx": 227
+      }
+    }
+  ]
+}

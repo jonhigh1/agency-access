@@ -1,0 +1,42 @@
+{
+  "cli_version": "0.10.2",
+  "checkpoint_id": "01M4J21PSYS2CF1X79NM9ED88G",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "apps/api/.env.example",
+    "apps/api/.env.sentry.example",
+    "apps/api/docs/monitoring/SENTRY_SETUP.md",
+    "apps/api/src/index.ts",
+    "apps/api/src/instrument.ts",
+    "apps/api/src/lib/__tests__/sentry-capture.test.ts",
+    "apps/api/src/lib/__tests__/sentry-release.test.ts",
+    "apps/api/src/lib/sentry-capture.ts",
+    "apps/api/src/lib/sentry-release.ts",
+    "apps/web/.env.example",
+    "apps/web/.env.sentry-build-plugin",
+    "apps/web/instrumentation-client.ts",
+    "apps/web/next.config.ts",
+    "apps/web/sentry.client.config.ts",
+    "apps/web/sentry.edge.config.ts",
+    "apps/web/sentry.server.config.ts",
+    "apps/web/src/__tests__/frontend-perf-contracts.test.ts",
+    "apps/web/src/__tests__/sentry-config.test.ts",
+    "apps/web/src/app/invite/layout.tsx",
+    "apps/web/src/lib/__tests__/sentry-environment.test.ts",
+    "apps/web/src/lib/__tests__/sentry-release.test.ts",
+    "apps/web/src/lib/sentry-release.ts",
+    "docs/SESSION-LOG.md",
+    "docs/monitoring/SENTRY_SETUP.md"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ]
+}
