@@ -3,7 +3,7 @@
   "checkpoint_id": "01M4J5228JFYD4JE1VEW1EMXH0",
   "strategy": "manual-commit",
   "branch": "feat/agent-memory-loop",
-  "checkpoints_count": 4,
+  "checkpoints_count": 5,
   "files_touched": [
     "docs/memory-loop-premise-tally.md",
     "docs/solutions/stale-design-frontmatter-token-trap.md",
@@ -38,6 +38,13 @@
       "transcript": "/3/full.jsonl",
       "compact_transcript": "/3/transcript.jsonl",
       "content_hash": "/3/content_hash.txt",
+      "prompt": ""
+    },
+    {
+      "metadata": "/4/metadata.json",
+      "transcript": "/4/full.jsonl",
+      "compact_transcript": "/4/transcript.jsonl",
+      "content_hash": "/4/content_hash.txt",
       "prompt": ""
     }
   ],
