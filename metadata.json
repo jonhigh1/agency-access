@@ -1,0 +1,38 @@
+{
+  "cli_version": "0.10.2",
+  "checkpoint_id": "01M4KKNB30S7MDT5DYH1T090NN",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "apps/web/src/__tests__/proxy.test.ts",
+    "apps/web/src/app/(marketing)/tools/__tests__/page.public.test.tsx",
+    "apps/web/src/app/(marketing)/tools/access-level/__tests__/page.public.test.tsx",
+    "apps/web/src/app/(marketing)/tools/access-level/access-level-quiz.tsx",
+    "apps/web/src/app/(marketing)/tools/access-level/page.tsx",
+    "apps/web/src/app/(marketing)/tools/page.tsx",
+    "apps/web/src/app/layout.tsx",
+    "apps/web/src/app/sitemap.ts",
+    "apps/web/src/components/marketing/__tests__/marketing-footer.test.tsx",
+    "apps/web/src/components/marketing/marketing-footer.tsx",
+    "apps/web/src/lib/__tests__/access-level-tool.test.ts",
+    "apps/web/src/lib/access-level-tool.ts",
+    "apps/web/src/proxy.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 0,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 0,
+    "api_call_count": 0
+  }
+}
