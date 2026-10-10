@@ -1,0 +1,1127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Email onboarding flow — as built — AuthHub audit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300..800&family=JetBrains+Mono:ital,wght@0,400..800;1,400&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#09090B;
+    --ink-secondary:#3F3F46;
+    --muted:#52525B;
+    --paper:#FAFAFA;
+    --card:#FFFFFF;
+    --border:#E4E4E7;
+    --hairline:rgba(9,9,11,.14);
+    --coral:#FF6B35;
+    --coral-tint:rgba(255,107,53,.10);
+    --coral-line:rgba(255,107,53,.32);
+    --teal:#00A896;
+    --teal-tint:rgba(0,168,150,.10);
+    --teal-line:rgba(0,168,150,.32);
+    --success-ink:#0F766E;
+    --danger-ink:#C2410C;
+    --warning:#B45309;
+    --warning-tint:rgba(180,83,9,.10);
+    --warning-line:rgba(180,83,9,.30);
+    --neutral-tint:rgba(9,9,11,.05);
+    --motion-hover:150ms;
+    --motion-surface:180ms;
+    --ease:cubic-bezier(.22,1,.36,1);
+    --font-body:"Outfit",system-ui,-apple-system,sans-serif;
+    --font-mono:"JetBrains Mono",ui-monospace,SFMono-Regular,monospace;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  @media (prefers-reduced-motion:reduce){
+    html{scroll-behavior:auto}
+    *,*::before,*::after{transition:none!important;animation:none!important}
+  }
+  body{
+    background:var(--paper);
+    color:var(--ink);
+    font-family:var(--font-body);
+    font-size:16px;
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:rgba(255,107,53,.25)}
+  :focus{outline:none}
+  :focus-visible{
+    outline:3px solid rgba(255,107,53,.25);
+    outline-offset:2px;
+    box-shadow:0 0 0 6px rgba(255,107,53,.08);
+  }
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-thumb{background:rgba(9,9,11,.22);border:2px solid var(--paper)}
+  ::-webkit-scrollbar-track{background:var(--paper)}
+
+  .wrap{max-width:1080px;margin:0 auto;padding:0 32px}
+  @media (max-width:640px){.wrap{padding:0 18px}}
+
+  /* ---------- type utilities ---------- */
+  .mono{font-family:var(--font-mono)}
+  h1,.thread-heading,.journey h4,.findings h2,.record-subject{text-wrap:balance}
+  .label-micro{
+    font-family:var(--font-mono);font-size:11px;font-weight:700;
+    letter-spacing:.10em;text-transform:uppercase;line-height:1.5;
+  }
+  .label-nano{
+    font-family:var(--font-mono);font-size:11px;font-weight:400;
+    letter-spacing:.02em;line-height:1.5;
+  }
+  .ref{font-family:var(--font-mono);font-size:11px;color:var(--muted);letter-spacing:.01em}
+  code{
+    font-family:var(--font-mono);font-size:.86em;
+    background:var(--neutral-tint);padding:1px 5px;border-radius:0;
+    display:inline-block;max-width:100%;overflow-wrap:anywhere;
+  }
+
+  /* ---------- masthead ---------- */
+  .masthead{padding:72px 0 0}
+  .masthead h1{
+    font-size:clamp(2.4rem,5.4vw,3.4rem);font-weight:700;line-height:1.05;
+    letter-spacing:-.03em;max-width:20ch;
+  }
+  .meta-row{
+    display:flex;flex-wrap:wrap;gap:8px 22px;align-items:baseline;
+    margin-top:22px;padding-bottom:18px;border-bottom:1px solid var(--hairline);
+  }
+  .meta-row .tag-live{
+    display:inline-flex;align-items:center;gap:7px;
+    color:var(--success-ink);
+  }
+  .dot{width:7px;height:7px;border-radius:999px;background:var(--teal);flex:none}
+  .lede{max-width:640px;margin:22px 0 0;font-size:1rem;color:var(--ink-secondary)}
+
+  /* ---------- legend ---------- */
+  .legend{
+    display:flex;flex-wrap:wrap;gap:10px 34px;align-items:center;
+    padding:16px 0;margin-top:30px;border-top:1px solid var(--hairline);border-bottom:1px solid var(--hairline);
+  }
+  .legend-item{display:inline-flex;align-items:center;gap:9px;font-size:.9rem;color:var(--ink-secondary)}
+  .legend-item svg{flex:none}
+  .legend-item .glyph-mail{color:var(--ink)}
+  .legend-item .glyph-journey{color:var(--success-ink)}
+  .legend-item .glyph-flag{color:var(--danger-ink)}
+
+  /* ---------- thread ---------- */
+  .thread{padding:14px 0 8px}
+  .thread-heading{font-size:1.55rem;font-weight:650;letter-spacing:-.02em;margin:34px 0 6px}
+  .thread-sub{color:var(--muted);font-size:.95rem;max-width:640px;margin-bottom:8px}
+  .thread-tools{display:flex;justify-content:flex-end;margin:2px 0 10px}
+  .btn-quiet{
+    font-family:var(--font-mono);font-size:11px;font-weight:700;letter-spacing:.10em;text-transform:uppercase;
+    color:var(--ink);background:var(--card);border:1px solid var(--ink);
+    padding:9px 14px;cursor:pointer;border-radius:0;min-height:44px;
+    transition:background var(--motion-hover) var(--ease),color var(--motion-hover) var(--ease);
+  }
+  .btn-quiet:hover{background:var(--ink);color:var(--paper)}
+  .btn-quiet:focus{outline:none}
+  .btn-quiet:focus-visible{
+    outline:3px solid rgba(255,107,53,.25);outline-offset:2px;
+    box-shadow:0 0 0 6px rgba(255,107,53,.08);
+  }
+
+  .record{position:relative;padding-left:44px}
+  .record::before{ /* rail */
+    content:"";position:absolute;left:15px;top:0;bottom:0;width:1px;background:var(--hairline);
+  }
+  .record:first-of-type::before{top:34px}
+  .record:last-of-type::before{bottom:auto;height:34px}
+  .record-node{
+    position:absolute;left:8px;top:26px;width:15px;height:15px;border-radius:999px;
+    background:var(--paper);border:2px solid var(--ink);z-index:1;
+    display:flex;align-items:center;justify-content:center;
+  }
+  .record.is-open .record-node{background:var(--ink)}
+  .record.is-ghost .record-node{background:var(--paper);border-style:dashed;border-color:var(--danger-ink)}
+
+  .record-head{
+    display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 18px;align-items:baseline;
+    width:100%;text-align:left;background:transparent;border:0;cursor:pointer;
+    padding:24px 4px 22px;border-radius:0;font:inherit;color:inherit;
+  }
+  .record-head:focus{outline:none}
+  .record-head:focus-visible{
+    outline:3px solid rgba(255,107,53,.25);outline-offset:2px;
+    box-shadow:0 0 0 6px rgba(255,107,53,.08);
+  }
+  .record-index{
+    font-family:var(--font-mono);font-size:11px;font-weight:700;letter-spacing:.10em;
+    color:var(--muted);grid-column:1/-1;
+  }
+  .record-subject{
+    font-size:1.12rem;font-weight:650;letter-spacing:-.01em;line-height:1.35;
+    transition:color var(--motion-hover) var(--ease);
+  }
+  .record-head:hover .record-subject{color:var(--danger-ink)}
+  .record.is-open .record-subject,.record.is-done .record-subject:hover{color:inherit}
+  .record-meta{
+    display:flex;flex-wrap:wrap;gap:6px 14px;margin-top:7px;align-items:center;
+  }
+  .chip{
+    display:inline-flex;align-items:center;gap:6px;
+    font-family:var(--font-mono);font-size:11px;font-weight:700;letter-spacing:.10em;text-transform:uppercase;
+    padding:3px 8px;border:1px solid;border-radius:999px;white-space:nowrap;
+  }
+  .chip svg{flex:none}
+  .chip-to{color:var(--ink-secondary);border-color:var(--border);background:var(--card)}
+  .chip-client{color:var(--ink);border-color:var(--ink);background:var(--card)}
+  .chip-agency{color:var(--ink);border-color:var(--border);background:var(--neutral-tint)}
+  .chip-done{color:var(--success-ink);border-color:var(--teal-line);background:var(--teal-tint)}
+  .chip-warn{color:var(--warning);border-color:var(--warning-line);background:var(--warning-tint)}
+  .chip-danger{color:var(--danger-ink);border-color:var(--coral-line);background:var(--coral-tint)}
+  .chip-ghost{color:var(--danger-ink);border-style:dashed;border-color:var(--danger-ink);background:var(--paper)}
+  .chev{grid-column:2;grid-row:2;justify-self:end;align-self:center;color:var(--muted);transition:transform var(--motion-surface) var(--ease)}
+  .record.is-open .chev{transform:rotate(180deg)}
+
+  .record-body{display:none;padding:0 4px 34px}
+  .record.is-open .record-body{display:block;animation:body-in var(--motion-surface) var(--ease)}
+  @keyframes body-in{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+
+  /* ---------- rendered email ---------- */
+  .mailcard{background:var(--card);border:1px solid var(--ink);max-width:640px}
+  .record.is-open .mailcard-open{box-shadow:4px 4px 0 var(--ink)} /* the one hard shadow */
+  .mailhead{padding:14px 20px;border-bottom:1px solid var(--hairline);display:grid;gap:5px}
+  .mailrow{display:grid;grid-template-columns:86px minmax(0,1fr);gap:12px;align-items:baseline}
+  .mailrow dt{font-family:var(--font-mono);font-size:11px;font-weight:700;letter-spacing:.10em;text-transform:uppercase;color:var(--muted)}
+  .mailrow dd{font-size:.92rem;color:var(--ink)}
+  @media (max-width:640px){
+    .mailrow{grid-template-columns:1fr;gap:2px}
+    .mailrow dd{margin-bottom:7px}
+    .mailrow dd:last-child{margin-bottom:0}
+  }
+  .mailrow dd .subj{font-weight:650}
+  .mailbody{padding:20px;border-bottom:1px solid var(--hairline)}
+  .mailbody p{font-size:.95rem;color:var(--ink-secondary);max-width:640px}
+  .mailbody p+p{margin-top:12px}
+  .mailbody .fine{font-size:.85rem;color:var(--muted)}
+  .mailbody p strong{color:var(--ink);font-weight:650}
+  .mailfoot{padding:18px 20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  .mail-cta{
+    display:inline-flex;align-items:center;gap:8px;
+    background:var(--coral);color:var(--ink);border:1px solid var(--ink);
+    font-weight:700;font-size:.95rem;padding:12px 24px;min-height:44px;border-radius:0;
+  }
+  .mail-note{font-size:.85rem;color:var(--muted);max-width:40ch}
+
+  /* facts aside */
+  .record-grid{display:grid;grid-template-columns:minmax(0,640px) minmax(240px,1fr);gap:28px;align-items:start}
+  @media (max-width:920px){.record-grid{grid-template-columns:1fr}}
+  .facts{display:grid;gap:0;border-top:1px solid var(--hairline)}
+  .fact{padding:12px 0;border-bottom:1px solid var(--hairline);display:grid;gap:3px}
+  .fact dt{font-family:var(--font-mono);font-size:11px;font-weight:700;letter-spacing:.10em;text-transform:uppercase;color:var(--muted)}
+  .fact dd{font-size:.9rem;color:var(--ink-secondary)}
+  .fact dd strong{color:var(--ink);font-weight:600}
+
+  /* finding flag block */
+  .flag{
+    margin-top:20px;border:1px solid var(--coral-line);background:var(--coral-tint);
+    padding:14px 16px;display:grid;gap:6px;max-width:640px;
+  }
+  .flag .flag-head{display:flex;align-items:center;gap:10px;color:var(--danger-ink)}
+  .flag p{font-size:.92rem;color:var(--ink);max-width:640px}
+  .flag .ref{color:var(--ink-secondary)}
+
+  /* ---------- journey attachment ---------- */
+  .journey{margin-top:26px;border:1px solid var(--ink);background:var(--card)}
+  .journey-head{
+    display:flex;align-items:center;gap:10px;padding:12px 18px;
+    border-bottom:1px solid var(--ink);background:var(--neutral-tint);
+  }
+  .journey-head h3{font-size:1rem;font-weight:650;letter-spacing:-.01em}
+  .journey-inner{padding:6px 18px 20px}
+  .phase-strip{
+    display:flex;align-items:stretch;gap:0;flex-wrap:wrap;
+    padding:16px 0 6px;
+  }
+  .phase{
+    display:flex;align-items:center;gap:8px;
+    font-family:var(--font-mono);font-size:11px;font-weight:700;letter-spacing:.10em;text-transform:uppercase;
+    color:var(--ink);padding:6px 0;
+  }
+  .phase-sep{color:var(--muted);padding:0 12px;display:flex;align-items:center}
+  .journey h4{
+    font-size:.98rem;font-weight:650;margin:26px 0 4px;letter-spacing:-.01em;
+  }
+  .journey h4:first-of-type{margin-top:18px}
+  .journey p{font-size:.93rem;color:var(--ink-secondary);max-width:640px}
+  .journey p code,.fact dd code{font-size:.82em}
+  .split{display:grid;grid-template-columns:1fr 1fr;gap:0;border:1px solid var(--hairline);margin-top:12px}
+  @media (max-width:760px){.split{grid-template-columns:1fr}}
+  .split>div{padding:14px 16px}
+  .split>div+div{border-left:1px solid var(--hairline)}
+  @media (max-width:760px){.split>div+div{border-left:0;border-top:1px solid var(--hairline)}}
+  .split h5{font-family:var(--font-mono);font-size:11px;font-weight:700;letter-spacing:.10em;text-transform:uppercase;margin-bottom:6px}
+  .split .count{color:var(--success-ink)}
+  .split ul{list-style:none;display:grid;gap:4px}
+  .split li{font-size:.88rem;color:var(--ink-secondary)}
+  .split li+.split li{margin-top:8px}
+  .split li .mono{font-size:.8rem;color:var(--muted);overflow-wrap:anywhere}
+  .split li .flow{display:block;margin-top:3px}
+  .steps-line{display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin:8px 0 2px}
+  .steps-line .step{
+    font-family:var(--font-mono);font-size:11px;font-weight:700;letter-spacing:.10em;text-transform:uppercase;
+    border:1px solid var(--ink);padding:4px 9px;background:var(--card);
+  }
+  .steps-line .arrow{color:var(--muted)}
+  .steps-line .step.alt{border-style:dashed}
+  .quote-row{display:grid;grid-template-columns:190px minmax(0,1fr);gap:14px;padding:9px 0;border-bottom:1px solid var(--hairline)}
+  @media (max-width:640px){.quote-row{grid-template-columns:1fr;gap:2px}}
+  .quote-row:last-child{border-bottom:0}
+  .quote-row dt{font-family:var(--font-mono);font-size:11px;font-weight:700;letter-spacing:.10em;text-transform:uppercase;color:var(--muted);padding-top:2px}
+  .quote-row dd{font-size:.9rem;color:var(--ink-secondary);max-width:640px}
+  .quote-row dd strong{color:var(--ink);font-weight:600}
+
+  /* ---------- ghost record ---------- */
+  .record.is-ghost .mailcard{border-style:dashed;background:transparent;box-shadow:none!important}
+  .record.is-ghost .mailhead,.record.is-ghost .mailbody{border-bottom-style:dashed;border-bottom-color:var(--hairline)}
+  .record.is-ghost .mailrow dd{color:var(--muted)}
+  .notsent{
+    display:inline-block;font-family:var(--font-mono);font-size:11px;font-weight:700;
+    letter-spacing:.12em;text-transform:uppercase;color:var(--danger-ink);
+    border:1px dashed var(--danger-ink);padding:3px 8px;border-radius:999px;
+  }
+
+  /* ---------- ink panel: sequence ---------- */
+  .sequence{margin:52px 0 0}
+  .ink-panel{background:var(--ink);color:var(--paper);padding:26px 28px 22px}
+  .ink-panel .panel-label{color:rgba(250,250,250,.6)}
+  .ink-panel .panel-title{font-size:1.15rem;font-weight:650;margin-top:6px;letter-spacing:-.01em}
+  .seq-table{width:100%;border-collapse:collapse;margin-top:16px}
+  .seq-table th{
+    font-family:var(--font-mono);font-size:11px;font-weight:700;letter-spacing:.10em;text-transform:uppercase;
+    color:rgba(250,250,250,.55);text-align:left;padding:8px 14px 8px 0;border-bottom:1px solid rgba(250,250,250,.22);
+  }
+  .seq-table td{
+    font-family:var(--font-mono);font-size:0.8125rem;line-height:1.55;color:var(--paper);
+    padding:9px 14px 9px 0;border-bottom:1px solid rgba(250,250,250,.12);vertical-align:top;
+  }
+  .seq-table td.day{white-space:nowrap;font-weight:700;color:var(--coral)}
+  .seq-table td.trig{color:rgba(250,250,250,.62);font-size:11.5px}
+  .seq-table tr:last-child td{border-bottom:0}
+  @media (max-width:640px){
+    .seq-table thead{display:none}
+    .seq-table tr{display:grid;grid-template-columns:44px 1fr;grid-template-areas:"day subject" "day trig";column-gap:12px;padding:11px 0;border-bottom:1px solid rgba(250,250,250,.12)}
+    .seq-table td{display:block;padding:2px 14px 0 0;border:0}
+    .seq-table td:nth-child(1){grid-area:day;padding:0}
+    .seq-table td:nth-child(2){grid-area:subject}
+    .seq-table td:nth-child(3){grid-area:trig;padding-top:3px}
+  }
+  .seq-foot{
+    display:flex;flex-wrap:wrap;gap:8px 20px;align-items:center;
+    margin-top:14px;padding-top:14px;border-top:1px solid rgba(250,250,250,.22);
+  }
+  .seq-foot .label-nano{color:rgba(250,250,250,.6)}
+  .seq-foot code{background:rgba(250,250,250,.08);color:var(--paper);font-size:.9em}
+  .cursor-blink{display:inline-block;width:8px;height:14px;background:var(--coral);vertical-align:-2px;animation:blink 1.1s steps(1) infinite}
+  @keyframes blink{50%{opacity:0}}
+  @media (prefers-reduced-motion:reduce){.cursor-blink{animation:none}}
+  .panel-hint{font-family:var(--font-mono);font-size:11px;font-weight:400;letter-spacing:.02em;color:rgba(250,250,250,.55);margin-top:8px}
+  .seq-subject{
+    font-family:var(--font-mono);font-size:0.8125rem;line-height:1.55;color:var(--paper);
+    background:none;border:0;padding:0;text-align:left;cursor:pointer;width:100%;
+    display:flex;align-items:center;min-height:44px;
+  }
+  .seq-subject:hover{color:var(--coral)}
+  .seq-subject:focus{outline:none}
+  .seq-subject:focus-visible{outline:3px solid rgba(255,107,53,.45);outline-offset:2px}
+  .seq-chev{display:inline-block;margin-left:8px;color:rgba(250,250,250,.55);transition:transform var(--motion-surface) var(--ease);vertical-align:-1px}
+  .seq-subject[aria-expanded="true"] .seq-chev{transform:rotate(180deg)}
+  tr.seq-open td{border-bottom:0}
+  tr.seq-mail td{padding:0 14px 16px 0;border-bottom:1px solid rgba(250,250,250,.12)}
+  .mailtext{
+    font-family:var(--font-mono);font-size:12px;line-height:1.7;
+    color:rgba(250,250,250,.85);white-space:pre-wrap;overflow-wrap:anywhere;
+    padding-top:12px;
+  }
+  .mailtext + .mailtext{padding-top:0;margin-top:14px}
+  .mail-variant{
+    display:block;font-family:var(--font-mono);font-size:11px;font-weight:700;
+    letter-spacing:.10em;text-transform:uppercase;color:var(--coral);margin:0 0 6px;
+  }
+  .mailtext .mail-variant:first-child{margin-top:0}
+  .mailnote{
+    font-family:var(--font-mono);font-size:11px;line-height:1.6;
+    color:rgba(255,107,53,.9);margin:10px 0 0;padding-top:10px;
+    border-top:1px dashed rgba(250,250,250,.2);
+  }
+  .mailnote code{background:rgba(250,250,250,.08);color:var(--paper);font-size:.9em}
+  @media (max-width:640px){
+    tr.seq-mail{display:block}
+    tr.seq-mail td{padding:0 0 16px}
+  }
+
+  /* ---------- findings ---------- */
+  .findings{margin:56px 0 0}
+  .findings h2{font-size:1.55rem;font-weight:650;letter-spacing:-.02em}
+  .findings-sub{color:var(--muted);font-size:.95rem;margin:4px 0 18px;max-width:640px}
+  table.find-table{width:100%;border-collapse:collapse;border:1px solid var(--ink);background:var(--card)}
+  .find-table th{
+    font-family:var(--font-mono);font-size:11px;font-weight:700;letter-spacing:.10em;text-transform:uppercase;
+    text-align:left;color:var(--muted);padding:10px 14px;border-bottom:1px solid var(--ink);
+    background:var(--neutral-tint);
+  }
+  .find-table td{padding:12px 14px;border-bottom:1px solid var(--hairline);vertical-align:top;font-size:.92rem}
+  .find-table tr:last-child td{border-bottom:0}
+  .find-table td.id{font-family:var(--font-mono);font-size:12px;font-weight:700;white-space:nowrap}
+  .find-table td.ev{font-family:var(--font-mono);font-size:11px;color:var(--muted);line-height:1.6;max-width:340px}
+  .find-table td.find-cell{max-width:420px;color:var(--ink-secondary)}
+  .find-table td.find-cell strong{color:var(--ink);font-weight:650}
+  @media (max-width:760px){
+    .find-table,.find-table tbody,.find-table tr,.find-table td{display:block}
+    .find-table thead{display:none}
+    .find-table tr{border-bottom:1px solid var(--hairline)}
+    .find-table td{border-bottom:0;padding:10px 14px}
+    .find-table td.ev{max-width:none}
+  }
+
+  /* ---------- sources / footer ---------- */
+  .sources{margin:56px 0 0;padding:20px 0 84px;border-top:1px solid var(--hairline)}
+  .sources h2{font-size:1.05rem;font-weight:650;margin-bottom:10px}
+  .sources ul{list-style:none;display:grid;gap:5px}
+  .sources .label-nano{color:var(--muted)}
+  .method{margin-top:18px;font-size:.85rem;color:var(--muted);max-width:640px}
+</style>
+</head>
+<body>
+<!--
+DESIGN CONTRACT — seed 8da60485
+THESIS: The onboarding flow is audited as its own mail record: every email the
+system sends, rendered in send order, with the journey each message triggers
+attached to it. Refuses the dashboard-mockup default that redraws product
+screens nobody asked to audit.
+OWN-WORLD: Acid Brutalism v2 (apps/web/DESIGN_SYSTEM.md): paper #FAFAFA, white
+mail chrome, 1px ink borders, square corners, coral #FF6B35 reserved for
+findings and the sequence day markers, teal fills with ink text for
+completion, JetBrains Mono
+micro-labels, Outfit throughout. One ink panel (day 0-60 sequence); one hard
+shadow (the open record).
+STORY: An operator reads the thread top to bottom, opens any record, and can
+name every email, trigger, limit, and gap without opening the repo.
+FIRST VIEWPORT: Masthead heading, legend row, then the thread: record 01 open
+showing the rendered invite email (subject, Grant access CTA) and the top of
+its attached journey; records 02-05 collapsed below it.
+FORM: Dealt lead "Inbox as Evidence", index 6 of 7 grounded structures, seed
+key 8da60485.
+VIEW: human-facing audit rendering only; agent-facing flow specs live in
+docs/flows/ (precedence: code > specs > this file).
+FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, DESIGN.md, and every shipping raster carrying its provenance
+-->
+<main class="wrap">
+
+  <header class="masthead">
+    <h1>Email onboarding flow, as built</h1>
+    <div class="meta-row">
+      <span class="ref">AUTHUB · CLIENT-ACCESS ONBOARDING</span>
+      <span class="ref">AUDITED 2026-10-09</span>
+      <span class="ref">MAIN @ c3319e2c</span>
+      <span class="tag-live label-nano"><span class="dot" aria-hidden="true"></span>VERIFIED AGAINST SOURCE</span>
+    </div>
+    <p class="lede">
+      Every email AuthHub sends during client onboarding, in send order, quoted
+      verbatim from the code, with the journey each message triggers attached.
+      Findings are flagged where the built flow leaks: the missing expiry email,
+      the mandatory platform loop, and the docs that drifted.
+    </p>
+  </header>
+
+  <div class="legend" role="list" aria-label="How to read this audit">
+    <span class="legend-item" role="listitem">
+      <svg class="glyph-mail" width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="1.5" y="3" width="13" height="10.5"/><path d="M2 4l6 5 6-5"/></svg>
+      Sent email — rendered from the template source
+    </span>
+    <span class="legend-item" role="listitem">
+      <svg class="glyph-journey" width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M1.5 8h12M9.5 4l4 4-4 4"/></svg>
+      After the click: the journey the email starts
+    </span>
+    <span class="legend-item" role="listitem">
+      <svg class="glyph-flag" width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3.5 14.5v-13M3.5 2h9l-2.5 3 2.5 3h-9"/></svg>
+      Finding — a gap in the built flow
+    </span>
+  </div>
+
+  <!-- ============ THE THREAD ============ -->
+  <section class="thread" aria-label="The email thread">
+    <h2 class="thread-heading">The thread</h2>
+    <p class="thread-sub">Four emails exist; one is missing. Open a record to read the mail and what it sets in motion.</p>
+    <div class="thread-tools">
+      <button class="btn-quiet" type="button" id="expand-all" aria-pressed="false">Expand all</button>
+    </div>
+
+    <!-- ——— 01 CLIENT INVITE ——— -->
+    <article class="record is-open" id="rec-invite">
+      <span class="record-node" aria-hidden="true"></span>
+      <h3 style="margin:0">
+        <button class="record-head" type="button" aria-expanded="true" aria-controls="body-invite">
+          <span class="record-index mono">01 · CLIENT INVITE</span>
+          <span class="record-subject">&ldquo;Acme Media needs access to your Google and Meta accounts&rdquo;</span>
+          <span class="chev" aria-hidden="true">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 6l5 5 5-5"/></svg>
+          </span>
+          <span class="record-meta">
+            <span class="chip chip-client">
+              <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="8" cy="5" r="2.6"/><path d="M2.8 13.6c.9-2.6 2.9-4 5.2-4s4.3 1.4 5.2 4"/></svg>
+              Client
+            </span>
+            <span class="chip chip-to">FROM AGENCY CLICK · &ldquo;SEND INVITE&rdquo;</span>
+          </span>
+        </button>
+      </h3>
+      <div class="record-body" id="body-invite">
+        <div class="record-grid">
+          <div class="mailcard mailcard-open">
+            <dl class="mailhead">
+              <div class="mailrow"><dt>From</dt><dd>&ldquo;Acme Media via AuthHub&rdquo; &lt;notifications@notifications.authhub.co&gt;</dd></div>
+              <div class="mailrow"><dt>To</dt><dd>Client email</dd></div>
+              <div class="mailrow"><dt>Subject</dt><dd class="subj">{agency} needs access to your {platformList} accounts</dd></div>
+            </dl>
+            <div class="mailbody">
+              <p>You&rsquo;ll give <strong>Acme Media</strong> partner access to your Google and Meta accounts.</p>
+              <p class="fine">AuthHub only adds Acme Media as a partner. It doesn&rsquo;t manage your ads.</p>
+            </div>
+            <div class="mailfoot">
+              <span class="mail-cta">
+                Grant access
+                <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2.5 8h11M9.5 4l4 4-4 4"/></svg>
+              </span>
+              <span class="mail-note">Opens <code>/invite/{token}</code>, the 12-character link created with the request.</span>
+            </div>
+          </div>
+          <dl class="facts">
+            <div class="fact"><dt>Transport</dt><dd>Resend via <code>sendEmail()</code></dd></div>
+            <div class="fact"><dt>Trigger</dt><dd>Agency clicks <strong>&ldquo;Send invite&rdquo;</strong> on the request page</dd></div>
+            <div class="fact"><dt>Rate limits</dt><dd><strong>1</strong>/60s · <strong>5</strong>/request/day · <strong>20</strong>/agency/hr</dd></div>
+            <div class="fact"><dt>Source</dt><dd><span class="ref">apps/api/src/lib/client-invite-email.ts:114</span><br><span class="ref">access-request-invite-email.service.ts</span></dd></div>
+          </dl>
+        </div>
+
+        <!-- After the click -->
+        <div class="journey">
+          <div class="journey-head">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--success-ink)" aria-hidden="true"><path d="M1.5 8h12M9.5 4l4 4-4 4"/></svg>
+            <h3>After the click: the client journey</h3>
+          </div>
+          <div class="journey-inner">
+            <div class="phase-strip" aria-label="Page phases in order">
+              <span class="phase">Intake</span>
+              <span class="phase-sep" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2.5 8h11M9.5 4l4 4-4 4"/></svg></span>
+              <span class="phase">Platforms</span>
+              <span class="phase-sep" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2.5 8h11M9.5 4l4 4-4 4"/></svg></span>
+              <span class="phase">Finalizing</span>
+              <span class="phase-sep" aria-hidden="true"><svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2.5 8h11M9.5 4l4 4-4 4"/></svg></span>
+              <span class="phase">Complete</span>
+            </div>
+
+            <h4>Entry</h4>
+            <p>The link lands on <code>/invite/[token]</code>. Two legacy aliases, <code>/authorize/[token]</code> and <code>/client/[token]</code>, redirect to it. The landing state resolves by precedence: terminal&nbsp;code → completed → OAuth&nbsp;return → Meta&nbsp;checklist&nbsp;resume → all&nbsp;connected → has&nbsp;progress → intake.</p>
+
+            <h4>Intake</h4>
+            <p>With intake fields, the client gets a <strong>&ldquo;Quick Setup&rdquo;</strong> form (<em>&ldquo;Share a few details before authorization.&rdquo;</em>) and a <strong>&ldquo;Continue&rdquo;</strong> button. Without fields, a &ldquo;Requested platforms&rdquo; grid and <strong>&ldquo;Continue to connect&rdquo;</strong>.</p>
+
+            <h4>Platforms: one loop per platform</h4>
+            <p>Each requested platform runs the same three-step wizard before the request can finalize:</p>
+            <div class="steps-line" aria-label="Wizard steps">
+              <span class="step">1 · Connect</span>
+              <span class="arrow" aria-hidden="true">→</span>
+              <span class="step">2 · Choose accounts to share</span>
+              <span class="arrow" aria-hidden="true">→</span>
+              <span class="step">3 · Done</span>
+            </div>
+            <div class="split">
+              <div>
+                <h5><span class="count">10 platforms</span> · OAuth</h5>
+                <ul>
+                  <li><span class="mono">google&nbsp;· meta&nbsp;· google_ads&nbsp;· ga4&nbsp;· meta_ads&nbsp;· meta_pages&nbsp;· tiktok&nbsp;· linkedin&nbsp;· snapchat&nbsp;· instagram</span></li>
+                  <li>Google riders ride the parent consent, no own step: <span class="mono flow">tag_manager&nbsp;· merchant_center&nbsp;· search_console&nbsp;· business_profile</span></li>
+                  <li>Exit note: <em>&ldquo;You will leave for {platform} and come right back here.&rdquo;</em></li>
+                  <li>Done step shows <strong>&ldquo;Signed in&rdquo;</strong>: <em>&ldquo;Finish the steps below to share access with your agency.&rdquo;</em> Meta adds its grant checklist.</li>
+                </ul>
+              </div>
+              <div>
+                <h5><span class="count" style="color:var(--warning)">7 platforms</span> · Manual invite</h5>
+                <ul>
+                  <li><span class="mono">kit&nbsp;· mailchimp&nbsp;· pinterest&nbsp;· klaviyo&nbsp;· shopify&nbsp;· zapier&nbsp;· beehiiv</span></li>
+                  <li>Step 1: <strong>&ldquo;Resume {platform} setup&rdquo;</strong> — <em>&ldquo;This platform uses native invite steps instead of OAuth.&rdquo;</em></li>
+                  <li>Email quartet checklist: <span class="mono flow">copy-invite-email → open-team-settings → send-invite</span></li>
+                  <li>Pinterest: <span class="mono flow">open-business-manager → add-partner → assign-permissions</span></li>
+                  <li>Shopify ends <span class="mono">connected</span> — &ldquo;Submitted for review&rdquo;</li>
+                  <li>Gate: checkbox <em>&ldquo;I invited {email} to my {platform} account&rdquo;</em></li>
+                </ul>
+              </div>
+            </div>
+            <p style="margin-top:12px">Security summary adapts to the mix: <em>&ldquo;You will authorize access through each platform&rsquo;s official login screen. Your credentials stay with the platform.&rdquo;</em> / <em>&ldquo;You will invite your agency through each platform&rsquo;s own settings. No login credentials are shared.&rdquo;</em></p>
+
+            <h4>Progress vocabulary: no bar, no counter</h4>
+            <dl>
+              <div class="quote-row"><dt>done</dt><dd><strong>&ldquo;Access confirmed.&rdquo;</strong></dd></div>
+              <div class="quote-row"><dt>action-needed</dt><dd>&ldquo;Choose which {platform} accounts to share.&rdquo;</dd></div>
+              <div class="quote-row"><dt>waiting-on-agency</dt><dd>&ldquo;Your {platform} access request was recorded. Your agency will verify it before this request can finish.&rdquo;</dd></div>
+              <div class="quote-row"><dt>connect-first · attention</dt><dd>Per-reason copy; status always pairs text with color.</dd></div>
+            </dl>
+
+            <h4>Resume</h4>
+            <p>Progress persists in <code>sessionStorage</code> key <code>invite-progress:{token}</code> merged with the server&rsquo;s <code>completedPlatforms</code>. An OAuth return (<code>?step=2&amp;connectionId=…</code>) resumes the same connection; no second OAuth. Any recorded progress lands back on <strong>platforms</strong>, never on intake.</p>
+
+            <h4>Finalizing</h4>
+            <p><strong>&ldquo;Confirming your authorization&rdquo;</strong>: <em>&ldquo;Your connected platforms are being confirmed with the agency.&rdquo;</em> The page posts <code>/api/client/:token/complete</code>.</p>
+
+            <h4>Complete</h4>
+            <p><strong>&ldquo;All set — you&rsquo;re done&rdquo;</strong> — <em>&ldquo;{agency} now has access to the accounts you approved. Nothing else is needed from you.&rdquo;</em> + <em>&ldquo;You can safely close this window.&rdquo;</em> Agency-verified variant: <strong>&ldquo;{agency} now has verified access&rdquo;</strong>.</p>
+
+            <h4>Dead ends</h4>
+            <dl>
+              <div class="quote-row"><dt>Expired</dt><dd><strong>&ldquo;This link has expired&rdquo;</strong> — &ldquo;This access request expired, so access cannot be granted. Contact your agency to get a new link.&rdquo;</dd></div>
+              <div class="quote-row"><dt>Revoked</dt><dd><strong>&ldquo;This request was revoked&rdquo;</strong> — &ldquo;Your agency withdrew this access request. Contact them if this does not look right.&rdquo;</dd></div>
+              <div class="quote-row"><dt>Unknown</dt><dd><strong>&ldquo;This link is no longer available&rdquo;</strong> — &ldquo;We could not find this access request.&rdquo;</dd></div>
+              <div class="quote-row"><dt>All three</dt><dd>&ldquo;You can safely close this page.&rdquo; + a &ldquo;Need a new link?&rdquo; support card. Terminal is one-way.</dd></div>
+            </dl>
+          </div>
+        </div>
+      </div>
+    </article>
+
+    <!-- ——— 02 AGENT INVITE ——— -->
+    <article class="record" id="rec-agent">
+      <span class="record-node" aria-hidden="true"></span>
+      <h3 style="margin:0">
+        <button class="record-head" type="button" aria-expanded="false" aria-controls="body-agent">
+          <span class="record-index mono">02 · CLIENT INVITE · AGENT CHANNEL</span>
+          <span class="record-subject">&ldquo;Acme Media requested access through AuthHub&rdquo;</span>
+          <span class="chev" aria-hidden="true">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 6l5 5 5-5"/></svg>
+          </span>
+          <span class="record-meta">
+            <span class="chip chip-client">
+              <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="8" cy="5" r="2.6"/><path d="M2.8 13.6c.9-2.6 2.9-4 5.2-4s4.3 1.4 5.2 4"/></svg>
+              Client
+            </span>
+            <span class="chip chip-warn">
+              <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 2.5 14.5 13.5H1.5Z"/><path d="M8 6.8v3M8 11.6v.1"/></svg>
+              2nd entry route
+            </span>
+          </span>
+        </button>
+      </h3>
+      <div class="record-body" id="body-agent">
+        <div class="record-grid">
+          <div class="mailcard">
+            <dl class="mailhead">
+              <div class="mailrow"><dt>From</dt><dd>AuthHub &lt;notifications@notifications.authhub.co&gt;</dd></div>
+              <div class="mailrow"><dt>To</dt><dd>Client email</dd></div>
+              <div class="mailrow"><dt>Subject</dt><dd class="subj">{agencyName} requested access through AuthHub</dd></div>
+            </dl>
+            <div class="mailbody">
+              <p>Sent when access is requested through the <strong>Agent API</strong> rather than the dashboard. Links to <code>/client/{token}</code>, which redirects to <code>/invite/{token}</code>.</p>
+            </div>
+            <div class="mailfoot">
+              <span class="mail-cta">Review request</span>
+              <span class="mail-note">Same funnel, different door.</span>
+            </div>
+          </div>
+          <dl class="facts">
+            <div class="fact"><dt>Trigger</dt><dd>Agent API access operation</dd></div>
+            <div class="fact"><dt>Source</dt><dd><span class="ref">agent-access-operations.service.ts:278</span></dd></div>
+          </dl>
+        </div>
+        <div class="flag">
+          <div class="flag-head">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3.5 14.5v-13M3.5 2h9l-2.5 3 2.5 3h-9"/></svg>
+            <span class="label-micro">Finding G6</span>
+          </div>
+          <p>Three client entry routes exist (<code>/invite</code>, <code>/authorize</code>, <code>/client</code>) plus the agent channel. The earlier funnel audit flagged duplicate client entry as a potential defect; aliases are redirects, but every route is a separate surface to keep truthful.</p>
+        </div>
+      </div>
+    </article>
+
+    <!-- ——— 03 REMINDER ——— -->
+    <article class="record" id="rec-reminder">
+      <span class="record-node" aria-hidden="true"></span>
+      <h3 style="margin:0">
+        <button class="record-head" type="button" aria-expanded="false" aria-controls="body-reminder">
+          <span class="record-index mono">03 · CLIENT REMINDER</span>
+          <span class="record-subject">&ldquo;Reminder: authorize platform access when ready&rdquo;</span>
+          <span class="chev" aria-hidden="true">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 6l5 5 5-5"/></svg>
+          </span>
+          <span class="record-meta">
+            <span class="chip chip-client">
+              <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><circle cx="8" cy="5" r="2.6"/><path d="M2.8 13.6c.9-2.6 2.9-4 5.2-4s4.3 1.4 5.2 4"/></svg>
+              Client
+            </span>
+            <span class="chip chip-to">FROM AGENCY CLICK · &ldquo;SEND REMINDER&rdquo;</span>
+            <span class="chip chip-warn">1H COOLDOWN</span>
+          </span>
+        </button>
+      </h3>
+      <div class="record-body" id="body-reminder">
+        <div class="record-grid">
+          <div class="mailcard">
+            <dl class="mailhead">
+              <div class="mailrow"><dt>From</dt><dd>AuthHub &lt;notifications@notifications.authhub.co&gt;</dd></div>
+              <div class="mailrow"><dt>To</dt><dd>Client email</dd></div>
+              <div class="mailrow"><dt>Subject</dt><dd class="subj">Reminder: authorize platform access when ready</dd></div>
+            </dl>
+            <div class="mailbody">
+              <p>Nudges the client back to the invite link. Carries the <strong>only expiry mention in any email</strong>:</p>
+              <p><em>&ldquo;This link expires on {date}.&rdquo;</em></p>
+            </div>
+            <div class="mailfoot">
+              <span class="mail-cta">Continue setup</span>
+            </div>
+          </div>
+          <dl class="facts">
+            <div class="fact"><dt>Trigger</dt><dd>Agency clicks <strong>&ldquo;Send Reminder&rdquo;</strong>; falls back to a copyable reminder link when no client email is stored</dd></div>
+            <div class="fact"><dt>Cooldown</dt><dd><strong>1 hour</strong> — <code>REMINDER_COOLDOWN_MS</code>; violations get <code>429 REMINDER_COOLDOWN</code></dd></div>
+            <div class="fact"><dt>Source</dt><dd><span class="ref">email.service.ts:194 · access-requests.ts:475</span><br><span class="ref">access-request-reminder.service.ts:8</span></dd></div>
+          </dl>
+        </div>
+        <div class="flag">
+          <div class="flag-head">
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3.5 14.5v-13M3.5 2h9l-2.5 3 2.5 3h-9"/></svg>
+            <span class="label-micro">Finding G5</span>
+          </div>
+          <p>Reminders are manual agency actions only. No scheduled cadence exists, and nothing fires as the 7-day expiry approaches. A client who ignores one reminder hears nothing until the link is dead.</p>
+        </div>
+      </div>
+    </article>
+
+    <!-- ——— 04 COMPLETION NOTICE ——— -->
+    <article class="record is-done" id="rec-complete">
+      <span class="record-node" aria-hidden="true"></span>
+      <h3 style="margin:0">
+        <button class="record-head" type="button" aria-expanded="false" aria-controls="body-complete">
+          <span class="record-index mono">04 · AGENCY COMPLETION NOTICE</span>
+          <span class="record-subject">&ldquo;Access Granted: Nova Client authorized 4 platform(s)&rdquo;</span>
+          <span class="chev" aria-hidden="true">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 6l5 5 5-5"/></svg>
+          </span>
+          <span class="record-meta">
+            <span class="chip chip-agency">
+              <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M2.5 13.5v-7l5.5-4 5.5 4v7"/><path d="M6.5 13.5V9h3v4.5"/></svg>
+              Agency
+            </span>
+            <span class="chip chip-done">
+              <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M3 8.5 6.5 12 13 4.5"/></svg>
+              Fires on client complete
+            </span>
+          </span>
+        </button>
+      </h3>
+      <div class="record-body" id="body-complete">
+        <div class="record-grid">
+          <div class="mailcard">
+            <dl class="mailhead">
+              <div class="mailrow"><dt>From</dt><dd>AuthHub &lt;notifications@notifications.authhub.co&gt;</dd></div>
+              <div class="mailrow"><dt>To</dt><dd>Agency notification email</dd></div>
+              <div class="mailrow"><dt>Subject</dt><dd class="subj">Access Granted: {clientName} authorized {n} platform(s)</dd></div>
+            </dl>
+            <div class="mailbody">
+              <p>Heading: <strong>&ldquo;Client Authorization Complete&rdquo;</strong>.</p>
+              <p>Closes the loop the invite email opened: the agency learns the request finished, and that tokens now exist.</p>
+            </div>
+            <div class="mailfoot">
+              <span class="mail-cta">View Connection in Dashboard</span>
+            </div>
+          </div>
+          <dl class="facts">
+            <div class="fact"><dt>Trigger</dt><dd>Client completes → <code>notification</code> queue job</dd></div>
+            <div class="fact"><dt>Source</dt><dd><span class="ref">notification.service.ts:137 · email.service.ts:78</span></dd></div>
+          </dl>
+        </div>
+      </div>
+    </article>
+
+    <!-- ——— 05 THE ABSENCE ——— -->
+    <article class="record is-ghost" id="rec-expiry">
+      <span class="record-node" aria-hidden="true"></span>
+      <h3 style="margin:0">
+        <button class="record-head" type="button" aria-expanded="false" aria-controls="body-expiry">
+          <span class="record-index mono">05 · EXPIRY WARNING</span>
+          <span class="record-subject" style="color:var(--danger-ink)">No expiration-warning email exists.</span>
+          <span class="chev" aria-hidden="true">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 6l5 5 5-5"/></svg>
+          </span>
+          <span class="record-meta">
+            <span class="chip chip-ghost">NOT SENT · MISSING TEMPLATE</span>
+            <span class="chip chip-danger">
+              <svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M8 2.5 14.5 13.5H1.5Z"/><path d="M8 6.8v3M8 11.6v.1"/></svg>
+              Finding G1 · High
+            </span>
+          </span>
+        </button>
+      </h3>
+      <div class="record-body" id="body-expiry">
+        <div class="record-grid">
+          <div class="mailcard">
+            <div class="mailhead">
+              <span class="notsent">This email does not exist in the codebase</span>
+            </div>
+            <div class="mailbody">
+              <p>Requests expire <strong>7 days</strong> after creation. Expiry is enforced lazily — the first client route hit after <code>expiresAt</code> returns <code>REQUEST_EXPIRED</code>, and a cleanup job deletes the request later.</p>
+              <p>So the client learns of expiry by <strong>clicking a dead link</strong> and hitting the terminal card. No email warns them; the only mention anywhere is the reminder&rsquo;s single line, and reminders are manual.</p>
+            </div>
+            <div class="mailfoot">
+              <span class="mail-note" style="max-width:44ch">The slot where a &ldquo;your link expires tomorrow&rdquo; mail would sit is empty.</span>
+            </div>
+          </div>
+          <dl class="facts">
+            <div class="fact"><dt>Expiry set</dt><dd><code>expiresAt = now + 7d</code> at creation</dd></div>
+            <div class="fact"><dt>Enforced</dt><dd>Lazily, per route hit → <code>REQUEST_EXPIRED</code>; cleanup job deletes after</dd></div>
+            <div class="fact"><dt>Source</dt><dd><span class="ref">access-request.service.ts:314, 1496–1506, 2369</span></dd></div>
+          </dl>
+        </div>
+      </div>
+    </article>
+  </section>
+
+  <!-- ============ AGENCY SEQUENCE ============ -->
+  <section class="sequence" aria-label="Agency onboarding email sequence">
+    <div class="ink-panel">
+      <span class="label-micro panel-label">AGENCY ONBOARDING SEQUENCE</span>
+      <p class="panel-title">Eight emails, day 0 → day 60</p>
+      <p class="panel-hint">Open any subject for the full text, verbatim from the builder.</p>
+      <table class="seq-table">
+        <thead>
+          <tr><th scope="col">Day</th><th scope="col">Subject</th><th scope="col">Trigger</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="day">0</td>
+            <td><button class="seq-subject" type="button" aria-expanded="false" aria-controls="seqm-welcome"><span class="subj-text">&ldquo;Your client access flow starts here&rdquo;</span><span class="seq-chev" aria-hidden="true"><svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6l5 5 5-5"/></svg></span></button></td>
+            <td class="trig">queued at signup</td>
+          </tr>
+          <tr class="seq-mail" id="seqm-welcome" hidden><td colspan="3"><div class="mailtext">Hi there,
+
+You signed up for one reason: get client access without the usual week of back-and-forth.
+
+{agencyName} now has the shortest path to that outcome: one secure link your client can use to authorize the platforms you need.
+
+Your fastest path to value:
+1. Add your agency details
+2. Choose a client
+3. Select the platforms you need
+4. Generate your access link
+
+The goal is not to set up everything. The goal is to get your first real request live.
+
+Start here:
+{FRONTEND_URL}/onboarding/unified
+
+If you want a quick recommendation, reply with the first client you plan to onboard and the platforms you need.
+
+- The AuthHub team</div></td></tr>
+          <tr>
+            <td class="day">1</td>
+            <td><button class="seq-subject" type="button" aria-expanded="false" aria-controls="seqm-firstlink"><span class="subj-text">&ldquo;Your first access link is still waiting&rdquo;</span><span class="seq-chev" aria-hidden="true"><svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6l5 5 5-5"/></svg></span></button></td>
+            <td class="trig">skipped if any request exists</td>
+          </tr>
+          <tr class="seq-mail" id="seqm-firstlink" hidden><td colspan="3"><div class="mailtext">Hi there,
+
+If you have not created your first access link yet, that is the only step that matters right now.
+
+Pick one real client. Create one real request. Send one real link.
+
+That gets you to value fast:
+1. Pick the client you want to onboard first
+2. Choose the platforms they need to authorize
+3. Generate the link
+4. Send it
+
+Create your first request here:
+{FRONTEND_URL}/onboarding/unified
+
+If you hit a blocker, reply with the step where you got stuck.
+
+- The AuthHub team</div></td></tr>
+          <tr>
+            <td class="day">1*</td>
+            <td><button class="seq-subject" type="button" aria-expanded="false" aria-controls="seqm-sendlink"><span class="subj-text">&ldquo;Your access link is ready to send&rdquo;</span><span class="seq-chev" aria-hidden="true"><svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6l5 5 5-5"/></svg></span></button></td>
+            <td class="trig">queued 1 day after the first request · skipped if that request completed</td>
+          </tr>
+          <tr class="seq-mail" id="seqm-sendlink" hidden><td colspan="3"><div class="mailtext">Hi there,
+
+Your first access link is ready.
+
+Next move: send it to {clientName}.
+
+Once they open it:
+1. They authorize each requested platform
+2. You track status from your dashboard
+3. You move the work forward without another email thread
+
+If you want a clean note to forward, use this:
+
+Hi {clientName},
+
+Please use this secure link to grant us access to the platforms we need. It should take a few minutes:
+{FRONTEND_URL}/authorize/{uniqueToken}
+
+Once you finish, we will be able to get started faster.
+
+Open your request here:
+{FRONTEND_URL}/authorize/{uniqueToken}
+
+- The AuthHub team</div><p class="mailnote">Links the legacy <code>/authorize/[token]</code> alias, not <code>/invite</code> — see finding G6.</p></td></tr>
+          <tr>
+            <td class="day">3</td>
+            <td><button class="seq-subject" type="button" aria-expanded="false" aria-controls="seqm-momentum"><span class="subj-text">&ldquo;Check your request status&rdquo; / &ldquo;Need help getting your first request live?&rdquo;</span><span class="seq-chev" aria-hidden="true"><svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6l5 5 5-5"/></svg></span></button></td>
+            <td class="trig">branches on whether any request exists</td>
+          </tr>
+          <tr class="seq-mail" id="seqm-momentum" hidden><td colspan="3"><div class="mailtext"><span class="mail-variant">With a request in flight</span>Hi there,
+
+Once your first request is in motion, the dashboard matters more than your inbox.
+
+Use it to:
+- see which requests are pending
+- confirm when a client has authorized access
+- create the next request without starting from scratch
+
+Open your dashboard here:
+{FRONTEND_URL}/dashboard
+
+If your client has not completed the request yet, this is the right moment for a short follow-up.
+
+- The AuthHub team</div><div class="mailtext"><span class="mail-variant">No request yet</span>Hi there,
+
+If you have not launched your first request yet, pick one client and create one link.
+
+That is the moment where the product starts paying off. Everything else can wait.
+
+Start here:
+{FRONTEND_URL}/onboarding/unified
+
+If you want help choosing which platforms to include, reply to this email and we will point you in the right direction.
+
+- The AuthHub team</div></td></tr>
+          <tr>
+            <td class="day">7</td>
+            <td><button class="seq-subject" type="button" aria-expanded="false" aria-controls="seqm-workflow"><span class="subj-text">&ldquo;Turn this into your standard onboarding flow&rdquo;</span><span class="seq-chev" aria-hidden="true"><svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6l5 5 5-5"/></svg></span></button></td>
+            <td class="trig">skipped unless at least one request exists</td>
+          </tr>
+          <tr class="seq-mail" id="seqm-workflow" hidden><td colspan="3"><div class="mailtext">Hi there,
+
+One completed request is useful.
+
+What matters next is turning that one request into a repeatable onboarding workflow for your agency.
+
+From your dashboard, you can:
+- create requests for new clients faster
+- track every authorization in one place
+- invite teammates so access setup does not live with one person
+- add your branding for a cleaner client experience
+
+Go back to your dashboard here:
+{FRONTEND_URL}/dashboard
+
+If you are still testing, run one more real client through the flow. That is usually when the time savings become obvious.
+
+- The AuthHub team</div></td></tr>
+          <tr>
+            <td class="day">14</td>
+            <td><button class="seq-subject" type="button" aria-expanded="false" aria-controls="seqm-day14"><span class="subj-text">&ldquo;The part where most agencies get stuck&rdquo;</span><span class="seq-chev" aria-hidden="true"><svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6l5 5 5-5"/></svg></span></button></td>
+            <td class="trig">skipped if any request exists, or churn opt-out recorded</td>
+          </tr>
+          <tr class="seq-mail" id="seqm-day14" hidden><td colspan="3"><div class="mailtext">Hi there,
+
+Two weeks ago you signed up to kill the access-handoff email loop. Still nothing set up. That is normal, and it is almost never the product that stopped you.
+
+It is picking which client goes first.
+
+So here is the shortcut: pick the next client you are already chasing for access. Not the biggest one. The one where the back-and-forth is actively annoying you this week.
+
+That client already needs to give you access. AuthHub just turns three days of email into one link.
+
+Create that request here:
+{FRONTEND_URL}/onboarding/unified
+
+If it is something else blocking you, reply with one sentence about what it is. We read every reply.
+
+- The AuthHub team</div></td></tr>
+          <tr>
+            <td class="day">30</td>
+            <td><button class="seq-subject" type="button" aria-expanded="false" aria-controls="seqm-day30"><span class="subj-text">&ldquo;Five minutes, one client, done&rdquo;</span><span class="seq-chev" aria-hidden="true"><svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6l5 5 5-5"/></svg></span></button></td>
+            <td class="trig">skipped if any request exists, or churn opt-out · reply &ldquo;pass&rdquo; records it</td>
+          </tr>
+          <tr class="seq-mail" id="seqm-day30" hidden><td colspan="3"><div class="mailtext">Hi there,
+
+One month in, so this is the short version.
+
+Setting up AuthHub takes about five minutes: pick a client, choose their platforms, generate the link. The link does the rest — your client authorizes Meta, Google, GA4, or LinkedIn without a single email thread.
+
+If you have a client waiting on access right now, this is your moment:
+
+Create the link here:
+{FRONTEND_URL}/onboarding/unified
+
+And if AuthHub turned out to be not for you, that is fine too. Reply with the word "pass" and we will stop emailing. No hard feelings. Marcus had whole chapters on letting go.
+
+- The AuthHub team</div></td></tr>
+          <tr>
+            <td class="day">60</td>
+            <td><button class="seq-subject" type="button" aria-expanded="false" aria-controls="seqm-day60"><span class="subj-text">&ldquo;Before we stop emailing you&rdquo;</span><span class="seq-chev" aria-hidden="true"><svg width="10" height="10" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 6l5 5 5-5"/></svg></span></button></td>
+            <td class="trig">skipped if any request exists, or churn opt-out · final contact</td>
+          </tr>
+          <tr class="seq-mail" id="seqm-day60" hidden><td colspan="3"><div class="mailtext">Hi there,
+
+This is the last email in this sequence. After this, we go quiet unless you reach out first.
+
+Before that, one honest question:
+
+What would have made you set up your first access link in those first days?
+
+Reply with one sentence. If the answer is something we can fix, you will have made the product better for every agency after you. If the answer means we are not for you, that is useful too.
+
+The door stays open. Your account is live whenever a client handoff gets painful again:
+
+{FRONTEND_URL}/dashboard
+
+— The AuthHub team</div></td></tr>
+        </tbody>
+      </table>
+      <div class="seq-foot">
+        <span class="label-nano">PgBoss queue&nbsp;· deduped via <code>ONBOARDING_EMAIL_SENT</code>&nbsp;· opt-out = <code>CHURN_OPTOUT</code></span>
+        <span class="label-nano">Bodies are plaintext · HTML generated from text (<code>textToHtml</code>) · links auto-linked</span>
+        <span class="label-nano">onboarding-email.service.ts:98–346 · job-handlers.ts:206</span>
+        <span class="label-nano" style="color:var(--coral)">DOCS SAY 5 · CODE SHIPS 8 (G3)</span>
+        <span class="cursor-blink" aria-hidden="true"></span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ AGENCY TRIGGER LAYER ============ -->
+  <section class="findings" aria-label="Where the emails come from" style="margin-top:52px">
+    <h2>Where the emails come from</h2>
+    <p class="findings-sub">The agency side that pulls the trigger — creation, delivery, and the callout the agency sees while waiting.</p>
+    <dl>
+      <div class="quote-row"><dt>Create</dt><dd>Wizard at <code>/access-requests/new</code>, 4 steps: <strong>Fundamentals → Platforms → Customize → Review</strong>. Create mints the 12-char token and <code>expiresAt = +7d</code>, status <code>pending</code>.</dd></div>
+      <div class="quote-row"><dt>Deliver</dt><dd>Three ways: <strong>Copy Link</strong> / Preview; <strong>&ldquo;Send invite&rdquo;</strong> email form (&ldquo;Invite sent to {email}. Replies go to you.&rdquo;); or a <strong>mailto</strong> fallback — &ldquo;Authorize platform access for {clientName}&rdquo;.</dd></div>
+      <div class="quote-row"><dt>Wait</dt><dd>The request page shows: <em>&ldquo;Client invite: Needs you — The client still has steps on the invite link (connect, share, or verify). Tokens are stored only after they finish — not when the link is sent.&rdquo;</em></dd></div>
+      <div class="quote-row"><dt>Docs drift</dt><dd><code>docs/APP_OVERVIEW.md</code> calls the same 4 steps &ldquo;Client Info / Platforms / Intake Form / Branding&rdquo; — labels and order no longer match the code <span class="ref">(G3)</span>.</dd></div>
+    </dl>
+  </section>
+
+  <!-- ============ FINDINGS ============ -->
+  <section class="findings" aria-label="Findings register">
+    <h2>Findings register</h2>
+    <p class="findings-sub">Six findings from reading the built flow. Severity follows the 2026-10-05 funnel audit where it already ranked; the rest are judged from blast radius.</p>
+    <table class="find-table">
+      <thead>
+        <tr><th scope="col">ID</th><th scope="col">Finding</th><th scope="col">Severity</th><th scope="col">Evidence</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="id">G1</td>
+          <td class="find-cell"><strong>No expiry-warning email.</strong> Clients learn of expiry by clicking a dead link. The only in-email mention is one line inside the manual reminder.</td>
+          <td><span class="chip chip-danger">HIGH</span></td>
+          <td class="ev">access-request.service.ts:314, 1496<br>email inventory, record 05</td>
+        </tr>
+        <tr>
+          <td class="id">G2</td>
+          <td class="find-cell"><strong>All platforms mandatory.</strong> Completion gates on every requested platform: a 6-platform request is 6 wizard loops before finalizing.</td>
+          <td><span class="chip chip-danger">HIGH</span></td>
+          <td class="ev">buildInvitePlatformQueue<br>client-invite-page.tsx</td>
+        </tr>
+        <tr>
+          <td class="id">G3</td>
+          <td class="find-cell"><strong>Docs drifted from code.</strong> Wizard step names, onboarding-email count (5 vs 8), subdomain URL claim, and a stale 4-step Klaviyo/Kit plan.</td>
+          <td><span class="chip chip-warn">MEDIUM</span></td>
+          <td class="ev">APP_OVERVIEW.md:420<br>new-user-onboarding-email-flow.md<br>plans/2026-08-18-001:54</td>
+        </tr>
+        <tr>
+          <td class="id">G4</td>
+          <td class="find-cell"><strong>Step telemetry partially landed.</strong> <code>client_*</code> and redesigned-flow funnel events exist with 5 join keys; the audit&rsquo;s &ldquo;no step-level events&rdquo; is partly addressed; re-rank after a PostHog export.</td>
+          <td><span class="chip chip-to" style="border-color:var(--border)">LOW</span></td>
+          <td class="ev">lib/analytics/invite-events.ts<br>invite-funnel-properties.ts</td>
+        </tr>
+        <tr>
+          <td class="id">G5</td>
+          <td class="find-cell"><strong>Reminders are manual-only.</strong> 1-hour cooldown, no scheduled cadence, nothing near expiry.</td>
+          <td><span class="chip chip-warn">MEDIUM</span></td>
+          <td class="ev">access-request-reminder.service.ts:8<br>access-requests.ts:475</td>
+        </tr>
+        <tr>
+          <td class="id">G6</td>
+          <td class="find-cell"><strong>Duplicate client entry routes.</strong> <code>/authorize</code> and <code>/client</code> alias <code>/invite</code>; the agent channel links a third path.</td>
+          <td><span class="chip chip-to" style="border-color:var(--border)">LOW</span></td>
+          <td class="ev">app/authorize · app/client<br>agent-access-operations.service.ts:278</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- ============ SOURCES ============ -->
+  <footer class="sources">
+    <h2>Sources</h2>
+    <ul>
+      <li class="label-nano">apps/api/src/lib/client-invite-email.ts · services/email.service.ts · services/onboarding-email.service.ts</li>
+      <li class="label-nano">apps/api/src/services/access-request-invite-email.service.ts · access-request-reminder.service.ts · notification.service.ts · agent-access-operations.service.ts</li>
+      <li class="label-nano">apps/api/src/routes/access-requests.ts · services/access-request.service.ts</li>
+      <li class="label-nano">apps/web/src/app/invite/[token]/client-invite-page.tsx · manual-invite.config.tsx · landing-state.ts (lib/invite)</li>
+      <li class="label-nano">apps/web/src/components/client-auth/PlatformAuthWizard.tsx · components/flow/invite-terminal-card.tsx · lib/invite/platform-status.ts</li>
+      <li class="label-nano">packages/shared/src/platforms/registry.ts (DEC-015)</li>
+    </ul>
+    <p class="method">
+      Strings quoted verbatim from source at main@c3319e2c, audited 2026-10-09.
+      Subject lines are templated; agency and platform names render at send time.
+      The sequence&rsquo;s &ldquo;day 1*&rdquo; fires one day after the agency&rsquo;s first request, not after signup.
+    </p>
+  </footer>
+</main>
+
+<script>
+  (function(){
+    var records = Array.prototype.slice.call(document.querySelectorAll('.record'));
+    var allBtn = document.getElementById('expand-all');
+
+    function setOpen(record, open){
+      record.classList.toggle('is-open', open);
+      var head = record.querySelector('.record-head');
+      var body = record.querySelector('.record-body');
+      if(head) head.setAttribute('aria-expanded', open ? 'true' : 'false');
+      if(body) body.hidden = !open;
+    }
+    records.forEach(function(record){
+      var head = record.querySelector('.record-head');
+      if(!head) return;
+      var body = record.querySelector('.record-body');
+      if(body) body.hidden = !record.classList.contains('is-open');
+      head.addEventListener('click', function(){
+        setOpen(record, !record.classList.contains('is-open'));
+        syncAllBtn();
+      });
+    });
+    function allOpen(){
+      return records.every(function(r){ return r.classList.contains('is-open'); });
+    }
+    function syncAllBtn(){
+      allBtn.setAttribute('aria-pressed', allOpen() ? 'true' : 'false');
+      allBtn.textContent = allOpen() ? 'Collapse all' : 'Expand all';
+    }
+    allBtn.addEventListener('click', function(){
+      var target = !allOpen();
+      records.forEach(function(r){ setOpen(r, target); });
+      syncAllBtn();
+    });
+    syncAllBtn();
+
+    var seqToggles = Array.prototype.slice.call(document.querySelectorAll('.seq-subject'));
+    seqToggles.forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var mailRow = document.getElementById(btn.getAttribute('aria-controls'));
+        if(!mailRow) return;
+        var open = btn.getAttribute('aria-expanded') === 'true';
+        btn.setAttribute('aria-expanded', open ? 'false' : 'true');
+        mailRow.hidden = open;
+        var dataRow = btn.closest('tr');
+        if(dataRow) dataRow.classList.toggle('seq-open', !open);
+      });
+    });
+  })();
+</script>
+</body>
+</html>

@@ -1,3 +1,21 @@
+## Session: 2026-10-09 — Agent-facing flow specs (`docs/flows/`) + anchor walker
+
+### What was done
+- Created `docs/flows/`: `README.md` (ground-truth ordering: code > specs > audit HTML), `client-invite.md`, `onboarding-emails.md`, `access-request.md`. Reference-style: flow shape, invariants, skip predicates, reasons (R3, AE6, opt-out asymmetry), gotchas, `file:line` anchors. Deliberately does NOT copy email bodies or token lists (single source of truth; anchors instead).
+- All anchors verified against source before writing (3 corrected: `REQUEST_EXPIRED` :1497, cleanup :2373, registry derivations :528).
+- New walker `scripts/tests/flow-spec-anchors.test.mjs` (node:test, mirrors platform-id walker): parses Sources bullets `- path:N — "fragment"`, fails on missing files, out-of-range lines, or fragments not found within ±5 lines; anti-vacuous guard (≥3 specs, ≥25 anchors); README must own the ground-truth ordering, specs must carry Sources. Wired into root `test:run`. Green 3/3.
+- Pointer line added to root `CLAUDE.md` (docs tree); audit HTML contract comment now states it is a view, not a source.
+- Also this session: audit HTML gained the real agency-onboarding email bodies (8 keys, disclosure rows) and an 11px legibility-floor pass (rule layer re-verified clean, vq5/vq6).
+
+### Decisions
+- Specs carry the why + anchors, never copied payloads — copying would be a cache that drifts (same lesson as DEC-015).
+- Drift enforcement is a walker test, not docs discipline.
+- Precedence recorded in README: code > docs/flows/ > email-onboarding-flow.html.
+
+### Next steps
+- Commit `docs/flows/`, walker, CLAUDE.md pointer, and `docs/email-onboarding-flow.html` (still uncommitted).
+- Use the specs + characterization tests as the input brief for the G1/G2 funnel rework.
+
 ## Session: 2026-10-09 — Sentry ops closeout (Vercel/Render + nav hook)
 
 ### What was done
