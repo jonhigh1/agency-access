@@ -1,0 +1,39 @@
+{
+  "cli_version": "0.10.2",
+  "checkpoint_id": "01M4HRBQ928HHD8PHZB15ZAGBN",
+  "session_id": "agent-5486b54a-5e0f-4822-86c9-3927856ccacf",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-10T01:55:38.557397Z",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "save_step_count": 2,
+  "files_touched": [],
+  "agent": "Cursor",
+  "model": "default",
+  "turn_id": "37bc24c6d7a9",
+  "compact_transcript_start": 0,
+  "session_metrics": {
+    "duration_ms": 1175472,
+    "turn_count": 7
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    },
+    {
+      "checkpoint_number": 3,
+      "user_lines_added": 27,
+      "user_lines_removed": 0,
+      "agent_lines_added": 9,
+      "agent_lines_removed": 2,
+      "user_added_per_file": {
+        ".impeccable/config.local.json": 26,
+        ".impeccable/hook.cache.json": 1
+      }
+    }
+  ]
+}
