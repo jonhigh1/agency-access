@@ -1,3 +1,16 @@
+## Session: 2026-10-09 — Sentry ops closeout (Vercel/Render + nav hook)
+
+### What was done
+- Added `onRouterTransitionStart` export in `instrumentation-client.ts` (Sentry App Router nav instrumentation).
+- Vercel `agency-access`: set `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_ORG`, `SENTRY_PROJECT`, `SENTRY_AUTH_TOKEN` (org:ci) on production/preview/development.
+- Render `agency-access`: confirmed `SENTRY_DSN` + `SENTRY_WEBHOOK_SECRET` present; added `SENTRY_ORG=authhub`, `SENTRY_PROJECT=node`.
+- CLI: finalized releases `308fc799…`, `4c367974…`, `cf43f3ee…`; set-commits + production deploy marker on `308fc799…`.
+- Deferred: separate frontend Sentry project (org:ci cannot create projects); GitHub repo link in Sentry (no permission).
+
+### Next steps
+- Confirm next Vercel/Render deploy uploads sourcemaps (release artifacts) under project `node`.
+- When a fuller token is available: create `agency-access-web` project + DSN split; link GitHub repo.
+
 ## Session: 2026-10-09 — Sentry CLI audit + high-severity config/code fixes
 
 ### What was done

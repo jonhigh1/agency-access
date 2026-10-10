@@ -48,6 +48,9 @@ Sentry.init({
   ),
 });
 
+/** Required by @sentry/nextjs for App Router navigation instrumentation. */
+export const onRouterTransitionStart = Sentry.captureRouterTransitionStart;
+
 function registerReplayIntegration() {
   void Sentry.lazyLoadIntegration('replayIntegration')
     .then((replayIntegration) => {

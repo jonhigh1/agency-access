@@ -25,6 +25,9 @@ describe('client Sentry init lives in instrumentation-client (Turbopack-safe)', 
     expect(source).toContain('resolveSentryEnvironment(');
     expect(source).toContain('process.env.NEXT_PUBLIC_SENTRY_ENVIRONMENT');
     expect(source).toContain("lazyLoadIntegration('replayIntegration')");
+    expect(source).toContain(
+      'export const onRouterTransitionStart = Sentry.captureRouterTransitionStart'
+    );
   });
 
   it('does not keep a separate sentry.client.config.ts (avoids double-init / Turbopack miss)', () => {
