@@ -247,6 +247,8 @@ AccessRequestTemplate: platforms (hierarchical), intakeFields, branding (logoUrl
 
 **UI testing:** Use the dev-browser skill for browser automation, visual regression, and E2E flows.
 
+**App Router QueryClient:** Route-level `AppProviders` (not root layout). Do not mock `useUserAgency` / RQ hooks to stand in for that contract — see `apps/web/AGENTS.md` and `scripts/tests/app-query-provider-walker.test.mjs`.
+
 ## Key Dependencies
 
 **Backend:** Fastify, Prisma, BullMQ, IORedis, @clerk/backend, @infisical/sdk, Zod, Pino.
