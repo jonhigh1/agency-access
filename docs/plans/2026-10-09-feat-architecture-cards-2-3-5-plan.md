@@ -246,7 +246,7 @@ Execute from clean worktrees off `origin/main`. Avoid editing `access-request.se
 
 - Slice 1 Instagram semantics remain the product truth.
 - Vocabulary unification stays deferred until a dedicated plan.
-- `TEMPLATE.ts` remains unused (already excluded from compile).
+- `TEMPLATE.ts` deleted in U9 (no longer excluded from compile).
 
 ## Verification Contract
 

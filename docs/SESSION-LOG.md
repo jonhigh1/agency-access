@@ -1,3 +1,21 @@
+## Session: 2026-10-09 — Architecture cards 2 / 3 / 5 ce-work on main
+
+### What was done
+- Executed `docs/plans/2026-10-09-feat-architecture-cards-2-3-5-plan.md` on `main` (no feature branch).
+- Card 2: Meta fulfillment lib (U1), Google grant lifecycle resolver (U2), verification handler table + walker prune (U3). U4 optional skipped.
+- Card 3: invite `product-selection-summary` extract + wizard walker prune (U5). U6 optional skipped (wizard still ~1.7k; non-walker).
+- Card 5: `authMode` OAuth / api_key union, beehiiv `as any` gone (U7); Google `getAccountsForProduct` unquoted-key map + walker prune (U8); deleted `TEMPLATE.ts` + excludes (U9).
+- Commits on main through `4509f1b3` (U9). Walker green; factory-completeness + google dispatch tests green.
+
+### Decisions
+- Stay on main for this plan (Jon). Skip optional U4 / U6.
+- Connector union uses `authMode` discriminant; `getConnector` rejects api_key platforms.
+
+### Next steps
+- Optional U6 if invite session locality is still painful.
+- Deferred: vocabulary enum merge (KTD3), `google-offboarding-executor` walker entry, Meta → BaseConnector.
+- Entire pre-push durable fix still parked.
+
 ## Session: 2026-10-08/09 — PLATFORMS registry: Phases 2a–3 shipped; the partition has one owner and an enforcement layer
 
 ### What was done
