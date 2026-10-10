@@ -1,0 +1,42 @@
+{
+  "cli_version": "0.10.2",
+  "checkpoint_id": "01M4J4T7X9ZCQBYF36SE19TDAB",
+  "session_id": "f778f72c-0fc8-4e6f-872d-212e8c0b3138",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-10T05:33:20.215764Z",
+  "branch": "feat/agent-memory-loop",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "CLAUDE.md",
+    "docs/memory-loop-premise-tally.md",
+    "docs/workspace/memory-loop.md",
+    "package.json",
+    "scripts/memory/check-markers.mjs",
+    "scripts/tests/memory-markers.test.mjs"
+  ],
+  "agent": "Factory AI Droid",
+  "model": "",
+  "turn_id": "2205d67948e5",
+  "checkpoint_transcript_start": 2,
+  "transcript_lines_at_start": 2,
+  "compact_transcript_start": 1,
+  "token_usage": {
+    "input_tokens": 0,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 0,
+    "api_call_count": 0
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-10-10T05:33:20.175791Z",
+    "agent_lines": 123,
+    "agent_removed": 13,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 123,
+    "total_lines_changed": 136,
+    "agent_percentage": 100,
+    "metric_version": 2
+  }
+}
