@@ -11,6 +11,13 @@ Authority order for memory: user instruction, live code and tests, promoted repo
 - Repo config carries `AGENTMEMORY_URL` only. No secrets are committed; local auth stays open loopback.
 - Recall proof (U1): observation posted keyless returns through hybrid recall. Re-verify after any substrate upgrade.
 
+## Verify and promote (U4)
+
+- Verification anchors to the verifying commit SHA from a clean checkout. Procedural learnings with no anchoring commit promote under a decision-record anchor (decision record, date, owner) per the settled 2026-10-09 call.
+- Destination checklist: behavior or bug to `docs/solutions/`, settled name to `GLOSSARY.md`, meaning to `CONCEPTS.md`, technical choice to `docs/DECISIONS.md`. Duplicates merge; the source entry links to the target.
+- Mandatory solution frontmatter: `title`, `date`, `category`, `module`, `problem_type`, `tags`; optional `component`, `symptoms`, `root_cause`, `resolution_type`, `severity`, `supersedes`. Enforced by `scripts/memory/check-frontmatter.mjs`, wired into root `test:run`.
+- Promotion writes the learning back into agentmemory as a high-confidence lesson so recall improves.
+
 ## Claim markers (U3)
 
 Six states, marked inline on the source entry. `pending` is the default unmarked state.

@@ -10,7 +10,7 @@ Proceed bar (recorded before counting): 5+ terminal-worthy durable claims.
 2. Entire double-call stomps `.githooks/pre-push` via stash-pop; inherited local main poisons stacks. → `tentative (recheck: hook file observed clean)`
 3. Stacked branches squash-merged into live bases instead of main; aggregate-PR repair recovers. → `tentative (recheck: PR #181 merged)`
 4. Provider-boundary tests must mock one layer down, never the provider-bound hook. → `promoted (apps/web/AGENTS.md)`
-5. Stale root `DESIGN.md` frontmatter parses as live tokens against canonical v2. → `promoted (frontmatter stripped this session)`
+5. Stale root `DESIGN.md` frontmatter parses as live tokens against canonical v2. → `promoted (docs/solutions/stale-design-frontmatter-token-trap.md, lesson lsn_9d708a19147ac825)`
 6. Taste-judge margin finding was a scrollbar-crop artifact; verify geometry before fixing. → `tentative (recheck: geometry method reused once)`
 7. Finish-reviewer recapture discipline: pixel-unaudited regions stay outside ship attestation. → `tentative (recheck: next finish review)`
 8. Onboarding email skip triggers follow code truth (activation, churn opt-out); day-1 star links legacy `/authorize` alias. → `tentative (recheck: artifact committed)`

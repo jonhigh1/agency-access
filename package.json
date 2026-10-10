@@ -32,7 +32,7 @@
     "perf:dashboard:gate": "node scripts/perf/benchmark-api.mjs --enforce-budget true",
     "perf:web:inp-smoke": "bash scripts/perf/web-inp-smoke.sh",
     "test:meta-app-review-p0-smoke": "node scripts/meta-app-review-p0-smoke.mjs",
-    "test:run": "npm run test:run --workspace=apps/api -- --maxWorkers=2 && npm run test:run --workspace=apps/web -- --maxWorkers=2 && npm test --workspace=packages/shared -- --runInBand && npm test --workspace=tools/authhub-cli && node scripts/meta-app-review-p0-smoke.mjs && node --test scripts/tests/pre-push.test.mjs scripts/perf/lib/validation.test.mjs scripts/tests/platform-id-walker.test.mjs scripts/tests/app-query-provider-walker.test.mjs scripts/tests/flow-spec-anchors.test.mjs scripts/tests/memory-markers.test.mjs"
+    "test:run": "npm run test:run --workspace=apps/api -- --maxWorkers=2 && npm run test:run --workspace=apps/web -- --maxWorkers=2 && npm test --workspace=packages/shared -- --runInBand && npm test --workspace=tools/authhub-cli && node scripts/meta-app-review-p0-smoke.mjs && node --test scripts/tests/pre-push.test.mjs scripts/perf/lib/validation.test.mjs scripts/tests/platform-id-walker.test.mjs scripts/tests/app-query-provider-walker.test.mjs scripts/tests/flow-spec-anchors.test.mjs scripts/tests/memory-markers.test.mjs scripts/tests/memory-frontmatter.test.mjs"
   },
   "devDependencies": {
     "@googleworkspace/cli": "^0.11.1",
