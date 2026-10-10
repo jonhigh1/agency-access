@@ -1,5 +1,6 @@
 import { HeroSection } from '@/components/marketing/hero-section';
 import { ValueMarqueeSection } from '@/components/marketing/value-marquee-section';
+import { getMarketingStats } from '@/lib/api/marketing-stats';
 import { PainSection } from '@/components/marketing/pain-section';
 import { SolutionSection } from '@/components/marketing/solution-section-new';
 import CombinedFeaturedSection from '@/components/ui/combined-featured-section';
@@ -56,7 +57,11 @@ const faqSchema = {
   ],
 };
 
-export default function MarketingPage() {
+export const revalidate = 3600;
+
+export default async function MarketingPage() {
+  const stats = await getMarketingStats();
+
   return (
     <div className="relative bg-background">
       <script
@@ -64,7 +69,7 @@ export default function MarketingPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
       />
       <HeroSection />
-      <ValueMarqueeSection />
+      <ValueMarqueeSection stats={stats} />
       <PainSection />
       <SolutionSection />
       <CombinedFeaturedSection />

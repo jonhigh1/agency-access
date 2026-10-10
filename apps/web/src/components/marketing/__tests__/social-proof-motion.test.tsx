@@ -14,3 +14,27 @@ describe('ValueMarqueeSection motion preference', () => {
     expect(container.querySelector('.marketing-marquee > [data-marquee-duplicate]')).toBeInTheDocument();
   });
 });
+
+describe('ValueMarqueeSection usage counters', () => {
+  const STATS = {
+    agencies: 12,
+    activeClientConnections: 140,
+    activePlatformAuthorizations: 380,
+    completedAccessRequests: 309,
+    tokenRefreshes: 5100,
+  };
+
+  it('shows production counters when stats are provided', () => {
+    render(<ValueMarqueeSection stats={STATS} />);
+    expect(screen.getByText('Active Platform Connections')).toBeInTheDocument();
+    expect(screen.getByText('Completed Access Requests')).toBeInTheDocument();
+    expect(screen.getByText('Tokens Auto-Refreshed')).toBeInTheDocument();
+    expect(screen.getByText('380')).toBeInTheDocument();
+    expect(screen.getByText('5,100')).toBeInTheDocument();
+  });
+
+  it('hides counters when stats are unavailable', () => {
+    render(<ValueMarqueeSection />);
+    expect(screen.queryByText('Active Platform Connections')).toBeNull();
+  });
+});
