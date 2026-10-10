@@ -205,10 +205,9 @@ const ALLOWLIST = {
   // PQ-selector-4.
   'apps/web/src/lib/client-invite-platforms.ts': 'DEC-015 Phase 3, 2026-10-09',
 
-  // Per-product grant-verification dispatch; same shape as the
-  // getSelectedAssetCount dispatch and collapses with the same review-card
-  // work. Allowlist-until-refactored.
-  'apps/api/src/services/authorization-verification.service.ts': 'DEC-015 Phase 3, 2026-10-09',
+  // verifyPlatformAccess lives in apps/api/src/lib/platform-verification-handlers.ts
+  // (unquoted-key table; review card 2 U3). Prior allowlist entry for
+  // authorization-verification.service.ts was pruned in the same change.
 
   // Google connector verifies assets per sub-product; one consent covers
   // every google product, so the case split is inherent to the flow.

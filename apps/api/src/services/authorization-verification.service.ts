@@ -13,11 +13,12 @@
 
 import { prisma } from '@/lib/prisma';
 import { infisical } from '@/lib/infisical';
-import { metaConnector } from './connectors/meta.js';
-import { googleAdsConnector } from './connectors/google-ads.js';
-import { ga4Connector } from './connectors/ga4.js';
 import type { AccessLevel } from '@agency-platform/shared';
 import { setAccessRequestLifecycleStatus } from '@/services/access-request.service.js';
+import {
+  verifyPlatformAccess,
+  type PlatformVerificationResult,
+} from '@/lib/platform-verification-handlers.js';
 
 // Validation schemas
 const initiateVerificationSchema = {
@@ -29,30 +30,7 @@ const initiateVerificationSchema = {
 
 export type InitiateVerificationInput = typeof initiateVerificationSchema;
 
-interface VerificationResult {
-  hasAccess: boolean;
-  accessLevel: AccessLevel;
-  accounts?: Array<{
-    id: string;
-    name: string;
-    status: string;
-    permissions: string[];
-  }>;
-  properties?: Array<{
-    id: string;
-    name: string;
-    displayName: string;
-    permissions: string[];
-  }>;
-  businessName?: string;
-  assets?: Array<{
-    type: string;
-    id: string;
-    name: string;
-    permissions?: string[];
-  }>;
-  error?: string;
-}
+type VerificationResult = PlatformVerificationResult;
 
 /**
  * Initiate verification after client confirms authorization
@@ -286,58 +264,6 @@ export async function executeVerification(
         attempts: { increment: 1 },
       },
     });
-  }
-}
-
-/**
- * Verify platform access using appropriate connector
- */
-async function verifyPlatformAccess(
-  platform: string,
-  accessToken: string,
-  jobData: {
-    clientEmail: string;
-    requiredAccessLevel: AccessLevel;
-    agencyIdentity: {
-      email?: string;
-      businessId?: string;
-    };
-  },
-  verificationId: string
-): Promise<VerificationResult> {
-  switch (platform) {
-    case 'meta_ads':
-    case 'meta_pages':
-      return await metaConnector.verifyClientAccess(
-        accessToken,
-        jobData.agencyIdentity.businessId || '',
-        jobData.clientEmail,
-        jobData.requiredAccessLevel
-      );
-
-    case 'google_ads':
-      return await googleAdsConnector.verifyClientAccess(
-        accessToken,
-        jobData.clientEmail,
-        jobData.requiredAccessLevel
-      );
-
-    case 'ga4':
-      // For GA4, we need the property ID which should come from confirmation data
-      // For MVP, we'll use the agency's identity
-      return await ga4Connector.verifyClientAccess(
-        accessToken,
-        jobData.clientEmail,
-        '', // Property ID would come from client confirmation data
-        jobData.requiredAccessLevel
-      );
-
-    default:
-      return {
-        hasAccess: false,
-        accessLevel: 'read_only',
-        error: `Unsupported platform: ${platform}`,
-      };
   }
 }
 
