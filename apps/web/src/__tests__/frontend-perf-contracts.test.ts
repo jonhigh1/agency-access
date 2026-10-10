@@ -72,7 +72,7 @@ describe('GTM placement', () => {
 
 describe('third-party JS gating', () => {
   it('lazy-loads Sentry Replay instead of registering it at client init', () => {
-    const source = fs.readFileSync(path.join(webRoot, 'sentry.client.config.ts'), 'utf8');
+    const source = fs.readFileSync(path.join(webRoot, 'instrumentation-client.ts'), 'utf8');
     expect(source).not.toMatch(/integrations:\s*\[Sentry\.replayIntegration\(\)\]/);
     expect(source).toContain("lazyLoadIntegration('replayIntegration')");
   });

@@ -17,7 +17,7 @@ https://336d2646d3970e13ba997b0f41a0c8dd@o4511018218946560.ingest.us.sentry.io/4
 - ✅ Sentry SDK installed (`@sentry/nextjs`)
 - ✅ Server-side configuration (`sentry.server.config.ts`)
 - ✅ Edge runtime configuration (`sentry.edge.config.ts`)
-- ✅ Client-side initialization in `instrumentation-client.ts`
+- ✅ Client-side initialization in `instrumentation-client.ts` (Turbopack-safe; not `sentry.client.config.ts`)
 - ✅ Global error boundary (`app/global-error.tsx`)
 - ✅ Source map uploads configured in `next.config.ts`
 - ✅ DSN configured in `.env.local`
@@ -57,8 +57,8 @@ Add these to `apps/web/.env.local`:
 ```bash
 # Sentry Source Map Upload
 SENTRY_AUTH_TOKEN=sntrys_YOUR_TOKEN_HERE
-SENTRY_ORG=your-org-slug
-SENTRY_PROJECT=javascript-nextjs
+SENTRY_ORG=authhub
+SENTRY_PROJECT=node
 ```
 
 ### Step 3: Configure Sentry Webhook Integration (Automated Issue Tracking)

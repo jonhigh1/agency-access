@@ -11,3 +11,12 @@ describe('server sentry config', () => {
     expect(source).not.toContain('replayIntegration(');
   });
 });
+
+describe('client sentry config', () => {
+  it('lives in instrumentation-client.ts for Turbopack', () => {
+    const webRoot = path.resolve(import.meta.dirname, '..', '..');
+    const source = fs.readFileSync(path.join(webRoot, 'instrumentation-client.ts'), 'utf8');
+    expect(source).toContain('Sentry.init(');
+    expect(fs.existsSync(path.join(webRoot, 'sentry.client.config.ts'))).toBe(false);
+  });
+});

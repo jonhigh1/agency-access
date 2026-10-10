@@ -10,8 +10,7 @@ import { AppProviders } from '../app-providers';
  * lives on this shared layout so every route under /invite (the main flow
  * page, the nested manual-invite pages, and oauth-callback) inherits it and
  * no route can opt out by being forgotten. Analytics-side scrubbing lives in
- * instrumentation-client.ts (PostHog sanitize_properties) and
- * sentry.client.config.ts (beforeSend).
+ * instrumentation-client.ts (PostHog sanitize_properties and Sentry beforeSend).
  *
  * AppProviders supplies the React Query client. The invite page uses
  * useUserAgency (React Query) for preview analytics; without the provider

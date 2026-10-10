@@ -10,6 +10,7 @@ import type { ErrorEvent, EventHint } from "@sentry/node";
 import { nodeProfilingIntegration } from "@sentry/profiling-node";
 import { redactSentryEvent, scrubSentryBreadcrumb } from "./lib/sentry-redaction.js";
 import { resolveSentryEnvironment } from "./lib/sentry-environment.js";
+import { resolveSentryRelease } from "./lib/sentry-release.js";
 
 // Get DSN from environment
 const dsn = process.env.SENTRY_DSN || "https://336d2646d3970e13ba997b0f41a0c8dd@o4511018218946560.ingest.us.sentry.io/4511018267574272";
@@ -47,8 +48,13 @@ if (!dsn || dsn === "") {
       // Environment: SENTRY_ENVIRONMENT (e.g. "staging"), else NODE_ENV
       environment: resolveSentryEnvironment(process.env.SENTRY_ENVIRONMENT, process.env.NODE_ENV),
 
-      // Release tracking for error correlation
-      release: process.env.APP_VERSION || undefined,
+      // Match deploy git SHA so events attach to the same release as builds
+      release: resolveSentryRelease(
+        process.env.APP_VERSION,
+        process.env.SENTRY_RELEASE,
+        process.env.RENDER_GIT_COMMIT,
+        process.env.VERCEL_GIT_COMMIT_SHA
+      ),
 
       // Filter out sensitive data
       beforeSend(event: ErrorEvent, _hint: EventHint) {

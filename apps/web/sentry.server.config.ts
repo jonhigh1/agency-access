@@ -1,5 +1,6 @@
 import * as Sentry from "@sentry/nextjs";
 import { resolveSentryEnvironment } from "./src/lib/sentry-environment";
+import { resolveSentryRelease } from "./src/lib/sentry-release";
 
 Sentry.init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN || "https://336d2646d3970e13ba997b0f41a0c8dd@o4511018218946560.ingest.us.sentry.io/4511018267574272",
@@ -35,6 +36,11 @@ Sentry.init({
     process.env.NODE_ENV
   ),
 
-  // Release tracking for error correlation
-  release: process.env.NEXT_PUBLIC_APP_VERSION || undefined,
+  // Match sourcemap upload release (git SHA on Vercel/Render when set)
+  release: resolveSentryRelease(
+    process.env.NEXT_PUBLIC_APP_VERSION,
+    process.env.NEXT_PUBLIC_SENTRY_RELEASE,
+    process.env.SENTRY_RELEASE,
+    process.env.VERCEL_GIT_COMMIT_SHA
+  ),
 });

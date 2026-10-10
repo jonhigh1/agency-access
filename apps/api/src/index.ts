@@ -42,6 +42,7 @@ import { performanceOnRequest, performanceOnSend } from './middleware/performanc
 import { shouldSkipGlobalLimiter } from './middleware/v1-gate.js';
 import { prisma } from './lib/prisma.js';
 import { redactSensitiveString } from './lib/sentry-redaction.js';
+import { shouldReportServerError } from './lib/sentry-capture.js';
 
 const trustProxy = env.TRUST_PROXY_IPS.length > 0 ? env.TRUST_PROXY_IPS : false;
 
@@ -163,8 +164,9 @@ fastify.setErrorHandler((error: unknown, _request, reply) => {
   const statusCode = err.statusCode ?? 500;
   const message = err?.message || 'An unexpected error occurred';
 
-  // Capture 500 errors in Sentry (4xx are client errors, don't need tracking)
-  if (statusCode >= 500 && process.env.SENTRY_DSN) {
+  // Capture 500 errors in Sentry (4xx are client errors, don't need tracking).
+  // Gate on SDK init — not env presence — so hardcoded DSN fallback still reports.
+  if (shouldReportServerError(statusCode, Sentry.isInitialized())) {
     Sentry.captureException(error);
   }
 

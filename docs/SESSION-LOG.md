@@ -1,3 +1,40 @@
+## Session: 2026-10-09 — Sentry CLI audit + high-severity config/code fixes
+
+### What was done
+- Audited Sentry via `sentry-cli` (ingest OK; org `authhub`; live project `node`; `agency-access-frontend` missing; 2/100 releases had events; none finalized; repos unlinked; local token `org:ci` only).
+- Fixed high-severity gaps without commit/PR:
+  - Client `Sentry.init` moved into `instrumentation-client.ts`; deleted `sentry.client.config.ts` (Turbopack-safe).
+  - API 500 capture gates on `Sentry.isInitialized()` via `shouldReportServerError` (not env DSN presence).
+  - `next.config.ts` defaults `SENTRY_ORG=authhub` / `SENTRY_PROJECT=node`; exposes `NEXT_PUBLIC_SENTRY_RELEASE` from Vercel git SHA.
+  - `resolveSentryRelease` on web + API (APP_VERSION / SENTRY_RELEASE / host git SHA).
+  - Env examples + `docs/monitoring/SENTRY_SETUP.md` aligned to live org/project.
+
+### Decisions
+- Keep single live project `node` for now (DSN already points there); splitting web/api projects deferred until a real Next project + DSN exist in Sentry.
+- Webhook→local task files on Render left as known med gap (ephemeral FS).
+
+### Next steps
+- Set `SENTRY_AUTH_TOKEN` + `SENTRY_ORG`/`SENTRY_PROJECT` on Vercel; confirm `SENTRY_DSN` on Render.
+- Optionally finalize releases + link GitHub repo in Sentry; create separate frontend project later.
+
+## Session: 2026-10-09 — Email onboarding flow audit artifact (`docs/email-onboarding-flow.html`)
+
+### What was done
+- Built `docs/email-onboarding-flow.html` — self-contained "Inbox as Evidence" audit page: 5 email records in send order (including the ghost record for the missing expiry-warning email), the full client-journey attachment (phases, wizard, OAuth/manual split, progress vocabulary, resume, terminal states), the day-0→60 agency sequence in an ink panel, and a findings register G1–G6. Every quoted string verified verbatim against source at `main@c3319e2c`.
+- Follow-up (Jon request): the sequence section now carries the **actual email bodies** — each row's subject is a 44px disclosure revealing the full verbatim text (both day-3 branch variants), triggers corrected to the code's real skip conditions (activation / churn opt-out on days 14/30/60), and a G6 mailnote on day 1* (its forwardable note links the legacy `/authorize` alias). Rule layer re-verified clean (vq5); one in-round catch: 7 subject toggles under the 24px tap-target floor → raised to 44px.
+- Flow facts mapped by a subagent sweep (emails, `/invite/[token]` phases, OAuth/manual registry partition, agency trigger layer, telemetry); composition chosen through the impeccable decision page (dealt lead "Inbox as Evidence", seed `8da60485`); built code-led in Acid Brutalism v2.
+- QA closed through both gates: impeccable finish review returned **ship** (after one recapture for stale/wrong-region evidence and one fix round: 44px touch target, +0.10em mono tracking, contract/render coral agreement; ~45 quotes verified against source) and visual-qa returned **PASS-WITH-NITS** at its 2-iteration cap (rule layer clean: zero overflow, no broken images/console errors; earlier FAIL findings fixed: split-column overflow at 390, prose measure, ink-panel table stacking, punctuation jams).
+- Receipts in `.impeccable/review/` (named viewport captures + `vq/`–`vq3/` full-page renders and rules JSON). Detector ran degraded (regex fallback); its font-size advisories re-judged by hand against the canonical v2 ramp. File is **uncommitted**.
+
+### Decisions
+- No DEC-XXX: documentation artifact only, no product code touched.
+- Ghost-record treatment chosen for the missing expiry email (dashed card, "NOT SENT · MISSING TEMPLATE") — the audit's key finding rendered as an absence, not prose.
+- Left standing by design: coral block cursor (sanctioned ink-panel device), day-marker coral (contract line amended to name it), file-scoped tiny-text ignore for the documented 10–11px mono micro-labels.
+
+### Next steps
+- Commit the artifact when ready (Jon's call).
+- Product-side: findings G1 (no expiry-warning email) and G2 (all platforms mandatory → N wizard loops) are the high-severity inputs to the pending funnel re-rank; G3 docs drift is a cheap cleanup pass.
+
 ## Session: 2026-10-09 — Architecture cards 2/3/5 ce-work closed (Phase 3–4)
 
 ### What was done

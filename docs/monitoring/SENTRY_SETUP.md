@@ -17,17 +17,17 @@ https://336d2646d3970e13ba997b0f41a0c8dd@o4511018218946560.ingest.us.sentry.io/4
 - ✅ Sentry SDK installed (`@sentry/nextjs`)
 - ✅ Server-side configuration (`sentry.server.config.ts`)
 - ✅ Edge runtime configuration (`sentry.edge.config.ts`)
-- ✅ Client-side initialization in `instrumentation-client.ts`
+- ✅ Client-side initialization in `instrumentation-client.ts` (required for Turbopack; do not use `sentry.client.config.ts`)
 - ✅ Global error boundary (`app/global-error.tsx`)
-- ✅ Source map uploads configured in `next.config.ts`
-- ✅ DSN configured in `.env.local`
+- ✅ Source map uploads configured in `next.config.ts` (org `authhub`, project `node`)
+- ✅ DSN fallback in code; set `NEXT_PUBLIC_SENTRY_DSN` / `SENTRY_AUTH_TOKEN` in Vercel for prod uploads
 
 ### Backend (Fastify)
 - ✅ Sentry SDK installed (`@sentry/node`)
-- ✅ Instrumentation file created (`apps/api/instrument.ts`)
-- ✅ Error handler integration in `src/index.ts`
+- ✅ Instrumentation file created (`apps/api/src/instrument.ts`)
+- ✅ Error handler reports 500s when `Sentry.isInitialized()` (not only when env DSN is set)
 - ✅ Performance tracing enabled
-- ✅ DSN configured in `.env`
+- ✅ DSN fallback in code; set `SENTRY_DSN` on Render
 - ✅ Webhook endpoint created (`/api/webhooks/sentry`)
 
 ---
@@ -55,10 +55,10 @@ https://336d2646d3970e13ba997b0f41a0c8dd@o4511018218946560.ingest.us.sentry.io/4
 Add these to `apps/web/.env.local`:
 
 ```bash
-# Sentry Source Map Upload
+# Sentry Source Map Upload (CLI-verified live project)
 SENTRY_AUTH_TOKEN=sntrys_YOUR_TOKEN_HERE
-SENTRY_ORG=your-org-slug
-SENTRY_PROJECT=javascript-nextjs
+SENTRY_ORG=authhub
+SENTRY_PROJECT=node
 ```
 
 ### Step 3: Configure Sentry Webhook Integration (Automated Issue Tracking)

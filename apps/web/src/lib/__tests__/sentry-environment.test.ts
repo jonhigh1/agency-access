@@ -23,7 +23,7 @@ describe('resolveSentryEnvironment (web)', () => {
 describe('sentry configs use resolveSentryEnvironment', () => {
   const webRoot = path.resolve(import.meta.dirname, '..', '..', '..');
 
-  it.each(['sentry.server.config.ts', 'sentry.edge.config.ts', 'sentry.client.config.ts'])(
+  it.each(['sentry.server.config.ts', 'sentry.edge.config.ts', 'instrumentation-client.ts'])(
     '%s no longer hard-codes NODE_ENV as the environment',
     (file) => {
       const source = fs.readFileSync(path.join(webRoot, file), 'utf8');
@@ -33,7 +33,7 @@ describe('sentry configs use resolveSentryEnvironment', () => {
   );
 
   it('the browser config reads the NEXT_PUBLIC_ variable (only those are inlined)', () => {
-    const source = fs.readFileSync(path.join(webRoot, 'sentry.client.config.ts'), 'utf8');
+    const source = fs.readFileSync(path.join(webRoot, 'instrumentation-client.ts'), 'utf8');
     expect(source).toContain('process.env.NEXT_PUBLIC_SENTRY_ENVIRONMENT');
   });
 });
