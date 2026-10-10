@@ -3,7 +3,7 @@
   "checkpoint_id": "01M4KMVWDAPNMY1DRP3VWA180Z",
   "strategy": "manual-commit",
   "branch": "main",
-  "checkpoints_count": 2,
+  "checkpoints_count": 3,
   "files_touched": [
     "docs/seo-patterns.md",
     "marketing/CONTENT-STRATEGY-2026.md"
@@ -20,6 +20,13 @@
       "metadata": "/1/metadata.json",
       "transcript": "/1/full.jsonl",
       "content_hash": "/1/content_hash.txt",
+      "prompt": ""
+    },
+    {
+      "metadata": "/2/metadata.json",
+      "transcript": "/2/full.jsonl",
+      "compact_transcript": "/2/transcript.jsonl",
+      "content_hash": "/2/content_hash.txt",
       "prompt": ""
     }
   ],
