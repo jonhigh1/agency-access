@@ -303,6 +303,7 @@ Actively manage institutional knowledge. This is as important as the current tas
 **Organize as a hierarchy of .md files:**
 - `docs/START-HERE.md` and `docs/` subdirs (solutions/, sprints/, features/) route to categories
 - `docs/solutions/` holds documented solutions to past problems (bugs, patterns, workflow lessons), organized by category with YAML frontmatter (`module`, `tags`, `problem_type`) — relevant when implementing or debugging in a documented area
+- `docs/flows/` holds agent-facing specs for the client-invite, onboarding-email, and access-request flows, each with source anchors — read before reworking or debugging those flows; a walker test (`scripts/tests/flow-spec-anchors.test.mjs`) fails on stale anchors
 - `CONCEPTS.md` (repo root) is the shared domain vocabulary — useful when orienting to the codebase
 - Categories hold the details
 - Progressive disclosure: read top-down, only load what is needed
@@ -324,7 +325,7 @@ Actively manage institutional knowledge. This is as important as the current tas
 
 **Start of session:** Read the last 3–5 entries in `docs/SESSION-LOG.md` to get current status and next steps.
 
-**End of session (when wrapping up):** Append a new entry to `docs/SESSION-LOG.md` (newest first) with: what was done, files changed, decisions made, next steps. Add any significant technical decisions to `docs/DECISIONS.md` using the DEC-XXX format there.
+**End of session (when wrapping up):** Write the capture distillation once: append it to `docs/SESSION-LOG.md` (newest first) with what was done, files changed, decisions made, and next steps, marking each durable claim inline per the marker taxonomy in `docs/workspace/memory-loop.md`. That one write is the session-log entry; do not maintain a separate summary. Add any significant technical decisions to `docs/DECISIONS.md` using the DEC-XXX format there.
 
 ## Task Management
 
