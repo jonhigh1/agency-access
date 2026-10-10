@@ -20,3 +20,11 @@ Authority order for memory: user instruction, live code and tests, promoted repo
 | Curated claims | Capture distillation, doubled as the session-log entry | `docs/SESSION-LOG.md` (committed) |
 
 No event has two owners. Single-slot `now.md` is retired; concurrent sessions write session-identity-prefixed blocks.
+
+## Hook composition (U2)
+
+- Session identity is the host sessionID, received independently by both plugins. Dedup key is date plus session identity.
+- agentmemory capture plugin: observations on prompts, tool calls, diffs, and status changes; `/session/end` plus forced consolidation on session delete; summarize on idle and compaction.
+- Entire plugin: raw transcript into `.remember/`; its `now.md` stays an Entire-owned latest-status slot, never a memory store the loop depends on.
+- The two stores never share a write surface (per-machine server store vs repo `.remember/`), so parallel sessions cannot corrupt each other; verification is per-store intactness, not cross-store locking.
+- The `.remember/` convention note lives here instead of in `.remember/` because that directory is gitignored and unrecoverable.
