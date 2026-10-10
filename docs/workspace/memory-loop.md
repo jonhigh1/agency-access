@@ -18,6 +18,11 @@ Authority order for memory: user instruction, live code and tests, promoted repo
 - Mandatory solution frontmatter: `title`, `date`, `category`, `module`, `problem_type`, `tags`; optional `component`, `symptoms`, `root_cause`, `resolution_type`, `severity`, `supersedes`. Enforced by `scripts/memory/check-frontmatter.mjs`, wired into root `test:run`.
 - Promotion writes the learning back into agentmemory as a high-confidence lesson so recall improves.
 
+## Tentative queue and heal (U5)
+
+- The scheduled heal pass owns every tentative claim per `docs/memory-heal-runbook.md`. Expiry is recorded as a flag for approval, never a direct write.
+- Last-run heartbeat lives in `docs/memory-heal-verdicts.md`. The retrieve path reads it and warns when overdue.
+
 ## Claim markers (U3)
 
 Six states, marked inline on the source entry. `pending` is the default unmarked state.
