@@ -812,7 +812,7 @@ export default function ClientAuthorizationPage({
           loadError ||
           (loadPhase === 'timeout'
             ? 'The request took too long to load. Please retry or contact your agency for a new link.'
-            : 'This request link is invalid or expired. Contact your agency for a new link.')
+            : "We couldn't load this request. Please try again, or contact your agency if it keeps failing.")
         }
         onRetry={retryLoad}
       />

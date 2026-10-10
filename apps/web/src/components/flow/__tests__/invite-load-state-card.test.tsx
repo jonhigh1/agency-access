@@ -22,4 +22,17 @@ describe('InviteLoadStateCard', () => {
     expect(screen.getByRole('link', { name: /contact support/i })).toHaveAttribute('href', '/contact');
     expect(screen.queryByText(/nothing has been shared/i)).not.toBeInTheDocument();
   });
+
+  it('does not call the link broken when the load failed without a terminal code', () => {
+    render(
+      <InviteLoadStateCard
+        phase="error"
+        message="Failed to load authorization request."
+        onRetry={vi.fn()}
+      />
+    );
+
+    expect(screen.getByRole('heading', { name: /couldn't load this request/i })).toBeInTheDocument();
+    expect(screen.queryByText(/not working|invalid or expired/i)).not.toBeInTheDocument();
+  });
 });
