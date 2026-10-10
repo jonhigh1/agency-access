@@ -3,7 +3,7 @@
   "checkpoint_id": "01M4KK6SKBFEKYM550XK64B6YX",
   "strategy": "manual-commit",
   "branch": "worktree-feat+social-proof-rollout",
-  "checkpoints_count": 6,
+  "checkpoints_count": 7,
   "files_touched": [
     "apps/web/src/app/(marketing)/page.tsx",
     "apps/web/src/components/marketing/__tests__/marketing-copy.claims.test.ts",
@@ -56,6 +56,13 @@
       "transcript": "/5/full.jsonl",
       "compact_transcript": "/5/transcript.jsonl",
       "content_hash": "/5/content_hash.txt",
+      "prompt": ""
+    },
+    {
+      "metadata": "/6/metadata.json",
+      "transcript": "/6/full.jsonl",
+      "compact_transcript": "/6/transcript.jsonl",
+      "content_hash": "/6/content_hash.txt",
       "prompt": ""
     }
   ],
