@@ -1,3 +1,22 @@
+## Session: 2026-10-10 — ClientInvite SEO units U4–U10 on main
+
+### What was done
+- Pushed U1–U3 already on `origin/main`, then shipped U4–U8 and U10 as incremental main commits. U9 skipped (no real customer). → `tentative (recheck: origin/main contains 4b7232d1)`
+- U4: blog `faqs:` frontmatter is the FAQPage source; `/authors/jon-high` Person page; invented bylines remapped to Jon High. → `tentative (recheck: /authors/jon-high 200 on authhub.co)`
+- U5: ungated `/tools/access-level` (platform family plus job to admin/standard/read_only/email_only). No Graph API. → `tentative (recheck: /tools/access-level public)`
+- U6: mock access-link widget on every guide. → `tentative (recheck: Meta guide widget)`
+- U7: `/uses` cluster (PPC, SEO, freelance, in-house). → `tentative (recheck: /uses 200)`
+- U8: `/stats` sourced list prices; four bylined client-access posts. No invented case-study metrics. → `tentative (recheck: /stats citations)`
+- U10: `marketing/CONTENT-STRATEGY-2026.md` URL map + `docs/seo-patterns.md` FAQ-from-content / tools policy. → `pending`
+
+### Decisions
+- Stay on main; unrelated dirty files left unstaged. → `tentative (recheck: git status)`
+- Case studies stay unpublished until Jon supplies a real customer. → `pending`
+
+### Next steps
+- Production indexation: GSC inspect `/tools/access-level`, `/uses`, `/stats`, `/authors/jon-high`.
+- Supply a real customer before any U9 case study.
+
 ## Session: 2026-10-09 — Agent-facing flow specs (`docs/flows/`) + anchor walker
 
 ### What was done
