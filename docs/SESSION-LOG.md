@@ -1,29 +1,18 @@
-## Session: 2026-10-09 — Architecture cards 2 / 3 / 5 ce-work on main
+## Session: 2026-10-09 — Architecture cards 2/3/5 ce-work closed (Phase 3–4)
 
 ### What was done
-- Executed `docs/plans/2026-10-09-feat-architecture-cards-2-3-5-plan.md` on `main` (no feature branch).
-- Card 2: Meta fulfillment lib (U1), Google grant lifecycle resolver (U2), verification handler table + walker prune (U3). U4 optional skipped.
-- Card 3: invite `product-selection-summary` extract + wizard walker prune (U5). U6 optional skipped (wizard still ~1.7k; non-walker).
-- Card 5: `authMode` OAuth / api_key union, beehiiv `as any` gone (U7); Google `getAccountsForProduct` unquoted-key map + walker prune (U8); deleted `TEMPLATE.ts` + excludes (U9).
-- Commits on main through `4509f1b3` (U9). Walker green; factory-completeness + google dispatch tests green.
+- Reconciled plan `docs/plans/2026-10-09-feat-architecture-cards-2-3-5-plan.md`: U1–U9 all present on `main` through `c3319e2c` (U4/U6 included).
+- Verification: walker green; named API/web suites green (including `platform-verification-handlers.test.ts`).
+- `ce-code-review` receipt `20261009-184456-6f5f67c9` (focused; verdict Ready with fixes). Applied P2: client-detail MCC `manager_link` characterization in `client.service.test.ts`.
+- Already shipped on `main` (Jon directed stay-on-main); no feature-branch PR.
 
 ### Decisions
-- Stay on main for this plan (Jon). Skip optional U4 / U6.
-- Connector union uses `authMode` discriminant; `getConnector` rejects api_key platforms.
+- Code review receipt: `/tmp/compound-engineering-501/ce-code-review/20261009-184456-6f5f67c9`
+- Residual: legacy rows with only `grantedAssets.instagram` ignored until re-save; TikTok advertisers-array web/API count asymmetry pre-existing.
 
 ### Next steps
 - Deferred: vocabulary enum merge (KTD3), `google-offboarding-executor` walker entry, Meta → BaseConnector.
 - Entire pre-push durable fix still parked.
-
-## Session: 2026-10-09 — Architecture cards U4 + U6 on main
-
-### What was done
-- U4: `apps/api/src/lib/product-fulfillment.ts` — shared `extractSelectedAssets` (Instagram → `meta_ads`), selection snapshot, asset-selecting evaluator; access-request + client detail rewired; client Instagram fixture pinned to `meta_ads` (`0b818c52`).
-- U6: invite resume/prefill + checklist overlay hooks (`useMetaResumePrefill`, `useMetaGrantChecklistOverlay`), pure `meta-resume-prefill` + `meta-oauth-popup`; wizard ~1678 → ~1536 lines. PlatformAuthWizard suites green.
-
-### Decisions
-- Client detail reads Instagram from `meta_ads` only (no legacy `instagram` key fallback).
-- U6 success is session seam clarity, not walker prune.
 
 ## Session: 2026-10-08/09 — PLATFORMS registry: Phases 2a–3 shipped; the partition has one owner and an enforcement layer
 

@@ -6,6 +6,10 @@ topic: architecture-cards-2-3-5
 artifact_contract: ce-unified-plan/v1
 product_contract_source: ce-plan-bootstrap
 execution: code
+status: completed
+completed_at: 2026-10-09
+completed_head: c3319e2c
+ce_code_review_run_id: 20261009-184456-6f5f67c9
 ---
 
 # Architecture review cards 2 / 3 / 5 — Plan

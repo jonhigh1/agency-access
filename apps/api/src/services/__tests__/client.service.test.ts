@@ -538,6 +538,82 @@ describe('Phase 5: Client Service - TDD Tests', () => {
       ]);
     });
 
+    it('surfaces agency MCC manager_link as the Google Ads fulfillment mode on client detail', async () => {
+      vi.mocked(mockPrisma.agencyPlatformConnection.findMany).mockResolvedValue([
+        {
+          platform: 'google',
+          metadata: {
+            googleAssetSettings: {
+              googleAdsManagement: {
+                preferredGrantMode: 'manager_link',
+                managerCustomerId: '999-888-7777',
+              },
+            },
+          },
+        },
+      ] as any);
+      vi.mocked(mockPrisma.client.findUnique).mockResolvedValue({
+        id: 'client-1',
+        agencyId: 'agency-1',
+        name: 'Taylor Client',
+        company: 'Acme',
+        email: 'taylor@acme.com',
+        website: null,
+        language: 'en',
+        createdAt: new Date('2026-03-01T00:00:00.000Z'),
+        updatedAt: new Date('2026-03-05T00:00:00.000Z'),
+        accessRequests: [
+          {
+            id: 'request-google-mcc',
+            clientName: 'Google Ads MCC',
+            status: 'partial',
+            createdAt: new Date('2026-03-08T00:00:00.000Z'),
+            authorizedAt: new Date('2026-03-08T01:00:00.000Z'),
+            platforms: { google: ['google_ads'] },
+            connection: {
+              id: 'connection-mcc',
+              status: 'active',
+              createdAt: new Date('2026-03-08T01:00:00.000Z'),
+              grantedAssets: {
+                google_ads: {
+                  adAccounts: [{ id: 'acc-1', name: 'Main Account' }],
+                },
+              },
+              authorizations: [
+                {
+                  platform: 'google',
+                  status: 'active',
+                  metadata: {},
+                },
+              ],
+            },
+          },
+        ],
+      } as any);
+
+      const result = await clientService.getClientDetail({
+        clientId: 'client-1',
+        agencyId: 'agency-1',
+      });
+
+      expect(result?.platformGroups).toEqual([
+        expect.objectContaining({
+          platformGroup: 'google',
+          products: [
+            expect.objectContaining({
+              product: 'google_ads',
+              status: 'pending',
+              googleGrantLifecycle: expect.objectContaining({
+                fulfillmentMode: 'manager_link',
+                state: 'oauth_only_insufficient',
+                isFulfilled: false,
+              }),
+            }),
+          ],
+        }),
+      ]);
+    });
+
     it('aggregates platform-group progress and product-level statuses', async () => {
       vi.mocked(mockPrisma.client.findUnique).mockResolvedValue({
         id: 'client-1',
