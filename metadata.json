@@ -3,7 +3,7 @@
   "checkpoint_id": "01M4KKTXBX1MJ4529PAG1A3MV8",
   "strategy": "manual-commit",
   "branch": "main",
-  "checkpoints_count": 2,
+  "checkpoints_count": 3,
   "files_touched": [
     "apps/web/src/components/guides/__tests__/access-link-demo.test.tsx",
     "apps/web/src/components/guides/access-link-demo.tsx",
@@ -21,6 +21,13 @@
       "metadata": "/1/metadata.json",
       "transcript": "/1/full.jsonl",
       "content_hash": "/1/content_hash.txt",
+      "prompt": ""
+    },
+    {
+      "metadata": "/2/metadata.json",
+      "transcript": "/2/full.jsonl",
+      "compact_transcript": "/2/transcript.jsonl",
+      "content_hash": "/2/content_hash.txt",
       "prompt": ""
     }
   ],

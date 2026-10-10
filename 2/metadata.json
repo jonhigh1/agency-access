@@ -1,0 +1,39 @@
+{
+  "cli_version": "0.10.2",
+  "checkpoint_id": "01M4KKTXBX1MJ4529PAG1A3MV8",
+  "session_id": "7ead3302-724a-4d12-a9f5-9bc8943c3819",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-10T19:15:02.809671Z",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "apps/web/src/components/guides/__tests__/access-link-demo.test.tsx",
+    "apps/web/src/components/guides/access-link-demo.tsx",
+    "apps/web/src/components/guides/guide-template.tsx"
+  ],
+  "agent": "Factory AI Droid",
+  "model": "",
+  "turn_id": "9c00072401b6",
+  "checkpoint_transcript_start": 2,
+  "transcript_lines_at_start": 2,
+  "compact_transcript_start": 1,
+  "token_usage": {
+    "input_tokens": 0,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 0,
+    "api_call_count": 0
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-10-10T19:15:02.788664Z",
+    "agent_lines": 0,
+    "agent_removed": 0,
+    "human_added": 108,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 108,
+    "total_lines_changed": 108,
+    "agent_percentage": 0,
+    "metric_version": 2
+  }
+}
