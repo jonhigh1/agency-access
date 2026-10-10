@@ -1,0 +1,27 @@
+{
+  "cli_version": "0.10.2",
+  "checkpoint_id": "01M4KMBYK0FN4S5EHYCEWSSGHX",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "apps/web/src/__tests__/proxy.test.ts",
+    "apps/web/src/app/(marketing)/compare/page.tsx",
+    "apps/web/src/app/(marketing)/guides/page.tsx",
+    "apps/web/src/app/(marketing)/pricing/page.tsx",
+    "apps/web/src/app/layout.tsx",
+    "apps/web/src/app/sitemap.ts",
+    "apps/web/src/components/marketing/__tests__/marketing-footer.test.tsx",
+    "apps/web/src/components/marketing/marketing-footer.tsx",
+    "apps/web/src/proxy.ts"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ]
+}
