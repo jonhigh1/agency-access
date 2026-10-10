@@ -3,7 +3,7 @@
   "checkpoint_id": "01M4KMVE4BKE190ZTQ4DXXB8AB",
   "strategy": "manual-commit",
   "branch": "main",
-  "checkpoints_count": 5,
+  "checkpoints_count": 6,
   "files_touched": [
     "apps/web/content/blog/admin-vs-standard-vs-read-only-agency-access.md",
     "apps/web/content/blog/google-ads-access-agency.md",
@@ -58,6 +58,13 @@
       "compact_transcript": "/4/transcript.jsonl",
       "content_hash": "/4/content_hash.txt",
       "prompt": ""
+    },
+    {
+      "metadata": "/5/metadata.json",
+      "transcript": "/5/full.jsonl",
+      "compact_transcript": "/5/transcript.jsonl",
+      "content_hash": "/5/content_hash.txt",
+      "prompt": "/5/prompt.txt"
     }
   ],
   "token_usage": {
