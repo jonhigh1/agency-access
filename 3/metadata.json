@@ -1,0 +1,42 @@
+{
+  "cli_version": "0.10.2",
+  "checkpoint_id": "01M4J5228JFYD4JE1VEW1EMXH0",
+  "session_id": "a911b358-03e2-48a1-bf14-7b228f132721",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-10T05:37:34.503177Z",
+  "branch": "feat/agent-memory-loop",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "docs/memory-loop-premise-tally.md",
+    "docs/solutions/stale-design-frontmatter-token-trap.md",
+    "docs/workspace/memory-loop.md",
+    "package.json",
+    "scripts/memory/check-frontmatter.mjs",
+    "scripts/tests/memory-frontmatter.test.mjs"
+  ],
+  "agent": "Factory AI Droid",
+  "model": "",
+  "turn_id": "3d45d9c243b8",
+  "checkpoint_transcript_start": 2,
+  "transcript_lines_at_start": 2,
+  "compact_transcript_start": 1,
+  "token_usage": {
+    "input_tokens": 0,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 0,
+    "api_call_count": 0
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-10-10T05:37:34.477795Z",
+    "agent_lines": 129,
+    "agent_removed": 2,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 129,
+    "total_lines_changed": 131,
+    "agent_percentage": 100,
+    "metric_version": 2
+  }
+}
