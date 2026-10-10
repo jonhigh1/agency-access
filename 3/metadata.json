@@ -1,9 +1,11 @@
 {
   "cli_version": "0.10.2",
   "checkpoint_id": "01M4KK6JMZBDGY3AWCDA2K3KA6",
+  "session_id": "a911b358-03e2-48a1-bf14-7b228f132721",
   "strategy": "manual-commit",
+  "created_at": "2026-10-10T19:04:10.368717Z",
   "branch": "main",
-  "checkpoints_count": 4,
+  "checkpoints_count": 1,
   "files_touched": [
     "apps/web/content/blog/agency-ad-account-access-management-guide.md",
     "apps/web/content/blog/best-client-onboarding-software-agencies-2026.md",
@@ -29,40 +31,29 @@
     "apps/web/src/lib/blog-types.ts",
     "apps/web/src/proxy.ts"
   ],
-  "sessions": [
-    {
-      "metadata": "/0/metadata.json",
-      "transcript": "/0/full.jsonl",
-      "compact_transcript": "/0/transcript.jsonl",
-      "content_hash": "/0/content_hash.txt",
-      "prompt": ""
-    },
-    {
-      "metadata": "/1/metadata.json",
-      "transcript": "/1/full.jsonl",
-      "content_hash": "/1/content_hash.txt",
-      "prompt": ""
-    },
-    {
-      "metadata": "/2/metadata.json",
-      "transcript": "/2/full.jsonl",
-      "compact_transcript": "/2/transcript.jsonl",
-      "content_hash": "/2/content_hash.txt",
-      "prompt": ""
-    },
-    {
-      "metadata": "/3/metadata.json",
-      "transcript": "/3/full.jsonl",
-      "compact_transcript": "/3/transcript.jsonl",
-      "content_hash": "/3/content_hash.txt",
-      "prompt": ""
-    }
-  ],
+  "agent": "Factory AI Droid",
+  "model": "",
+  "turn_id": "3d45d9c243b8",
+  "checkpoint_transcript_start": 2,
+  "transcript_lines_at_start": 2,
+  "compact_transcript_start": 1,
   "token_usage": {
     "input_tokens": 0,
     "cache_creation_tokens": 0,
     "cache_read_tokens": 0,
     "output_tokens": 0,
     "api_call_count": 0
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-10-10T19:04:10.27095Z",
+    "agent_lines": 0,
+    "agent_removed": 0,
+    "human_added": 132,
+    "human_modified": 414,
+    "human_removed": 0,
+    "total_committed": 132,
+    "total_lines_changed": 546,
+    "agent_percentage": 0,
+    "metric_version": 2
   }
 }
