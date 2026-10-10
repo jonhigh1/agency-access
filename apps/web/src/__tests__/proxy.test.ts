@@ -49,7 +49,7 @@ describe('proxy public route handling', () => {
     expect(protectMock).not.toHaveBeenCalled();
   });
 
-  it.each(['/guides/meta-ads-access', '/guides/google-ads-access'])('does not protect public guide route %s', async (path) => {
+  it.each(['/guides', '/guides/meta-ads-access', '/guides/google-ads-access'])('does not protect public guide route %s', async (path) => {
     const { default: proxy } = await import('../proxy');
 
     await proxy({ protect: protectMock }, new Request(`https://authhub.test${path}`));
