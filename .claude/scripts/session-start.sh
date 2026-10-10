@@ -53,7 +53,10 @@ If a skill has a checklist, YOU MUST create TodoWrite todos for EACH item.
 **Finding a relevant skill = mandatory to read and use it. Not optional.**
 '
 
-# Load memory.md if it exists
+# Load memory.md if it exists, bounded by the retrieval budget (U6).
+# Priority: workspace docs first (via loop-contract pointer below), then this
+# recalled context, then recent logs. Raw claims already promoted or dropped
+# are skipped at the source: memory.md is archived history, not authority.
 memory_context=""
 
 # Discover workspace root by walking up from current directory
@@ -62,10 +65,15 @@ while [ "$workspace_root" != "/" ] && [ ! -d "$workspace_root/.aipmos" ]; do
     workspace_root=$(dirname "$workspace_root")
 done
 
-# Try to load memory.md
+# Try to load memory.md, capped so session start stays inside budget
 memory_file="$workspace_root/memory-bank/memory.md"
+MEMORY_BUDGET_BYTES=6000
 if [ -f "$memory_file" ]; then
-    memory_context=$(cat "$memory_file")
+    memory_context=$(head -c "$MEMORY_BUDGET_BYTES" "$memory_file")
+    if [ "$(wc -c < "$memory_file" | tr -d ' ')" -gt "$MEMORY_BUDGET_BYTES" ]; then
+        memory_context="${memory_context}
+[…truncated at budget: full history in memory-bank/memory.md, which is archived, not authoritative…]"
+    fi
 fi
 
 # Try to load learned patterns if they exist
@@ -118,9 +126,31 @@ if [ -n "$memory_context" ]; then
 
 ---
 
-## Memory Context
+## Memory Context (recalled, bounded; authority: code > promoted notes > this recall > raw logs; see docs/workspace/memory-loop.md)
 
 ${memory_context}"
+fi
+
+# Heal heartbeat: warn when the last heal verdict is older than 7 days (U6)
+verdicts_file="$workspace_root/docs/memory-heal-verdicts.md"
+heal_warn=""
+if [ ! -f "$verdicts_file" ]; then
+    heal_warn="Memory heal has never run: treat promoted notes as unverified."
+else
+    mtime=$(stat -f "%m" "$verdicts_file" 2>/dev/null || stat -c "%Y" "$verdicts_file" 2>/dev/null)
+    now=$(date +%s)
+    if [ -n "$mtime" ] && [ "$((now - mtime))" -gt 604800 ]; then
+        heal_warn="Memory heal overdue (no verdict in 7+ days): treat promoted notes as unverified."
+    fi
+fi
+if [ -n "$heal_warn" ]; then
+    additional_context="${additional_context}
+
+---
+
+## Heal Status
+
+${heal_warn}"
 fi
 
 if [ -n "$learned_patterns_context" ]; then
