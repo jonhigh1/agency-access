@@ -1017,6 +1017,32 @@ export function getAllComparisonPageSlugs(): string[] {
   ];
 }
 
+export interface CompareHubEntry {
+  slug: string;
+  title: string;
+  summary: string;
+}
+
+export function getCompareHubEntries(): CompareHubEntry[] {
+  return [
+    ...COMPARISON_PAGES.map((page) => ({
+      slug: page.slug,
+      title: page.title,
+      summary: page.metaDescription,
+    })),
+    {
+      slug: THREE_WAY_COMPARE_SLUG,
+      title: leadsieVsAgencyAccessVsAuthHubPage.title,
+      summary: leadsieVsAgencyAccessVsAuthHubPage.metaDescription,
+    },
+    {
+      slug: LEADSIE_PRICING_SLUG,
+      title: leadsiePricingPage.title,
+      summary: leadsiePricingPage.metaDescription,
+    },
+  ];
+}
+
 export function getComparisonLastVerified(slug: string): string | undefined {
   const page = getComparisonPageBySlug(slug);
   if (page?.lastVerified) {

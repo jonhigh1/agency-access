@@ -94,6 +94,7 @@ export function MarketingFooter() {
             <div>
               <h4 className="label-micro mb-4 sm:mb-6">Compare</h4>
               <ul className="space-y-3 sm:space-y-4 text-sm text-gray-600 font-mono">
+                <li><Link href="/compare" className="hover:text-danger-ink hover:underline decoration-2 underline-offset-2 transition-all">All comparisons</Link></li>
                 <li><Link href="/compare/leadsie-alternative" className="hover:text-danger-ink hover:underline decoration-2 underline-offset-2 transition-all">Leadsie Alternative</Link></li>
                 <li><Link href="/compare/agencyaccess-alternative" className="hover:text-danger-ink hover:underline decoration-2 underline-offset-2 transition-all">AgencyAccess Alternative</Link></li>
                 <li><Link href="/compare/clientinvite-alternative" className="hover:text-danger-ink hover:underline decoration-2 underline-offset-2 transition-all">ClientInvite Alternative</Link></li>

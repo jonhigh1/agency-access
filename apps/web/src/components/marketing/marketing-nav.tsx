@@ -173,6 +173,9 @@ export function MarketingNav() {
             <Link href="/pricing">Pricing</Link>
           </Button>
           <Button variant="secondary" size="sm" asChild className="font-bold uppercase tracking-wider">
+            <Link href="/compare">Compare</Link>
+          </Button>
+          <Button variant="secondary" size="sm" asChild className="font-bold uppercase tracking-wider">
             <Link href="/blog" onClick={handleLinkClick}>Blog</Link>
           </Button>
         </div>
@@ -265,6 +268,11 @@ export function MarketingNav() {
                     <Button variant="secondary" size="lg" asChild className="w-full min-h-[60px] font-bold">
                       <Link href="/pricing">
                         Pricing
+                      </Link>
+                    </Button>
+                    <Button variant="secondary" size="lg" asChild className="w-full min-h-[60px] font-bold">
+                      <Link href="/compare">
+                        Compare
                       </Link>
                     </Button>
                     <Button variant="secondary" size="lg" asChild className="w-full min-h-[60px] font-bold">
