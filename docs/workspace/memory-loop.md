@@ -11,6 +11,13 @@ Authority order for memory: user instruction, live code and tests, promoted repo
 - Repo config carries `AGENTMEMORY_URL` only. No secrets are committed; local auth stays open loopback.
 - Recall proof (U1): observation posted keyless returns through hybrid recall. Re-verify after any substrate upgrade.
 
+## Consolidation quality bar (U7, verdict 2026-10-09)
+
+- Operating backend: keyless baseline. Proven live: hook capture with dedup, BM25 recall with session attribution, session summaries, deterministic graph extraction.
+- Deferred arm: provider-backed distillation (richer facts, lesson reinforcement, decay sweeps) needs an approvable model backend; no key or local model is approved today. Consolidation pipeline stays off.
+- Auto-injection stays off: recall runs through MCP tools on demand instead of auto-inject, keeping the repo assembly the truncating authority.
+- Revisit when a backend is approved or recall precision implicates consolidation depth.
+
 ## Verify and promote (U4)
 
 - Verification anchors to the verifying commit SHA from a clean checkout. Procedural learnings with no anchoring commit promote under a decision-record anchor (decision record, date, owner) per the settled 2026-10-09 call.
