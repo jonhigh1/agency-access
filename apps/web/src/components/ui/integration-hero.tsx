@@ -1,5 +1,7 @@
 "use client";
 
+import { SectionBadge } from "@/components/marketing/section-badge";
+
 import { SignUpButton } from '@/components/lazy-clerk-auth-buttons';
 import { Button } from "@/components/ui/button";
 import { PlatformIcon } from "@/components/ui/platform-icon";
@@ -58,10 +60,7 @@ export default function IntegrationHero() {
 
       {/* Content */}
       <div className="relative max-w-7xl mx-auto px-6 text-center">
-        <div className="inline-flex items-center gap-2 border-2 border-black bg-coral text-black px-4 sm:px-6 py-2 text-[10px] sm:text-xs font-bold uppercase tracking-widest font-mono shadow-brutalist rounded-[0.75rem] mb-6">
-          <Zap size={14} />
-          Integration
-        </div>
+        <SectionBadge variant="ink" icon={Zap}>Integration</SectionBadge>
         <h1 className="font-dela text-4xl lg:text-6xl tracking-tight text-ink">
           Connect, Automate, and Scale
         </h1>

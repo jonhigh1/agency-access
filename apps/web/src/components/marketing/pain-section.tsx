@@ -1,6 +1,9 @@
 'use client';
 
+import { SectionBadge } from './section-badge';
+
 import { m } from 'framer-motion';
+import { TriangleAlert } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { Reveal } from './reveal';
 import { useAnimationOrchestrator } from '@/hooks/use-animation-orchestrator';
@@ -213,7 +216,6 @@ function ChatMessage({
 }
 
 export function PainSection() {
-  const { shouldAnimate } = useAnimationOrchestrator();
 
   return (
     <section className="relative py-20 sm:py-24 md:py-32 bg-paper overflow-hidden">
@@ -225,27 +227,7 @@ export function PainSection() {
         <Reveal delay={0.2}>
           <div className="max-w-4xl mx-auto text-center mb-12 sm:mb-16 md:mb-20">
             {/* Warning badge */}
-            <m.div
-              initial={shouldAnimate ? { rotate: -2 } : false}
-              whileInView={shouldAnimate ? { rotate: 0 } : undefined}
-              viewport={{ once: true }}
-              transition={{ duration: 0.3 }}
-              className="inline-flex items-center gap-2 border-2 border-coral bg-coral text-white px-5 py-2.5 text-xs font-bold uppercase tracking-[0.2em] font-mono shadow-brutalist-lg mb-6 rounded-lg hover:shadow-brutalist-lg hover:translate-x-[-2px] hover:translate-y-[-2px] transition-all duration-200"
-            >
-              <m.span
-                animate={shouldAnimate ? { opacity: [1, 0.6, 1] } : undefined}
-                transition={{ duration: 2, repeat: Infinity }}
-              >
-                ⚠️
-              </m.span>
-              The Reality
-              <m.span
-                animate={shouldAnimate ? { opacity: [1, 0.6, 1] } : undefined}
-                transition={{ duration: 2, repeat: Infinity, delay: 0.7 }}
-              >
-                ⚠️
-              </m.span>
-            </m.div>
+            <SectionBadge variant="coral" icon={TriangleAlert}>The Reality</SectionBadge>
 
             {/* Main headline */}
             <h2 className="font-dela text-4xl sm:text-5xl md:text-6xl lg:text-7xl !leading-[1.05] tracking-tight mb-6 text-ink">
