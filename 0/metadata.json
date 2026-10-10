@@ -1,0 +1,20 @@
+{
+  "cli_version": "0.10.2",
+  "checkpoint_id": "01M4HN694XJKYVGGH6AV2JMASV",
+  "session_id": "agent-5486b54a-5e0f-4822-86c9-3927856ccacf",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-10T01:00:14.33812Z",
+  "branch": "main",
+  "checkpoints_count": 5,
+  "files_touched": [],
+  "agent": "Cursor",
+  "model": "default",
+  "turn_id": "97b9d6a87b85",
+  "checkpoint_transcript_start": 95,
+  "transcript_lines_at_start": 95,
+  "compact_transcript_start": 15,
+  "session_metrics": {
+    "duration_ms": 52496,
+    "turn_count": 5
+  }
+}
