@@ -45,19 +45,12 @@ import { metaAssetsService } from '@/services/meta-assets.service.js';
 import { metaAutoAssignService } from '@/services/meta-auto-assign.service.js';
 import { readMetaAuthorizationMetadata } from '@/lib/meta-authorization-metadata.js';
 import { ASSET_SELECTING_PRODUCTS } from '@/lib/asset-selecting-products.js';
+import { getVerifiedMetaGrantProblem } from '@/lib/meta-product-fulfillment.js';
+import type { GoogleAgencyPlatformConnectionSummary } from '@/lib/google-grant-lifecycle-resolver.js';
 import {
-  getSelectedAssetCount,
-  hasNoAssetsSignal,
-} from '@/lib/product-selection-signals.js';
-import {
-  evaluateMetaProductFulfillment,
-  getVerifiedMetaGrantProblem,
-} from '@/lib/meta-product-fulfillment.js';
-import {
-  isGooglePlatformProduct,
-  resolveGoogleGrantLifecycle,
-  type GoogleAgencyPlatformConnectionSummary,
-} from '@/lib/google-grant-lifecycle-resolver.js';
+  evaluateAssetSelectingProductFulfillment,
+  summarizeProductSelectionAcrossConnections,
+} from '@/lib/product-fulfillment.js';
 
 // Payload-history ids from the PLATFORMS registry (DEC-015). Zod needs a
 // non-empty tuple; LEGACY_PAYLOAD_IDS is golden-pinned at seven members.
@@ -701,24 +694,6 @@ function getManualPlatformGrant(
   return grant.platform === requestedProduct.product ? grant : null;
 }
 
-function extractSelectedAssets(
-  requestedProduct: RequestedProduct,
-  connection: AuthorizationProgressConnection
-): Record<string, any> | null {
-  const grantedAssets =
-    (connection.grantedAssets as Record<string, unknown> | null) || null;
-
-  if (!grantedAssets) {
-    return null;
-  }
-
-  const assetProduct = requestedProduct.product === 'instagram' ? 'meta_ads' : requestedProduct.product;
-  const selectedAssets = grantedAssets[assetProduct];
-  return selectedAssets && typeof selectedAssets === 'object'
-    ? (selectedAssets as Record<string, any>)
-    : null;
-}
-
 function evaluateAuthorizationProgress(
   requestedProducts: RequestedProduct[],
   connections: AuthorizationProgressConnection[],
@@ -746,141 +721,37 @@ function evaluateAuthorizationProgress(
       continue;
     }
 
-    let hasAuthorization = false;
-    let hasSelectedAssets = false;
-    let hasNoAssets = false;
-    let resolvedSelectedAssets: Record<string, any> | null = null;
-
-    for (const connection of connections) {
-      if (
-        (connection.authorizations || []).some(
-          (authorization) =>
-            isActiveAuthorizationStatus(authorization.status) &&
-            normalizePlatformGroup(authorization.platform) === requestedProduct.platformGroup
-        )
-      ) {
-        hasAuthorization = true;
+    const selection = summarizeProductSelectionAcrossConnections(
+      requestedProduct.product,
+      requestedProduct.platformGroup,
+      connections,
+      {
+        isActiveAuthorization: (status) =>
+          typeof status === 'string' && isActiveAuthorizationStatus(status),
       }
+    );
 
-      const selectedAssets = extractSelectedAssets(requestedProduct, connection);
-      if (!selectedAssets) {
-        continue;
-      }
+    const outcome = evaluateAssetSelectingProductFulfillment({
+      requestedProduct,
+      selection,
+      connections,
+      metaAccessConfig,
+      agencyPlatformConnections,
+    });
 
-      resolvedSelectedAssets = selectedAssets;
-
-      if (getSelectedAssetCount(requestedProduct.product, selectedAssets) > 0) {
-        hasSelectedAssets = true;
-      }
-
-      if (hasNoAssetsSignal(requestedProduct.product, selectedAssets)) {
-        hasNoAssets = true;
-      }
+    if (outcome.googleGrantLifecycle) {
+      googleProductFulfillment.push(outcome.googleGrantLifecycle);
     }
 
-    if (isGooglePlatformProduct(requestedProduct.product)) {
-      const lifecycle = resolveGoogleGrantLifecycle({
-        product: requestedProduct.product,
-        hasOAuthAuthorization: hasAuthorization,
-        selectedAssets: resolvedSelectedAssets,
-        agencyPlatformConnections,
-      });
-      if (!lifecycle) {
-        unresolvedProducts.push({ ...requestedProduct, reason: 'authorization_required' });
-        continue;
-      }
-      googleProductFulfillment.push(lifecycle);
-
-      if (!hasAuthorization) {
-        unresolvedProducts.push({ ...requestedProduct, reason: 'authorization_required' });
-        continue;
-      }
-
-      if (hasNoAssets) {
-        unresolvedProducts.push({
-          ...requestedProduct,
-          reason: 'no_assets',
-        });
-        continue;
-      }
-
-      if (!hasSelectedAssets) {
-        if (hasAuthorization) {
-          unresolvedProducts.push({
-            ...requestedProduct,
-            reason: 'selection_required',
-          });
-        }
-        continue;
-      }
-
-      if (lifecycle.isFulfilled) {
-        fulfilledProducts.push(requestedProduct);
-        continue;
-      }
-
-      unresolvedProducts.push({
-        ...requestedProduct,
-        reason: lifecycle.state as UnresolvedProduct['reason'],
-      });
-      continue;
-    }
-
-    if (requestedProduct.platformGroup === 'meta') {
-      if (!hasAuthorization && (!hasSelectedAssets || !resolvedSelectedAssets)) {
-        unresolvedProducts.push({ ...requestedProduct, reason: 'authorization_required' });
-        continue;
-      }
-
-      if (hasNoAssets) {
-        unresolvedProducts.push({ ...requestedProduct, reason: 'no_assets' });
-        continue;
-      }
-      if (!hasSelectedAssets || !resolvedSelectedAssets) {
-        if (hasAuthorization) {
-          unresolvedProducts.push({ ...requestedProduct, reason: 'selection_required' });
-        }
-        continue;
-      }
-
-      const fulfillment = evaluateMetaProductFulfillment(
-        requestedProduct,
-        resolvedSelectedAssets,
-        connections,
-        metaAccessConfig
-      );
-      if (fulfillment.fulfilled) fulfilledProducts.push(requestedProduct);
-      else unresolvedProducts.push({
-        ...requestedProduct,
-        reason: fulfillment.reason || 'sharing_required',
-      });
-      continue;
-    }
-
-    if (!hasAuthorization) {
-      unresolvedProducts.push({ ...requestedProduct, reason: 'authorization_required' });
-      continue;
-    }
-
-    if (hasSelectedAssets) {
+    if (outcome.outcome === 'fulfilled') {
       fulfilledProducts.push(requestedProduct);
       continue;
     }
 
-    if (hasNoAssets) {
-      unresolvedProducts.push({
-        ...requestedProduct,
-        reason: 'no_assets',
-      });
-      continue;
-    }
-
-    if (hasAuthorization) {
-      unresolvedProducts.push({
-        ...requestedProduct,
-        reason: 'selection_required',
-      });
-    }
+    unresolvedProducts.push({
+      ...requestedProduct,
+      reason: outcome.reason,
+    });
   }
 
   const fulfilledKeys = new Set(

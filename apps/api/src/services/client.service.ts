@@ -15,6 +15,7 @@ import {
   resolveGoogleGrantLifecycle,
   type GoogleAgencyPlatformConnectionSummary,
 } from '@/lib/google-grant-lifecycle-resolver';
+import { extractSelectedAssets } from '@/lib/product-fulfillment';
 import { prisma } from '@/lib/prisma';
 import { connectionService } from '@/services/connection.service';
 import { evaluateMetaProductFulfillment } from '@/lib/meta-product-fulfillment';
@@ -657,11 +658,15 @@ function resolveProductSummary(
     return { status: 'pending' };
   }
 
+  const grantedAssets =
+    (request.connection?.grantedAssets as Record<string, unknown> | null) || null;
+
   if (requestedProduct.platformGroup === 'meta') {
-    const assets = (request.connection?.grantedAssets as Record<string, unknown> | null)?.[requestedProduct.product];
+    // Instagram selections live under meta_ads (invite/progress truth — U4).
+    const assets = extractSelectedAssets(requestedProduct.product, grantedAssets) ?? {};
     const fulfillment = evaluateMetaProductFulfillment(
       requestedProduct,
-      assets && typeof assets === 'object' ? assets as Record<string, any> : {},
+      assets,
       request.connection ? [request.connection as any] : [],
       request.metaAccessConfig
     );
@@ -678,12 +683,7 @@ function resolveProductSummary(
     return { status: 'selection_required', note };
   }
 
-  const selectedAssets =
-    request.connection?.grantedAssets &&
-    typeof request.connection.grantedAssets === 'object' &&
-    requestedProduct.product in (request.connection.grantedAssets as Record<string, unknown>)
-      ? ((request.connection.grantedAssets as Record<string, unknown>)[requestedProduct.product] as Record<string, any> | null)
-      : null;
+  const selectedAssets = extractSelectedAssets(requestedProduct.product, grantedAssets) as Record<string, any> | null;
 
   const authorizationMetadata =
     matchingAuthorization?.metadata && typeof matchingAuthorization.metadata === 'object'

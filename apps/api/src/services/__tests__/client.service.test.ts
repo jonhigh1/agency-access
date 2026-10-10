@@ -438,7 +438,10 @@ describe('Phase 5: Client Service - TDD Tests', () => {
           metaAccessConfig: { recipients: [{ type: 'human', id: 'person-1', name: 'Operator' }], pageTasks: [], adAccountTasks: [], datasetTasks: [] },
           connection: {
             id: 'connection-meta', status: 'active', createdAt: now,
-            grantedAssets: { meta_ads: { catalogs: ['catalog-1'] }, instagram: { instagramAccounts: ['instagram-1'] } },
+            // Instagram selections are stored under meta_ads (U4 / invite truth).
+            grantedAssets: {
+              meta_ads: { catalogs: ['catalog-1'], instagramAccounts: ['instagram-1'] },
+            },
             authorizations: [{ platform: 'meta', status: 'active', authorizationEpoch: 2, expiresAt: null }],
             metaAssetGrants: grants,
           },
