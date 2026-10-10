@@ -16,11 +16,7 @@ import {
   type AccessRequestStatus,
   type ConnectionStatus,
   type DashboardRequestSummary,
-  GOOGLE_PLATFORM_PRODUCT_IDS,
-  evaluateGoogleProductFulfillment,
   platformGroupOf,
-  type GooglePlatformProductId,
-  type GoogleProductFulfillmentMode,
   type GoogleProductGrantLifecycle,
   type WebhookAccessRequestLifecycleEventType,
   MetaAccessConfigSchema,
@@ -43,7 +39,6 @@ import { env } from '@/lib/env.js';
 import { isAnalyticsInternal } from '@/lib/analytics-internal.js';
 import { logger } from '@/lib/logger.js';
 import { emitWebhookEvents, webhookEventService } from '@/services/webhook-event.service.js';
-import { normalizeCustomerId } from '@/services/connectors/google.js';
 import { resolveListLimit, resolveListOffset } from '@/lib/list-pagination.js';
 import { encodeKeysetCursor } from '@/services/catalog.service.js';
 import { metaAssetsService } from '@/services/meta-assets.service.js';
@@ -58,6 +53,11 @@ import {
   evaluateMetaProductFulfillment,
   getVerifiedMetaGrantProblem,
 } from '@/lib/meta-product-fulfillment.js';
+import {
+  isGooglePlatformProduct,
+  resolveGoogleGrantLifecycle,
+  type GoogleAgencyPlatformConnectionSummary,
+} from '@/lib/google-grant-lifecycle-resolver.js';
 
 // Payload-history ids from the PLATFORMS registry (DEC-015). Zod needs a
 // non-empty tuple; LEGACY_PAYLOAD_IDS is golden-pinned at seven members.
@@ -479,10 +479,7 @@ type AuthorizationProgressConnection = {
   }>;
 };
 
-type AgencyPlatformConnectionSummary = {
-  platform: string;
-  metadata?: unknown;
-};
+type AgencyPlatformConnectionSummary = GoogleAgencyPlatformConnectionSummary;
 
 type MetaFulfillmentGrant = NonNullable<AuthorizationProgressConnection['metaAssetGrants']>[number] & {
   id: string;
@@ -503,30 +500,12 @@ type MetaFulfillmentGrant = NonNullable<AuthorizationProgressConnection['metaAss
   } | null;
 };
 
-const GOOGLE_PRODUCT_ID_SET = new Set<string>(GOOGLE_PLATFORM_PRODUCT_IDS);
-
-const GOOGLE_DEFAULT_FULFILLMENT_MODE: Record<
-  GooglePlatformProductId,
-  GoogleProductFulfillmentMode
-> = {
-  google_ads: 'user_invite',
-  ga4: 'access_binding',
-  google_business_profile: 'location_admin',
-  google_tag_manager: 'user_permission',
-  google_search_console: 'discovery',
-  google_merchant_center: 'merchant_user',
-};
-
 function isActiveAuthorizationStatus(status: string): boolean {
   return status === 'active';
 }
 
 function isAssetSelectingProduct(product: string): boolean {
   return ASSET_SELECTING_PRODUCTS.has(product);
-}
-
-function isGooglePlatformProduct(product: string): product is GooglePlatformProductId {
-  return GOOGLE_PRODUCT_ID_SET.has(product);
 }
 
 function extractRequestedProducts(platforms: unknown): RequestedProduct[] {
@@ -740,89 +719,6 @@ function extractSelectedAssets(
     : null;
 }
 
-function resolveGoogleDefaultFulfillmentMode(
-  requestedProduct: RequestedProduct,
-  agencyPlatformConnections: AgencyPlatformConnectionSummary[] = []
-): GoogleProductFulfillmentMode {
-  const defaultMode =
-    GOOGLE_DEFAULT_FULFILLMENT_MODE[requestedProduct.product as GooglePlatformProductId];
-
-  if (requestedProduct.product !== 'google_ads') {
-    return defaultMode;
-  }
-
-  const googleConnection = agencyPlatformConnections.find(
-    (connection) => connection.platform === 'google'
-  );
-  const metadata =
-    googleConnection?.metadata && typeof googleConnection.metadata === 'object'
-      ? (googleConnection.metadata as Record<string, any>)
-      : null;
-  const managementSettings =
-    metadata?.googleAssetSettings &&
-    typeof metadata.googleAssetSettings === 'object' &&
-    metadata.googleAssetSettings.googleAdsManagement &&
-    typeof metadata.googleAssetSettings.googleAdsManagement === 'object'
-      ? (metadata.googleAssetSettings.googleAdsManagement as Record<string, any>)
-      : null;
-
-  if (managementSettings?.preferredGrantMode !== 'manager_link') {
-    return defaultMode;
-  }
-
-  const managerCustomerId =
-    typeof managementSettings.managerCustomerId === 'string'
-      ? normalizeCustomerId(managementSettings.managerCustomerId)
-      : '';
-
-  if (!managerCustomerId) {
-    return defaultMode;
-  }
-
-  const adsAccounts = Array.isArray(metadata?.googleAccounts?.adsAccounts)
-    ? metadata.googleAccounts.adsAccounts
-    : null;
-
-  if (adsAccounts && adsAccounts.length > 0) {
-    const selectedManager = adsAccounts.find(
-      (account: any) => account?.id === managerCustomerId && account?.isManager
-    );
-
-    return selectedManager ? 'manager_link' : defaultMode;
-  }
-
-  return 'manager_link';
-}
-
-function buildGoogleGrantLifecycle(
-  requestedProduct: RequestedProduct,
-  hasOAuthAuthorization: boolean,
-  selectedAssets: Record<string, any> | null,
-  agencyPlatformConnections: AgencyPlatformConnectionSummary[] = []
-): GoogleProductGrantLifecycle {
-  const storedLifecycle =
-    selectedAssets &&
-    selectedAssets.googleGrantLifecycle &&
-    typeof selectedAssets.googleGrantLifecycle === 'object'
-      ? (selectedAssets.googleGrantLifecycle as Partial<GoogleProductGrantLifecycle>)
-      : null;
-
-  const fulfillmentMode =
-    typeof storedLifecycle?.fulfillmentMode === 'string'
-      ? (storedLifecycle.fulfillmentMode as GoogleProductFulfillmentMode)
-      : resolveGoogleDefaultFulfillmentMode(requestedProduct, agencyPlatformConnections);
-
-  const grantStatus =
-    typeof storedLifecycle?.grantStatus === 'string' ? storedLifecycle.grantStatus : undefined;
-
-  return evaluateGoogleProductFulfillment({
-    productId: requestedProduct.product as GooglePlatformProductId,
-    hasOAuthAuthorization,
-    fulfillmentMode,
-    grantStatus,
-  });
-}
-
 function evaluateAuthorizationProgress(
   requestedProducts: RequestedProduct[],
   connections: AuthorizationProgressConnection[],
@@ -883,12 +779,16 @@ function evaluateAuthorizationProgress(
     }
 
     if (isGooglePlatformProduct(requestedProduct.product)) {
-      const lifecycle = buildGoogleGrantLifecycle(
-        requestedProduct,
-        hasAuthorization,
-        resolvedSelectedAssets,
-        agencyPlatformConnections
-      );
+      const lifecycle = resolveGoogleGrantLifecycle({
+        product: requestedProduct.product,
+        hasOAuthAuthorization: hasAuthorization,
+        selectedAssets: resolvedSelectedAssets,
+        agencyPlatformConnections,
+      });
+      if (!lifecycle) {
+        unresolvedProducts.push({ ...requestedProduct, reason: 'authorization_required' });
+        continue;
+      }
       googleProductFulfillment.push(lifecycle);
 
       if (!hasAuthorization) {

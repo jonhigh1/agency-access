@@ -11,16 +11,16 @@ import {
   getSelectedAssetCount,
   hasNoAssetsSignal,
 } from '@/lib/product-selection-signals';
+import {
+  resolveGoogleGrantLifecycle,
+  type GoogleAgencyPlatformConnectionSummary,
+} from '@/lib/google-grant-lifecycle-resolver';
 import { prisma } from '@/lib/prisma';
 import { connectionService } from '@/services/connection.service';
 import { evaluateMetaProductFulfillment } from '@/lib/meta-product-fulfillment';
 import {
-  GOOGLE_PLATFORM_PRODUCT_IDS,
-  evaluateGoogleProductFulfillment,
   platformGroupOf,
   type ClientLanguage,
-  type GooglePlatformProductId,
-  type GoogleProductFulfillmentMode,
   type GoogleProductGrantLifecycle,
   type ClientDetailProductStatus,
   type ClientDetailPlatformGroupStatus,
@@ -524,30 +524,12 @@ type ClientDetailAccessRequestRecord = {
   } | null;
 };
 
-const GOOGLE_PRODUCT_ID_SET = new Set<string>(GOOGLE_PLATFORM_PRODUCT_IDS);
-
-const GOOGLE_DEFAULT_FULFILLMENT_MODE: Record<
-  GooglePlatformProductId,
-  GoogleProductFulfillmentMode
-> = {
-  google_ads: 'user_invite',
-  ga4: 'access_binding',
-  google_business_profile: 'location_admin',
-  google_tag_manager: 'user_permission',
-  google_search_console: 'discovery',
-  google_merchant_center: 'merchant_user',
-};
-
 function normalizePlatformGroup(platform: string): string {
   return platformGroupOf(platform);
 }
 
 function isActiveAuthorizationStatus(status?: string | null): boolean {
   return status === 'active';
-}
-
-function isGooglePlatformProduct(product: string): product is GooglePlatformProductId {
-  return GOOGLE_PRODUCT_ID_SET.has(product);
 }
 
 function extractRequestedProducts(platforms: unknown): ClientDetailRequestedProduct[] {
@@ -612,61 +594,10 @@ function extractRequestedProducts(platforms: unknown): ClientDetailRequestedProd
   return requestedProducts;
 }
 
-function resolveGoogleGrantLifecycle(
-  requestedProduct: ClientDetailRequestedProduct,
-  matchingAuthorization:
-    | {
-        platform: string;
-        status: string;
-        metadata?: unknown;
-      }
-    | undefined,
-  selectedAssets: Record<string, any> | null
-): GoogleProductGrantLifecycle | undefined {
-  if (!isGooglePlatformProduct(requestedProduct.product)) {
-    return undefined;
-  }
-
-  const authorizationMetadata =
-    matchingAuthorization?.metadata && typeof matchingAuthorization.metadata === 'object'
-      ? (matchingAuthorization.metadata as Record<string, any>)
-      : null;
-
-  const storedLifecycleSource =
-    (selectedAssets &&
-      selectedAssets.googleGrantLifecycle &&
-      typeof selectedAssets.googleGrantLifecycle === 'object'
-      ? selectedAssets.googleGrantLifecycle
-      : null) ||
-    (authorizationMetadata &&
-    authorizationMetadata.googleGrantLifecycle &&
-    typeof authorizationMetadata.googleGrantLifecycle === 'object'
-      ? authorizationMetadata.googleGrantLifecycle
-      : null);
-
-  const storedLifecycle = storedLifecycleSource as Partial<GoogleProductGrantLifecycle> | null;
-
-  const fulfillmentMode =
-    typeof storedLifecycle?.fulfillmentMode === 'string'
-      ? (storedLifecycle.fulfillmentMode as GoogleProductFulfillmentMode)
-      : GOOGLE_DEFAULT_FULFILLMENT_MODE[requestedProduct.product as GooglePlatformProductId];
-
-  const grantStatus =
-    typeof storedLifecycle?.grantStatus === 'string' ? storedLifecycle.grantStatus : undefined;
-
-  return evaluateGoogleProductFulfillment({
-    productId: requestedProduct.product as GooglePlatformProductId,
-    hasOAuthAuthorization: Boolean(
-      matchingAuthorization && isActiveAuthorizationStatus(matchingAuthorization.status)
-    ),
-    fulfillmentMode,
-    grantStatus,
-  });
-}
-
 function resolveProductSummary(
   request: ClientDetailAccessRequestRecord,
-  requestedProduct: ClientDetailRequestedProduct
+  requestedProduct: ClientDetailRequestedProduct,
+  agencyPlatformConnections: GoogleAgencyPlatformConnectionSummary[] = []
 ): {
   status: ClientDetailProductStatus;
   note?: string;
@@ -754,11 +685,20 @@ function resolveProductSummary(
       ? ((request.connection.grantedAssets as Record<string, unknown>)[requestedProduct.product] as Record<string, any> | null)
       : null;
 
-  const googleGrantLifecycle = resolveGoogleGrantLifecycle(
-    requestedProduct,
-    matchingAuthorization,
-    selectedAssets
-  );
+  const authorizationMetadata =
+    matchingAuthorization?.metadata && typeof matchingAuthorization.metadata === 'object'
+      ? (matchingAuthorization.metadata as Record<string, unknown>)
+      : null;
+
+  const googleGrantLifecycle = resolveGoogleGrantLifecycle({
+    product: requestedProduct.product,
+    hasOAuthAuthorization: Boolean(
+      matchingAuthorization && isActiveAuthorizationStatus(matchingAuthorization.status)
+    ),
+    selectedAssets,
+    authorizationMetadata,
+    agencyPlatformConnections,
+  });
 
   if (selectedAssets) {
     if (getSelectedAssetCount(requestedProduct.product, selectedAssets) > 0) {
@@ -827,7 +767,8 @@ function getProductStatusNote(status: ClientDetailProductStatus): string | undef
 }
 
 function buildClientDetailPlatformGroups(
-  accessRequests: ClientDetailAccessRequestRecord[]
+  accessRequests: ClientDetailAccessRequestRecord[],
+  agencyPlatformConnections: GoogleAgencyPlatformConnectionSummary[] = []
 ): ClientDetailResponse['platformGroups'] {
   const groupedProducts = new Map<
     string,
@@ -882,7 +823,11 @@ function buildClientDetailPlatformGroups(
         currentGroup.latestRequestedAt = request.createdAt;
       }
 
-      const nextProductSummary = resolveProductSummary(request, requestedProduct);
+      const nextProductSummary = resolveProductSummary(
+        request,
+        requestedProduct,
+        agencyPlatformConnections
+      );
       const existingProduct = currentGroup.products.get(requestedProduct.product);
 
       if (
@@ -1040,6 +985,11 @@ export async function getClientDetail(
     return null;
   }
 
+  const agencyPlatformConnections = (await prisma.agencyPlatformConnection.findMany({
+    where: { agencyId, platform: 'google' },
+    select: { platform: true, metadata: true },
+  })) as GoogleAgencyPlatformConnectionSummary[];
+
   // Parse platforms from each access request
   const accessRequestsWithPlatforms = client.accessRequests.map((request) => {
     // Parse platforms from JSON - handle both hierarchical and flat formats
@@ -1093,7 +1043,8 @@ export async function getClientDetail(
     (r) => r.status === 'expired' || r.connection?.status === 'expired'
   ).length;
   const platformGroups = buildClientDetailPlatformGroups(
-    client.accessRequests as ClientDetailAccessRequestRecord[]
+    client.accessRequests as ClientDetailAccessRequestRecord[],
+    agencyPlatformConnections
   );
 
   // Build activity timeline from request and connection events

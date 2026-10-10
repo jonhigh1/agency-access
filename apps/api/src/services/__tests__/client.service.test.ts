@@ -25,6 +25,9 @@ vi.mock('@/lib/prisma', () => ({
     agency: {
       findUnique: vi.fn(),
     },
+    agencyPlatformConnection: {
+      findMany: vi.fn(),
+    },
   },
 }));
 
@@ -38,6 +41,7 @@ describe('Phase 5: Client Service - TDD Tests', () => {
   beforeEach(() => {
     vi.resetAllMocks();
     vi.mocked(connectionService.revokeConnection).mockResolvedValue({ data: null, error: null } as any);
+    vi.mocked(mockPrisma.agencyPlatformConnection.findMany).mockResolvedValue([]);
   });
 
   describe('createClient', () => {
