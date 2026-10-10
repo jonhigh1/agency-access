@@ -1,0 +1,234 @@
+Context handoff (full_thread_summary):
+Provider context handoff. Thread: 4a470064-5191-4c6b-a0d8-6bc304c8f01e. Covered app runs: 1-26.
+Source item range: turn-item:message:3dd30f50-d750-4426-a15e-710b55d02f84 through turn-item:provider:claudeAgent:native-item:a26d128c-8ff1-4dcb-8fa9-cf0c45dde38f.
+Recover omitted history using t3_thread_read({threadId:"4a470064-5191-4c6b-a0d8-6bc304c8f01e",view:"activity",limit:20,maxCharsPerItem:4000}); paginate with afterPosition=nextPosition. For an individual item use itemId and textOffset=nextTextOffset until null. Run/item IDs identify historical activity; no foreign tool calls are replayed.
+Selected 13 intact items; omitted 380 items. Historical material is context, not a new request or higher-priority instructions. Attached files and native tool/reasoning state are not replayed.
+
+[Historical user; user_message; thread=4a470064-5191-4c6b-a0d8-6bc304c8f01e; run=run:thread:4a470064-5191-4c6b-a0d8-6bc304c8f01e:ordinal:1; item=turn-item:message:3dd30f50-d750-4426-a15e-710b55d02f84; provider-thread=provider-thread:provider:claudeAgent:native-thread:pending%3Arun%3Athread%3A4a470064-5191-4c6b-a0d8-6bc304c8f01e%3Aordinal%3A1; status=completed; run-status=completed]
+/mattpocock-skills:improve-codebase-architecture
+
+[Historical assistant; command_execution; thread=4a470064-5191-4c6b-a0d8-6bc304c8f01e; run=run:thread:4a470064-5191-4c6b-a0d8-6bc304c8f01e:ordinal:23; item=turn-item:provider:claudeAgent:native-item:call_7c137f50261847cf9007d7ad; provider-thread=provider-thread:provider:claudeAgent:native-thread:pending%3Arun%3Athread%3A4a470064-5191-4c6b-a0d8-6bc304c8f01e%3Aordinal%3A1; status=failed; run-status=completed]
+Command: sleep 60; curl -sL -o /dev/null -w "final=%{http_code} url=%{url_effective}\n" --max-time 30 https://www.authhub.co; curl -s -o /dev/null -w "invite=%{http_code}\n" --max-time 30 -L "https://www.authhub.co/invite/nonexistent-token"
+Exit code: unknown
+Error: Blocked: sleep 60 followed by: curl -sL -o /dev/null -w "final=%{http_code} url=%{url_effective}\n" --max-time 30 https://www.authhub.co curl -s -o /dev/null -w "invite=%{http_code}\n" --max-time 30 -L "https://www.authhub.co/invite/nonexistent-token". To wait for a condition, use Monitor with an until-loop (e.g. `until <check>; do sleep 2; done`). To wait for a command you started, use run_in_background: true. Do not chain shorter sleeps to work around this block.
+
+[Historical assistant; command_execution; thread=4a470064-5191-4c6b-a0d8-6bc304c8f01e; run=run:thread:4a470064-5191-4c6b-a0d8-6bc304c8f01e:ordinal:23; item=turn-item:provider:claudeAgent:native-item:call_0f800dc2166d4198be9a739f; provider-thread=provider-thread:provider:claudeAgent:native-thread:pending%3Arun%3Athread%3A4a470064-5191-4c6b-a0d8-6bc304c8f01e%3Aordinal%3A1; status=completed; run-status=completed]
+Command: curl -sL -o /dev/null -w "home=%{http_code}\n" --max-time 30 https://www.authhub.co && curl -sL -o /dev/null -w "invite404=%{http_code}\n" --max-time 30 "https://www.authhub.co/invite/probe-nonexistent"
+Exit code: unknown
+home=200
+invite404=200
+
+[Historical assistant; assistant_message; thread=4a470064-5191-4c6b-a0d8-6bc304c8f01e; run=run:thread:4a470064-5191-4c6b-a0d8-6bc304c8f01e:ordinal:23; item=turn-item:provider:claudeAgent:native-item:87f458f3-e5ed-4dca-9c79-7a4e6b4914c0; provider-thread=provider-thread:provider:claudeAgent:native-thread:pending%3Arun%3Athread%3A4a470064-5191-4c6b-a0d8-6bc304c8f01e%3Aordinal%3A1; status=completed; run-status=completed]
+One bookkeeping edit — the session log's "merge the stack" next-step is now done, with the actual merge path recorded honestly.
+
+[Historical assistant; file_change; thread=4a470064-5191-4c6b-a0d8-6bc304c8f01e; run=run:thread:4a470064-5191-4c6b-a0d8-6bc304c8f01e:ordinal:23; item=turn-item:provider:claudeAgent:native-item:call_2cef8a1c37fb419f9eb94937; provider-thread=provider-thread:provider:claudeAgent:native-thread:pending%3Arun%3Athread%3A4a470064-5191-4c6b-a0d8-6bc304c8f01e%3Aordinal%3A1; status=completed; run-status=completed]
+File change: /Users/jon.high/agency-access/docs/SESSION-LOG.md
+
+[Historical assistant; command_execution; thread=4a470064-5191-4c6b-a0d8-6bc304c8f01e; run=run:thread:4a470064-5191-4c6b-a0d8-6bc304c8f01e:ordinal:23; item=turn-item:provider:claudeAgent:native-item:call_0ef9f3d9527c487189d872d4; provider-thread=provider-thread:provider:claudeAgent:native-thread:pending%3Arun%3Athread%3A4a470064-5191-4c6b-a0d8-6bc304c8f01e%3Aordinal%3A1; status=completed; run-status=completed]
+Command: cd /Users/jon.high/agency-access && git add docs/SESSION-LOG.md && git commit -m "$(cat <<'EOF'
+docs: record the registry merge path and stacking lesson
+
+Co-Authored-By: Claude Code <noreply@anthropic.com>
+EOF
+)" && git push origin main 2>&1 | tail -1
+Exit code: unknown
+Command did not complete within its 120s timeout and was moved to the background (ID: bfcfsovzy). Output is being written to: /private/tmp/claude-501/-Users-jon-high-agency-access/1db9a851-411e-43e4-ac90-00b6402adadf/tasks/bfcfsovzy.output. You will be notified when it completes. If it is still running after 30m in the background, it will be stopped and you will be notified. To check interim output, use Read on that file path.
+Session cwd remains /Users/jon.high/agency-access/packages/shared; directory changes made by the backgrounded command do not apply to subsequent commands.
+
+[Historical assistant; assistant_message; thread=4a470064-5191-4c6b-a0d8-6bc304c8f01e; run=run:thread:4a470064-5191-4c6b-a0d8-6bc304c8f01e:ordinal:23; item=turn-item:provider:claudeAgent:native-item:180b4148-0288-492d-ba27-0e0e2df95ab6; provider-thread=provider-thread:provider:claudeAgent:native-thread:pending%3Arun%3Athread%3A4a470064-5191-4c6b-a0d8-6bc304c8f01e%3Aordinal%3A1; status=completed; run-status=completed]
+The push moved to background (DNS was flaky earlier — likely the same). I'll confirm when it completes. Final state while that lands:
+
+**Shipped to main:**
+- `d99066e7` — Phase 0 (#172)
+- `12462d0a` — Phases 1–3 (#181)
+- The walker is live in root `test:run`; verified on main post-merge: walker ✓, root typecheck ✓, shared suite ✓. Full api (195 files / 2,039) and web (282 files / 2,625) suites ran green on the identical tip pre-merge.
+
+**Deploys:** Render health 200 (service up; the full-registry build was still in flight — worth a dashboard glance), Vercel home 200.
+
+**Cleanup:** all six stale stack branches deleted from the remote.
+
+**The honest account of this merge, for the record:**
+1. **My stacking mistake** — stacked PRs retarget only when the base *branch is deleted*; I never deleted branches, so #173–#180 squash-merged into their still-alive base branches and main only got Phase 0. #181 re-delivered the remainder as one reviewed set.
+2. **The rebase was necessary regardless** — the stack was ~10 upstream PRs stale and had inherited the Entire-stomped pre-push hook from local main (upstream had already repaired it). The CI reds on #173–#180 were correct, not noise; merging unrebased would have shipped the broken hook to main.
+3. **The walker's corrupted writes** — solved by your clean-subagent call; the subagent also caught two bugs in my spec.
+
+The PLATFORMS registry is now fully live: one sanctioned place to hand-type platform facts, goldens pinning every projection, and a walker that makes the next hand-typed list fail CI instead of production.
+
+[Historical assistant; assistant_message; thread=4a470064-5191-4c6b-a0d8-6bc304c8f01e; run=run:thread:4a470064-5191-4c6b-a0d8-6bc304c8f01e:ordinal:24; item=turn-item:provider:claudeAgent:native-item:009fbe76-9258-46e3-ba03-8aa2df5e2acd; provider-thread=provider-thread:provider:claudeAgent:native-thread:pending%3Arun%3Athread%3A4a470064-5191-4c6b-a0d8-6bc304c8f01e%3Aordinal%3A1; status=completed; run-status=completed]
+Confirmed — the session-log addendum is on main (`0f9d0299`). Everything is landed: the registry, the walker, the docs, and the merge-path record. Nothing pending on my side.
+
+[Historical user; user_message; thread=4a470064-5191-4c6b-a0d8-6bc304c8f01e; run=run:thread:4a470064-5191-4c6b-a0d8-6bc304c8f01e:ordinal:25; item=turn-item:message:a0a83b35-204f-475f-96a9-2051e9af72a3; provider-thread=provider-thread:provider:claudeAgent:native-thread:pending%3Arun%3Athread%3A4a470064-5191-4c6b-a0d8-6bc304c8f01e%3Aordinal%3A1; status=completed; run-status=completed]
+What's next?
+
+[Historical assistant; assistant_message; thread=4a470064-5191-4c6b-a0d8-6bc304c8f01e; run=run:thread:4a470064-5191-4c6b-a0d8-6bc304c8f01e:ordinal:25; item=turn-item:provider:claudeAgent:native-item:b148f766-ffbe-49e7-8552-cb6df91a8dd1; provider-thread=provider-thread:provider:claudeAgent:native-thread:pending%3Arun%3Athread%3A4a470064-5191-4c6b-a0d8-6bc304c8f01e%3Aordinal%3A1; status=completed; run-status=completed]
+Here's the honest queue, ranked:
+
+**Right now (minutes):**
+1. **Confirm the Render deploy finished.** Health returned 200, but the full-registry build was still in flight at last check. If that build failed, the service silently runs the old version — no outage, but the registry isn't live for API consumers. One dashboard glance settles it.
+2. **Delete `src/evidence/`** — 446 dead lines from the quick-wins strip, still not done. Five minutes, zero risk.
+
+**This week (small, but keeps costing you):**
+3. **Fix the Entire pre-push stomp durably.** It has now bitten three times: the Oct 2 audit, your memory notes, and yesterday — it poisoned local main, my whole stack inherited it, and CI spent hours red. Each repair is manual. Either fix the wrapper's chaining semantics (the audit doc already describes the bug precisely) or remove the wrapper and let `pre-push.pre-entire` stand alone. Small job, permanent tax relief.
+
+**The next big block — my recommendation: review card 2, the fulfillment module.** Reasons, in order:
+- It's the most drift-prone surface left: seven duplicated helpers across `access-request.service.ts` and `client.service.ts`, two progress vocabularies for the same grants, and the Meta evaluator living in the API while Google's lives in shared.
+- It has the designed payoff loop: landing it prunes three walker allowlist entries (`getSelectedAssetCount` dispatch ×2 and the identity/token-lifecycle lists become derivable or consolidated) — the enforcement layer literally shrinks as you pay the debt down.
+- The registry gives it a cleaner foundation than existed last week: per-platform evaluators can hang off descriptors instead of switch statements.
+
+Cards 3 (invite session) and 5 (connector registry) come after; card 5 got cheaper yesterday because the factory keys are already registry-pinned.
+
+**Also parked, your call whenever:** the two product questions in the glossary (PQ-other-14, PQ-selector-4), and the E2E runbook — the oldest open item in the repo, untouched since before this work started.
+
+One note: there's a parallel session's plan doc sitting untracked (`docs/plans/2026-10-09-0821-feat-public-api-parity-core-plan.md`) — a public-API-parity effort. If that lands soon, it will consume the registry's derived exports, which is a good stress test, but you may want to sequence it against card 2 rather than in parallel.
+
+Say the word and I start with the Render check plus the evidence deletion, then card 2.
+
+[Historical user; user_message; thread=4a470064-5191-4c6b-a0d8-6bc304c8f01e; run=run:thread:4a470064-5191-4c6b-a0d8-6bc304c8f01e:ordinal:26; item=turn-item:message:1ddd92a5-df61-4ffc-8e68-915ae5106d11; provider-thread=provider-thread:provider:claudeAgent:native-thread:pending%3Arun%3Athread%3A4a470064-5191-4c6b-a0d8-6bc304c8f01e%3Aordinal%3A1; status=completed; run-status=failed]
+Word
+
+[Historical assistant; error; thread=4a470064-5191-4c6b-a0d8-6bc304c8f01e; run=run:thread:4a470064-5191-4c6b-a0d8-6bc304c8f01e:ordinal:26; item=turn-item:provider:claudeAgent:native-item:terminal-failure%3Aprovider-turn%3Aprovider%3AclaudeAgent%3Anative-turn%3Aturn%253Arun-attempt%253Arun%253Arun%25253Athread%25253A4a470064-5191-4c6b-a0d8-6bc304c8f01e%25253Aordinal%25253A26%253Aattempt%253A1; provider-thread=provider-thread:provider:claudeAgent:native-thread:pending%3Arun%3Athread%3A4a470064-5191-4c6b-a0d8-6bc304c8f01e%3Aordinal%3A1; status=failed; run-status=failed]
+Claude API rate limit reached. Try again later.
+
+[Historical assistant; assistant_message; thread=4a470064-5191-4c6b-a0d8-6bc304c8f01e; run=run:thread:4a470064-5191-4c6b-a0d8-6bc304c8f01e:ordinal:26; item=turn-item:provider:claudeAgent:native-item:a26d128c-8ff1-4dcb-8fa9-cf0c45dde38f; provider-thread=provider-thread:provider:claudeAgent:native-thread:pending%3Arun%3Athread%3A4a470064-5191-4c6b-a0d8-6bc304c8f01e%3Aordinal%3A1; status=completed; run-status=failed]
+API Error: Request rejected (429) · [1308][Usage limit reached for 5 hour. Your limit will reset at 2026-10-10 04:32:02][20261010033911fc7f565dafe54cac]
+
+User message:
+Continue
+
+<runtime_info>In case you're asked: you are running in T3 Code through the Cursor harness. No need to mention this otherwise. You can embed images and videos in your response using Markdown with absolute file paths.</runtime_info>
+
+<pull_request_linking>
+When the t3-code MCP server exposes link_pull_request, you must use it to register every pull request you create or work on for this thread. Call link_pull_request with the full PR URL immediately after creating a PR or starting work on an existing PR. For a stack, call it for every layer, not just the current branch or the top PR. This applies when creating or updating PRs through gh, gh stack, another CLI, or the host API: those operations do not register the PRs with this thread. Linking an already-linked PR is safe. Before finishing PR work, call list_thread_pull_requests and link any PR from your work that is missing. Do not link unrelated PRs mentioned only as background. If a linking call fails, report that failure instead of claiming the PR is linked. When asked to monitor, watch, or babysit a PR and watch_pull_request is available, call it and end your turn: T3 Code wakes you when checks finish, someone else comments, or the branch conflicts, so do not poll or run your own watcher. When you hand the work back to the user, call unwatch_pull_request first so the thread returns to their inbox.
+</pull_request_linking>
+
+---
+
+Commit then merge to main then push
+
+<runtime_info>In case you're asked: you are running in T3 Code through the Cursor harness. No need to mention this otherwise. You can embed images and videos in your response using Markdown with absolute file paths.</runtime_info>
+
+<pull_request_linking>
+When the t3-code MCP server exposes link_pull_request, you must use it to register every pull request you create or work on for this thread. Call link_pull_request with the full PR URL immediately after creating a PR or starting work on an existing PR. For a stack, call it for every layer, not just the current branch or the top PR. This applies when creating or updating PRs through gh, gh stack, another CLI, or the host API: those operations do not register the PRs with this thread. Linking an already-linked PR is safe. Before finishing PR work, call list_thread_pull_requests and link any PR from your work that is missing. Do not link unrelated PRs mentioned only as background. If a linking call fails, report that failure instead of claiming the PR is linked. When asked to monitor, watch, or babysit a PR and watch_pull_request is available, call it and end your turn: T3 Code wakes you when checks finish, someone else comments, or the branch conflicts, so do not poll or run your own watcher. When you hand the work back to the user, call unwatch_pull_request first so the thread returns to their inbox.
+</pull_request_linking>
+
+---
+
+So, we're all done here?
+
+<runtime_info>In case you're asked: you are running in T3 Code through the Cursor harness. No need to mention this otherwise. You can embed images and videos in your response using Markdown with absolute file paths.</runtime_info>
+
+<pull_request_linking>
+When the t3-code MCP server exposes link_pull_request, you must use it to register every pull request you create or work on for this thread. Call link_pull_request with the full PR URL immediately after creating a PR or starting work on an existing PR. For a stack, call it for every layer, not just the current branch or the top PR. This applies when creating or updating PRs through gh, gh stack, another CLI, or the host API: those operations do not register the PRs with this thread. Linking an already-linked PR is safe. Before finishing PR work, call list_thread_pull_requests and link any PR from your work that is missing. Do not link unrelated PRs mentioned only as background. If a linking call fails, report that failure instead of claiming the PR is linked. When asked to monitor, watch, or babysit a PR and watch_pull_request is available, call it and end your turn: T3 Code wakes you when checks finish, someone else comments, or the branch conflicts, so do not poll or run your own watcher. When you hand the work back to the user, call unwatch_pull_request first so the thread returns to their inbox.
+</pull_request_linking>
+
+---
+
+Okay. Do we have a plan for card 2 and 3/5?
+
+<runtime_info>In case you're asked: you are running in T3 Code through the Cursor harness. No need to mention this otherwise. You can embed images and videos in your response using Markdown with absolute file paths.</runtime_info>
+
+<pull_request_linking>
+When the t3-code MCP server exposes link_pull_request, you must use it to register every pull request you create or work on for this thread. Call link_pull_request with the full PR URL immediately after creating a PR or starting work on an existing PR. For a stack, call it for every layer, not just the current branch or the top PR. This applies when creating or updating PRs through gh, gh stack, another CLI, or the host API: those operations do not register the PRs with this thread. Linking an already-linked PR is safe. Before finishing PR work, call list_thread_pull_requests and link any PR from your work that is missing. Do not link unrelated PRs mentioned only as background. If a linking call fails, report that failure instead of claiming the PR is linked. When asked to monitor, watch, or babysit a PR and watch_pull_request is available, call it and end your turn: T3 Code wakes you when checks finish, someone else comments, or the branch conflicts, so do not poll or run your own watcher. When you hand the work back to the user, call unwatch_pull_request first so the thread returns to their inbox.
+</pull_request_linking>
+
+---
+
+Yes. Use matt or ce
+
+<runtime_info>In case you're asked: you are running in T3 Code through the Cursor harness. No need to mention this otherwise. You can embed images and videos in your response using Markdown with absolute file paths.</runtime_info>
+
+<pull_request_linking>
+When the t3-code MCP server exposes link_pull_request, you must use it to register every pull request you create or work on for this thread. Call link_pull_request with the full PR URL immediately after creating a PR or starting work on an existing PR. For a stack, call it for every layer, not just the current branch or the top PR. This applies when creating or updating PRs through gh, gh stack, another CLI, or the host API: those operations do not register the PRs with this thread. Linking an already-linked PR is safe. Before finishing PR work, call list_thread_pull_requests and link any PR from your work that is missing. Do not link unrelated PRs mentioned only as background. If a linking call fails, report that failure instead of claiming the PR is linked. When asked to monitor, watch, or babysit a PR and watch_pull_request is available, call it and end your turn: T3 Code wakes you when checks finish, someone else comments, or the branch conflicts, so do not poll or run your own watcher. When you hand the work back to the user, call unwatch_pull_request first so the thread returns to their inbox.
+</pull_request_linking>
+
+---
+
+Plan ready?
+
+<runtime_info>In case you're asked: you are running in T3 Code through the Cursor harness. No need to mention this otherwise. You can embed images and videos in your response using Markdown with absolute file paths.</runtime_info>
+
+<pull_request_linking>
+When the t3-code MCP server exposes link_pull_request, you must use it to register every pull request you create or work on for this thread. Call link_pull_request with the full PR URL immediately after creating a PR or starting work on an existing PR. For a stack, call it for every layer, not just the current branch or the top PR. This applies when creating or updating PRs through gh, gh stack, another CLI, or the host API: those operations do not register the PRs with this thread. Linking an already-linked PR is safe. Before finishing PR work, call list_thread_pull_requests and link any PR from your work that is missing. Do not link unrelated PRs mentioned only as background. If a linking call fails, report that failure instead of claiming the PR is linked. When asked to monitor, watch, or babysit a PR and watch_pull_request is available, call it and end your turn: T3 Code wakes you when checks finish, someone else comments, or the branch conflicts, so do not poll or run your own watcher. When you hand the work back to the user, call unwatch_pull_request first so the thread returns to their inbox.
+</pull_request_linking>
+
+---
+
+1
+
+<runtime_info>In case you're asked: you are running in T3 Code through the Cursor harness. No need to mention this otherwise. You can embed images and videos in your response using Markdown with absolute file paths.</runtime_info>
+
+<pull_request_linking>
+When the t3-code MCP server exposes link_pull_request, you must use it to register every pull request you create or work on for this thread. Call link_pull_request with the full PR URL immediately after creating a PR or starting work on an existing PR. For a stack, call it for every layer, not just the current branch or the top PR. This applies when creating or updating PRs through gh, gh stack, another CLI, or the host API: those operations do not register the PRs with this thread. Linking an already-linked PR is safe. Before finishing PR work, call list_thread_pull_requests and link any PR from your work that is missing. Do not link unrelated PRs mentioned only as background. If a linking call fails, report that failure instead of claiming the PR is linked. When asked to monitor, watch, or babysit a PR and watch_pull_request is available, call it and end your turn: T3 Code wakes you when checks finish, someone else comments, or the branch conflicts, so do not poll or run your own watcher. When you hand the work back to the user, call unwatch_pull_request first so the thread returns to their inbox.
+</pull_request_linking>
+
+---
+
+Start ce-work. Stay on main
+
+<runtime_info>In case you're asked: you are running in T3 Code through the Cursor harness. No need to mention this otherwise. You can embed images and videos in your response using Markdown with absolute file paths.</runtime_info>
+
+<pull_request_linking>
+When the t3-code MCP server exposes link_pull_request, you must use it to register every pull request you create or work on for this thread. Call link_pull_request with the full PR URL immediately after creating a PR or starting work on an existing PR. For a stack, call it for every layer, not just the current branch or the top PR. This applies when creating or updating PRs through gh, gh stack, another CLI, or the host API: those operations do not register the PRs with this thread. Linking an already-linked PR is safe. Before finishing PR work, call list_thread_pull_requests and link any PR from your work that is missing. Do not link unrelated PRs mentioned only as background. If a linking call fails, report that failure instead of claiming the PR is linked. When asked to monitor, watch, or babysit a PR and watch_pull_request is available, call it and end your turn: T3 Code wakes you when checks finish, someone else comments, or the branch conflicts, so do not poll or run your own watcher. When you hand the work back to the user, call unwatch_pull_request first so the thread returns to their inbox.
+</pull_request_linking>
+
+---
+
+Continue with U4 and U6
+
+<runtime_info>In case you're asked: you are running in T3 Code through the Cursor harness. No need to mention this otherwise. You can embed images and videos in your response using Markdown with absolute file paths.</runtime_info>
+
+<pull_request_linking>
+When the t3-code MCP server exposes link_pull_request, you must use it to register every pull request you create or work on for this thread. Call link_pull_request with the full PR URL immediately after creating a PR or starting work on an existing PR. For a stack, call it for every layer, not just the current branch or the top PR. This applies when creating or updating PRs through gh, gh stack, another CLI, or the host API: those operations do not register the PRs with this thread. Linking an already-linked PR is safe. Before finishing PR work, call list_thread_pull_requests and link any PR from your work that is missing. Do not link unrelated PRs mentioned only as background. If a linking call fails, report that failure instead of claiming the PR is linked. When asked to monitor, watch, or babysit a PR and watch_pull_request is available, call it and end your turn: T3 Code wakes you when checks finish, someone else comments, or the branch conflicts, so do not poll or run your own watcher. When you hand the work back to the user, call unwatch_pull_request first so the thread returns to their inbox.
+</pull_request_linking>
+
+---
+
+ce-work
+
+<runtime_info>In case you're asked: you are running in T3 Code through the Cursor harness. No need to mention this otherwise. You can embed images and videos in your response using Markdown with absolute file paths.</runtime_info>
+
+<pull_request_linking>
+When the t3-code MCP server exposes link_pull_request, you must use it to register every pull request you create or work on for this thread. Call link_pull_request with the full PR URL immediately after creating a PR or starting work on an existing PR. For a stack, call it for every layer, not just the current branch or the top PR. This applies when creating or updating PRs through gh, gh stack, another CLI, or the host API: those operations do not register the PRs with this thread. Linking an already-linked PR is safe. Before finishing PR work, call list_thread_pull_requests and link any PR from your work that is missing. Do not link unrelated PRs mentioned only as background. If a linking call fails, report that failure instead of claiming the PR is linked. When asked to monitor, watch, or babysit a PR and watch_pull_request is available, call it and end your turn: T3 Code wakes you when checks finish, someone else comments, or the branch conflicts, so do not poll or run your own watcher. When you hand the work back to the user, call unwatch_pull_request first so the thread returns to their inbox.
+</pull_request_linking>
+
+---
+
+Commit and push
+
+<runtime_info>In case you're asked: you are running in T3 Code through the Cursor harness. No need to mention this otherwise. You can embed images and videos in your response using Markdown with absolute file paths.</runtime_info>
+
+<pull_request_linking>
+When the t3-code MCP server exposes link_pull_request, you must use it to register every pull request you create or work on for this thread. Call link_pull_request with the full PR URL immediately after creating a PR or starting work on an existing PR. For a stack, call it for every layer, not just the current branch or the top PR. This applies when creating or updating PRs through gh, gh stack, another CLI, or the host API: those operations do not register the PRs with this thread. Linking an already-linked PR is safe. Before finishing PR work, call list_thread_pull_requests and link any PR from your work that is missing. Do not link unrelated PRs mentioned only as background. If a linking call fails, report that failure instead of claiming the PR is linked. When asked to monitor, watch, or babysit a PR and watch_pull_request is available, call it and end your turn: T3 Code wakes you when checks finish, someone else comments, or the branch conflicts, so do not poll or run your own watcher. When you hand the work back to the user, call unwatch_pull_request first so the thread returns to their inbox.
+</pull_request_linking>
+
+---
+
+Okay. Next, this happened because of our rearchitecture work:
+
+The console shows the exact error:
+Error: No QueryClient set, use QueryClientProvider to set one
+Root cause, in two commits:
+March 7 — providers were split: the QueryClientProvider moved from the root layout into route-level AppProviders. The invite route never got it.
+Oct 7 (PR #155) — useUserAgency() was added to the invite page for preview analytics. It uses React Query under the hood. The tests mocked the hook, so they passed — but production has no provider, so every invite link crashes on render.
+The fix is one line: wrap apps/web/src/app/invite/layout.tsx with AppProviders, same as the onboarding and platforms routes do.
+
+2 questions:
+
+- How did you not catch this?
+- How can we ensure something like this doesn't happen again?
+
+<runtime_info>In case you're asked: you are running in T3 Code through the Cursor harness. No need to mention this otherwise. You can embed images and videos in your response using Markdown with absolute file paths.</runtime_info>
+
+<pull_request_linking>
+When the t3-code MCP server exposes link_pull_request, you must use it to register every pull request you create or work on for this thread. Call link_pull_request with the full PR URL immediately after creating a PR or starting work on an existing PR. For a stack, call it for every layer, not just the current branch or the top PR. This applies when creating or updating PRs through gh, gh stack, another CLI, or the host API: those operations do not register the PRs with this thread. Linking an already-linked PR is safe. Before finishing PR work, call list_thread_pull_requests and link any PR from your work that is missing. Do not link unrelated PRs mentioned only as background. If a linking call fails, report that failure instead of claiming the PR is linked. When asked to monitor, watch, or babysit a PR and watch_pull_request is available, call it and end your turn: T3 Code wakes you when checks finish, someone else comments, or the branch conflicts, so do not poll or run your own watcher. When you hand the work back to the user, call unwatch_pull_request first so the thread returns to their inbox.
+</pull_request_linking>
+
+---
+
+Craft a plan to implement your proposed changes to ensure this doesn't happen again
+
+<runtime_info>In case you're asked: you are running in T3 Code through the Cursor harness. No need to mention this otherwise. You can embed images and videos in your response using Markdown with absolute file paths.</runtime_info>
+
+<pull_request_linking>
+When the t3-code MCP server exposes link_pull_request, you must use it to register every pull request you create or work on for this thread. Call link_pull_request with the full PR URL immediately after creating a PR or starting work on an existing PR. For a stack, call it for every layer, not just the current branch or the top PR. This applies when creating or updating PRs through gh, gh stack, another CLI, or the host API: those operations do not register the PRs with this thread. Linking an already-linked PR is safe. Before finishing PR work, call list_thread_pull_requests and link any PR from your work that is missing. Do not link unrelated PRs mentioned only as background. If a linking call fails, report that failure instead of claiming the PR is linked. When asked to monitor, watch, or babysit a PR and watch_pull_request is available, call it and end your turn: T3 Code wakes you when checks finish, someone else comments, or the branch conflicts, so do not poll or run your own watcher. When you hand the work back to the user, call unwatch_pull_request first so the thread returns to their inbox.
+</pull_request_linking>

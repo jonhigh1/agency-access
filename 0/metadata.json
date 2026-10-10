@@ -1,0 +1,91 @@
+{
+  "cli_version": "0.10.2",
+  "checkpoint_id": "01M4HTMVKYR01T6K6N4FKCKC0F",
+  "session_id": "agent-5486b54a-5e0f-4822-86c9-3927856ccacf",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-10T02:35:35.102035Z",
+  "branch": "fix/queryclient-provider-boundary-gates",
+  "checkpoints_count": 4,
+  "save_step_count": 5,
+  "files_touched": [
+    "docs/plans/2026-10-09-fix-queryclient-provider-boundary-gates-plan.md"
+  ],
+  "agent": "Cursor",
+  "model": "default",
+  "turn_id": "0c98e6f82f59",
+  "compact_transcript_start": 0,
+  "session_metrics": {
+    "duration_ms": 89980,
+    "turn_count": 11
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-10-10T02:35:34.958478Z",
+    "agent_lines": 194,
+    "agent_removed": 0,
+    "human_added": 348,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 542,
+    "total_lines_changed": 543,
+    "agent_percentage": 35.727440147329645,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    },
+    {
+      "checkpoint_number": 3,
+      "user_lines_added": 27,
+      "user_lines_removed": 0,
+      "agent_lines_added": 9,
+      "agent_lines_removed": 2,
+      "user_added_per_file": {
+        ".impeccable/config.local.json": 26,
+        ".impeccable/hook.cache.json": 1
+      }
+    },
+    {
+      "checkpoint_number": 4,
+      "user_lines_added": 28,
+      "user_lines_removed": 0,
+      "agent_lines_added": 9,
+      "agent_lines_removed": 2,
+      "user_added_per_file": {
+        ".impeccable/config.local.json": 26,
+        ".impeccable/hook.cache.json": 1,
+        "apps/web/.impeccable/questions/f2a36795.state.json": 1
+      }
+    },
+    {
+      "checkpoint_number": 5,
+      "user_lines_added": 28,
+      "user_lines_removed": 0,
+      "agent_lines_added": 9,
+      "agent_lines_removed": 2,
+      "user_added_per_file": {
+        ".impeccable/config.local.json": 26,
+        ".impeccable/hook.cache.json": 1,
+        "apps/web/.impeccable/questions/f2a36795.state.json": 1
+      }
+    },
+    {
+      "checkpoint_number": 6,
+      "user_lines_added": 918,
+      "user_lines_removed": 0,
+      "agent_lines_added": 203,
+      "agent_lines_removed": 2,
+      "user_added_per_file": {
+        ".impeccable/config.local.json": 26,
+        ".impeccable/hook.cache.json": 1,
+        "apps/web/.impeccable/questions/f2a36795.state.json": 1,
+        "apps/web/src/.impeccable/config.json": 17,
+        "docs/email-onboarding-flow.html": 873
+      }
+    }
+  ]
+}
