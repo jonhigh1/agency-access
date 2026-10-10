@@ -1,0 +1,41 @@
+{
+  "cli_version": "0.10.2",
+  "checkpoint_id": "01M4KBV7G796HRF6G91KXH6RYT",
+  "session_id": "4a82b8e6-f84e-44cb-813c-a7a544ebe21d",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-10T16:55:25.837818Z",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".gitignore",
+    "docs/flows/README.md",
+    "docs/flows/access-request.md",
+    "docs/flows/client-invite.md",
+    "docs/flows/onboarding-emails.md",
+    "scripts/tests/flow-spec-anchors.test.mjs"
+  ],
+  "agent": "Factory AI Droid",
+  "model": "",
+  "turn_id": "cb4dbb38f29d",
+  "checkpoint_transcript_start": 1,
+  "transcript_lines_at_start": 1,
+  "token_usage": {
+    "input_tokens": 0,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 0,
+    "api_call_count": 0
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-10-10T16:55:25.823949Z",
+    "agent_lines": 459,
+    "agent_removed": 0,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 459,
+    "total_lines_changed": 459,
+    "agent_percentage": 100,
+    "metric_version": 2
+  }
+}
