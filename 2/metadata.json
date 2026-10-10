@@ -1,0 +1,57 @@
+{
+  "cli_version": "0.10.2",
+  "checkpoint_id": "01M4J361S65GJ9FNAXCNX096AW",
+  "session_id": "7ead3302-724a-4d12-a9f5-9bc8943c3819",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-10T05:04:46.970129Z",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "apps/web/instrumentation-client.ts",
+    "apps/web/src/lib/__tests__/sentry-release.test.ts",
+    "docs/SESSION-LOG.md"
+  ],
+  "agent": "Factory AI Droid",
+  "model": "",
+  "turn_id": "9c00072401b6",
+  "compact_transcript_start": 0,
+  "token_usage": {
+    "input_tokens": 0,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 0,
+    "api_call_count": 0
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-10-10T05:04:46.962573Z",
+    "agent_lines": 0,
+    "agent_removed": 0,
+    "human_added": 19,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 19,
+    "total_lines_changed": 19,
+    "agent_percentage": 0,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 936,
+      "user_lines_removed": 2,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        ".githooks/pre-push": 9,
+        ".impeccable/config.local.json": 26,
+        ".impeccable/hook.cache.json": 1,
+        "apps/web/.impeccable/questions/f2a36795.state.json": 1,
+        "apps/web/src/.impeccable/config.json": 17,
+        "docs/email-onboarding-flow.html": 882
+      },
+      "user_removed_per_file": {
+        ".githooks/pre-push": 2
+      }
+    }
+  ]
+}
