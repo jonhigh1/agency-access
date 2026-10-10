@@ -65,23 +65,31 @@ while [ "$workspace_root" != "/" ] && [ ! -d "$workspace_root/.aipmos" ]; do
     workspace_root=$(dirname "$workspace_root")
 done
 
-# Try to load memory.md, capped so session start stays inside budget
+# Try to load memory.md, capped so session start stays inside budget.
+# Truncation is character-safe (python path) with a byte fallback.
 memory_file="$workspace_root/memory-bank/memory.md"
-MEMORY_BUDGET_BYTES=6000
+MEMORY_BUDGET_CHARS=1500
+cap_text() {
+    if command -v python3 >/dev/null 2>&1; then
+        python3 -c 'import sys; print(open(sys.argv[1], encoding="utf-8", errors="replace").read()[:int(sys.argv[2])])' "$1" "$2"
+    else
+        head -c "$2" "$1"
+    fi
+}
 if [ -f "$memory_file" ]; then
-    memory_context=$(head -c "$MEMORY_BUDGET_BYTES" "$memory_file")
-    if [ "$(wc -c < "$memory_file" | tr -d ' ')" -gt "$MEMORY_BUDGET_BYTES" ]; then
+    memory_context=$(cap_text "$memory_file" "$MEMORY_BUDGET_CHARS")
+    if [ "$(wc -m < "$memory_file" | tr -d ' ')" -gt "$MEMORY_BUDGET_CHARS" ]; then
         memory_context="${memory_context}
 […truncated at budget: full history in memory-bank/memory.md, which is archived, not authoritative…]"
     fi
 fi
 
-# Try to load learned patterns if they exist
+# Try to load learned patterns if they exist, under the same cap
 learned_patterns_file="$workspace_root/memory-bank/learned-patterns.md"
 learned_patterns_context=""
 
 if [ -f "$learned_patterns_file" ]; then
-    learned_patterns_context=$(cat "$learned_patterns_file")
+    learned_patterns_context=$(cap_text "$learned_patterns_file" "$MEMORY_BUDGET_CHARS")
 fi
 
 # Initialize session intent file if it doesn't exist or is stale
@@ -92,7 +100,7 @@ current_time=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 # Check if session intent exists and is from today (stale check)
 init_intent=false
 if [ -f "$session_intent_file" ]; then
-    file_time=$(stat -f "%Sm" -t "%Y-%m-%d" "$session_intent_file" 2>/dev/null || stat -c "%y" "$session_intent_file" 2>/dev/null | cut -d' ' -f1)
+    file_time=$(stat -f "%Sm" -t "%Y-%m-%d" "$session_intent_file" 2>/dev/null || stat -c "%y" "$session_intent_file" 2>/dev/null | cut -d' ' -f1 || true)
     today=$(date +%Y-%m-%d)
     if [ "$file_time" != "$today" ]; then
         init_intent=true
@@ -137,7 +145,7 @@ heal_warn=""
 if [ ! -f "$verdicts_file" ]; then
     heal_warn="Memory heal has never run: treat promoted notes as unverified."
 else
-    mtime=$(stat -f "%m" "$verdicts_file" 2>/dev/null || stat -c "%Y" "$verdicts_file" 2>/dev/null)
+    mtime=$(stat -f "%m" "$verdicts_file" 2>/dev/null || stat -c "%Y" "$verdicts_file" 2>/dev/null || true)
     now=$(date +%s)
     if [ -n "$mtime" ] && [ "$((now - mtime))" -gt 604800 ]; then
         heal_warn="Memory heal overdue (no verdict in 7+ days): treat promoted notes as unverified."

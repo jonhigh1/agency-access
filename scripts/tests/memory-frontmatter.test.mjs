@@ -42,4 +42,12 @@ describe('solutions frontmatter schema (U4)', () => {
     assert.equal(errors.length, 1);
     assert.match(errors[0], /unknown problem_type/);
   });
+
+  it('folds block-style lists and strips quotes', () => {
+    const errors = checkFile(
+      'block.md',
+      '---\ntitle: "Quoted Title"\ndate: 2026-10-09\ncategory: c\nmodule: m\nproblem_type: "documentation_gap"\ntags:\n  - a\n  - b\n---\n',
+    );
+    assert.deepEqual(errors, []);
+  });
 });

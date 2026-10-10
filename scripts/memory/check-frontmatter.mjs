@@ -30,9 +30,21 @@ export function parseFrontmatter(text) {
   const end = lines.findIndex((l, i) => i > 0 && l.trim() === '---');
   if (end < 0) return null;
   const fields = {};
+  let current = null;
+  const unquote = (v) => v.replace(/^"(.*)"$/, '$1').replace(/^'(.*)'$/, '$1');
   for (const line of lines.slice(1, end)) {
     const m = line.match(/^([A-Za-z_]+):\s*(.*)$/);
-    if (m) fields[m[1]] = m[2].trim();
+    if (m) {
+      current = m[1];
+      fields[current] = unquote(m[2].trim());
+      continue;
+    }
+    // Block-style list continuation: fold `- item` lines into the current key.
+    const item = line.match(/^\s*-\s+(.*)$/);
+    if (item && current) {
+      const v = unquote(item[1].trim());
+      fields[current] = fields[current] ? `${fields[current]} ${v}` : v;
+    }
   }
   return fields;
 }
