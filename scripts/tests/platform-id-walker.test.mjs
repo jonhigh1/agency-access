@@ -197,9 +197,10 @@ const ALLOWLIST = {
   // allowlist entries for access-request.service.ts and client.service.ts
   // were pruned in the same change.
 
-  // getSelectedAssetCount + getProductSummaryLines dispatch; collapses with
-  // review card 3. Allowlist-until-card-3.
-  'apps/web/src/components/client-auth/PlatformAuthWizard.tsx': 'DEC-015 Phase 3, 2026-10-09',
+  // getSelectedAssetCount + getProductSummaryLines + shouldPersistMetaProductSave
+  // live in apps/web/src/lib/invite/product-selection-summary.ts (unquoted-key
+  // tables; review card 3 U5). Prior allowlist entry for PlatformAuthWizard.tsx
+  // was pruned in the same change.
 
   // EMAIL_INVITE_PLATFORMS curated quartet; semantics parked as
   // PQ-selector-4.

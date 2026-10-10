@@ -57,9 +57,7 @@ import { getApiBaseUrl } from '@/lib/api/api-env';
 import { ApiResponseError, parseJsonResponse } from '@/lib/api/parse-json-response';
 import {
   resolveCta,
-  type CtaProductSelectionState,
   type RequestAvailability,
-  type ZeroSelectionMode,
 } from '@/lib/invite/cta-reason';
 import {
   hasSelectableAssets,
@@ -68,9 +66,19 @@ import {
 } from '@/lib/invite/landing-state';
 import {
   buildMetaGrantChecklist,
-  type MetaGrantChecklist as MetaGrantChecklistResult,
   type MetaGrantItemState,
 } from '@/lib/invite/meta-grant-checklist';
+import {
+  getMetaFollowUpLines,
+  getProductCtaState,
+  getProductSummaryLines,
+  getSelectedAssetCount,
+  hasGrantFollowUp,
+  hasNoAssetsFollowUp,
+  isMetaAssetProduct,
+  shouldPersistMetaProductSave,
+  supportsAssetSelection,
+} from '@/lib/invite/product-selection-summary';
 import { META_GRANT_ACCESS } from '@/lib/content/meta-grant-access';
 import { resolveMetaGrantPhaseHeader } from '@/lib/invite/client-invite-status';
 
@@ -135,38 +143,6 @@ const SAVE_REQUEST_TIMEOUT_MS = 45_000;
 const SAVE_REQUEST_TIMEOUT_MESSAGE =
   'Saving is taking longer than expected. Check your connection and try again.';
 
-function isMetaAssetProduct(
-  product: string
-): product is 'meta_ads' | 'meta_pages' | 'instagram' {
-  return product === 'meta_ads' || product === 'meta_pages' || product === 'instagram';
-}
-
-/**
- * Meta products share one selector blob, but save-assets is product-scoped.
- * Skip secondary products that have nothing of their own to persist so an
- * empty Instagram/Pages save cannot fail a successful ads/pages share.
- */
-function shouldPersistMetaProductSave(
-  product: 'meta_ads' | 'meta_pages' | 'instagram',
-  assets: MetaSelectionBlob
-): boolean {
-  switch (product) {
-    case 'meta_ads':
-      return (
-        getSelectedAssetCount('meta_ads', assets) > 0 ||
-        (assets.declinedAssetKinds?.length ?? 0) > 0
-      );
-    case 'meta_pages':
-      return (assets.pages?.length ?? 0) > 0;
-    case 'instagram':
-      return (assets.instagramAccounts?.length ?? 0) > 0;
-    default: {
-      const _exhaustive: never = product;
-      return _exhaustive;
-    }
-  }
-}
-
 function hasRetainedMetaSelection(
   expected: InviteSelectionPrefill | null,
   actual: MetaSelectionBlob | undefined
@@ -181,22 +157,6 @@ function hasRetainedMetaSelection(
     matches(expected.catalogs, actual.catalogs) &&
     matches(expected.datasets, actual.datasets)
   );
-}
-
-function supportsAssetSelection(product: string): boolean {
-  return (
-    isMetaAssetProduct(product) ||
-    product.startsWith('google_') ||
-    product === 'ga4' ||
-    product === 'linkedin_ads' ||
-    product === 'linkedin_pages' ||
-    product === 'tiktok' ||
-    product === 'tiktok_ads'
-  );
-}
-
-function isGoogleProduct(product: string): boolean {
-  return product.startsWith('google_') || product === 'ga4';
 }
 
 function clampStep(step: number): 1 | 2 | 3 {
@@ -249,247 +209,6 @@ function waitForMetaPopup(popup: Window) {
     }
   }, 500);
   return { promise, cleanup, cancel: () => fail(new Error('Meta authorization was cancelled.')) };
-}
-
-function hasNoAssetsFollowUp(product: string, assets: MetaSelectionBlob): boolean {
-  if (
-    (isGoogleProduct(product) || product === 'linkedin_ads' || product === 'linkedin_pages') &&
-    assets.availableAssetCount === 0
-  ) {
-    return true;
-  }
-
-  if (
-    (product === 'tiktok' || product === 'tiktok_ads') &&
-    Array.isArray(assets.availableAdvertisers) &&
-    assets.availableAdvertisers.length === 0
-  ) {
-    return true;
-  }
-
-  return false;
-}
-
-function getMetaFollowUpLines(
-  assets: MetaSelectionBlob,
-  checklist?: MetaGrantChecklistResult
-): string[] {
-  const lines: string[] = [];
-  const unresolvedManualResults = Array.isArray(assets.manualAdAccountVerificationResults)
-    ? assets.manualAdAccountVerificationResults.filter(
-        (result: any) => result?.status && result.status !== 'verified'
-      )
-    : [];
-
-  if (unresolvedManualResults.length > 0) {
-    unresolvedManualResults.forEach((result: any) => {
-      const assetName =
-        typeof result.assetName === 'string' && result.assetName.length > 0
-          ? result.assetName
-          : typeof result.assetId === 'string'
-            ? result.assetId
-            : 'Selected ad account';
-      lines.push(`Follow-up needed: ${assetName} still needs manual Meta sharing`);
-    });
-  } else if (assets.manualAdAccountShareStatus === 'partial') {
-    lines.push('Follow-up needed: Some ad accounts still require manual sharing');
-  }
-
-  const selectedInstagramAccounts = Array.isArray(assets.selectedInstagramWithNames)
-    ? assets.selectedInstagramWithNames
-    : Array.isArray(assets.instagramAccounts)
-      ? assets.instagramAccounts.map((id: string) => ({ id, name: id }))
-      : [];
-
-  selectedInstagramAccounts.forEach((account: any) => {
-    const accountName =
-      typeof account?.name === 'string' && account.name.length > 0
-        ? account.name
-        : typeof account?.id === 'string'
-          ? account.id
-          : 'Selected Instagram account';
-    // The checklist machine owns the Instagram state once mounted; the blob
-    // flag stays as the fallback for callers without a checklist.
-    const instagramState = checklist?.items.find(
-      (item) => item.key === 'instagram_account'
-    )?.state;
-    const instagramVerified =
-      instagramState !== undefined
-        ? instagramState === 'done'
-        : assets.instagramBusinessAccessStatus === 'verified';
-    lines.push(instagramVerified
-      ? `Follow-up needed: ${accountName} agency access is verified; individual recipient access is not verified`
-      : `Follow-up needed: ${accountName} needs agency Business Portfolio sharing and verification`);
-  });
-
-  const selectedDatasets = Array.isArray(assets.selectedDatasetsWithNames)
-    ? assets.selectedDatasetsWithNames
-    : Array.isArray(assets.datasets)
-      ? assets.datasets.map((id: string) => ({ id, name: id }))
-      : [];
-  // A verified dataset row set is a Done on the checklist: repeating the
-  // manual-assignment ask would contradict the Connected header.
-  const datasetDone = checklist?.items.some(
-    (item) => item.key === 'dataset' && item.state === 'done'
-  );
-  if (!datasetDone) {
-    selectedDatasets.forEach((dataset: any) => {
-      lines.push(`Follow-up needed: ${dataset.name || dataset.id} requires manual Meta access assignment and verification`);
-    });
-  }
-
-  return lines;
-}
-
-function hasGrantFollowUp(
-  product: string,
-  assets: MetaSelectionBlob,
-  checklist?: MetaGrantChecklistResult
-): boolean {
-  return isMetaAssetProduct(product) && getMetaFollowUpLines(assets, checklist).length > 0;
-}
-
-function getSelectedAssetCount(product: string, assets: any): number {
-  switch (product) {
-    case 'google_ads':
-    case 'meta_ads':
-    case 'linkedin_ads':
-    case 'linkedin_pages':
-      return (assets.adAccounts?.length ?? 0) + (assets.pages?.length ?? 0) + (assets.instagramAccounts?.length ?? 0) + (assets.catalogs?.length ?? 0) + (assets.datasets?.length ?? 0);
-    case 'meta_pages':
-      return assets.pages?.length ?? 0;
-    case 'instagram':
-      return assets.instagramAccounts?.length ?? 0;
-    case 'ga4':
-      return assets.properties?.length ?? 0;
-    case 'google_business_profile':
-      return assets.businessAccounts?.length ?? 0;
-    case 'google_tag_manager':
-      return assets.containers?.length ?? 0;
-    case 'google_search_console':
-      return assets.sites?.length ?? 0;
-    case 'google_merchant_center':
-      return assets.merchantAccounts?.length ?? 0;
-    case 'tiktok':
-    case 'tiktok_ads':
-      return (assets.selectedAdvertiserIds?.length ?? 0) || (assets.adAccounts?.length ?? 0) || 0;
-    default:
-      return 0;
-  }
-}
-
-/**
- * Zero available Meta assets cannot be saved (the save API rejects zero
- * assets), so the client must create an asset first (KTD10). The selection
- * blob carries the full available lists, so an all-empty blob means the
- * client's business has nothing to select from.
- */
-function getMetaZeroSelectionMode(
-  assets: MetaSelectionBlob,
-  allowedAssetTypes: readonly string[]
-): ZeroSelectionMode {
-  const declineKindByAssetType: Record<string, string> = {
-    ad_account: 'ad_account',
-    page: 'page',
-    instagram: 'instagram_account',
-    catalog: 'catalog',
-    dataset: 'dataset',
-  };
-  const declinedKinds = new Set(assets.declinedAssetKinds || []);
-  if (
-    allowedAssetTypes.length > 0 &&
-    allowedAssetTypes.every((type) => declinedKinds.has(declineKindByAssetType[type] as never))
-  ) {
-    return 'declined-save';
-  }
-  const availableCount =
-    (assets.allAdAccounts?.length ?? 0) +
-    (assets.allPages?.length ?? 0) +
-    (assets.allInstagramAccounts?.length ?? 0) +
-    (assets.allProductCatalogs?.length ?? 0) +
-    (assets.allDatasets?.length ?? 0);
-  return availableCount === 0 ? 'create-required' : 'selection-required';
-}
-
-/** Maps one product's selection blob to the resolver's per-product input. */
-function getProductCtaState(
-  product: string,
-  assets: MetaSelectionBlob,
-  metaAllowedAssetTypes: readonly string[]
-): CtaProductSelectionState {
-  const zeroSelectionMode: ZeroSelectionMode = isMetaAssetProduct(product)
-    ? getMetaZeroSelectionMode(assets, metaAllowedAssetTypes)
-    : hasNoAssetsFollowUp(product, assets)
-      ? 'follow-up-save'
-      : 'selection-required';
-
-  return {
-    product,
-    selectedCount: getSelectedAssetCount(product, assets),
-    zeroSelectionMode,
-  };
-}
-
-function getProductSummaryLines(product: string, assets: any, checklist?: MetaGrantChecklistResult): string[] {
-  switch (product) {
-    case 'google_ads':
-      if ((assets.adAccounts?.length ?? 0) > 0) return [`${assets.adAccounts.length} Ad Account${assets.adAccounts.length === 1 ? '' : 's'} selected`];
-      if (assets.availableAssetCount === 0) return ['Follow-up needed: No ad accounts found yet'];
-      return [];
-    case 'ga4':
-      if ((assets.properties?.length ?? 0) > 0) return [`${assets.properties.length} Propert${assets.properties.length === 1 ? 'y' : 'ies'} selected`];
-      if (assets.availableAssetCount === 0) return ['Follow-up needed: No properties found yet'];
-      return [];
-    case 'google_business_profile':
-      if ((assets.businessAccounts?.length ?? 0) > 0) return [`${assets.businessAccounts.length} Location${assets.businessAccounts.length === 1 ? '' : 's'} selected`];
-      if (assets.availableAssetCount === 0) return ['Follow-up needed: No locations found yet'];
-      return [];
-    case 'google_tag_manager':
-      if ((assets.containers?.length ?? 0) > 0) return [`${assets.containers.length} Container${assets.containers.length === 1 ? '' : 's'} selected`];
-      if (assets.availableAssetCount === 0) return ['Follow-up needed: No containers found yet'];
-      return [];
-    case 'google_search_console':
-      if ((assets.sites?.length ?? 0) > 0) return [`${assets.sites.length} Site${assets.sites.length === 1 ? '' : 's'} selected`];
-      if (assets.availableAssetCount === 0) return ['Follow-up needed: No sites found yet'];
-      return [];
-    case 'google_merchant_center':
-      if ((assets.merchantAccounts?.length ?? 0) > 0) return [`${assets.merchantAccounts.length} Account${assets.merchantAccounts.length === 1 ? '' : 's'} selected`];
-      if (assets.availableAssetCount === 0) return ['Follow-up needed: No Merchant Center accounts found yet'];
-      return [];
-    case 'meta_ads': {
-      const lines: string[] = [];
-      if ((assets.adAccounts?.length ?? 0) > 0) lines.push(`${assets.adAccounts.length} Ad Account${assets.adAccounts.length === 1 ? '' : 's'} selected`);
-      if ((assets.pages?.length ?? 0) > 0) lines.push(`${assets.pages.length} Page${assets.pages.length === 1 ? '' : 's'} selected`);
-      if ((assets.instagramAccounts?.length ?? 0) > 0) lines.push(`${assets.instagramAccounts.length} IG Account${assets.instagramAccounts.length === 1 ? '' : 's'} selected`);
-      lines.push(...getMetaFollowUpLines(assets, checklist));
-      return lines;
-    }
-    case 'meta_pages':
-      if ((assets.pages?.length ?? 0) > 0) return [`${assets.pages.length} Page${assets.pages.length === 1 ? '' : 's'} selected`];
-      return [];
-    case 'linkedin_ads':
-      if ((assets.adAccounts?.length ?? 0) > 0) return [`${assets.adAccounts.length} Ad Account${assets.adAccounts.length === 1 ? '' : 's'} selected`];
-      if (assets.availableAssetCount === 0) return ['Follow-up needed: No ad accounts found yet'];
-      return [];
-    case 'linkedin_pages':
-      if ((assets.pages?.length ?? 0) > 0) return [`${assets.pages.length} Page${assets.pages.length === 1 ? '' : 's'} selected`];
-      if (assets.availableAssetCount === 0) return ['Follow-up needed: No pages found yet'];
-      return [];
-    case 'tiktok':
-    case 'tiktok_ads':
-      if ((assets.selectedAdvertiserIds?.length ?? 0) > 0) {
-        return [`${assets.selectedAdvertiserIds.length} Advertiser${assets.selectedAdvertiserIds.length === 1 ? '' : 's'} selected`];
-      }
-      if ((assets.adAccounts?.length ?? 0) > 0) {
-        return [`${assets.adAccounts.length} Advertiser${assets.adAccounts.length === 1 ? '' : 's'} selected`];
-      }
-      if (Array.isArray(assets.availableAdvertisers) && assets.availableAdvertisers.length === 0) {
-        return ['Follow-up needed: No advertisers found yet'];
-      }
-      return [];
-    default:
-      return [];
-  }
 }
 
 const PAGE_TASK_LABELS: Record<string, string> = {
