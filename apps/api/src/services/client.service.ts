@@ -13,7 +13,7 @@ import {
 } from '@/lib/product-selection-signals';
 import { prisma } from '@/lib/prisma';
 import { connectionService } from '@/services/connection.service';
-import { evaluateMetaProductFulfillment } from '@/services/access-request.service';
+import { evaluateMetaProductFulfillment } from '@/lib/meta-product-fulfillment';
 import {
   GOOGLE_PLATFORM_PRODUCT_IDS,
   evaluateGoogleProductFulfillment,

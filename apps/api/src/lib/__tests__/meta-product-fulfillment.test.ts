@@ -1,10 +1,5 @@
-import { describe, expect, it, vi } from 'vitest';
-
-vi.mock('@/lib/prisma', () => ({
-  prisma: {},
-}));
-
-import { evaluateMetaProductFulfillment } from '@/services/access-request.service';
+import { describe, expect, it } from 'vitest';
+import { evaluateMetaProductFulfillment } from '../meta-product-fulfillment.js';
 
 const META_ACCESS_CONFIG = {
   recipients: [
