@@ -1,0 +1,66 @@
+{
+  "cli_version": "0.10.2",
+  "checkpoint_id": "01M4KDDCBZPA94HAP35773DZ17",
+  "session_id": "agent-5c8fc601-8634-4d19-852d-0e0c25ee2d24",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-10T17:22:47.63014Z",
+  "branch": "main",
+  "checkpoints_count": 2,
+  "save_step_count": 2,
+  "files_touched": [],
+  "agent": "Cursor",
+  "model": "grok-4.6",
+  "turn_id": "0a5250fb06ff",
+  "compact_transcript_start": 0,
+  "session_metrics": {
+    "duration_ms": 64101,
+    "turn_count": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 2206,
+      "user_lines_removed": 2,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0,
+      "user_added_per_file": {
+        ".githooks/pre-push": 9,
+        ".impeccable/config.local.json": 26,
+        ".impeccable/hook.cache.json": 1,
+        "apps/web/.impeccable/questions/f2a36795.log": 1,
+        "apps/web/.impeccable/questions/f2a36795.state.json": 1,
+        "apps/web/src/.impeccable/config.json": 17,
+        "docs/client-funnel-walkthrough.html": 786,
+        "docs/clientinvite-competitive-teardown-2026-10-10.md": 181,
+        "docs/plans/2026-10-09-2152-feat-agent-memory-loop-plan.md": 322,
+        "docs/plans/2026-10-09-2206-feat-agentmemory-memory-loop-plan.md": 349,
+        "docs/user-journeys.html": 513
+      },
+      "user_removed_per_file": {
+        ".githooks/pre-push": 2
+      }
+    },
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 27,
+      "user_lines_removed": 0,
+      "agent_lines_added": 2179,
+      "agent_lines_removed": 2,
+      "user_added_per_file": {
+        ".impeccable/config.local.json": 26,
+        ".impeccable/hook.cache.json": 1
+      }
+    },
+    {
+      "checkpoint_number": 3,
+      "user_lines_added": 27,
+      "user_lines_removed": 0,
+      "agent_lines_added": 2179,
+      "agent_lines_removed": 2,
+      "user_added_per_file": {
+        ".impeccable/config.local.json": 26,
+        ".impeccable/hook.cache.json": 1
+      }
+    }
+  ]
+}
