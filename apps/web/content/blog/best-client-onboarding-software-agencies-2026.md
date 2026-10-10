@@ -36,6 +36,22 @@ relatedPosts:
   - flat-rate-vs-credit-pricing
   - oauth-token-management-agencies
   - leadsie-vs-authhub-comparison
+faqs:
+  - question: What is agency onboarding software?
+    answer: >-
+      Agency onboarding software is any tool that removes a step between signed contract and live work. That usually spans four jobs: platform access (OAuth permissions to Meta, Google, and similar), intake forms, contracts/e-sign, and internal project management.
+  - question: Which agency onboarding software should I buy first?
+    answer: >-
+      Buy for your current bottleneck. If campaigns are blocked waiting on Meta Business Manager or Google Ads permissions, start with access management (AuthHub, Leadsie, or Agency Access). If the pain is brand assets, questionnaires, signatures, and deposits in one client link, start with a client portal.
+  - question: How is AuthHub different in this category?
+    answer: >-
+      AuthHub is client OAuth onboarding for agencies: one link for featured platforms (Meta, Google Ads, GA4, LinkedIn, TikTok) across an honest 15+ platform set, with in-link intake, flat-rate plans ($29 / $79 / $149, caps 5 / 20 / 50), Infisical-backed token storage, and audit logs.
+  - question: Portal vs access — which do I need?
+    answer: >-
+      Portals collect forms, files, signatures, and often payments. Access tools collect platform permissions. If work is blocked on Meta/Google access, buy access first. If work is blocked on missing brand kits or unsigned SOWs, buy portal / contracts first.
+  - question: How much does access-oriented onboarding software cost?
+    answer: >-
+      AuthHub monthly list: $29 / $79 / $149. Leadsie monthly list: $59 / $129 / $299 (credits plus $50 packs). Agency Access: roughly $33–44 / $74–99 / $149–199 depending on monthly vs yearly billing.
 ---
 # Best Client Onboarding Software for Agencies (2026): Access Tools vs Portals
 

@@ -7,8 +7,9 @@
 import { readdirSync, readFileSync, existsSync } from "node:fs";
 import path from "node:path";
 import { parse as parseYaml } from "yaml";
-import type { BlogPost, BlogCategory, BlogStage } from "./blog-types";
-import { toCanonicalUrl } from "./seo-canonical";
+import { slugifyAuthorName } from "./authors";
+import type { BlogFaq, BlogPost, BlogCategory, BlogStage } from "./blog-types";
+import { isExcludedBlogSlug, toCanonicalUrl } from "./seo-canonical";
 
 const CONTENT_DIR = path.join(process.cwd(), "content", "blog");
 
@@ -35,6 +36,28 @@ let allPostsCache: BlogPost[] | undefined;
 
 function isAuthorFrontmatter(value: unknown): value is AuthorFrontmatter {
   return typeof value === "object" && value !== null && "name" in value;
+}
+
+function parseFaqs(value: unknown): BlogFaq[] | undefined {
+  if (!Array.isArray(value) || value.length === 0) {
+    return undefined;
+  }
+
+  const faqs: BlogFaq[] = [];
+  for (const item of value) {
+    if (typeof item !== "object" || item === null) {
+      continue;
+    }
+    const record = item as Record<string, unknown>;
+    const question = typeof record.question === "string" ? record.question.trim() : "";
+    const answer = typeof record.answer === "string" ? record.answer.trim() : "";
+    if (!question || !answer) {
+      continue;
+    }
+    faqs.push({ question, answer });
+  }
+
+  return faqs.length > 0 ? faqs : undefined;
 }
 
 function parseMarkdown(raw: string): { data: Frontmatter; content: string } {
@@ -77,13 +100,25 @@ function parseFileToPost(filePath: string, slug: string): BlogPost {
   }
 
   const author = data.author;
-  const authorObj = isAuthorFrontmatter(author)
-    ? {
-        name: String(author.name ?? ""),
-        role: String(author.role ?? ""),
-        avatar: author.avatar ? String(author.avatar) : undefined,
-      }
-    : { name: "AuthHub Team", role: "Agency Operations Experts" };
+  const authorName = isAuthorFrontmatter(author)
+    ? String(author.name ?? "")
+    : "Jon High";
+  const authorRole = isAuthorFrontmatter(author)
+    ? String(author.role ?? "")
+    : "Founder";
+  const authorSlug =
+    isAuthorFrontmatter(author) && typeof author.slug === "string" && author.slug
+      ? String(author.slug)
+      : slugifyAuthorName(authorName);
+  const authorObj = {
+    name: authorName,
+    role: authorRole,
+    slug: authorSlug,
+    avatar:
+      isAuthorFrontmatter(author) && author.avatar
+        ? String(author.avatar)
+        : undefined,
+  };
 
   return {
     id: String(data.id ?? slug),
@@ -112,6 +147,7 @@ function parseFileToPost(filePath: string, slug: string): BlogPost {
     relatedPosts: Array.isArray(data.relatedPosts)
       ? data.relatedPosts.map(String)
       : undefined,
+    faqs: parseFaqs(data.faqs),
     featuredImage: data.featuredImage ? String(data.featuredImage) : undefined,
     canonical: data.canonical ? toCanonicalUrl(String(data.canonical)) : undefined,
     suppressArticleFooter: data.suppressArticleFooter === true,
@@ -180,4 +216,10 @@ export function getFeaturedPosts(limit = 3): BlogPost[] {
   return getBlogPosts()
     .filter((post) => post.tags.includes("featured"))
     .slice(0, limit);
+}
+
+export function getPostsByAuthorSlug(slug: string): BlogPost[] {
+  return getBlogPosts().filter(
+    (post) => post.author.slug === slug && !isExcludedBlogSlug(post.slug),
+  );
 }

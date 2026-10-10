@@ -18,8 +18,10 @@ describe("blog-data", () => {
       author: {
         name: "Jon High",
         role: "Founder",
+        slug: "jon-high",
       },
     });
+    expect(post?.faqs).toBeUndefined();
     expect(post?.content).toContain("Google's Unique Multi-Product Challenge");
     expect(post?.tags.length).toBeGreaterThan(0);
   });
@@ -43,6 +45,16 @@ describe("blog-data", () => {
       "Ready to simplify Snapchat (and every other) client invite?"
     );
     expect(post?.content).not.toContain("Agency Access Platform");
+  });
+
+  it("parses frontmatter faqs for posts that declare them", () => {
+    const post = getBlogPostBySlug("client-onboarding-checklist");
+    expect(post?.faqs?.[0]).toEqual({
+      question: "What should a client onboarding checklist include?",
+      answer:
+        "Contract/SOW close, intake and brand assets, platform access with exact roles, expectations (comms, approvals, reporting, scope), kickoff with a written success metric, and a first-value path through a 30-day review. Every task needs an owner and a due day.",
+    });
+    expect(post?.faqs?.length).toBe(6);
   });
 
   it("rewrites www canonicals to the non-www origin", () => {

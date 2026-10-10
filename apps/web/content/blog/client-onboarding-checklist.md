@@ -27,6 +27,25 @@ relatedPosts:
   - social-media-access-request-template
   - how-to-onboard-new-marketing-client
   - meta-business-manager-access-guide
+faqs:
+  - question: What should a client onboarding checklist include?
+    answer: >-
+      Contract/SOW close, intake and brand assets, platform access with exact roles, expectations (comms, approvals, reporting, scope), kickoff with a written success metric, and a first-value path through a 30-day review. Every task needs an owner and a due day.
+  - question: How long should client onboarding take?
+    answer: >-
+      Plan about two weeks from signed contract to first useful deliverable if access is verified early. Day 0–3 for close, intake, and access; kickoff by Day 5; first small win inside two weeks; formal review at Day 30.
+  - question: Who should own client onboarding at an agency?
+    answer: >-
+      One accountable owner (usually the account manager), with billing or ops on close and a strategist on kickoff. If everyone owns onboarding, nobody chases open platform-access rows.
+  - question: What access do I need from a new marketing client?
+    answer: >-
+      Whatever platforms you will run: typically Meta, Google Ads, GA4, and any of LinkedIn, TikTok, Pinterest, or Snapchat in scope — plus pixel or GTM publish rights, Search Console, and CMS or Shopify access if you will touch landing pages. Ask for the role that lets you do the work, then verify each one in-platform.
+  - question: How do I get access without asking for passwords?
+    answer: >-
+      Use each platform's official partner or user invite (Business Manager, Google Ads users, GA4 property access, and similar). Send clear role names. You can also send one AuthHub link that walks the client through those official surfaces. Never share logins.
+  - question: Should the client or the agency own the ad accounts?
+    answer: >-
+      The client owns the ad accounts. The agency gets partner or user access with the right role. That keeps billing, asset ownership, and offboarding clean when the engagement ends.
 ---
 Updated October 7, 2026
 
@@ -195,26 +214,6 @@ Send the right role (from Phase 3), then verify in-platform.
 Phase 3 can be **one client link** instead of a stack of separate invite emails. The client signs into each platform and approves; your team sees status. AuthHub supports **15+** platform integrations for that flow. Start a free trial from the homepage, or compare plans on [/pricing](/pricing) (**$29 / $79 / $149** monthly for **5 / 20 / 50** active clients).
 
 AuthHub does not replace your SOW, intake form, or kickoff — it compresses the access-collection step.
-
-## FAQ
-
-**What should a client onboarding checklist include?**  
-Contract/SOW close, intake + brand assets, platform access with exact roles, expectations (comms, approvals, reporting, scope), kickoff with a written success metric, and a first-value path through a 30-day review. Every task needs an owner and a due day.
-
-**How long should client onboarding take?**  
-Plan about two weeks from signed contract to first useful deliverable if access is verified early. Day 0–3 for close, intake, and access; kickoff by Day 5; first small win inside two weeks; formal review at Day 30.
-
-**Who should own client onboarding at an agency?**  
-One accountable owner (usually the account manager), with billing/ops on Close and a strategist on kickoff. "Everyone owns onboarding" means nobody chases the open Phase 3 rows.
-
-**What access do I need from a new marketing client?**  
-Whatever platforms you'll run: typically Meta, Google Ads, GA4, and any of LinkedIn, TikTok, Pinterest, Snapchat in scope — plus pixel/GTM publish rights, Search Console, and CMS/Shopify if you'll touch landing pages. Ask for the role that lets you do the work; verify each one.
-
-**How do I get access without asking for passwords?**  
-Use each platform's official partner / user invite (Business Manager, Google Ads users, GA4 property access, etc.). Send clear role names. Or send one AuthHub link that walks the client through those official surfaces. Never share logins.
-
-**Should the client or the agency own the ad accounts?**  
-The **client owns** the ad accounts. The agency gets partner or user access with the right role. That keeps billing, asset ownership, and offboarding clean when the engagement ends.
 
 ### Ready to simplify Phase 3?
 

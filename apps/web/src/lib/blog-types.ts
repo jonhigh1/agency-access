@@ -14,9 +14,15 @@ export type BlogCategory =
 
 export type BlogStage = "awareness" | "consideration" | "decision";
 
+export interface BlogFaq {
+  question: string;
+  answer: string;
+}
+
 export interface BlogAuthor {
   name: string;
   role: string;
+  slug: string;
   avatar?: string;
 }
 
@@ -33,6 +39,7 @@ export interface BlogPost {
   updatedAt?: string;
   readTime: number;
   author: BlogAuthor;
+  faqs?: BlogFaq[];
   featuredImage?: string;
   tags: string[];
   metaTitle?: string;

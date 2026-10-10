@@ -36,6 +36,19 @@ relatedPosts:
   - oauth-token-management-agencies
   - leadsie-vs-authhub-comparison
   - what-is-client-access-management
+faqs:
+  - question: What are the best Leadsie alternatives in 2026?
+    answer: >-
+      The main Leadsie alternatives agencies shortlist are ClientInvite, AgencyAccess, AuthHub, ClientFuse, and free or credit-based options such as OnboardClient and Access Pilot. The best pick depends on pricing model, platform breadth, and whether token lifecycle and audit matter.
+  - question: Does AgencyAccess have an API?
+    answer: >-
+      Yes. AgencyAccess documents a public REST API and also offers Zapier on higher plans. Do not treat it as Zapier-only.
+  - question: Is ClientInvite or AuthHub the better Leadsie alternative?
+    answer: >-
+      Choose ClientInvite for flat-fee unlimited connections at a published $89 Agency plan when Meta, Google, Shopify, and LinkedIn cover your stack. Choose AuthHub if expired-token reconnects, Infisical-style vaulting and audit logs, in-link intake, or Growth-tier API and webhooks on 5/20/50 active-client caps are the bottleneck.
+  - question: Should I stay on Leadsie?
+    answer: >-
+      Stay on Leadsie if you rely on broader platform set, prospect-audit workflows, Meta helpers, multi-brand Pro features, or credit pooling on annual plans. Switch when credits and overages, branding depth, intake-in-link, or automatic token refresh become the bottleneck.
 ---
 # Best Leadsie Alternatives (2026): Fair Comparison for Agencies
 
@@ -260,43 +273,6 @@ Units differ—**do not** treat "10 clients" as identical across credit, invite,
 4. **Cut over** only after the clients you care about have completed the new flow and your team trusts status / token health in the new system.
 
 **No** "15-minute migration" or free CS migration promise. Platform access remains until the client or platform revokes it—even if you cancel a vendor subscription.
-
----
-
-## FAQ
-
-### What are the best Leadsie alternatives in 2026?
-
-The main Leadsie alternatives agencies shortlist are **ClientInvite** (flat pricing and unlimited connections on its Agency plan), **AgencyAccess** (intake, deep branding, broader integrations, longer trial, public API), **AuthHub** (automatic OAuth token refresh, Infisical-backed storage with audit logs, in-link intake, and **$29 / $79 / $149** active-client tiers), **ClientFuse** (lower published tiers and access diagnostics), and free or credit-based options such as **OnboardClient** and **Access Pilot**—with **OneClick Onboard** also in market for Google/Meta-focused flat cards. The best pick depends on pricing model, platform breadth, and whether token lifecycle and audit matter.
-
-### Credits vs flat vs caps—what's the real difference?
-
-**Leadsie** meters **onboarding credits** (plus audit credits) and sells **$50** overage packs. **ClientInvite** sells a **flat** monthly fee with unlimited connections on Agency. **AgencyAccess** meters **clients/invites per month**. **AuthHub** and **ClientFuse** sell **active-client / clients-per-month tiers**. **Access Pilot** sells **per-grant credits**. **OnboardClient** publishes **$0**. Compare the meter that matches how your agency actually grows—not just the sticker entry price.
-
-### Does AgencyAccess have an API?
-
-**Yes.** AgencyAccess documents a **public REST API** and also offers **Zapier** on higher plans. Do not treat it as Zapier-only. Differentiate peers on **token refresh**, vault/audit packaging, and which automation surfaces you actually need—not on a false "no API" claim.
-
-### Is ClientInvite or AuthHub the better Leadsie alternative?
-
-Choose **ClientInvite** if you want the simplest flat-fee path with unlimited connections at a published **$89** Agency plan and you mainly need Meta, Google, Shopify, and LinkedIn. Choose **AuthHub** if expired-token reconnects are the pain, you need Infisical-style vaulting and audit logs, you want intake in the same authorization link, or you need Growth-tier API and webhooks on predictable **5 / 20 / 50** active-client caps.
-
-### Is free OnboardClient enough?
-
-It can be enough to **prove** one-link onboarding at zero list price. Treat "forever free" as their sponsorship model, not a guaranteed feature roadmap for token health, Infisical-class vaulting, or Growth-tier API. Graduate to a paid peer when those become requirements.
-
-### Should I stay on Leadsie?
-
-**Stay on Leadsie** if you rely on its broader platform set, prospect-audit workflows, Meta/Access Detective helpers, multi-brand Pro features, GoHighLevel-era maturity, or you are happy with credit pooling on annual plans. **Switch** when credits and overages, branding depth, Shopify Partner access, intake-in-link, or automatic token refresh become the bottleneck.
-
-### Which AuthHub page should I read next?
-
-1. **AuthHub vs Leadsie switcher:** [/compare/leadsie-alternative](/compare/leadsie-alternative)
-2. **Leadsie credit math:** [/compare/leadsie-pricing](/compare/leadsie-pricing)
-3. **AgencyAccess binary:** [/compare/agencyaccess-alternative](/compare/agencyaccess-alternative)
-4. **Three-way:** [/compare/leadsie-vs-agencyaccess-vs-authhub](/compare/leadsie-vs-agencyaccess-vs-authhub)
-5. **Tiers + trial:** [/pricing](/pricing)
-6. **Category context:** [/blog/best-client-onboarding-software-agencies-2026](/blog/best-client-onboarding-software-agencies-2026)
 
 ---
 

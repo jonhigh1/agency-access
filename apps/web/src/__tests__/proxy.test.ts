@@ -65,6 +65,14 @@ describe('proxy public route handling', () => {
     expect(protectMock).not.toHaveBeenCalled();
   });
 
+  it.each(['/authors', '/authors/jon-high'])('does not protect public author route %s', async (path) => {
+    const { default: proxy } = await import('../proxy');
+
+    await proxy({ protect: protectMock }, new Request(`https://authhub.test${path}`));
+
+    expect(protectMock).not.toHaveBeenCalled();
+  });
+
   it.each(['/features', '/features/white-label'])('does not protect public features route %s', async (path) => {
     const { default: proxy } = await import('../proxy');
 

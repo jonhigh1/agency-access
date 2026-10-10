@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+import type { Route } from 'next';
+import Link from 'next/link';
 
 import { Button } from '@/components/ui/button';
 
@@ -79,6 +81,27 @@ export default function AboutPage() {
               <p className="text-gray-600 text-sm leading-relaxed">Client authorizes through a guided flow. You see real-time status — done, pending, or blocked.</p>
             </div>
           </div>
+        </div>
+      </section>
+
+      <section className="py-16 px-4 sm:px-6 lg:px-8 border-y-2 border-black bg-card">
+        <div className="max-w-4xl mx-auto">
+          <h2 className="font-dela text-2xl sm:text-3xl font-black text-ink mb-6">
+            Who builds AuthHub
+          </h2>
+          <p className="text-foreground font-mono text-base leading-relaxed mb-4">
+            <Link href={'/authors/jon-high' as Route} className="font-bold text-danger-ink hover:underline">
+              Jon High
+            </Link>{' '}
+            is the founder. He built AuthHub after watching agencies lose days to Meta Business
+            Manager partner requests, Google Ads Access and security screens, and expired tokens.
+            The how-tos and comparisons on this site are his: named, dated, and written from
+            operating the product rather than a generic &quot;team&quot; byline.
+          </p>
+          <p className="text-foreground font-mono text-base leading-relaxed">
+            Tokens go in Infisical, not Postgres. Access events go in an audit log. Status is
+            complete, partial, pending, or failed — not a false green check.
+          </p>
         </div>
       </section>
 

@@ -4,6 +4,7 @@ import {
   getAllComparisonPageSlugs,
   getComparisonLastVerified,
 } from '@/lib/comparison-data';
+import { getAllAuthorSlugs } from '@/lib/authors';
 import { getAllGuides } from '@/lib/guides';
 import {
   isExcludedBlogSlug,
@@ -91,9 +92,20 @@ export default function sitemap(): MetadataRoute.Sitemap {
     )
   );
 
+  const authorUrls: MetadataRoute.Sitemap = getAllAuthorSlugs().map((slug) =>
+    entry(`/authors/${slug}`, buildDate, 'monthly', 0.6)
+  );
+
   const featureUrls: MetadataRoute.Sitemap = [
     entry('/features/white-label', buildDate, 'monthly', 0.8),
   ];
 
-  return [...staticPages, ...blogUrls, ...compareUrls, ...guideUrls, ...featureUrls];
+  return [
+    ...staticPages,
+    ...blogUrls,
+    ...compareUrls,
+    ...guideUrls,
+    ...authorUrls,
+    ...featureUrls,
+  ];
 }
