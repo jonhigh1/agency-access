@@ -203,7 +203,7 @@ OAuth connectors live in `apps/api/src/services/connectors/`. Configuration-driv
 
 **Adding a new platform:** (1) Add to shared types (PlatformSchema, PLATFORM_NAMES, PLATFORM_SCOPES), (2) Add config in registry.config.ts, (3) Add env vars in env.ts and .env.example, (4) Create connector only if non-standard OAuth, (5) Register in factory, (6) Test full flow and Infisical storage.
 
-**Platform hierarchy:** Group-level (google, meta, linkedin) = one OAuth for multiple products; product-level (google_ads, ga4, meta_ads, etc.) = per-product. Meta: use getLongLivedToken for 60-day tokens. Google Ads: developer-token header. Kit: JSON body for token exchange. Beehiiv/Zapier: manual invitation flows, not standard OAuth. Store metadata in PlatformAuthorization.metadata. OAuth state via OAuthStateService (Redis). Template: `TEMPLATE.ts`.
+**Platform hierarchy:** Group-level (google, meta, linkedin) = one OAuth for multiple products; product-level (google_ads, ga4, meta_ads, etc.) = per-product. Meta: use getLongLivedToken for 60-day tokens. Google Ads: developer-token header. Kit: JSON body for token exchange. Beehiiv/Zapier: manual invitation flows, not standard OAuth. Store metadata in PlatformAuthorization.metadata. OAuth state via OAuthStateService (Redis).
 
 ### Client Authorization Pattern
 

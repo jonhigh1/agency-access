@@ -11,7 +11,6 @@ export default tseslint.config(
       '**/*.test.ts',
       '**/*.spec.ts',
       'prisma/**',
-      'src/services/connectors/TEMPLATE.ts',
     ],
   },
   js.configs.recommended,
