@@ -1,0 +1,19 @@
+{
+  "cli_version": "0.10.2",
+  "checkpoint_id": "01M4KDDRWAJFDCC678RYJEDF1R",
+  "session_id": "agent-5c8fc601-8634-4d19-852d-0e0c25ee2d24",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-10T17:23:00.959337Z",
+  "branch": "main",
+  "checkpoints_count": 2,
+  "save_step_count": 1,
+  "files_touched": [],
+  "agent": "Cursor",
+  "model": "grok-4.6",
+  "turn_id": "0a5250fb06ff",
+  "compact_transcript_start": 0,
+  "session_metrics": {
+    "duration_ms": 64101,
+    "turn_count": 2
+  }
+}
