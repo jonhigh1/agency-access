@@ -3,7 +3,7 @@
   "checkpoint_id": "01M4KK0GKNSRJRSHGCKY721Q51",
   "strategy": "manual-commit",
   "branch": "worktree-feat+social-proof-rollout",
-  "checkpoints_count": 6,
+  "checkpoints_count": 7,
   "files_touched": [
     "apps/web/src/app/(marketing)/security/__tests__/page.public.test.tsx",
     "apps/web/src/app/(marketing)/security/page.tsx",
@@ -55,6 +55,13 @@
       "compact_transcript": "/5/transcript.jsonl",
       "content_hash": "/5/content_hash.txt",
       "prompt": "/5/prompt.txt"
+    },
+    {
+      "metadata": "/6/metadata.json",
+      "transcript": "/6/full.jsonl",
+      "compact_transcript": "/6/transcript.jsonl",
+      "content_hash": "/6/content_hash.txt",
+      "prompt": ""
     }
   ],
   "token_usage": {
