@@ -1,5 +1,5 @@
 import { HeroSection } from '@/components/marketing/hero-section';
-import { SocialProofSection } from '@/components/marketing/social-proof-section';
+import { ValueMarqueeSection } from '@/components/marketing/value-marquee-section';
 import { PainSection } from '@/components/marketing/pain-section';
 import { SolutionSection } from '@/components/marketing/solution-section-new';
 import CombinedFeaturedSection from '@/components/ui/combined-featured-section';
@@ -64,7 +64,7 @@ export default function MarketingPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
       />
       <HeroSection />
-      <SocialProofSection />
+      <ValueMarqueeSection />
       <PainSection />
       <SolutionSection />
       <CombinedFeaturedSection />

@@ -39,7 +39,7 @@ const valueHighlights = [
 // Duplicate for seamless marquee loop (desktop only)
 const marqueeHighlights = [...valueHighlights, ...valueHighlights, ...valueHighlights];
 
-export function SocialProofSection() {
+export function ValueMarqueeSection() {
   const isMobile = useMobile();
   const prefersReducedMotion = useReducedMotion();
   return (

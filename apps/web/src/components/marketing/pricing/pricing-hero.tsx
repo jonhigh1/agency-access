@@ -4,7 +4,7 @@ import { SignUpButton } from '@/components/lazy-clerk-auth-buttons';
 import { Button } from '@/components/ui/button';
 import { ArrowRight } from 'lucide-react';
 import { m } from 'framer-motion';
-import { SocialProofSection } from '../social-proof-section';
+import { ValueMarqueeSection } from '../value-marquee-section';
 
 // Helper to set Growth tier (STARTER in backend) for trial signup
 const handleTrialSignup = () => {
@@ -101,7 +101,7 @@ export function PricingHero() {
         transition={{ delay: 0.5, duration: 0.6 }}
         className="w-full"
       >
-        <SocialProofSection />
+        <ValueMarqueeSection />
       </m.div>
     </section>
   );
