@@ -5,6 +5,7 @@
 
 import { env } from '@/lib/env.js';
 import { analyticsEnvironmentProperties } from '@/lib/analytics-environment.js';
+import { sanitizeAnalyticsProperties } from '@agency-platform/shared';
 
 type ServerCaptureProps = Record<string, unknown>;
 
@@ -31,6 +32,7 @@ export async function captureServerPosthogEvent(input: {
   distinctId: string;
   event: string;
   properties?: ServerCaptureProps;
+  uuid?: string;
 }): Promise<void> {
   const config = getPosthogConfig();
   if (!config) return;
@@ -43,8 +45,9 @@ export async function captureServerPosthogEvent(input: {
         api_key: config.apiKey,
         event: input.event,
         distinct_id: input.distinctId,
+        ...(input.uuid ? { uuid: input.uuid } : {}),
         // APP_ENV (e.g. staging) acts like a super-property; explicit event props win.
-        properties: { ...analyticsEnvironmentProperties(env.APP_ENV), ...(input.properties ?? {}) },
+        properties: sanitizeAnalyticsProperties({ ...analyticsEnvironmentProperties(env.APP_ENV), ...(input.properties ?? {}) }),
       }),
       signal: AbortSignal.timeout(SERVER_CAPTURE_TIMEOUT_MS),
     });

@@ -3,6 +3,7 @@
 import { ClerkProvider } from '@clerk/nextjs';
 import { useEffect, useMemo, useState } from 'react';
 import { trackAffiliateEvent } from '@/lib/analytics/affiliate';
+import { PosthogIdentity } from '@/components/analytics/posthog-identity';
 import {
   clearPendingAffiliateClickFromDocument,
   getAffiliateClickTokenFromDocument,
@@ -87,6 +88,7 @@ export function RootProviders({ children }: { children: React.ReactNode }) {
       afterSignUpUrl={getAfterSignUpUrl()}
       afterSignInUrl="/dashboard"
     >
+      <PosthogIdentity />
       {children}
     </ClerkProvider>
   );

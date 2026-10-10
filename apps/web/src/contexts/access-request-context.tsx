@@ -590,12 +590,13 @@ export function AccessRequestProvider({
         created = true;
         setState(initialState);
 
-        // Track access request creation in PostHog
+        // UI confirmation only; the backend owns access_request_created so
+        // browser, CLI and agent creation count once in the same funnel.
         const platformCount = Object.values(state.selectedPlatforms).reduce(
           (sum, products) => sum + products.length,
           0
         );
-        void capturePosthogEvent('access_request_created', {
+        void capturePosthogEvent('access_request_creation_confirmed', {
           access_request_id: result.data.id,
           agency_id: agencyId,
           client_id: state.client?.id,

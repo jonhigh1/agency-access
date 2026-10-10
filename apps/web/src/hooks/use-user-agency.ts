@@ -71,7 +71,10 @@ export function useUserAgency(options: UseUserAgencyOptions = {}) {
   // is acting (agency_id, clerk_user_id, is_internal).
   const agency = query.data;
   useEffect(() => {
-    if (!agency?.id) return;
+    if (!agency?.id) {
+      setAgencyViewerAnalyticsContext(null);
+      return;
+    }
     setAgencyViewerAnalyticsContext({
       agencyId: agency.id,
       clerkUserId: userId ?? null,

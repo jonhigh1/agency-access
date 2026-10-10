@@ -12,6 +12,9 @@ import { queueWebhookDelivery } from '@/lib/queue-helpers';
 import * as accessRequestService from '@/services/access-request.service';
 import { metaAssetsService } from '@/services/meta-assets.service';
 import { notificationService } from '@/services/notification.service';
+import { captureServerPosthogEvent } from '@/lib/posthog.js';
+
+vi.mock('@/lib/posthog.js', () => ({ captureServerPosthogEvent: vi.fn().mockResolvedValue(undefined) }));
 
 const META_ACCESS_CONFIG = {
   recipients: [{ type: 'human' as const, id: 'person-1', name: 'Jon High' }],
@@ -31,7 +34,8 @@ vi.mock('@/lib/env', () => ({
 
 // Mock crypto for token generation
 var cryptoCallCount = 0;
-vi.mock('crypto', () => ({
+vi.mock('crypto', async (importOriginal) => ({
+  ...await importOriginal<typeof import('crypto')>(),
   randomUUID: () => '11111111-1111-4111-8111-111111111111',
   randomBytes: (size: number) => ({
     toString: (encoding: string) => {
@@ -133,6 +137,47 @@ describe('AccessRequestService', () => {
 
   afterEach(() => {
     vi.useRealTimers();
+  });
+
+  describe('authoritative request lifecycle analytics', () => {
+    it('counts creation from the shared backend service for browser, CLI and agent callers', async () => {
+      vi.mocked(prisma.agency.findUnique).mockResolvedValue({ id: 'agency-1', clerkUserId: 'user-1' } as any);
+      vi.mocked(prisma.accessRequest.create).mockResolvedValue({ id: 'request-1', agencyId: 'agency-1', uniqueToken: 'private-token' } as any);
+      const result = await accessRequestService.createAccessRequest({ agencyId: 'agency-1', clientName: 'Private', clientEmail: 'private@example.com', platforms: [{ platform: 'google_ads', accessLevel: 'manage' }] });
+      expect(result.error).toBeNull();
+      expect(captureServerPosthogEvent).toHaveBeenCalledWith(expect.objectContaining({
+        event: 'access_request_created', distinctId: 'agency:agency-1',
+        properties: expect.objectContaining({ access_request_id: 'request-1', agency_id: 'agency-1', source: 'server', platform_count: 1 }),
+      }));
+      expect(JSON.stringify(vi.mocked(captureServerPosthogEvent).mock.calls)).not.toContain('private');
+    });
+
+    it('tracks committed completion even when the agency has no webhook subscription', async () => {
+      vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue({
+        id: 'request-1', agencyId: 'agency-1', clientId: 'client-1', status: 'completed',
+        clientName: 'Private Client', clientEmail: 'private@example.com', uniqueToken: 'bearer-secret',
+        createdAt: new Date('2026-10-10T10:00:00Z'), authorizedAt: new Date('2026-10-10T10:04:00Z'),
+      } as any);
+      vi.mocked(prisma.webhookEndpoint.findMany).mockResolvedValue([]);
+      await accessRequestService.emitAccessRequestLifecycleWebhook({
+        accessRequestId: 'request-1', previousStatus: 'partial', nextStatus: 'completed',
+      });
+      expect(captureServerPosthogEvent).toHaveBeenCalledWith(expect.objectContaining({
+        event: 'access_request_completed', distinctId: 'agency:agency-1',
+        uuid: expect.stringMatching(/^[a-f0-9-]{36}$/),
+        properties: expect.objectContaining({ access_request_id: 'request-1', agency_id: 'agency-1', duration_ms: 240000, source: 'server', actor_type: 'system' }),
+      }));
+      const captured = JSON.stringify(vi.mocked(captureServerPosthogEvent).mock.calls);
+      expect(captured).not.toContain('private@example.com'); expect(captured).not.toContain('bearer-secret');
+    });
+
+    it('does not count unchanged or stale lifecycle snapshots', async () => {
+      await accessRequestService.emitAccessRequestLifecycleWebhook({ accessRequestId: 'request-1', previousStatus: 'completed', nextStatus: 'completed' });
+      vi.mocked(prisma.accessRequest.findUnique).mockResolvedValue({ id: 'request-1', agencyId: 'agency-1', status: 'partial' } as any);
+      vi.mocked(prisma.webhookEndpoint.findMany).mockResolvedValue([]);
+      await accessRequestService.emitAccessRequestLifecycleWebhook({ accessRequestId: 'request-1', previousStatus: 'partial', nextStatus: 'completed' });
+      expect(captureServerPosthogEvent).not.toHaveBeenCalled();
+    });
   });
 
   describe('createAccessRequest', () => {

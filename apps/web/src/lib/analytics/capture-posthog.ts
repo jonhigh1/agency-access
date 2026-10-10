@@ -4,8 +4,7 @@
  * during the first dynamic import (e.g. invite_link_copied + invite_sent on Copy Link).
  */
 import type posthog from 'posthog-js';
-import { omitSensitiveTokenProperties } from './omit-sensitive-token-properties';
-import { stripPosthogPiiProperties } from './posthog-pii-property-keys';
+import { sanitizeAnalyticsProperties } from '@agency-platform/shared';
 import { withInviteFunnelProperties } from './invite-funnel-properties';
 
 type PosthogClient = typeof posthog;
@@ -38,15 +37,10 @@ function enqueueCapture(task: (posthog: PosthogClient) => void): Promise<void> {
 }
 
 function sanitizeCaptureProperties(
-  event: string,
   properties?: Record<string, unknown>
 ): Record<string, unknown> | undefined {
   if (!properties) return undefined;
-  let sanitized = omitSensitiveTokenProperties(properties);
-  if (event.startsWith('client_') || event.startsWith('invite_')) {
-    sanitized = stripPosthogPiiProperties(sanitized);
-  }
-  return sanitized;
+  return sanitizeAnalyticsProperties(properties);
 }
 
 export async function capturePosthogEvent(
@@ -56,7 +50,7 @@ export async function capturePosthogEvent(
   // Resolve funnel context at call time, not when the lazy import settles.
   const enriched = withInviteFunnelProperties(event, properties);
   await enqueueCapture((posthog) => {
-    posthog.capture(event, sanitizeCaptureProperties(event, enriched));
+    posthog.capture(event, sanitizeCaptureProperties(enriched));
   });
 }
 
@@ -67,7 +61,7 @@ export async function capturePosthogEvents(events: PosthogCapture[]): Promise<vo
   }));
   await enqueueCapture((posthog) => {
     for (const { event, properties } of enrichedEvents) {
-      posthog.capture(event, sanitizeCaptureProperties(event, properties));
+      posthog.capture(event, sanitizeCaptureProperties(properties));
     }
   });
 }

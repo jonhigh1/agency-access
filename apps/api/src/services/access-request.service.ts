@@ -10,6 +10,8 @@ import { Prisma } from '@prisma/client';
 import type { FastifyRequest } from 'fastify';
 import { z } from 'zod';
 import { randomBytes, randomUUID } from 'crypto';
+import { createHash } from 'node:crypto';
+import { captureServerPosthogEvent } from '@/lib/posthog.js';
 import {
   PlatformSchema,
   type Platform,
@@ -57,6 +59,12 @@ import {
 const LegacyPlatformSchema = z.enum(
   [...LEGACY_PAYLOAD_IDS] as [PlatformRegistryId, ...PlatformRegistryId[]]
 );
+
+/** Stable UUID per first request milestone, so analytics retries can deduplicate. */
+function requestAnalyticsUuid(requestId: string, milestone: string): string {
+  const hash = createHash('sha256').update(`authhub:request:${requestId}:${milestone}`).digest('hex');
+  return `${hash.slice(0, 8)}-${hash.slice(8, 12)}-5${hash.slice(13, 16)}-a${hash.slice(17, 20)}-${hash.slice(20, 32)}`;
+}
 
 const AccessRequestPlatformSchema = z.union([PlatformSchema, LegacyPlatformSchema]);
 
@@ -343,6 +351,24 @@ export async function createAccessRequest(input: unknown, request?: FastifyReque
 
     // Invalidate dashboard cache for this agency
     await invalidateDashboardCache(validated.agencyId);
+
+    void captureServerPosthogEvent({
+      distinctId: `agency:${validated.agencyId}`,
+      event: 'access_request_created',
+      uuid: requestAnalyticsUuid(accessRequest.id, 'created'),
+      properties: {
+        schema_version: 1,
+        source: 'server',
+        actor_type: 'system',
+        access_request_id: accessRequest.id,
+        agency_id: validated.agencyId,
+        client_id: validated.clientId,
+        platforms: extractRequestedProducts(validated.platforms).map((item) => item.product),
+        platform_count: extractRequestedProducts(validated.platforms).length,
+        intake_fields_count: normalizedIntakeFields?.length ?? 0,
+        is_internal: isAnalyticsInternal([validated.agencyId, agency.clerkUserId]),
+      },
+    });
 
     return { data: accessRequest, error: null };
   } catch (error) {
@@ -877,6 +903,31 @@ export async function emitAccessRequestLifecycleWebhook(input: {
 
     if (!accessRequest) {
       return;
+    }
+
+    // Track persisted outcomes independently of paid webhook adoption. Agency
+    // creation and client completion are different people: join by request id.
+    if (accessRequest.status === input.nextStatus) {
+      const createdAt = accessRequest.createdAt?.getTime();
+      const completedAt = accessRequest.authorizedAt?.getTime();
+      // Fastify is long-lived; analytics must not delay the access workflow.
+      void captureServerPosthogEvent({
+        distinctId: `agency:${accessRequest.agencyId}`,
+        event: eventType.replace('.', '_'),
+        uuid: requestAnalyticsUuid(accessRequest.id, input.nextStatus),
+        properties: {
+          schema_version: 1,
+          source: 'server',
+          actor_type: 'system',
+          agency_id: accessRequest.agencyId,
+          access_request_id: accessRequest.id,
+          client_id: accessRequest.clientId,
+          status: input.nextStatus,
+          is_internal: isAnalyticsInternal([accessRequest.agencyId]),
+          ...(input.nextStatus === 'completed' && createdAt !== undefined && completedAt !== undefined
+            ? { duration_ms: Math.max(0, completedAt - createdAt) } : {}),
+        },
+      });
     }
 
     const endpoints = await prisma.webhookEndpoint.findMany({

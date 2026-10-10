@@ -595,7 +595,7 @@ export default function ClientAuthorizationPage({
           ).length ?? 0;
         void capturePosthogEvent('client_authorization_complete_failed', {
           access_request_id: data?.id,
-          code: errorCode ?? 'UNKNOWN',
+          error_code: errorCode ?? 'UNKNOWN',
           pending_item_count: pendingItemCount,
         });
       }

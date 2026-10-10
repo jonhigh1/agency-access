@@ -4,10 +4,11 @@ import { resolveSentryEnvironment } from '@/lib/sentry-environment';
 import { resolveSentryRelease } from '@/lib/sentry-release';
 import {
   redactInviteTokensDeep,
-  sanitizeInviteTokenProperties,
   shouldRecordInviteReplay,
 } from '@/lib/analytics/sanitize-invite-token-properties';
 import { analyticsEnvironmentProperties } from '@/lib/analytics/app-environment';
+import { sanitizeAnalyticsProperties } from '@agency-platform/shared';
+import { registerPosthogIdentityClient } from '@/lib/analytics/posthog-identity';
 
 /**
  * Client Sentry init must live here (not sentry.client.config.ts).
@@ -90,7 +91,7 @@ if (
  * must use `access_request_token` or `accessRequestId`, never properties.token.
  *
  * KTD13: invite URLs carry an anonymous bearer token on a logged-out visit.
- * sanitize_properties runs on EVERY captured event (pageviews, autocapture,
+ * before_send runs on EVERY captured event (pageviews and explicit captures),
  * and explicit captures), replacing the `/invite/<token>` path segment with a
  * redaction marker in $current_url, $pathname, $referrer, and any other
  * string property. The invite pages also set referrer: 'no-referrer' so the
@@ -123,10 +124,18 @@ function initPosthog() {
       api_host: '/ingest',
       ui_host: 'https://us.posthog.com',
       persistence: 'localStorage',
-      capture_pageview: true,
+      capture_pageview: 'history_change',
       capture_pageleave: true,
+      autocapture: false,
+      disable_session_recording: true,
+      capture_exceptions: false,
       debug: process.env.NODE_ENV === 'development',
-      sanitize_properties: (properties) => sanitizeInviteTokenProperties(properties),
+      before_send: (event) => {
+        if (!event) return null;
+        event.properties = sanitizeAnalyticsProperties(event.properties, true);
+        return event;
+      },
+      loaded: registerPosthogIdentityClient,
     });
     // Staging/preview builds tag every event with `environment`; prod (unset or
     // "production") registers nothing, so its events are unchanged.
