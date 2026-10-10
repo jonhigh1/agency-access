@@ -88,14 +88,6 @@ export function WebsiteSchema() {
     name: "AuthHub",
     url: "https://authhub.co",
     description: "OAuth aggregation platform for marketing agencies",
-    potentialAction: {
-      "@type": "SearchAction",
-      target: {
-        "@type": "EntryPoint",
-        urlTemplate: "https://authhub.co/search?q={search_term_string}",
-      },
-      "query-input": "required name=search_term_string",
-    },
   };
 
   return <Schema schema={schema} />;

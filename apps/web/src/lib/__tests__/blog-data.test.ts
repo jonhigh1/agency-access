@@ -45,6 +45,11 @@ describe("blog-data", () => {
     expect(post?.content).not.toContain("Agency Access Platform");
   });
 
+  it("rewrites www canonicals to the non-www origin", () => {
+    const post = getBlogPostBySlug("how-to-get-meta-ads-access-from-clients");
+    expect(post?.canonical).toBe("https://authhub.co/guides/meta-ads-access");
+  });
+
   it("sorts posts newest first and filters by category", () => {
     const posts = getBlogPosts();
     const securityPosts = getBlogPostsByCategory("security");

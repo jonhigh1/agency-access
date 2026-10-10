@@ -1,6 +1,6 @@
 # SEO Patterns & Standards
 
-**Last Updated**: March 14, 2026
+**Last Updated**: October 10, 2026
 **Purpose**: Ensure consistent SEO implementation across all AuthHub pages
 
 ---
@@ -11,6 +11,14 @@
 2. **One H1 per page**: The first heading on every page must be `<h1>`
 3. **Metadata completeness**: Every page needs title, description, canonical, and OpenGraph
 4. **Structured data**: Use JSON-LD schema for content types (Article, HowTo, Organization)
+
+## GitHub indexing leak
+
+`apps/web/src/app/robots.ts` only governs **authhub.co**. It cannot noindex `github.com` blob or raw pages of this public repo. Do not add unpublished SEO drafts, competitive teardowns, or keyword-rich planning docs that should not rank. Published marketing pages must carry self-referencing `https://authhub.co` canonicals so Google can prefer the live site over GitHub copies of `apps/web/content/blog/*.md`.
+
+Making the repository private is an ops decision, not a `robots.ts` fix.
+
+**GSC ops (not code):** inspect `/compare/clientinvite-alternative`, `/guides/meta-ads-access`, and `/guides/google-ads-access`; request indexing if they are 200 with self-canonicals.
 
 ---
 

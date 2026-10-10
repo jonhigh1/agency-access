@@ -22,7 +22,7 @@ metaTitle: 'How to Get Meta Ads Access From Clients: 2026 Guide'
 metaDescription: >-
   How to get Meta Ads access from clients in 2026. Step-by-step guide to Facebook
   Business Manager authorization, ad account permissions, and troubleshooting.
-canonical: 'https://www.authhub.co/guides/meta-ads-access'
+canonical: 'https://authhub.co/guides/meta-ads-access'
 relatedPosts:
   - google-ads-access-guide
   - ga4-access-guide

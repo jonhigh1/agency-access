@@ -8,6 +8,7 @@ import { readdirSync, readFileSync, existsSync } from "node:fs";
 import path from "node:path";
 import { parse as parseYaml } from "yaml";
 import type { BlogPost, BlogCategory, BlogStage } from "./blog-types";
+import { toCanonicalUrl } from "./seo-canonical";
 
 const CONTENT_DIR = path.join(process.cwd(), "content", "blog");
 
@@ -112,7 +113,7 @@ function parseFileToPost(filePath: string, slug: string): BlogPost {
       ? data.relatedPosts.map(String)
       : undefined,
     featuredImage: data.featuredImage ? String(data.featuredImage) : undefined,
-    canonical: data.canonical ? String(data.canonical) : undefined,
+    canonical: data.canonical ? toCanonicalUrl(String(data.canonical)) : undefined,
     suppressArticleFooter: data.suppressArticleFooter === true,
   };
 }

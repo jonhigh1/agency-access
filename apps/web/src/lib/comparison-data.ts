@@ -9,8 +9,11 @@ export {
   clientInviteAlternativePage,
   FORBIDDEN_CLIENTINVITE_COMPARE_TESTIMONIAL_NAMES,
 } from "./clientinvite-alternative-data";
-import { LEADSIE_PRICING_SLUG } from "./leadsie-pricing-page";
-import { THREE_WAY_COMPARE_SLUG } from "./three-way-comparison-data";
+import { LEADSIE_PRICING_SLUG, leadsiePricingPage } from "./leadsie-pricing-page";
+import {
+  THREE_WAY_COMPARE_SLUG,
+  leadsieVsAgencyAccessVsAuthHubPage,
+} from "./three-way-comparison-data";
 import type { ProgrammaticComparisonPage } from "./programmatic-types";
 
 /**
@@ -1012,6 +1015,20 @@ export function getAllComparisonPageSlugs(): string[] {
     THREE_WAY_COMPARE_SLUG,
     LEADSIE_PRICING_SLUG,
   ];
+}
+
+export function getComparisonLastVerified(slug: string): string | undefined {
+  const page = getComparisonPageBySlug(slug);
+  if (page?.lastVerified) {
+    return page.lastVerified;
+  }
+  if (slug === THREE_WAY_COMPARE_SLUG) {
+    return leadsieVsAgencyAccessVsAuthHubPage.lastVerified;
+  }
+  if (slug === LEADSIE_PRICING_SLUG) {
+    return leadsiePricingPage.lastVerified;
+  }
+  return undefined;
 }
 
 /**

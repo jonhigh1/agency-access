@@ -4,6 +4,7 @@ import { DeferredAnalytics } from "@/components/deferred-analytics";
 import { GoogleAnalytics } from "@/components/analytics/google-analytics";
 import { RootProviders } from "./root-providers";
 import { AnimationGate } from "@/components/animation-gate";
+import { organizationSchema, webSiteSchema } from "@/lib/root-schemas";
 import "./globals.css";
 
 // Preconnect to Google Fonts for faster font loading
@@ -59,42 +60,6 @@ export const metadata: Metadata = {
   // DNS preconnect hints for faster Google Fonts loading
   other: {
     'x-dns-prefetch-control': 'on',
-  },
-};
-
-// Organization JSON-LD structured data for SEO
-const organizationSchema = {
-  "@context": "https://schema.org",
-  "@type": "Organization",
-  "name": "AuthHub",
-  "url": "https://authhub.co",
-  "logo": "https://authhub.co/authhub.png",
-  "description": "Client access platform for marketing agencies. Replace weeks of OAuth setup with a single 5-minute link.",
-  "sameAs": [
-    "https://twitter.com/authhubco",
-    "https://linkedin.com/company/authhub-platform",
-  ],
-  "contactPoint": {
-    "@type": "ContactPoint",
-    "contactType": "customer support",
-    "url": "https://authhub.co/contact",
-  },
-};
-
-// WebSite JSON-LD structured data for site search and potential actions
-const webSiteSchema = {
-  "@context": "https://schema.org",
-  "@type": "WebSite",
-  "name": "AuthHub",
-  "url": "https://authhub.co",
-  "description": "Client access platform for marketing agencies",
-  "potentialAction": {
-    "@type": "SearchAction",
-    "target": {
-      "@type": "EntryPoint",
-      "urlTemplate": "https://authhub.co/search?q={search_term_string}",
-    },
-    "query-input": "required name=search_term_string",
   },
 };
 

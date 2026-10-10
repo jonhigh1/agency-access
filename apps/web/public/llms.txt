@@ -1,0 +1,32 @@
+# AuthHub
+
+> Client access platform for marketing agencies. Agencies send one link; clients authorize Meta, Google Ads, GA4, LinkedIn, and related platforms; tokens stay in Infisical with an audit log.
+
+AuthHub is for digital marketing agencies that onboard clients across ad and analytics platforms and need access plus intake in one flow. It is not an influencer-whitelisting product.
+
+## Product
+
+- Audience: marketing agency owners, ops leads, and onboarding teams
+- Job: collect client platform access in minutes instead of days of manual OAuth
+- Pricing: https://authhub.co/pricing (flat tiers by active clients; 14-day trial)
+- Docs: https://docs.authhub.co
+- Security: https://authhub.co/security
+
+## Guides
+
+- Meta Ads access: https://authhub.co/guides/meta-ads-access
+- Google Ads access: https://authhub.co/guides/google-ads-access
+
+## Comparisons
+
+- ClientInvite alternative: https://authhub.co/compare/clientinvite-alternative
+- Leadsie alternative: https://authhub.co/compare/leadsie-alternative
+- AgencyAccess alternative: https://authhub.co/compare/agencyaccess-alternative
+- Leadsie vs AgencyAccess vs AuthHub: https://authhub.co/compare/leadsie-vs-agencyaccess-vs-authhub
+- Leadsie pricing: https://authhub.co/compare/leadsie-pricing
+
+## Optional
+
+- Blog: https://authhub.co/blog
+- About: https://authhub.co/about
+- Contact: https://authhub.co/contact

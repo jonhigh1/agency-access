@@ -1,6 +1,13 @@
 import { MetadataRoute } from 'next';
 import { getBlogPosts } from '@/lib/blog-data';
-import { getAllComparisonPageSlugs } from '@/lib/comparison-data';
+import {
+  getAllComparisonPageSlugs,
+  getComparisonLastVerified,
+} from '@/lib/comparison-data';
+import {
+  isExcludedBlogSlug,
+  sitemapLastmod,
+} from '@/lib/seo-canonical';
 
 /**
  * Dynamic sitemap generation for AuthHub
@@ -11,8 +18,8 @@ import { getAllComparisonPageSlugs } from '@/lib/comparison-data';
  * Generates sitemap.xml at /sitemap.xml for Google Search Console.
  * Follows 2026 best practices:
  * - Only index-worthy URLs (canonical, clean, HTTPS)
- * - Accurate lastmod where known (blog publishedAt)
- * - No thin/duplicate/internal pages
+ * - Accurate lastmod from updatedAt / lastVerified when known
+ * - No thin/duplicate/internal pages or 301 sources
  * - Absolute URLs with full protocol
  *
  * Reference: https://developers.google.com/search/docs/crawling-indexing/sitemaps/build-sitemap
@@ -25,13 +32,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
   // Ensure base URL uses https in production for sitemap submission
   const canonicalBase =
     baseUrl.startsWith('http') ? baseUrl : `https://${baseUrl}`;
-
-  // Helper: format date string to ISO for lastmod (W3C Datetime)
-  const toLastmod = (dateStr: string): string => {
-    if (!dateStr) return buildDate;
-    const d = new Date(dateStr);
-    return Number.isNaN(d.getTime()) ? buildDate : d.toISOString();
-  };
 
   const entry = (
     path: string,
@@ -58,19 +58,27 @@ export default function sitemap(): MetadataRoute.Sitemap {
     entry('/security', buildDate, 'monthly', 0.7),
   ];
 
-  // Blog posts — use publishedAt for lastmod (accurate per 2026 guidelines)
-  const blogPosts = getBlogPosts();
-  const blogUrls: MetadataRoute.Sitemap = blogPosts.map((post) =>
-    entry(`/blog/${post.slug}`, toLastmod(post.publishedAt), 'monthly', 0.7)
+  const blogUrls: MetadataRoute.Sitemap = getBlogPosts()
+    .filter((post) => !isExcludedBlogSlug(post.slug))
+    .map((post) =>
+      entry(
+        `/blog/${post.slug}`,
+        sitemapLastmod(post.updatedAt, post.publishedAt) ?? buildDate,
+        'monthly',
+        0.7
+      )
+    );
+
+  const compareUrls: MetadataRoute.Sitemap = getAllComparisonPageSlugs().map(
+    (slug) =>
+      entry(
+        `/compare/${slug}`,
+        sitemapLastmod(getComparisonLastVerified(slug)) ?? buildDate,
+        'monthly',
+        0.7
+      )
   );
 
-  // Compare pages (programmatic SEO)
-  const compareSlugs = getAllComparisonPageSlugs();
-  const compareUrls: MetadataRoute.Sitemap = compareSlugs.map((slug) =>
-    entry(`/compare/${slug}`, buildDate, 'monthly', 0.7)
-  );
-
-  // Platform guides
   const guideUrls: MetadataRoute.Sitemap = [
     entry('/guides/meta-ads-access', buildDate, 'monthly', 0.8),
     entry('/guides/google-ads-access', buildDate, 'monthly', 0.8),
