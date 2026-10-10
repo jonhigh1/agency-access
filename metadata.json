@@ -3,7 +3,7 @@
   "checkpoint_id": "01M4J5PGYGE08W43DB0WJ7JR2D",
   "strategy": "manual-commit",
   "branch": "feat/agent-memory-loop",
-  "checkpoints_count": 2,
+  "checkpoints_count": 3,
   "files_touched": [
     "docs/workspace/memory-loop.md",
     "scripts/memory/check-frontmatter.mjs",
@@ -23,6 +23,13 @@
       "metadata": "/1/metadata.json",
       "transcript": "/1/full.jsonl",
       "content_hash": "/1/content_hash.txt",
+      "prompt": ""
+    },
+    {
+      "metadata": "/2/metadata.json",
+      "transcript": "/2/full.jsonl",
+      "compact_transcript": "/2/transcript.jsonl",
+      "content_hash": "/2/content_hash.txt",
       "prompt": ""
     }
   ],
