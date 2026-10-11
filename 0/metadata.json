@@ -1,0 +1,63 @@
+{
+  "cli_version": "0.10.2",
+  "checkpoint_id": "01M4M651FG99AWJKRE0BXJWAX0",
+  "session_id": "da6788d1-e8b7-4594-8df1-c06ca38c7409",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-11T00:35:10.196801Z",
+  "branch": "Signup-page-revamp",
+  "checkpoints_count": 2,
+  "save_step_count": 1,
+  "files_touched": [
+    "apps/web/src/app/(auth)/layout.tsx",
+    "apps/web/src/app/(auth)/sign-in/[[...sign-in]]/page.tsx",
+    "apps/web/src/app/(auth)/sign-up/[[...sign-up]]/page.tsx",
+    "apps/web/src/app/(auth)/sign-up/__tests__/sign-up-screen.test.tsx",
+    "apps/web/src/app/(auth)/sign-up/sign-up-screen.tsx",
+    "apps/web/src/app/sso-callback/page.tsx",
+    "apps/web/src/proxy.ts",
+    "docs/DECISIONS.md",
+    "docs/SESSION-LOG.md"
+  ],
+  "agent": "Factory AI Droid",
+  "model": "glm-5.3-flash",
+  "turn_id": "e32ec368b92b",
+  "compact_transcript_start": 0,
+  "token_usage": {
+    "input_tokens": 0,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 0,
+    "api_call_count": 0
+  },
+  "session_metrics": {
+    "turn_count": 2
+  },
+  "initial_attribution": {
+    "calculated_at": "2026-10-11T00:35:10.01964Z",
+    "agent_lines": 608,
+    "agent_removed": 16,
+    "human_added": 0,
+    "human_modified": 0,
+    "human_removed": 0,
+    "total_committed": 608,
+    "total_lines_changed": 624,
+    "agent_percentage": 100,
+    "metric_version": 2
+  },
+  "prompt_attributions": [
+    {
+      "checkpoint_number": 1,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 0,
+      "agent_lines_removed": 0
+    },
+    {
+      "checkpoint_number": 2,
+      "user_lines_added": 0,
+      "user_lines_removed": 0,
+      "agent_lines_added": 608,
+      "agent_lines_removed": 16
+    }
+  ]
+}

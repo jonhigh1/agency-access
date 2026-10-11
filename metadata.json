@@ -1,0 +1,34 @@
+{
+  "cli_version": "0.10.2",
+  "checkpoint_id": "01M4M651FG99AWJKRE0BXJWAX0",
+  "strategy": "manual-commit",
+  "branch": "Signup-page-revamp",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "apps/web/src/app/(auth)/layout.tsx",
+    "apps/web/src/app/(auth)/sign-in/[[...sign-in]]/page.tsx",
+    "apps/web/src/app/(auth)/sign-up/[[...sign-up]]/page.tsx",
+    "apps/web/src/app/(auth)/sign-up/__tests__/sign-up-screen.test.tsx",
+    "apps/web/src/app/(auth)/sign-up/sign-up-screen.tsx",
+    "apps/web/src/app/sso-callback/page.tsx",
+    "apps/web/src/proxy.ts",
+    "docs/DECISIONS.md",
+    "docs/SESSION-LOG.md"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 0,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 0,
+    "api_call_count": 0
+  }
+}
