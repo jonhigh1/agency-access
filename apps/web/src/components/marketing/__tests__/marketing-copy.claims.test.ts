@@ -27,7 +27,7 @@ describe('Marketing copy claims', () => {
   });
 
   it('uses value-focused highlights in the scrolling social banner', () => {
-    const code = readFile('src/components/marketing/social-proof-section.tsx');
+    const code = readFile('src/components/marketing/value-marquee-section.tsx');
 
     expect(code).toMatch(/One Link/);
     expect(code).toMatch(/Built-In Token Refresh/);

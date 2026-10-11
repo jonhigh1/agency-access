@@ -266,6 +266,9 @@ export const CacheKeys = {
   // Dashboard cache
   dashboard: (agencyId: string) => `dashboard:${agencyId}`,
 
+  // Public marketing aggregate (anonymous counts, hourly refresh)
+  marketingStats: () => 'marketing-stats:global',
+
   // Dashboard components
   stats: (agencyId: string) => `dashboard:${agencyId}:stats`,
   requests: (agencyId: string) => `dashboard:${agencyId}:requests`,

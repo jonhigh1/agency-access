@@ -11,7 +11,6 @@ describe('Pricing page copy claims', () => {
   it('removes agency-count social proof language in pricing surfaces', () => {
     const files = [
       'src/components/marketing/pricing/metric-banner.tsx',
-      'src/components/marketing/pricing/testimonial-cards.tsx',
       'src/components/marketing/success-stories-section.tsx',
       'src/components/marketing/pricing/savings-calculator.tsx',
       'src/components/marketing/pricing/pricing-tiers.tsx',

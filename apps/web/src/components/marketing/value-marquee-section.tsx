@@ -2,6 +2,14 @@
 
 import { m, useReducedMotion } from 'framer-motion';
 import { useMobile } from '@/hooks/use-mobile';
+import type { MarketingStats } from '@/lib/api/marketing-stats';
+
+// Homepage proof counters — same production aggregate the pricing banner uses.
+const USAGE_STATS = [
+  { key: 'activePlatformAuthorizations' as const, label: 'Active Platform Connections' },
+  { key: 'completedAccessRequests' as const, label: 'Completed Access Requests' },
+  { key: 'tokenRefreshes' as const, label: 'Tokens Auto-Refreshed' },
+];
 
 const valueHighlights = [
   {
@@ -39,7 +47,7 @@ const valueHighlights = [
 // Duplicate for seamless marquee loop (desktop only)
 const marqueeHighlights = [...valueHighlights, ...valueHighlights, ...valueHighlights];
 
-export function SocialProofSection() {
+export function ValueMarqueeSection({ stats }: { stats?: MarketingStats | null }) {
   const isMobile = useMobile();
   const prefersReducedMotion = useReducedMotion();
   return (
@@ -48,6 +56,23 @@ export function SocialProofSection() {
         <p className="text-[10px] sm:text-[11px] font-black uppercase tracking-[0.25em] sm:tracking-[0.3em] text-center text-ink font-mono">
           Built for faster onboarding. Cleaner handoffs. No exceptions.
         </p>
+        {stats && (
+          <div
+            className="mt-6 flex flex-wrap items-center justify-center gap-x-10 gap-y-4"
+            data-testid="usage-stats-row"
+          >
+            {USAGE_STATS.map(({ key, label }) => (
+              <div key={key} className="text-center">
+                <div className="font-mono font-bold text-lg sm:text-xl text-ink">
+                  {stats[key].toLocaleString('en-US')}
+                </div>
+                <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-ink/50">
+                  {label}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Marquee container - static grid on mobile, animated marquee on desktop */}
