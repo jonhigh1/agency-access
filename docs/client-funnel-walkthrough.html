@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AuthHub — Client Funnel: Every Screen As Built</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#09090B; --ink2:#52525B; --ink3:#8b8b93;
+    --paper:#FAFAFA; --card:#FFFFFF; --line:#E4E4E7; --hair:#d4d4d8;
+    --coral:#FF6B35; --coral-soft:#FFF1EB;
+    --teal:#00A896; --teal-ink:#0F766E; --teal-soft:#E6F7F5;
+    --warn:#B45309; --warn-soft:#FEF3E2;
+    --danger:#C2410C; --danger-soft:#FDEEE7;
+    --meta:#0866FF; --google:#1A73E8; --gab:#34A853; --gred:#EA4335; --gyellow:#FBBC04;
+    --linkedin:#0A66C2; --kit:#FB6970;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:#EFEFEA; color:var(--ink); font-family:'Outfit',-apple-system,sans-serif; line-height:1.45; -webkit-font-smoothing:antialiased;}
+  .mono{font-family:'JetBrains Mono',ui-monospace,monospace;}
+  .wrap{max-width:1120px; margin:0 auto; padding:44px 24px 80px;}
+
+  /* ===== walkthrough shell ===== */
+  .wt-head{border-bottom:2px solid var(--ink); padding-bottom:24px; margin-bottom:28px;}
+  .wt-eyebrow{display:inline-block; font-family:'JetBrains Mono',monospace; font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--ink); background:#CCFF00; border:1.5px solid var(--ink); padding:4px 10px; font-weight:500;}
+  h1{font-size:clamp(26px,4vw,40px); font-weight:700; letter-spacing:-0.02em; margin:14px 0 8px; line-height:1.1;}
+  .wt-sub{color:var(--ink2); font-size:14.5px; max-width:760px;}
+  .wt-sub b{color:var(--ink);}
+  .funnel{display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin-top:18px;}
+  .fnode{font-family:'JetBrains Mono',monospace; font-size:10.5px; letter-spacing:.04em; border:1.5px solid var(--ink); background:#fff; padding:5px 9px; font-weight:500;}
+  .fnode.hot{background:var(--ink); color:#fff;}
+  .fnode.off{border-style:dashed; color:var(--danger);}
+  .farr{color:var(--ink3); font-weight:700; font-size:12px;}
+
+  .screen{margin-top:44px;}
+  .scr-meta{display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin-bottom:10px;}
+  .scr-num{font-family:'JetBrains Mono',monospace; font-size:12px; font-weight:700; color:#fff; background:var(--ink); padding:4px 9px; box-shadow:3px 3px 0 var(--coral);}
+  .scr-name{font-size:17px; font-weight:700; letter-spacing:-0.01em;}
+  .scr-route{font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--ink2); background:#fff; border:1px solid var(--hair); padding:3px 8px;}
+  .scr-phase{font-family:'JetBrains Mono',monospace; font-size:10.5px; letter-spacing:.08em; text-transform:uppercase; color:var(--ink2); border:1px solid var(--hair); background:#fff; padding:3px 8px;}
+  .scr-note{font-size:12.5px; color:var(--ink2); margin-bottom:10px; max-width:860px;}
+  .ev{display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; align-items:center;}
+  .ev-l{font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.1em; color:var(--ink3);}
+  .ev-c{font-family:'JetBrains Mono',monospace; font-size:10.5px; border:1px dashed var(--ink3); color:var(--ink2); padding:2px 7px; background:#fff;}
+
+  .frame{border:2px solid var(--ink); background:#fff; box-shadow:6px 6px 0 var(--ink);}
+  .frame-bar{display:flex; align-items:center; gap:8px; background:#F4F4F2; border-bottom:2px solid var(--ink); padding:7px 12px;}
+  .dot3{width:9px;height:9px;border-radius:50%;border:1.5px solid var(--ink);background:#fff;}
+  .frame-url{font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--ink2); background:#fff; border:1px solid var(--hair); padding:2px 10px; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+  .frame-body{background:var(--paper); padding:26px 20px 30px; overflow:hidden;}
+
+  .connector{display:flex; justify-content:center; margin-top:14px; color:var(--ink3); font-size:20px; font-weight:700;}
+
+  /* ===== product screen fidelity (Acid Brutalism v2) ===== */
+  .ps{max-width:896px; margin:0 auto; border-top:4px solid var(--coral); padding-top:22px;}
+  .ps-logo{height:34px; width:120px; border:1.5px solid var(--hair); background:#fff; display:flex; align-items:center; justify-content:center; font-family:'JetBrains Mono',monospace; font-size:9px; letter-spacing:.12em; color:var(--ink3); text-transform:uppercase; margin-bottom:12px;}
+  .ps-ident{border-bottom:2px solid var(--ink); padding-bottom:10px; margin-bottom:12px;}
+  .ps-ident b{font-size:17px; font-weight:600; display:block; line-height:1.2;}
+  .ps-req{font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--ink3); letter-spacing:.08em; margin-top:2px;}
+  .ps-h1{font-size:24px; font-weight:700; letter-spacing:-0.02em; line-height:1.15;}
+  .ps-desc{font-size:13.5px; color:var(--ink2); margin-top:6px; line-height:1.5;}
+  .ps-shield{display:flex; gap:8px; font-size:13.5px; margin-top:10px; line-height:1.5;}
+  .ps-shield svg{flex:0 0 auto; margin-top:2px;}
+  .ps-shield .lk{display:inline-flex; align-items:center; gap:4px;}
+
+  .label-micro{font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--ink);}
+  .label-nano{font-family:'JetBrains Mono',monospace; font-size:10px; letter-spacing:.06em; color:var(--ink2);}
+
+  .prog{border-top:2px solid var(--ink); margin-top:16px; padding-top:10px;}
+  .prog-top{display:flex; align-items:center; justify-content:space-between; gap:10px;}
+  .btn-ghost{font-size:12.5px; font-weight:500; color:var(--ink2); background:none; border:none; display:inline-flex; align-items:center; gap:6px; padding:6px 8px;}
+  .plist{margin-top:6px; list-style:none;}
+  .prow{display:flex; align-items:center; gap:11px; min-height:44px; padding:8px 0; border-bottom:1px solid rgba(9,9,11,.2);}
+  .prow:last-child{border-bottom:none;}
+  .ptile{width:26px;height:26px;border:1.5px solid var(--ink);display:flex;align-items:center;justify-content:center;font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:700;color:#fff;flex:0 0 auto;}
+  .ptile.sm{width:22px;height:22px;font-size:10px;}
+  .ptile.lg{width:44px;height:44px;font-size:16px;}
+  .ptile.xl{width:64px;height:64px;font-size:22px;}
+  .pinfo{flex:1; min-width:0;}
+  .pname{font-size:13.5px; font-weight:600;}
+  .pdesc{font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--ink2); margin-top:1px; letter-spacing:.04em;}
+  .schip{display:inline-flex; align-items:center; gap:5px; font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; flex:0 0 auto;}
+  .schip.done{color:var(--teal-ink);} .schip.active{color:var(--ink);} .schip.wait{color:var(--ink3);} .schip.att{color:var(--danger);}
+
+  .card{background:#fff; border:2px solid var(--ink);}
+  .card.shadow{box-shadow:4px 4px 0 var(--ink);}
+  .card-head{padding:14px 20px; border-bottom:1px solid rgba(9,9,11,.12);}
+  .card-head h2{font-size:18px; font-weight:600;}
+  .card-head p{font-size:12.5px; color:var(--ink2); margin-top:2px;}
+  .card-foot{display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between; padding:12px 20px; background:#F4F4F2; border-top:1px solid rgba(9,9,11,.12);}
+  .foot-sec{display:flex; align-items:center; gap:7px; font-size:12px; color:var(--ink2);}
+
+  .bbtn{display:inline-flex; align-items:center; justify-content:center; gap:9px; font-family:'Outfit',sans-serif; font-weight:700; text-transform:uppercase; letter-spacing:.03em; background:var(--coral); color:var(--ink); border:2px solid var(--ink); box-shadow:4px 4px 0 var(--ink); padding:12px 30px; font-size:15px; min-height:48px;}
+  .bbtn.sm{padding:9px 18px; font-size:13px; min-height:44px;}
+  .pbtn{display:inline-flex; align-items:center; justify-content:center; gap:8px; font-weight:600; background:var(--coral); color:var(--ink); border:1px solid var(--ink); box-shadow:3px 3px 0 var(--ink); padding:10px 20px; font-size:14px; min-height:44px;}
+  .sbtn{display:inline-flex; align-items:center; justify-content:center; gap:8px; font-weight:600; background:#fff; color:var(--ink); border:1px solid var(--ink); padding:10px 20px; font-size:14px; min-height:44px;}
+  .btnrow{display:flex; flex-wrap:wrap; gap:12px; align-items:center;}
+
+  .plat-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin-top:12px;}
+  .pcard{border:1px solid rgba(9,9,11,.25); background:var(--paper); padding:13px;}
+  .pcard .nm{display:flex; align-items:center; gap:9px; font-size:13.5px; font-weight:600;}
+  .ptags{display:flex; flex-wrap:wrap; gap:6px; margin-top:9px;}
+  .ptag{border:1px solid rgba(9,9,11,.25); background:#fff; padding:3px 7px; font-size:11px; color:var(--ink2);}
+
+  .trust{border-top:1px solid rgba(9,9,11,.1); padding:12px 20px; display:flex; gap:10px;}
+  .trust .ic{flex:0 0 auto; margin-top:2px; color:var(--ink2);}
+  .trust b{font-size:13px; display:block;}
+  .trust p{font-size:12.5px; color:var(--ink2); margin-top:2px; line-height:1.45;}
+
+  .stage{background:#fff; border:2px solid var(--ink); box-shadow:4px 4px 0 var(--ink);}
+  .stage-top{padding:16px 20px 14px; border-bottom:1px solid rgba(9,9,11,.1);}
+  .stage-chip{display:flex; justify-content:flex-end;}
+  .stage-title{display:flex; align-items:center; gap:12px; margin-top:10px;}
+  .stage-title h2{font-size:20px; font-weight:700; letter-spacing:-0.01em;}
+  .stage-desc{font-size:13px; color:var(--ink2); margin-top:8px; max-width:560px; line-height:1.5;}
+  .stage-exit{font-size:13px; margin-top:6px; line-height:1.5;}
+  .verify{padding:13px 20px; border-bottom:1px solid rgba(9,9,11,.1);}
+  .verify .val{font-size:13px; margin-top:6px; word-break:break-all;}
+  .verify .warn{font-size:12.5px; color:var(--ink2); margin-top:3px;}
+  .stage-body{padding:20px;}
+
+  .center{text-align:center;}
+  .connect-hero{display:flex; flex-direction:column; align-items:center; gap:14px;}
+  .connect-hero h3{font-size:26px; font-weight:700; letter-spacing:-0.02em;}
+  .connect-hero .sub{font-size:15px; color:var(--ink2); max-width:420px; line-height:1.5;}
+  .help{border:1px solid rgba(9,9,11,.15); background:var(--paper); padding:14px 16px; text-align:left; max-width:430px; margin:4px auto 0;}
+  .help .t{font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase;}
+  .help .d{font-size:12.5px; color:var(--ink2); margin-top:3px;}
+  .help ol{margin:9px 0 0; padding-left:18px; font-family:'JetBrains Mono',monospace; font-size:11px; color:var(--ink2); display:flex; flex-direction:column; gap:4px;}
+
+  .disclosure{display:flex; align-items:center; justify-content:space-between; gap:10px; background:#F4F4F2; padding:14px 20px; cursor:default;}
+  .disclosure h3{font-size:17px; font-weight:700; letter-spacing:-0.01em;}
+  .disclosure p{font-size:12.5px; color:var(--ink2); margin-top:2px;}
+
+  .assign{border-top:1px solid rgba(9,9,11,.1); padding-top:12px; font-size:13px;}
+  .assign b{font-weight:600;}
+  .assign ul{margin:7px 0 0; padding-left:18px; color:var(--ink2); font-size:12.5px; display:flex; flex-direction:column; gap:3px;}
+  .assign .tasks{font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--ink2); margin-top:6px;}
+  .assign .note{border:1px solid rgba(9,9,11,.1); background:#F4F4F2; padding:7px 10px; font-size:11px; color:var(--ink2); margin-top:9px; line-height:1.45;}
+
+  .receipt{display:flex; align-items:center; justify-content:space-between; gap:10px; border:1px solid rgba(9,9,11,.25); background:var(--teal-soft); padding:12px 14px; margin-top:12px;}
+  .receipt .who{display:flex; align-items:center; gap:10px;}
+  .receipt b{font-size:13.5px; display:block;}
+  .receipt span{font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--teal-ink); letter-spacing:.08em; text-transform:uppercase;}
+
+  .agroup{margin-top:18px;}
+  .agroup-h{display:flex; align-items:center; gap:11px;}
+  .agicon{width:38px;height:38px;border:2px solid var(--ink);display:flex;align-items:center;justify-content:center;flex:0 0 auto;}
+  .agroup-h h3{font-size:16px; font-weight:700;}
+  .agroup-h .cnt{font-size:12px; color:var(--ink2); margin-top:1px;}
+  .combo{border:1px solid rgba(9,9,11,.25); background:#fff; margin-top:9px;}
+  .combo-row{display:flex; align-items:center; gap:10px; padding:9px 12px; border-bottom:1px solid var(--line); font-size:13px;}
+  .combo-row:last-child{border-bottom:none;}
+  .cbx{width:17px;height:17px;border:1.5px solid var(--ink);display:flex;align-items:center;justify-content:center;flex:0 0 auto;background:var(--teal-soft);}
+  .cbx.off{background:#fff;}
+  .combo-row .ad{margin-left:auto; font-family:'JetBrains Mono',monospace; font-size:10px; color:var(--ink3);}
+  .decline{margin-top:8px; font-size:12.5px; color:var(--ink2); text-decoration:underline;}
+  .decline.on{color:var(--ink); text-decoration:none; font-weight:600;}
+
+  .sticky-foot{border-top:2px solid var(--ink); background:#fff; padding:14px 16px; display:flex; flex-wrap:wrap; gap:10px; align-items:center; justify-content:space-between;}
+  .cta-reason{font-size:12.5px; color:var(--ink2); max-width:250px; text-align:right;}
+
+  .ghead{display:flex; align-items:center; gap:12px;}
+  .gsq{width:38px;height:38px;border:1px solid var(--teal);background:var(--teal-soft);display:flex;align-items:center;justify-content:center;flex:0 0 auto;}
+  .ghead h3{font-size:17px; font-weight:700;}
+  .ghead p{font-size:12.5px; color:var(--ink2); margin-top:1px;}
+
+  .ckrow{border:1px solid rgba(9,9,11,.2); padding:14px 16px; margin-top:12px;}
+  .ckrow-top{display:flex; flex-wrap:wrap; gap:8px; align-items:flex-start; justify-content:space-between;}
+  .ckrow h4{font-size:14.5px; font-weight:700;}
+  .mchip{font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; border:1px solid var(--ink); padding:2px 6px; margin-left:6px;}
+  .ckrow .act{font-size:12.5px; color:var(--ink2); margin-top:3px;}
+  .ckrow .right{display:flex; align-items:center; gap:8px; flex:0 0 auto;}
+  .ckrow .prog-l{font-family:'JetBrains Mono',monospace; font-size:10.5px; letter-spacing:.06em; color:var(--ink2);}
+  .badge{display:inline-flex; align-items:center; font-family:'JetBrains Mono',monospace; font-size:10px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; padding:3px 8px; border:1.5px solid;}
+  .badge.danger{color:var(--danger); border-color:var(--danger); background:var(--danger-soft);}
+  .badge.success{color:var(--teal-ink); border-color:var(--teal); background:var(--teal-soft);}
+  .badge.default{color:var(--ink2); border-color:var(--hair); background:#F4F4F5;}
+  .panel{border-top:1px dashed var(--hair); margin-top:11px; padding-top:11px;}
+  .panel .p-t{font-family:'JetBrains Mono',monospace; font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase;}
+  .panel .p-s{font-size:12.5px; color:var(--ink2); margin-top:2px;}
+  .steps-mini{margin-top:9px; display:flex; flex-direction:column; gap:6px;}
+  .steps-mini .st{display:flex; gap:9px; font-size:12.5px; color:var(--ink2); align-items:baseline;}
+  .steps-mini .n{font-family:'JetBrains Mono',monospace; font-size:10.5px; color:var(--ink3); flex:0 0 auto;}
+
+  .seewhich{border:2px solid var(--ink); margin-top:14px;}
+  .fin-row{margin-top:16px;}
+
+  .term{max-width:430px; margin:0 auto; background:#fff; border:2px solid var(--ink); box-shadow:4px 4px 0 var(--ink); padding:30px 26px; text-align:center;}
+  .term h1{font-size:22px; font-weight:600; letter-spacing:-0.01em;}
+  .term p{font-size:13px; color:var(--ink2); margin-top:10px; line-height:1.55;}
+  .term .safe{color:var(--ink); margin-top:8px;}
+  .support{border:1px solid rgba(9,9,11,.15); background:var(--paper); padding:13px 15px; text-align:left; margin-top:20px;}
+  .support b{font-size:13px; display:block;}
+  .support p{font-size:12px; color:var(--ink2); margin-top:2px;}
+  .support a{display:inline-block; font-size:12.5px; font-weight:600; margin-top:7px; text-decoration:underline;}
+
+  .edge-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:18px;}
+  .strip{display:flex; flex-wrap:wrap; gap:10px; margin-top:18px;}
+  .strip .sc{flex:1 1 300px; background:#fff; border:2px solid var(--ink); padding:16px;}
+  .strip h4{font-size:15px; font-weight:700;}
+  .strip p{font-size:12.5px; color:var(--ink2); margin-top:4px;}
+
+  footer.wt-foot{margin-top:56px; border-top:2px solid var(--ink); padding-top:16px; display:flex; flex-wrap:wrap; gap:12px; justify-content:space-between;}
+  footer.wt-foot p{font-size:11.5px; color:var(--ink3);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ======================= WALKTHROUGH HEADER ======================= -->
+  <div class="wt-head">
+    <span class="wt-eyebrow">AUTHHUB · CLIENT FUNNEL · AS BUILT · 2026-10-09</span>
+    <h1>Every screen the client sees</h1>
+    <p class="wt-sub"><b>Rebuilt 1:1 from source.</b> Copy is verbatim from the components — <span class="mono">client-invite-page.tsx</span>, <span class="mono">PlatformAuthWizard.tsx</span>, <span class="mono">MetaGrantChecklist.tsx</span>, <span class="mono">MetaAssetSelector.tsx</span>, <span class="mono">flow/*</span>. Names, counts, and logos are sample data; platform icons are approximated with letter tiles; a few selector micro-labels are simplified.</p>
+    <div class="funnel">
+      <span class="fnode">OPEN LINK</span><span class="farr">→</span>
+      <span class="fnode">INTAKE</span><span class="farr">→</span>
+      <span class="fnode hot">CONNECT ×N</span><span class="farr">→</span>
+      <span class="fnode hot">CHOOSE ACCOUNTS</span><span class="farr">→</span>
+      <span class="fnode hot">GRANT / DONE</span><span class="farr">→</span>
+      <span class="fnode">CONFIRMING</span><span class="farr">→</span>
+      <span class="fnode">ALL SET</span>
+      <span class="farr">|</span>
+      <span class="fnode off">EXPIRED / REVOKED — terminal</span>
+    </div>
+  </div>
+
+  <!-- ======================= SCREEN 01 ======================= -->
+  <div class="screen">
+    <div class="scr-meta"><span class="scr-num">01</span><span class="scr-name">Open the link — load state</span><span class="scr-route">/invite/[token]</span><span class="scr-phase">loading</span></div>
+    <p class="scr-note">No login exists anywhere in this funnel — the token is the credential. Every API route is token-scoped (<span class="mono">/api/client/:token/…</span>). Spinner is the AuthHub logo mark; a slow load upgrades to "Still loading…".</p>
+    <div class="frame">
+      <div class="frame-bar"><span class="dot3"></span><span class="dot3"></span><span class="dot3"></span><span class="frame-url">authhub.co/invite/9f2c-aw71-xkpq</span></div>
+      <div class="frame-body">
+        <div class="center" style="padding:70px 0;">
+          <svg width="34" height="34" viewBox="0 0 24 24" fill="none" style="animation:spin 1.2s linear infinite"><style>@keyframes spin{to{transform:rotate(360deg)}}</style><circle cx="12" cy="12" r="9" stroke="#FF6B35" stroke-width="3" stroke-dasharray="42 18" stroke-linecap="square"/></svg>
+          <p style="font-size:13px;color:var(--ink2);margin-top:12px;">Loading your authorization request…</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================= SCREEN 02 ======================= -->
+  <div class="screen">
+    <div class="scr-meta"><span class="scr-num">02</span><span class="scr-name">Landing — "needs access" + requested platforms</span><span class="scr-route">/invite/[token]</span><span class="scr-phase">phase: intake (no intake fields)</span></div>
+    <p class="scr-note">The truthful header: who asks, for what, and the security promise — on every screen. Progress checklist is the flow's single progress surface: list order, no percentages, no step counters. Status chips are always icon + word, never color alone.</p>
+    <div class="frame">
+      <div class="frame-bar"><span class="dot3"></span><span class="dot3"></span><span class="dot3"></span><span class="frame-url">authhub.co/invite/9f2c-aw71-xkpq</span></div>
+      <div class="frame-body">
+        <div class="ps">
+          <div class="ps-logo">LOGO</div>
+          <div class="ps-ident"><b>Brightpath Media</b><div class="ps-req">REQUEST BR-2043 · SENT OCT 6</div></div>
+          <h1 class="ps-h1">Brightpath Media needs access to finish setup</h1>
+          <p class="ps-desc">Brightpath Media requested access to Meta Ads, Google Ads, and GA4. Confirm which accounts to share below.</p>
+          <p class="ps-shield">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#0F766E" stroke-width="2.2"><path d="M20 13c0 5-3.5 7.5-7.7 9a.6.6 0 0 1-.6 0C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.2-2.7a1.2 1.2 0 0 1 1.6 0C14.5 3.8 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></svg>
+            <span>You stay in control. Approve only what you want to share. <span class="lk"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="4" y="11" width="16" height="10" rx="1"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg> Passwords are never requested.</span></span>
+          </p>
+
+          <div class="prog">
+            <div class="prog-top">
+              <span class="label-micro">Your progress</span>
+              <button class="btn-ghost"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/></svg> Check again</button>
+            </div>
+            <ul class="plist">
+              <li class="prow">
+                <span class="ptile" style="background:var(--meta)">M</span>
+                <span class="pinfo"><span class="pname">Meta</span><span class="pdesc" style="display:block">CONNECT META TO CONTINUE.</span></span>
+                <span class="schip active"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4l14 8-14 8z"/></svg> In progress</span>
+              </li>
+              <li class="prow">
+                <span class="ptile" style="background:var(--google)">G</span>
+                <span class="pinfo"><span class="pname">Google Ads</span><span class="pdesc" style="display:block">CONNECT GOOGLE ADS TO CONTINUE.</span></span>
+                <span class="schip wait"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="8"/></svg> Waiting</span>
+              </li>
+              <li class="prow">
+                <span class="ptile" style="background:var(--gab)">A</span>
+                <span class="pinfo"><span class="pname">Google Analytics</span><span class="pdesc" style="display:block">CONNECT GOOGLE ANALYTICS TO CONTINUE.</span></span>
+                <span class="schip wait"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="12" cy="12" r="8"/></svg> Waiting</span>
+              </li>
+            </ul>
+          </div>
+
+          <div class="card" style="margin-top:20px;">
+            <div style="padding:16px 20px;">
+              <p class="label-micro" style="color:var(--ink2)">Requested platforms</p>
+              <div class="plat-grid">
+                <div class="pcard">
+                  <div class="nm"><span class="ptile sm" style="background:var(--meta)">M</span> Meta</div>
+                  <div class="ptags"><span class="ptag">Meta Ads · Manage</span><span class="ptag">Meta Pages · View only</span></div>
+                </div>
+                <div class="pcard">
+                  <div class="nm"><span class="ptile sm" style="background:var(--google)">G</span> Google Ads</div>
+                  <div class="ptags"><span class="ptag">Google Ads · Manage</span></div>
+                </div>
+                <div class="pcard">
+                  <div class="nm"><span class="ptile sm" style="background:var(--gab)">A</span> Google Analytics</div>
+                  <div class="ptags"><span class="ptag">Google Analytics · View only</span></div>
+                </div>
+              </div>
+              <div class="trust" style="border-top:1px solid rgba(9,9,11,.1); padding:12px 0 0; margin-top:14px;">
+                <span class="ic"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="4" y="11" width="16" height="10" rx="1"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg></span>
+                <span><b>Approve only what you want to share</b><p>Your agency receives access only to the accounts you explicitly approve in the next step.</p></span>
+              </div>
+            </div>
+            <div class="card-foot">
+              <span class="foot-sec"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="4" y="11" width="16" height="10" rx="1"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg> Passwords are never requested</span>
+              <span class="pbtn">Continue to connect</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="ev"><span class="ev-l">EVENTS</span><span class="ev-c">invite_opened</span><span class="ev-c">client_authorization_started</span><span class="ev-c">invite_progress_check_requested (on "Check again")</span></div>
+  </div>
+
+  <!-- ======================= SCREEN 03 ======================= -->
+  <div class="screen">
+    <div class="scr-meta"><span class="scr-num">03</span><span class="scr-name">Intake form — agency's custom questions</span><span class="scr-route">/invite/[token]</span><span class="scr-phase">phase: intake (with intake fields)</span></div>
+    <p class="scr-note">Only when the agency added intake fields (text / email / phone / url / dropdown / textarea). Required fields are marked and validated on submit; the hero, checklist, and security promise stay identical.</p>
+    <div class="frame">
+      <div class="frame-bar"><span class="dot3"></span><span class="dot3"></span><span class="dot3"></span><span class="frame-url">authhub.co/invite/9f2c-aw71-xkpq</span></div>
+      <div class="frame-body">
+        <div class="ps">
+          <div class="ps-ident"><b>Brightpath Media</b><div class="ps-req">REQUEST BR-2043 · SENT OCT 6</div></div>
+          <h1 class="ps-h1">Brightpath Media needs access to finish setup</h1>
+          <p class="ps-desc">Brightpath Media asked for a few details, then you confirm which accounts to share.</p>
+
+          <div class="card" style="margin-top:18px;">
+            <div class="card-head"><h2>Quick Setup</h2><p>Share a few details before authorization.</p></div>
+            <div style="padding:20px; display:flex; flex-direction:column; gap:18px;">
+              <div>
+                <label style="display:block; font-size:13px; font-weight:600;">Business name <span style="color:var(--danger)">*</span></label>
+                <div style="border:1px solid var(--ink); background:#fff; padding:10px 14px; font-size:13.5px; color:var(--ink3); margin-top:6px;">Acme Coffee Co.</div>
+              </div>
+              <div>
+                <label style="display:block; font-size:13px; font-weight:600;">Website <span style="color:var(--danger)">*</span></label>
+                <div style="border:1px solid var(--ink); background:#fff; padding:10px 14px; font-size:13.5px; color:var(--ink3); margin-top:6px;">acmecoffee.co</div>
+              </div>
+              <div>
+                <label style="display:block; font-size:13px; font-weight:600;">Monthly ad spend</label>
+                <div style="border:1px solid var(--ink); background:#fff; padding:10px 14px; font-size:13.5px; color:var(--ink3); margin-top:6px; display:flex; justify-content:space-between;">Select an option <span>▾</span></div>
+              </div>
+            </div>
+            <div class="card-foot">
+              <span class="foot-sec"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="4" y="11" width="16" height="10" rx="1"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg> Passwords are never requested</span>
+              <span class="pbtn">Continue</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="connector">↓</div>
+
+  <!-- ======================= SCREEN 04 ======================= -->
+  <div class="screen">
+    <div class="scr-meta"><span class="scr-num">04</span><span class="scr-name">Connect — OAuth platform (wizard step 1 of 3)</span><span class="scr-route">/invite/[token]</span><span class="scr-phase">phase: platforms</span></div>
+    <p class="scr-note">One active decision on screen. The stage card carries the platform's live status chip; the wizard inside owns the three steps: Connect → Choose → Done. Meta adds a pop-up variant. Manual-invite platforms get a different step 1 — screen 07.</p>
+    <div class="frame">
+      <div class="frame-bar"><span class="dot3"></span><span class="dot3"></span><span class="dot3"></span><span class="frame-url">authhub.co/invite/9f2c-aw71-xkpq</span></div>
+      <div class="frame-body">
+        <div class="ps">
+          <div class="ps-ident"><b>Brightpath Media</b><div class="ps-req">REQUEST BR-2043 · SENT OCT 6</div></div>
+          <h1 class="ps-h1">Complete Meta access</h1>
+          <p class="ps-desc">Finish Meta first. The rest of the request is listed below.</p>
+
+          <div class="stage" style="margin-top:16px;">
+            <div class="stage-top">
+              <div class="stage-chip"><span class="schip active"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4l14 8-14 8z"/></svg> In progress</span></div>
+              <div class="stage-title"><span class="ptile lg" style="background:var(--meta)">M</span><h2>Meta</h2></div>
+              <p class="stage-desc">Complete this step, then continue to Google Ads.</p>
+              <p class="stage-exit">You will leave for Meta and come right back here.</p>
+            </div>
+            <div class="verify">
+              <p class="label-micro" style="color:var(--ink2)">Verify before you approve</p>
+              <p class="val">Meta invite email: invites@brightpathmedia.com</p>
+              <p class="warn">If this does not match what your agency sent you, stop and contact them.</p>
+            </div>
+            <div class="stage-body center">
+              <div class="connect-hero">
+                <span class="ptile xl" style="background:var(--meta); margin:0 auto;">M</span>
+                <h3>Connect Meta</h3>
+                <p class="sub">Sign in to Meta and approve access. You'll choose which accounts to share next.</p>
+                <span class="bbtn">Connect Meta <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg></span>
+                <span class="sbtn">Open Meta in a pop-up</span>
+                <div class="help">
+                  <p class="t">What happens when you click Connect?</p>
+                  <p class="d">You'll be redirected to Meta to sign in and authorize access.</p>
+                  <ol>
+                    <li>Click "Connect Meta" above</li>
+                    <li>Sign in to your Meta account</li>
+                    <li>Approve the requested permissions</li>
+                    <li>Return here to select which accounts to share</li>
+                  </ol>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="ev"><span class="ev-l">EVENTS</span><span class="ev-c">invite_cta_blocked (if a blocked state appears)</span></div>
+  </div>
+  <div class="connector">↓ &nbsp;<span class="mono" style="font-size:11px; color:var(--ink3)">redirect to Meta → consent → callback ?connectionId=…&amp;platform=meta&amp;step=2</span></div>
+
+  <!-- ======================= SCREEN 05 ======================= -->
+  <div class="screen">
+    <div class="scr-meta"><span class="scr-num">05</span><span class="scr-name">Choose accounts to share (wizard step 2 of 3)</span><span class="scr-route">/invite/[token]?connectionId=…&amp;platform=meta&amp;step=2</span><span class="scr-phase">phase: platforms</span></div>
+    <p class="scr-note">Resumes the same connection after OAuth — selections prefill from server truth. The portfolio receipt is confirmation-first: one tap to accept, "Switch" to change. Asset kinds the client can't share get a decline link instead of a dead end — declining never blocks the flow.</p>
+    <div class="frame">
+      <div class="frame-bar"><span class="dot3"></span><span class="dot3"></span><span class="dot3"></span><span class="frame-url">authhub.co/invite/9f2c-…?connectionId=cn_81f2&amp;platform=meta&amp;step=2</span></div>
+      <div class="frame-body">
+        <div class="ps">
+          <div class="stage">
+            <div class="stage-top">
+              <div class="stage-chip"><span class="schip active"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4l14 8-14 8z"/></svg> In progress</span></div>
+              <div class="stage-title"><span class="ptile lg" style="background:var(--meta)">M</span><h2>Meta</h2></div>
+              <p class="stage-desc">Complete this step, then continue to Google Ads.</p>
+            </div>
+            <div class="stage-body" style="padding-bottom:0;">
+              <div class="disclosure" style="background:#F4F4F2; margin:0 -20px; padding:14px 20px;">
+                <span><h3>Choose accounts to share</h3><p>Select the accounts you can share now. Anything left to do shows up in the next step.</p></span>
+                <span style="color:var(--ink2); font-size:18px;">▾</span>
+              </div>
+
+              <div class="assign">
+                <b>Access this request will assign</b>
+                <ul><li>Brightpath Media (system user)</li><li>Jordan Reyes (person)</li></ul>
+                <p class="tasks">PAGE TASKS: MANAGE LEADS</p>
+                <div class="note">Brightpath Media will receive access through its own Business Portfolio — not through a personal login.</div>
+              </div>
+
+              <div class="receipt">
+                <span class="who"><span class="ptile sm" style="background:var(--ink)">A</span><span><b>Acme Coffee Co.</b><span>Business portfolio · confirmed</span></span></span>
+                <span class="btn-ghost" style="text-decoration:underline;">Switch</span>
+              </div>
+
+              <div class="agroup">
+                <div class="agroup-h">
+                  <span class="agicon" style="background:var(--coral)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="1"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg></span>
+                  <span><h3>Ad Accounts</h3><div class="cnt">2 of 2 selected</div></span>
+                </div>
+                <div class="combo">
+                  <div class="combo-row"><span class="cbx"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#0F766E" stroke-width="3.2"><path d="M20 6 9 17l-5-5"/></svg></span> Acme Coffee — Prospecting <span class="ad">act_1192…</span></div>
+                  <div class="combo-row"><span class="cbx"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#0F766E" stroke-width="3.2"><path d="M20 6 9 17l-5-5"/></svg></span> Acme Coffee — Retargeting <span class="ad">act_2277…</span></div>
+                </div>
+              </div>
+
+              <div class="agroup">
+                <div class="agroup-h">
+                  <span class="agicon" style="background:var(--ink)"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M18 3h3l-7.5 8.6L22 21h-6l-4.7-6.2L6 21H3l8-9.2L2.5 3h6l4.3 5.7z"/></svg></span>
+                  <span><h3>Pages</h3><div class="cnt">1 of 3 selected</div></span>
+                </div>
+                <div class="combo">
+                  <div class="combo-row"><span class="cbx"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#0F766E" stroke-width="3.2"><path d="M20 6 9 17l-5-5"/></svg></span> Acme Coffee Co. <span class="ad">PAGE</span></div>
+                  <div class="combo-row"><span class="cbx off"></span> Acme Wholesale <span class="ad">PAGE</span></div>
+                  <div class="combo-row"><span class="cbx off"></span> Acme EU <span class="ad">PAGE</span></div>
+                </div>
+              </div>
+
+              <div class="agroup">
+                <div class="agroup-h">
+                  <span class="agicon" style="background:#C13584"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r="1" fill="#fff"/></svg></span>
+                  <span><h3>Instagram</h3><div class="cnt">Nothing selected</div></span>
+                </div>
+                <p class="decline on">No Instagram accounts to share</p>
+              </div>
+
+              <div style="border:1px solid rgba(9,9,11,.25); background:var(--paper); padding:11px 13px; margin-top:16px; font-size:12px; color:var(--ink2);">
+                Sharing from <b style="color:var(--ink)">Acme Coffee Co.</b> — 2 ad accounts · 1 Page
+              </div>
+            </div>
+            <div class="sticky-foot">
+              <span class="bbtn sm"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.5 2.5 4.5-5"/></svg> Share Access</span>
+              <p class="cta-reason">Select at least one Page, or decline the ones you can't share.</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="ev"><span class="ev-l">EVENTS</span><span class="ev-c">invite_assets_loaded</span><span class="ev-c">invite_receipt_shown</span><span class="ev-c">client_assets_decline_toggled</span><span class="ev-c">invite_cta_blocked</span><span class="ev-c">invite_selection_saved</span></div>
+  </div>
+  <div class="connector">↓</div>
+
+  <!-- ======================= SCREEN 06 ======================= -->
+  <div class="screen">
+    <div class="scr-meta"><span class="scr-num">06</span><span class="scr-name">Done — grant checklist (wizard step 3 of 3)</span><span class="scr-route">/invite/[token]</span><span class="scr-phase">phase: platforms · Meta follow-up</span></div>
+    <p class="scr-note">Server truth, not local state: the checklist renders from the payload's fulfillment rows. One focused actionable item at a time; the rest wait. Finishing with open items is allowed — the label says exactly what's left — and the request re-verifies server-side.</p>
+    <div class="frame">
+      <div class="frame-bar"><span class="dot3"></span><span class="dot3"></span><span class="dot3"></span><span class="frame-url">authhub.co/invite/9f2c-aw71-xkpq</span></div>
+      <div class="frame-body">
+        <div class="ps">
+          <div class="stage">
+            <div class="stage-top">
+              <div class="stage-chip"><span class="schip att"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="9"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg> Needs you</span></div>
+              <div class="stage-title"><span class="ptile lg" style="background:var(--meta)">M</span><h2>Meta</h2></div>
+            </div>
+            <div class="stage-body">
+              <div class="ghead">
+                <span class="gsq"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#0F766E" stroke-width="2.6"><path d="M20 6 9 17l-5-5"/></svg></span>
+                <span><h3>Signed in</h3><p>Finish the steps below to share access with your agency.</p></span>
+              </div>
+
+              <p class="label-micro" style="margin-top:20px; color:var(--ink2)">Finish Meta access</p>
+
+              <div class="ckrow">
+                <div class="ckrow-top">
+                  <span><h4>Ad accounts<span class="mchip">Automatic</span></h4><p class="act">Share each selected ad account with Brightpath Media from Meta Business Settings.</p></span>
+                  <span class="right"><span class="prog-l">1 OF 2 VERIFIED</span><span class="badge danger">Needs you</span></span>
+                </div>
+                <div class="panel">
+                  <p class="p-t">How to share</p>
+                  <p class="p-s">In Meta Business Settings, add Brightpath Media as a partner on the remaining ad account.</p>
+                  <div class="steps-mini">
+                    <div class="st"><span class="n">01</span> Open Business Settings → Accounts → Ad Accounts</div>
+                    <div class="st"><span class="n">02</span> Select "Acme Coffee — Retargeting" → Add Partners</div>
+                    <div class="st"><span class="n">03</span> Paste the partner ID and choose "Manage ads"</div>
+                  </div>
+                  <div class="btnrow" style="margin-top:11px;">
+                    <span class="pbtn" style="font-size:13px;">I've shared it — verify</span>
+                    <span class="sbtn" style="font-size:13px;">Open Business Settings</span>
+                  </div>
+                </div>
+              </div>
+
+              <div class="ckrow">
+                <div class="ckrow-top">
+                  <span><h4>Pages<span class="mchip">Automatic</span></h4><p class="act">Page access was granted with your selection.</p></span>
+                  <span class="right"><span class="prog-l">1 OF 1 VERIFIED</span><span class="badge success">Done</span></span>
+                </div>
+              </div>
+
+              <div class="ckrow">
+                <div class="ckrow-top">
+                  <span><h4>Instagram</h4><p class="act">You chose not to share Instagram. Brightpath Media will see the gap.</p></span>
+                  <span class="right"><span class="badge default">Declined</span></span>
+                </div>
+              </div>
+
+              <div class="seewhich">
+                <div class="disclosure" style="padding:11px 14px;">
+                  <span class="label-nano" style="font-size:11.5px;">See which accounts you shared</span>
+                  <span style="color:var(--ink2); font-size:15px;">▸</span>
+                </div>
+              </div>
+
+              <div class="fin-row">
+                <span class="sbtn" style="width:100%;">Finish when done (1 left)</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="ev"><span class="ev-l">EVENTS</span><span class="ev-c">client_grant_checklist_viewed</span><span class="ev-c">client_grant_item_completed</span><span class="ev-c">client_finish_clicked_with_pending</span><span class="ev-c">client_platform_authorized (per platform, on completion)</span></div>
+  </div>
+  <div class="connector">↓</div>
+
+  <!-- ======================= SCREEN 07 ======================= -->
+  <div class="screen">
+    <div class="scr-meta"><span class="scr-num">07</span><span class="scr-name">Manual platform — resume step (wizard step 1)</span><span class="scr-route">/invite/[token]</span><span class="scr-phase">phase: platforms · manual platform</span></div>
+    <p class="scr-note">Manual-invite platforms (Kit, Beehiiv, Klaviyo, Mailchimp by email; Pinterest, Shopify, Zapier by native invite) never redirect to OAuth. The wizard hands off to the platform's own checklist page.</p>
+    <div class="frame">
+      <div class="frame-bar"><span class="dot3"></span><span class="dot3"></span><span class="dot3"></span><span class="frame-url">authhub.co/invite/9f2c-aw71-xkpq</span></div>
+      <div class="frame-body">
+        <div class="ps">
+          <div class="stage">
+            <div class="stage-top">
+              <div class="stage-chip"><span class="schip active"><svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4l14 8-14 8z"/></svg> In progress</span></div>
+              <div class="stage-title"><span class="ptile lg" style="background:var(--kit)">K</span><h2>Kit</h2></div>
+              <p class="stage-desc">Complete this step, then check the request's progress.</p>
+              <p class="stage-exit">Complete the native invite steps inside Kit, then return to this request.</p>
+            </div>
+            <div class="verify">
+              <p class="label-micro" style="color:var(--ink2)">Verify before you approve</p>
+              <p class="val">Kit invite email: invites@brightpathmedia.com</p>
+              <p class="warn">If this does not match what your agency sent you, stop and contact them.</p>
+            </div>
+            <div class="stage-body center">
+              <div class="connect-hero">
+                <span class="ptile xl" style="background:var(--kit); margin:0 auto;">K</span>
+                <h3>Resume Kit setup</h3>
+                <p class="sub">This platform uses native invite steps instead of OAuth. Resume the checklist when you are ready.</p>
+                <span class="bbtn">Continue in Kit <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M15 3h6v6"/><path d="M10 14 21 3"/><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/></svg></span>
+                <div class="help">
+                  <p class="t">What happens when you continue in Kit?</p>
+                  <p class="d">You'll return to the Kit checklist and can come back here afterward to review platform status.</p>
+                  <ol>
+                    <li>Open the Kit invite checklist</li>
+                    <li>Complete the native platform steps</li>
+                    <li>Return to the request flow when the invite is sent</li>
+                    <li>Continue with the next requested platform</li>
+                  </ol>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="connector">↓</div>
+
+  <!-- ======================= SCREEN 08 ======================= -->
+  <div class="screen">
+    <div class="scr-meta"><span class="scr-num">08</span><span class="scr-name">Manual platform — native invite checklist</span><span class="scr-route">/invite/[token]/kit</span><span class="scr-phase">phase: platforms · manual flow</span></div>
+    <p class="scr-note">Shared frame for all manual platforms (<span class="mono">ManualInviteFlow</span>): objective, verify-identities rail, numbered steps with per-step primary actions, then a completion gate. Step copy is configured per platform (Kit, Beehiiv, Pinterest, Shopify…), so shown steps are structural; Shopify adds client-side form fields (e.g. store domain, collaborator code). Submitting hands back to the request with <span class="mono">?view=connect</span>.</p>
+    <div class="frame">
+      <div class="frame-bar"><span class="dot3"></span><span class="dot3"></span><span class="dot3"></span><span class="frame-url">authhub.co/invite/9f2c-aw71-xkpq/kit</span></div>
+      <div class="frame-body">
+        <div class="ps">
+          <div class="ps-ident"><b>Brightpath Media</b><div class="ps-req">REQUEST BR-2043 · SENT OCT 6</div></div>
+          <h1 class="ps-h1">Invite Brightpath Media to Kit</h1>
+          <p class="ps-desc">Kit uses a native email invite. Complete the steps below — Brightpath Media receives access only after you send the invite.</p>
+
+          <div class="prog" style="margin-top:14px;">
+            <div class="prog-top"><span class="label-micro">Verify before you approve</span></div>
+            <p style="font-size:13px; margin-top:6px;">Kit invite email: <span class="mono" style="font-size:12px;">invites@brightpathmedia.com</span></p>
+            <p class="verify" style="border:none; padding:0; font-size:12.5px; color:var(--ink2);">If this does not match what your agency sent you, stop and contact them.</p>
+          </div>
+
+          <div class="card" style="margin-top:16px;">
+            <div style="padding:18px 20px;">
+              <div class="steps-mini" style="margin-top:0;">
+                <div class="st" style="align-items:flex-start;"><span class="n" style="border:1.5px solid var(--ink); background:var(--ink); color:#fff; padding:2px 7px;">1</span><span><b style="color:var(--ink); font-size:13.5px;">Open your Kit account</b><br><span style="font-size:12.5px;">Sign in at app.kit.com as the account owner.</span></span></div>
+                <div class="st" style="align-items:flex-start;"><span class="n" style="border:1.5px solid var(--ink); background:#fff; color:var(--ink); padding:2px 7px;">2</span><span><b style="color:var(--ink); font-size:13.5px;">Invite the agency email</b><br><span style="font-size:12.5px;">Settings → Team → invite the address above with edit access.</span></span></div>
+                <div class="st" style="align-items:flex-start;"><span class="n" style="border:1.5px solid var(--ink); background:#fff; color:var(--ink); padding:2px 7px;">3</span><span><b style="color:var(--ink); font-size:13.5px;">Send the invite</b><br><span style="font-size:12.5px;">Brightpath Media accepts on their side — nothing is shared until you send.</span></span></div>
+              </div>
+              <div class="btnrow" style="margin-top:16px; justify-content:space-between;">
+                <span class="btn-ghost">← Back to request</span>
+                <span class="pbtn">I've sent the invite</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="support" style="margin-top:14px;">
+            <b>After you send it</b>
+            <p>Your request returns to waiting while Brightpath Media verifies the invite. This page will update automatically.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="connector">↓ &nbsp;<span class="mono" style="font-size:11px; color:var(--ink3)">all platforms complete → auto-finalize (POST /complete)</span></div>
+
+  <!-- ======================= SCREEN 09 ======================= -->
+  <div class="screen">
+    <div class="scr-meta"><span class="scr-num">09</span><span class="scr-name">Finalizing</span><span class="scr-route">/invite/[token]</span><span class="scr-phase">phase: finalizing</span></div>
+    <p class="scr-note">Fires automatically the moment the last platform completes — the client never clicks "submit request". A slow confirmation times out into a retry state instead of hanging.</p>
+    <div class="frame">
+      <div class="frame-bar"><span class="dot3"></span><span class="dot3"></span><span class="dot3"></span><span class="frame-url">authhub.co/invite/9f2c-aw71-xkpq</span></div>
+      <div class="frame-body">
+        <div class="ps center">
+          <div class="card shadow" style="padding:34px 24px;">
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="none" style="animation:spin 1.2s linear infinite"><style>@keyframes spin{to{transform:rotate(360deg)}}</style><path d="M21 12a9 9 0 1 1-2.6-6.4" stroke="#09090B" stroke-width="2.4" stroke-linecap="square"/></svg>
+            <h2 style="font-size:23px; font-weight:600; margin-top:18px; letter-spacing:-0.01em;">Confirming access</h2>
+            <p style="font-size:13px; color:var(--ink2); margin-top:8px;">Your platforms are connected. We are confirming the final status with Brightpath Media.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="connector">↓</div>
+
+  <!-- ======================= SCREEN 10 ======================= -->
+  <div class="screen">
+    <div class="scr-meta"><span class="scr-num">10</span><span class="scr-name">Complete — success receipt</span><span class="scr-route">/invite/[token]</span><span class="scr-phase">phase: complete · verified</span></div>
+    <p class="scr-note">The end state is engineered as the peak: what happened, what the agency can now do, and permission to leave. No account creation, no upsell, no next steps for the client.</p>
+    <div class="frame">
+      <div class="frame-bar"><span class="dot3"></span><span class="dot3"></span><span class="dot3"></span><span class="frame-url">authhub.co/invite/9f2c-aw71-xkpq</span></div>
+      <div class="frame-body">
+        <div class="ps center">
+          <div class="card shadow" style="padding:34px 26px;">
+            <div style="width:62px;height:62px;border:2px solid var(--ink);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto;">
+              <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#0F766E" stroke-width="2.6"><path d="M20 6 9 17l-5-5"/></svg>
+            </div>
+            <h2 style="font-size:24px; font-weight:600; margin-top:18px; letter-spacing:-0.01em;">All set — you're done</h2>
+            <p style="font-size:13px; color:var(--ink2); margin-top:8px; line-height:1.55;">Brightpath Media now has access to the accounts you approved. Nothing else is needed from you.</p>
+            <div style="border:1px solid var(--ink); background:var(--paper); padding:15px 17px; text-align:left; margin-top:22px;">
+              <p class="label-micro" style="color:var(--ink2)">Connected Platforms</p>
+              <p style="font-size:13.5px; margin-top:7px;">Meta Ads, Meta Pages, Google Ads, Google Analytics</p>
+            </div>
+            <p style="font-size:13px; color:var(--ink2); margin-top:20px;">You can safely close this window.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="ev"><span class="ev-l">EVENTS</span><span class="ev-c">client_authorization_completed</span></div>
+  </div>
+
+  <!-- ======================= SCREEN 11 ======================= -->
+  <div class="screen">
+    <div class="scr-meta"><span class="scr-num">11</span><span class="scr-name">Complete — needs follow-up</span><span class="scr-route">/invite/[token]</span><span class="scr-phase">phase: complete · unverified</span></div>
+    <p class="scr-note">When verification fails, the receipt turns into a worklist: which item is open, the fix, and two ways back — resume the Meta checklist, or re-check after fixing it in Meta. The request never dead-ends silently.</p>
+    <div class="frame">
+      <div class="frame-bar"><span class="dot3"></span><span class="dot3"></span><span class="dot3"></span><span class="frame-url">authhub.co/invite/9f2c-aw71-xkpq</span></div>
+      <div class="frame-body">
+        <div class="ps center">
+          <div class="card shadow" style="padding:32px 26px;">
+            <div style="width:62px;height:62px;border:2px solid var(--ink);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto;">
+              <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#C2410C" stroke-width="2.4"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/></svg>
+            </div>
+            <h2 style="font-size:23px; font-weight:600; margin-top:16px; letter-spacing:-0.01em;">Access needs follow-up</h2>
+            <p style="font-size:13px; color:var(--ink2); margin-top:8px; line-height:1.55;">One or more selected assets or assignees are not verified yet. Complete the action below, then check again.</p>
+            <div style="border:1px solid var(--ink); background:var(--paper); padding:13px 15px; text-align:left; margin-top:16px;">
+              <p style="font-size:12.5px; color:var(--danger);">1 ad account is still waiting for your share in Meta Business Settings.</p>
+            </div>
+            <div style="border:1px solid rgba(9,9,11,.2); padding:12px 14px; text-align:left; margin-top:12px;">
+              <div style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+                <span style="font-size:13px; font-weight:700;">Ad accounts</span><span class="badge danger">Needs you</span>
+              </div>
+              <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:8px;">
+                <span style="font-size:13px; font-weight:700;">Pages</span><span class="badge success">Done</span>
+              </div>
+            </div>
+            <div class="btnrow" style="margin-top:18px; justify-content:center;">
+              <span class="sbtn">Resume Meta checklist</span>
+              <span class="pbtn"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/></svg> Check again</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="ev"><span class="ev-l">EVENTS</span><span class="ev-c">client_authorization_complete_failed</span><span class="ev-c">client_checklist_resumed</span></div>
+  </div>
+
+  <!-- ======================= SCREEN 12 ======================= -->
+  <div class="screen">
+    <div class="scr-meta"><span class="scr-num">12</span><span class="scr-name">Terminal &amp; edge states</span><span class="scr-route">/invite/[token]</span><span class="scr-phase">any phase</span></div>
+    <p class="scr-note">Terminal states are one-way and honest: no "Check again" against a dead link. Expired and revoked replace the whole flow (AE6) — agency contact is the only path. Google-first mode parks Meta at the end with a coming-soon card; returning to the link after finishing shows the review banner.</p>
+    <div class="frame">
+      <div class="frame-bar"><span class="dot3"></span><span class="dot3"></span><span class="dot3"></span><span class="frame-url">authhub.co/invite/9f2c-aw71-xkpq</span></div>
+      <div class="frame-body">
+        <div class="edge-grid">
+          <div class="term" style="margin:0;">
+            <h1>This link has expired</h1>
+            <p>This access request expired, so access cannot be granted. Contact your agency to get a new link.</p>
+            <p class="safe">You can safely close this page.</p>
+            <div class="support"><b>Need a new link?</b><p>Contact your agency or support and they will send a fresh authorization link.</p><a>Contact support</a></div>
+          </div>
+          <div class="term" style="margin:0;">
+            <h1>This request was revoked</h1>
+            <p>Your agency withdrew this access request. Contact them if this does not look right.</p>
+            <p class="safe">You can safely close this page.</p>
+            <div class="support"><b>Need a new link?</b><p>Contact your agency or support and they will send a fresh authorization link.</p><a>Contact support</a></div>
+          </div>
+          <div class="term" style="margin:0;">
+            <h1>This link is not working</h1>
+            <p>This request link is invalid or expired. Contact your agency for a new link.</p>
+            <p class="safe">You can safely close this page and try again later.</p>
+            <div style="margin-top:18px;"><span class="pbtn" style="width:100%;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M21 12a9 9 0 1 1-2.6-6.4"/><path d="M21 3v6h-6"/></svg> Try again</span></div>
+            <div class="support"><b>Need a new link?</b><p>Contact your agency or support if this authorization request is still unavailable after retrying.</p><a>Contact support</a></div>
+          </div>
+          <div class="term" style="margin:0;">
+            <h1>Access verification is in progress</h1>
+            <p>Your agency is verifying the reported access. Check again after they confirm it.</p>
+            <div style="margin-top:18px;"><span class="sbtn" style="width:100%;">Check again</span></div>
+          </div>
+        </div>
+        <div class="strip">
+          <div class="sc">
+            <h4>Meta access coming soon</h4>
+            <p>Google-first mode: Meta sits last in the queue under a pending-approval flag, so the client finishes every other platform first.</p>
+          </div>
+          <div class="sc">
+            <h4>Review connected platforms</h4>
+            <p>Returning to the link after all platforms connected: "All requested platforms are connected. You can review the status below or return to the final confirmation." + <b>Confirm completion</b>.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======================= FOOTER ======================= -->
+  <footer class="wt-foot">
+    <p>Rebuilt from source · apps/web · client-invite-page.tsx · PlatformAuthWizard.tsx · MetaGrantChecklist.tsx · MetaAssetSelector.tsx · flow/* · lib/invite/* · 2026-10-09</p>
+    <p class="mono">Copy verbatim · sample data illustrative</p>
+  </footer>
+
+</div>
+</body>
+</html>
