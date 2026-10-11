@@ -40,9 +40,11 @@ Plan: ~/.claude/plans/jaunty-coalescing-prism.md · Branch: worktree-feat+social
 
 ## Wrap
 
+- [x] W0. Jon's post-review call (d6439099): pricing MetricBanner reverted to the benefit trio
+      (99.9% + estimated hours/emails + disclosure); homepage stats row + endpoint unchanged
 - [ ] W1. Post-deploy: `curl https://agency-access.onrender.com/api/marketing-stats`; verify counters show
       real values; apply display floor (omit agencies count if too small) before it ships if needed
-- [ ] W2. SESSION-LOG entry; PR offered to Jon
+- [ ] W2. PR offered to Jon
 - [ ] W3. Swap text chips for portal-exported badge assets when Jon provides them (config `src` field ready)
 
 ## Review
