@@ -13,7 +13,8 @@
 ### Next steps
 - Visual smoke on the deployed preview (dev-server screenshot pass) — not run this session.
 - The Clerk instance must have the `oauth_google` connection enabled for the Google button; unverified against live instance.
-- Nothing committed yet — Jon's call.
+- Committed and pushed as `80f537c9`; merged `origin/main` into the branch twice (17a19e2c, d923af64) while main kept moving — no conflicts except a trivial `docs/SESSION-LOG.md` prepend clash (both entries kept). [durable] Merged tree: web `typecheck` green, full web suite 317 files / 2799 tests green.
+- Note: `apps/api` tests (Meta grant/oauth-exchange suites) fail on this machine with 500s — no `apps/api/.env` present and the API tree is byte-identical to `origin/main`, so pre-existing/environmental, not merge fallout. Branch not pushed past the first push yet (merges are local).
 
 ## Session: 2026-10-10 — ClientInvite SEO units U4–U10 on main
 
