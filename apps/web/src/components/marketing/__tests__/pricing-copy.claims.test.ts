@@ -26,22 +26,19 @@ describe('Pricing page copy claims', () => {
     });
   });
 
-  it('uses value-focused language and real production counters (no estimates)', () => {
+  it('uses value-focused and team-oriented pricing language', () => {
     const metricCode = readFile('src/components/marketing/pricing/metric-banner.tsx');
     const tiersCode = readFile('src/components/marketing/pricing/pricing-tiers.tsx');
     const toggleCode = readFile('src/components/marketing/pricing/pricing-toggle.tsx');
 
     expect(metricCode).toMatch(/OAuth Success Rate/);
     expect(metricCode).toMatch(/99\.9/);
-    // Counters are props-driven from the production aggregate (getMarketingStats).
-    expect(metricCode).toMatch(/stats\?/);
-    expect(metricCode).toMatch(/Active Platform Connections/);
-    expect(metricCode).toMatch(/Tokens Auto-Refreshed/);
-    // Estimated ranges are gone for good.
-    expect(metricCode).not.toMatch(/Estimated Hours Saved/i);
-    expect(metricCode).not.toMatch(/Estimated Emails Reduced/i);
-    expect(metricCode).not.toMatch(/displayValue:\s*'2-4'/);
-    expect(metricCode).not.toMatch(/displayValue:\s*'15-30'/);
+    expect(metricCode).toMatch(/Estimated Hours Saved \/ Client/);
+    expect(metricCode).toMatch(/displayValue:\s*'2-4'/);
+    expect(metricCode).not.toMatch(/subtext:\s*'hrs\/client'/);
+    expect(metricCode).not.toMatch(/displayValue:\s*'2-4 hrs'/);
+    expect(metricCode).toMatch(/Estimated Emails Reduced \/ Client/);
+    expect(metricCode).toMatch(/15-30/);
     expect(metricCode).not.toMatch(/Saved for Clients/);
     expect(metricCode).not.toMatch(/Hours Reclaimed/);
     expect(tiersCode).toMatch(/fits your team/i);

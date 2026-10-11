@@ -7,7 +7,6 @@ import { MetricBanner } from '@/components/marketing/pricing/metric-banner';
 import { SuccessStoriesSection } from '@/components/marketing/success-stories-section';
 import { FAQSection } from '@/components/marketing/pricing/faq-section';
 import { FinalCTASection } from '@/components/marketing/pricing/final-cta-section';
-import { getMarketingStats } from '@/lib/api/marketing-stats';
 
 const pricingSchema = {
   '@context': 'https://schema.org',
@@ -69,11 +68,7 @@ export const metadata: Metadata = {
   },
 };
 
-export const revalidate = 3600;
-
 export default async function PricingPage() {
-  const stats = await getMarketingStats();
-
   return (
     <div className="relative bg-background">
       <script
@@ -83,7 +78,7 @@ export default async function PricingPage() {
       <PricingHero />
       <SavingsCalculator />
       <PricingTiers />
-      <MetricBanner stats={stats} />
+      <MetricBanner />
       <SuccessStoriesSection />
       <FAQSection />
       <FinalCTASection />
