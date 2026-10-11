@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+import type { Route } from 'next';
+import Link from 'next/link';
 import { SUPPORTED_PLATFORM_COUNT } from '@agency-platform/shared';
 import { PricingHero } from '@/components/marketing/pricing/pricing-hero';
 import { SavingsCalculator } from '@/components/marketing/pricing/savings-calculator';
@@ -81,6 +83,15 @@ export default async function PricingPage() {
       <MetricBanner />
       <SuccessStoriesSection />
       <FAQSection />
+      <section className="py-12 px-4 sm:px-6 lg:px-8 border-y-2 border-black bg-paper">
+        <p className="max-w-3xl mx-auto font-mono text-sm text-foreground text-center">
+          PPC, SEO, freelance, and in-house teams:{' '}
+          <Link href={'/uses' as Route} className="text-danger-ink font-bold hover:underline">
+            who AuthHub is for
+          </Link>
+          .
+        </p>
+      </section>
       <FinalCTASection />
     </div>
   );

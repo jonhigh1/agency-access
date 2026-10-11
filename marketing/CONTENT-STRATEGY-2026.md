@@ -20,6 +20,26 @@
 
 **Content Philosophy**: Be searchable first (capture existing demand), then shareable (create new demand). Every piece must answer a real question agencies are asking.
 
+### Current URL map (October 10, 2026)
+
+Supersedes the March 2026 “only two `/guides/` pages” architecture note below. Competing blog spokes 301 to `/guides/*`. Do not clone an influencer-whitelisting page or a Meta Business Manager ID scraper.
+
+| Cluster | Live routes |
+|---------|-------------|
+| Guides hub + spokes | `/guides`, `/guides/meta-ads-access`, `/guides/google-ads-access`, `/guides/ga4-access`, `/guides/linkedin-ads-access`, `/guides/tiktok-ads-access`, `/guides/facebook-business-manager-access` |
+| Compare hub | `/compare` plus ClientInvite, Leadsie, AgencyAccess, three-way, Leadsie pricing |
+| Tools | `/tools`, `/tools/access-level` (ungated; no Graph API) |
+| Uses | `/uses`, `/uses/ppc-agencies`, `/uses/seo-agencies`, `/uses/freelancers`, `/uses/in-house-teams` |
+| Authors | `/authors/jon-high` (catalog authors only) |
+| Stats | `/stats` (citable figures with `lastVerified` sources; no invented case-study metrics) |
+| Case studies | **Skipped** until Jon supplies a real customer |
+
+**FAQ rule:** JSON-LD `FAQPage` must be generated from the same list the page renders (guide catalog, blog `faqs:` frontmatter, or the tools FAQ constant). Do not keep a hardcoded schema map.
+
+**Named operator:** Jon High. Do not invent bylines.
+
+**GitHub leak:** `robots.ts` cannot noindex github.com. Keep unpublished SEO drafts out of the public repo; prefer a private repo as an ops decision.
+
 ---
 
 ## Target Audience
@@ -333,9 +353,11 @@ Leadsie supports **31+ platforms**: Meta (Pages, IG, Ads, Datasets, Pixels, Cata
 
 ## Priority Content Calendar
 
-### Architecture Decision (Resolved — March 2026)
+### Architecture Decision (Resolved — March 2026; superseded October 10, 2026)
 
-**Decision**: `/guides/` for highest-volume platform keywords (Google Ads, Meta). `/blog/` for everything else, including remaining platform guides. One page per topic — no duplicates.
+**Current map:** see “Current URL map (October 10, 2026)” at the top of this file. Guide spokes now live under `/guides/` with 301s from competing blog URLs.
+
+**March 2026 decision (historical)**: `/guides/` for highest-volume platform keywords (Google Ads, Meta). `/blog/` for everything else, including remaining platform guides. One page per topic — no duplicates.
 
 **Rationale**:
 - The 2 `/guides/` pages (Google Ads, Meta) already exist and target the highest-volume "how to" keywords with optimized metadata

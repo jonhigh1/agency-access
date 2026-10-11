@@ -32,6 +32,27 @@ relatedPosts:
   - tiktok-ads-access-guide
   - linkedin-ads-access-guide
   - how-to-revoke-client-access-offboarding
+faqs:
+  - question: Can I request Snapchat ad account access as an agency?
+    answer: >-
+      No. Snapchat has no inbound request system. The client must invite you as an Organization member and assign ad account roles.
+  - question: What is the minimum access an agency needs?
+    answer: >-
+      Organization Member plus Campaign Manager on the ad account. Add Data Analyst for reporting-only staff.
+  - question: Does my client need a Public Profile before I can run ads?
+    answer: Yes. Snapchat requires a Public Profile for all advertising. Create it before assigning ad account access.
+  - question: Can multiple agencies work in the same Snapchat ad account?
+    answer: >-
+      Yes, but each member gets their own role assignment. Snapchat's Agency Admin role is designed for exactly this. It cannot change business details.
+  - question: Can the client and agency both pay for spend?
+    answer: >-
+      Not in the same ad account. Snapchat allows one funding source per ad account. Use separate accounts for separate billing arrangements.
+  - question: How do I remove agency access later?
+    answer: >-
+      Remove ad account roles, Public Profile roles, and Organization membership, in that order. Verify all three.
+  - question: 'What does "Organization not spend ready" (PERMISSION_DENIED) mean on Snapchat?'
+    answer: >-
+      Most likely, the Organization that owns the ad account or Public Profile isn't set up to spend yet — usually a missing billing address, payment method, or business details. Snapchat doesn't publish an official definition. An Organization Admin on that org (almost always the client) completes Business Details + Billing & Payments, then retries. Agencies invited as Members usually can't clear it themselves.
 ---
 # Snapchat Business Manager Access for Agencies: Roles & Permissions (2026)
 

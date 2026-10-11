@@ -5,8 +5,11 @@
  * Uses react-markdown with remark-gfm for proper markdown, table, and rich text rendering
  */
 
+import type { Route } from 'next';
+import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { getAuthorBySlug } from '@/lib/authors';
 import { BlogPost, BLOG_CATEGORIES } from '@/lib/blog-types';
 import { Calendar, Clock, User, Share2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -79,7 +82,7 @@ const markdownComponents: Components = {
   blockquote: ({ children, ...props }) => (
     <blockquote
       {...props}
-      className="border-l-4 border-coral pl-4 my-4 italic text-gray-700 font-mono"
+      className="border-2 border-black bg-paper px-4 py-3 my-4 italic text-foreground font-mono"
     >
       {children}
     </blockquote>
@@ -198,7 +201,16 @@ export function BlogContent({ post }: BlogContentProps) {
         <div className="flex flex-wrap items-center gap-4 text-sm font-mono text-gray-600">
           <span className="flex items-center gap-2">
             <User size={16} />
-            <span className="font-bold">{post.author.name}</span>
+            {getAuthorBySlug(post.author.slug) ? (
+              <Link
+                href={`/authors/${post.author.slug}` as Route}
+                className="font-bold text-ink hover:text-danger-ink hover:underline"
+              >
+                {post.author.name}
+              </Link>
+            ) : (
+              <span className="font-bold">{post.author.name}</span>
+            )}
             <span className="text-gray-400">· {post.author.role}</span>
           </span>
           <span className="flex items-center gap-2">
@@ -263,6 +275,24 @@ export function BlogContent({ post }: BlogContentProps) {
           {post.content}
         </ReactMarkdown>
       </div>
+
+      {post.faqs && post.faqs.length > 0 ? (
+        <section className="mt-12" aria-labelledby="blog-faq-heading">
+          <h2 id="blog-faq-heading" className="font-dela text-2xl md:text-3xl text-ink mt-10 mb-4 border-b-2 border-black pb-2">
+            Frequently asked questions
+          </h2>
+          <dl className="space-y-6">
+            {post.faqs.map((faq) => (
+              <div key={faq.question}>
+                <dt>
+                  <h3 className="font-dela text-xl text-ink mt-8 mb-3">{faq.question}</h3>
+                </dt>
+                <dd className="font-mono text-ink leading-relaxed">{faq.answer}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+      ) : null}
 
       {/* Article footer */}
       {!post.suppressArticleFooter && (

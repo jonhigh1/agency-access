@@ -282,7 +282,10 @@ export const metadata: Metadata = {
 }
 ```
 
-### FAQ Schema (Optional)
+### FAQ Schema (from the visible list)
+
+FAQ JSON-LD must use the same array the page renders (`generateFAQSchema`). Blog posts: `faqs:` in frontmatter. Guides: `guide.faqs`. Tools: `ACCESS_LEVEL_TOOL_FAQS`. Do not maintain a separate hardcoded `faqSchemas` map.
+
 ```json
 {
   "@context": "https://schema.org",
@@ -299,6 +302,13 @@ export const metadata: Metadata = {
   ]
 }
 ```
+
+### Tools, uses, authors, stats
+
+- `/tools/access-level` is ungated. Recommend `admin | standard | read_only | email_only`. No Graph API, no Business Manager ID lookup, no influencer/whitelisting clone.
+- `/uses` is PPC, SEO, freelance, and in-house only. No dental or ecommerce spokes.
+- `/authors/[slug]` exists only for catalog authors (`AUTHORS` in `lib/authors.ts`). Person schema on the author page; Article `author.url` when the byline matches the catalog.
+- `/stats` cites comparison `lastVerified` prices and `SUPPORTED_PLATFORM_COUNT`. No invented conversion rates or customer metrics.
 
 ### Organization Schema (Root Layout - TODO)
 ```json
@@ -354,8 +364,13 @@ apps/web/src/app/
 │   │   ├── page.tsx                # Blog index
 │   │   └── [slug]/page.tsx         # Blog posts
 │   ├── guides/
-│   │   ├── meta-ads-access/
-│   │   └── google-ads-access/
+│   │   ├── page.tsx
+│   │   └── [slug]/page.tsx
+│   ├── compare/page.tsx
+│   ├── tools/
+│   ├── uses/
+│   ├── authors/
+│   ├── stats/page.tsx
 │   ├── contact/page.tsx
 │   ├── terms/page.tsx
 │   └── privacy-policy/page.tsx

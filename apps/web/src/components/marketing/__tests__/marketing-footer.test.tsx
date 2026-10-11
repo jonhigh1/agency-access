@@ -35,4 +35,22 @@ describe('MarketingFooter section links', () => {
 
       expect(push).toHaveBeenCalledWith(`/#${id}`);
     });
+
+  it('links to the ungated access-level tool', () => {
+    render(<MarketingFooter />);
+    expect(screen.getByRole('link', { name: 'Access-level tool' })).toHaveAttribute(
+      'href',
+      '/tools/access-level',
+    );
+  });
+
+  it('links to the uses cluster', () => {
+    render(<MarketingFooter />);
+    expect(screen.getByRole('link', { name: 'Uses' })).toHaveAttribute('href', '/uses');
+  });
+
+  it('links to the stats roundup', () => {
+    render(<MarketingFooter />);
+    expect(screen.getByRole('link', { name: 'Stats' })).toHaveAttribute('href', '/stats');
+  });
 });

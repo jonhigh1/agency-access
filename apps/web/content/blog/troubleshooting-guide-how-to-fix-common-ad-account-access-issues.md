@@ -10,8 +10,8 @@ stage: consideration
 publishedAt: '2026-03-13'
 readTime: 6
 author:
-  name: Alex Rivera
-  role: Head of Customer Success
+  name: Jon High
+  role: Founder
 tags:
   - troubleshooting
   - meta ads

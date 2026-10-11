@@ -65,6 +65,41 @@ describe('proxy public route handling', () => {
     expect(protectMock).not.toHaveBeenCalled();
   });
 
+  it('does not protect the public stats page', async () => {
+    const { default: proxy } = await import('../proxy');
+
+    await proxy({ protect: protectMock }, new Request('https://authhub.test/stats'));
+
+    expect(protectMock).not.toHaveBeenCalled();
+  });
+
+  it.each(['/uses', '/uses/ppc-agencies', '/uses/seo-agencies', '/uses/freelancers', '/uses/in-house-teams'])(
+    'does not protect public uses route %s',
+    async (path) => {
+      const { default: proxy } = await import('../proxy');
+
+      await proxy({ protect: protectMock }, new Request(`https://authhub.test${path}`));
+
+      expect(protectMock).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(['/tools', '/tools/access-level'])('does not protect public tools route %s', async (path) => {
+    const { default: proxy } = await import('../proxy');
+
+    await proxy({ protect: protectMock }, new Request(`https://authhub.test${path}`));
+
+    expect(protectMock).not.toHaveBeenCalled();
+  });
+
+  it.each(['/authors', '/authors/jon-high'])('does not protect public author route %s', async (path) => {
+    const { default: proxy } = await import('../proxy');
+
+    await proxy({ protect: protectMock }, new Request(`https://authhub.test${path}`));
+
+    expect(protectMock).not.toHaveBeenCalled();
+  });
+
   it.each(['/features', '/features/white-label'])('does not protect public features route %s', async (path) => {
     const { default: proxy } = await import('../proxy');
 

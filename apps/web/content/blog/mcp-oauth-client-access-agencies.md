@@ -35,6 +35,22 @@ relatedPosts:
   - best-leadsie-alternatives-2026
   - what-is-client-access-management
   - agency-security-checklist
+faqs:
+  - question: How do I give an AI agent / MCP server access to a client's Meta or Google account without passwords?
+    answer: >-
+      Send a branded OAuth authorization link. The client completes each platform's official grant. Store and refresh the token in a vault with audit logs. Point your MCP connector or agent at that client's credentials only—never a shared personal admin token for the whole book.
+  - question: Is AuthHub an ads MCP server?
+    answer: >-
+      No. AuthHub collects and vaults client OAuth. Ads MCP products (AdKit, Agency AI, 1ClickReport, meta-ads-mcp, and peers) expose tools to Claude, ChatGPT, or Cursor. Most AI-forward agencies need both.
+  - question: What happens when tokens expire on Friday night?
+    answer: >-
+      Without refresh and monitoring, agents and automations fail silently until a human notices. AuthHub auto-refreshes where providers allow it and keeps health/audit signals. Platform-specific expiry and reauth workflows are covered in the OAuth token management for agencies guide.
+  - question: Can I migrate from Leadsie or another tool without downtime?
+    answer: >-
+      Dual-run: keep the current tool live, send AuthHub links for new onboards and re-authorizations, cut over when the clients you care about complete the new flow. No silent permission port.
+  - question: When should I stay on a peer or DIY instead of AuthHub?
+    answer: >-
+      Stay on Leadsie for breadth and audits. Pick AgencyAccess for branding, intake, 30-day trial, and API/Zapier. Pick ClientInvite for unlimited flat on a focused stack. DIY when engineering owns system users and secrets. Choose AuthHub when humans and agents need the same one-link OAuth intake with Infisical, refresh, and audit logs.
 ---
 
 # MCP OAuth for Agencies: Give AI Agents Client Ad Access Without Password Sharing
@@ -201,30 +217,6 @@ Peer list prices checked **September 28, 2026 (PT)**, pre-tax—**verify live be
 Units differ—do not treat "10 clients" as identical across meters, and do not headline a save-$ figure without arithmetic for *your* volume. Worked examples: [Leadsie pricing](/compare/leadsie-pricing) and the [alternatives roundup](/blog/best-leadsie-alternatives-2026).
 
 All AuthHub plans include a **14-day free trial** (no credit card on the public pricing page).
-
----
-
-## FAQ
-
-### How do I give an AI agent / MCP server access to a client's Meta or Google account without passwords?
-
-Send a branded OAuth authorization link. The client completes each platform's official grant. Store and refresh the token in a vault with audit logs. Point your MCP connector or agent at that client's credentials only—never a shared personal admin token for the whole book.
-
-### Is AuthHub an ads MCP server?
-
-No. AuthHub collects and vaults client OAuth. Ads MCP products (AdKit, Agency AI, 1ClickReport, `meta-ads-mcp`, and peers) expose tools to Claude, ChatGPT, or Cursor. Most AI-forward agencies need **both**.
-
-### What happens when tokens expire on Friday night?
-
-Without refresh and monitoring, agents and automations fail silently until a human notices. AuthHub auto-refreshes where providers allow it and keeps health/audit signals. Platform-specific expiry quirks and reauth workflows are covered in [OAuth token refresh for agencies](/blog/oauth-token-management-agencies)—link out there; this page does not replace that pillar.
-
-### Can I migrate from Leadsie or another tool without downtime?
-
-**Dual-run**: keep the current tool live, send AuthHub links for new onboards and re-authorizations, cut over when the clients you care about complete the new flow. No silent permission port.
-
-### When should I stay on a peer or DIY instead of AuthHub?
-
-Stay on Leadsie for breadth and audits. Pick AgencyAccess for branding + intake + 30-day trial + API/Zapier. Pick ClientInvite for unlimited flat on a focused stack. DIY when eng owns system users and secrets. Choose AuthHub when humans **and** agents need the same one-link OAuth intake with Infisical, refresh, and audit logs.
 
 ---
 

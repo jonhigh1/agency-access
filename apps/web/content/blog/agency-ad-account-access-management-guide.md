@@ -10,8 +10,8 @@ stage: consideration
 publishedAt: '2026-03-13'
 readTime: 8
 author:
-  name: AuthHub Team
-  role: Agency Operations Experts
+  name: Jon High
+  role: Founder
 tags:
   - agency-operations
   - ad-account-management

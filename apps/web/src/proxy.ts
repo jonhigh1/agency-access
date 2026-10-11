@@ -5,7 +5,7 @@ import { NextResponse } from 'next/server'
  * Clerk Proxy (formerly Middleware)
  *
  * Protects routes and handles authentication redirects.
- * - Public routes: home, pricing, contact, blog, guides, compare, features, security, terms, privacy, authorize callback, invite flow, platform OAuth callback, PostHog ingest proxy
+ * - Public routes: home, pricing, contact, blog, guides, compare, tools, uses, authors, features, security, terms, privacy, authorize callback, invite flow, platform OAuth callback, PostHog ingest proxy
  * - Protected routes: dashboard, connections, clients, settings, access requests
  */
 
@@ -24,6 +24,13 @@ const isPublicRoute = createRouteMatcher([
   '/features/(.*)',
   '/privacy-policy',
   '/about',
+  '/authors',
+  '/authors/(.*)',
+  '/tools',
+  '/tools/(.*)',
+  '/uses',
+  '/uses/(.*)',
+  '/stats',
   '/terms',
   '/security',
   '/sign-in',

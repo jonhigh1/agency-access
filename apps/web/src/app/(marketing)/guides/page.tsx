@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import type { Route } from "next";
 import Link from "next/link";
 import { getAllGuides } from "@/lib/guides";
 import { CANONICAL_ORIGIN } from "@/lib/seo-canonical";
@@ -54,6 +55,11 @@ export default function GuidesHubPage() {
             <p className="font-mono text-base text-foreground">
               How agencies get client access to ad and analytics accounts. Manual steps first,
               then the one-link option. These pages are the breadcrumb parent for every guide.
+              Same job by team type:{" "}
+              <Link href={"/uses" as Route} className="text-danger-ink font-bold hover:underline">
+                who AuthHub is for
+              </Link>
+              .
             </p>
           </div>
         </div>
