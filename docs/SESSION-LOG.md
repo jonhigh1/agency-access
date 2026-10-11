@@ -1,4 +1,19 @@
-## Session: 2026-10-09 — Agent-facing flow specs (`docs/flows/`) + anchor walker
+## Session: 2026-10-10 — Sign-up page revamp (custom Clerk flow, two-column layout)
+
+### What was done
+- Replaced the prebuilt `<SignUp />` on `/sign-up` with a custom `SignUpScreen` (`apps/web/src/app/(auth)/sign-up/sign-up-screen.tsx`) matching the approved two-column reference: brand lockup, headline, email/password form, primary `Sign up`, "Or continue with" divider, `secondary` Google button, sign-in + terms/privacy links; right column is the view's one ink panel carrying the approved Pillar AI (AJ S.) testimonial with 5 coral stars.
+- Flow: `signUp.create` → optional `email_code` verification step (code input, resend, back) → `setActive` → redirect `/onboarding/unified`. Google via `authenticateWithRedirect` through new public `/sso-callback` (`AuthenticateWithRedirectCallback`; added to `isPublicRoute` in `src/proxy.ts`).
+- Deleted `(auth)/layout.tsx`; sign-in page now carries its own centered wrapper (visually unchanged).
+- TDD: 10 tests in `src/app/(auth)/sign-up/__tests__/sign-up-screen.test.tsx` written first. [durable] DEC-016 records the custom-flow decision.
+- Verified: new suite 10/10; full web suite 303 files / 2742 tests green; `typecheck` web green (after building `packages/shared` — fresh checkout needs it); eslint clean on changed files; button-contract walker + proxy tests green.
+
+### Decisions
+- DEC-016 (see docs/DECISIONS.md): custom `useSignUp` flow over themed prebuilt card, chosen for exact layout control; `/sso-callback` is a new public route.
+
+### Next steps
+- Visual smoke on the deployed preview (dev-server screenshot pass) — not run this session.
+- The Clerk instance must have the `oauth_google` connection enabled for the Google button; unverified against live instance.
+- Nothing committed yet — Jon's call.
 
 ### What was done
 - Created `docs/flows/`: `README.md` (ground-truth ordering: code > specs > audit HTML), `client-invite.md`, `onboarding-emails.md`, `access-request.md`. Reference-style: flow shape, invariants, skip predicates, reasons (R3, AE6, opt-out asymmetry), gotchas, `file:line` anchors. Deliberately does NOT copy email bodies or token lists (single source of truth; anchors instead).

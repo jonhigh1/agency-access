@@ -8,6 +8,15 @@ Record significant technical choices so future sessions (and humans) understand 
 
 ---
 
+### DEC-016: Sign-up runs a custom Clerk flow (useSignUp), not the prebuilt card
+**Date:** 2026-10-10
+
+**Context:** The revamp of `/sign-up` targets a two-column layout (form on paper, testimonial on an ink panel) copied from a competitor reference. The prebuilt `<SignUp />` card cannot host custom copy placement, so the choice was theming the prebuilt card (close, not exact) versus a custom flow.
+
+**Decision:** `/sign-up` renders a custom `SignUpScreen` on Clerk's `useSignUp` hook: `create` → optional `email_code` verification step → `setActive` → redirect to `/onboarding/unified`. Google uses `authenticateWithRedirect` returning through a new public `/sso-callback` route (`AuthenticateWithRedirectCallback`, added to `isPublicRoute` in `proxy.ts`). The `(auth)` group layout was deleted: sign-in carries its own centered wrapper; sign-up is full-bleed.
+
+**Consequences:** positive — exact layout control, the right panel is the view's one ink panel, social button uses the sanctioned `secondary` variant; negative — Clerk sign-up config changes (e.g. adding a strategy) are code changes here now, and the Clerk instance must keep the `oauth_google` connection and password enabled for this page to work.
+
 ### DEC-015: The PLATFORMS registry is the one sanctioned place to hand-type platform facts
 **Date:** 2026-10-08
 
