@@ -34,6 +34,26 @@
 - Production indexation: GSC inspect `/tools/access-level`, `/uses`, `/stats`, `/authors/jon-high`.
 - Supply a real customer before any U9 case study.
 
+## Session: 2026-10-10 — Social proof rollout (badges P0, proof fixes P1, real counters Tier 1)
+
+### What was done
+- Shipped in worktree `feat+social-proof-rollout` (4 commits: 77764595, b6cf1a43, 4a3590ea, 30e36b8b), all test-first.
+- **P0**: `PartnerBadges` chips ("Google Official Partner" / "Meta Official Partner" — Jon's explicit naming call, config in `partner-badges.tsx`; accepts portal asset swap via future `src`) in hero trust strip, footer brand column, pricing final CTA, security platforms section ("AuthHub is an official Google and Meta partner." framing line — new claim on the packet-approved page, sourced from Jon's instruction + asserted in `page.public.test.tsx`).
+- **P1**: single-story carousel chrome hidden (`CASE_STUDIES.length > 1`); dead `pricing/testimonial-cards.tsx` deleted (+ walker file list); `SocialProofSection` → `ValueMarqueeSection` rename (5 consumers, motion test, claims walker path).
+- **Tier 1**: `GET /api/marketing-stats` (public, typed prisma counts, `getCached` ttl 3600, `CacheKeys.marketingStats`); web `getMarketingStats()` (revalidate 3600 + 5s timeout + null fallback); homepage async + `revalidate=3600` + mono stats row above marquee; pricing `MetricBanner` props-driven — 99.9% + Active Platform Connections + Tokens Auto-Refreshed, estimated ranges removed; claims walker now pins real labels and bans estimates (no ban weakened). `d6439099` later restored the benefit metrics on pricing per Jon's post-review call — homepage stats row and endpoint unchanged.
+- Gates: typecheck/test/lint/build all green (`/`, `/pricing` static with 1h revalidate). Fresh-worktree build initially failed on a stale Prisma client — `db:generate` fixed, environmental not code.
+- Visual QA (t3 preview + mock stats API on 3201): desktop 1440 + mobile 390 clean across hero/pricing/security/footer; API-down fallback verified cold (counters hidden, badges stay).
+
+### Decisions
+- Badge wording stays "Official Partner" per Jon's 2026-10-10 call; Plan-agent's integration-wording flag noted once and superseded — single config constant keeps a later correction one-line.
+- Counter labels avoid the walker-banned phrases ("Agencies Onboarded" etc.); agencies count fetched but display-gated (omit if too small post-deploy).
+- Next dev persists the fetch data cache in `.next/cache` across restarts — fallback state only shows cold; QA had to clear `.next` to see it.
+
+### Next steps
+- Post-deploy: `curl https://agency-access.onrender.com/api/marketing-stats`, confirm real values, apply display floor if agencies count is too small (W1 in `tasks/todo.md`).
+- Swap text chips for portal-exported badge assets when Jon provides them.
+- Deferred: flow-capture video (needs staging OAuth accounts), testimonial collection (Tier 2), G2/Capterra (Tier 3).
+
 ## Session: 2026-10-09 — Agent-facing flow specs (`docs/flows/`) + anchor walker
 
 ### What was done

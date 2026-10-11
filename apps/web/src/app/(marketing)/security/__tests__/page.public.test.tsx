@@ -1,8 +1,14 @@
 import { render, screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import sitemap from "@/app/sitemap";
 import { securityFaqSchema, securityFaqs } from "@/lib/security-page-faq";
 import SecurityPage, { metadata } from "../page";
+
+vi.mock("@/components/ui/platform-icon", () => ({
+  PlatformIcon: ({ platform }: { platform: string }) => (
+    <div data-testid={`platform-icon-${platform}`} />
+  ),
+}));
 
 // FAQPage JSON-LD exactly as approved in the AuthHub Growth packet (2026-10-09).
 const APPROVED_FAQ_SCHEMA = {
@@ -98,6 +104,15 @@ describe("/security trust page", () => {
     expect(text).toContain("we don't claim to be \"SOC 2 ready.\"");
     expect(text).not.toMatch(/Agency Access Platform/);
     expect(text).not.toMatch(/hours? (saved|per week)/i);
+  });
+
+  it("renders official partner badges with program-standing framing in the platforms section", () => {
+    render(<SecurityPage />);
+    expect(screen.getByText("Google Official Partner")).toBeInTheDocument();
+    expect(screen.getByText("Meta Official Partner")).toBeInTheDocument();
+    expect(
+      screen.getByText(/official Google and Meta partner/i),
+    ).toBeInTheDocument();
   });
 
   it("is listed in the sitemap", () => {

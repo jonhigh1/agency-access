@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AuthHub — User Journeys &amp; Workflows</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#09090B; --ink2:#52525B; --ink3:#8b8b93;
+    --paper:#FAFAFA; --card:#FFFFFF; --line:#E4E4E7;
+    --coral:#FF6B35; --coral-soft:#FFF1EB;
+    --teal:#00A896; --teal-ink:#0F766E; --teal-soft:#E6F7F5;
+    --warn:#B45309; --warn-soft:#FEF3E2;
+    --danger:#C2410C; --danger-soft:#FDEEE7;
+    --electric:#8B5CF6; --electric-soft:#F3EEFD;
+    --radius:10px;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    background:var(--paper); color:var(--ink);
+    font-family:'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    line-height:1.45; -webkit-font-smoothing:antialiased;
+  }
+  .mono{font-family:'IBM Plex Mono', ui-monospace, monospace;}
+  .wrap{max-width:1240px; margin:0 auto; padding:48px 28px 72px;}
+
+  /* ---------- header ---------- */
+  header.hero{border-bottom:2px solid var(--ink); padding-bottom:28px; margin-bottom:40px;}
+  .eyebrow{display:inline-flex; align-items:center; gap:8px; font-family:'IBM Plex Mono',monospace;
+    font-size:11px; letter-spacing:.14em; text-transform:uppercase; color:var(--ink2);
+    border:1.5px solid var(--ink); padding:5px 12px; background:var(--acid); font-weight:500;}
+  h1{font-size:clamp(30px,4.6vw,46px); font-weight:700; letter-spacing:-0.02em; margin:18px 0 10px; line-height:1.08;}
+  h1 .accent{color:var(--coral);}
+  .sub{max-width:680px; color:var(--ink2); font-size:15px;}
+  .legend{display:flex; flex-wrap:wrap; gap:10px; margin-top:20px;}
+  .legend .chip{display:inline-flex; align-items:center; gap:7px; font-size:12px; font-weight:500;
+    border:1.5px solid var(--ink); background:var(--card); padding:5px 12px; border-radius:999px;}
+  .dot{width:10px; height:10px; border-radius:50%; border:1.5px solid var(--ink); flex:0 0 auto;}
+  .dot.agency{background:var(--coral);} .dot.client{background:var(--teal);}
+  .dot.system{background:var(--ink);} .dot.agent{background:var(--electric);}
+
+  /* ---------- sections ---------- */
+  section{margin-top:52px;}
+  .sec-head{display:flex; align-items:baseline; gap:14px; margin-bottom:6px;}
+  .sec-num{font-family:'IBM Plex Mono',monospace; font-size:13px; font-weight:500; color:var(--card);
+    background:var(--ink); padding:4px 10px; box-shadow:4px 4px 0 var(--coral); flex:0 0 auto;}
+  h2{font-size:clamp(20px,2.6vw,26px); font-weight:700; letter-spacing:-0.01em;}
+  .sec-sub{color:var(--ink2); font-size:14px; margin-bottom:22px; max-width:760px;}
+
+  /* ---------- A: core loop stage grid ---------- */
+  .stages{display:grid; grid-template-columns:repeat(auto-fit,minmax(255px,1fr)); gap:14px; counter-reset:stage;}
+  .stage{background:var(--card); border:1.5px solid var(--ink); border-radius:var(--radius); padding:16px 16px 14px; position:relative;
+    display:flex; flex-direction:column; gap:8px; transition:transform .12s ease, box-shadow .12s ease;}
+  .stage:hover{transform:translate(-2px,-2px); box-shadow:4px 4px 0 var(--ink);}
+  .stage .top{display:flex; align-items:center; justify-content:space-between; gap:8px;}
+  .stage .n{font-family:'IBM Plex Mono',monospace; font-size:12px; font-weight:500; color:var(--ink3);}
+  .actor{display:inline-flex; align-items:center; gap:6px; font-size:10.5px; font-weight:700; letter-spacing:.08em; text-transform:uppercase;
+    padding:3px 9px; border-radius:999px; border:1.5px solid;}
+  .actor.agency{color:var(--danger); border-color:var(--coral); background:var(--coral-soft);}
+  .actor.client{color:var(--teal-ink); border-color:var(--teal); background:var(--teal-soft);}
+  .actor.system{color:var(--ink); border-color:var(--ink); background:#F4F4F5;}
+  .actor.agent{color:#6D28D9; border-color:var(--electric); background:var(--electric-soft);}
+  .stage h3{font-size:16px; font-weight:700;}
+  .stage p{font-size:13px; color:var(--ink2);}
+  .stage .route{font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--ink3); margin-top:auto; padding-top:6px; border-top:1px dashed var(--line);}
+  .loop-hint{margin-top:14px; font-size:12.5px; color:var(--ink2); display:flex; align-items:center; gap:8px;}
+  .loop-hint .arr{font-family:'IBM Plex Mono',monospace; color:var(--coral); font-weight:700;}
+
+  /* ---------- flow spine (vertical) ---------- */
+  .spine{display:flex; flex-direction:column; gap:0;}
+  .sp-step{display:grid; grid-template-columns:44px 1fr; gap:14px; position:relative; padding-bottom:18px;}
+  .sp-step:last-child{padding-bottom:0;}
+  .sp-rail{display:flex; flex-direction:column; align-items:center;}
+  .sp-dot{width:32px; height:32px; border-radius:50%; border:2px solid var(--ink); background:var(--card);
+    display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono',monospace; font-size:12.5px; font-weight:500; flex:0 0 auto; z-index:1;}
+  .sp-line{flex:1; width:2px; background:var(--ink); margin-top:2px;}
+  .sp-step:last-child .sp-line{display:none;}
+  .sp-body{background:var(--card); border:1.5px solid var(--line); border-radius:var(--radius); padding:13px 16px;}
+  .sp-body:hover{border-color:var(--ink);}
+  .sp-body h4{font-size:15px; font-weight:700; display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
+  .sp-body p{font-size:13px; color:var(--ink2); margin-top:4px;}
+  .sp-body .route{font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--ink3); margin-top:6px;}
+
+  /* two-column layout */
+  .cols{display:grid; grid-template-columns:1.35fr .9fr; gap:26px; align-items:start;}
+  @media(max-width:900px){.cols{grid-template-columns:1fr;}}
+
+  .side-card{background:var(--card); border:1.5px solid var(--ink); border-radius:var(--radius); padding:16px; margin-bottom:16px;}
+  .side-card h5{font-size:12px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink2);
+    font-family:'IBM Plex Mono',monospace; margin-bottom:10px; font-weight:500;}
+  .kv{display:grid; grid-template-columns:auto 1fr; gap:5px 12px; font-size:13px;}
+  .kv dt{font-weight:700; white-space:nowrap; color:var(--ink);}
+  .kv dd{color:var(--ink2);}
+  .tag{display:inline-block; font-family:'IBM Plex Mono',monospace; font-size:11px; border:1px solid var(--line);
+    background:#F4F4F5; border-radius:6px; padding:2px 7px; margin:2px 3px 2px 0; color:var(--ink2);}
+
+  /* ---------- C: wizard ---------- */
+  .entry{display:flex; flex-wrap:wrap; align-items:stretch; gap:10px; margin-bottom:20px;}
+  .entry .node{background:var(--card); border:1.5px solid var(--ink); border-radius:var(--radius); padding:11px 15px; flex:1 1 200px;}
+  .entry .node b{display:block; font-size:14px;}
+  .entry .node span{font-size:12px; color:var(--ink2);}
+  .entry .fa{align-self:center; color:var(--ink3); font-size:18px; flex:0 0 auto;}
+
+  .wizard-step{border:1.5px solid var(--ink); border-radius:var(--radius); background:var(--card); margin-bottom:16px; overflow:hidden;}
+  .ws-head{display:flex; align-items:center; gap:12px; padding:12px 16px; border-bottom:1.5px solid var(--ink); background:#F4F4F5;}
+  .ws-badge{width:30px; height:30px; border-radius:8px; background:var(--ink); color:var(--card);
+    display:flex; align-items:center; justify-content:center; font-family:'IBM Plex Mono',monospace; font-size:13px; font-weight:500; flex:0 0 auto;}
+  .ws-head h4{font-size:15.5px; font-weight:700;}
+  .ws-head .hint{margin-left:auto; font-size:12px; color:var(--ink2); text-align:right;}
+  .ws-body{padding:16px;}
+  .branch{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+  @media(max-width:760px){.branch{grid-template-columns:1fr;}}
+  .branch-card{border:1.5px solid var(--line); border-radius:var(--radius); padding:14px; background:#FDFDFD;}
+  .branch-card.oauth{border-color:var(--teal); background:var(--teal-soft);}
+  .branch-card.manual{border-color:var(--warn); background:var(--warn-soft);}
+  .branch-card h5{font-size:13.5px; font-weight:700; display:flex; align-items:center; gap:8px; margin-bottom:8px;}
+  .branch-card p{font-size:12.5px; color:var(--ink2); margin-bottom:8px;}
+  .flow-mini{display:flex; flex-wrap:wrap; align-items:center; gap:6px; font-size:12px;}
+  .fm{background:var(--card); border:1.5px solid var(--ink); border-radius:7px; padding:4px 9px; font-weight:500;}
+  .fma{color:var(--ink3); font-weight:700;}
+  .plist{margin-top:9px;}
+
+  .outcomes{display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:12px; margin-top:16px;}
+  .outcome{border-radius:var(--radius); border:1.5px solid; padding:12px 14px; background:var(--card);}
+  .outcome b{font-size:13.5px; display:flex; align-items:center; gap:8px;}
+  .outcome p{font-size:12px; color:var(--ink2); margin-top:3px;}
+  .badge{display:inline-block; font-size:10.5px; font-weight:700; letter-spacing:.06em; text-transform:uppercase;
+    border-radius:6px; padding:2px 8px; border:1.5px solid;}
+  .badge.completed{color:var(--teal-ink); border-color:var(--teal); background:var(--teal-soft);}
+  .badge.partial{color:var(--warn); border-color:var(--warn); background:var(--warn-soft);}
+  .badge.expired{color:var(--danger); border-color:var(--danger); background:var(--danger-soft);}
+  .badge.revoked{color:var(--ink); border-color:var(--ink); background:#F4F4F5;}
+
+  /* ---------- D: pipeline ---------- */
+  .pipe{display:flex; flex-direction:column; gap:10px;}
+  .pipe-row{display:flex; align-items:stretch; gap:10px; flex-wrap:wrap;}
+  .pnode{flex:1 1 150px; background:var(--card); border:1.5px solid var(--ink); border-radius:var(--radius);
+    padding:11px 13px; min-width:140px;}
+  .pnode .pn{font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--coral); font-weight:500; letter-spacing:.08em;}
+  .pnode b{display:block; font-size:13.5px; margin:2px 0 3px;}
+  .pnode p{font-size:12px; color:var(--ink2);}
+  .parr{align-self:center; color:var(--ink3); font-weight:700; flex:0 0 auto;}
+  .rules{display:flex; flex-wrap:wrap; gap:10px; margin-top:18px;}
+  .rule{display:inline-flex; align-items:center; gap:8px; font-size:12.5px; font-weight:500;
+    background:var(--ink); color:var(--card); border-radius:999px; padding:7px 15px;}
+  .rule .tick{color:var(--acid); font-weight:700;}
+
+  /* ---------- E: state machine ---------- */
+  .sm{display:flex; flex-wrap:wrap; align-items:center; gap:7px; margin:10px 0 4px;}
+  .state{font-family:'IBM Plex Mono',monospace; font-size:12px; border:1.5px solid var(--ink); border-radius:8px;
+    padding:5px 10px; background:var(--card); font-weight:500;}
+  .state.ok{border-color:var(--teal); color:var(--teal-ink); background:var(--teal-soft);}
+  .state.warn{border-color:var(--warn); color:var(--warn); background:var(--warn-soft);}
+  .state.bad{border-color:var(--danger); color:var(--danger); background:var(--danger-soft);}
+  .state.neutral{border-color:var(--ink); color:var(--ink);}
+  .sarr{color:var(--ink3); font-weight:700; font-size:13px;}
+  .agent-setup{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px; margin-bottom:18px;}
+  .setup-card{background:var(--card); border:1.5px solid var(--line); border-radius:var(--radius); padding:13px 14px;}
+  .setup-card b{font-size:13.5px;}
+  .setup-card p{font-size:12.5px; color:var(--ink2); margin-top:3px;}
+  .sm-label{font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--ink2); margin-top:16px;}
+
+  footer{margin-top:60px; border-top:2px solid var(--ink); padding-top:18px; display:flex; flex-wrap:wrap; gap:14px; justify-content:space-between; align-items:center;}
+  footer p{font-size:12px; color:var(--ink3);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ============ HEADER ============ -->
+  <header class="hero">
+    <span class="eyebrow">AUTHHUB · PRODUCT MAP · 2026-10</span>
+    <h1>User journeys <span class="accent">&amp;</span> workflows</h1>
+    <p class="sub">How a marketing agency goes from sign-up to live client platform access — and how AI agents operate on that access. Compiled from the actual routes in <span class="mono">apps/web</span>, services in <span class="mono">apps/api</span>, and shared types.</p>
+    <div class="legend">
+      <span class="chip"><span class="dot agency"></span>Agency</span>
+      <span class="chip"><span class="dot client"></span>Client</span>
+      <span class="chip"><span class="dot system"></span>AuthHub system</span>
+      <span class="chip"><span class="dot agent"></span>AI agent</span>
+    </div>
+  </header>
+
+  <!-- ============ A. CORE LOOP ============ -->
+  <section id="core">
+    <div class="sec-head"><span class="sec-num">A</span><h2>The core loop</h2></div>
+    <p class="sec-sub">Eight stages, four actors. One link replaces 2–3 days of OAuth back-and-forth. Stages 3–6 are the money path.</p>
+    <div class="stages">
+      <div class="stage">
+        <div class="top"><span class="n">01</span><span class="actor agency">Agency</span></div>
+        <h3>Onboard</h3>
+        <p>Clerk sign-up → agency workspace → team invites → connect the agency's own platform identities.</p>
+        <div class="route">/onboarding · /settings/platforms</div>
+      </div>
+      <div class="stage">
+        <div class="top"><span class="n">02</span><span class="actor agency">Agency</span></div>
+        <h3>Templatize</h3>
+        <p>Reusable request templates: platform sets, custom intake fields, white-label branding.</p>
+        <div class="route">/access-requests → templates</div>
+      </div>
+      <div class="stage">
+        <div class="top"><span class="n">03</span><span class="actor agency">Agency</span></div>
+        <h3>Request access</h3>
+        <p>Pick clients + platforms + access levels. One magic link with a unique token. Expires in 7 days.</p>
+        <div class="route">/access-requests</div>
+      </div>
+      <div class="stage">
+        <div class="top"><span class="n">04</span><span class="actor client">Client</span></div>
+        <h3>Open the link</h3>
+        <p>No login needed. Email identifies the client — matched or created on the fly (en / es / nl).</p>
+        <div class="route">/r/[code] · /invite/[token]</div>
+      </div>
+      <div class="stage">
+        <div class="top"><span class="n">05</span><span class="actor client">Client</span></div>
+        <h3>Authorize</h3>
+        <p>3-step wizard per platform: Connect → Choose accounts → Done. OAuth or guided manual invite.</p>
+        <div class="route">/invite/[token]?step=2</div>
+      </div>
+      <div class="stage">
+        <div class="top"><span class="n">06</span><span class="actor system">System</span></div>
+        <h3>Fulfill</h3>
+        <p>Tokens encrypted into Infisical. Postgres stores only a secretId. Every access hits the audit log.</p>
+        <div class="route">connectors · oauth-state · audit</div>
+      </div>
+      <div class="stage">
+        <div class="top"><span class="n">07</span><span class="actor agency">Agency</span></div>
+        <h3>Operate</h3>
+        <p>Live connection status per client, token health (healthy → expiring → expired), refresh jobs, offboarding.</p>
+        <div class="route">/connections · /token-health</div>
+      </div>
+      <div class="stage">
+        <div class="top"><span class="n">08</span><span class="actor agent">AI agent</span></div>
+        <h3>Extend</h3>
+        <p>Agents get scoped grants and run operations (via MCP) through policy gates with human approval.</p>
+        <div class="route">/agent-operations</div>
+      </div>
+    </div>
+    <div class="loop-hint"><span class="arr">↺</span> Stage 07 feeds stage 03: healthy connections make the next request one click. Stage 06 gates everything.</div>
+  </section>
+
+  <!-- ============ B. AGENCY JOURNEY ============ -->
+  <section id="agency">
+    <div class="sec-head"><span class="sec-num">B</span><h2>Agency journey</h2></div>
+    <p class="sec-sub">From marketing site to daily operations. Onboarding is a resumable 7-step unified checklist.</p>
+    <div class="cols">
+      <div class="spine">
+        <div class="sp-step">
+          <div class="sp-rail"><div class="sp-dot">1</div><div class="sp-line"></div></div>
+          <div class="sp-body">
+            <h4>Sign up <span class="actor agency">Agency</span></h4>
+            <p>Clerk authentication. Subscription checkout via Creem; tier sets quotas (requests, seats, platforms).</p>
+            <div class="route">/checkout/success · billing + tier-limits services</div>
+          </div>
+        </div>
+        <div class="sp-step">
+          <div class="sp-rail"><div class="sp-dot">2</div><div class="sp-line"></div></div>
+          <div class="sp-body">
+            <h4>Onboard <span class="actor agency">Agency</span></h4>
+            <p>Unified checklist: agency profile → platform preferences → first access request. Progress saved per step (0–6), resumable any time. Status: not_started → in_progress → activated → completed.</p>
+            <div class="route">/onboarding/agency · /onboarding/platforms · /onboarding/unified</div>
+          </div>
+        </div>
+        <div class="sp-step">
+          <div class="sp-rail"><div class="sp-dot">3</div><div class="sp-line"></div></div>
+          <div class="sp-body">
+            <h4>Set up the workspace <span class="actor agency">Agency</span></h4>
+            <p>Invite team with roles — admin (full), member (create + view), viewer (read-only). Connect the agency's own Meta / Google identities for later native grants.</p>
+            <div class="route">/settings · /settings/platforms</div>
+          </div>
+        </div>
+        <div class="sp-step">
+          <div class="sp-rail"><div class="sp-dot">4</div><div class="sp-line"></div></div>
+          <div class="sp-body">
+            <h4>Create a template <span class="actor agency">Agency</span> <span style="font-size:11px;color:var(--ink3);font-weight:500">optional, recommended</span></h4>
+            <p>Save the standard bundle: platform set, intake fields (text / email / phone / url / dropdown / textarea), branding (logo, primary color).</p>
+            <div class="route">template.service · unique per agency + name</div>
+          </div>
+        </div>
+        <div class="sp-step">
+          <div class="sp-rail"><div class="sp-dot">5</div><div class="sp-line"></div></div>
+          <div class="sp-body">
+            <h4>Create + send the access request <span class="actor agency">Agency</span></h4>
+            <p>Select clients, platforms, and per-product access levels (manage / view_only). AuthHub mints a unique token link, emails it, schedules reminders. Default TTL: 7 days.</p>
+            <div class="route">access-request.service · reminder service</div>
+          </div>
+        </div>
+        <div class="sp-step">
+          <div class="sp-rail"><div class="sp-dot">6</div><div class="sp-line"></div></div>
+          <div class="sp-body">
+            <h4>Track <span class="actor agency">Agency</span></h4>
+            <p>Dashboard + per-request progress: pending → partial → completed. Nudge the laggards instead of chasing emails.</p>
+            <div class="route">/dashboard · /access-requests</div>
+          </div>
+        </div>
+        <div class="sp-step">
+          <div class="sp-rail"><div class="sp-dot">7</div><div class="sp-line"></div></div>
+          <div class="sp-body">
+            <h4>Operate <span class="actor agency">Agency</span></h4>
+            <p>Connections aggregated per client + platform (active / revoked / expired). Token health monitoring with reconnect prompts. Google-native grants (manager link or user invite) and Meta fulfillment handled server-side.</p>
+            <div class="route">/connections · /token-health</div>
+          </div>
+        </div>
+        <div class="sp-step">
+          <div class="sp-rail"><div class="sp-dot">8</div><div class="sp-line"></div></div>
+          <div class="sp-body">
+            <h4>Offboard <span class="actor agency">Agency</span></h4>
+            <p>Client leaves? Run offboarding: items classified per provider, revocation executed, outcomes logged.</p>
+            <div class="route">client-offboarding.service</div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="side-card">
+          <h5>Anatomy of an access request</h5>
+          <dl class="kv">
+            <dt>Platforms</dt><dd>Groups (google, meta, linkedin, tiktok, snapchat) expand into products (google_ads, ga4, meta_ads, meta_pages, linkedin_ads, linkedin_pages…)</dd>
+            <dt>Access</dt><dd>manage or view_only, mapped to OAuth scopes per platform</dd>
+            <dt>Intake</dt><dd>Custom fields collected during authorization</dd>
+            <dt>Branding</dt><dd>Logo, primary color — client sees the agency, not AuthHub</dd>
+            <dt>Link</dt><dd>Unique token · 7-day expiry · reminders</dd>
+          </dl>
+        </div>
+        <div class="side-card">
+          <h5>Platform coverage</h5>
+          <div>
+            <span class="tag">meta_ads</span><span class="tag">meta_pages</span><span class="tag">google_ads</span><span class="tag">ga4</span><span class="tag">linkedin_ads</span><span class="tag">linkedin_pages</span><span class="tag">tiktok_ads</span><span class="tag">snapchat_ads</span><span class="tag">instagram</span>
+          </div>
+          <p style="font-size:12px;color:var(--ink2);margin-top:8px">Manual / API-key flows: <span class="tag">kit</span><span class="tag">beehiiv</span><span class="tag">mailchimp</span><span class="tag">pinterest</span><span class="tag">klaviyo</span><span class="tag">shopify</span><span class="tag">zapier</span></p>
+        </div>
+        <div class="side-card">
+          <h5>Also in the workspace</h5>
+          <p style="font-size:12.5px;color:var(--ink2)">Partner portal <span class="mono">/partners</span> · affiliate program · webhooks (delivery + endpoints) · HelpScout · internal admin <span class="mono">/internal</span></p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ C. CLIENT AUTHORIZATION ============ -->
+  <section id="client">
+    <div class="sec-head"><span class="sec-num">C</span><h2>Client authorization — the wizard</h2></div>
+    <p class="sec-sub">The 5-minute flow that replaces the email chase. Non-technical clients; every step is designed to never dead-end.</p>
+
+    <div class="entry">
+      <div class="node"><b>📧 Email / SMS link</b><span>From the agency. One link, all platforms.</span></div>
+      <div class="fa">→</div>
+      <div class="node"><b>Open</b><span class="mono" style="font-size:11px">/r/[code] · /invite/[token]</span><br><span>No account needed</span></div>
+      <div class="fa">→</div>
+      <div class="node"><b>Identify</b><span>Confirm email → client record matched or created</span></div>
+      <div class="fa">→</div>
+      <div class="node"><b>Per-platform wizard</b><span>Repeat until every requested platform is done</span></div>
+    </div>
+
+    <div class="wizard-step">
+      <div class="ws-head">
+        <div class="ws-badge">1</div>
+        <h4>Connect</h4>
+        <div class="hint">Route depends on the platform's connection method: oauth · manual · api_key</div>
+      </div>
+      <div class="ws-body">
+        <div class="branch">
+          <div class="branch-card oauth">
+            <h5><span class="dot client"></span> OAuth platforms</h5>
+            <p>Meta, Google (Ads + GA4), LinkedIn, TikTok, Snapchat, Instagram.</p>
+            <div class="flow-mini">
+              <span class="fm">Redirect to platform</span><span class="fma">→</span>
+              <span class="fm">Client signs in + consents</span><span class="fma">→</span>
+              <span class="fm">Callback (state verified)</span><span class="fma">→</span>
+              <span class="fm" style="border-color:var(--teal)">Connection created</span>
+            </div>
+            <p style="margin-top:9px; font-size:11.5px">Google Ads may fall back to a native grant: manager link or user invite.</p>
+          </div>
+          <div class="branch-card manual">
+            <h5><span class="dot system" style="background:var(--warn)"></span> Manual / API-key platforms</h5>
+            <p>Kit, Beehiiv, Mailchimp, Pinterest, Klaviyo, Shopify, Zapier.</p>
+            <div class="flow-mini">
+              <span class="fm">Exact in-platform instructions</span><span class="fma">→</span>
+              <span class="fm">Client invites / pastes API key</span><span class="fma">→</span>
+              <span class="fm">AuthHub verifies</span><span class="fma">→</span>
+              <span class="fm" style="border-color:var(--warn)">Confirmed</span>
+            </div>
+            <p style="margin-top:9px; font-size:11.5px">No OAuth redirect — the client does it inside the platform; AuthHub generates the steps.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="wizard-step">
+      <div class="ws-head">
+        <div class="ws-badge">2</div>
+        <h4>Choose accounts to share</h4>
+        <div class="hint">Assets fetched live from the platform after connect</div>
+      </div>
+      <div class="ws-body">
+        <div class="flow-mini" style="margin-bottom:10px">
+          <span class="fm">Asset selector</span><span class="fma">→</span>
+          <span class="fm">Meta: ad accounts · pages · catalogs</span><span class="fma">→</span>
+          <span class="fm">Google: ads accounts · GA4 properties</span><span class="fma">→</span>
+          <span class="fm">LinkedIn · TikTok: ad accounts</span>
+        </div>
+        <p style="font-size:13px; color:var(--ink2)">Nothing found? Create it inline: Meta business setup checklist + asset creator, with proof steps (page engagement, dataset verify). Selection resets require confirmation. Saved to <span class="mono">grantedAssets</span> (row-locked write) + <span class="mono">metadata.selectedAssets</span>.</p>
+      </div>
+    </div>
+
+    <div class="wizard-step">
+      <div class="ws-head">
+        <div class="ws-badge">3</div>
+        <h4>Done — grants &amp; checklist</h4>
+        <div class="hint">Server truth: checklist renders from the backend, not local state</div>
+      </div>
+      <div class="ws-body">
+        <div class="flow-mini" style="margin-bottom:10px">
+          <span class="fm">Grant checklist (Meta system-user / asset grants)</span><span class="fma">→</span>
+          <span class="fm">Verify each item</span><span class="fma">→</span>
+          <span class="fm">All green → platform complete</span>
+        </div>
+        <p style="font-size:13px; color:var(--ink2)">Declining a declinable asset doesn't block the flow — the agency sees the gap. Leaving mid-wizard is safe: progress is saved per platform and the link resumes where the client left off (<span class="mono">?connectionId=…&amp;step=2</span>).</p>
+      </div>
+    </div>
+
+    <div class="outcomes">
+      <div class="outcome" style="border-color:var(--teal)"><b><span class="badge completed">completed</span></b><p>Every requested platform authorized. Agency notified.</p></div>
+      <div class="outcome" style="border-color:var(--warn)"><b><span class="badge partial">partial</span></b><p>Some platforms done. Reminders fire; agency can nudge.</p></div>
+      <div class="outcome" style="border-color:var(--danger)"><b><span class="badge expired">expired</span></b><p>7 days elapsed. Agency re-issues in one click.</p></div>
+      <div class="outcome" style="border-color:var(--ink)"><b><span class="badge revoked">revoked</span></b><p>Agency or client revokes; tokens deleted from Infisical.</p></div>
+    </div>
+  </section>
+
+  <!-- ============ D. SYSTEM WORKFLOW ============ -->
+  <section id="system">
+    <div class="sec-head"><span class="sec-num">D</span><h2>Behind the scenes — token lifecycle</h2></div>
+    <p class="sec-sub">What happens in the seconds after a client clicks "Allow" — and forever after.</p>
+    <div class="pipe">
+      <div class="pipe-row">
+        <div class="pnode"><span class="pn">01</span><b>Consent returns</b><p>Platform redirects back with <span class="mono">code</span> + <span class="mono">state</span>.</p></div>
+        <div class="parr">→</div>
+        <div class="pnode"><span class="pn">02</span><b>State check</b><p>OAuthStateService validates single-use CSRF state in Redis.</p></div>
+        <div class="parr">→</div>
+        <div class="pnode"><span class="pn">03</span><b>Token exchange</b><p>Connector swaps code for tokens. Meta: 60-day long-lived exchange. Google Ads: developer-token header.</p></div>
+      </div>
+      <div class="pipe-row">
+        <div class="pnode"><span class="pn">04</span><b>Seal in Infisical</b><p>Tokens written to Infisical secrets management. <b>Never to PostgreSQL.</b></p></div>
+        <div class="parr">→</div>
+        <div class="pnode"><span class="pn">05</span><b>Reference row</b><p>Postgres stores only <span class="mono">secretId</span> + selected / granted assets.</p></div>
+        <div class="parr">→</div>
+        <div class="pnode"><span class="pn">06</span><b>Audit</b><p>AuditLog entry: user email, IP, user agent, action, timestamp.</p></div>
+      </div>
+      <div class="pipe-row">
+        <div class="pnode"><span class="pn">07</span><b>Refresh loop</b><p>BullMQ worker keeps tokens alive on a schedule.</p></div>
+        <div class="parr">→</div>
+        <div class="pnode"><span class="pn">08</span><b>Health watch</b><p>healthy → expiring → expired. Agency sees reconnect prompts before breakage.</p></div>
+        <div class="parr">→</div>
+        <div class="pnode"><span class="pn">09</span><b>Serve</b><p>Agency pulls assets / connections; tokens fetched from Infisical only when needed.</p></div>
+      </div>
+    </div>
+    <div class="rules">
+      <span class="rule"><span class="tick">✓</span> Tokens never touch PostgreSQL</span>
+      <span class="rule"><span class="tick">✓</span> Every token access audited</span>
+      <span class="rule"><span class="tick">✓</span> CSRF state: Redis, single-use</span>
+      <span class="rule"><span class="tick">✓</span> Agency-scoped queries, always</span>
+      <span class="rule"><span class="tick">✓</span> Infisical identity rotated quarterly</span>
+    </div>
+  </section>
+
+  <!-- ============ E. AGENT OPERATIONS ============ -->
+  <section id="agent">
+    <div class="sec-head"><span class="sec-num">E</span><h2>AI agent operations</h2></div>
+    <p class="sec-sub">The newest surface: external AI agents (via MCP) operate on platform access — but only inside scoped grants, gated policies, and with human approval on risky steps.</p>
+
+    <div class="agent-setup">
+      <div class="setup-card"><b>1 · Register the agent</b><p>Agency creates a grant: OAuth client id + display name.</p></div>
+      <div class="setup-card"><b>2 · Scope it</b><p>Permission list + risk class. Owners only (admin gate).</p></div>
+      <div class="setup-card"><b>3 · Gate it</b><p>Policy rules + rollout percentage control what agents may attempt.</p></div>
+      <div class="setup-card"><b>4 · Let it work</b><p>Agent authenticates and drives operations through MCP tools.</p></div>
+    </div>
+
+    <div class="side-card" style="margin-bottom:14px">
+      <h5>Operation state machine</h5>
+      <div class="sm">
+        <span class="state neutral">prepared</span><span class="sarr">→</span>
+        <span class="state warn">pending_approval</span><span class="sarr">→</span>
+        <span class="state neutral">approved</span><span class="sarr">→</span>
+        <span class="state neutral">executing</span><span class="sarr">→</span>
+        <span class="state ok">succeeded</span>
+      </div>
+      <div class="sm">
+        <span class="state bad">failed_retryable</span><span class="sarr">↺ re-queued</span>
+        <span class="state bad">failed_terminal</span>
+        <span class="state bad">declined</span>
+        <span class="state">expired</span>
+        <span class="state">canceled</span>
+      </div>
+      <div class="sm-label">Completion states</div>
+      <div class="sm">
+        <span class="state ok">completed</span>
+        <span class="state warn">partial</span>
+        <span class="state warn">follow_up_needed</span>
+        <span class="state">pending · expired · revoked · invalid</span>
+      </div>
+    </div>
+    <p style="font-size:13px; color:var(--ink2); max-width:760px">Every operation lands in <span class="mono">/agent-operations</span> with full activity and telemetry; a retention service prunes history. Access-request grants can also be issued <em>to</em> agents — same audit trail as human clients.</p>
+  </section>
+
+  <!-- ============ FOOTER ============ -->
+  <footer>
+    <p>Compiled from code · apps/web routes, apps/api services, packages/shared types · 2026-10-06</p>
+    <p class="mono">authhub.co</p>
+  </footer>
+
+</div>
+</body>
+</html>

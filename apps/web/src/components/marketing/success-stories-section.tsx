@@ -199,7 +199,8 @@ export function SuccessStoriesSection() {
             </m.div>
           </AnimatePresence>
 
-          {/* Navigation Controls */}
+          {/* Navigation Controls — hidden for a single story */}
+          {CASE_STUDIES.length > 1 && (
           <div className="flex items-center justify-center gap-3 sm:gap-4 mt-8 sm:mt-12">
             <m.button
               onClick={handlePrev}
@@ -234,6 +235,7 @@ export function SuccessStoriesSection() {
               <ChevronRight size={24} className="text-ink" strokeWidth={2.5} />
             </m.button>
           </div>
+          )}
         </div>
       </div>
     </section>

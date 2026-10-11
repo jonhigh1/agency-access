@@ -10,6 +10,11 @@ vi.mock('next/link', () => ({
 }));
 vi.mock('next/navigation', () => ({ usePathname: pathname, useRouter: () => ({ push }) }));
 vi.mock('@/lib/docs-url', () => ({ getDocsUrl: () => 'https://docs.example.test' }));
+vi.mock('@/components/ui/platform-icon', () => ({
+  PlatformIcon: ({ platform }: { platform: string }) => (
+    <div data-testid={`platform-icon-${platform}`} />
+  ),
+}));
 
 describe('MarketingFooter section links', () => {
   beforeEach(() => {
@@ -52,5 +57,13 @@ describe('MarketingFooter section links', () => {
   it('links to the stats roundup', () => {
     render(<MarketingFooter />);
     expect(screen.getByRole('link', { name: 'Stats' })).toHaveAttribute('href', '/stats');
+  });
+});
+
+describe('MarketingFooter partner badges', () => {
+  it('renders official partner badges in the brand column', () => {
+    render(<MarketingFooter />);
+    expect(screen.getByText('Google Official Partner')).toBeInTheDocument();
+    expect(screen.getByText('Meta Official Partner')).toBeInTheDocument();
   });
 });
