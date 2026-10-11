@@ -1,5 +1,1 @@
-Let's revamp our app's signup/get started page to match the screenshot exactly but following our design system
-
----
-
-Let's revamp our app's signup/get started page to match the screenshot exactly but following our design system
+Commit and push
