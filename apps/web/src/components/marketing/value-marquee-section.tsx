@@ -5,6 +5,10 @@ import { useMobile } from '@/hooks/use-mobile';
 import type { MarketingStats } from '@/lib/api/marketing-stats';
 
 // Homepage proof counters — same production aggregate the pricing banner uses.
+// Display floor: a counter only shows once it is credible scale proof. Below the
+// floor the row hides entirely (real numbers must never read as "barely used").
+const USAGE_STATS_DISPLAY_FLOOR = 100;
+
 const USAGE_STATS = [
   { key: 'activePlatformAuthorizations' as const, label: 'Active Platform Connections' },
   { key: 'completedAccessRequests' as const, label: 'Completed Access Requests' },
@@ -49,6 +53,11 @@ const marqueeHighlights = [...valueHighlights, ...valueHighlights, ...valueHighl
 
 export function ValueMarqueeSection({ stats }: { stats?: MarketingStats | null }) {
   const isMobile = useMobile();
+  const visibleStats = stats
+    ? USAGE_STATS
+        .filter(({ key }) => stats[key] >= USAGE_STATS_DISPLAY_FLOOR)
+        .map(({ key, label }) => ({ key, label, value: stats[key] }))
+    : [];
   const prefersReducedMotion = useReducedMotion();
   return (
     <section className="py-12 sm:py-16 border-y-2 border-black bg-paper relative overflow-hidden">
@@ -56,15 +65,15 @@ export function ValueMarqueeSection({ stats }: { stats?: MarketingStats | null }
         <p className="text-[10px] sm:text-[11px] font-black uppercase tracking-[0.25em] sm:tracking-[0.3em] text-center text-ink font-mono">
           Built for faster onboarding. Cleaner handoffs. No exceptions.
         </p>
-        {stats && (
+        {visibleStats.length > 0 && (
           <div
             className="mt-6 flex flex-wrap items-center justify-center gap-x-10 gap-y-4"
             data-testid="usage-stats-row"
           >
-            {USAGE_STATS.map(({ key, label }) => (
+            {visibleStats.map(({ key, label, value }) => (
               <div key={key} className="text-center">
                 <div className="font-mono font-bold text-lg sm:text-xl text-ink">
-                  {stats[key].toLocaleString('en-US')}
+                  {value.toLocaleString("en-US")}
                 </div>
                 <div className="font-mono text-[10px] uppercase tracking-[0.12em] text-ink/50">
                   {label}

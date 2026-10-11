@@ -37,4 +37,19 @@ describe('ValueMarqueeSection usage counters', () => {
     render(<ValueMarqueeSection />);
     expect(screen.queryByText('Active Platform Connections')).toBeNull();
   });
+
+  it('hides the whole row while every counter sits below the display floor', () => {
+    render(
+      <ValueMarqueeSection
+        stats={{
+          agencies: 46,
+          activeClientConnections: 18,
+          activePlatformAuthorizations: 16,
+          completedAccessRequests: 5,
+          tokenRefreshes: 33,
+        }}
+      />,
+    );
+    expect(screen.queryByTestId('usage-stats-row')).toBeNull();
+  });
 });
